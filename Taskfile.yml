@@ -1,0 +1,63 @@
+version: "3"
+
+tasks:
+  build:
+    desc: Build the codeviz binary
+    cmds:
+      - go build -o bin/codeviz ./cmd/codeviz
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - bin/codeviz
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./... -count=1
+
+  test:cover:
+    desc: Run tests with coverage report
+    cmds:
+      - go test ./... -count=1 -coverprofile=coverage.out
+      - go tool cover -func=coverage.out
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format all Go source files
+    cmds:
+      - gofumpt -w .
+
+  fmt:check:
+    desc: Check formatting without modifying files
+    cmds:
+      - test -z "$(gofumpt -l .)"
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf bin/ coverage.out
+
+  tidy:
+    desc: Format, mod tidy, and lint fix
+    cmds:
+      - gofumpt -w .
+      - go mod tidy
+      - golangci-lint run --fix ./...
+
+  ci:
+    desc: Build, test, and lint
+    cmds:
+      - task: build
+      - task: test
+      - task: lint
+
+  update-golden-files:
+    desc: Regenerate golden file snapshots
+    cmds:
+      - UPDATE_GOLDEN=1 go test ./... -count=1

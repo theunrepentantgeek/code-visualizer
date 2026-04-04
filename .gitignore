@@ -1,0 +1,22 @@
+.specify/extensions/.cache
+
+# Task runner
+.task/
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+coverage.out
+vendor/
+
+# Generated output
+out.png
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+codeviz
