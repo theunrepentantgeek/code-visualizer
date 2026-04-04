@@ -99,6 +99,15 @@ A developer chooses among the four built-in colour palettes — Categorization, 
 - What happens when the user specifies an output path in a directory that does not exist? The tool exits with a clear error rather than silently creating directories.
 - What happens with permission-denied files during scanning? The tool logs a warning for each inaccessible file and continues scanning the rest of the tree.
 
+## Clarifications
+
+### Session 2026-04-04
+
+- Q: Should file/directory names appear as text labels on treemap rectangles? → A: Labels shown only on rectangles large enough to display them legibly; omitted on small rectangles.
+- Q: Can file-type (categorical) be used as the size metric? → A: No. File-type is only allowed for fill or border colour; the size metric must be numeric.
+- Q: What are the defaults when fill colour or border colour are not specified? → A: If no fill metric is specified, the size metric is reused for fill. If no border metric is specified, no borders are displayed.
+- Q: What default palette should be used for each metric when no palette is explicitly specified? → A: file-size: Neutral, file-lines: Neutral, file-age: Temperature, file-freshness: Temperature, author-count: Good/Bad, file-type: Categorization.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -106,13 +115,15 @@ A developer chooses among the four built-in colour palettes — Categorization, 
 - **FR-001**: The tool MUST accept a directory path as input and recursively scan all files within it.
 - **FR-002**: The tool MUST compute the following metrics for each file: size in bytes, length in lines (binary files as identified by git report zero; in non-git directories all files are treated as text), file type (based on file extension).
 - **FR-003**: The tool MUST compute the following git-derived metrics when the target is a git repository: file age (duration since first commit), file freshness (duration since most recent commit), number of distinct authors.
-- **FR-004**: The tool MUST require the user to select exactly one metric for determining the size of treemap rectangles.
-- **FR-005**: The tool MUST allow the user to optionally select one metric and one colour palette for the fill colour of treemap rectangles.
-- **FR-006**: The tool MUST allow the user to optionally select one metric and one colour palette for the border colour of treemap rectangles.
+- **FR-004**: The tool MUST require the user to select exactly one numeric metric for determining the size of treemap rectangles. Categorical metrics (e.g., file-type) MUST NOT be allowed as the size metric.
+- **FR-005**: The tool MUST allow the user to optionally select one metric and one colour palette for the fill colour of treemap rectangles. If no fill metric is specified, the tool MUST default to using the size metric for fill colour. If no palette is specified, the tool MUST use the metric's default palette.
+- **FR-006**: The tool MUST allow the user to optionally select one metric and one colour palette for the border colour of treemap rectangles. If no border metric is specified, the tool MUST render rectangles without borders. If a border metric is specified without a palette, the tool MUST use the metric's default palette.
 - **FR-007**: The tool MUST produce a treemap layout based on the directory structure, with files as leaf nodes and directories as nested groups.
 - **FR-008**: The tool MUST render the treemap to a PNG image file at a user-specified output path.
+- **FR-008a**: The tool MUST display file and directory names as text labels on treemap rectangles that are large enough to render them legibly; labels MUST be omitted on rectangles too small for readable text.
 - **FR-009**: The tool MUST provide four built-in colour palettes: Categorization (12 colours, unordered), Temperature (11 steps, dark blue through white to bright red), Good/Bad (13 steps, red through orange and yellow to green), and Neutral (9 monochromatic steps, black to white).
 - **FR-010**: The tool MUST map metric values to palette colours using discrete steps — no colour interpolation.
+- **FR-010a**: Each metric MUST have a default palette used when the user does not specify one: file-size → Neutral, file-lines → Neutral, file-age → Temperature, file-freshness → Temperature, author-count → Good/Bad, file-type → Categorization.
 - **FR-011**: The tool MUST exit with a clear, actionable error message when a git-dependent metric is requested but the target directory is not a git repository.
 - **FR-012**: The tool MUST log a warning and continue scanning when individual files are inaccessible due to permissions.
 - **FR-013**: The tool MUST display files with zero-valued size metrics as minimum-size rectangles rather than omitting them.
@@ -122,7 +133,7 @@ A developer chooses among the four built-in colour palettes — Categorization, 
 
 - **FileNode**: Represents a single file in the scanned tree. Attributes: path, name, extension, and computed metric values (size, line count, file type, and optionally age, freshness, author count).
 - **DirectoryNode**: Represents a directory in the scanned tree. Contains child FileNodes and child DirectoryNodes. Serves as a grouping container in the treemap layout.
-- **Metric**: A named measurement that can be computed for a file. Has a value type (numeric or categorical) and a range/set of possible values.
+- **Metric**: A named measurement that can be computed for a file. Has a value type (numeric or categorical) and a range/set of possible values. Categorical metrics are restricted to colour mapping only; they cannot be used as the size metric.
 - **ColourPalette**: An ordered sequence of predefined colours with a name and a fixed step count. Maps metric values to colours by dividing the metric range into palette-sized buckets.
 - **TreemapRectangle**: A visual element in the rendered treemap. Has position, dimensions (determined by size metric), fill colour (determined by fill metric + palette), and border colour (determined by border metric + palette).
 - **RenderConfiguration**: The user's chosen combination of target path, output path, size metric, optional fill metric + palette, and optional border metric + palette.
