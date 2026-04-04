@@ -116,7 +116,10 @@
 - **UI Framework**: Fyne for the interactive visualization UX.
 - **CLI Framework**: Kong for command-line argument parsing.
 - **Testing**: Gomega (assertions) + Goldie (golden-file
-  snapshots). Standard `go test` runner.
+  snapshots). Standard `go test` runner. Test files MUST be
+  co-located with the packages they test (e.g.,
+  `internal/scan/scanner_test.go` alongside `scanner.go`).
+  Package-specific `testdata/` directories for fixtures.
 - **Build Orchestration**: Taskfile (`task`) for build, test,
   lint, and release workflows.
 - **Formatting/Linting**: `gofmt` and `golangci-lint` MUST pass
@@ -175,4 +178,4 @@
 - Complexity beyond what the constitution permits MUST be
   justified in writing within the relevant spec or plan.
 
-**Version**: 1.1.0 | **Ratified**: 2026-04-04 | **Last Amended**: 2026-04-04
+**Version**: 1.2.0 | **Ratified**: 2026-04-04 | **Last Amended**: 2026-04-04

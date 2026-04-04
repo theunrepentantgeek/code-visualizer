@@ -61,29 +61,33 @@ cmd/
 internal/
 ├── scan/
 │   ├── scanner.go           # Directory tree scanning
-│   └── gitinfo.go           # Git metadata collection
+│   ├── scanner_test.go      # Scanner tests
+│   ├── gitinfo.go           # Git metadata collection
+│   ├── gitinfo_test.go      # Git metadata tests
+│   └── testdata/            # Sample directory fixtures
 ├── metric/
 │   ├── metric.go            # Metric types and computation
+│   ├── metric_test.go       # Metric computation tests
 │   ├── bucket.go            # Quantile bucketing with sig-fig rounding
-│   └── registry.go          # Metric registry and validation
+│   ├── bucket_test.go       # Bucketing tests
+│   ├── registry.go          # Metric registry and validation
+│   └── registry_test.go     # Registry tests
 ├── palette/
 │   ├── palette.go           # Palette type and colour definitions
-│   └── mapper.go            # Metric-to-colour mapping
+│   ├── palette_test.go      # Palette definition tests
+│   ├── mapper.go            # Metric-to-colour mapping
+│   └── mapper_test.go       # Mapper tests
 ├── treemap/
 │   ├── layout.go            # Squarified treemap layout algorithm
-│   └── node.go              # Layout tree node types
+│   ├── layout_test.go       # Layout tests
+│   ├── node.go              # Layout tree node types
+│   └── node_test.go         # Node tests
 └── render/
     ├── renderer.go          # PNG image rendering
-    └── label.go             # Text label fitting and rendering
-
-tests/
-├── golden/                  # Goldie snapshot files
-├── testdata/                # Sample directory trees for testing
-├── scan_test.go
-├── metric_test.go
-├── palette_test.go
-├── treemap_test.go
-└── render_test.go
+    ├── renderer_test.go     # Renderer tests (golden-file snapshots)
+    ├── label.go             # Text label fitting and rendering
+    ├── label_test.go        # Label fitting tests
+    └── testdata/            # Golden-file snapshots
 ```
 
 **Structure Decision**: Single-project Go layout with `cmd/` for the CLI entrypoint and `internal/` for all library packages. This follows Go conventions and the constitution's module structure guidance. Shared `pkg/` is not needed since this feature is CLI-only; when the Fyne UI feature is added later, shared packages can be promoted to `pkg/` at that time (YAGNI).

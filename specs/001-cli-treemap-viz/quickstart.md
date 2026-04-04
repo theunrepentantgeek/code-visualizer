@@ -81,10 +81,9 @@ golangci-lint run
 
 ```
 cmd/codeviz/main.go       # CLI entrypoint
-internal/scan/             # Directory + git scanning
-internal/metric/           # Metric computation + bucketing
-internal/palette/          # Colour palette definitions + mapping
-internal/treemap/          # Squarified treemap layout
-internal/render/           # PNG rendering
-tests/                     # Test files + testdata + golden files
+internal/scan/             # Directory + git scanning (tests + testdata co-located)
+internal/metric/           # Metric computation + bucketing (tests co-located)
+internal/palette/          # Colour palette definitions + mapping (tests co-located)
+internal/treemap/          # Squarified treemap layout (tests co-located)
+internal/render/           # PNG rendering (tests + golden snapshots co-located)
 ```
