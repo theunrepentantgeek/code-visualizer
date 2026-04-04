@@ -19,10 +19,10 @@
 
 **Purpose**: Go module, dependencies, build tooling, project skeleton
 
-- [ ] T001 Create project directory structure per plan: `cmd/codeviz/`, `internal/scan/`, `internal/metric/`, `internal/palette/`, `internal/treemap/`, `internal/render/`
-- [ ] T002 Initialize Go module (`go mod init`) and add dependencies to `go.mod`: kong, nikolaydubina/treemap, fogleman/gg, go-git/go-git/v5, onsi/gomega, sebdah/goldie/v2
-- [ ] T003 [P] Create `Taskfile.yml` with `build`, `test`, `lint` targets per constitution Development Workflow
-- [ ] T004 [P] Create `.golangci.yml` with linting rules per constitution Technology Constraints
+- [X] T001 Create project directory structure per plan: `cmd/codeviz/`, `internal/scan/`, `internal/metric/`, `internal/palette/`, `internal/treemap/`, `internal/render/`
+- [X] T002 Initialize Go module (`go mod init`) and add dependencies to `go.mod`: kong, nikolaydubina/treemap, fogleman/gg, go-git/go-git/v5, onsi/gomega, sebdah/goldie/v2
+- [X] T003 [P] Create `Taskfile.yml` with `build`, `test`, `lint` targets per constitution Development Workflow
+- [X] T004 [P] Create `.golangci.yml` with linting rules per constitution Technology Constraints
 
 ---
 
