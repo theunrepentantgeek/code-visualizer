@@ -17,15 +17,17 @@ import (
 )
 
 type CLI struct {
-	TargetPath  string            `arg:"" help:"Path to directory to scan."`
-	Output      string            `help:"Output PNG file path." short:"o" required:""`
-	Size        metric.MetricName `help:"Metric for rectangle area (file-size, file-lines, file-age, file-freshness, author-count)." short:"s" required:"" enum:"file-size,file-lines,file-age,file-freshness,author-count"`
-	Fill        string            `help:"Metric for fill colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"f" optional:"" default:""`
-	FillPalette string            `help:"Palette for fill colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"fill-palette"`
-	Verbose     bool              `help:"Enable debug-level logging." short:"v"`
-	Format      string            `help:"Diagnostic/error output format (text, json)." enum:"text,json" default:"text"`
-	Width       int               `help:"Image width in pixels." default:"1920"`
-	Height      int               `help:"Image height in pixels." default:"1080"`
+	TargetPath    string            `arg:"" help:"Path to directory to scan."`
+	Output        string            `help:"Output PNG file path." short:"o" required:""`
+	Size          metric.MetricName `help:"Metric for rectangle area (file-size, file-lines, file-age, file-freshness, author-count)." short:"s" required:"" enum:"file-size,file-lines,file-age,file-freshness,author-count"`
+	Fill          string            `help:"Metric for fill colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"f" optional:"" default:""`
+	FillPalette   string            `help:"Palette for fill colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"fill-palette"`
+	Border        string            `help:"Metric for border colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"b" optional:"" default:""`
+	BorderPalette string            `help:"Palette for border colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"border-palette"`
+	Verbose       bool              `help:"Enable debug-level logging." short:"v"`
+	Format        string            `help:"Diagnostic/error output format (text, json)." enum:"text,json" default:"text"`
+	Width         int               `help:"Image width in pixels." default:"1920"`
+	Height        int               `help:"Image height in pixels." default:"1080"`
 }
 
 func (c *CLI) Validate() error {
@@ -71,6 +73,25 @@ func (c *CLI) Validate() error {
 		fp := palette.PaletteName(c.FillPalette)
 		if !fp.IsValid() {
 			return fmt.Errorf("invalid fill palette %q", c.FillPalette)
+		}
+	}
+
+	// Validate border metric if specified
+	if c.Border != "" {
+		bm := metric.MetricName(c.Border)
+		if !bm.IsValid() {
+			return fmt.Errorf("invalid border metric %q", c.Border)
+		}
+	}
+
+	// Validate border palette if specified
+	if c.BorderPalette != "" {
+		if c.Border == "" {
+			return fmt.Errorf("--border-palette requires --border to be specified")
+		}
+		bp := palette.PaletteName(c.BorderPalette)
+		if !bp.IsValid() {
+			return fmt.Errorf("invalid border palette %q", c.BorderPalette)
 		}
 	}
 
@@ -129,6 +150,40 @@ func (c *CLI) Run() error {
 		applyCategoricalFillColours(&rects, root, mapper)
 	}
 
+	// Apply border colours if --border specified
+	var borderMetric metric.MetricName
+	var borderPaletteName palette.PaletteName
+	if c.Border != "" {
+		borderMetric = metric.MetricName(c.Border)
+		borderPaletteName = palette.PaletteName(c.BorderPalette)
+		if c.BorderPalette == "" {
+			if p, ok := metric.DefaultPaletteFor(borderMetric); ok {
+				borderPaletteName = p
+			} else {
+				borderPaletteName = palette.Neutral
+			}
+		}
+
+		// Count lines if border metric needs it
+		if borderMetric == metric.FileLines && c.Size != metric.FileLines && fillMetric != metric.FileLines {
+			scan.PopulateLineCounts(&root)
+		}
+
+		borderPalette := palette.GetPalette(borderPaletteName)
+		if borderMetric.IsNumeric() {
+			values := collectNumericValues(root, borderMetric)
+			if len(values) > 0 {
+				buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
+				numBuckets := len(buckets.Boundaries) + 1
+				applyNumericBorderColours(&rects, root, borderMetric, buckets, numBuckets, borderPalette)
+			}
+		} else {
+			types := collectDistinctTypes(root)
+			mapper := palette.NewCategoricalMapper(types, borderPalette)
+			applyCategoricalBorderColours(&rects, root, mapper)
+		}
+	}
+
 	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
 
 	if err := render.RenderPNG(rects, c.Width, c.Height, c.Output); err != nil {
@@ -137,6 +192,11 @@ func (c *CLI) Run() error {
 
 	// Success output
 	if c.Format == "json" {
+		var bm, bp any
+		if c.Border != "" {
+			bm = string(borderMetric)
+			bp = string(borderPaletteName)
+		}
 		out := map[string]any{
 			"files":          files,
 			"directories":    dirs,
@@ -146,8 +206,8 @@ func (c *CLI) Run() error {
 			"size_metric":    string(c.Size),
 			"fill_metric":    string(fillMetric),
 			"fill_palette":   string(fillPaletteName),
-			"border_metric":  nil,
-			"border_palette": nil,
+			"border_metric":  bm,
+			"border_palette": bp,
 		}
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -232,6 +292,40 @@ func applyCategoricalFillColours(rect *treemap.TreemapRectangle, node scan.Direc
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			child.FillColour = mapper.Map(node.Files[fileIdx].FileType)
+			fileIdx++
+		}
+	}
+}
+
+func applyNumericBorderColours(rect *treemap.TreemapRectangle, node scan.DirectoryNode, m metric.MetricName, buckets metric.BucketBoundaries, numBuckets int, p palette.ColourPalette) {
+	fileIdx := 0
+	dirIdx := 0
+	for i := range rect.Children {
+		child := &rect.Children[i]
+		if child.IsDirectory && dirIdx < len(node.Dirs) {
+			applyNumericBorderColours(child, node.Dirs[dirIdx], m, buckets, numBuckets, p)
+			dirIdx++
+		} else if !child.IsDirectory && fileIdx < len(node.Files) {
+			val := extractNumeric(node.Files[fileIdx], m)
+			idx := buckets.BucketIndex(val)
+			col := palette.MapNumericToColour(idx, numBuckets, p)
+			child.BorderColour = &col
+			fileIdx++
+		}
+	}
+}
+
+func applyCategoricalBorderColours(rect *treemap.TreemapRectangle, node scan.DirectoryNode, mapper *palette.CategoricalMapper) {
+	fileIdx := 0
+	dirIdx := 0
+	for i := range rect.Children {
+		child := &rect.Children[i]
+		if child.IsDirectory && dirIdx < len(node.Dirs) {
+			applyCategoricalBorderColours(child, node.Dirs[dirIdx], mapper)
+			dirIdx++
+		} else if !child.IsDirectory && fileIdx < len(node.Files) {
+			col := mapper.Map(node.Files[fileIdx].FileType)
+			child.BorderColour = &col
 			fileIdx++
 		}
 	}

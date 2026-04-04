@@ -128,16 +128,16 @@
 
 > **Write tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T050 [P] [US3] Write tests for border colour rendering (border visible when metric set, no border when metric absent, border colour independent of fill colour, same metric different palettes) in `internal/render/renderer_test.go`
-- [ ] T051 [P] [US3] Write tests for CLI validation: `--border-palette` without `--border` returns exit code 1 with error message in `cmd/codeviz/main_test.go`
+- [X] T050 [P] [US3] Write tests for border colour rendering (border visible when metric set, no border when metric absent, border colour independent of fill colour, same metric different palettes) in `internal/render/renderer_test.go`
+- [X] T051 [P] [US3] Write tests for CLI validation: `--border-palette` without `--border` returns exit code 1 with error message in `cmd/codeviz/main_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T052 [US3] Add `--border` and `--border-palette` flags to Kong CLI struct in `cmd/codeviz/main.go`
-- [ ] T053 [US3] Update `Validate()`: border-palette requires border metric; default palette applied when border specified without palette in `cmd/codeviz/main.go`
-- [ ] T054 [US3] Integrate border colour into pipeline: bucket border metric values → map to border palette → set `BorderColour` on each `TreemapRectangle` in `cmd/codeviz/main.go`
-- [ ] T055 [US3] Update renderer to draw coloured borders from `BorderColour` when present, replacing structural dark borders in `internal/render/renderer.go`
-- [ ] T056 [US3] Update golden-file snapshots for bordered output in `internal/render/testdata/`
+- [X] T052 [US3] Add `--border` and `--border-palette` flags to Kong CLI struct in `cmd/codeviz/main.go`
+- [X] T053 [US3] Update `Validate()`: border-palette requires border metric; default palette applied when border specified without palette in `cmd/codeviz/main.go`
+- [X] T054 [US3] Integrate border colour into pipeline: bucket border metric values → map to border palette → set `BorderColour` on each `TreemapRectangle` in `cmd/codeviz/main.go`
+- [X] T055 [US3] Update renderer to draw coloured borders from `BorderColour` when present, replacing structural dark borders in `internal/render/renderer.go`
+- [X] T056 [US3] Update golden-file snapshots for bordered output in `internal/render/testdata/`
 
 **Checkpoint**: Three data dimensions (size, fill, border) rendered independently in one treemap
 
