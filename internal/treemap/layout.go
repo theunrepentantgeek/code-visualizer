@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	headerHeight = 20.0 // pixels for directory header bar
-	padding      = 4.0  // pixels between groups
-	minFileSize  = 1.0  // minimum area for zero-size files (FR-013)
+	HeaderHeight  = 20.0 // pixels for directory header bar
+	padding       = 4.0  // pixels between groups
+	siblingGap    = 2.0  // pixels between sibling rectangles
+	minFileSize   = 1.0  // minimum area for zero-size files (FR-013)
 )
 
 // Layout computes a squarified treemap layout from a DirectoryNode tree.
@@ -64,9 +65,9 @@ func layoutDir(dir scan.DirectoryNode, box layout.Box) TreemapRectangle {
 	// Reserve space for header bar and padding
 	contentBox := layout.Box{
 		X: box.X + padding,
-		Y: box.Y + headerHeight,
+		Y: box.Y + HeaderHeight,
 		W: box.W - 2*padding,
-		H: box.H - headerHeight - padding,
+		H: box.H - HeaderHeight - padding,
 	}
 
 	if contentBox.W <= 0 || contentBox.H <= 0 {
@@ -83,6 +84,8 @@ func layoutDir(dir scan.DirectoryNode, box layout.Box) TreemapRectangle {
 
 	for i, c := range children {
 		b := boxes[i]
+		// Inset each sibling rectangle by a small gap for visual separation
+		b = insetBox(b, siblingGap/2)
 		if c.isDir {
 			childRect := layoutDir(dir.Dirs[c.dirIdx], b)
 			rect.Children = append(rect.Children, childRect)
@@ -99,6 +102,19 @@ func layoutDir(dir scan.DirectoryNode, box layout.Box) TreemapRectangle {
 	}
 
 	return rect
+}
+
+func insetBox(b layout.Box, inset float64) layout.Box {
+	// Only apply inset if the box is large enough to remain positive
+	if b.W <= 2*inset || b.H <= 2*inset {
+		return b
+	}
+	return layout.Box{
+		X: b.X + inset,
+		Y: b.Y + inset,
+		W: b.W - 2*inset,
+		H: b.H - 2*inset,
+	}
 }
 
 func dirTotalSize(dir scan.DirectoryNode) float64 {

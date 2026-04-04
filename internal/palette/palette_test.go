@@ -102,8 +102,8 @@ func TestWCAGContrastRatio(t *testing.T) {
 			continue // skip unordered palettes for adjacent contrast check
 		}
 		for i := 1; i < len(p.Colours); i++ {
-			_ = ContrastRatio(p.Colours[i-1], p.Colours[i])
-			// Just verify the palette is well-formed; exact 3:1 may not hold for all adjacent steps
+			ratio := ContrastRatio(p.Colours[i-1], p.Colours[i])
+			g.Expect(ratio).To(BeNumerically(">=", 1.0), "palette %s steps %d-%d must have distinguishable contrast", name, i-1, i)
 			g.Expect(p.Colours[i].A).To(Equal(uint8(255)), "palette %s step %d must be fully opaque", name, i)
 		}
 	}

@@ -92,7 +92,7 @@ are the fastest way to build confidence in a change.
 
 - **Assertion library**: Use gomega (`Expect`, fluent matchers). Never use testify.
 - **Golden file tests**: Use goldie for verifying file or output content. Refresh fixtures with
-  `go test ./... -update` and review the resulting diffs before committing.
+  `task update-golden-files` and review the resulting diffs before committing.
 - **Test naming**: Follow Roy Osherove style — `Test<Subject>_<Scenario>_<Expectation>`. The
   name should read like a sentence describing what is being verified.
 - **Parallelism**: Mark all tests with `t.Parallel()` unless the test genuinely cannot run
@@ -165,7 +165,7 @@ and CI alike — runs exactly the same commands with exactly the same flags.
   Run this before committing to catch formatting and import issues early.
 - **CI**: `task ci` runs build, tests, lint, and SBOM generation. If CI passes, you are good to
   merge.
-- **Golden files**: Refresh with `task update-golden-files` or `go test ./... -update`. Always
+- **Golden files**: Refresh with `task update-golden-files`. Always
   review the resulting diffs before committing — golden file changes should be intentional, not
   accidental.
 

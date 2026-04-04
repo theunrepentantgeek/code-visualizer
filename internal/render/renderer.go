@@ -45,12 +45,12 @@ func drawRect(dc *gg.Context, rect treemap.TreemapRectangle) {
 func drawDirectoryHeader(dc *gg.Context, rect treemap.TreemapRectangle) {
 	// Draw header bar
 	dc.SetColor(headerFill)
-	dc.DrawRectangle(rect.X, rect.Y, rect.W, 18)
+	dc.DrawRectangle(rect.X, rect.Y, rect.W, treemap.HeaderHeight)
 	dc.Fill()
 
 	// Header label
 	dc.SetColor(color.RGBA{R: 255, G: 255, B: 255, A: 255})
-	dc.DrawStringAnchored(rect.Label, rect.X+4, rect.Y+9, 0, 0.5)
+	dc.DrawStringAnchored(rect.Label, rect.X+4, rect.Y+treemap.HeaderHeight/2, 0, 0.5)
 
 	// Border around entire directory group
 	dc.SetColor(structuralBorder)

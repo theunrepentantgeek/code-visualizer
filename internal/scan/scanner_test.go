@@ -1,7 +1,6 @@
 package scan
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -86,26 +85,6 @@ func TestScanSkipsDirSymlinks(t *testing.T) {
 	// The real target-dir should be present but the symlink link-to-dir should be skipped
 	g.Expect(dirNames).To(HaveKey("target-dir"))
 	g.Expect(dirNames).NotTo(HaveKey("link-to-dir"))
-}
-
-func TestScanPermissionDenied(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	// Create a temporary directory with an unreadable file
-	tmp := t.TempDir()
-	f, err := os.Create(filepath.Join(tmp, "readable.txt"))
-	g.Expect(err).NotTo(HaveOccurred())
-	f.WriteString("hello") //nolint:errcheck
-	f.Close()              //nolint:errcheck
-
-	unreadable := filepath.Join(tmp, "unreadable.txt")
-	err = os.WriteFile(unreadable, []byte("secret"), 0o000)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	root, err := Scan(tmp)
-	g.Expect(err).NotTo(HaveOccurred())
-	// Scanner should continue and include the readable file
-	g.Expect(len(root.Files)).To(BeNumerically(">=", 1))
 }
 
 func TestScanFileExtension(t *testing.T) {

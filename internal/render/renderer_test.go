@@ -167,7 +167,7 @@ func goldenPaletteTest(t *testing.T, name palette.PaletteName, filename string) 
 	// Compare rendered output against golden file
 	goldenFile, err := os.Open(golden)
 	if os.IsNotExist(err) {
-		t.Fatalf("golden file %s not found; run with UPDATE_GOLDEN=1 to generate", golden)
+		t.Fatalf("golden file %s not found; run 'task update-golden-files' to generate", golden)
 	}
 	g.Expect(err).NotTo(HaveOccurred())
 	defer goldenFile.Close() //nolint:errcheck

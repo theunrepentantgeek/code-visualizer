@@ -10,7 +10,7 @@ Build a CLI tool in Go that scans a directory (optionally a git repo), computes 
 ## Technical Context
 
 **Language/Version**: Go (latest stable, currently 1.22+)
-**Primary Dependencies**: Kong (CLI parsing), image/png + image/draw (rendering), os/exec for git commands
+**Primary Dependencies**: Kong (CLI parsing), fogleman/gg (PNG rendering), go-git (git metadata)
 **Storage**: N/A — stateless CLI tool, reads filesystem and git history, writes PNG
 **Testing**: Gomega (assertions) + Goldie (golden-file snapshots), standard `go test`
 **Target Platform**: Linux, macOS, Windows (cross-platform CLI)

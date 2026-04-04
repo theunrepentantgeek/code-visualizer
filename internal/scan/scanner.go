@@ -174,6 +174,11 @@ func PopulateLineCounts(node *DirectoryNode) {
 		}
 		count, err := countLines(f.Path)
 		if err != nil {
+			if errors.Is(err, errBinaryFile) {
+				f.IsBinary = true
+				f.LineCount = 0
+				continue
+			}
 			slog.Warn("could not count lines", "path", f.Path, "error", err)
 			continue
 		}
@@ -183,6 +188,8 @@ func PopulateLineCounts(node *DirectoryNode) {
 		PopulateLineCounts(&node.Dirs[i])
 	}
 }
+
+var errBinaryFile = errors.New("file appears to be binary (line exceeds 64KB)")
 
 func countLines(path string) (int, error) {
 	file, err := os.Open(path)
@@ -196,5 +203,8 @@ func countLines(path string) (int, error) {
 	for scanner.Scan() {
 		count++
 	}
-	return count, scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return 0, errBinaryFile
+	}
+	return count, nil
 }

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kong"
+	"github.com/rotisserie/eris"
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/palette"
@@ -21,10 +22,10 @@ type CLI struct {
 	TargetPath    string            `arg:"" help:"Path to directory to scan."`
 	Output        string            `help:"Output PNG file path." short:"o" required:""`
 	Size          metric.MetricName `help:"Metric for rectangle area (file-size, file-lines, file-age, file-freshness, author-count)." short:"s" required:"" enum:"file-size,file-lines,file-age,file-freshness,author-count"`
-	Fill          string            `help:"Metric for fill colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"f" optional:"" default:""`
-	FillPalette   string            `help:"Palette for fill colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"fill-palette"`
-	Border        string            `help:"Metric for border colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"b" optional:"" default:""`
-	BorderPalette string            `help:"Palette for border colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"border-palette"`
+	Fill          string            `help:"Metric for fill colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"f" optional:"" default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count"`
+	FillPalette   string            `help:"Palette for fill colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"fill-palette" enum:",categorization,temperature,good-bad,neutral"`
+	Border        string            `help:"Metric for border colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"b" optional:"" default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count"`
+	BorderPalette string            `help:"Palette for border colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"border-palette" enum:",categorization,temperature,good-bad,neutral"`
 	Verbose       bool              `help:"Enable debug-level logging." short:"v"`
 	Format        string            `help:"Diagnostic/error output format (text, json)." enum:"text,json" default:"text"`
 	Width         int               `help:"Image width in pixels." default:"1920"`
@@ -35,14 +36,14 @@ func (c *CLI) Validate() error {
 	// Validate args/metrics (exit code 1 errors)
 	// Size metric must be numeric (already enforced by enum, but belt-and-suspenders)
 	if !c.Size.IsNumeric() {
-		return fmt.Errorf("size metric must be numeric, got %q", c.Size)
+		return eris.Errorf("size metric must be numeric, got %q", c.Size)
 	}
 
 	// Validate fill metric if specified
 	if c.Fill != "" {
 		fm := metric.MetricName(c.Fill)
 		if !fm.IsValid() {
-			return fmt.Errorf("invalid fill metric %q", c.Fill)
+			return eris.Errorf("invalid fill metric %q", c.Fill)
 		}
 	}
 
@@ -50,7 +51,7 @@ func (c *CLI) Validate() error {
 	if c.FillPalette != "" {
 		fp := palette.PaletteName(c.FillPalette)
 		if !fp.IsValid() {
-			return fmt.Errorf("invalid fill palette %q", c.FillPalette)
+			return eris.Errorf("invalid fill palette %q", c.FillPalette)
 		}
 	}
 
@@ -58,18 +59,18 @@ func (c *CLI) Validate() error {
 	if c.Border != "" {
 		bm := metric.MetricName(c.Border)
 		if !bm.IsValid() {
-			return fmt.Errorf("invalid border metric %q", c.Border)
+			return eris.Errorf("invalid border metric %q", c.Border)
 		}
 	}
 
 	// Validate border palette if specified
 	if c.BorderPalette != "" {
 		if c.Border == "" {
-			return fmt.Errorf("--border-palette requires --border to be specified")
+			return eris.New("--border-palette requires --border to be specified")
 		}
 		bp := palette.PaletteName(c.BorderPalette)
 		if !bp.IsValid() {
-			return fmt.Errorf("invalid border palette %q", c.BorderPalette)
+			return eris.Errorf("invalid border palette %q", c.BorderPalette)
 		}
 	}
 
@@ -123,27 +124,40 @@ func (c *CLI) Run() error {
 
 	root, err := scan.Scan(c.TargetPath)
 	if err != nil {
-		return fmt.Errorf("scan failed: %w", err)
+		return eris.Wrap(err, "scan failed")
 	}
 
 	// Check if any metric requires git
 	borderMetricName := metric.MetricName(c.Border)
-	needsGit := c.Size.IsGitRequired() || fillMetric.IsGitRequired() || (c.Border != "" && borderMetricName.IsGitRequired())
+	var gitMetric metric.MetricName
+	switch {
+	case c.Size.IsGitRequired():
+		gitMetric = c.Size
+	case fillMetric.IsGitRequired():
+		gitMetric = fillMetric
+	case c.Border != "" && borderMetricName.IsGitRequired():
+		gitMetric = borderMetricName
+	}
+	needsGit := gitMetric != ""
 
 	if needsGit {
-		absPath, _ := filepath.Abs(c.TargetPath)
+		absPath, err := filepath.Abs(c.TargetPath)
+		if err != nil {
+			return eris.Wrap(err, "failed to resolve absolute path")
+		}
 		isGit, err := scan.IsGitRepo(absPath)
 		if err != nil {
-			return fmt.Errorf("git check failed: %w", err)
+			return eris.Wrap(err, "git check failed")
 		}
 		if !isGit {
-			return &gitRequiredError{metric: c.Size, target: c.TargetPath}
+			return &gitRequiredError{metric: gitMetric, target: c.TargetPath}
 		}
 		info, err := scan.NewGitInfo(absPath)
 		if err != nil {
-			return fmt.Errorf("failed to open git repo: %w", err)
+			return eris.Wrap(err, "failed to open git repo")
 		}
 		scan.EnrichWithGitMetadata(&root, info, absPath)
+		info.ClearCache()
 	}
 
 	// Count lines for all files if needed
@@ -210,7 +224,7 @@ func (c *CLI) Run() error {
 	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
 
 	if err := render.RenderPNG(rects, c.Width, c.Height, c.Output); err != nil {
-		return fmt.Errorf("render failed: %w", err)
+		return eris.Wrap(err, "render failed")
 	}
 
 	// Success output

@@ -22,7 +22,8 @@ func IsGitRepo(path string) (bool, error) {
 
 // GitInfo provides git metadata extraction for files in a repository.
 type GitInfo struct {
-	repo *git.Repository
+	repo     *git.Repository
+	headTree *object.Tree
 }
 
 // NewGitInfo opens the git repository at the given path.
@@ -32,6 +33,36 @@ func NewGitInfo(path string) (*GitInfo, error) {
 		return nil, err
 	}
 	return &GitInfo{repo: repo}, nil
+}
+
+// ClearCache discards the cached HEAD tree so subsequent calls
+// re-read from the repository. Call this after a bulk operation completes.
+func (g *GitInfo) ClearCache() {
+	g.headTree = nil
+}
+
+func (g *GitInfo) getHeadTree() (*object.Tree, error) {
+	if g.headTree != nil {
+		return g.headTree, nil
+	}
+
+	head, err := g.repo.Head()
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := g.repo.CommitObject(head.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	tree, err := commit.Tree()
+	if err != nil {
+		return nil, err
+	}
+
+	g.headTree = tree
+	return tree, nil
 }
 
 // FileAge returns the duration since the file's first commit.
@@ -95,17 +126,7 @@ func (g *GitInfo) AuthorCount(relPath string) (*int, error) {
 
 // IsBinary checks if a file is binary by inspecting its content in the HEAD tree.
 func (g *GitInfo) IsBinary(relPath string) bool {
-	head, err := g.repo.Head()
-	if err != nil {
-		return false
-	}
-
-	commit, err := g.repo.CommitObject(head.Hash())
-	if err != nil {
-		return false
-	}
-
-	tree, err := commit.Tree()
+	tree, err := g.getHeadTree()
 	if err != nil {
 		return false
 	}

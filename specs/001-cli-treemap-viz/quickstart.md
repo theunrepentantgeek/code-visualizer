@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- Go 1.22+ installed
+- Go 1.26+ installed
 - `task` (Taskfile runner) installed
 - Git (for running tests against git repos)
 
@@ -45,7 +45,7 @@ go test ./...
 go test -v ./...
 
 # Update golden files after intentional output changes
-go test ./... -update
+task update-golden-files
 ```
 
 ## Lint
