@@ -57,28 +57,28 @@
 
 > **Write tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T015 [P] [US1] Create test fixture directories in `internal/scan/testdata/`: `flat/` (3 files, known sizes), `nested/` (2 levels deep), `empty/`, `with-symlinks/` (file symlink + dir symlink)
-- [ ] T016 [P] [US1] Write scanner tests (flat scan, nested scan, empty dir returns error, file symlinks followed, dir symlinks skipped, permission-denied logs warning and continues) in `internal/scan/scanner_test.go`
-- [ ] T017 [P] [US1] Write tests for file-size metric extraction (regular file, zero-byte file, large file) in `internal/metric/metric_test.go`
-- [ ] T018 [P] [US1] Write tests for squarified layout (single file, multiple files proportional areas, nested dirs produce nested rectangles, zero-size file gets minimum rectangle per FR-013) in `internal/treemap/layout_test.go`
-- [ ] T019 [P] [US1] Write tests for directory header bar generation (header has directory name, padding separates groups) in `internal/treemap/node_test.go`
-- [ ] T020 [P] [US1] Write tests for label fitting (large rect → ShowLabel=true, small rect → ShowLabel=false, dark text on light fill, light text on dark fill) in `internal/render/label_test.go`
-- [ ] T021 [P] [US1] Write golden-file tests for PNG rendering (flat dir treemap, nested dir treemap) in `internal/render/renderer_test.go`
+- [X] T015 [P] [US1] Create test fixture directories in `internal/scan/testdata/`: `flat/` (3 files, known sizes), `nested/` (2 levels deep), `empty/`, `with-symlinks/` (file symlink + dir symlink)
+- [X] T016 [P] [US1] Write scanner tests (flat scan, nested scan, empty dir returns error, file symlinks followed, dir symlinks skipped, permission-denied logs warning and continues) in `internal/scan/scanner_test.go`
+- [X] T017 [P] [US1] Write tests for file-size metric extraction (regular file, zero-byte file, large file) in `internal/metric/metric_test.go`
+- [X] T018 [P] [US1] Write tests for squarified layout (single file, multiple files proportional areas, nested dirs produce nested rectangles, zero-size file gets minimum rectangle per FR-013) in `internal/treemap/layout_test.go`
+- [X] T019 [P] [US1] Write tests for directory header bar generation (header has directory name, padding separates groups) in `internal/treemap/node_test.go`
+- [X] T020 [P] [US1] Write tests for label fitting (large rect → ShowLabel=true, small rect → ShowLabel=false, dark text on light fill, light text on dark fill) in `internal/render/label_test.go`
+- [X] T021 [P] [US1] Write golden-file tests for PNG rendering (flat dir treemap, nested dir treemap) in `internal/render/renderer_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Implement recursive directory scanner returning `DirectoryNode` tree in `internal/scan/scanner.go` — follow file symlinks, skip dir symlinks, log permission-denied via slog, error on empty dir
-- [ ] T023 [US1] Implement file-size metric populating `FileNode.Size` from `os.FileInfo` in `internal/metric/metric.go`
-- [ ] T024 [US1] Implement squarified treemap layout using `nikolaydubina/treemap` layout package, converting `DirectoryNode` tree to `TreemapRectangle` tree in `internal/treemap/layout.go` — handle zero-size files as minimum rectangles (FR-013), reserve space for directory header bars
-- [ ] T025 [US1] Implement `TreemapRectangle` tree construction with directory nesting, header bar nodes, and padding in `internal/treemap/node.go`
-- [ ] T026 [US1] Implement label fitting logic using `gg.MeasureString()` in `internal/render/label.go` — set `ShowLabel` based on available rect area, select dark/light text colour based on fill luminance
-- [ ] T027 [US1] Implement PNG renderer using `fogleman/gg` in `internal/render/renderer.go` — draw filled rectangles with structural dark borders (#333333), directory header bars, text labels where ShowLabel=true, write PNG to output path
-- [ ] T028 [US1] Define Kong CLI struct with `TargetPath` arg and `--output`, `--size`, `--verbose`, `--format`, `--width`, `--height` flags in `cmd/codeviz/main.go`
-- [ ] T029 [US1] Implement `Validate()` on CLI struct: target path exists and is a directory, output parent dir exists, --size must be numeric (FR-004) in `cmd/codeviz/main.go`
-- [ ] T030 [US1] Implement `Run()` method wiring scan → metric → layout → render pipeline in `cmd/codeviz/main.go`
-- [ ] T031 [US1] Implement text and JSON success/error output formatting per CLI contract in `cmd/codeviz/main.go`
-- [ ] T032 [US1] Implement exit codes 0–5 per CLI contract in `cmd/codeviz/main.go`
-- [ ] T033 [US1] Generate initial golden-file reference snapshots in `internal/render/testdata/`
+- [X] T022 [US1] Implement recursive directory scanner returning `DirectoryNode` tree in `internal/scan/scanner.go` — follow file symlinks, skip dir symlinks, log permission-denied via slog, error on empty dir
+- [X] T023 [US1] Implement file-size metric populating `FileNode.Size` from `os.FileInfo` in `internal/metric/metric.go`
+- [X] T024 [US1] Implement squarified treemap layout using `nikolaydubina/treemap` layout package, converting `DirectoryNode` tree to `TreemapRectangle` tree in `internal/treemap/layout.go` — handle zero-size files as minimum rectangles (FR-013), reserve space for directory header bars
+- [X] T025 [US1] Implement `TreemapRectangle` tree construction with directory nesting, header bar nodes, and padding in `internal/treemap/node.go`
+- [X] T026 [US1] Implement label fitting logic using `gg.MeasureString()` in `internal/render/label.go` — set `ShowLabel` based on available rect area, select dark/light text colour based on fill luminance
+- [X] T027 [US1] Implement PNG renderer using `fogleman/gg` in `internal/render/renderer.go` — draw filled rectangles with structural dark borders (#333333), directory header bars, text labels where ShowLabel=true, write PNG to output path
+- [X] T028 [US1] Define Kong CLI struct with `TargetPath` arg and `--output`, `--size`, `--verbose`, `--format`, `--width`, `--height` flags in `cmd/codeviz/main.go`
+- [X] T029 [US1] Implement `Validate()` on CLI struct: target path exists and is a directory, output parent dir exists, --size must be numeric (FR-004) in `cmd/codeviz/main.go`
+- [X] T030 [US1] Implement `Run()` method wiring scan → metric → layout → render pipeline in `cmd/codeviz/main.go`
+- [X] T031 [US1] Implement text and JSON success/error output formatting per CLI contract in `cmd/codeviz/main.go`
+- [X] T032 [US1] Implement exit codes 0–5 per CLI contract in `cmd/codeviz/main.go`
+- [X] T033 [US1] Generate initial golden-file reference snapshots in `internal/render/testdata/`
 
 **Checkpoint**: MVP complete — `codeviz ./dir -o out.png --size file-size` produces a valid treemap PNG
 

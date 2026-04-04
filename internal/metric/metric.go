@@ -1,5 +1,7 @@
 package metric
 
+import "github.com/bevan/code-visualizer/internal/scan"
+
 // MetricName identifies a metric used for sizing or colouring treemap rectangles.
 type MetricName string
 
@@ -32,4 +34,9 @@ func (m MetricName) IsNumeric() bool {
 
 func (m MetricName) IsGitRequired() bool {
 	return m == FileAge || m == FileFreshness || m == AuthorCount
+}
+
+// ExtractFileSize returns the file size in bytes as a float64.
+func ExtractFileSize(node scan.FileNode) float64 {
+	return float64(node.Size)
 }

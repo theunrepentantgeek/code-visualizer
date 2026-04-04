@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/bevan/code-visualizer/internal/scan"
 )
 
 func TestMetricName_IsValid(t *testing.T) {
@@ -42,4 +44,28 @@ func TestMetricName_IsGitRequired(t *testing.T) {
 	for _, m := range nonGit {
 		g.Expect(m.IsGitRequired()).To(BeFalse(), "expected %q to NOT be git-required", m)
 	}
+}
+
+func TestExtractFileSize_RegularFile(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	node := scan.FileNode{Size: 4096}
+	val := ExtractFileSize(node)
+	g.Expect(val).To(Equal(float64(4096)))
+}
+
+func TestExtractFileSize_ZeroByteFile(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	node := scan.FileNode{Size: 0}
+	val := ExtractFileSize(node)
+	g.Expect(val).To(Equal(float64(0)))
+}
+
+func TestExtractFileSize_LargeFile(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	node := scan.FileNode{Size: 1_073_741_824} // 1 GiB
+	val := ExtractFileSize(node)
+	g.Expect(val).To(Equal(float64(1_073_741_824)))
 }
