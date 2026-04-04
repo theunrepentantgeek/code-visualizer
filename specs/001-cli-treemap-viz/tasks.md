@@ -32,16 +32,16 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Define `MetricName` custom string type with constants (`file-size`, `file-lines`, `file-type`, `file-age`, `file-freshness`, `author-count`) and `IsNumeric()`, `IsGitRequired()`, `IsValid()` methods in `internal/metric/metric.go`
-- [ ] T006 Write tests for `MetricName` methods (numeric check, git-required check, valid/invalid values) in `internal/metric/metric_test.go`
-- [ ] T007 [P] Define `PaletteName` custom string type with constants (`categorization`, `temperature`, `good-bad`, `neutral`) and `IsValid()` method in `internal/palette/palette.go`
-- [ ] T008 [P] Define `ColourPalette` struct (`Name PaletteName`, `Colours []color.RGBA`, `Ordered bool`) in `internal/palette/palette.go`
-- [ ] T009 [P] Define `FileNode` and `DirectoryNode` structs per data model in `internal/scan/scanner.go`
-- [ ] T010 [P] Define `TreemapRectangle` struct per data model in `internal/treemap/node.go`
-- [ ] T011 [P] Define `BucketBoundaries` struct per data model in `internal/metric/bucket.go`
-- [ ] T012 Define metric-to-default-palette mapping (`MetricDefaultPalette`) and `DefaultPaletteFor(MetricName)` function in `internal/metric/registry.go`
-- [ ] T013 Write tests for `DefaultPaletteFor()` — each metric returns correct palette — in `internal/metric/registry_test.go`
-- [ ] T014 Configure `slog` structured logger with `--verbose` level switching (INFO default, DEBUG when verbose) in `cmd/codeviz/main.go`
+- [X] T005 Define `MetricName` custom string type with constants (`file-size`, `file-lines`, `file-type`, `file-age`, `file-freshness`, `author-count`) and `IsNumeric()`, `IsGitRequired()`, `IsValid()` methods in `internal/metric/metric.go`
+- [X] T006 Write tests for `MetricName` methods (numeric check, git-required check, valid/invalid values) in `internal/metric/metric_test.go`
+- [X] T007 [P] Define `PaletteName` custom string type with constants (`categorization`, `temperature`, `good-bad`, `neutral`) and `IsValid()` method in `internal/palette/palette.go`
+- [X] T008 [P] Define `ColourPalette` struct (`Name PaletteName`, `Colours []color.RGBA`, `Ordered bool`) in `internal/palette/palette.go`
+- [X] T009 [P] Define `FileNode` and `DirectoryNode` structs per data model in `internal/scan/scanner.go`
+- [X] T010 [P] Define `TreemapRectangle` struct per data model in `internal/treemap/node.go`
+- [X] T011 [P] Define `BucketBoundaries` struct per data model in `internal/metric/bucket.go`
+- [X] T012 Define metric-to-default-palette mapping (`MetricDefaultPalette`) and `DefaultPaletteFor(MetricName)` function in `internal/metric/registry.go`
+- [X] T013 Write tests for `DefaultPaletteFor()` — each metric returns correct palette — in `internal/metric/registry_test.go`
+- [X] T014 Configure `slog` structured logger with `--verbose` level switching (INFO default, DEBUG when verbose) in `cmd/codeviz/main.go`
 
 **Checkpoint**: All shared types defined — user story implementation can begin
 
