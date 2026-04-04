@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"bufio"
 	"errors"
 	"io/fs"
 	"log/slog"
@@ -122,4 +123,40 @@ func countFiles(node DirectoryNode) int {
 		count += countFiles(d)
 	}
 	return count
+}
+
+// PopulateLineCounts counts lines for all files in the tree.
+// In non-git directories, all files are treated as text.
+func PopulateLineCounts(node *DirectoryNode) {
+	for i := range node.Files {
+		f := &node.Files[i]
+		if f.IsBinary {
+			f.LineCount = 0
+			continue
+		}
+		count, err := countLines(f.Path)
+		if err != nil {
+			slog.Warn("could not count lines", "path", f.Path, "error", err)
+			continue
+		}
+		f.LineCount = count
+	}
+	for i := range node.Dirs {
+		PopulateLineCounts(&node.Dirs[i])
+	}
+}
+
+func countLines(path string) (int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	count := 0
+	for scanner.Scan() {
+		count++
+	}
+	return count, scanner.Err()
 }

@@ -69,3 +69,33 @@ func TestExtractFileSize_LargeFile(t *testing.T) {
 	val := ExtractFileSize(node)
 	g.Expect(val).To(Equal(float64(1_073_741_824)))
 }
+
+func TestExtractFileLines_TextFile(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	node := scan.FileNode{LineCount: 42}
+	val := ExtractFileLines(node)
+	g.Expect(val).To(Equal(float64(42)))
+}
+
+func TestExtractFileLines_EmptyFile(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	node := scan.FileNode{LineCount: 0}
+	val := ExtractFileLines(node)
+	g.Expect(val).To(Equal(float64(0)))
+}
+
+func TestExtractFileType(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	g.Expect(ExtractFileType(scan.FileNode{FileType: "go"})).To(Equal("go"))
+	g.Expect(ExtractFileType(scan.FileNode{FileType: "no-extension"})).To(Equal("no-extension"))
+}
+
+func TestExtractFileType_Extension(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	// Extension-based: .go → "go", .tar.gz → "gz", no ext → "no-extension"
+	g.Expect(ExtractFileType(scan.FileNode{FileType: "gz"})).To(Equal("gz"))
+}

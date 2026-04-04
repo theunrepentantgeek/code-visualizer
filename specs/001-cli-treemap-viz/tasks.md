@@ -94,25 +94,25 @@
 
 > **Write tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T034 [P] [US2] Write tests for quantile bucketing (even distribution, skewed distribution, single value, all same value, boundary rounding to 2 sig figs, deduplication after rounding) in `internal/metric/bucket_test.go`
-- [ ] T035 [P] [US2] Write tests for Neutral palette definition (exactly 9 steps, black→white, ordered=true) in `internal/palette/palette_test.go`
-- [ ] T036 [P] [US2] Write tests for numeric metric-to-colour mapping (value at min→first colour, value at max→last colour, value at median→middle colour) in `internal/palette/mapper_test.go`
-- [ ] T037 [P] [US2] Write tests for categorical metric-to-colour mapping (distinct values→distinct colours, wrap-around when >12 types logs warning) in `internal/palette/mapper_test.go`
-- [ ] T038 [P] [US2] Write tests for file-lines metric (text file returns correct count, empty file returns 0, non-git dir treats all as text) in `internal/metric/metric_test.go`
-- [ ] T039 [P] [US2] Write tests for file-type metric (`.go`→`go`, `.tar.gz`→`gz`, no extension→`no-extension`, mixed case preserved) in `internal/metric/metric_test.go`
+- [X] T034 [P] [US2] Write tests for quantile bucketing (even distribution, skewed distribution, single value, all same value, boundary rounding to 2 sig figs, deduplication after rounding) in `internal/metric/bucket_test.go`
+- [X] T035 [P] [US2] Write tests for Neutral palette definition (exactly 9 steps, black→white, ordered=true) in `internal/palette/palette_test.go`
+- [X] T036 [P] [US2] Write tests for numeric metric-to-colour mapping (value at min→first colour, value at max→last colour, value at median→middle colour) in `internal/palette/mapper_test.go`
+- [X] T037 [P] [US2] Write tests for categorical metric-to-colour mapping (distinct values→distinct colours, wrap-around when >12 types logs warning) in `internal/palette/mapper_test.go`
+- [X] T038 [P] [US2] Write tests for file-lines metric (text file returns correct count, empty file returns 0, non-git dir treats all as text) in `internal/metric/metric_test.go`
+- [X] T039 [P] [US2] Write tests for file-type metric (`.go`→`go`, `.tar.gz`→`gz`, no extension→`no-extension`, mixed case preserved) in `internal/metric/metric_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T040 [US2] Implement quantile-based bucketing with 2 sig-fig boundary rounding and deduplication in `internal/metric/bucket.go`
-- [ ] T041 [US2] Implement file-lines metric (count newlines in file content, binary files via go-git report 0, non-git dirs treat all as text) in `internal/metric/metric.go`
-- [ ] T042 [US2] Implement file-type metric extraction from file extension in `internal/metric/metric.go`
-- [ ] T043 [US2] Define Neutral palette (9 monochromatic steps, black→white) with WCAG-compliant hex values in `internal/palette/palette.go`
-- [ ] T044 [US2] Implement numeric metric-to-colour mapper (compute buckets → assign palette step via binary search) in `internal/palette/mapper.go`
-- [ ] T045 [US2] Implement categorical metric-to-colour mapper (hash/index assignment, wrap-around with slog warning when values exceed palette capacity) in `internal/palette/mapper.go`
-- [ ] T046 [US2] Add `--fill` and `--fill-palette` flags to Kong CLI struct (fill defaults to size metric, palette defaults to metric's default via registry) in `cmd/codeviz/main.go`
-- [ ] T047 [US2] Integrate fill colour into pipeline: after metric computation, bucket fill metric values → map to palette colours → set `FillColour` on each `TreemapRectangle` in `cmd/codeviz/main.go`
-- [ ] T048 [US2] Update renderer to use `TreemapRectangle.FillColour` instead of default fill in `internal/render/renderer.go`
-- [ ] T049 [US2] Update golden-file snapshots for coloured output in `internal/render/testdata/`
+- [X] T040 [US2] Implement quantile-based bucketing with 2 sig-fig boundary rounding and deduplication in `internal/metric/bucket.go`
+- [X] T041 [US2] Implement file-lines metric (count newlines in file content, binary files via go-git report 0, non-git dirs treat all as text) in `internal/metric/metric.go`
+- [X] T042 [US2] Implement file-type metric extraction from file extension in `internal/metric/metric.go`
+- [X] T043 [US2] Define Neutral palette (9 monochromatic steps, black→white) with WCAG-compliant hex values in `internal/palette/palette.go`
+- [X] T044 [US2] Implement numeric metric-to-colour mapper (compute buckets → assign palette step via binary search) in `internal/palette/mapper.go`
+- [X] T045 [US2] Implement categorical metric-to-colour mapper (hash/index assignment, wrap-around with slog warning when values exceed palette capacity) in `internal/palette/mapper.go`
+- [X] T046 [US2] Add `--fill` and `--fill-palette` flags to Kong CLI struct (fill defaults to size metric, palette defaults to metric's default via registry) in `cmd/codeviz/main.go`
+- [X] T047 [US2] Integrate fill colour into pipeline: after metric computation, bucket fill metric values → map to palette colours → set `FillColour` on each `TreemapRectangle` in `cmd/codeviz/main.go`
+- [X] T048 [US2] Update renderer to use `TreemapRectangle.FillColour` instead of default fill in `internal/render/renderer.go`
+- [X] T049 [US2] Update golden-file snapshots for coloured output in `internal/render/testdata/`
 
 **Checkpoint**: Fill colour working — any metric + palette combination colours treemap rectangles
 
