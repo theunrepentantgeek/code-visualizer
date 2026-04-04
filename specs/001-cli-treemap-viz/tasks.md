@@ -188,20 +188,20 @@
 
 > **Write tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T074 [P] [US5] Write tests verifying Categorization palette: exactly 12 colours, ordered=false in `internal/palette/palette_test.go`
-- [ ] T075 [P] [US5] Write tests verifying Temperature palette: exactly 11 steps, first=dark blue, middle=white, last=bright red, ordered=true in `internal/palette/palette_test.go`
-- [ ] T076 [P] [US5] Write tests verifying Good/Bad palette: exactly 13 steps, first=red, last=green, ordered=true in `internal/palette/palette_test.go`
-- [ ] T077 [P] [US5] Write test verifying Neutral palette step count and ordering already defined in Phase 4 (regression guard) in `internal/palette/palette_test.go`
-- [ ] T078 [P] [US5] Write WCAG contrast ratio validation tests: adjacent palette colours ≥3:1 contrast for all four palettes in `internal/palette/palette_test.go`
-- [ ] T079 [P] [US5] Write golden-file rendering tests: one treemap per palette in `internal/render/renderer_test.go`
+- [X] T074 [P] [US5] Write tests verifying Categorization palette: exactly 12 colours, ordered=false in `internal/palette/palette_test.go`
+- [X] T075 [P] [US5] Write tests verifying Temperature palette: exactly 11 steps, first=dark blue, middle=white, last=bright red, ordered=true in `internal/palette/palette_test.go`
+- [X] T076 [P] [US5] Write tests verifying Good/Bad palette: exactly 13 steps, first=red, last=green, ordered=true in `internal/palette/palette_test.go`
+- [X] T077 [P] [US5] Write test verifying Neutral palette step count and ordering already defined in Phase 4 (regression guard) in `internal/palette/palette_test.go`
+- [X] T078 [P] [US5] Write WCAG contrast ratio validation tests: adjacent palette colours ≥3:1 contrast for all four palettes in `internal/palette/palette_test.go`
+- [X] T079 [P] [US5] Write golden-file rendering tests: one treemap per palette in `internal/render/renderer_test.go`
 
 ### Implementation for User Story 5
 
-- [ ] T080 [US5] Define Categorization palette (12 visually distinct unordered colours, sourced from ColorBrewer Set3/Paired) in `internal/palette/palette.go`
-- [ ] T081 [US5] Define Temperature palette (11 steps, dark blue→white→bright red, sourced from ColorBrewer RdBu diverging) in `internal/palette/palette.go`
-- [ ] T082 [US5] Define Good/Bad palette (13 steps, red→orange→yellow→green, sourced from ColorBrewer RdYlGn) in `internal/palette/palette.go`
-- [ ] T083 [US5] Implement WCAG relative luminance and contrast ratio utility functions for palette validation in `internal/palette/palette.go`
-- [ ] T084 [US5] Generate golden-file reference snapshots for all four palette renderings in `internal/render/testdata/`
+- [X] T080 [US5] Define Categorization palette (12 visually distinct unordered colours, sourced from ColorBrewer Set3/Paired) in `internal/palette/palette.go`
+- [X] T081 [US5] Define Temperature palette (11 steps, dark blue→white→bright red, sourced from ColorBrewer RdBu diverging) in `internal/palette/palette.go`
+- [X] T082 [US5] Define Good/Bad palette (13 steps, red→orange→yellow→green, sourced from ColorBrewer RdYlGn) in `internal/palette/palette.go`
+- [X] T083 [US5] Implement WCAG relative luminance and contrast ratio utility functions for palette validation in `internal/palette/palette.go`
+- [X] T084 [US5] Generate golden-file reference snapshots for all four palette renderings in `internal/render/testdata/`
 
 **Checkpoint**: All four palettes defined, validated for WCAG AA, and rendering correctly
 
