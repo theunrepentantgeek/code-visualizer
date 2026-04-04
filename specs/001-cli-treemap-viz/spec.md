@@ -107,6 +107,9 @@ A developer chooses among the four built-in colour palettes — Categorization, 
 - Q: Can file-type (categorical) be used as the size metric? → A: No. File-type is only allowed for fill or border colour; the size metric must be numeric.
 - Q: What are the defaults when fill colour or border colour are not specified? → A: If no fill metric is specified, the size metric is reused for fill. If no border metric is specified, no borders are displayed.
 - Q: What default palette should be used for each metric when no palette is explicitly specified? → A: file-size: Neutral, file-lines: Neutral, file-age: Temperature, file-freshness: Temperature, author-count: Good/Bad, file-type: Categorization.
+- Q: How should bipolar palettes (e.g., Temperature) map to non-negative metrics? → A: Map the full step range linearly from observed min to max. For future metrics with both positive and negative values, zero must anchor at the palette midpoint regardless of the min/max range.
+- Q: How should directories be visually distinguished from files in the treemap? → A: Directories get a labelled header bar above their children, with padding separating groups.
+- Q: How should numeric metrics be bucketed into discrete palette steps? → A: Quantile-based (each colour step gets an equal number of files), with bucket boundaries rounded to 2 significant figures for human comprehensibility.
 
 ## Requirements *(mandatory)*
 
@@ -119,10 +122,11 @@ A developer chooses among the four built-in colour palettes — Categorization, 
 - **FR-005**: The tool MUST allow the user to optionally select one metric and one colour palette for the fill colour of treemap rectangles. If no fill metric is specified, the tool MUST default to using the size metric for fill colour. If no palette is specified, the tool MUST use the metric's default palette.
 - **FR-006**: The tool MUST allow the user to optionally select one metric and one colour palette for the border colour of treemap rectangles. If no border metric is specified, the tool MUST render rectangles without borders. If a border metric is specified without a palette, the tool MUST use the metric's default palette.
 - **FR-007**: The tool MUST produce a treemap layout based on the directory structure, with files as leaf nodes and directories as nested groups.
+- **FR-007a**: Directory containers MUST be rendered with a labelled header bar displaying the directory name, and padding separating child elements from sibling groups.
 - **FR-008**: The tool MUST render the treemap to a PNG image file at a user-specified output path.
 - **FR-008a**: The tool MUST display file and directory names as text labels on treemap rectangles that are large enough to render them legibly; labels MUST be omitted on rectangles too small for readable text.
 - **FR-009**: The tool MUST provide four built-in colour palettes: Categorization (12 colours, unordered), Temperature (11 steps, dark blue through white to bright red), Good/Bad (13 steps, red through orange and yellow to green), and Neutral (9 monochromatic steps, black to white).
-- **FR-010**: The tool MUST map metric values to palette colours using discrete steps — no colour interpolation.
+- **FR-010**: The tool MUST map metric values to palette colours using discrete steps — no colour interpolation. For non-negative metrics, the full palette range MUST be mapped linearly from the observed minimum to maximum value. For metrics with both positive and negative values (future), zero MUST anchor at the palette midpoint regardless of the observed min/max range. Numeric metrics MUST be bucketed using quantile-based distribution (each colour step receives an approximately equal number of files), with bucket boundaries rounded to 2 significant figures for human comprehensibility.
 - **FR-010a**: Each metric MUST have a default palette used when the user does not specify one: file-size → Neutral, file-lines → Neutral, file-age → Temperature, file-freshness → Temperature, author-count → Good/Bad, file-type → Categorization.
 - **FR-011**: The tool MUST exit with a clear, actionable error message when a git-dependent metric is requested but the target directory is not a git repository.
 - **FR-012**: The tool MUST log a warning and continue scanning when individual files are inaccessible due to permissions.
