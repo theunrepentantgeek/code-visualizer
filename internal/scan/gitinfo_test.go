@@ -54,23 +54,23 @@ func setupTestGitRepo(t *testing.T) string {
 	run("git", "config", "user.email", "alice@example.com")
 
 	// First commit: alice creates old.go and shared.go
-	os.WriteFile(filepath.Join(dir, "old.go"), []byte("package main\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "shared.go"), []byte("package shared\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "old.go"), []byte("package main\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "shared.go"), []byte("package shared\n"), 0o644)
 	run("git", "add", ".")
 	run("git", "commit", "-m", "initial commit", "--date=2024-01-01T00:00:00+00:00")
 
 	// Second commit: bob modifies shared.go
-	os.WriteFile(filepath.Join(dir, "shared.go"), []byte("package shared\n// updated by bob\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "shared.go"), []byte("package shared\n// updated by bob\n"), 0o644)
 	runAs("Bob", "bob@example.com", "git", "add", "shared.go")
 	runAs("Bob", "bob@example.com", "git", "commit", "-m", "bob update", "--date=2025-06-15T00:00:00+00:00")
 
 	// Third commit: alice adds new.go
-	os.WriteFile(filepath.Join(dir, "new.go"), []byte("package new\nfunc New() {}\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "new.go"), []byte("package new\nfunc New() {}\n"), 0o644)
 	run("git", "add", "new.go")
 	run("git", "commit", "-m", "add new.go")
 
 	// Add an untracked file
-	os.WriteFile(filepath.Join(dir, "untracked.txt"), []byte("not tracked\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "untracked.txt"), []byte("not tracked\n"), 0o644)
 
 	return dir
 }
@@ -98,7 +98,7 @@ func TestIsGitRepo_NestedInside(t *testing.T) {
 	dir := setupTestGitRepo(t)
 
 	subDir := filepath.Join(dir, "subdir")
-	os.Mkdir(subDir, 0o755)
+	_ = os.Mkdir(subDir, 0o755)
 
 	isGit, err := IsGitRepo(subDir)
 	g.Expect(err).NotTo(HaveOccurred())

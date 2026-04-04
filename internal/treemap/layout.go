@@ -1,3 +1,5 @@
+// Package treemap implements squarified treemap layout using the
+// nikolaydubina/treemap library.
 package treemap
 
 import (
@@ -6,9 +8,9 @@ import (
 )
 
 const (
-	headerHeight = 20.0  // pixels for directory header bar
-	padding      = 4.0   // pixels between groups
-	minFileSize  = 1.0   // minimum area for zero-size files (FR-013)
+	headerHeight = 20.0 // pixels for directory header bar
+	padding      = 4.0  // pixels between groups
+	minFileSize  = 1.0  // minimum area for zero-size files (FR-013)
 )
 
 // Layout computes a squarified treemap layout from a DirectoryNode tree.
@@ -31,7 +33,7 @@ func layoutDir(dir scan.DirectoryNode, box layout.Box) TreemapRectangle {
 
 	// Collect all children (files + subdirs) with their areas
 	type child struct {
-		isDir bool
+		isDir   bool
 		fileIdx int
 		dirIdx  int
 		area    float64

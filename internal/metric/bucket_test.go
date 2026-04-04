@@ -84,10 +84,10 @@ func TestBucketIndex(t *testing.T) {
 		StepCount:  3,
 	}
 
-	g.Expect(b.BucketIndex(10)).To(Equal(0))  // at min → first bucket
-	g.Expect(b.BucketIndex(25)).To(Equal(0))  // below first boundary
-	g.Expect(b.BucketIndex(30)).To(Equal(1))  // at first boundary → second bucket
-	g.Expect(b.BucketIndex(50)).To(Equal(1))  // between boundaries
-	g.Expect(b.BucketIndex(60)).To(Equal(2))  // at second boundary → third bucket
-	g.Expect(b.BucketIndex(90)).To(Equal(2))  // at max → last bucket
+	g.Expect(b.BucketIndex(10)).To(Equal(0)) // at min → first bucket
+	g.Expect(b.BucketIndex(25)).To(Equal(0)) // below first boundary
+	g.Expect(b.BucketIndex(30)).To(Equal(1)) // at first boundary → second bucket
+	g.Expect(b.BucketIndex(50)).To(Equal(1)) // between boundaries
+	g.Expect(b.BucketIndex(60)).To(Equal(2)) // at second boundary → third bucket
+	g.Expect(b.BucketIndex(90)).To(Equal(2)) // at max → last bucket
 }

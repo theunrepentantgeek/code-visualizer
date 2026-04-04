@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	minLabelWidth  = 40.0  // minimum rect width to show a label
-	minLabelHeight = 16.0  // minimum rect height to show a label
+	minLabelWidth  = 40.0 // minimum rect width to show a label
+	minLabelHeight = 16.0 // minimum rect height to show a label
 )
 
 // ShouldShowLabel returns true if the rectangle is large enough to display a label.

@@ -45,11 +45,11 @@ func TestDirectoryPaddingSeparatesGroups(t *testing.T) {
 		Name: "root",
 		Dirs: []scan.DirectoryNode{
 			{
-				Name: "dir-a",
+				Name:  "dir-a",
 				Files: []scan.FileNode{{Name: "a.go", Size: 100}},
 			},
 			{
-				Name: "dir-b",
+				Name:  "dir-b",
 				Files: []scan.FileNode{{Name: "b.go", Size: 100}},
 			},
 		},

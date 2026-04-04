@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"image/color"
 	"image/png"
 	"os"
@@ -169,14 +170,14 @@ func goldenPaletteTest(t *testing.T, name palette.PaletteName, filename string) 
 		t.Fatalf("golden file %s not found; run with UPDATE_GOLDEN=1 to generate", golden)
 	}
 	g.Expect(err).NotTo(HaveOccurred())
-	defer goldenFile.Close()
+	defer goldenFile.Close() //nolint:errcheck
 
 	goldenImg, err := png.Decode(goldenFile)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	actualFile, err := os.Open(out)
 	g.Expect(err).NotTo(HaveOccurred())
-	defer actualFile.Close()
+	defer actualFile.Close() //nolint:errcheck
 
 	actualImg, err := png.Decode(actualFile)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -192,6 +193,40 @@ func goldenPaletteTest(t *testing.T, name palette.PaletteName, filename string) 
 				t.Fatalf("pixel mismatch at (%d,%d): golden=(%d,%d,%d,%d) actual=(%d,%d,%d,%d)",
 					x, y, gr, gg2, gb, ga, ar, ag, ab, aa)
 			}
+		}
+	}
+}
+
+// BenchmarkScanAndRender benchmarks the full scan→layout→render pipeline
+// with a 1,000-file fixture.
+func BenchmarkScanAndRender(b *testing.B) {
+	dir := b.TempDir()
+	// Create 10 subdirs × 100 files = 1,000 files
+	for d := 0; d < 10; d++ {
+		subdir := filepath.Join(dir, fmt.Sprintf("dir%02d", d))
+		if err := os.MkdirAll(subdir, 0755); err != nil {
+			b.Fatal(err)
+		}
+		for f := 0; f < 100; f++ {
+			name := filepath.Join(subdir, fmt.Sprintf("file%03d.go", f))
+			data := make([]byte, 100+f*10)
+			if err := os.WriteFile(name, data, 0644); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	out := filepath.Join(b.TempDir(), "bench.png")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		root, err := scan.Scan(dir)
+		if err != nil {
+			b.Fatal(err)
+		}
+		rects := treemap.Layout(root, 1920, 1080)
+		if err := RenderPNG(rects, 1920, 1080, out); err != nil {
+			b.Fatal(err)
 		}
 	}
 }

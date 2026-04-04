@@ -119,7 +119,7 @@ func (g *GitInfo) IsBinary(relPath string) bool {
 	if err != nil {
 		return false
 	}
-	defer reader.Close()
+	defer reader.Close() //nolint:errcheck
 
 	// Read first 8000 bytes to check for null bytes (same heuristic as git)
 	buf := make([]byte, 8000)

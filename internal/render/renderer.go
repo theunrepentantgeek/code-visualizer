@@ -1,3 +1,5 @@
+// Package render produces PNG images of treemap layouts using the
+// fogleman/gg graphics library.
 package render
 
 import (

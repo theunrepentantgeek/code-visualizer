@@ -95,8 +95,8 @@ func TestScanPermissionDenied(t *testing.T) {
 	tmp := t.TempDir()
 	f, err := os.Create(filepath.Join(tmp, "readable.txt"))
 	g.Expect(err).NotTo(HaveOccurred())
-	f.WriteString("hello")
-	f.Close()
+	f.WriteString("hello") //nolint:errcheck
+	f.Close()              //nolint:errcheck
 
 	unreadable := filepath.Join(tmp, "unreadable.txt")
 	err = os.WriteFile(unreadable, []byte("secret"), 0o000)

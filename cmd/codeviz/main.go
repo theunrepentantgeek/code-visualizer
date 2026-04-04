@@ -32,30 +32,7 @@ type CLI struct {
 }
 
 func (c *CLI) Validate() error {
-	// Check target path exists and is a directory
-	info, err := os.Stat(c.TargetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("target path does not exist: %s", c.TargetPath)
-		}
-		return fmt.Errorf("cannot access target path: %w", err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("target path is not a directory: %s", c.TargetPath)
-	}
-
-	// Check output parent directory exists
-	outDir := filepath.Dir(c.Output)
-	if outDir != "." {
-		info, err = os.Stat(outDir)
-		if err != nil {
-			return fmt.Errorf("output directory does not exist: %s", outDir)
-		}
-		if !info.IsDir() {
-			return fmt.Errorf("output parent is not a directory: %s", outDir)
-		}
-	}
-
+	// Validate args/metrics (exit code 1 errors)
 	// Size metric must be numeric (already enforced by enum, but belt-and-suspenders)
 	if !c.Size.IsNumeric() {
 		return fmt.Errorf("size metric must be numeric, got %q", c.Size)
@@ -101,6 +78,30 @@ func (c *CLI) Validate() error {
 
 func (c *CLI) Run() error {
 	setupLogger(c.Verbose)
+
+	// Validate target path (exit code 2)
+	info, err := os.Stat(c.TargetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &targetPathError{msg: fmt.Sprintf("target path does not exist: %s", c.TargetPath)}
+		}
+		return &targetPathError{msg: fmt.Sprintf("cannot access target path: %s", err)}
+	}
+	if !info.IsDir() {
+		return &targetPathError{msg: fmt.Sprintf("target path is not a directory: %s", c.TargetPath)}
+	}
+
+	// Validate output parent directory (exit code 4)
+	outDir := filepath.Dir(c.Output)
+	if outDir != "." {
+		info, err = os.Stat(outDir)
+		if err != nil {
+			return &outputPathError{msg: fmt.Sprintf("output directory does not exist: %s", outDir)}
+		}
+		if !info.IsDir() {
+			return &outputPathError{msg: fmt.Sprintf("output parent is not a directory: %s", outDir)}
+		}
+	}
 
 	// Default fill to size metric if not specified
 	fillMetric := metric.MetricName(c.Fill)
@@ -390,21 +391,42 @@ func countAll(node scan.DirectoryNode) (files int, dirs int) {
 
 func main() {
 	cli := CLI{}
-	ctx := kong.Parse(&cli,
+	parser, err := kong.New(&cli,
 		kong.Name("codeviz"),
 		kong.Description("Generate treemap visualizations of file trees."),
-		kong.UsageOnError(),
 	)
-
-	err := ctx.Run(&cli)
 	if err != nil {
-		var gitErr *gitRequiredError
-		switch {
-		case errors.As(err, &gitErr):
-			exitWithError(cli.Format, err, 3)
-		default:
-			exitWithError(cli.Format, err, 5)
-		}
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		os.Exit(5)
+	}
+
+	ctx, err := parser.Parse(os.Args[1:])
+	if err != nil {
+		// Kong parse/validation errors are argument failures → exit 1
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
+	err = ctx.Run(&cli)
+	if err != nil {
+		code := classifyError(err, cli.Format)
+		exitWithError(cli.Format, err, code)
+	}
+}
+
+func classifyError(err error, format string) int {
+	var gitErr *gitRequiredError
+	var targetErr *targetPathError
+	var outputErr *outputPathError
+	switch {
+	case errors.As(err, &targetErr):
+		return 2
+	case errors.As(err, &gitErr):
+		return 3
+	case errors.As(err, &outputErr):
+		return 4
+	default:
+		return 5
 	}
 }
 
@@ -417,6 +439,18 @@ func (e *gitRequiredError) Error() string {
 	return fmt.Sprintf("metric %q requires a git repository, but %q is not a git repository", e.metric, e.target)
 }
 
+type targetPathError struct {
+	msg string
+}
+
+func (e *targetPathError) Error() string { return e.msg }
+
+type outputPathError struct {
+	msg string
+}
+
+func (e *outputPathError) Error() string { return e.msg }
+
 func exitWithError(format string, err error, code int) {
 	if format == "json" {
 		out := map[string]any{
@@ -425,7 +459,7 @@ func exitWithError(format string, err error, code int) {
 		}
 		enc := json.NewEncoder(os.Stderr)
 		enc.SetIndent("", "  ")
-		enc.Encode(out)
+		_ = enc.Encode(out)
 	} else {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
 	}

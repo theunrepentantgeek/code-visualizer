@@ -1,3 +1,5 @@
+// Package scan provides recursive directory scanning with symlink handling
+// and optional git metadata enrichment.
 package scan
 
 import (
@@ -187,7 +189,7 @@ func countLines(path string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	scanner := bufio.NewScanner(file)
 	count := 0

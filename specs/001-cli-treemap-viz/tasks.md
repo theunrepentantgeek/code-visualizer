@@ -211,13 +211,13 @@
 
 **Purpose**: Documentation, benchmarks, final quality validation
 
-- [ ] T085 [P] Add package-level doc comments to all `internal/` packages (`scan`, `metric`, `palette`, `treemap`, `render`)
-- [ ] T086 [P] Create `docs/usage.md` with CLI usage examples from CLI contract
-- [ ] T087 [P] Add benchmark tests for scan+render pipeline (1,000-file fixture) in `internal/render/renderer_test.go`
-- [ ] T088 Run `task lint` (`golangci-lint`) across entire codebase — fix all warnings
-- [ ] T089 Run `task test` — verify all tests pass
-- [ ] T090 Run quickstart.md validation: build binary, run against a real directory, verify PNG output opens correctly
-- [ ] T091 Verify all exit codes (0–5) against CLI contract with targeted test cases
+- [X] T085 [P] Add package-level doc comments to all `internal/` packages (`scan`, `metric`, `palette`, `treemap`, `render`)
+- [X] T086 [P] Create `docs/usage.md` with CLI usage examples from CLI contract
+- [X] T087 [P] Add benchmark tests for scan+render pipeline (1,000-file fixture) in `internal/render/renderer_test.go`
+- [X] T088 Run `task lint` (`golangci-lint`) across entire codebase — fix all warnings
+- [X] T089 Run `task test` — verify all tests pass
+- [X] T090 Run quickstart.md validation: build binary, run against a real directory, verify PNG output opens correctly
+- [X] T091 Verify all exit codes (0–5) against CLI contract with targeted test cases
 
 ---
 

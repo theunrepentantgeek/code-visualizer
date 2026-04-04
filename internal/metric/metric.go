@@ -1,3 +1,5 @@
+// Package metric defines file metrics (size, lines, type, git age/freshness/authors)
+// and quantile-based bucketing for numeric values.
 package metric
 
 import "github.com/bevan/code-visualizer/internal/scan"
