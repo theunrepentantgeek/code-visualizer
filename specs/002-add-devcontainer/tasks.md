@@ -61,7 +61,7 @@ _(No tasks — proceed directly to Phase 2)_
 
 **Purpose**: Final validation and documentation alignment
 
-- [ ] T008 Verify `task ci` passes inside the built devcontainer (manual validation)
+- [ ] T008 Verify `task ci` passes both inside the built devcontainer and outside it (manual validation, covers FR-009)
 - [ ] T009 [P] Run quickstart.md validation — confirm the steps in `specs/002-add-devcontainer/quickstart.md` match the actual devcontainer experience
 
 ---
@@ -125,4 +125,4 @@ T009 (in parallel with T008)
 
 1. Complete Phase 2 (T001–T006) → Core devcontainer building and working
 2. Complete Phase 3 (T007) → Module cache pre-populated
-3. Complete Phase 4 (T007–T008) → Validated and documented
+3. Complete Phase 4 (T008–T009) → Validated and documented
