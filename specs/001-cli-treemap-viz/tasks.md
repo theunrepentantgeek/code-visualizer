@@ -153,26 +153,26 @@
 
 > **Write tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T057 [P] [US4] Create test helper that initialises a temporary git repo with known commits (multiple files, multiple authors, known dates) for use in `internal/scan/gitinfo_test.go`
-- [ ] T058 [P] [US4] Write tests for git repo detection (is git repo, is not git repo, nested inside git repo) in `internal/scan/gitinfo_test.go`
-- [ ] T059 [P] [US4] Write tests for file-age computation (first commit date → correct duration) in `internal/scan/gitinfo_test.go`
-- [ ] T060 [P] [US4] Write tests for file-freshness computation (most recent commit → correct duration) in `internal/scan/gitinfo_test.go`
-- [ ] T061 [P] [US4] Write tests for author-count computation (distinct emails across commits) in `internal/scan/gitinfo_test.go`
-- [ ] T062 [P] [US4] Write tests for binary file detection via go-git (binary file → IsBinary=true, text file → IsBinary=false) in `internal/scan/gitinfo_test.go`
-- [ ] T063 [P] [US4] Write tests for untracked file handling (receives nil git metrics, sentinel "unknown" mapped to first palette step) in `internal/scan/gitinfo_test.go`
-- [ ] T064 [P] [US4] Write tests for non-git directory with git metric producing exit code 3 with error message in `cmd/codeviz/main_test.go`
+- [X] T057 [P] [US4] Create test helper that initialises a temporary git repo with known commits (multiple files, multiple authors, known dates) for use in `internal/scan/gitinfo_test.go`
+- [X] T058 [P] [US4] Write tests for git repo detection (is git repo, is not git repo, nested inside git repo) in `internal/scan/gitinfo_test.go`
+- [X] T059 [P] [US4] Write tests for file-age computation (first commit date → correct duration) in `internal/scan/gitinfo_test.go`
+- [X] T060 [P] [US4] Write tests for file-freshness computation (most recent commit → correct duration) in `internal/scan/gitinfo_test.go`
+- [X] T061 [P] [US4] Write tests for author-count computation (distinct emails across commits) in `internal/scan/gitinfo_test.go`
+- [X] T062 [P] [US4] Write tests for binary file detection via go-git (binary file → IsBinary=true, text file → IsBinary=false) in `internal/scan/gitinfo_test.go`
+- [X] T063 [P] [US4] Write tests for untracked file handling (receives nil git metrics, sentinel "unknown" mapped to first palette step) in `internal/scan/gitinfo_test.go`
+- [X] T064 [P] [US4] Write tests for non-git directory with git metric producing exit code 3 with error message in `cmd/codeviz/main_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T065 [US4] Implement git repository detection (open repo at target path via go-git) in `internal/scan/gitinfo.go`
-- [ ] T066 [US4] Implement file-age extraction: iterate `Repository.Log` with `FileName` filter to last commit in `internal/scan/gitinfo.go`
-- [ ] T067 [US4] Implement file-freshness extraction: take first commit from file-filtered log in `internal/scan/gitinfo.go`
-- [ ] T068 [US4] Implement author-count extraction: collect unique `Author.Email` from file-filtered log in `internal/scan/gitinfo.go`
-- [ ] T069 [US4] Implement binary file detection via go-git content inspection / `.gitattributes` in `internal/scan/gitinfo.go`
-- [ ] T070 [US4] Handle untracked files: git metrics remain nil, binary defaults to false in `internal/scan/gitinfo.go`
-- [ ] T071 [US4] Integrate git metadata into scan pipeline: after directory scan, enrich FileNodes with git fields when target is a git repo in `internal/scan/scanner.go`
-- [ ] T072 [US4] Update file-lines metric to use `IsBinary` from go-git (binary → 0 lines) in `internal/metric/metric.go`
-- [ ] T073 [US4] Implement exit code 3 and error message for git-required metric on non-git directory in `cmd/codeviz/main.go`
+- [X] T065 [US4] Implement git repository detection (open repo at target path via go-git) in `internal/scan/gitinfo.go`
+- [X] T066 [US4] Implement file-age extraction: iterate `Repository.Log` with `FileName` filter to last commit in `internal/scan/gitinfo.go`
+- [X] T067 [US4] Implement file-freshness extraction: take first commit from file-filtered log in `internal/scan/gitinfo.go`
+- [X] T068 [US4] Implement author-count extraction: collect unique `Author.Email` from file-filtered log in `internal/scan/gitinfo.go`
+- [X] T069 [US4] Implement binary file detection via go-git content inspection / `.gitattributes` in `internal/scan/gitinfo.go`
+- [X] T070 [US4] Handle untracked files: git metrics remain nil, binary defaults to false in `internal/scan/gitinfo.go`
+- [X] T071 [US4] Integrate git metadata into scan pipeline: after directory scan, enrich FileNodes with git fields when target is a git repo in `internal/scan/scanner.go`
+- [X] T072 [US4] Update file-lines metric to use `IsBinary` from go-git (binary → 0 lines) in `internal/metric/metric.go`
+- [X] T073 [US4] Implement exit code 3 and error message for git-required metric on non-git directory in `cmd/codeviz/main.go`
 
 **Checkpoint**: Git metrics fully functional — file-age, file-freshness, author-count available for size/fill/border
 

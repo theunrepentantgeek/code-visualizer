@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -124,8 +125,29 @@ func (c *CLI) Run() error {
 		return fmt.Errorf("scan failed: %w", err)
 	}
 
+	// Check if any metric requires git
+	borderMetricName := metric.MetricName(c.Border)
+	needsGit := c.Size.IsGitRequired() || fillMetric.IsGitRequired() || (c.Border != "" && borderMetricName.IsGitRequired())
+
+	if needsGit {
+		absPath, _ := filepath.Abs(c.TargetPath)
+		isGit, err := scan.IsGitRepo(absPath)
+		if err != nil {
+			return fmt.Errorf("git check failed: %w", err)
+		}
+		if !isGit {
+			return &gitRequiredError{metric: c.Size, target: c.TargetPath}
+		}
+		info, err := scan.NewGitInfo(absPath)
+		if err != nil {
+			return fmt.Errorf("failed to open git repo: %w", err)
+		}
+		scan.EnrichWithGitMetadata(&root, info, absPath)
+	}
+
 	// Count lines for all files if needed
-	if c.Size == metric.FileLines || fillMetric == metric.FileLines {
+	needsLines := c.Size == metric.FileLines || fillMetric == metric.FileLines || (c.Border != "" && borderMetricName == metric.FileLines)
+	if needsLines {
 		scan.PopulateLineCounts(&root)
 	}
 
@@ -241,6 +263,21 @@ func extractNumeric(f scan.FileNode, m metric.MetricName) float64 {
 		return metric.ExtractFileSize(f)
 	case metric.FileLines:
 		return metric.ExtractFileLines(f)
+	case metric.FileAge:
+		if f.Age != nil {
+			return f.Age.Seconds()
+		}
+		return 0
+	case metric.FileFreshness:
+		if f.Freshness != nil {
+			return f.Freshness.Seconds()
+		}
+		return 0
+	case metric.AuthorCount:
+		if f.AuthorCount != nil {
+			return float64(*f.AuthorCount)
+		}
+		return 0
 	default:
 		return 0
 	}
@@ -361,17 +398,23 @@ func main() {
 
 	err := ctx.Run(&cli)
 	if err != nil {
+		var gitErr *gitRequiredError
 		switch {
-		case isValidationError(err):
-			exitWithError(cli.Format, err, 1)
-		case isPathError(err):
-			exitWithError(cli.Format, err, 2)
-		case isOutputError(err):
-			exitWithError(cli.Format, err, 4)
+		case errors.As(err, &gitErr):
+			exitWithError(cli.Format, err, 3)
 		default:
 			exitWithError(cli.Format, err, 5)
 		}
 	}
+}
+
+type gitRequiredError struct {
+	metric metric.MetricName
+	target string
+}
+
+func (e *gitRequiredError) Error() string {
+	return fmt.Sprintf("metric %q requires a git repository, but %q is not a git repository", e.metric, e.target)
 }
 
 func exitWithError(format string, err error, code int) {
@@ -387,17 +430,4 @@ func exitWithError(format string, err error, code int) {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
 	}
 	os.Exit(code)
-}
-
-func isValidationError(err error) bool {
-	// Validation errors from Kong or our Validate()
-	return false
-}
-
-func isPathError(err error) bool {
-	return false
-}
-
-func isOutputError(err error) bool {
-	return false
 }

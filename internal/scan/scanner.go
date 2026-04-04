@@ -125,6 +125,42 @@ func countFiles(node DirectoryNode) int {
 	return count
 }
 
+// EnrichWithGitMetadata populates git-derived fields (Age, Freshness, AuthorCount, IsBinary)
+// for all files in the tree. rootPath is the absolute path of the scan root.
+func EnrichWithGitMetadata(node *DirectoryNode, info *GitInfo, rootPath string) {
+	for i := range node.Files {
+		f := &node.Files[i]
+		relPath, err := filepath.Rel(rootPath, f.Path)
+		if err != nil {
+			slog.Warn("could not compute relative path", "path", f.Path, "error", err)
+			continue
+		}
+
+		age, err := info.FileAge(relPath)
+		if err != nil {
+			slog.Debug("could not get file age", "path", relPath, "error", err)
+		}
+		f.Age = age
+
+		freshness, err := info.FileFreshness(relPath)
+		if err != nil {
+			slog.Debug("could not get file freshness", "path", relPath, "error", err)
+		}
+		f.Freshness = freshness
+
+		count, err := info.AuthorCount(relPath)
+		if err != nil {
+			slog.Debug("could not get author count", "path", relPath, "error", err)
+		}
+		f.AuthorCount = count
+
+		f.IsBinary = info.IsBinary(relPath)
+	}
+	for i := range node.Dirs {
+		EnrichWithGitMetadata(&node.Dirs[i], info, rootPath)
+	}
+}
+
 // PopulateLineCounts counts lines for all files in the tree.
 // In non-git directories, all files are treated as text.
 func PopulateLineCounts(node *DirectoryNode) {
