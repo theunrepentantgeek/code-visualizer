@@ -52,10 +52,9 @@
 
 ## Phase 4: Polish & Cross-Cutting Concerns
 
-**Purpose**: Documentation and final validation
+**Purpose**: Final validation
 
-- [ ] T007 [P] Update golden file update instructions in docs/usage.md (if referenced)
-- [ ] T008 Run `task ci` (build, test, lint) to confirm no regressions
+- [ ] T007 Run `task ci` (build, test, lint) to confirm no regressions
 
 ---
 
@@ -81,7 +80,7 @@
 
 ### Parallel Opportunities
 
-- T007 can run in parallel with T008 (different files)
+- None in Phase 4 (single task remaining)
 
 ---
 

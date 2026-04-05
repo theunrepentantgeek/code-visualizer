@@ -41,14 +41,14 @@ As a developer, I want a single consistent mechanism to update golden files so t
 ### Edge Cases
 
 - What happens when a golden file does not yet exist for a new test? Goldie should fail the test and prompt the developer to generate it using the update flag.
-- What happens when the golden file directory structure changes? Goldie manages its own `testdata/fixtures` directory (or configured equivalent), so the migration must ensure golden files are in the expected location.
+- What happens when the golden file directory structure changes? Goldie uses `testdata/` by default (configured via `WithFixtureDir`), so the migration must ensure golden files are in the expected location.
 - What happens when binary golden files (PNG images) are used? Goldie must support binary comparison for rendered PNG output, not just text-based diffs.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: All existing golden file tests MUST be migrated to use the Goldie library (`github.com/sebdah/goldie`) for snapshot comparison.
+- **FR-001**: All existing golden file tests MUST be migrated to use the Goldie library (`github.com/sebdah/goldie/v2`) for snapshot comparison.
 - **FR-002**: All handwritten golden file infrastructure (file reading, writing, pixel comparison, update-via-environment-variable logic) MUST be removed after migration.
 - **FR-003**: Golden file updates MUST use Goldie's standard update mechanisms (`-update` flag or `GOLDIE_UPDATE` environment variable) instead of the custom `UPDATE_GOLDEN` environment variable.
 - **FR-004**: All existing golden file test cases MUST continue to pass after migration with no change in test coverage or correctness.
@@ -67,7 +67,7 @@ As a developer, I want a single consistent mechanism to update golden files so t
 
 ## Assumptions
 
-- The Goldie library (`github.com/sebdah/goldie`) supports binary file comparison suitable for PNG golden files, or can be configured/extended to do so.
+- The Goldie library (`github.com/sebdah/goldie/v2`) supports binary file comparison suitable for PNG golden files, or can be configured/extended to do so.
 - The existing `testdata/` directory structure in the render package can be preserved or adapted to work with Goldie's expected directory layout.
 - Only the render package currently uses golden file testing; if additional packages adopt golden files in the future, they will also use Goldie.
 - The custom `UPDATE_GOLDEN` environment variable mechanism will be fully retired and replaced by Goldie's built-in `GOLDIE_UPDATE` environment variable and `-update` flag.
