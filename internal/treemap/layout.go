@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	HeaderHeight  = 20.0 // pixels for directory header bar
-	padding       = 4.0  // pixels between groups
-	siblingGap    = 2.0  // pixels between sibling rectangles
-	minFileSize   = 1.0  // minimum area for zero-size files (FR-013)
+	HeaderHeight = 20.0 // pixels for directory header bar
+	padding      = 4.0  // pixels between groups
+	siblingGap   = 2.0  // pixels between sibling rectangles
+	minFileSize  = 1.0  // minimum area for zero-size files (FR-013)
 )
 
 // Layout computes a squarified treemap layout from a DirectoryNode tree.
