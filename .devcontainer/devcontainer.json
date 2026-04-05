@@ -45,7 +45,7 @@
 	},
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "go version",
+	"postCreateCommand": "bash -lc 'git config --global --add safe.directory \"${containerWorkspaceFolder}\" && go version'",
 
 	"remoteUser": "vscode"
 }
