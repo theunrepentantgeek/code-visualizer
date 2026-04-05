@@ -132,22 +132,27 @@ func paletteTreemap(p palette.ColourPalette) treemap.TreemapRectangle {
 }
 
 func TestGoldenFile_NeutralPalette(t *testing.T) {
+	t.Parallel()
 	goldenPaletteTest(t, palette.Neutral, "neutral-palette")
 }
 
 func TestGoldenFile_CategorizationPalette(t *testing.T) {
+	t.Parallel()
 	goldenPaletteTest(t, palette.Categorization, "categorization-palette")
 }
 
 func TestGoldenFile_TemperaturePalette(t *testing.T) {
+	t.Parallel()
 	goldenPaletteTest(t, palette.Temperature, "temperature-palette")
 }
 
 func TestGoldenFile_GoodBadPalette(t *testing.T) {
+	t.Parallel()
 	goldenPaletteTest(t, palette.GoodBad, "goodbad-palette")
 }
 
 func goldenPaletteTest(t *testing.T, name palette.PaletteName, fixtureName string) {
+	t.Helper()
 	g := NewGomegaWithT(t)
 
 	p := palette.GetPalette(name)
