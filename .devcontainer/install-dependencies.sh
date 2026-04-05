@@ -160,6 +160,6 @@ fi
 
 if [ "$DEVCONTAINER" == true ]; then
     # Git Permissions
-    # Workaround for issue where /workspace has different owner because checkout happens outside the container
-    git config --global --add safe.directory /workspace
+    # Workaround for issue where /workspaces has different owner because checkout happens outside the container
+    git config --global --add safe.directory /workspaces
 fi
