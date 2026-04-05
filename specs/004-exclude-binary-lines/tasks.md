@@ -55,15 +55,15 @@
 
 ### Tests for User Story 1 (write first, must FAIL)
 
-- [ ] T012 [P] [US1] Write test verifying filter is called when size metric is file-lines in cmd/codeviz/main.go (or internal test)
-- [ ] T013 [P] [US1] Write test verifying noFilesAfterFilterError with exit code 6 when all files are binary in cmd/codeviz/main.go
+- [x] T012 [P] [US1] Write test verifying filter is called when size metric is file-lines in cmd/codeviz/main.go (or internal test)
+- [x] T013 [P] [US1] Write test verifying noFilesAfterFilterError with exit code 6 when all files are binary in cmd/codeviz/main.go
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Add FilterBinaryFiles call in Run() pipeline after PopulateLineCounts and before treemap.Layout when size metric is file-lines in cmd/codeviz/main.go
-- [ ] T015 [US1] Add zero-file check after filtering that returns noFilesAfterFilterError in cmd/codeviz/main.go
-- [ ] T016 [US1] Add verbose logging summary (excluded count, remaining count) after filter call in cmd/codeviz/main.go
-- [ ] T017 [US1] Run `task test` to verify all US1 tests pass
+- [x] T014 [US1] Add FilterBinaryFiles call in Run() pipeline after PopulateLineCounts and before treemap.Layout when size metric is file-lines in cmd/codeviz/main.go
+- [x] T015 [US1] Add zero-file check after filtering that returns noFilesAfterFilterError in cmd/codeviz/main.go
+- [x] T016 [US1] Add verbose logging summary (excluded count, remaining count) after filter call in cmd/codeviz/main.go
+- [x] T017 [US1] Run `task test` to verify all US1 tests pass
 
 **Checkpoint**: User Story 1 is fully functional — `codeviz --size file-lines` excludes binary files from the treemap.
 

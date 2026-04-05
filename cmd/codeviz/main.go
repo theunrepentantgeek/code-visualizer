@@ -166,6 +166,20 @@ func (c *CLI) Run() error {
 		scan.PopulateLineCounts(&root)
 	}
 
+	// Filter binary files when size metric is line count
+	if c.Size == metric.FileLines {
+		beforeCount, _ := countAll(root)
+		root = scan.FilterBinaryFiles(root)
+		afterCount, _ := countAll(root)
+		excluded := beforeCount - afterCount
+		slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
+		if afterCount == 0 {
+			return &noFilesAfterFilterError{
+				msg: "no files available for visualization after excluding binary files",
+			}
+		}
+	}
+
 	files, dirs := countAll(root)
 	slog.Debug("scan complete", "files", files, "directories", dirs)
 
