@@ -4,6 +4,10 @@
 # Should be automatically kept up to date by dependabot.
 FROM mcr.microsoft.com/devcontainers/go:2-1.26
 
+# APT dependencies
+RUN apt-get update \
+    && apt-get -y install --no-install-recommends bash-completion graphviz zip python3-pip
+
 # Install development tools
 COPY .devcontainer/install-dependencies.sh .
 RUN ./install-dependencies.sh devcontainer && rm install-dependencies.sh
