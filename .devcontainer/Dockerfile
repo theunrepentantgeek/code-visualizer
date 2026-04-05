@@ -13,7 +13,7 @@ COPY .devcontainer/install-dependencies.sh .
 RUN ./install-dependencies.sh devcontainer && rm install-dependencies.sh
 
 # Setup go-task completions
-RUN curl -sL "https://raw.githubusercontent.com/go-task/task/v3.2.0/completion/bash/task.bash" > "/etc/.task.completion.sh" \
+RUN task --completion bash > "/etc/.task.completion.sh" \
     && echo 'source /etc/.task.completion.sh' >> "/etc/bash.bashrc"
 
 # Pre-download Go modules for faster builds
