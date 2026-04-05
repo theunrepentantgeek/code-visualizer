@@ -77,13 +77,13 @@
 
 ### Tests for User Story 2 (write first, must FAIL)
 
-- [ ] T018 [P] [US2] Write test verifying filter is NOT called when size metric is file-size in cmd/codeviz/main.go (or internal test)
-- [ ] T019 [P] [US2] Write test verifying filter is NOT called when size metric is file-age in cmd/codeviz/main.go (or internal test)
+- [x] T018 [P] [US2] Write test verifying filter is NOT called when size metric is file-size in cmd/codeviz/main.go (or internal test)
+- [x] T019 [P] [US2] Write test verifying filter is NOT called when size metric is file-age in cmd/codeviz/main.go (or internal test)
 
 ### Verification for User Story 2
 
-- [ ] T020 [US2] Review existing tests for file-size mode to confirm no regressions from Phase 2/3 changes
-- [ ] T021 [US2] Run `task test` to verify all existing tests pass — no regressions
+- [x] T020 [US2] Review existing tests for file-size mode to confirm no regressions from Phase 2/3 changes
+- [x] T021 [US2] Run `task test` to verify all existing tests pass — no regressions
 
 **Checkpoint**: User Story 2 confirmed — file-size and other non-line-count metrics still include binary files.
 
@@ -97,13 +97,13 @@
 
 ### Tests for User Story 3 (write first, must FAIL)
 
-- [ ] T022 [P] [US3] Write test verifying binary files excluded when size=file-lines and fill=file-type in cmd/codeviz/main.go (or internal test)
-- [ ] T023 [P] [US3] Write test verifying binary files included when size=file-size and fill=file-type in cmd/codeviz/main.go (or internal test)
+- [x] T022 [P] [US3] Write test verifying binary files excluded when size=file-lines and fill=file-type in cmd/codeviz/main.go (or internal test)
+- [x] T023 [P] [US3] Write test verifying binary files included when size=file-size and fill=file-type in cmd/codeviz/main.go (or internal test)
 
 ### Verification for User Story 3
 
-- [ ] T024 [US3] Review that filter call site in Run() is conditioned on c.Size only, not fillMetric or borderMetric in cmd/codeviz/main.go
-- [ ] T025 [US3] Run `task test` to verify all US3 tests pass
+- [x] T024 [US3] Review that filter call site in Run() is conditioned on c.Size only, not fillMetric or borderMetric in cmd/codeviz/main.go
+- [x] T025 [US3] Run `task test` to verify all US3 tests pass
 
 **Checkpoint**: User Story 3 confirmed — fill/border metrics do not affect file inclusion.
 
@@ -113,10 +113,10 @@
 
 **Purpose**: Documentation, final validation, cleanup.
 
-- [ ] T026 [P] Add exit code 6 row to exit code table in docs/usage.md
-- [ ] T027 [P] Run `task lint` to verify no linting issues
-- [ ] T028 Run `task ci` to verify full CI pipeline passes (build + test + lint)
-- [ ] T029 Run quickstart.md validation — verify implementation matches all design decisions
+- [x] T026 [P] Add exit code 6 row to exit code table in docs/usage.md
+- [x] T027 [P] Run `task lint` to verify no linting issues
+- [x] T028 Run `task ci` to verify full CI pipeline passes (build + test + lint)
+- [x] T029 Run quickstart.md validation — verify implementation matches all design decisions
 
 ---
 
