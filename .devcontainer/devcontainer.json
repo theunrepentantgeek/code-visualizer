@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.137.0/containers/go
 {
-	"name": "Azure Service Operator",
+	"name": "Code Visualizer",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": ".."
@@ -16,9 +16,7 @@
 		"vscode": {
 			"extensions": [
 				"ms-vscode.go",
-				"ms-azuretools.vscode-docker",
 				"redhat.vscode-yaml",
-				"ms-kubernetes-tools.vscode-kubernetes-tools",
 				"task.vscode-task",
 				"github.vscode-pull-request-github"
 			],
@@ -46,15 +44,8 @@
 
 	},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [9000],
-
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "go version",
 
-	"remoteUser": "vscode",
-
-	// Use docker-from-docker: mount host docker socket for CI compatibility
-	"mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
-	"overrideCommand": false
+	"remoteUser": "vscode"
 }

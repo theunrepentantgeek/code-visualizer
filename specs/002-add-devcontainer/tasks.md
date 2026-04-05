@@ -31,13 +31,13 @@ _(No tasks — proceed directly to Phase 2)_
 
 ### Implementation
 
-- [ ] T001 [P] [US1] [US2] Update devcontainer name, extensions, mounts, and remove ASO-specific settings in `.devcontainer/devcontainer.json`
-- [ ] T002 [P] [US1] [US2] Strip ASO APT packages (Azure CLI, Docker CLI, nodejs, npm, python3-pip, graphviz, gnuplot) and remove envtest, kubectl, kind, and Docker group setup from `.devcontainer/Dockerfile`
-- [ ] T003 [P] [US1] [US2] Simplify install-dependencies.sh to only install gofumpt, golangci-lint, and go-task; remove all ASO tools, az/pip3 checks, kubebuilder/buildx dest, webhook certs, and python virtualenv from `.devcontainer/install-dependencies.sh`
-- [ ] T004 [P] [US1] [US2] Update Dockerfile.dockerignore to reference root-level go.mod/go.sum instead of v2/ paths in `.devcontainer/Dockerfile.dockerignore`
-- [ ] T005 [US1] Configure git safe.directory for /workspace in postCreateCommand in `.devcontainer/devcontainer.json`
+- [x] T001 [P] [US1] [US2] Update devcontainer name, extensions, mounts, and remove ASO-specific settings in `.devcontainer/devcontainer.json`
+- [x] T002 [P] [US1] [US2] Strip ASO APT packages (Azure CLI, Docker CLI, nodejs, npm, python3-pip, graphviz, gnuplot) and remove envtest, kubectl, kind, and Docker group setup from `.devcontainer/Dockerfile`
+- [x] T003 [P] [US1] [US2] Simplify install-dependencies.sh to only install gofumpt, golangci-lint, and go-task; remove all ASO tools, az/pip3 checks, kubebuilder/buildx dest, webhook certs, and python virtualenv from `.devcontainer/install-dependencies.sh`
+- [x] T004 [P] [US1] [US2] Update Dockerfile.dockerignore to reference root-level go.mod/go.sum instead of v2/ paths in `.devcontainer/Dockerfile.dockerignore`
+- [x] T005 [US1] Configure git safe.directory for /workspace in postCreateCommand in `.devcontainer/devcontainer.json`
 
-- [ ] T006 [US1] [US2] Run `docker build -f .devcontainer/Dockerfile .` to verify the container image builds successfully after ASO stripping
+- [x] T006 [US1] [US2] Run `docker build -f .devcontainer/Dockerfile .` to verify the container image builds successfully after ASO stripping
 
 **Checkpoint**: At this point, the devcontainer configuration should be clean of all ASO content and properly configured for code-visualizer. Container should build successfully.
 
@@ -51,7 +51,7 @@ _(No tasks — proceed directly to Phase 2)_
 
 ### Implementation
 
-- [ ] T007 [US3] Replace ASO multi-module COPY/download block with single-module `COPY go.mod go.sum` + `go mod download` in `.devcontainer/Dockerfile`
+- [x] T007 [US3] Replace ASO multi-module COPY/download block with single-module `COPY go.mod go.sum` + `go mod download` in `.devcontainer/Dockerfile`
 
 **Checkpoint**: First `go build` inside the container completes without downloading modules.
 
@@ -61,8 +61,8 @@ _(No tasks — proceed directly to Phase 2)_
 
 **Purpose**: Final validation and documentation alignment
 
-- [ ] T008 Verify `task ci` passes both inside the built devcontainer and outside it (manual validation, covers FR-009)
-- [ ] T009 [P] Run quickstart.md validation — confirm the steps in `specs/002-add-devcontainer/quickstart.md` match the actual devcontainer experience
+- [x] T008 Verify `task ci` passes both inside the built devcontainer and outside it (manual validation, covers FR-009)
+- [x] T009 [P] Run quickstart.md validation — confirm the steps in `specs/002-add-devcontainer/quickstart.md` match the actual devcontainer experience
 
 ---
 
