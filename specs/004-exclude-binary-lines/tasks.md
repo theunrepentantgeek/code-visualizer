@@ -17,7 +17,7 @@
 
 **Purpose**: No new project infrastructure needed — this feature adds to an existing codebase. Setup is limited to ensuring binary detection works end-to-end before filtering.
 
-- [ ] T001 Verify existing binary detection pipeline works by running `task test` in internal/scan/
+- [x] T001 Verify existing binary detection pipeline works by running `task test` in internal/scan/
 
 ---
 
@@ -29,19 +29,19 @@
 
 ### Tests (write first, must FAIL)
 
-- [ ] T002 [P] Write test for FilterBinaryFiles with mixed binary and text files returning only text files in internal/scan/scanner_test.go
-- [ ] T003 [P] Write test for FilterBinaryFiles with all binary files returning empty tree in internal/scan/scanner_test.go
-- [ ] T004 [P] Write test for FilterBinaryFiles with no binary files returning tree unchanged in internal/scan/scanner_test.go
-- [ ] T005 [P] Write test for FilterBinaryFiles pruning directories that become empty after binary removal in internal/scan/scanner_test.go
-- [ ] T006 [P] Write test for FilterBinaryFiles with nested directories where only deepest dir has binary files in internal/scan/scanner_test.go
-- [ ] T007 [P] Write test for FilterBinaryFiles logging excluded files at Debug level in internal/scan/scanner_test.go
+- [x] T002 [P] Write test for FilterBinaryFiles with mixed binary and text files returning only text files in internal/scan/scanner_test.go
+- [x] T003 [P] Write test for FilterBinaryFiles with all binary files returning empty tree in internal/scan/scanner_test.go
+- [x] T004 [P] Write test for FilterBinaryFiles with no binary files returning tree unchanged in internal/scan/scanner_test.go
+- [x] T005 [P] Write test for FilterBinaryFiles pruning directories that become empty after binary removal in internal/scan/scanner_test.go
+- [x] T006 [P] Write test for FilterBinaryFiles with nested directories where only deepest dir has binary files in internal/scan/scanner_test.go
+- [x] T007 [P] Write test for FilterBinaryFiles logging excluded files at Debug level in internal/scan/scanner_test.go
 
 ### Implementation
 
-- [ ] T008 Implement FilterBinaryFiles function in internal/scan/scanner.go
-- [ ] T009 Add noFilesAfterFilterError type to cmd/codeviz/main.go
-- [ ] T010 [P] Add exit code 6 mapping in classifyError function in cmd/codeviz/main.go
-- [ ] T011 Run `task test` to verify all foundational tests pass
+- [x] T008 Implement FilterBinaryFiles function in internal/scan/scanner.go
+- [x] T009 Add noFilesAfterFilterError type to cmd/codeviz/main.go
+- [x] T010 [P] Add exit code 6 mapping in classifyError function in cmd/codeviz/main.go
+- [x] T011 Run `task test` to verify all foundational tests pass
 
 **Checkpoint**: FilterBinaryFiles works correctly in isolation; error type and exit code defined.
 

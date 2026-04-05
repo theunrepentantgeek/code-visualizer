@@ -432,6 +432,7 @@ func classifyError(err error, format string) int {
 	var gitErr *gitRequiredError
 	var targetErr *targetPathError
 	var outputErr *outputPathError
+	var noFilesErr *noFilesAfterFilterError
 	switch {
 	case errors.As(err, &targetErr):
 		return 2
@@ -439,6 +440,8 @@ func classifyError(err error, format string) int {
 		return 3
 	case errors.As(err, &outputErr):
 		return 4
+	case errors.As(err, &noFilesErr):
+		return 6
 	default:
 		return 5
 	}
@@ -464,6 +467,12 @@ type outputPathError struct {
 }
 
 func (e *outputPathError) Error() string { return e.msg }
+
+type noFilesAfterFilterError struct {
+	msg string
+}
+
+func (e *noFilesAfterFilterError) Error() string { return e.msg }
 
 func exitWithError(format string, err error, code int) {
 	if format == "json" {
