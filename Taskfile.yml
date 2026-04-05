@@ -60,4 +60,4 @@ tasks:
   update-golden-files:
     desc: Regenerate golden file snapshots
     cmds:
-      - UPDATE_GOLDEN=1 go test ./... -count=1
+      - GOLDIE_UPDATE=1 go test ./... -count=1

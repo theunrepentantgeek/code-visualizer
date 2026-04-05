@@ -3,12 +3,12 @@ package render
 import (
 	"fmt"
 	"image/color"
-	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/sebdah/goldie/v2"
 
 	"github.com/bevan/code-visualizer/internal/palette"
 	"github.com/bevan/code-visualizer/internal/scan"
@@ -132,69 +132,35 @@ func paletteTreemap(p palette.ColourPalette) treemap.TreemapRectangle {
 }
 
 func TestGoldenFile_NeutralPalette(t *testing.T) {
-	goldenPaletteTest(t, palette.Neutral, "neutral-palette.png")
+	goldenPaletteTest(t, palette.Neutral, "neutral-palette")
 }
 
 func TestGoldenFile_CategorizationPalette(t *testing.T) {
-	goldenPaletteTest(t, palette.Categorization, "categorization-palette.png")
+	goldenPaletteTest(t, palette.Categorization, "categorization-palette")
 }
 
 func TestGoldenFile_TemperaturePalette(t *testing.T) {
-	goldenPaletteTest(t, palette.Temperature, "temperature-palette.png")
+	goldenPaletteTest(t, palette.Temperature, "temperature-palette")
 }
 
 func TestGoldenFile_GoodBadPalette(t *testing.T) {
-	goldenPaletteTest(t, palette.GoodBad, "goodbad-palette.png")
+	goldenPaletteTest(t, palette.GoodBad, "goodbad-palette")
 }
 
-func goldenPaletteTest(t *testing.T, name palette.PaletteName, filename string) {
+func goldenPaletteTest(t *testing.T, name palette.PaletteName, fixtureName string) {
 	g := NewGomegaWithT(t)
 
 	p := palette.GetPalette(name)
 	root := paletteTreemap(p)
-	out := filepath.Join(t.TempDir(), filename)
+	out := filepath.Join(t.TempDir(), fixtureName+".png")
 	err := RenderPNG(root, 800, 600, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	golden := filepath.Join("testdata", filename)
-	if os.Getenv("UPDATE_GOLDEN") != "" {
-		data, readErr := os.ReadFile(out)
-		g.Expect(readErr).NotTo(HaveOccurred())
-		g.Expect(os.WriteFile(golden, data, 0644)).To(Succeed())
-		return
-	}
-
-	// Compare rendered output against golden file
-	goldenFile, err := os.Open(golden)
-	if os.IsNotExist(err) {
-		t.Fatalf("golden file %s not found; run 'task update-golden-files' to generate", golden)
-	}
-	g.Expect(err).NotTo(HaveOccurred())
-	defer goldenFile.Close() //nolint:errcheck
-
-	goldenImg, err := png.Decode(goldenFile)
+	actual, err := os.ReadFile(out)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	actualFile, err := os.Open(out)
-	g.Expect(err).NotTo(HaveOccurred())
-	defer actualFile.Close() //nolint:errcheck
-
-	actualImg, err := png.Decode(actualFile)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	g.Expect(actualImg.Bounds()).To(Equal(goldenImg.Bounds()))
-
-	bounds := goldenImg.Bounds()
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			gr, gg2, gb, ga := goldenImg.At(x, y).RGBA()
-			ar, ag, ab, aa := actualImg.At(x, y).RGBA()
-			if gr != ar || gg2 != ag || gb != ab || ga != aa {
-				t.Fatalf("pixel mismatch at (%d,%d): golden=(%d,%d,%d,%d) actual=(%d,%d,%d,%d)",
-					x, y, gr, gg2, gb, ga, ar, ag, ab, aa)
-			}
-		}
-	}
+	gld := goldie.New(t, goldie.WithFixtureDir("testdata"), goldie.WithNameSuffix(".png"))
+	gld.Assert(t, fixtureName, actual)
 }
 
 // BenchmarkScanAndRender benchmarks the full scan→layout→render pipeline

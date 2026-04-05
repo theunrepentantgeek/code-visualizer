@@ -15,7 +15,7 @@
 
 **Purpose**: Add Goldie v2 dependency to the project
 
-- [ ] T001 Add `github.com/sebdah/goldie/v2` dependency in go.mod
+- [x] T001 Add `github.com/sebdah/goldie/v2` dependency in go.mod
 
 ---
 
@@ -27,9 +27,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T002 [US1] Rewrite `goldenPaletteTest` helper to use Goldie v2 API (`goldie.New` with `WithFixtureDir("testdata")` and `WithNameSuffix(".png")`) in internal/render/renderer_test.go
-- [ ] T003 [US1] Remove unused imports (`image/png`, `os`) from internal/render/renderer_test.go after Goldie migration
-- [ ] T004 [US1] Run `task test` and verify all 4 `TestGoldenFile_*` tests pass with Goldie
+- [x] T002 [US1] Rewrite `goldenPaletteTest` helper to use Goldie v2 API (`goldie.New` with `WithFixtureDir("testdata")` and `WithNameSuffix(".png")`) in internal/render/renderer_test.go
+- [x] T003 [US1] Remove unused imports (`image/png`) and add `goldie/v2` import in internal/render/renderer_test.go after Goldie migration
+- [x] T004 [US1] Run `task test` and verify all 4 `TestGoldenFile_*` tests pass with Goldie
 
 **Checkpoint**: All golden file tests pass using Goldie. No handwritten comparison code remains.
 
@@ -43,8 +43,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T005 [US2] Update `update-golden-files` task to use `GOLDIE_UPDATE=1` instead of `UPDATE_GOLDEN=1` in Taskfile.yml
-- [ ] T006 [US2] Run `task update-golden-files` and verify golden files are regenerated correctly
+- [x] T005 [US2] Update `update-golden-files` task to use `GOLDIE_UPDATE=1` instead of `UPDATE_GOLDEN=1` in Taskfile.yml
+- [x] T006 [US2] Run `task update-golden-files` and verify golden files are regenerated correctly
 
 **Checkpoint**: Developers use `GOLDIE_UPDATE=1` or `-update` flag exclusively. Custom `UPDATE_GOLDEN` env var is retired.
 
@@ -54,7 +54,7 @@
 
 **Purpose**: Final validation
 
-- [ ] T007 Run `task ci` (build, test, lint) to confirm no regressions
+- [x] T007 Run `task ci` (build, test, lint) to confirm no regressions
 
 ---
 
