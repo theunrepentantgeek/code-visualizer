@@ -42,9 +42,10 @@ func TestLayoutProportionalAreas(t *testing.T) {
 	var bigRect, smallRect TreemapRectangle
 	for _, c := range rects.Children {
 		if !c.IsDirectory {
-			if c.Label == "big.go" {
+			switch c.Label {
+			case "big.go":
 				bigRect = c
-			} else if c.Label == "small.go" {
+			case "small.go":
 				smallRect = c
 			}
 		}
