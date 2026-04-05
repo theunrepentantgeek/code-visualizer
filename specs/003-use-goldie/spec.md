@@ -33,7 +33,7 @@ As a developer, I want a single consistent mechanism to update golden files so t
 
 **Acceptance Scenarios**:
 
-1. **Given** a developer wants to update golden files, **When** they use Goldie's standard update mechanism (`-update` flag), **Then** all golden files are regenerated without needing custom environment variables (e.g., `UPDATE_GOLDEN`).
+1. **Given** a developer wants to update golden files, **When** they use Goldie's standard update mechanism (`-update` flag or `GOLDIE_UPDATE` environment variable), **Then** all golden files are regenerated without needing the custom `UPDATE_GOLDEN` environment variable.
 2. **Given** the project uses a task runner, **When** a developer runs `task test`, **Then** existing golden files are compared (not overwritten) by default.
 
 ---
@@ -50,7 +50,7 @@ As a developer, I want a single consistent mechanism to update golden files so t
 
 - **FR-001**: All existing golden file tests MUST be migrated to use the Goldie library (`github.com/sebdah/goldie`) for snapshot comparison.
 - **FR-002**: All handwritten golden file infrastructure (file reading, writing, pixel comparison, update-via-environment-variable logic) MUST be removed after migration.
-- **FR-003**: Golden file updates MUST use Goldie's standard `-update` flag mechanism instead of custom environment variables like `UPDATE_GOLDEN`.
+- **FR-003**: Golden file updates MUST use Goldie's standard update mechanisms (`-update` flag or `GOLDIE_UPDATE` environment variable) instead of the custom `UPDATE_GOLDEN` environment variable.
 - **FR-004**: All existing golden file test cases MUST continue to pass after migration with no change in test coverage or correctness.
 - **FR-005**: The Goldie dependency MUST be added to the project's `go.mod`.
 - **FR-006**: Golden files MUST be stored in a location consistent with Goldie's conventions (configurable via Goldie options if needed to preserve existing `testdata/` paths).
@@ -62,7 +62,7 @@ As a developer, I want a single consistent mechanism to update golden files so t
 
 - **SC-001**: 100% of existing golden file tests pass after migration to Goldie.
 - **SC-002**: Zero lines of handwritten golden file read/write/compare infrastructure remain in the codebase.
-- **SC-003**: Developers can update all golden files using a single standard mechanism (Goldie's `-update` flag).
+- **SC-003**: Developers can update all golden files using Goldie's standard mechanisms (`-update` flag or `GOLDIE_UPDATE` environment variable).
 - **SC-004**: No regression in test coverage — the same test scenarios are covered before and after migration.
 
 ## Assumptions
@@ -70,4 +70,4 @@ As a developer, I want a single consistent mechanism to update golden files so t
 - The Goldie library (`github.com/sebdah/goldie`) supports binary file comparison suitable for PNG golden files, or can be configured/extended to do so.
 - The existing `testdata/` directory structure in the render package can be preserved or adapted to work with Goldie's expected directory layout.
 - Only the render package currently uses golden file testing; if additional packages adopt golden files in the future, they will also use Goldie.
-- The custom `UPDATE_GOLDEN` environment variable mechanism will be fully retired and replaced by Goldie's `-update` flag.
+- The custom `UPDATE_GOLDEN` environment variable mechanism will be fully retired and replaced by Goldie's built-in `GOLDIE_UPDATE` environment variable and `-update` flag.
