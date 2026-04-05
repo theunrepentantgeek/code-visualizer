@@ -2,7 +2,8 @@
 
 # -e immediate exit on error
 # -u treat unset variables as an error
-set -eu
+# -o pipefail fail a pipeline if any command fails
+set -euo pipefail
 
 # This may be run in two modes:
 #
