@@ -236,8 +236,8 @@ func TestFilterBinaryFilesNestedPruning(t *testing.T) {
 	g.Expect(filtered.Dirs[0].Dirs).To(BeEmpty()) // bin dir pruned
 }
 
+//nolint:paralleltest // mutates global slog default logger, cannot run in parallel.
 func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	var buf bytes.Buffer

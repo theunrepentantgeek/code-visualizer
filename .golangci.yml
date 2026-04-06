@@ -136,7 +136,7 @@ linters:
         - eris.New(
         - eris.Wrap(
         - eris.Wrapf(
-    wsl-v5:
+    wsl_v5:
       allow-cuddle-declarations: true
     custom:
       nilaway:
