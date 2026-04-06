@@ -8,6 +8,7 @@ import (
 )
 
 func TestMapNumeric_MinToFirstColour(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral)
@@ -17,6 +18,7 @@ func TestMapNumeric_MinToFirstColour(t *testing.T) {
 }
 
 func TestMapNumeric_MaxToLastColour(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral)
@@ -27,6 +29,7 @@ func TestMapNumeric_MaxToLastColour(t *testing.T) {
 }
 
 func TestMapNumeric_MedianToMiddleColour(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral)
@@ -39,6 +42,7 @@ func TestMapNumeric_MedianToMiddleColour(t *testing.T) {
 }
 
 func TestMapCategorical_DistinctValues(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral)
@@ -46,18 +50,22 @@ func TestMapCategorical_DistinctValues(t *testing.T) {
 
 	mapper := NewCategoricalMapper(values, p)
 	colours := map[color.RGBA]bool{}
+
 	for _, v := range values {
 		col := mapper.Map(v)
 		colours[col] = true
 		g.Expect(col.A).To(Equal(uint8(255)))
 	}
+
 	g.Expect(colours).To(HaveLen(3))
 }
 
 func TestMapCategorical_WrapAround(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral) // 9 steps
+
 	values := make([]string, 15)
 	for i := range values {
 		values[i] = string(rune('a' + i))

@@ -9,6 +9,7 @@ import (
 )
 
 func TestDirectoryHeaderBar(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -27,18 +28,27 @@ func TestDirectoryHeaderBar(t *testing.T) {
 
 	// Find the directory rectangle
 	var dirRect *TreemapRectangle
+
 	for i, c := range rects.Children {
 		if c.IsDirectory && c.Label == "mydir" {
 			dirRect = &rects.Children[i]
+
 			break
 		}
 	}
+
 	g.Expect(dirRect).NotTo(BeNil())
+
+	if dirRect == nil {
+		return
+	}
+
 	g.Expect(dirRect.IsDirectory).To(BeTrue())
 	g.Expect(dirRect.Label).To(Equal("mydir"))
 }
 
 func TestDirectoryPaddingSeparatesGroups(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -57,24 +67,36 @@ func TestDirectoryPaddingSeparatesGroups(t *testing.T) {
 
 	rects := Layout(root, 1920, 1080)
 
-	// Find the two directory rectangles
-	var dirA, dirB *TreemapRectangle
-	for i, c := range rects.Children {
-		if c.IsDirectory && c.Label == "dir-a" {
-			dirA = &rects.Children[i]
-		}
-		if c.IsDirectory && c.Label == "dir-b" {
-			dirB = &rects.Children[i]
-		}
-	}
+	dirA := findDirRect(rects, "dir-a")
+	dirB := findDirRect(rects, "dir-b")
+
 	g.Expect(dirA).NotTo(BeNil())
 	g.Expect(dirB).NotTo(BeNil())
 
+	if dirA == nil || dirB == nil {
+		return
+	}
+
 	// Directories should not overlap — there should be padding between them
-	aRight := dirA.X + dirA.W
-	bLeft := dirB.X
-	aBottom := dirA.Y + dirA.H
-	bTop := dirB.Y
-	separated := aRight <= bLeft || bLeft+dirB.W <= dirA.X || aBottom <= bTop || bTop+dirB.H <= dirA.Y
+	separated := rectsAreSeparated(dirA, dirB)
 	g.Expect(separated).To(BeTrue(), "directory groups should not overlap")
+}
+
+func findDirRect(rects TreemapRectangle, name string) *TreemapRectangle {
+	for i, c := range rects.Children {
+		if c.IsDirectory && c.Label == name {
+			return &rects.Children[i]
+		}
+	}
+
+	return nil
+}
+
+func rectsAreSeparated(a, b *TreemapRectangle) bool {
+	aRight := a.X + a.W
+	bRight := b.X + b.W
+	aBottom := a.Y + a.H
+	bBottom := b.Y + b.H
+
+	return aRight <= b.X || bRight <= a.X || aBottom <= b.Y || bBottom <= a.Y
 }

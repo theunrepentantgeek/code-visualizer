@@ -19,8 +19,8 @@
 
 **Purpose**: Ensure devcontainer has required tooling prerequisites
 
-- [ ] T001 Verify envsubst availability in devcontainer and add gettext-base to .devcontainer/Dockerfile if not already present
-- [ ] T002 Add SCRIPT_DIR variable to .devcontainer/install-dependencies.sh for locating template files
+- [X] T001 Verify envsubst availability in devcontainer and add gettext-base to .devcontainer/Dockerfile if not already present
+- [X] T002 Add SCRIPT_DIR variable to .devcontainer/install-dependencies.sh for locating template files
 
 ---
 
@@ -30,9 +30,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Create custom linter build template at .devcontainer/.custom-gcl.template.yml with nilaway plugin definition (version v2.8.0, destination $TOOL_DEST)
-- [ ] T004 Add custom linter build step to .devcontainer/install-dependencies.sh after the existing golangci-lint installation block
-- [ ] T005 Build the custom golangci-lint-custom binary by running the updated install-dependencies.sh and verify it exists in the tools directory
+- [X] T003 Create custom linter build template at .devcontainer/.custom-gcl.template.yml with nilaway plugin definition (version v2.8.0, destination $TOOL_DEST)
+- [X] T004 Add custom linter build step to .devcontainer/install-dependencies.sh after the existing golangci-lint installation block
+- [X] T005 Build the custom golangci-lint-custom binary by running the updated install-dependencies.sh and verify it exists in the tools directory
 
 **Checkpoint**: Custom linter binary available — configuration and task changes can now proceed
 
@@ -44,10 +44,10 @@
 
 **Independent Test**: Run `task lint` and verify the expanded linter set executes with nilaway included
 
-- [ ] T006 [P] [US1] Replace .golangci.yml with expanded configuration imported from go-vcr-tidy reference project, adapting module paths (nilaway include-pkgs, revive dot-imports, wrapcheck eris sigs) for this project
-- [ ] T007 [P] [US1] Update lint task in Taskfile.yml to invoke golangci-lint-custom run --verbose instead of golangci-lint run ./...
-- [ ] T008 [US1] Update tidy task in Taskfile.yml to invoke golangci-lint-custom run --fix --verbose instead of golangci-lint run --fix ./...
-- [ ] T009 [US1] Run task lint to verify the expanded linter set executes successfully and nilaway is included in the output
+- [X] T006 [P] [US1] Replace .golangci.yml with expanded configuration imported from go-vcr-tidy reference project, adapting module paths (nilaway include-pkgs, revive dot-imports, wrapcheck eris sigs) for this project
+- [X] T007 [P] [US1] Update lint task in Taskfile.yml to invoke golangci-lint-custom run --verbose instead of golangci-lint run ./...
+- [X] T008 [US1] Update tidy task in Taskfile.yml to invoke golangci-lint-custom run --fix --verbose instead of golangci-lint run --fix ./...
+- [X] T009 [US1] Run task lint to verify the expanded linter set executes successfully and nilaway is included in the output
 
 **Checkpoint**: `task lint` runs with expanded linter set including nilaway
 
@@ -59,8 +59,8 @@
 
 **Independent Test**: Run install-dependencies.sh and verify golangci-lint-custom binary is produced
 
-- [ ] T010 [US2] Verify install-dependencies.sh builds golangci-lint-custom in devcontainer mode (TOOL_DEST=/usr/local/bin)
-- [ ] T011 [US2] Verify install-dependencies.sh skips the custom build when using --skip-installed and binary already exists
+- [X] T010 [US2] Verify install-dependencies.sh builds golangci-lint-custom in devcontainer mode (TOOL_DEST=/usr/local/bin)
+- [X] T011 [US2] Verify install-dependencies.sh skips the custom build when using --skip-installed and binary already exists
 
 **Checkpoint**: Devcontainer setup produces the custom linter binary without manual steps
 
@@ -72,14 +72,14 @@
 
 **Independent Test**: Run `task lint` on the full codebase and confirm zero exit code
 
-- [ ] T012 [US3] Run task lint and capture all lint issues reported by the expanded linter set
-- [ ] T013 [US3] Fix lint issues in cmd/codeviz/main.go — prefer root-cause fixes over suppressions
-- [ ] T014 [P] [US3] Fix lint issues in internal/metric/ package files — prefer root-cause fixes over suppressions
-- [ ] T015 [P] [US3] Fix lint issues in internal/palette/ package files — prefer root-cause fixes over suppressions
-- [ ] T016 [P] [US3] Fix lint issues in internal/render/ package files — prefer root-cause fixes over suppressions
-- [ ] T017 [P] [US3] Fix lint issues in internal/scan/ package files — prefer root-cause fixes over suppressions
-- [ ] T018 [P] [US3] Fix lint issues in internal/treemap/ package files — prefer root-cause fixes over suppressions
-- [ ] T019 [US3] Run task lint to confirm zero exit code across entire codebase
+- [X] T012 [US3] Run task lint and capture all lint issues reported by the expanded linter set
+- [X] T013 [US3] Fix lint issues in cmd/codeviz/main.go — prefer root-cause fixes over suppressions
+- [X] T014 [P] [US3] Fix lint issues in internal/metric/ package files — prefer root-cause fixes over suppressions
+- [X] T015 [P] [US3] Fix lint issues in internal/palette/ package files — prefer root-cause fixes over suppressions
+- [X] T016 [P] [US3] Fix lint issues in internal/render/ package files — prefer root-cause fixes over suppressions
+- [X] T017 [P] [US3] Fix lint issues in internal/scan/ package files — prefer root-cause fixes over suppressions
+- [X] T018 [P] [US3] Fix lint issues in internal/treemap/ package files — prefer root-cause fixes over suppressions
+- [X] T019 [US3] Run task lint to confirm zero exit code across entire codebase
 
 **Checkpoint**: All existing code passes the expanded linter configuration
 
@@ -89,8 +89,8 @@
 
 **Purpose**: Final validation and documentation
 
-- [ ] T020 Run task ci (build, test, lint) to confirm all checks pass end-to-end
-- [ ] T021 Run quickstart.md validation — verify golangci-lint-custom linters | grep nilaway shows nilaway in linter list
+- [X] T020 Run task ci (build, test, lint) to confirm all checks pass end-to-end
+- [X] T021 Run quickstart.md validation — verify golangci-lint-custom linters | grep nilaway shows nilaway in linter list
 
 ---
 

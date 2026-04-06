@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	"github.com/sebdah/goldie/v2"
 
 	"github.com/bevan/code-visualizer/internal/palette"
@@ -16,6 +17,7 @@ import (
 )
 
 func TestRenderFlatDir(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -34,10 +36,17 @@ func TestRenderFlatDir(t *testing.T) {
 
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(info).NotTo(BeNil())
+
+	if info == nil {
+		return
+	}
+
 	g.Expect(info.Size()).To(BeNumerically(">", 0))
 }
 
 func TestRenderNestedDir(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -62,10 +71,17 @@ func TestRenderNestedDir(t *testing.T) {
 
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(info).NotTo(BeNil())
+
+	if info == nil {
+		return
+	}
+
 	g.Expect(info.Size()).To(BeNumerically(">", 0))
 }
 
 func TestRenderWithBorderColour(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	red := color.RGBA{R: 255, G: 0, B: 0, A: 255}
@@ -87,10 +103,17 @@ func TestRenderWithBorderColour(t *testing.T) {
 
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(info).NotTo(BeNil())
+
+	if info == nil {
+		return
+	}
+
 	g.Expect(info.Size()).To(BeNumerically(">", 0))
 }
 
 func TestRenderNoBorderWhenNil(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	rects := treemap.TreemapRectangle{
@@ -109,6 +132,12 @@ func TestRenderNoBorderWhenNil(t *testing.T) {
 
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(info).NotTo(BeNil())
+
+	if info == nil {
+		return
+	}
+
 	g.Expect(info.Size()).To(BeNumerically(">", 0))
 }
 
@@ -116,14 +145,16 @@ func TestRenderNoBorderWhenNil(t *testing.T) {
 func paletteTreemap(p palette.ColourPalette) treemap.TreemapRectangle {
 	n := len(p.Colours)
 	children := make([]treemap.TreemapRectangle, n)
+
 	w := 800.0 / float64(n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		children[i] = treemap.TreemapRectangle{
 			X: float64(i) * w, Y: 20, W: w, H: 580,
 			Label:      "f" + string(rune('0'+i%10)),
 			FillColour: p.Colours[i],
 		}
 	}
+
 	return treemap.TreemapRectangle{
 		X: 0, Y: 0, W: 800, H: 600,
 		Label: "root", IsDirectory: true,
@@ -171,33 +202,42 @@ func goldenPaletteTest(t *testing.T, name palette.PaletteName, fixtureName strin
 // BenchmarkScanAndRender benchmarks the full scan→layout→render pipeline
 // with a 1,000-file fixture.
 func BenchmarkScanAndRender(b *testing.B) {
-	dir := b.TempDir()
-	// Create 10 subdirs × 100 files = 1,000 files
-	for d := 0; d < 10; d++ {
-		subdir := filepath.Join(dir, fmt.Sprintf("dir%02d", d))
-		if err := os.MkdirAll(subdir, 0755); err != nil {
-			b.Fatal(err)
-		}
-		for f := 0; f < 100; f++ {
-			name := filepath.Join(subdir, fmt.Sprintf("file%03d.go", f))
-			data := make([]byte, 100+f*10)
-			if err := os.WriteFile(name, data, 0644); err != nil {
-				b.Fatal(err)
-			}
-		}
-	}
-
+	dir := createBenchFixture(b)
 	out := filepath.Join(b.TempDir(), "bench.png")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		root, err := scan.Scan(dir)
 		if err != nil {
 			b.Fatal(err)
 		}
+
 		rects := treemap.Layout(root, 1920, 1080)
 		if err := RenderPNG(rects, 1920, 1080, out); err != nil {
 			b.Fatal(err)
 		}
 	}
+}
+
+func createBenchFixture(b *testing.B) string {
+	b.Helper()
+
+	dir := b.TempDir()
+
+	for d := range 10 {
+		subdir := filepath.Join(dir, fmt.Sprintf("dir%02d", d))
+		if err := os.MkdirAll(subdir, 0755); err != nil {
+			b.Fatal(err)
+		}
+
+		for f := range 100 {
+			name := filepath.Join(subdir, fmt.Sprintf("file%03d.go", f))
+
+			data := make([]byte, 100+f*10)
+			if err := os.WriteFile(name, data, 0o600); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	return dir
 }

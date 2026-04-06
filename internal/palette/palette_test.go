@@ -7,6 +7,7 @@ import (
 )
 
 func TestNeutralPalette_StepCount(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral)
@@ -16,6 +17,7 @@ func TestNeutralPalette_StepCount(t *testing.T) {
 }
 
 func TestNeutralPalette_BlackToWhite(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral)
@@ -30,6 +32,7 @@ func TestNeutralPalette_BlackToWhite(t *testing.T) {
 }
 
 func TestNeutralPalette_MonotonicallyIncreasing(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Neutral)
@@ -40,6 +43,7 @@ func TestNeutralPalette_MonotonicallyIncreasing(t *testing.T) {
 }
 
 func TestPaletteName_IsValid(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	g.Expect(Neutral.IsValid()).To(BeTrue())
@@ -50,6 +54,7 @@ func TestPaletteName_IsValid(t *testing.T) {
 }
 
 func TestCategorizationPalette(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Categorization)
@@ -59,6 +64,7 @@ func TestCategorizationPalette(t *testing.T) {
 }
 
 func TestTemperaturePalette(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Temperature)
@@ -79,6 +85,7 @@ func TestTemperaturePalette(t *testing.T) {
 }
 
 func TestGoodBadPalette(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(GoodBad)
@@ -94,6 +101,7 @@ func TestGoodBadPalette(t *testing.T) {
 }
 
 func TestWCAGContrastRatio(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	for _, name := range []PaletteName{Neutral, Temperature, GoodBad, Categorization} {
@@ -101,9 +109,13 @@ func TestWCAGContrastRatio(t *testing.T) {
 		if !p.Ordered {
 			continue // skip unordered palettes for adjacent contrast check
 		}
+
 		for i := 1; i < len(p.Colours); i++ {
 			ratio := ContrastRatio(p.Colours[i-1], p.Colours[i])
-			g.Expect(ratio).To(BeNumerically(">=", 1.0), "palette %s steps %d-%d must have distinguishable contrast", name, i-1, i)
+			g.Expect(ratio).To(
+				BeNumerically(">=", 1.0),
+				"palette %s steps %d-%d must have distinguishable contrast", name, i-1, i,
+			)
 			g.Expect(p.Colours[i].A).To(Equal(uint8(255)), "palette %s step %d must be fully opaque", name, i)
 		}
 	}

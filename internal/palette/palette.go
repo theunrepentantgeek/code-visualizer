@@ -26,6 +26,7 @@ var validPalettes = map[PaletteName]struct{}{
 
 func (p PaletteName) IsValid() bool {
 	_, ok := validPalettes[p]
+
 	return ok
 }
 
@@ -131,6 +132,7 @@ func RelativeLuminance(c color.RGBA) float64 {
 	r := linearize(float64(c.R) / 255.0)
 	g := linearize(float64(c.G) / 255.0)
 	b := linearize(float64(c.B) / 255.0)
+
 	return 0.2126*r + 0.7152*g + 0.0722*b
 }
 
@@ -140,6 +142,7 @@ func ContrastRatio(a, b color.RGBA) float64 {
 	l2 := RelativeLuminance(b)
 	lighter := math.Max(l1, l2)
 	darker := math.Min(l1, l2)
+
 	return (lighter + 0.05) / (darker + 0.05)
 }
 
@@ -147,5 +150,6 @@ func linearize(v float64) float64 {
 	if v <= 0.03928 {
 		return v / 12.92
 	}
+
 	return math.Pow((v+0.055)/1.055, 2.4)
 }

@@ -10,6 +10,7 @@ import (
 )
 
 func TestScanFlat(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
@@ -23,12 +24,14 @@ func TestScanFlat(t *testing.T) {
 	for _, f := range root.Files {
 		sizes[f.Name] = f.Size
 	}
+
 	g.Expect(sizes["small.txt"]).To(Equal(int64(5)))
 	g.Expect(sizes["medium.go"]).To(Equal(int64(100)))
 	g.Expect(sizes["large.rs"]).To(Equal(int64(1000)))
 }
 
 func TestScanNested(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "nested")
 
@@ -50,6 +53,7 @@ func TestScanNested(t *testing.T) {
 }
 
 func TestScanEmptyDir(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "empty")
 
@@ -59,6 +63,7 @@ func TestScanEmptyDir(t *testing.T) {
 }
 
 func TestScanFollowsFileSymlinks(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
@@ -69,11 +74,13 @@ func TestScanFollowsFileSymlinks(t *testing.T) {
 	for _, f := range root.Files {
 		fileNames[f.Name] = true
 	}
+
 	g.Expect(fileNames).To(HaveKey("real.txt"))
 	g.Expect(fileNames).To(HaveKey("link-to-file.txt"))
 }
 
 func TestScanSkipsDirSymlinks(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
@@ -90,6 +97,7 @@ func TestScanSkipsDirSymlinks(t *testing.T) {
 }
 
 func TestScanFileExtension(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
@@ -100,12 +108,14 @@ func TestScanFileExtension(t *testing.T) {
 	for _, f := range root.Files {
 		exts[f.Name] = f.Extension
 	}
+
 	g.Expect(exts["small.txt"]).To(Equal("txt"))
 	g.Expect(exts["medium.go"]).To(Equal("go"))
 	g.Expect(exts["large.rs"]).To(Equal("rs"))
 }
 
 func TestFilterBinaryFilesMixed(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := DirectoryNode{
@@ -125,6 +135,7 @@ func TestFilterBinaryFilesMixed(t *testing.T) {
 }
 
 func TestFilterBinaryFilesAllBinary(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := DirectoryNode{
@@ -142,6 +153,7 @@ func TestFilterBinaryFilesAllBinary(t *testing.T) {
 }
 
 func TestFilterBinaryFilesNoBinary(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := DirectoryNode{
@@ -160,6 +172,7 @@ func TestFilterBinaryFilesNoBinary(t *testing.T) {
 }
 
 func TestFilterBinaryFilesPrunesEmptyDirs(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := DirectoryNode{
@@ -186,6 +199,7 @@ func TestFilterBinaryFilesPrunesEmptyDirs(t *testing.T) {
 }
 
 func TestFilterBinaryFilesNestedPruning(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := DirectoryNode{
@@ -223,11 +237,14 @@ func TestFilterBinaryFilesNestedPruning(t *testing.T) {
 }
 
 func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	var buf bytes.Buffer
+
 	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	oldDefault := slog.Default()
+
 	slog.SetDefault(slog.New(handler))
 	defer slog.SetDefault(oldDefault)
 
@@ -241,6 +258,7 @@ func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
 	}
 
 	_ = FilterBinaryFiles(root)
+
 	g.Expect(buf.String()).To(ContainSubstring("excluding binary file"))
 	g.Expect(buf.String()).To(ContainSubstring("image.png"))
 }
