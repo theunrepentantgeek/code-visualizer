@@ -140,7 +140,11 @@ func (c *CLI) Run() error {
 	}
 	needsGit := gitMetric != ""
 
-	if needsGit {
+	// Also enrich with git metadata when size metric is file-lines,
+	// so that IsBinary is populated for accurate binary filtering.
+	needsBinaryDetection := c.Size == metric.FileLines && !needsGit
+
+	if needsGit || needsBinaryDetection {
 		absPath, err := filepath.Abs(c.TargetPath)
 		if err != nil {
 			return eris.Wrap(err, "failed to resolve absolute path")
@@ -149,15 +153,17 @@ func (c *CLI) Run() error {
 		if err != nil {
 			return eris.Wrap(err, "git check failed")
 		}
-		if !isGit {
+		if !isGit && needsGit {
 			return &gitRequiredError{metric: gitMetric, target: c.TargetPath}
 		}
-		info, err := scan.NewGitInfo(absPath)
-		if err != nil {
-			return eris.Wrap(err, "failed to open git repo")
+		if isGit {
+			info, err := scan.NewGitInfo(absPath)
+			if err != nil {
+				return eris.Wrap(err, "failed to open git repo")
+			}
+			scan.EnrichWithGitMetadata(&root, info, absPath)
+			info.ClearCache()
 		}
-		scan.EnrichWithGitMetadata(&root, info, absPath)
-		info.ClearCache()
 	}
 
 	// Count lines for all files if needed

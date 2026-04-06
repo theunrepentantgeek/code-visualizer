@@ -227,8 +227,9 @@ func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
 
 	var buf bytes.Buffer
 	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
+	oldDefault := slog.Default()
 	slog.SetDefault(slog.New(handler))
-	defer slog.SetDefault(slog.Default())
+	defer slog.SetDefault(oldDefault)
 
 	root := DirectoryNode{
 		Path: "/project",
