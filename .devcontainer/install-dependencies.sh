@@ -77,7 +77,7 @@ else
     mkdir -p "$TOOL_DEST"
 fi
 
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+SCRIPT_DIR=$(dirname "$0")
 
 # Ensure we have the right version of GO
 
