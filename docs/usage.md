@@ -88,3 +88,4 @@ codeviz ./src -o treemap.png -s file-size -v
 | 3    | Git-required metric used on non-git directory      |
 | 4    | Output path error (parent missing, permission)     |
 | 5    | Internal error during scan/render                  |
+| 6    | No files available after filtering (e.g. all binary) |

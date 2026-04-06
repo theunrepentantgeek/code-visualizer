@@ -191,6 +191,33 @@ func PopulateLineCounts(node *DirectoryNode) {
 
 var errBinaryFile = errors.New("file appears to be binary (line exceeds 64KB)")
 
+// FilterBinaryFiles returns a copy of the directory tree with binary files removed.
+// Directories that become empty after removal are also pruned.
+// Each excluded file is logged at Debug level.
+func FilterBinaryFiles(node DirectoryNode) DirectoryNode {
+	result := DirectoryNode{
+		Path: node.Path,
+		Name: node.Name,
+	}
+
+	for _, f := range node.Files {
+		if f.IsBinary {
+			slog.Debug("excluding binary file", "path", f.Path)
+			continue
+		}
+		result.Files = append(result.Files, f)
+	}
+
+	for _, d := range node.Dirs {
+		filtered := FilterBinaryFiles(d)
+		if len(filtered.Files) > 0 || len(filtered.Dirs) > 0 {
+			result.Dirs = append(result.Dirs, filtered)
+		}
+	}
+
+	return result
+}
+
 func countLines(path string) (int, error) {
 	file, err := os.Open(path)
 	if err != nil {

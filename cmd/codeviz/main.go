@@ -140,7 +140,11 @@ func (c *CLI) Run() error {
 	}
 	needsGit := gitMetric != ""
 
-	if needsGit {
+	// Also enrich with git metadata when size metric is file-lines,
+	// so that IsBinary is populated for accurate binary filtering.
+	needsBinaryDetection := c.Size == metric.FileLines && !needsGit
+
+	if needsGit || needsBinaryDetection {
 		absPath, err := filepath.Abs(c.TargetPath)
 		if err != nil {
 			return eris.Wrap(err, "failed to resolve absolute path")
@@ -149,21 +153,37 @@ func (c *CLI) Run() error {
 		if err != nil {
 			return eris.Wrap(err, "git check failed")
 		}
-		if !isGit {
+		if !isGit && needsGit {
 			return &gitRequiredError{metric: gitMetric, target: c.TargetPath}
 		}
-		info, err := scan.NewGitInfo(absPath)
-		if err != nil {
-			return eris.Wrap(err, "failed to open git repo")
+		if isGit {
+			info, err := scan.NewGitInfo(absPath)
+			if err != nil {
+				return eris.Wrap(err, "failed to open git repo")
+			}
+			scan.EnrichWithGitMetadata(&root, info, absPath)
+			info.ClearCache()
 		}
-		scan.EnrichWithGitMetadata(&root, info, absPath)
-		info.ClearCache()
 	}
 
 	// Count lines for all files if needed
 	needsLines := c.Size == metric.FileLines || fillMetric == metric.FileLines || (c.Border != "" && borderMetricName == metric.FileLines)
 	if needsLines {
 		scan.PopulateLineCounts(&root)
+	}
+
+	// Filter binary files when size metric is line count
+	if c.Size == metric.FileLines {
+		beforeCount, _ := countAll(root)
+		root = scan.FilterBinaryFiles(root)
+		afterCount, _ := countAll(root)
+		excluded := beforeCount - afterCount
+		slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
+		if afterCount == 0 {
+			return &noFilesAfterFilterError{
+				msg: "no files available for visualization after excluding binary files",
+			}
+		}
 	}
 
 	files, dirs := countAll(root)
@@ -432,6 +452,7 @@ func classifyError(err error, format string) int {
 	var gitErr *gitRequiredError
 	var targetErr *targetPathError
 	var outputErr *outputPathError
+	var noFilesErr *noFilesAfterFilterError
 	switch {
 	case errors.As(err, &targetErr):
 		return 2
@@ -439,6 +460,8 @@ func classifyError(err error, format string) int {
 		return 3
 	case errors.As(err, &outputErr):
 		return 4
+	case errors.As(err, &noFilesErr):
+		return 6
 	default:
 		return 5
 	}
@@ -464,6 +487,12 @@ type outputPathError struct {
 }
 
 func (e *outputPathError) Error() string { return e.msg }
+
+type noFilesAfterFilterError struct {
+	msg string
+}
+
+func (e *noFilesAfterFilterError) Error() string { return e.msg }
 
 func exitWithError(format string, err error, code int) {
 	if format == "json" {
