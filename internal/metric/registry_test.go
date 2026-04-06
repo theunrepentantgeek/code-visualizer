@@ -9,6 +9,7 @@ import (
 )
 
 func TestDefaultPaletteFor(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	tests := []struct {
@@ -31,6 +32,7 @@ func TestDefaultPaletteFor(t *testing.T) {
 }
 
 func TestDefaultPaletteFor_InvalidMetric(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	_, ok := DefaultPaletteFor(MetricName("unknown"))

@@ -27,6 +27,7 @@ var validMetrics = map[MetricName]struct{}{
 
 func (m MetricName) IsValid() bool {
 	_, ok := validMetrics[m]
+
 	return ok
 }
 

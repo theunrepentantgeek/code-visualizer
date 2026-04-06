@@ -6,6 +6,7 @@ import (
 	"image/color"
 
 	"github.com/fogleman/gg"
+	"github.com/rotisserie/eris"
 
 	"github.com/bevan/code-visualizer/internal/treemap"
 )
@@ -27,7 +28,7 @@ func RenderPNG(root treemap.TreemapRectangle, width, height int, outputPath stri
 
 	drawRect(dc, root)
 
-	return dc.SavePNG(outputPath)
+	return eris.Wrap(dc.SavePNG(outputPath), "failed to save PNG")
 }
 
 func drawRect(dc *gg.Context, rect treemap.TreemapRectangle) {
@@ -69,6 +70,7 @@ func drawFileRect(dc *gg.Context, rect treemap.TreemapRectangle) {
 	if rect.FillColour.A > 0 {
 		fill = rect.FillColour
 	}
+
 	dc.SetColor(fill)
 	dc.DrawRectangle(rect.X, rect.Y, rect.W, rect.H)
 	dc.Fill()
@@ -79,6 +81,7 @@ func drawFileRect(dc *gg.Context, rect treemap.TreemapRectangle) {
 	} else {
 		dc.SetColor(structuralBorder)
 	}
+
 	dc.SetLineWidth(1)
 	dc.DrawRectangle(rect.X, rect.Y, rect.W, rect.H)
 	dc.Stroke()

@@ -14,6 +14,7 @@ func MapNumericToColour(bucketIdx, numBuckets int, p ColourPalette) color.RGBA {
 
 	if numBuckets <= 1 {
 		mid := len(p.Colours) / 2
+
 		return p.Colours[mid]
 	}
 
@@ -22,6 +23,7 @@ func MapNumericToColour(bucketIdx, numBuckets int, p ColourPalette) color.RGBA {
 	if paletteIdx >= len(p.Colours) {
 		paletteIdx = len(p.Colours) - 1
 	}
+
 	return p.Colours[paletteIdx]
 }
 
@@ -39,6 +41,7 @@ func NewCategoricalMapper(values []string, p ColourPalette) *CategoricalMapper {
 		for _, v := range values {
 			mapping[v] = color.RGBA{R: 128, G: 128, B: 128, A: 255}
 		}
+
 		return &CategoricalMapper{mapping: mapping}
 	}
 
@@ -52,6 +55,7 @@ func NewCategoricalMapper(values []string, p ColourPalette) *CategoricalMapper {
 		idx := i % len(p.Colours)
 		mapping[v] = p.Colours[idx]
 	}
+
 	return &CategoricalMapper{mapping: mapping}
 }
 
@@ -60,5 +64,6 @@ func (m *CategoricalMapper) Map(value string) color.RGBA {
 	if c, ok := m.mapping[value]; ok {
 		return c
 	}
+
 	return color.RGBA{R: 128, G: 128, B: 128, A: 255}
 }

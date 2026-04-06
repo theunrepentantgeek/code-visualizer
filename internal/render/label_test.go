@@ -10,6 +10,7 @@ import (
 )
 
 func TestLabelFitting_LargeRect(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	rect := treemap.TreemapRectangle{
@@ -23,6 +24,7 @@ func TestLabelFitting_LargeRect(t *testing.T) {
 }
 
 func TestLabelFitting_SmallRect(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	rect := treemap.TreemapRectangle{
@@ -36,6 +38,7 @@ func TestLabelFitting_SmallRect(t *testing.T) {
 }
 
 func TestTextColour_DarkOnLightFill(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	lightFill := color.RGBA{R: 240, G: 240, B: 240, A: 255}
@@ -47,6 +50,7 @@ func TestTextColour_DarkOnLightFill(t *testing.T) {
 }
 
 func TestTextColour_LightOnDarkFill(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	darkFill := color.RGBA{R: 20, G: 20, B: 20, A: 255}

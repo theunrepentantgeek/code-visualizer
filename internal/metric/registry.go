@@ -15,5 +15,6 @@ var metricDefaultPalette = map[MetricName]palette.PaletteName{
 // The second return value is false if the metric is unknown.
 func DefaultPaletteFor(m MetricName) (palette.PaletteName, bool) {
 	p, ok := metricDefaultPalette[m]
+
 	return p, ok
 }

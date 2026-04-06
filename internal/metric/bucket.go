@@ -42,6 +42,7 @@ func ComputeBuckets(values []float64, steps int) BucketBoundaries {
 		if idx >= len(sorted) {
 			idx = len(sorted) - 1
 		}
+
 		raw = append(raw, roundToSigFigs(sorted[idx], 2))
 	}
 
@@ -68,6 +69,7 @@ func (b BucketBoundaries) BucketIndex(value float64) int {
 			return i
 		}
 	}
+
 	return len(b.Boundaries)
 }
 
@@ -76,7 +78,9 @@ func roundToSigFigs(v float64, n int) float64 {
 	if v == 0 {
 		return 0
 	}
+
 	d := math.Ceil(math.Log10(math.Abs(v)))
 	pow := math.Pow(10, float64(n)-d)
+
 	return math.Round(v*pow) / pow
 }

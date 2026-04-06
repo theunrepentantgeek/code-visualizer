@@ -7,6 +7,7 @@ import (
 )
 
 func TestComputeBuckets_EvenDistribution(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	values := []float64{10, 20, 30, 40, 50, 60, 70, 80, 90}
@@ -18,6 +19,7 @@ func TestComputeBuckets_EvenDistribution(t *testing.T) {
 }
 
 func TestComputeBuckets_SkewedDistribution(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	// Most values are small, a few are very large
@@ -30,6 +32,7 @@ func TestComputeBuckets_SkewedDistribution(t *testing.T) {
 }
 
 func TestComputeBuckets_SingleValue(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	values := []float64{42}
@@ -40,6 +43,7 @@ func TestComputeBuckets_SingleValue(t *testing.T) {
 }
 
 func TestComputeBuckets_AllSameValue(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	values := []float64{7, 7, 7, 7, 7}
@@ -49,10 +53,12 @@ func TestComputeBuckets_AllSameValue(t *testing.T) {
 }
 
 func TestComputeBuckets_BoundaryRounding(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	// Values that should produce boundaries rounded to 2 sig figs
 	values := []float64{123, 456, 789, 1234, 5678, 9012}
+
 	b := ComputeBuckets(values, 3)
 	for _, boundary := range b.Boundaries {
 		// Each boundary should be rounded to 2 significant figures
@@ -61,6 +67,7 @@ func TestComputeBuckets_BoundaryRounding(t *testing.T) {
 }
 
 func TestComputeBuckets_DeduplicationAfterRounding(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	// Values very close together — rounding may produce duplicate boundaries
@@ -75,6 +82,7 @@ func TestComputeBuckets_DeduplicationAfterRounding(t *testing.T) {
 }
 
 func TestBucketIndex(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	b := BucketBoundaries{

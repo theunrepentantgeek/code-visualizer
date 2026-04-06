@@ -19,58 +19,54 @@ import (
 )
 
 type CLI struct {
-	TargetPath    string            `arg:"" help:"Path to directory to scan."`
-	Output        string            `help:"Output PNG file path." short:"o" required:""`
-	Size          metric.MetricName `help:"Metric for rectangle area (file-size, file-lines, file-age, file-freshness, author-count)." short:"s" required:"" enum:"file-size,file-lines,file-age,file-freshness,author-count"`
-	Fill          string            `help:"Metric for fill colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"f" optional:"" default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count"`
-	FillPalette   string            `help:"Palette for fill colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"fill-palette" enum:",categorization,temperature,good-bad,neutral"`
-	Border        string            `help:"Metric for border colour (file-size, file-lines, file-type, file-age, file-freshness, author-count)." short:"b" optional:"" default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count"`
-	BorderPalette string            `help:"Palette for border colour (categorization, temperature, good-bad, neutral)." optional:"" default:"" name:"border-palette" enum:",categorization,temperature,good-bad,neutral"`
-	Verbose       bool              `help:"Enable debug-level logging." short:"v"`
-	Format        string            `help:"Diagnostic/error output format (text, json)." enum:"text,json" default:"text"`
-	Width         int               `help:"Image width in pixels." default:"1920"`
-	Height        int               `help:"Image height in pixels." default:"1080"`
+	TargetPath string `arg:"" help:"Path to directory to scan."`
+	Output     string `help:"Output PNG file path." required:"true" short:"o"`
+
+	Size metric.MetricName `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." required:"true" short:"s"` //nolint:revive // kong struct tags require long lines
+
+	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive // kong struct tags require long lines
+	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for fill colour." name:"fill-palette" optional:""`                //nolint:revive // kong struct tags require long lines
+	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
+	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for border colour." name:"border-palette" optional:""`            //nolint:revive // kong struct tags require long lines
+
+	Verbose bool   `help:"Enable debug-level logging." short:"v"`
+	Format  string `default:"text" enum:"text,json" help:"Diagnostic/error output format (text, json)."`
+	Width   int    `default:"1920" help:"Image width in pixels."`
+	Height  int    `default:"1080" help:"Image height in pixels."`
 }
 
 func (c *CLI) Validate() error {
-	// Validate args/metrics (exit code 1 errors)
-	// Size metric must be numeric (already enforced by enum, but belt-and-suspenders)
 	if !c.Size.IsNumeric() {
 		return eris.Errorf("size metric must be numeric, got %q", c.Size)
 	}
 
-	// Validate fill metric if specified
-	if c.Fill != "" {
-		fm := metric.MetricName(c.Fill)
-		if !fm.IsValid() {
-			return eris.Errorf("invalid fill metric %q", c.Fill)
+	if err := validateMetricPalette(c.Fill, c.FillPalette, "fill"); err != nil {
+		return err
+	}
+
+	if err := validateMetricPalette(c.Border, c.BorderPalette, "border"); err != nil {
+		return err
+	}
+
+	if c.BorderPalette != "" && c.Border == "" {
+		return eris.New("--border-palette requires --border to be specified")
+	}
+
+	return nil
+}
+
+func validateMetricPalette(metricStr, paletteStr, label string) error {
+	if metricStr != "" {
+		m := metric.MetricName(metricStr)
+		if !m.IsValid() {
+			return eris.Errorf("invalid %s metric %q", label, metricStr)
 		}
 	}
 
-	// Validate fill palette if specified
-	if c.FillPalette != "" {
-		fp := palette.PaletteName(c.FillPalette)
-		if !fp.IsValid() {
-			return eris.Errorf("invalid fill palette %q", c.FillPalette)
-		}
-	}
-
-	// Validate border metric if specified
-	if c.Border != "" {
-		bm := metric.MetricName(c.Border)
-		if !bm.IsValid() {
-			return eris.Errorf("invalid border metric %q", c.Border)
-		}
-	}
-
-	// Validate border palette if specified
-	if c.BorderPalette != "" {
-		if c.Border == "" {
-			return eris.New("--border-palette requires --border to be specified")
-		}
-		bp := palette.PaletteName(c.BorderPalette)
-		if !bp.IsValid() {
-			return eris.Errorf("invalid border palette %q", c.BorderPalette)
+	if paletteStr != "" {
+		p := palette.PaletteName(paletteStr)
+		if !p.IsValid() {
+			return eris.Errorf("invalid %s palette %q", label, paletteStr)
 		}
 	}
 
@@ -80,45 +76,12 @@ func (c *CLI) Validate() error {
 func (c *CLI) Run() error {
 	setupLogger(c.Verbose)
 
-	// Validate target path (exit code 2)
-	info, err := os.Stat(c.TargetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return &targetPathError{msg: fmt.Sprintf("target path does not exist: %s", c.TargetPath)}
-		}
-		return &targetPathError{msg: fmt.Sprintf("cannot access target path: %s", err)}
-	}
-	if !info.IsDir() {
-		return &targetPathError{msg: fmt.Sprintf("target path is not a directory: %s", c.TargetPath)}
+	if err := c.validatePaths(); err != nil {
+		return err
 	}
 
-	// Validate output parent directory (exit code 4)
-	outDir := filepath.Dir(c.Output)
-	if outDir != "." {
-		info, err = os.Stat(outDir)
-		if err != nil {
-			return &outputPathError{msg: fmt.Sprintf("output directory does not exist: %s", outDir)}
-		}
-		if !info.IsDir() {
-			return &outputPathError{msg: fmt.Sprintf("output parent is not a directory: %s", outDir)}
-		}
-	}
-
-	// Default fill to size metric if not specified
-	fillMetric := metric.MetricName(c.Fill)
-	if c.Fill == "" {
-		fillMetric = c.Size
-	}
-
-	// Resolve fill palette
-	fillPaletteName := palette.PaletteName(c.FillPalette)
-	if c.FillPalette == "" {
-		if p, ok := metric.DefaultPaletteFor(fillMetric); ok {
-			fillPaletteName = p
-		} else {
-			fillPaletteName = palette.Neutral
-		}
-	}
+	fillMetric := c.resolveFillMetric()
+	fillPaletteName := c.resolveFillPalette(fillMetric)
 
 	slog.Debug("scanning directory", "path", c.TargetPath)
 
@@ -127,63 +90,18 @@ func (c *CLI) Run() error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	// Check if any metric requires git
+	if err := c.enrichGitMetadata(&root, fillMetric); err != nil {
+		return err
+	}
+
 	borderMetricName := metric.MetricName(c.Border)
-	var gitMetric metric.MetricName
-	switch {
-	case c.Size.IsGitRequired():
-		gitMetric = c.Size
-	case fillMetric.IsGitRequired():
-		gitMetric = fillMetric
-	case c.Border != "" && borderMetricName.IsGitRequired():
-		gitMetric = borderMetricName
-	}
-	needsGit := gitMetric != ""
 
-	// Also enrich with git metadata when size metric is file-lines,
-	// so that IsBinary is populated for accurate binary filtering.
-	needsBinaryDetection := c.Size == metric.FileLines && !needsGit
-
-	if needsGit || needsBinaryDetection {
-		absPath, err := filepath.Abs(c.TargetPath)
-		if err != nil {
-			return eris.Wrap(err, "failed to resolve absolute path")
-		}
-		isGit, err := scan.IsGitRepo(absPath)
-		if err != nil {
-			return eris.Wrap(err, "git check failed")
-		}
-		if !isGit && needsGit {
-			return &gitRequiredError{metric: gitMetric, target: c.TargetPath}
-		}
-		if isGit {
-			info, err := scan.NewGitInfo(absPath)
-			if err != nil {
-				return eris.Wrap(err, "failed to open git repo")
-			}
-			scan.EnrichWithGitMetadata(&root, info, absPath)
-			info.ClearCache()
-		}
-	}
-
-	// Count lines for all files if needed
-	needsLines := c.Size == metric.FileLines || fillMetric == metric.FileLines || (c.Border != "" && borderMetricName == metric.FileLines)
-	if needsLines {
+	if c.needsLineCounts(fillMetric, borderMetricName) {
 		scan.PopulateLineCounts(&root)
 	}
 
-	// Filter binary files when size metric is line count
-	if c.Size == metric.FileLines {
-		beforeCount, _ := countAll(root)
-		root = scan.FilterBinaryFiles(root)
-		afterCount, _ := countAll(root)
-		excluded := beforeCount - afterCount
-		slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
-		if afterCount == 0 {
-			return &noFilesAfterFilterError{
-				msg: "no files available for visualization after excluding binary files",
-			}
-		}
+	if err := c.filterBinaryFiles(&root); err != nil {
+		return err
 	}
 
 	files, dirs := countAll(root)
@@ -191,55 +109,9 @@ func (c *CLI) Run() error {
 
 	rects := treemap.Layout(root, c.Width, c.Height)
 
-	// Apply fill colours
-	fillPalette := palette.GetPalette(fillPaletteName)
-	if fillMetric.IsNumeric() {
-		values := collectNumericValues(root, fillMetric)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			numBuckets := len(buckets.Boundaries) + 1
-			applyNumericFillColours(&rects, root, fillMetric, buckets, numBuckets, fillPalette)
-		}
-	} else {
-		// Categorical (file-type)
-		types := collectDistinctTypes(root)
-		mapper := palette.NewCategoricalMapper(types, fillPalette)
-		applyCategoricalFillColours(&rects, root, mapper)
-	}
+	applyFillColours(&rects, root, fillMetric, fillPaletteName)
 
-	// Apply border colours if --border specified
-	var borderMetric metric.MetricName
-	var borderPaletteName palette.PaletteName
-	if c.Border != "" {
-		borderMetric = metric.MetricName(c.Border)
-		borderPaletteName = palette.PaletteName(c.BorderPalette)
-		if c.BorderPalette == "" {
-			if p, ok := metric.DefaultPaletteFor(borderMetric); ok {
-				borderPaletteName = p
-			} else {
-				borderPaletteName = palette.Neutral
-			}
-		}
-
-		// Count lines if border metric needs it
-		if borderMetric == metric.FileLines && c.Size != metric.FileLines && fillMetric != metric.FileLines {
-			scan.PopulateLineCounts(&root)
-		}
-
-		borderPalette := palette.GetPalette(borderPaletteName)
-		if borderMetric.IsNumeric() {
-			values := collectNumericValues(root, borderMetric)
-			if len(values) > 0 {
-				buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-				numBuckets := len(buckets.Boundaries) + 1
-				applyNumericBorderColours(&rects, root, borderMetric, buckets, numBuckets, borderPalette)
-			}
-		} else {
-			types := collectDistinctTypes(root)
-			mapper := palette.NewCategoricalMapper(types, borderPalette)
-			applyCategoricalBorderColours(&rects, root, mapper)
-		}
-	}
+	borderMetric, borderPaletteName := c.applyBorderColours(&rects, root, fillMetric)
 
 	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
 
@@ -247,39 +119,245 @@ func (c *CLI) Run() error {
 		return eris.Wrap(err, "render failed")
 	}
 
-	// Success output
-	if c.Format == "json" {
-		var bm, bp any
-		if c.Border != "" {
-			bm = string(borderMetric)
-			bp = string(borderPaletteName)
+	return c.printResult(files, dirs, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
+}
+
+func (c *CLI) validatePaths() error {
+	info, err := os.Stat(c.TargetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &targetPathError{msg: "target path does not exist: " + c.TargetPath}
 		}
-		out := map[string]any{
-			"files":          files,
-			"directories":    dirs,
-			"output":         c.Output,
-			"width":          c.Width,
-			"height":         c.Height,
-			"size_metric":    string(c.Size),
-			"fill_metric":    string(fillMetric),
-			"fill_palette":   string(fillPaletteName),
-			"border_metric":  bm,
-			"border_palette": bp,
-		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(out)
+
+		return &targetPathError{msg: fmt.Sprintf("cannot access target path: %s", err)}
 	}
 
-	fmt.Printf("Rendered treemap: %d files, %d directories → %s (%d×%d)\n",
-		files, dirs, c.Output, c.Width, c.Height)
+	if !info.IsDir() {
+		return &targetPathError{msg: "target path is not a directory: " + c.TargetPath}
+	}
+
+	outDir := filepath.Dir(c.Output)
+	if outDir == "." {
+		return nil
+	}
+
+	info, err = os.Stat(outDir)
+	if err != nil {
+		return &outputPathError{msg: "output directory does not exist: " + outDir}
+	}
+
+	if !info.IsDir() {
+		return &outputPathError{msg: "output parent is not a directory: " + outDir}
+	}
 
 	return nil
+}
+
+func (c *CLI) resolveFillMetric() metric.MetricName {
+	if c.Fill == "" {
+		return c.Size
+	}
+
+	return metric.MetricName(c.Fill)
+}
+
+func (c *CLI) resolveFillPalette(fillMetric metric.MetricName) palette.PaletteName {
+	if c.FillPalette != "" {
+		return palette.PaletteName(c.FillPalette)
+	}
+
+	if p, ok := metric.DefaultPaletteFor(fillMetric); ok {
+		return p
+	}
+
+	return palette.Neutral
+}
+
+func (c *CLI) resolveGitMetric(fillMetric metric.MetricName) metric.MetricName {
+	borderMetricName := metric.MetricName(c.Border)
+
+	switch {
+	case c.Size.IsGitRequired():
+		return c.Size
+	case fillMetric.IsGitRequired():
+		return fillMetric
+	case c.Border != "" && borderMetricName.IsGitRequired():
+		return borderMetricName
+	default:
+		return ""
+	}
+}
+
+func (c *CLI) enrichGitMetadata(root *scan.DirectoryNode, fillMetric metric.MetricName) error {
+	gitMetric := c.resolveGitMetric(fillMetric)
+	needsGit := gitMetric != ""
+	needsBinaryDetection := c.Size == metric.FileLines && !needsGit
+
+	if !needsGit && !needsBinaryDetection {
+		return nil
+	}
+
+	absPath, err := filepath.Abs(c.TargetPath)
+	if err != nil {
+		return eris.Wrap(err, "failed to resolve absolute path")
+	}
+
+	isGit, err := scan.IsGitRepo(absPath)
+	if err != nil {
+		return eris.Wrap(err, "git check failed")
+	}
+
+	if !isGit && needsGit {
+		return &gitRequiredError{metric: gitMetric, target: c.TargetPath}
+	}
+
+	if isGit {
+		info, err := scan.NewGitInfo(absPath)
+		if err != nil {
+			return eris.Wrap(err, "failed to open git repo")
+		}
+
+		scan.EnrichWithGitMetadata(root, info, absPath)
+		info.ClearCache()
+	}
+
+	return nil
+}
+
+func (c *CLI) needsLineCounts(fillMetric, borderMetric metric.MetricName) bool {
+	return c.Size == metric.FileLines ||
+		fillMetric == metric.FileLines ||
+		(c.Border != "" && borderMetric == metric.FileLines)
+}
+
+func (c *CLI) filterBinaryFiles(root *scan.DirectoryNode) error {
+	if c.Size != metric.FileLines {
+		return nil
+	}
+
+	beforeCount, _ := countAll(*root)
+	*root = scan.FilterBinaryFiles(*root)
+	afterCount, _ := countAll(*root)
+	excluded := beforeCount - afterCount
+	slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
+
+	if afterCount == 0 {
+		return &noFilesAfterFilterError{
+			msg: "no files available for visualization after excluding binary files",
+		}
+	}
+
+	return nil
+}
+
+func applyFillColours(
+	rects *treemap.TreemapRectangle,
+	root scan.DirectoryNode,
+	fillMetric metric.MetricName,
+	fillPaletteName palette.PaletteName,
+) {
+	fillPalette := palette.GetPalette(fillPaletteName)
+
+	if fillMetric.IsNumeric() {
+		values := collectNumericValues(root, fillMetric)
+		if len(values) > 0 {
+			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
+			numBuckets := len(buckets.Boundaries) + 1
+			applyNumericFillColours(rects, root, fillMetric, buckets, numBuckets, fillPalette)
+		}
+	} else {
+		types := collectDistinctTypes(root)
+		mapper := palette.NewCategoricalMapper(types, fillPalette)
+		applyCategoricalFillColours(rects, root, mapper)
+	}
+}
+
+func (c *CLI) applyBorderColours(
+	rects *treemap.TreemapRectangle,
+	root scan.DirectoryNode,
+	fillMetric metric.MetricName,
+) (metric.MetricName, palette.PaletteName) {
+	if c.Border == "" {
+		return "", ""
+	}
+
+	borderMetric := metric.MetricName(c.Border)
+
+	borderPaletteName := palette.PaletteName(c.BorderPalette)
+	if c.BorderPalette == "" {
+		if p, ok := metric.DefaultPaletteFor(borderMetric); ok {
+			borderPaletteName = p
+		} else {
+			borderPaletteName = palette.Neutral
+		}
+	}
+
+	if borderMetric == metric.FileLines &&
+		c.Size != metric.FileLines &&
+		fillMetric != metric.FileLines {
+		scan.PopulateLineCounts(&root)
+	}
+
+	borderPalette := palette.GetPalette(borderPaletteName)
+
+	if borderMetric.IsNumeric() {
+		values := collectNumericValues(root, borderMetric)
+		if len(values) > 0 {
+			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
+			numBuckets := len(buckets.Boundaries) + 1
+			applyNumericBorderColours(rects, root, borderMetric, buckets, numBuckets, borderPalette)
+		}
+	} else {
+		types := collectDistinctTypes(root)
+		mapper := palette.NewCategoricalMapper(types, borderPalette)
+		applyCategoricalBorderColours(rects, root, mapper)
+	}
+
+	return borderMetric, borderPaletteName
+}
+
+func (c *CLI) printResult(
+	files, dirs int,
+	fillMetric metric.MetricName,
+	fillPaletteName palette.PaletteName,
+	borderMetric metric.MetricName,
+	borderPaletteName palette.PaletteName,
+) error {
+	if c.Format != "json" {
+		fmt.Printf("Rendered treemap: %d files, %d directories → %s (%d×%d)\n",
+			files, dirs, c.Output, c.Width, c.Height)
+
+		return nil
+	}
+
+	var bm, bp any
+	if c.Border != "" {
+		bm = string(borderMetric)
+		bp = string(borderPaletteName)
+	}
+
+	out := map[string]any{
+		"files":          files,
+		"directories":    dirs,
+		"output":         c.Output,
+		"width":          c.Width,
+		"height":         c.Height,
+		"size_metric":    string(c.Size),
+		"fill_metric":    string(fillMetric),
+		"fill_palette":   string(fillPaletteName),
+		"border_metric":  bm,
+		"border_palette": bp,
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+
+	return eris.Wrap(enc.Encode(out), "failed to encode JSON output")
 }
 
 func collectNumericValues(root scan.DirectoryNode, m metric.MetricName) []float64 {
 	var values []float64
 	collectNumericValuesRecursive(root, m, &values)
+
 	return values
 }
 
@@ -287,6 +365,7 @@ func collectNumericValuesRecursive(node scan.DirectoryNode, m metric.MetricName,
 	for _, f := range node.Files {
 		*values = append(*values, extractNumeric(f, m))
 	}
+
 	for _, d := range node.Dirs {
 		collectNumericValuesRecursive(d, m, values)
 	}
@@ -302,16 +381,19 @@ func extractNumeric(f scan.FileNode, m metric.MetricName) float64 {
 		if f.Age != nil {
 			return f.Age.Seconds()
 		}
+
 		return 0
 	case metric.FileFreshness:
 		if f.Freshness != nil {
 			return f.Freshness.Seconds()
 		}
+
 		return 0
 	case metric.AuthorCount:
 		if f.AuthorCount != nil {
 			return float64(*f.AuthorCount)
 		}
+
 		return 0
 	default:
 		return 0
@@ -321,10 +403,12 @@ func extractNumeric(f scan.FileNode, m metric.MetricName) float64 {
 func collectDistinctTypes(root scan.DirectoryNode) []string {
 	seen := map[string]bool{}
 	collectTypesRecursive(root, seen)
+
 	types := make([]string, 0, len(seen))
 	for t := range seen {
 		types = append(types, t)
 	}
+
 	return types
 }
 
@@ -332,14 +416,23 @@ func collectTypesRecursive(node scan.DirectoryNode, seen map[string]bool) {
 	for _, f := range node.Files {
 		seen[f.FileType] = true
 	}
+
 	for _, d := range node.Dirs {
 		collectTypesRecursive(d, seen)
 	}
 }
 
-func applyNumericFillColours(rect *treemap.TreemapRectangle, node scan.DirectoryNode, m metric.MetricName, buckets metric.BucketBoundaries, numBuckets int, p palette.ColourPalette) {
+func applyNumericFillColours(
+	rect *treemap.TreemapRectangle,
+	node scan.DirectoryNode,
+	m metric.MetricName,
+	buckets metric.BucketBoundaries,
+	numBuckets int,
+	p palette.ColourPalette,
+) {
 	fileIdx := 0
 	dirIdx := 0
+
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
@@ -354,9 +447,14 @@ func applyNumericFillColours(rect *treemap.TreemapRectangle, node scan.Directory
 	}
 }
 
-func applyCategoricalFillColours(rect *treemap.TreemapRectangle, node scan.DirectoryNode, mapper *palette.CategoricalMapper) {
+func applyCategoricalFillColours(
+	rect *treemap.TreemapRectangle,
+	node scan.DirectoryNode,
+	mapper *palette.CategoricalMapper,
+) {
 	fileIdx := 0
 	dirIdx := 0
+
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
@@ -369,9 +467,17 @@ func applyCategoricalFillColours(rect *treemap.TreemapRectangle, node scan.Direc
 	}
 }
 
-func applyNumericBorderColours(rect *treemap.TreemapRectangle, node scan.DirectoryNode, m metric.MetricName, buckets metric.BucketBoundaries, numBuckets int, p palette.ColourPalette) {
+func applyNumericBorderColours(
+	rect *treemap.TreemapRectangle,
+	node scan.DirectoryNode,
+	m metric.MetricName,
+	buckets metric.BucketBoundaries,
+	numBuckets int,
+	p palette.ColourPalette,
+) {
 	fileIdx := 0
 	dirIdx := 0
+
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
@@ -387,9 +493,14 @@ func applyNumericBorderColours(rect *treemap.TreemapRectangle, node scan.Directo
 	}
 }
 
-func applyCategoricalBorderColours(rect *treemap.TreemapRectangle, node scan.DirectoryNode, mapper *palette.CategoricalMapper) {
+func applyCategoricalBorderColours(
+	rect *treemap.TreemapRectangle,
+	node scan.DirectoryNode,
+	mapper *palette.CategoricalMapper,
+) {
 	fileIdx := 0
 	dirIdx := 0
+
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
@@ -403,11 +514,12 @@ func applyCategoricalBorderColours(rect *treemap.TreemapRectangle, node scan.Dir
 	}
 }
 
-func setupLogger(verbose bool) {
+func setupLogger(verbose bool) { //nolint:revive // flag-parameter: boolean toggle is idiomatic for log verbosity
 	level := slog.LevelInfo
 	if verbose {
 		level = slog.LevelDebug
 	}
+
 	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 	slog.SetDefault(slog.New(handler))
 }
@@ -420,11 +532,13 @@ func countAll(node scan.DirectoryNode) (files int, dirs int) {
 		files += f
 		dirs += d2
 	}
-	return
+
+	return files, dirs
 }
 
 func main() {
 	cli := CLI{}
+
 	parser, err := kong.New(&cli,
 		kong.Name("codeviz"),
 		kong.Description("Generate treemap visualizations of file trees."),
@@ -443,16 +557,19 @@ func main() {
 
 	err = ctx.Run(&cli)
 	if err != nil {
-		code := classifyError(err, cli.Format)
+		code := classifyError(err)
 		exitWithError(cli.Format, err, code)
 	}
 }
 
-func classifyError(err error, format string) int {
-	var gitErr *gitRequiredError
-	var targetErr *targetPathError
-	var outputErr *outputPathError
-	var noFilesErr *noFilesAfterFilterError
+func classifyError(err error) int {
+	var (
+		gitErr     *gitRequiredError
+		targetErr  *targetPathError
+		outputErr  *outputPathError
+		noFilesErr *noFilesAfterFilterError
+	)
+
 	switch {
 	case errors.As(err, &targetErr):
 		return 2
@@ -496,15 +613,23 @@ func (e *noFilesAfterFilterError) Error() string { return e.msg }
 
 func exitWithError(format string, err error, code int) {
 	if format == "json" {
-		out := map[string]any{
-			"error": err.Error(),
-			"code":  code,
+		out := struct {
+			Error string `json:"error"`
+			Code  int    `json:"code"`
+		}{
+			Error: err.Error(),
+			Code:  code,
 		}
+
 		enc := json.NewEncoder(os.Stderr)
 		enc.SetIndent("", "  ")
-		_ = enc.Encode(out)
+
+		if encErr := enc.Encode(out); encErr != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
+		}
 	} else {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
 	}
-	os.Exit(code)
+
+	os.Exit(code) //nolint:revive // deep-exit: intentional exit from CLI error handler called by main
 }

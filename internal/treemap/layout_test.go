@@ -9,6 +9,7 @@ import (
 )
 
 func TestLayoutSingleFile(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -27,6 +28,7 @@ func TestLayoutSingleFile(t *testing.T) {
 }
 
 func TestLayoutProportionalAreas(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -40,6 +42,7 @@ func TestLayoutProportionalAreas(t *testing.T) {
 	rects := Layout(root, 1000, 1000)
 	// Find the two file rectangles
 	var bigRect, smallRect TreemapRectangle
+
 	for _, c := range rects.Children {
 		if !c.IsDirectory {
 			switch c.Label {
@@ -47,9 +50,12 @@ func TestLayoutProportionalAreas(t *testing.T) {
 				bigRect = c
 			case "small.go":
 				smallRect = c
+			default:
+				// other files
 			}
 		}
 	}
+
 	bigArea := bigRect.W * bigRect.H
 	smallArea := smallRect.W * smallRect.H
 	// big should be roughly 9x the small (within tolerance for padding)
@@ -58,6 +64,7 @@ func TestLayoutProportionalAreas(t *testing.T) {
 }
 
 func TestLayoutNestedDirs(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -81,18 +88,27 @@ func TestLayoutNestedDirs(t *testing.T) {
 
 	// Find the directory child
 	var dirRect *TreemapRectangle
+
 	for i, c := range rects.Children {
 		if c.IsDirectory {
 			dirRect = &rects.Children[i]
+
 			break
 		}
 	}
+
 	g.Expect(dirRect).NotTo(BeNil())
+
+	if dirRect == nil {
+		return
+	}
+
 	g.Expect(dirRect.Label).To(Equal("sub"))
 	g.Expect(dirRect.Children).NotTo(BeEmpty())
 }
 
 func TestLayoutZeroSizeFile(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := scan.DirectoryNode{
@@ -106,13 +122,21 @@ func TestLayoutZeroSizeFile(t *testing.T) {
 	rects := Layout(root, 1920, 1080)
 	// Zero-size file should get a minimum rectangle (FR-013)
 	var emptyRect *TreemapRectangle
+
 	for i, c := range rects.Children {
 		if c.Label == "empty.go" {
 			emptyRect = &rects.Children[i]
+
 			break
 		}
 	}
+
 	g.Expect(emptyRect).NotTo(BeNil())
+
+	if emptyRect == nil {
+		return
+	}
+
 	g.Expect(emptyRect.W).To(BeNumerically(">", 0))
 	g.Expect(emptyRect.H).To(BeNumerically(">", 0))
 }

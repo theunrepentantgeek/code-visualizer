@@ -6,11 +6,11 @@ FROM mcr.microsoft.com/devcontainers/go:2-1.26
 
 # APT dependencies
 RUN apt-get update \
-    && apt-get -y install --no-install-recommends bash-completion graphviz zip python3-pip
+    && apt-get -y install --no-install-recommends bash-completion gettext-base graphviz zip python3-pip
 
 # Install development tools
-COPY .devcontainer/install-dependencies.sh .
-RUN ./install-dependencies.sh devcontainer && rm install-dependencies.sh
+COPY .devcontainer/install-dependencies.sh .devcontainer/.custom-gcl.template.yml ./
+RUN ./install-dependencies.sh devcontainer && rm install-dependencies.sh .custom-gcl.template.yml
 
 # Setup go-task completions
 RUN task --completion bash > "/etc/.task.completion.sh" \

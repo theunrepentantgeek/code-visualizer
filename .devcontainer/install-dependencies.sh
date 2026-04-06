@@ -77,6 +77,8 @@ else
     mkdir -p "$TOOL_DEST"
 fi
 
+SCRIPT_DIR=$(dirname "$0")
+
 # Ensure we have the right version of GO
 
 if ! command -v go > /dev/null 2>&1; then
@@ -145,6 +147,13 @@ write-verbose "Checking for $TOOL_DEST/golangci-lint"
 if should-install "$TOOL_DEST/golangci-lint"; then
     write-info "Installing golangci-lint"
     curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$TOOL_DEST" v2.8.0 2>&1
+fi
+
+if should-install "$TOOL_DEST/golangci-lint-custom"; then
+    write-info "Building golangci-lint custom"
+    TOOL_DEST=$TOOL_DEST envsubst < "$SCRIPT_DIR/.custom-gcl.template.yml" > .custom-gcl.yml
+    $TOOL_DEST/golangci-lint custom -v
+    rm .custom-gcl.yml
 fi
 
 # Install Task

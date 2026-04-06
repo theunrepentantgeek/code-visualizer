@@ -3,6 +3,7 @@
 
 # Allow devcontainer files
 !.devcontainer/install-dependencies.sh
+!.devcontainer/.custom-gcl.template.yml
 
 # Allow go.mod/go.sum for module pre-download
 !go.mod
