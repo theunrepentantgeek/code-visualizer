@@ -44,7 +44,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/*
           file_glob: true
-          asset_name: code-visualizer-${{ github.ref }}.zip
-          tag: ${{ github.ref }}
+          asset_name: code-visualizer-${{ github.ref_name }}.zip
+          tag: ${{ github.ref_name }}
           overwrite: true
-          body: "Release of code-visualizer  version ${{ github.ref }}."
+          body: "Release of code-visualizer  version ${{ github.ref_name }}."
