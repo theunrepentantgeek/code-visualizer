@@ -1,0 +1,50 @@
+name: Create Release
+on:
+  workflow_dispatch:
+    # No configuration, but allows manual triggering
+  push:
+    tags:
+      - "v*.*.*" # Trigger on version tags like v1.0.0
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build devcontainer image
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
+          cacheFrom: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
+          push: never
+
+      - name: Run task ci in devcontainer
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
+          push: never
+          runCmd: task ci
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/*
+          file_glob: true
+          asset_name: code-visualizer-${{ github.ref_name }}.zip
+          tag: ${{ github.ref_name }}
+          overwrite: true
+          body: "Release of code-visualizer  version ${{ github.ref_name }}."
