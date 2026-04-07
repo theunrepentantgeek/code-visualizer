@@ -57,6 +57,11 @@ func TestScanEmptyDir(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "empty")
 
+	// Create an empty directory for testing if its missing
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("failed to create test directory: %v", err)
+	}
+
 	_, err := Scan(dir)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("no files"))
