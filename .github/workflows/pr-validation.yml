@@ -40,8 +40,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     permissions:
-      packages: write
-      contents: write
+      packages: read
+      contents: read
 
     steps:
       - name: Checkout code
