@@ -57,11 +57,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v6
 
-    # Add any setup steps before running the `github/codeql-action/init` action.
-    # This includes steps like installing compilers or runtimes (`actions/setup-node`
-    # or others). This is typically only required for manual builds.
-    # - name: Setup runtime (example)
-    #   uses: actions/setup-example@v1
+    # Set up the Go toolchain required by this repository before CodeQL init/autobuild.
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
