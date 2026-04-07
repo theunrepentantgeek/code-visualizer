@@ -3,6 +3,7 @@ package scan
 import (
 	"bytes"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"testing"
 
