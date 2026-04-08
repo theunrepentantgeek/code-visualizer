@@ -550,7 +550,12 @@ func main() {
 
 	ctx, err := parser.Parse(os.Args[1:])
 	if err != nil {
-		// Kong parse/validation errors are argument failures → exit 1
+		// Kong parse/validation errors are argument failures → show help, then exit 1
+		var parseErr *kong.ParseError
+		if errors.As(err, &parseErr) && parseErr.Context != nil {
+			_ = parseErr.Context.PrintUsage(false)
+		}
+
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
