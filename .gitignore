@@ -20,4 +20,4 @@ out.png
 Thumbs.db
 *.tmp
 *.swp
-codeviz
+/codeviz
