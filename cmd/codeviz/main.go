@@ -19,6 +19,17 @@ import (
 )
 
 type CLI struct {
+	Verbose bool   `help:"Enable debug-level logging." short:"v"`
+	Format  string `default:"text" enum:"text,json" help:"Diagnostic/error output format (text, json)."`
+
+	Render RenderCmd `cmd:"" help:"Render a visualization."`
+}
+
+type RenderCmd struct {
+	Treemap TreemapCmd `cmd:"" help:"Generate a treemap visualization."`
+}
+
+type TreemapCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output PNG file path." required:"true" short:"o"`
 
@@ -29,13 +40,11 @@ type CLI struct {
 	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
 	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for border colour." name:"border-palette" optional:""`            //nolint:revive // kong struct tags require long lines
 
-	Verbose bool   `help:"Enable debug-level logging." short:"v"`
-	Format  string `default:"text" enum:"text,json" help:"Diagnostic/error output format (text, json)."`
-	Width   int    `default:"1920" help:"Image width in pixels."`
-	Height  int    `default:"1080" help:"Image height in pixels."`
+	Width  int `default:"1920" help:"Image width in pixels."`
+	Height int `default:"1080" help:"Image height in pixels."`
 }
 
-func (c *CLI) Validate() error {
+func (c *TreemapCmd) Validate() error {
 	if !c.Size.IsNumeric() {
 		return eris.Errorf("size metric must be numeric, got %q", c.Size)
 	}
@@ -73,8 +82,8 @@ func validateMetricPalette(metricStr, paletteStr, label string) error {
 	return nil
 }
 
-func (c *CLI) Run() error {
-	setupLogger(c.Verbose)
+func (c *TreemapCmd) Run(cli *CLI) error {
+	setupLogger(cli.Verbose)
 
 	if err := c.validatePaths(); err != nil {
 		return err
@@ -119,10 +128,10 @@ func (c *CLI) Run() error {
 		return eris.Wrap(err, "render failed")
 	}
 
-	return c.printResult(files, dirs, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
+	return c.printResult(cli.Format, files, dirs, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 }
 
-func (c *CLI) validatePaths() error {
+func (c *TreemapCmd) validatePaths() error {
 	info, err := os.Stat(c.TargetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -153,7 +162,7 @@ func (c *CLI) validatePaths() error {
 	return nil
 }
 
-func (c *CLI) resolveFillMetric() metric.MetricName {
+func (c *TreemapCmd) resolveFillMetric() metric.MetricName {
 	if c.Fill == "" {
 		return c.Size
 	}
@@ -161,7 +170,7 @@ func (c *CLI) resolveFillMetric() metric.MetricName {
 	return metric.MetricName(c.Fill)
 }
 
-func (c *CLI) resolveFillPalette(fillMetric metric.MetricName) palette.PaletteName {
+func (c *TreemapCmd) resolveFillPalette(fillMetric metric.MetricName) palette.PaletteName {
 	if c.FillPalette != "" {
 		return palette.PaletteName(c.FillPalette)
 	}
@@ -173,7 +182,7 @@ func (c *CLI) resolveFillPalette(fillMetric metric.MetricName) palette.PaletteNa
 	return palette.Neutral
 }
 
-func (c *CLI) resolveGitMetric(fillMetric metric.MetricName) metric.MetricName {
+func (c *TreemapCmd) resolveGitMetric(fillMetric metric.MetricName) metric.MetricName {
 	borderMetricName := metric.MetricName(c.Border)
 
 	switch {
@@ -188,7 +197,7 @@ func (c *CLI) resolveGitMetric(fillMetric metric.MetricName) metric.MetricName {
 	}
 }
 
-func (c *CLI) enrichGitMetadata(root *scan.DirectoryNode, fillMetric metric.MetricName) error {
+func (c *TreemapCmd) enrichGitMetadata(root *scan.DirectoryNode, fillMetric metric.MetricName) error {
 	gitMetric := c.resolveGitMetric(fillMetric)
 	needsGit := gitMetric != ""
 	needsBinaryDetection := c.Size == metric.FileLines && !needsGit
@@ -224,13 +233,13 @@ func (c *CLI) enrichGitMetadata(root *scan.DirectoryNode, fillMetric metric.Metr
 	return nil
 }
 
-func (c *CLI) needsLineCounts(fillMetric, borderMetric metric.MetricName) bool {
+func (c *TreemapCmd) needsLineCounts(fillMetric, borderMetric metric.MetricName) bool {
 	return c.Size == metric.FileLines ||
 		fillMetric == metric.FileLines ||
 		(c.Border != "" && borderMetric == metric.FileLines)
 }
 
-func (c *CLI) filterBinaryFiles(root *scan.DirectoryNode) error {
+func (c *TreemapCmd) filterBinaryFiles(root *scan.DirectoryNode) error {
 	if c.Size != metric.FileLines {
 		return nil
 	}
@@ -272,7 +281,7 @@ func applyFillColours(
 	}
 }
 
-func (c *CLI) applyBorderColours(
+func (c *TreemapCmd) applyBorderColours(
 	rects *treemap.TreemapRectangle,
 	root scan.DirectoryNode,
 	fillMetric metric.MetricName,
@@ -316,14 +325,15 @@ func (c *CLI) applyBorderColours(
 	return borderMetric, borderPaletteName
 }
 
-func (c *CLI) printResult(
+func (c *TreemapCmd) printResult(
+	format string,
 	files, dirs int,
 	fillMetric metric.MetricName,
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.MetricName,
 	borderPaletteName palette.PaletteName,
 ) error {
-	if c.Format != "json" {
+	if format != "json" {
 		fmt.Printf("Rendered treemap: %d files, %d directories → %s (%d×%d)\n",
 			files, dirs, c.Output, c.Width, c.Height)
 
@@ -541,7 +551,7 @@ func main() {
 
 	parser, err := kong.New(&cli,
 		kong.Name("codeviz"),
-		kong.Description("Generate treemap visualizations of file trees."),
+		kong.Description("Generate visualizations of file trees."),
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err)
