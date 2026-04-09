@@ -28,8 +28,8 @@ type TreemapCmd struct {
 	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
 	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for border colour." name:"border-palette" optional:""`            //nolint:revive // kong struct tags require long lines
 
-	Width  int `default:"0" help:"Image width in pixels."`
-	Height int `default:"0" help:"Image height in pixels."`
+	Width  int `default:"1920" help:"Image width in pixels."`
+	Height int `default:"1080" help:"Image height in pixels."`
 }
 
 func (c *TreemapCmd) Validate() error {
@@ -71,7 +71,7 @@ func validateMetricPalette(metricStr, paletteStr, label string) error {
 }
 
 func (c *TreemapCmd) Run(flags *Flags) error {
-	c.applyOverrides(flags.Config.Treemap)
+	c.applyOverrides(flags.Config)
 
 	cfg := flags.Config.Treemap
 
@@ -80,7 +80,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	if flags.ExportConfig != "" {
-		if err := config.Save(flags.ExportConfig, flags.Config); err != nil {
+		if err := flags.Config.Save(flags.ExportConfig); err != nil {
 			return err
 		}
 	}
@@ -112,8 +112,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	files, dirs := countAll(root)
 	slog.Debug("scan complete", "files", files, "directories", dirs)
 
-	width := ptrInt(cfg.Width, 1920)
-	height := ptrInt(cfg.Height, 1080)
+	width := ptrInt(flags.Config.Width, 1920)
+	height := ptrInt(flags.Config.Height, 1080)
 
 	rects := treemap.Layout(root, width, height)
 
@@ -132,7 +132,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
-func (c *TreemapCmd) applyOverrides(cfg *config.TreemapConfig) {
+func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 	if c.Width != 0 {
 		cfg.Width = &c.Width
 	}
@@ -142,19 +142,19 @@ func (c *TreemapCmd) applyOverrides(cfg *config.TreemapConfig) {
 	}
 
 	if c.Fill != "" {
-		cfg.Fill = &c.Fill
+		cfg.Treemap.Fill = &c.Fill
 	}
 
 	if c.FillPalette != "" {
-		cfg.FillPalette = &c.FillPalette
+		cfg.Treemap.FillPalette = &c.FillPalette
 	}
 
 	if c.Border != "" {
-		cfg.Border = &c.Border
+		cfg.Treemap.Border = &c.Border
 	}
 
 	if c.BorderPalette != "" {
-		cfg.BorderPalette = &c.BorderPalette
+		cfg.Treemap.BorderPalette = &c.BorderPalette
 	}
 }
 
@@ -207,7 +207,7 @@ func (c *TreemapCmd) validatePaths() error {
 	return nil
 }
 
-func (c *TreemapCmd) resolveFillMetric(cfg *config.TreemapConfig) metric.MetricName {
+func (c *TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.MetricName {
 	if fill := ptrString(cfg.Fill); fill != "" {
 		return metric.MetricName(fill)
 	}
@@ -215,7 +215,7 @@ func (c *TreemapCmd) resolveFillMetric(cfg *config.TreemapConfig) metric.MetricN
 	return c.Size
 }
 
-func (c *TreemapCmd) resolveFillPalette(cfg *config.TreemapConfig, fillMetric metric.MetricName) palette.PaletteName {
+func (c *TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.MetricName) palette.PaletteName {
 	if fp := ptrString(cfg.FillPalette); fp != "" {
 		return palette.PaletteName(fp)
 	}
@@ -227,7 +227,7 @@ func (c *TreemapCmd) resolveFillPalette(cfg *config.TreemapConfig, fillMetric me
 	return palette.Neutral
 }
 
-func (c *TreemapCmd) resolveGitMetric(cfg *config.TreemapConfig, fillMetric metric.MetricName) metric.MetricName {
+func (c *TreemapCmd) resolveGitMetric(cfg *config.Treemap, fillMetric metric.MetricName) metric.MetricName {
 	borderMetricName := metric.MetricName(ptrString(cfg.Border))
 
 	switch {
@@ -242,7 +242,7 @@ func (c *TreemapCmd) resolveGitMetric(cfg *config.TreemapConfig, fillMetric metr
 	}
 }
 
-func (c *TreemapCmd) enrichGitMetadata(root *scan.DirectoryNode, cfg *config.TreemapConfig, fillMetric metric.MetricName) error {
+func (c *TreemapCmd) enrichGitMetadata(root *scan.DirectoryNode, cfg *config.Treemap, fillMetric metric.MetricName) error {
 	gitMetric := c.resolveGitMetric(cfg, fillMetric)
 	needsGit := gitMetric != ""
 	needsBinaryDetection := c.Size == metric.FileLines && !needsGit
@@ -278,13 +278,13 @@ func (c *TreemapCmd) enrichGitMetadata(root *scan.DirectoryNode, cfg *config.Tre
 	return nil
 }
 
-func (c *TreemapCmd) needsLineCounts(cfg *config.TreemapConfig, fillMetric, borderMetric metric.MetricName) bool {
+func (c *TreemapCmd) needsLineCounts(cfg *config.Treemap, fillMetric, borderMetric metric.MetricName) bool {
 	return c.Size == metric.FileLines ||
 		fillMetric == metric.FileLines ||
 		(ptrString(cfg.Border) != "" && borderMetric == metric.FileLines)
 }
 
-func (c *TreemapCmd) filterBinaryFiles(cfg *config.TreemapConfig, root *scan.DirectoryNode) error {
+func (c *TreemapCmd) filterBinaryFiles(cfg *config.Treemap, root *scan.DirectoryNode) error {
 	if c.Size != metric.FileLines {
 		return nil
 	}
@@ -329,7 +329,7 @@ func applyFillColours(
 func (c *TreemapCmd) applyBorderColours(
 	rects *treemap.TreemapRectangle,
 	root scan.DirectoryNode,
-	cfg *config.TreemapConfig,
+	cfg *config.Treemap,
 	fillMetric metric.MetricName,
 ) (metric.MetricName, palette.PaletteName) {
 	border := ptrString(cfg.Border)
