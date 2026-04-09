@@ -21,6 +21,20 @@ func TestNew_ReturnsNonNil(t *testing.T) {
 	g.Expect(cfg).NotTo(BeNil())
 }
 
+func TestNew_DefaultsSet(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Act
+	cfg := New()
+
+	// Assert
+	g.Expect(cfg.Width).NotTo(BeNil())
+	g.Expect(*cfg.Width).To(Equal(1920))
+	g.Expect(cfg.Height).NotTo(BeNil())
+	g.Expect(*cfg.Height).To(Equal(1080))
+}
+
 func TestNew_TreemapDefaultsSet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -30,10 +44,6 @@ func TestNew_TreemapDefaultsSet(t *testing.T) {
 
 	// Assert
 	g.Expect(cfg.Treemap).NotTo(BeNil())
-	g.Expect(cfg.Width).NotTo(BeNil())
-	g.Expect(*cfg.Width).To(Equal(1920))
-	g.Expect(cfg.Height).NotTo(BeNil())
-	g.Expect(*cfg.Height).To(Equal(1080))
 }
 
 func TestNew_OptionalFieldsNil(t *testing.T) {
