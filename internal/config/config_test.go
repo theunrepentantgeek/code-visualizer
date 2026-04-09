@@ -57,10 +57,14 @@ func TestLoad_UnknownExtension_ReturnsError(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	g.Expect(os.WriteFile(path, []byte("[treemap]\nwidth = 800\n"), 0o600)).To(Succeed())
+
 	cfg := New()
 
 	// Act
-	err := Load("config.toml", cfg)
+	err := Load(path, cfg)
 
 	// Assert
 	g.Expect(err).To(HaveOccurred())

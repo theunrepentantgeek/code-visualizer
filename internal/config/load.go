@@ -16,19 +16,12 @@ import (
 // Any field absent from the file retains the value already set in cfg.
 // Returns an error if the file has an unknown extension, cannot be read, or fails to parse.
 func Load(path string, cfg *Config) error {
-	ext := strings.ToLower(filepath.Ext(path))
-
-	switch ext {
-	case ".yaml", ".yml", ".json":
-		// valid extension; proceed to read
-	default:
-		return eris.Errorf("unsupported config file extension %q (use .yaml, .yml, or .json)", ext)
-	}
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return eris.Wrapf(err, "failed to read config file %q", path)
 	}
+
+	ext := strings.ToLower(filepath.Ext(path))
 
 	switch ext {
 	case ".yaml", ".yml":
@@ -39,6 +32,8 @@ func Load(path string, cfg *Config) error {
 		if err := json.Unmarshal(data, cfg); err != nil {
 			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
 		}
+	default:
+		return eris.Errorf("unsupported config file extension %q (use .yaml, .yml, or .json)", ext)
 	}
 
 	return nil
