@@ -144,4 +144,3 @@ func exitWithError(format string, err error, code int) {
 
 	os.Exit(code) //nolint:revive // deep-exit: intentional exit from CLI error handler called by main
 }
-
