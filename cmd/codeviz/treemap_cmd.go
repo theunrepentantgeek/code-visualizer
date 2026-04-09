@@ -81,7 +81,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	if flags.ExportConfig != "" {
 		if err := flags.Config.Save(flags.ExportConfig); err != nil {
-			return err
+			return eris.Wrap(err, "failed to save config")
 		}
 	}
 

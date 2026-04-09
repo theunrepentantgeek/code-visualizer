@@ -77,8 +77,7 @@ func TestLoad_UnknownExtension_ReturnsError(t *testing.T) {
 	err := cfg.Load(path)
 
 	// Assert
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("unsupported config file extension"))
+	g.Expect(err).To(MatchError(ContainSubstring("unsupported config file extension")))
 }
 
 func TestLoad_MissingFile_ReturnsError(t *testing.T) {
@@ -92,8 +91,7 @@ func TestLoad_MissingFile_ReturnsError(t *testing.T) {
 	err := cfg.Load("/nonexistent/path/config.yaml")
 
 	// Assert
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("failed to read config file"))
+	g.Expect(err).To(MatchError(ContainSubstring("failed to read config file")))
 }
 
 func TestLoad_YAMLPartialConfig_OverridesWidth(t *testing.T) {
@@ -176,8 +174,7 @@ func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
 	err := cfg.Load(path)
 
 	// Assert
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("failed to parse YAML"))
+	g.Expect(err).To(MatchError(ContainSubstring("failed to parse YAML")))
 }
 
 func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
@@ -195,8 +192,7 @@ func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
 	err := cfg.Load(path)
 
 	// Assert
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("failed to parse JSON"))
+	g.Expect(err).To(MatchError(ContainSubstring("failed to parse JSON")))
 }
 
 // Save tests
@@ -209,8 +205,7 @@ func TestSave_UnknownExtension_ReturnsError(t *testing.T) {
 	err := New().Save("/tmp/config.toml")
 
 	// Assert
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("unsupported config file extension"))
+	g.Expect(err).To(MatchError(ContainSubstring("unsupported config file extension")))
 }
 
 func TestSave_YAML_WritesFile(t *testing.T) {
