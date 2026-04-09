@@ -120,9 +120,11 @@ func TestRenderNoBorderWhenNil(t *testing.T) {
 		X: 0, Y: 0, W: 400, H: 300,
 		Label: "root", IsDirectory: true,
 		Children: []treemap.TreemapRectangle{
-			{X: 4, Y: 20, W: 392, H: 276, Label: "a.go",
+			{
+				X: 4, Y: 20, W: 392, H: 276, Label: "a.go",
 				FillColour:   color.RGBA{R: 200, G: 200, B: 200, A: 255},
-				BorderColour: nil},
+				BorderColour: nil,
+			},
 		},
 	}
 
@@ -225,7 +227,7 @@ func createBenchFixture(b *testing.B) string {
 
 	for d := range 10 {
 		subdir := filepath.Join(dir, fmt.Sprintf("dir%02d", d))
-		if err := os.MkdirAll(subdir, 0755); err != nil {
+		if err := os.MkdirAll(subdir, 0o755); err != nil {
 			b.Fatal(err)
 		}
 
