@@ -208,16 +208,16 @@ func (c *TreemapCmd) validatePaths() error {
 }
 
 func (c *TreemapCmd) resolveFillMetric(cfg *config.TreemapConfig) metric.MetricName {
-	if cfg.Fill != nil && *cfg.Fill != "" {
-		return metric.MetricName(*cfg.Fill)
+	if fill := ptrString(cfg.Fill); fill != "" {
+		return metric.MetricName(fill)
 	}
 
 	return c.Size
 }
 
 func (c *TreemapCmd) resolveFillPalette(cfg *config.TreemapConfig, fillMetric metric.MetricName) palette.PaletteName {
-	if cfg.FillPalette != nil && *cfg.FillPalette != "" {
-		return palette.PaletteName(*cfg.FillPalette)
+	if fp := ptrString(cfg.FillPalette); fp != "" {
+		return palette.PaletteName(fp)
 	}
 
 	if p, ok := metric.DefaultPaletteFor(fillMetric); ok {
