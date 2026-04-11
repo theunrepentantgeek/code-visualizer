@@ -18,4 +18,7 @@ RUN task --completion bash > "/etc/.task.completion.sh" \
 
 # Pre-download Go modules for faster builds
 COPY go.mod go.sum /tmp/mod-download/
-RUN cd /tmp/mod-download && go mod download && rm -rf /tmp/mod-download
+RUN cd /tmp/mod-download \
+    && go mod download \
+    && rm -rf /tmp/mod-download \
+    && chmod -R g+w /go/pkg/mod
