@@ -65,4 +65,6 @@ tasks:
   update-superpowers:
     desc: Update superpower snapshots
     cmds:
+      # Assumes https://github.com/obra/superpowers.git is cloned at the same level as this repository
+      # Cannot be used within the devcontainer
       - 'cp -r {{joinPath .ROOT_DIR ".." "superpowers" "skills"}} .agents/'
