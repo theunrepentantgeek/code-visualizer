@@ -61,3 +61,8 @@ tasks:
     desc: Regenerate golden file snapshots
     cmds:
       - GOLDIE_UPDATE=1 go test ./... -count=1
+
+  update-superpowers:
+    desc: Update superpower snapshots
+    cmds:
+      - 'cp -r {{joinPath .ROOT_DIR ".." "superpowers" "skills"}} .agents/'
