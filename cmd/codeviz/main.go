@@ -9,6 +9,7 @@ import (
 
 	"github.com/alecthomas/kong"
 
+	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/scan"
 )
@@ -16,8 +17,20 @@ import (
 type CLI struct {
 	Verbose bool   `help:"Enable debug-level logging." short:"v"`
 	Format  string `default:"text" enum:"text,json" help:"Diagnostic/error output format (text, json)."`
+	Config  string `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
+
+	//nolint:revive // Long help text is more important than minimizing line length, and annotations can't be wrapped
+	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 
 	Render RenderCmd `cmd:"" help:"Render a visualization."`
+}
+
+// Flags bundles cross-cutting concerns that are passed to every command's Run method.
+type Flags struct {
+	Verbose      bool
+	Format       string
+	ExportConfig string
+	Config       *config.Config
 }
 
 func setupLogger(verbose bool) { //nolint:revive // flag-parameter: boolean toggle is idiomatic for log verbosity
@@ -66,7 +79,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = ctx.Run(&cli)
+	setupLogger(cli.Verbose)
+
+	cfg := config.New()
+
+	if cli.Config != "" {
+		if loadErr := cfg.Load(cli.Config); loadErr != nil {
+			exitWithError(cli.Format, loadErr, 5)
+		}
+	}
+
+	flags := &Flags{
+		Verbose:      cli.Verbose,
+		Format:       cli.Format,
+		ExportConfig: cli.ExportConfig,
+		Config:       cfg,
+	}
+
+	err = ctx.Run(flags)
 	if err != nil {
 		code := classifyError(err)
 		exitWithError(cli.Format, err, code)
