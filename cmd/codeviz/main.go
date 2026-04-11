@@ -15,9 +15,11 @@ import (
 )
 
 type CLI struct {
-	Verbose      bool   `help:"Enable debug-level logging." short:"v"`
-	Format       string `default:"text" enum:"text,json" help:"Diagnostic/error output format (text, json)."`
-	Config       string `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
+	Verbose bool   `help:"Enable debug-level logging." short:"v"`
+	Format  string `default:"text" enum:"text,json" help:"Diagnostic/error output format (text, json)."`
+	Config  string `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
+
+	//nolint:revive // Long help text is more important than minimizing line length, and annotations can't be wrapped
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 
 	Render RenderCmd `cmd:"" help:"Render a visualization."`
