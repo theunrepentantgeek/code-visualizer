@@ -222,6 +222,7 @@ func TestSave_YAML_WritesFile(t *testing.T) {
 
 	// Assert
 	g.Expect(err).NotTo(HaveOccurred())
+
 	data, readErr := os.ReadFile(path)
 	g.Expect(readErr).NotTo(HaveOccurred())
 	g.Expect(string(data)).To(ContainSubstring("width: 1920"))
@@ -242,6 +243,7 @@ func TestSave_JSON_WritesFile(t *testing.T) {
 
 	// Assert
 	g.Expect(err).NotTo(HaveOccurred())
+
 	data, readErr := os.ReadFile(path)
 	g.Expect(readErr).NotTo(HaveOccurred())
 	g.Expect(string(data)).To(ContainSubstring(`"width": 1920`))

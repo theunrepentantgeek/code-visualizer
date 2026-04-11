@@ -82,8 +82,8 @@ func main() {
 	cfg := config.New()
 
 	if cli.Config != "" {
-		if err := cfg.Load(cli.Config); err != nil {
-			exitWithError(cli.Format, err, 5)
+		if loadErr := cfg.Load(cli.Config); loadErr != nil {
+			exitWithError(cli.Format, loadErr, 5)
 		}
 	}
 

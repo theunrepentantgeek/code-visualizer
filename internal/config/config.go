@@ -8,9 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/rotisserie/eris"
+	"go.yaml.in/yaml/v3"
 )
 
 // Config is the root configuration struct for the application.
