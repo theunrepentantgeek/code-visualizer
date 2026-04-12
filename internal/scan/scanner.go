@@ -11,6 +11,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/bevan/code-visualizer/internal/filter"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
@@ -19,13 +20,13 @@ import (
 // File symlinks are followed; directory symlinks are skipped.
 // Permission-denied errors are logged and scanning continues.
 // Returns an error if the directory contains no files.
-func Scan(path string) (*model.Directory, error) {
+func Scan(path string, rules []filter.Rule) (*model.Directory, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to resolve absolute path")
 	}
 
-	root, err := scanDir(absPath)
+	root, err := scanDir(absPath, absPath, rules)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func Scan(path string) (*model.Directory, error) {
 	return root, nil
 }
 
-func scanDir(dirPath string) (*model.Directory, error) {
+func scanDir(dirPath, rootPath string, rules []filter.Rule) (*model.Directory, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, eris.Wrapf(err, "failed to read directory %s", dirPath)
@@ -51,7 +52,7 @@ func scanDir(dirPath string) (*model.Directory, error) {
 	for _, entry := range entries {
 		entryPath := filepath.Join(dirPath, entry.Name())
 
-		if err := processEntry(node, entry, entryPath); err != nil {
+		if err := processEntry(node, entry, entryPath, rootPath, rules); err != nil {
 			return nil, err
 		}
 	}
@@ -59,7 +60,7 @@ func scanDir(dirPath string) (*model.Directory, error) {
 	return node, nil
 }
 
-func processEntry(node *model.Directory, entry os.DirEntry, entryPath string) error {
+func processEntry(node *model.Directory, entry os.DirEntry, entryPath, rootPath string, rules []filter.Rule) error {
 	info, err := os.Stat(entryPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
@@ -73,8 +74,18 @@ func processEntry(node *model.Directory, entry os.DirEntry, entryPath string) er
 		return nil
 	}
 
+	relPath, err := filepath.Rel(rootPath, entryPath)
+	if err != nil {
+		return eris.Wrapf(err, "failed to compute relative path for %s", entryPath)
+	}
+
+	if !filter.IsIncluded(relPath, rules) {
+		slog.Debug("excluding by filter rule", "path", relPath)
+		return nil
+	}
+
 	if info.IsDir() {
-		return processDir(node, entry, entryPath)
+		return processDir(node, entry, entryPath, rootPath, rules)
 	}
 
 	if info.Mode().IsRegular() || isSymlink(entry) {
@@ -84,14 +95,14 @@ func processEntry(node *model.Directory, entry os.DirEntry, entryPath string) er
 	return nil
 }
 
-func processDir(node *model.Directory, entry os.DirEntry, entryPath string) error {
+func processDir(node *model.Directory, entry os.DirEntry, entryPath, rootPath string, rules []filter.Rule) error {
 	if isSymlink(entry) {
 		slog.Debug("skipping directory symlink", "path", entryPath)
 
 		return nil
 	}
 
-	child, err := scanDir(entryPath)
+	child, err := scanDir(entryPath, rootPath, rules)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
 			slog.Warn("skipping directory: permission denied", "path", entryPath)
@@ -102,7 +113,10 @@ func processDir(node *model.Directory, entry os.DirEntry, entryPath string) erro
 		return err
 	}
 
-	node.Dirs = append(node.Dirs, child)
+	// Prune empty directories
+	if len(child.Files) > 0 || len(child.Dirs) > 0 {
+		node.Dirs = append(node.Dirs, child)
+	}
 
 	return nil
 }
