@@ -5,7 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
 )
 
@@ -32,19 +33,14 @@ func TestFilterNotCalledForFileSizeMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	// Verify that file-size metric does not trigger filtering
-	// by checking that the condition in Run() is scoped to FileLines only
-	g.Expect(metric.FileSize).NotTo(Equal(metric.FileLines))
+	g.Expect(filesystem.FileSize).NotTo(Equal(filesystem.FileLines))
 
-	// When size is file-size, a tree with only binary files should NOT be filtered
-	root := scan.DirectoryNode{
-		Path: "/project",
-		Name: "project",
-		Files: []scan.FileNode{
-			{Path: "/project/image.png", Name: "image.png", IsBinary: true, Size: 1024},
-		},
+	f := &model.File{Path: "/project/image.png", Name: "image.png", IsBinary: true}
+	f.SetQuantity(filesystem.FileSize, 1024)
+	root := &model.Directory{
+		Path: "/project", Name: "project",
+		Files: []*model.File{f},
 	}
-	// countFiles should return 1 — binary files are NOT excluded for non-line-count metrics
 	g.Expect(countFilesInTree(root)).To(Equal(1))
 }
 
@@ -53,25 +49,26 @@ func TestFilterNotCalledForFileAgeMetric(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Verify that file-age metric does not trigger filtering
-	g.Expect(metric.FileAge).NotTo(Equal(metric.FileLines))
+	g.Expect(filesystem.FileLines).NotTo(Equal("file-age"))
 }
 
 func TestFilterAppliedRegardlessOfFillMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	// When size=file-lines, binary files should be excluded
-	// regardless of what fill metric is set to (e.g. file-type)
-	root := scan.DirectoryNode{
-		Path: "/project",
-		Name: "project",
-		Files: []scan.FileNode{
-			{Path: "/project/main.go", Name: "main.go", IsBinary: false, LineCount: 50, FileType: "go"},
-			{Path: "/project/image.png", Name: "image.png", IsBinary: true, Size: 1024, FileType: "png"},
-		},
+	fGo := &model.File{Path: "/project/main.go", Name: "main.go", IsBinary: false}
+	fGo.SetQuantity(filesystem.FileLines, 50)
+	fGo.SetClassification(filesystem.FileType, "go")
+	
+	fPng := &model.File{Path: "/project/image.png", Name: "image.png", IsBinary: true}
+	fPng.SetQuantity(filesystem.FileSize, 1024)
+	fPng.SetClassification(filesystem.FileType, "png")
+
+	root := &model.Directory{
+		Path: "/project", Name: "project",
+		Files: []*model.File{fGo, fPng},
 	}
 
-	// FilterBinaryFiles removes binary files — it doesn't check fill/border metrics
 	filtered := scan.FilterBinaryFiles(root)
 	g.Expect(filtered.Files).To(HaveLen(1))
 	g.Expect(filtered.Files[0].Name).To(Equal("main.go"))
@@ -81,15 +78,17 @@ func TestNoFilterWhenFileSizeWithFileTypeFill(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	// When size=file-size, binary files should NOT be filtered
-	// even when fill=file-type
-	root := scan.DirectoryNode{
-		Path: "/project",
-		Name: "project",
-		Files: []scan.FileNode{
-			{Path: "/project/main.go", Name: "main.go", IsBinary: false, Size: 100, FileType: "go"},
-			{Path: "/project/image.png", Name: "image.png", IsBinary: true, Size: 1024, FileType: "png"},
-		},
+	fGo := &model.File{Path: "/project/main.go", Name: "main.go", IsBinary: false}
+	fGo.SetQuantity(filesystem.FileSize, 100)
+	fGo.SetClassification(filesystem.FileType, "go")
+	
+	fPng := &model.File{Path: "/project/image.png", Name: "image.png", IsBinary: true}
+	fPng.SetQuantity(filesystem.FileSize, 1024)
+	fPng.SetClassification(filesystem.FileType, "png")
+
+	root := &model.Directory{
+		Path: "/project", Name: "project",
+		Files: []*model.File{fGo, fPng},
 	}
 
 	// Without filtering, both files remain
@@ -97,7 +96,7 @@ func TestNoFilterWhenFileSizeWithFileTypeFill(t *testing.T) {
 }
 
 // countFilesInTree is a test helper that counts all files in a tree.
-func countFilesInTree(node scan.DirectoryNode) int {
+func countFilesInTree(node *model.Directory) int {
 	count := len(node.Files)
 	for _, d := range node.Dirs {
 		count += countFilesInTree(d)
