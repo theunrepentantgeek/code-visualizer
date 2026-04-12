@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bevan/code-visualizer/internal/filter"
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
+
+	"github.com/bevan/code-visualizer/internal/filter"
 )
 
 // Config is the root configuration struct for the application.

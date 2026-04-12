@@ -172,8 +172,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 }
 
 func (c *TreemapCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
-	rules := make([]filter.Rule, len(cfg.FileFilter))
-	copy(rules, cfg.FileFilter)
+	rules := make([]filter.Rule, 0, len(cfg.FileFilter)+len(c.Filter))
+	rules = append(rules, cfg.FileFilter...)
 
 	for _, f := range c.Filter {
 		// Already validated in Validate()

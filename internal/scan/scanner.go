@@ -81,6 +81,7 @@ func processEntry(node *model.Directory, entry os.DirEntry, entryPath, rootPath 
 
 	if !filter.IsIncluded(relPath, rules) {
 		slog.Debug("excluding by filter rule", "path", relPath)
+
 		return nil
 	}
 

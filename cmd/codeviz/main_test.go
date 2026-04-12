@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -13,7 +12,7 @@ import (
 
 func TestMain(m *testing.M) {
 	filesystem.Register()
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
@@ -124,7 +123,7 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 
 	err := cmd.Validate()
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("invalid filter"))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid filter")))
 }
 
 func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {

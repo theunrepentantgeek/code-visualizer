@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bevan/code-visualizer/internal/filter"
 	. "github.com/onsi/gomega"
+
+	"github.com/bevan/code-visualizer/internal/filter"
 )
 
 // New tests

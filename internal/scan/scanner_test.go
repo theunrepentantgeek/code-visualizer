@@ -258,6 +258,10 @@ func TestScanWithRules_ExcludesDotfiles(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
+	if root == nil {
+		return
+	}
+
 	// .hidden and .config/ should be excluded
 	// Only src/main.go and README.md should remain
 	allFiles := collectFileNames(root)
@@ -280,6 +284,10 @@ func TestScanWithRules_ExcludedDirNotDescended(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
+	if root == nil {
+		return
+	}
+
 	// .config/ should not appear in the tree at all
 	allDirs := collectDirNames(root)
 	g.Expect(allDirs).NotTo(ContainElement(".config"))
@@ -293,6 +301,10 @@ func TestScanWithRules_NoRules_IncludesAll(t *testing.T) {
 	root, err := Scan(dir, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		return
+	}
 
 	allFiles := collectFileNames(root)
 	g.Expect(allFiles).To(ContainElement("main.go"))
@@ -316,6 +328,10 @@ func TestScanWithRules_IncludeOverridesExclude(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
+	if root == nil {
+		return
+	}
+
 	allFiles := collectFileNames(root)
 	g.Expect(allFiles).To(ContainElement("settings.json"))
 	g.Expect(allFiles).To(ContainElement("main.go"))
@@ -338,14 +354,18 @@ func TestScanWithRules_PrunesEmptyDirs(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
+	if root == nil {
+		return
+	}
+
 	allDirs := collectDirNames(root)
 	g.Expect(allDirs).NotTo(ContainElement("src"))
 	g.Expect(allDirs).NotTo(ContainElement(".config"))
 }
 
-// Helper: collect all file names recursively
+// collectFileNames collects all file names recursively.
 func collectFileNames(dir *model.Directory) []string {
-	var names []string
+	names := make([]string, 0, len(dir.Files))
 	for _, f := range dir.Files {
 		names = append(names, f.Name)
 	}
@@ -357,9 +377,9 @@ func collectFileNames(dir *model.Directory) []string {
 	return names
 }
 
-// Helper: collect all directory names recursively (excludes root)
+// collectDirNames collects all directory names recursively (excludes root).
 func collectDirNames(dir *model.Directory) []string {
-	var names []string
+	names := make([]string, 0, len(dir.Dirs))
 	for _, d := range dir.Dirs {
 		names = append(names, d.Name)
 		names = append(names, collectDirNames(d)...)
