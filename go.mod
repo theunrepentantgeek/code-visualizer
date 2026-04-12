@@ -11,6 +11,7 @@ require (
 	github.com/rotisserie/eris v0.5.4
 	github.com/sebdah/goldie/v2 v2.8.0
 	go.yaml.in/yaml/v3 v3.0.4
+	golang.org/x/sync v0.20.0
 )
 
 require (
