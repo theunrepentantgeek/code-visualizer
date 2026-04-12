@@ -8,6 +8,15 @@ import (
 	"github.com/bevan/code-visualizer/internal/scan"
 )
 
+func TestKindConstants(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(Quantity).To(Equal(Kind(0)))
+	g.Expect(Measure).To(Equal(Kind(1)))
+	g.Expect(Classification).To(Equal(Kind(2)))
+}
+
 func TestMetricName_IsValid(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

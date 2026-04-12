@@ -7,6 +7,18 @@ import "github.com/bevan/code-visualizer/internal/scan"
 // MetricName identifies a metric used for sizing or colouring treemap rectangles.
 type MetricName string
 
+// Name identifies a metric. Provider packages define their own Name constants.
+type Name = MetricName
+
+// Kind describes the value type of a metric.
+type Kind int
+
+const (
+	Quantity       Kind = iota // int values (file sizes, line counts)
+	Measure                    // float64 values (percentages, rates)
+	Classification             // string values (file type, category)
+)
+
 const (
 	FileSize      MetricName = "file-size"
 	FileLines     MetricName = "file-lines"
