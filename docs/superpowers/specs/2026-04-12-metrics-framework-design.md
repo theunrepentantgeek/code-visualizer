@@ -113,17 +113,17 @@ func (f *File) Measure(name metric.Name) (float64, bool)
 func (f *File) Classification(name metric.Name) (string, bool)
 ```
 
-Typed setters:
+Typed setters take a `metric.Provider` (not a `metric.Name`) so the setter can verify `provider.Kind()` matches the method called — e.g. `SetQuantity` panics if the provider's Kind is not `Quantity`:
 
 ```go
-func (f *File) SetQuantity(name metric.Name, v int)
-func (f *File) SetMeasure(name metric.Name, v float64)
-func (f *File) SetClassification(name metric.Name, v string)
+func (f *File) SetQuantity(p metric.Provider, v int)
+func (f *File) SetMeasure(p metric.Provider, v float64)
+func (f *File) SetClassification(p metric.Provider, v string)
 ```
 
 The three metric maps are lazily initialized on first `Set*` call. A single `sync.RWMutex` per File guards all three maps for concurrent access.
 
-There are no special-cased metric fields. File size is stored via `SetQuantity(filesystem.FileSize, value)` during the scan, not as a dedicated struct field.
+There are no special-cased metric fields. File size is stored via `file.SetQuantity(fileSizeProvider, value)` during the scan, not as a dedicated struct field.
 
 #### Directory
 
@@ -159,7 +159,7 @@ const (
 
 **FileSizeProvider** — `Kind: Quantity`, no dependencies, no-op `Load()` (value set during scan), default palette: `Neutral`.
 
-**FileLinesProvider** — `Kind: Quantity`, no dependencies, `Load()` walks the tree and counts lines for each non-binary file, sets `SetQuantity(FileLines, count)`, default palette: `Neutral`.
+**FileLinesProvider** — `Kind: Quantity`, no dependencies, `Load()` walks the tree and counts lines for each non-binary file, sets `SetQuantity(self, count)`, default palette: `Neutral`.
 
 **FileTypeProvider** — `Kind: Classification`, no dependencies, no-op `Load()` (value set during scan), default palette: `Categorization`.
 
@@ -194,11 +194,11 @@ func getService(repoPath string) (*repoService, error) {
 
 The first provider to call `getService()` initializes the shared git repository handle. If the path is not a git repository, all three providers receive the same error from their `Load()` calls.
 
-**FileAgeProvider** — `Kind: Quantity`, no dependencies, `Load()` calls `getService(root.Path)`, walks tree, sets `SetQuantity(FileAge, durationDays)`, default palette: `Temperature`.
+**FileAgeProvider** — `Kind: Quantity`, no dependencies, `Load()` calls `getService(root.Path)`, walks tree, sets `SetQuantity(self, durationDays)`, default palette: `Temperature`.
 
-**FileFreshnessProvider** — `Kind: Quantity`, no dependencies, `Load()` calls `getService(root.Path)`, walks tree, sets `SetQuantity(FileFreshness, durationDays)`, default palette: `Temperature`.
+**FileFreshnessProvider** — `Kind: Quantity`, no dependencies, `Load()` calls `getService(root.Path)`, walks tree, sets `SetQuantity(self, durationDays)`, default palette: `Temperature`.
 
-**AuthorCountProvider** — `Kind: Quantity`, no dependencies, `Load()` calls `getService(root.Path)`, walks tree, sets `SetQuantity(AuthorCount, count)`, default palette: `GoodBad`.
+**AuthorCountProvider** — `Kind: Quantity`, no dependencies, `Load()` calls `getService(root.Path)`, walks tree, sets `SetQuantity(self, count)`, default palette: `GoodBad`.
 
 #### Registration
 
@@ -227,12 +227,12 @@ Registration always succeeds. Errors are deferred to `Load()`.
 `scan.Scan()` returns `*model.Directory` instead of `scan.DirectoryNode`. During the directory walk:
 
 1. Constructs `model.Directory` and `model.File` nodes with pointer slices.
-2. Sets `file-size` via `file.SetQuantity(filesystem.FileSize, info.Size())`.
-3. Sets `file-type` via `file.SetClassification(filesystem.FileType, fileType)`.
+2. Sets `file-size` via `file.SetQuantity(fileSizeProvider, info.Size())`.
+3. Sets `file-type` via `file.SetClassification(fileTypeProvider, fileType)`.
 4. Sets `IsBinary` as a direct field.
 5. Does **not** count lines or fetch git metadata.
 
-This means the scan package imports `provider/filesystem` for the metric name constants. This is an intentional compile-time dependency — the scanner is the code that populates these cheap filesystem metrics.
+This means the scan package imports `provider/filesystem` for the provider instances used in `Set*` calls. This is an intentional compile-time dependency — the scanner is the code that populates these cheap filesystem metrics.
 
 `scan.FileNode` and `scan.DirectoryNode` are deleted.
 
