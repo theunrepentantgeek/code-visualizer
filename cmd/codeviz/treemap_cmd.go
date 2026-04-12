@@ -10,6 +10,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/bevan/code-visualizer/internal/config"
+	"github.com/bevan/code-visualizer/internal/filter"
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/palette"
@@ -33,6 +34,8 @@ type TreemapCmd struct {
 
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
+
+	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
 func (c *TreemapCmd) Validate() error {
@@ -55,6 +58,12 @@ func (c *TreemapCmd) Validate() error {
 
 	if c.BorderPalette != "" && c.Border == "" {
 		return eris.New("--border-palette requires --border to be specified")
+	}
+
+	for _, f := range c.Filter {
+		if _, err := filter.ParseFilterFlag(f); err != nil {
+			return eris.Wrapf(err, "invalid filter %q", f)
+		}
 	}
 
 	return nil
@@ -111,9 +120,11 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	fillMetric := c.resolveFillMetric(cfg)
 	fillPaletteName := c.resolveFillPalette(cfg, fillMetric)
 
+	filterRules := c.buildFilterRules(flags.Config)
+
 	slog.Debug("scanning directory", "path", c.TargetPath)
 
-	root, err := scan.Scan(c.TargetPath)
+	root, err := scan.Scan(c.TargetPath, filterRules)
 	if err != nil {
 		return eris.Wrap(err, "scan failed")
 	}
@@ -158,6 +169,19 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		fillMetric: fillMetric, fillPaletteName: fillPaletteName,
 		borderMetric: borderMetric, borderPaletteName: borderPaletteName,
 	})
+}
+
+func (c *TreemapCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
+	rules := make([]filter.Rule, len(cfg.FileFilter))
+	copy(rules, cfg.FileFilter)
+
+	for _, f := range c.Filter {
+		// Already validated in Validate()
+		rule, _ := filter.ParseFilterFlag(f)
+		rules = append(rules, rule)
+	}
+
+	return rules
 }
 
 func (c *TreemapCmd) checkGitRequirement(requested []metric.Name) error {
