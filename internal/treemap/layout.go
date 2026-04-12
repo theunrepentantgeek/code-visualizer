@@ -5,37 +5,31 @@ package treemap
 import (
 	"github.com/nikolaydubina/treemap/layout"
 
-	"github.com/bevan/code-visualizer/internal/scan"
+	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/model"
 )
 
 const (
-	HeaderHeight = 20.0 // pixels for directory header bar
-	padding      = 4.0  // pixels between groups
-	siblingGap   = 2.0  // pixels between sibling rectangles
-	minFileSize  = 1.0  // minimum area for zero-size files (FR-013)
+	HeaderHeight = 20.0
+	padding      = 4.0
+	siblingGap   = 2.0
+	minFileSize  = 1.0
 )
 
-// Layout computes a squarified treemap layout from a DirectoryNode tree.
-// Returns a root TreemapRectangle with nested children.
-func Layout(root scan.DirectoryNode, width, height int) TreemapRectangle {
+// Layout computes a squarified treemap layout from a Directory tree.
+func Layout(root *model.Directory, width, height int, sizeMetric metric.Name) TreemapRectangle {
 	box := layout.Box{X: 0, Y: 0, W: float64(width), H: float64(height)}
-	rect := layoutDir(root, box)
 
-	return rect
+	return layoutDir(root, box, sizeMetric)
 }
 
-func layoutDir(dir scan.DirectoryNode, box layout.Box) TreemapRectangle {
+func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name) TreemapRectangle {
 	rect := TreemapRectangle{
-		X:           box.X,
-		Y:           box.Y,
-		W:           box.W,
-		H:           box.H,
-		Label:       dir.Name,
-		IsDirectory: true,
+		X: box.X, Y: box.Y, W: box.W, H: box.H,
+		Label: dir.Name, IsDirectory: true,
 	}
 
-	children := collectChildren(dir)
-
+	children := collectChildren(dir, sizeMetric)
 	if len(children) == 0 {
 		return rect
 	}
@@ -54,7 +48,7 @@ func layoutDir(dir scan.DirectoryNode, box layout.Box) TreemapRectangle {
 
 	for i, c := range children {
 		b := insetBox(boxes[i], siblingGap/2)
-		rect.Children = append(rect.Children, layoutChild(dir, c, b))
+		rect.Children = append(rect.Children, layoutChild(dir, c, b, sizeMetric))
 	}
 
 	return rect
@@ -67,11 +61,11 @@ type child struct {
 	area    float64
 }
 
-func collectChildren(dir scan.DirectoryNode) []child {
+func collectChildren(dir *model.Directory, sizeMetric metric.Name) []child {
 	children := make([]child, 0, len(dir.Files)+len(dir.Dirs))
 
 	for i, f := range dir.Files {
-		area := float64(f.Size)
+		area := fileSize(f, sizeMetric)
 		if area <= 0 {
 			area = minFileSize
 		}
@@ -80,7 +74,7 @@ func collectChildren(dir scan.DirectoryNode) []child {
 	}
 
 	for i, d := range dir.Dirs {
-		area := dirTotalSize(d)
+		area := dirTotalSize(d, sizeMetric)
 		if area <= 0 {
 			area = minFileSize
 		}
@@ -89,6 +83,15 @@ func collectChildren(dir scan.DirectoryNode) []child {
 	}
 
 	return children
+}
+
+func fileSize(f *model.File, sizeMetric metric.Name) float64 {
+	v, ok := f.Quantity(sizeMetric)
+	if !ok {
+		return 0
+	}
+
+	return float64(v)
 }
 
 func contentArea(box layout.Box) layout.Box {
@@ -100,41 +103,35 @@ func contentArea(box layout.Box) layout.Box {
 	}
 }
 
-func layoutChild(dir scan.DirectoryNode, c child, b layout.Box) TreemapRectangle {
+func layoutChild(dir *model.Directory, c child, b layout.Box, sizeMetric metric.Name) TreemapRectangle {
 	if c.isDir {
-		return layoutDir(dir.Dirs[c.dirIdx], b)
+		return layoutDir(dir.Dirs[c.dirIdx], b, sizeMetric)
 	}
 
 	f := dir.Files[c.fileIdx]
 
 	return TreemapRectangle{
-		X:     b.X,
-		Y:     b.Y,
-		W:     b.W,
-		H:     b.H,
+		X: b.X, Y: b.Y, W: b.W, H: b.H,
 		Label: f.Name,
 	}
 }
 
 func insetBox(b layout.Box, inset float64) layout.Box {
-	// Only apply inset if the box is large enough to remain positive
 	if b.W <= 2*inset || b.H <= 2*inset {
 		return b
 	}
 
 	return layout.Box{
-		X: b.X + inset,
-		Y: b.Y + inset,
-		W: b.W - 2*inset,
-		H: b.H - 2*inset,
+		X: b.X + inset, Y: b.Y + inset,
+		W: b.W - 2*inset, H: b.H - 2*inset,
 	}
 }
 
-func dirTotalSize(dir scan.DirectoryNode) float64 {
+func dirTotalSize(dir *model.Directory, sizeMetric metric.Name) float64 {
 	var total float64
 
 	for _, f := range dir.Files {
-		s := float64(f.Size)
+		s := fileSize(f, sizeMetric)
 		if s <= 0 {
 			s = minFileSize
 		}
@@ -143,7 +140,7 @@ func dirTotalSize(dir scan.DirectoryNode) float64 {
 	}
 
 	for _, d := range dir.Dirs {
-		total += dirTotalSize(d)
+		total += dirTotalSize(d, sizeMetric)
 	}
 
 	return total

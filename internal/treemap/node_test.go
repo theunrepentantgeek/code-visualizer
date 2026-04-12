@@ -5,30 +5,27 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/scan"
+	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
 
 func TestDirectoryHeaderBar(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
+	root := &model.Directory{
 		Name: "root",
-		Dirs: []scan.DirectoryNode{
+		Dirs: []*model.Directory{
 			{
-				Name: "mydir",
-				Files: []scan.FileNode{
-					{Name: "file.go", Size: 100},
-				},
+				Name:  "mydir",
+				Files: []*model.File{makeFile("file.go", 100)},
 			},
 		},
 	}
 
-	rects := Layout(root, 1920, 1080)
+	rects := Layout(root, 1920, 1080, filesystem.FileSize)
 
-	// Find the directory rectangle
 	var dirRect *TreemapRectangle
-
 	for i, c := range rects.Children {
 		if c.IsDirectory && c.Label == "mydir" {
 			dirRect = &rects.Children[i]
@@ -51,21 +48,21 @@ func TestDirectoryPaddingSeparatesGroups(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
+	root := &model.Directory{
 		Name: "root",
-		Dirs: []scan.DirectoryNode{
+		Dirs: []*model.Directory{
 			{
 				Name:  "dir-a",
-				Files: []scan.FileNode{{Name: "a.go", Size: 100}},
+				Files: []*model.File{makeFile("a.go", 100)},
 			},
 			{
 				Name:  "dir-b",
-				Files: []scan.FileNode{{Name: "b.go", Size: 100}},
+				Files: []*model.File{makeFile("b.go", 100)},
 			},
 		},
 	}
 
-	rects := Layout(root, 1920, 1080)
+	rects := Layout(root, 1920, 1080, filesystem.FileSize)
 
 	dirA := findDirRect(rects, "dir-a")
 	dirB := findDirRect(rects, "dir-b")
@@ -77,7 +74,6 @@ func TestDirectoryPaddingSeparatesGroups(t *testing.T) {
 		return
 	}
 
-	// Directories should not overlap — there should be padding between them
 	separated := rectsAreSeparated(dirA, dirB)
 	g.Expect(separated).To(BeTrue(), "directory groups should not overlap")
 }

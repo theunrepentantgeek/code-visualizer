@@ -5,61 +5,57 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/scan"
+	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
+
+func makeFile(name string, size int) *model.File {
+	f := &model.File{Name: name}
+	f.SetQuantity(filesystem.FileSize, size)
+
+	return f
+}
 
 func TestLayoutSingleFile(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
-		Name: "root",
-		Files: []scan.FileNode{
-			{Name: "only.go", Size: 100},
-		},
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeFile("only.go", 100)},
 	}
 
-	rects := Layout(root, 1920, 1080)
+	rects := Layout(root, 1920, 1080, filesystem.FileSize)
 	g.Expect(rects.Children).To(HaveLen(1))
-	// Single file should occupy most of the available area
-	child := rects.Children[0]
-	g.Expect(child.W).To(BeNumerically(">", 0))
-	g.Expect(child.H).To(BeNumerically(">", 0))
+	g.Expect(rects.Children[0].W).To(BeNumerically(">", 0))
+	g.Expect(rects.Children[0].H).To(BeNumerically(">", 0))
 }
 
 func TestLayoutProportionalAreas(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
+	root := &model.Directory{
 		Name: "root",
-		Files: []scan.FileNode{
-			{Name: "big.go", Size: 900},
-			{Name: "small.go", Size: 100},
+		Files: []*model.File{
+			makeFile("big.go", 900),
+			makeFile("small.go", 100),
 		},
 	}
 
-	rects := Layout(root, 1000, 1000)
-	// Find the two file rectangles
-	var bigRect, smallRect TreemapRectangle
+	rects := Layout(root, 1000, 1000, filesystem.FileSize)
 
+	var bigRect, smallRect TreemapRectangle
 	for _, c := range rects.Children {
-		if !c.IsDirectory {
-			switch c.Label {
-			case "big.go":
-				bigRect = c
-			case "small.go":
-				smallRect = c
-			default:
-				// other files
-			}
+		switch c.Label {
+		case "big.go":
+			bigRect = c
+		case "small.go":
+			smallRect = c
 		}
 	}
 
-	bigArea := bigRect.W * bigRect.H
-	smallArea := smallRect.W * smallRect.H
-	// big should be roughly 9x the small (within tolerance for padding)
-	ratio := bigArea / smallArea
+	ratio := (bigRect.W * bigRect.H) / (smallRect.W * smallRect.H)
 	g.Expect(ratio).To(BeNumerically("~", 9.0, 2.0))
 }
 
@@ -67,28 +63,21 @@ func TestLayoutNestedDirs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
-		Name: "root",
-		Files: []scan.FileNode{
-			{Name: "top.go", Size: 100},
-		},
-		Dirs: []scan.DirectoryNode{
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeFile("top.go", 100)},
+		Dirs: []*model.Directory{
 			{
-				Name: "sub",
-				Files: []scan.FileNode{
-					{Name: "inner.go", Size: 200},
-				},
+				Name:  "sub",
+				Files: []*model.File{makeFile("inner.go", 200)},
 			},
 		},
 	}
 
-	rects := Layout(root, 1920, 1080)
-	// Should have children (file + directory group)
+	rects := Layout(root, 1920, 1080, filesystem.FileSize)
 	g.Expect(len(rects.Children)).To(BeNumerically(">=", 2))
 
-	// Find the directory child
 	var dirRect *TreemapRectangle
-
 	for i, c := range rects.Children {
 		if c.IsDirectory {
 			dirRect = &rects.Children[i]
@@ -98,11 +87,6 @@ func TestLayoutNestedDirs(t *testing.T) {
 	}
 
 	g.Expect(dirRect).NotTo(BeNil())
-
-	if dirRect == nil {
-		return
-	}
-
 	g.Expect(dirRect.Label).To(Equal("sub"))
 	g.Expect(dirRect.Children).NotTo(BeEmpty())
 }
@@ -111,18 +95,17 @@ func TestLayoutZeroSizeFile(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
+	root := &model.Directory{
 		Name: "root",
-		Files: []scan.FileNode{
-			{Name: "normal.go", Size: 1000},
-			{Name: "empty.go", Size: 0},
+		Files: []*model.File{
+			makeFile("normal.go", 1000),
+			makeFile("empty.go", 0),
 		},
 	}
 
-	rects := Layout(root, 1920, 1080)
-	// Zero-size file should get a minimum rectangle (FR-013)
-	var emptyRect *TreemapRectangle
+	rects := Layout(root, 1920, 1080, filesystem.FileSize)
 
+	var emptyRect *TreemapRectangle
 	for i, c := range rects.Children {
 		if c.Label == "empty.go" {
 			emptyRect = &rects.Children[i]
@@ -132,11 +115,6 @@ func TestLayoutZeroSizeFile(t *testing.T) {
 	}
 
 	g.Expect(emptyRect).NotTo(BeNil())
-
-	if emptyRect == nil {
-		return
-	}
-
 	g.Expect(emptyRect.W).To(BeNumerically(">", 0))
 	g.Expect(emptyRect.H).To(BeNumerically(">", 0))
 }
