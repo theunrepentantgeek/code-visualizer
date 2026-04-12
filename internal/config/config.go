@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bevan/code-visualizer/internal/filter"
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
 )
@@ -18,9 +19,10 @@ import (
 // All fields are pointers: nil means the field was not configured, non-nil
 // means it was explicitly set (by a config file or by a CLI flag override).
 type Config struct {
-	Width   *int     `yaml:"width,omitempty"   json:"width,omitempty"`
-	Height  *int     `yaml:"height,omitempty"  json:"height,omitempty"`
-	Treemap *Treemap `yaml:"treemap,omitempty" json:"treemap,omitempty"`
+	Width      *int          `yaml:"width,omitempty"      json:"width,omitempty"`
+	Height     *int          `yaml:"height,omitempty"     json:"height,omitempty"`
+	Treemap    *Treemap      `yaml:"treemap,omitempty"    json:"treemap,omitempty"`
+	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 }
 
 // New returns a Config populated with sensible defaults.
@@ -34,6 +36,9 @@ func New() *Config {
 		Width:   &width,
 		Height:  &height,
 		Treemap: &Treemap{},
+		FileFilter: []filter.Rule{
+			{Pattern: ".*", Mode: filter.Exclude},
+		},
 	}
 }
 
