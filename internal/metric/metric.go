@@ -2,8 +2,6 @@
 // and quantile-based bucketing for numeric values.
 package metric
 
-import "github.com/bevan/code-visualizer/internal/scan"
-
 // MetricName identifies a metric used for sizing or colouring treemap rectangles.
 type MetricName string
 
@@ -49,19 +47,4 @@ func (m MetricName) IsNumeric() bool {
 
 func (m MetricName) IsGitRequired() bool {
 	return m == FileAge || m == FileFreshness || m == AuthorCount
-}
-
-// ExtractFileSize returns the file size in bytes as a float64.
-func ExtractFileSize(node scan.FileNode) float64 {
-	return float64(node.Size)
-}
-
-// ExtractFileLines returns the line count as a float64.
-func ExtractFileLines(node scan.FileNode) float64 {
-	return float64(node.LineCount)
-}
-
-// ExtractFileType returns the file type classification string.
-func ExtractFileType(node scan.FileNode) string {
-	return node.FileType
 }

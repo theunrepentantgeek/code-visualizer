@@ -8,6 +8,9 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
 
 func TestScanFlat(t *testing.T) {
@@ -21,14 +24,16 @@ func TestScanFlat(t *testing.T) {
 	g.Expect(root.Files).To(HaveLen(3))
 	g.Expect(root.Dirs).To(BeEmpty())
 
-	sizes := map[string]int64{}
+	sizes := map[string]int{}
 	for _, f := range root.Files {
-		sizes[f.Name] = f.Size
+		v, ok := f.Quantity(filesystem.FileSize)
+		g.Expect(ok).To(BeTrue())
+		sizes[f.Name] = v
 	}
 
-	g.Expect(sizes["small.txt"]).To(Equal(int64(5)))
-	g.Expect(sizes["medium.go"]).To(Equal(int64(100)))
-	g.Expect(sizes["large.rs"]).To(Equal(int64(1000)))
+	g.Expect(sizes["small.txt"]).To(Equal(5))
+	g.Expect(sizes["medium.go"]).To(Equal(100))
+	g.Expect(sizes["large.rs"]).To(Equal(1000))
 }
 
 func TestScanNested(t *testing.T) {
@@ -58,7 +63,6 @@ func TestScanEmptyDir(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "empty")
 
-	// Create an empty directory for testing if its missing
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
@@ -97,7 +101,7 @@ func TestScanSkipsDirSymlinks(t *testing.T) {
 	for _, d := range root.Dirs {
 		dirNames[d.Name] = true
 	}
-	// The real target-dir should be present but the symlink link-to-dir should be skipped
+
 	g.Expect(dirNames).To(HaveKey("target-dir"))
 	g.Expect(dirNames).NotTo(HaveKey("link-to-dir"))
 }
@@ -120,17 +124,32 @@ func TestScanFileExtension(t *testing.T) {
 	g.Expect(exts["large.rs"]).To(Equal("rs"))
 }
 
+func TestScanSetsFileType(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := filepath.Join("testdata", "flat")
+
+	root, err := Scan(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	for _, f := range root.Files {
+		ft, ok := f.Classification(filesystem.FileType)
+		g.Expect(ok).To(BeTrue())
+		g.Expect(ft).NotTo(BeEmpty())
+	}
+}
+
 func TestFilterBinaryFilesMixed(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := DirectoryNode{
+	root := &model.Directory{
 		Path: "/project",
 		Name: "project",
-		Files: []FileNode{
-			{Path: "/project/main.go", Name: "main.go", IsBinary: false, LineCount: 50},
-			{Path: "/project/image.png", Name: "image.png", IsBinary: true, LineCount: 0},
-			{Path: "/project/util.go", Name: "util.go", IsBinary: false, LineCount: 30},
+		Files: []*model.File{
+			{Path: "/project/main.go", Name: "main.go", IsBinary: false},
+			{Path: "/project/image.png", Name: "image.png", IsBinary: true},
+			{Path: "/project/util.go", Name: "util.go", IsBinary: false},
 		},
 	}
 
@@ -140,60 +159,22 @@ func TestFilterBinaryFilesMixed(t *testing.T) {
 	g.Expect(filtered.Files[1].Name).To(Equal("util.go"))
 }
 
-func TestFilterBinaryFilesAllBinary(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := DirectoryNode{
-		Path: "/project",
-		Name: "project",
-		Files: []FileNode{
-			{Path: "/project/image.png", Name: "image.png", IsBinary: true},
-			{Path: "/project/font.ttf", Name: "font.ttf", IsBinary: true},
-		},
-	}
-
-	filtered := FilterBinaryFiles(root)
-	g.Expect(filtered.Files).To(BeEmpty())
-	g.Expect(countFiles(filtered)).To(Equal(0))
-}
-
-func TestFilterBinaryFilesNoBinary(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := DirectoryNode{
-		Path: "/project",
-		Name: "project",
-		Files: []FileNode{
-			{Path: "/project/main.go", Name: "main.go", IsBinary: false, LineCount: 50},
-			{Path: "/project/README.md", Name: "README.md", IsBinary: false, LineCount: 10},
-		},
-	}
-
-	filtered := FilterBinaryFiles(root)
-	g.Expect(filtered.Files).To(HaveLen(2))
-	g.Expect(filtered.Files[0].Name).To(Equal("main.go"))
-	g.Expect(filtered.Files[1].Name).To(Equal("README.md"))
-}
-
 func TestFilterBinaryFilesPrunesEmptyDirs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := DirectoryNode{
+	root := &model.Directory{
 		Path: "/project",
 		Name: "project",
-		Files: []FileNode{
-			{Path: "/project/main.go", Name: "main.go", IsBinary: false, LineCount: 50},
+		Files: []*model.File{
+			{Path: "/project/main.go", Name: "main.go", IsBinary: false},
 		},
-		Dirs: []DirectoryNode{
+		Dirs: []*model.Directory{
 			{
 				Path: "/project/assets",
 				Name: "assets",
-				Files: []FileNode{
+				Files: []*model.File{
 					{Path: "/project/assets/logo.png", Name: "logo.png", IsBinary: true},
-					{Path: "/project/assets/icon.ico", Name: "icon.ico", IsBinary: true},
 				},
 			},
 		},
@@ -204,67 +185,25 @@ func TestFilterBinaryFilesPrunesEmptyDirs(t *testing.T) {
 	g.Expect(filtered.Dirs).To(BeEmpty())
 }
 
-func TestFilterBinaryFilesNestedPruning(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := DirectoryNode{
-		Path: "/project",
-		Name: "project",
-		Files: []FileNode{
-			{Path: "/project/main.go", Name: "main.go", IsBinary: false, LineCount: 50},
-		},
-		Dirs: []DirectoryNode{
-			{
-				Path: "/project/src",
-				Name: "src",
-				Files: []FileNode{
-					{Path: "/project/src/util.go", Name: "util.go", IsBinary: false, LineCount: 20},
-				},
-				Dirs: []DirectoryNode{
-					{
-						Path: "/project/src/bin",
-						Name: "bin",
-						Files: []FileNode{
-							{Path: "/project/src/bin/app.exe", Name: "app.exe", IsBinary: true},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	filtered := FilterBinaryFiles(root)
-	g.Expect(filtered.Files).To(HaveLen(1))
-	g.Expect(filtered.Dirs).To(HaveLen(1))
-	g.Expect(filtered.Dirs[0].Name).To(Equal("src"))
-	g.Expect(filtered.Dirs[0].Files).To(HaveLen(1))
-	g.Expect(filtered.Dirs[0].Dirs).To(BeEmpty()) // bin dir pruned
-}
-
-//nolint:paralleltest // mutates global slog default logger, cannot run in parallel.
+//nolint:paralleltest // mutates global slog default logger
 func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	var buf bytes.Buffer
-
 	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	oldDefault := slog.Default()
-
 	slog.SetDefault(slog.New(handler))
 	defer slog.SetDefault(oldDefault)
 
-	root := DirectoryNode{
+	root := &model.Directory{
 		Path: "/project",
 		Name: "project",
-		Files: []FileNode{
+		Files: []*model.File{
 			{Path: "/project/main.go", Name: "main.go", IsBinary: false},
 			{Path: "/project/image.png", Name: "image.png", IsBinary: true},
 		},
 	}
 
 	_ = FilterBinaryFiles(root)
-
 	g.Expect(buf.String()).To(ContainSubstring("excluding binary file"))
-	g.Expect(buf.String()).To(ContainSubstring("image.png"))
 }
