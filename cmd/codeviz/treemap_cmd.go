@@ -11,7 +11,10 @@ import (
 
 	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/bevan/code-visualizer/internal/provider"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/render"
 	"github.com/bevan/code-visualizer/internal/scan"
 	"github.com/bevan/code-visualizer/internal/treemap"
@@ -21,7 +24,7 @@ type TreemapCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output PNG file path." required:"true" short:"o"`
 
-	Size metric.MetricName `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." required:"true" short:"s"` //nolint:revive // kong struct tags require long lines
+	Size metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." required:"true" short:"s"` //nolint:revive // kong struct tags require long lines
 
 	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive // kong struct tags require long lines
 	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for fill colour." name:"fill-palette" optional:""`                //nolint:revive // kong struct tags require long lines
@@ -33,8 +36,13 @@ type TreemapCmd struct {
 }
 
 func (c *TreemapCmd) Validate() error {
-	if !c.Size.IsNumeric() {
-		return eris.Errorf("size metric must be numeric, got %q", c.Size)
+	p, ok := provider.Get(c.Size)
+	if !ok {
+		return eris.Errorf("unknown size metric %q", c.Size)
+	}
+
+	if p.Kind() != metric.Quantity {
+		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", c.Size, p.Kind())
 	}
 
 	if err := validateMetricPalette(c.Fill, c.FillPalette, "fill"); err != nil {
@@ -54,8 +62,7 @@ func (c *TreemapCmd) Validate() error {
 
 func validateMetricPalette(metricStr, paletteStr, label string) error {
 	if metricStr != "" {
-		m := metric.MetricName(metricStr)
-		if !m.IsValid() {
+		if _, ok := provider.Get(metric.Name(metricStr)); !ok {
 			return eris.Errorf("invalid %s metric %q", label, metricStr)
 		}
 	}
@@ -70,9 +77,25 @@ func validateMetricPalette(metricStr, paletteStr, label string) error {
 	return nil
 }
 
+func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Name {
+	seen := map[metric.Name]bool{size: true}
+	names := []metric.Name{size}
+
+	for _, s := range []string{fill, border} {
+		if s != "" {
+			n := metric.Name(s)
+			if !seen[n] {
+				seen[n] = true
+				names = append(names, n)
+			}
+		}
+	}
+
+	return names
+}
+
 func (c *TreemapCmd) Run(flags *Flags) error {
 	c.applyOverrides(flags.Config)
-
 	cfg := flags.Config.Treemap
 
 	if err := c.validatePaths(); err != nil {
@@ -95,17 +118,19 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	if err := c.enrichGitMetadata(&root, cfg, fillMetric); err != nil {
+	// Collect all requested metrics and run providers
+	requested := collectRequestedMetrics(c.Size, ptrString(cfg.Fill), ptrString(cfg.Border))
+
+	// Check git requirement before running providers
+	if err := c.checkGitRequirement(requested); err != nil {
 		return err
 	}
 
-	borderMetricName := metric.MetricName(ptrString(cfg.Border))
-
-	if c.needsLineCounts(cfg, fillMetric, borderMetricName) {
-		scan.PopulateLineCounts(&root)
+	if err := provider.Run(root, requested); err != nil {
+		return eris.Wrap(err, "failed to load metrics")
 	}
 
-	if err := c.filterBinaryFiles(cfg, &root); err != nil {
+	if err := c.filterBinaryFiles(cfg, root); err != nil {
 		return err
 	}
 
@@ -115,11 +140,11 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	width := ptrInt(flags.Config.Width, 1920)
 	height := ptrInt(flags.Config.Height, 1080)
 
-	rects := treemap.Layout(root, width, height)
+	rects := treemap.Layout(root, width, height, c.Size)
 
 	applyFillColours(&rects, root, fillMetric, fillPaletteName)
 
-	borderMetric, borderPaletteName := c.applyBorderColours(&rects, root, cfg, fillMetric)
+	borderMetric, borderPaletteName := c.applyBorderColours(&rects, root, cfg)
 
 	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
 
@@ -133,6 +158,43 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		fillMetric: fillMetric, fillPaletteName: fillPaletteName,
 		borderMetric: borderMetric, borderPaletteName: borderPaletteName,
 	})
+}
+
+func (c *TreemapCmd) checkGitRequirement(requested []metric.Name) error {
+	name, needsGit := findGitMetric(requested)
+	if !needsGit {
+		return nil
+	}
+
+	absPath, err := filepath.Abs(c.TargetPath)
+	if err != nil {
+		return eris.Wrap(err, "failed to resolve absolute path")
+	}
+
+	isGit, err := scan.IsGitRepo(absPath)
+	if err != nil {
+		return eris.Wrap(err, "git check failed")
+	}
+
+	if !isGit {
+		return &gitRequiredError{metric: name, target: c.TargetPath}
+	}
+
+	return nil
+}
+
+func findGitMetric(requested []metric.Name) (metric.Name, bool) {
+	gitMetrics := map[metric.Name]bool{
+		"file-age": true, "file-freshness": true, "author-count": true,
+	}
+
+	for _, name := range requested {
+		if gitMetrics[name] {
+			return name, true
+		}
+	}
+
+	return "", false
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -212,93 +274,34 @@ func (c *TreemapCmd) validatePaths() error {
 	return nil
 }
 
-func (c *TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.MetricName {
+func (c *TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
 	if fill := ptrString(cfg.Fill); fill != "" {
-		return metric.MetricName(fill)
+		return metric.Name(fill)
 	}
 
 	return c.Size
 }
 
-func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.MetricName) palette.PaletteName {
+func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.Name) palette.PaletteName {
 	if fp := ptrString(cfg.FillPalette); fp != "" {
 		return palette.PaletteName(fp)
 	}
 
-	if p, ok := metric.DefaultPaletteFor(fillMetric); ok {
-		return p
+	if p, ok := provider.Get(fillMetric); ok {
+		return p.DefaultPalette()
 	}
 
 	return palette.Neutral
 }
 
-func (c *TreemapCmd) resolveGitMetric(cfg *config.Treemap, fillMetric metric.MetricName) metric.MetricName {
-	borderMetricName := metric.MetricName(ptrString(cfg.Border))
-
-	switch {
-	case c.Size.IsGitRequired():
-		return c.Size
-	case fillMetric.IsGitRequired():
-		return fillMetric
-	case ptrString(cfg.Border) != "" && borderMetricName.IsGitRequired():
-		return borderMetricName
-	default:
-		return ""
-	}
-}
-
-func (c *TreemapCmd) enrichGitMetadata(
-	root *scan.DirectoryNode, cfg *config.Treemap, fillMetric metric.MetricName,
-) error {
-	gitMetric := c.resolveGitMetric(cfg, fillMetric)
-	needsGit := gitMetric != ""
-	needsBinaryDetection := c.Size == metric.FileLines && !needsGit
-
-	if !needsGit && !needsBinaryDetection {
+func (c *TreemapCmd) filterBinaryFiles(_ *config.Treemap, root *model.Directory) error {
+	if c.Size != filesystem.FileLines {
 		return nil
 	}
 
-	absPath, err := filepath.Abs(c.TargetPath)
-	if err != nil {
-		return eris.Wrap(err, "failed to resolve absolute path")
-	}
-
-	isGit, err := scan.IsGitRepo(absPath)
-	if err != nil {
-		return eris.Wrap(err, "git check failed")
-	}
-
-	if !isGit && needsGit {
-		return &gitRequiredError{metric: gitMetric, target: c.TargetPath}
-	}
-
-	if isGit {
-		info, err := scan.NewGitInfo(absPath)
-		if err != nil {
-			return eris.Wrap(err, "failed to open git repo")
-		}
-
-		scan.EnrichWithGitMetadata(root, info, absPath)
-		info.ClearCache()
-	}
-
-	return nil
-}
-
-func (c *TreemapCmd) needsLineCounts(cfg *config.Treemap, fillMetric, borderMetric metric.MetricName) bool {
-	return c.Size == metric.FileLines ||
-		fillMetric == metric.FileLines ||
-		(ptrString(cfg.Border) != "" && borderMetric == metric.FileLines)
-}
-
-func (c *TreemapCmd) filterBinaryFiles(_ *config.Treemap, root *scan.DirectoryNode) error {
-	if c.Size != metric.FileLines {
-		return nil
-	}
-
-	beforeCount, _ := countAll(*root)
-	*root = scan.FilterBinaryFiles(*root)
-	afterCount, _ := countAll(*root)
+	beforeCount, _ := countAll(root)
+	filtered := scan.FilterBinaryFiles(root)
+	afterCount, _ := countAll(filtered)
 	excluded := beforeCount - afterCount
 	slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
 
@@ -307,19 +310,27 @@ func (c *TreemapCmd) filterBinaryFiles(_ *config.Treemap, root *scan.DirectoryNo
 			msg: "no files available for visualization after excluding binary files",
 		}
 	}
+	// Update root in place — avoid struct copy which would copy the mutex.
+	root.Files = filtered.Files
+	root.Dirs = filtered.Dirs
 
 	return nil
 }
 
 func applyFillColours(
 	rects *treemap.TreemapRectangle,
-	root scan.DirectoryNode,
-	fillMetric metric.MetricName,
+	root *model.Directory,
+	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) {
 	fillPalette := palette.GetPalette(fillPaletteName)
 
-	if fillMetric.IsNumeric() {
+	p, ok := provider.Get(fillMetric)
+	if !ok {
+		return
+	}
+
+	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
@@ -327,43 +338,41 @@ func applyFillColours(
 			applyNumericFillColours(rects, root, fillMetric, buckets, numBuckets, fillPalette)
 		}
 	} else {
-		types := collectDistinctTypes(root)
+		types := collectDistinctTypes(root, fillMetric)
 		mapper := palette.NewCategoricalMapper(types, fillPalette)
-		applyCategoricalFillColours(rects, root, mapper)
+		applyCategoricalFillColours(rects, root, fillMetric, mapper)
 	}
 }
 
-func (c *TreemapCmd) applyBorderColours(
+func (*TreemapCmd) applyBorderColours(
 	rects *treemap.TreemapRectangle,
-	root scan.DirectoryNode,
+	root *model.Directory,
 	cfg *config.Treemap,
-	fillMetric metric.MetricName,
-) (metric.MetricName, palette.PaletteName) {
+) (metric.Name, palette.PaletteName) {
 	border := ptrString(cfg.Border)
 	if border == "" {
 		return "", ""
 	}
 
-	borderMetric := metric.MetricName(border)
+	borderMetric := metric.Name(border)
 
 	borderPaletteName := palette.PaletteName(ptrString(cfg.BorderPalette))
 	if ptrString(cfg.BorderPalette) == "" {
-		if p, ok := metric.DefaultPaletteFor(borderMetric); ok {
-			borderPaletteName = p
+		if p, ok := provider.Get(borderMetric); ok {
+			borderPaletteName = p.DefaultPalette()
 		} else {
 			borderPaletteName = palette.Neutral
 		}
 	}
 
-	if borderMetric == metric.FileLines &&
-		c.Size != metric.FileLines &&
-		fillMetric != metric.FileLines {
-		scan.PopulateLineCounts(&root)
-	}
-
 	borderPalette := palette.GetPalette(borderPaletteName)
 
-	if borderMetric.IsNumeric() {
+	p, ok := provider.Get(borderMetric)
+	if !ok {
+		return borderMetric, borderPaletteName
+	}
+
+	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
 		values := collectNumericValues(root, borderMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
@@ -371,9 +380,9 @@ func (c *TreemapCmd) applyBorderColours(
 			applyNumericBorderColours(rects, root, borderMetric, buckets, numBuckets, borderPalette)
 		}
 	} else {
-		types := collectDistinctTypes(root)
+		types := collectDistinctTypes(root, borderMetric)
 		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalBorderColours(rects, root, mapper)
+		applyCategoricalBorderColours(rects, root, borderMetric, mapper)
 	}
 
 	return borderMetric, borderPaletteName
@@ -382,9 +391,9 @@ func (c *TreemapCmd) applyBorderColours(
 type renderResult struct {
 	files, dirs       int
 	width, height     int
-	fillMetric        metric.MetricName
+	fillMetric        metric.Name
 	fillPaletteName   palette.PaletteName
-	borderMetric      metric.MetricName
+	borderMetric      metric.Name
 	borderPaletteName palette.PaletteName
 }
 
@@ -420,55 +429,36 @@ func (c *TreemapCmd) printResult(flags *Flags, r renderResult) error {
 	return eris.Wrap(enc.Encode(out), "failed to encode JSON output")
 }
 
-func collectNumericValues(root scan.DirectoryNode, m metric.MetricName) []float64 {
+func extractNumeric(f *model.File, m metric.Name) float64 {
+	if v, ok := f.Quantity(m); ok {
+		return float64(v)
+	}
+
+	if v, ok := f.Measure(m); ok {
+		return v
+	}
+
+	return 0
+}
+
+func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
 	var values []float64
-	collectNumericValuesRecursive(root, m, &values)
+
+	model.WalkFiles(root, func(f *model.File) {
+		values = append(values, extractNumeric(f, m))
+	})
 
 	return values
 }
 
-func collectNumericValuesRecursive(node scan.DirectoryNode, m metric.MetricName, values *[]float64) {
-	for _, f := range node.Files {
-		*values = append(*values, extractNumeric(f, m))
-	}
-
-	for _, d := range node.Dirs {
-		collectNumericValuesRecursive(d, m, values)
-	}
-}
-
-func extractNumeric(f scan.FileNode, m metric.MetricName) float64 {
-	switch m {
-	case metric.FileSize:
-		return metric.ExtractFileSize(f)
-	case metric.FileLines:
-		return metric.ExtractFileLines(f)
-	case metric.FileAge:
-		if f.Age != nil {
-			return f.Age.Seconds()
-		}
-
-		return 0
-	case metric.FileFreshness:
-		if f.Freshness != nil {
-			return f.Freshness.Seconds()
-		}
-
-		return 0
-	case metric.AuthorCount:
-		if f.AuthorCount != nil {
-			return float64(*f.AuthorCount)
-		}
-
-		return 0
-	default:
-		return 0
-	}
-}
-
-func collectDistinctTypes(root scan.DirectoryNode) []string {
+func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	seen := map[string]bool{}
-	collectTypesRecursive(root, seen)
+
+	model.WalkFiles(root, func(f *model.File) {
+		if v, ok := f.Classification(m); ok {
+			seen[v] = true
+		}
+	})
 
 	types := make([]string, 0, len(seen))
 	for t := range seen {
@@ -478,20 +468,10 @@ func collectDistinctTypes(root scan.DirectoryNode) []string {
 	return types
 }
 
-func collectTypesRecursive(node scan.DirectoryNode, seen map[string]bool) {
-	for _, f := range node.Files {
-		seen[f.FileType] = true
-	}
-
-	for _, d := range node.Dirs {
-		collectTypesRecursive(d, seen)
-	}
-}
-
 func applyNumericFillColours(
 	rect *treemap.TreemapRectangle,
-	node scan.DirectoryNode,
-	m metric.MetricName,
+	node *model.Directory,
+	m metric.Name,
 	buckets metric.BucketBoundaries,
 	numBuckets int,
 	p palette.ColourPalette,
@@ -515,7 +495,8 @@ func applyNumericFillColours(
 
 func applyCategoricalFillColours(
 	rect *treemap.TreemapRectangle,
-	node scan.DirectoryNode,
+	node *model.Directory,
+	m metric.Name,
 	mapper *palette.CategoricalMapper,
 ) {
 	fileIdx := 0
@@ -524,10 +505,13 @@ func applyCategoricalFillColours(
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyCategoricalFillColours(child, node.Dirs[dirIdx], mapper)
+			applyCategoricalFillColours(child, node.Dirs[dirIdx], m, mapper)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			child.FillColour = mapper.Map(node.Files[fileIdx].FileType)
+			if v, ok := node.Files[fileIdx].Classification(m); ok {
+				child.FillColour = mapper.Map(v)
+			}
+
 			fileIdx++
 		}
 	}
@@ -535,8 +519,8 @@ func applyCategoricalFillColours(
 
 func applyNumericBorderColours(
 	rect *treemap.TreemapRectangle,
-	node scan.DirectoryNode,
-	m metric.MetricName,
+	node *model.Directory,
+	m metric.Name,
 	buckets metric.BucketBoundaries,
 	numBuckets int,
 	p palette.ColourPalette,
@@ -561,7 +545,8 @@ func applyNumericBorderColours(
 
 func applyCategoricalBorderColours(
 	rect *treemap.TreemapRectangle,
-	node scan.DirectoryNode,
+	node *model.Directory,
+	m metric.Name,
 	mapper *palette.CategoricalMapper,
 ) {
 	fileIdx := 0
@@ -570,11 +555,14 @@ func applyCategoricalBorderColours(
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyCategoricalBorderColours(child, node.Dirs[dirIdx], mapper)
+			applyCategoricalBorderColours(child, node.Dirs[dirIdx], m, mapper)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			col := mapper.Map(node.Files[fileIdx].FileType)
-			child.BorderColour = &col
+			if v, ok := node.Files[fileIdx].Classification(m); ok {
+				col := mapper.Map(v)
+				child.BorderColour = &col
+			}
+
 			fileIdx++
 		}
 	}

@@ -11,7 +11,9 @@ import (
 
 	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/scan"
+	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/bevan/code-visualizer/internal/provider/git"
 )
 
 type CLI struct {
@@ -43,7 +45,7 @@ func setupLogger(verbose bool) { //nolint:revive // flag-parameter: boolean togg
 	slog.SetDefault(slog.New(handler))
 }
 
-func countAll(node scan.DirectoryNode) (files int, dirs int) {
+func countAll(node *model.Directory) (files int, dirs int) {
 	files = len(node.Files)
 	for _, d := range node.Dirs {
 		dirs++
@@ -56,6 +58,9 @@ func countAll(node scan.DirectoryNode) (files int, dirs int) {
 }
 
 func main() {
+	filesystem.Register()
+	git.Register()
+
 	cli := CLI{}
 
 	parser, err := kong.New(&cli,
@@ -126,7 +131,7 @@ func classifyError(err error) int {
 }
 
 type gitRequiredError struct {
-	metric metric.MetricName
+	metric metric.Name
 	target string
 }
 

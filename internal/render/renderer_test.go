@@ -11,25 +11,35 @@ import (
 
 	"github.com/sebdah/goldie/v2"
 
+	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
 	"github.com/bevan/code-visualizer/internal/treemap"
 )
+
+func makeFile(name, ext string, size int) *model.File {
+	f := &model.File{Name: name, Extension: ext}
+	f.SetQuantity(filesystem.FileSize, size)
+	f.SetClassification(filesystem.FileType, ext)
+
+	return f
+}
 
 func TestRenderFlatDir(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
+	root := &model.Directory{
 		Name: "flat",
-		Files: []scan.FileNode{
-			{Name: "small.txt", Size: 5, Extension: "txt", FileType: "txt"},
-			{Name: "medium.go", Size: 100, Extension: "go", FileType: "go"},
-			{Name: "large.rs", Size: 1000, Extension: "rs", FileType: "rs"},
+		Files: []*model.File{
+			makeFile("small.txt", "txt", 5),
+			makeFile("medium.go", "go", 100),
+			makeFile("large.rs", "rs", 1000),
 		},
 	}
 
-	rects := treemap.Layout(root, 800, 600)
+	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "flat.png")
 	err := RenderPNG(rects, 800, 600, out)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -49,22 +59,22 @@ func TestRenderNestedDir(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := scan.DirectoryNode{
+	root := &model.Directory{
 		Name: "nested",
-		Files: []scan.FileNode{
-			{Name: "root.txt", Size: 50, Extension: "txt", FileType: "txt"},
+		Files: []*model.File{
+			makeFile("root.txt", "txt", 50),
 		},
-		Dirs: []scan.DirectoryNode{
+		Dirs: []*model.Directory{
 			{
 				Name: "sub",
-				Files: []scan.FileNode{
-					{Name: "child.go", Size: 200, Extension: "go", FileType: "go"},
+				Files: []*model.File{
+					makeFile("child.go", "go", 200),
 				},
 			},
 		},
 	}
 
-	rects := treemap.Layout(root, 800, 600)
+	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "nested.png")
 	err := RenderPNG(rects, 800, 600, out)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -213,7 +223,7 @@ func BenchmarkScanAndRender(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		rects := treemap.Layout(root, 1920, 1080)
+		rects := treemap.Layout(root, 1920, 1080, filesystem.FileSize)
 		if err := RenderPNG(rects, 1920, 1080, out); err != nil {
 			b.Fatal(err)
 		}
