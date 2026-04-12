@@ -4,23 +4,23 @@
 
 **Goal:** Replace hardcoded metric fields on FileNode/DirectoryNode with a pluggable provider framework supporting parallel execution and dependency resolution.
 
-**Architecture:** New `model` package holds File/Directory with typed metric maps. Metric package gains Provider interface, registry, and parallel scheduler. Provider packages (filesystem, git) each register one provider per metric. Scanner returns `*model.Directory`, setting cheap metrics during the walk. Consumers read metrics via typed getters.
+**Architecture:** New `model` package holds File/Directory with typed metric maps keyed by `metric.Name`. New `provider` package defines the `Interface` that every metric implements, plus the registry and parallel scheduler. Provider packages (filesystem, git) each register one provider per metric. Scanner returns `*model.Directory`, setting cheap metrics during the walk. Consumers read metrics via typed getters.
 
 **Tech Stack:** Go 1.26.1, sync.RWMutex (node-level locking), errgroup (parallel provider execution), eris (error wrapping), Gomega (test assertions)
 
-**Import cycle avoidance:** `metric` defines Name, Kind, Provider (where `Load` takes `any`). `model` imports `metric` for Name/Kind/Provider. `metric` does NOT import `model`. The scheduler (`metric.Run`) also takes `any` and passes it through to providers, which type-assert to `*model.Directory` internally.
+**Import cycle avoidance:** The import graph flows one way: `metric` ← `model` ← `provider`. The `metric` package is a leaf — it defines only `Name`, `Kind`, and bucketing utilities with no imports from `model` or `provider`. The `model` package imports `metric` for `Name`/`Kind`. The `provider` package imports both `metric` and `model`, defining `Interface` (with `Load(*model.Directory)`), the registry, and the scheduler. No `any` types or type assertions are needed anywhere.
 
 ---
 
 ### Task 1: Metric Framework Types
 
-Add Name (as alias for backward compat), Kind enum, and Provider interface to the metric package.
+Add Name (as alias for backward compat) and Kind enum to the metric package. The metric package is a leaf — no Provider interface lives here.
 
 **Files:**
 - Modify: `internal/metric/metric.go`
 - Modify: `internal/metric/metric_test.go`
 
-- [ ] **Step 1: Add Name, Kind, and Provider to metric.go**
+- [ ] **Step 1: Add Name and Kind to metric.go**
 
 At the top of `internal/metric/metric.go`, below the existing `MetricName` type and above the constants, add:
 
@@ -36,19 +36,7 @@ const (
 	Measure                    // float64 values (percentages, rates)
 	Classification             // string values (file type, category)
 )
-
-// Provider is the interface every metric implements.
-// Load receives the tree root (typically *model.Directory) as any to avoid import cycles.
-type Provider interface {
-	Name() Name
-	Kind() Kind
-	Dependencies() []Name
-	DefaultPalette() palette.PaletteName
-	Load(root any) error
-}
 ```
-
-Add `"github.com/bevan/code-visualizer/internal/palette"` to the imports.
 
 **Note:** `type Name = MetricName` is a type alias — both names refer to the same underlying type. This allows all existing code that uses `MetricName` to continue working. In the final cleanup task, we'll flip the definition to `type Name string` and `type MetricName = Name`.
 
@@ -76,189 +64,21 @@ Expected: All tests pass, including new TestKindConstants.
 
 ```bash
 git add internal/metric/metric.go internal/metric/metric_test.go
-git commit -m "feat(metric): add Name alias, Kind enum, and Provider interface
+git commit -m "feat(metric): add Name alias and Kind enum
 
-Introduces the core framework types for the pluggable metric system.
+Introduces the core value types for the pluggable metric system.
 Name is a type alias for MetricName for backward compatibility.
 Kind classifies metrics as Quantity, Measure, or Classification.
-Provider is the interface every metric must implement.
+The metric package remains a leaf with no model or provider imports.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ```
 
 ---
 
-### Task 2: Metric Registry
+### Task 2: Model Package
 
-Add provider registration (Register/Get/All) alongside the existing palette registry.
-
-**Files:**
-- Modify: `internal/metric/registry.go`
-- Modify: `internal/metric/registry_test.go`
-
-- [ ] **Step 1: Write failing tests for Register/Get/All**
-
-Add to `internal/metric/registry_test.go`:
-
-```go
-func TestRegisterAndGet(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
-	p := &stubProvider{name: "test-metric", kind: Quantity}
-	reg.register(p)
-
-	got, ok := reg.get("test-metric")
-	g.Expect(ok).To(BeTrue())
-	g.Expect(got.Name()).To(Equal(Name("test-metric")))
-	g.Expect(got.Kind()).To(Equal(Quantity))
-}
-
-func TestGetUnregistered(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
-	_, ok := reg.get("nonexistent")
-	g.Expect(ok).To(BeFalse())
-}
-
-func TestAllProviders(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
-	reg.register(&stubProvider{name: "m1", kind: Quantity})
-	reg.register(&stubProvider{name: "m2", kind: Classification})
-
-	all := reg.all()
-	g.Expect(all).To(HaveLen(2))
-}
-
-func TestRegisterDuplicatePanics(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
-	reg.register(&stubProvider{name: "dup", kind: Quantity})
-
-	g.Expect(func() {
-		reg.register(&stubProvider{name: "dup", kind: Quantity})
-	}).To(Panic())
-}
-
-// stubProvider is a minimal Provider for testing.
-type stubProvider struct {
-	name Name
-	kind Kind
-}
-
-func (s *stubProvider) Name() Name                    { return s.name }
-func (s *stubProvider) Kind() Kind                    { return s.kind }
-func (s *stubProvider) Dependencies() []Name          { return nil }
-func (s *stubProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
-func (s *stubProvider) Load(_ any) error              { return nil }
-```
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-Run: `go test ./internal/metric/ -count=1 -run TestRegisterAndGet -v`
-Expected: FAIL — `newRegistry` not defined.
-
-- [ ] **Step 3: Implement registry**
-
-Add to `internal/metric/registry.go` (keep existing `DefaultPaletteFor` and palette map):
-
-```go
-import (
-	"fmt"
-	"sync"
-
-	"github.com/bevan/code-visualizer/internal/palette"
-)
-
-// registry holds registered metric providers.
-type registry struct {
-	mu        sync.RWMutex
-	providers map[Name]Provider
-}
-
-func newRegistry() *registry {
-	return &registry{providers: make(map[Name]Provider)}
-}
-
-func (r *registry) register(p Provider) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, exists := r.providers[p.Name()]; exists {
-		panic(fmt.Sprintf("metric %q already registered", p.Name()))
-	}
-
-	r.providers[p.Name()] = p
-}
-
-func (r *registry) get(name Name) (Provider, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	p, ok := r.providers[name]
-	return p, ok
-}
-
-func (r *registry) all() []Provider {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	result := make([]Provider, 0, len(r.providers))
-	for _, p := range r.providers {
-		result = append(result, p)
-	}
-
-	return result
-}
-
-// globalRegistry is the process-wide provider registry.
-var globalRegistry = newRegistry()
-
-// Register adds a provider to the global registry. Panics on duplicate name.
-func Register(p Provider) { globalRegistry.register(p) }
-
-// Get retrieves a provider by name from the global registry.
-func Get(name Name) (Provider, bool) { return globalRegistry.get(name) }
-
-// All returns all registered providers.
-func All() []Provider { return globalRegistry.all() }
-
-// ResetRegistryForTesting clears the global registry. Test use only.
-func ResetRegistryForTesting() {
-	globalRegistry = newRegistry()
-}
-```
-
-- [ ] **Step 4: Run tests**
-
-Run: `go test ./internal/metric/ -count=1 -v`
-Expected: All tests pass.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add internal/metric/registry.go internal/metric/registry_test.go
-git commit -m "feat(metric): add provider registry with Register/Get/All
-
-Thread-safe registry backed by sync.RWMutex. Panics on duplicate
-registration. Global registry used by Register/Get/All package functions.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
-```
-
----
-
-### Task 3: Model Package
-
-Create `internal/model/` with File and Directory types. Typed getters return `(value, bool)`. Setters take `metric.Provider` and validate Kind.
+Create `internal/model/` with File and Directory types. Typed getters return `(value, bool)`. Setters take `metric.Name` directly — no provider instance or Kind validation needed.
 
 **Files:**
 - Create: `internal/model/file.go`
@@ -279,30 +99,15 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
 )
-
-type fakeProvider struct {
-	name metric.Name
-	kind metric.Kind
-}
-
-func (f *fakeProvider) Name() metric.Name                    { return f.name }
-func (f *fakeProvider) Kind() metric.Kind                    { return f.kind }
-func (f *fakeProvider) Dependencies() []metric.Name          { return nil }
-func (f *fakeProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
-func (f *fakeProvider) Load(_ any) error                     { return nil }
 
 func TestFileSetAndGetQuantity(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	f := &File{Path: "/a.go", Name: "a.go"}
-	p := &fakeProvider{name: "file-size", kind: metric.Quantity}
 
-	f.SetQuantity(p, 1024)
+	f.SetQuantity("file-size", 1024)
 
 	v, ok := f.Quantity("file-size")
 	g.Expect(ok).To(BeTrue())
@@ -314,9 +119,8 @@ func TestFileSetAndGetMeasure(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	f := &File{Path: "/a.go", Name: "a.go"}
-	p := &fakeProvider{name: "complexity", kind: metric.Measure}
 
-	f.SetMeasure(p, 3.14)
+	f.SetMeasure("complexity", 3.14)
 
 	v, ok := f.Measure("complexity")
 	g.Expect(ok).To(BeTrue())
@@ -328,9 +132,8 @@ func TestFileSetAndGetClassification(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	f := &File{Path: "/a.go", Name: "a.go"}
-	p := &fakeProvider{name: "file-type", kind: metric.Classification}
 
-	f.SetClassification(p, "go")
+	f.SetClassification("file-type", "go")
 
 	v, ok := f.Classification("file-type")
 	g.Expect(ok).To(BeTrue())
@@ -353,43 +156,11 @@ func TestFileGetUnsetMetric(t *testing.T) {
 	g.Expect(ok).To(BeFalse())
 }
 
-func TestFileSetQuantityPanicsOnWrongKind(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	f := &File{Path: "/a.go", Name: "a.go"}
-	p := &fakeProvider{name: "file-type", kind: metric.Classification}
-
-	g.Expect(func() { f.SetQuantity(p, 42) }).To(Panic())
-}
-
-func TestFileSetMeasurePanicsOnWrongKind(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	f := &File{Path: "/a.go", Name: "a.go"}
-	p := &fakeProvider{name: "file-size", kind: metric.Quantity}
-
-	g.Expect(func() { f.SetMeasure(p, 1.5) }).To(Panic())
-}
-
-func TestFileSetClassificationPanicsOnWrongKind(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	f := &File{Path: "/a.go", Name: "a.go"}
-	p := &fakeProvider{name: "file-size", kind: metric.Quantity}
-
-	g.Expect(func() { f.SetClassification(p, "go") }).To(Panic())
-}
-
 func TestFileConcurrentAccess(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	f := &File{Path: "/a.go", Name: "a.go"}
-	pSize := &fakeProvider{name: "size", kind: metric.Quantity}
-	pType := &fakeProvider{name: "type", kind: metric.Classification}
 
 	var wg sync.WaitGroup
 
@@ -399,7 +170,7 @@ func TestFileConcurrentAccess(t *testing.T) {
 		defer wg.Done()
 
 		for i := range 100 {
-			f.SetQuantity(pSize, i)
+			f.SetQuantity("size", i)
 		}
 	}()
 
@@ -407,7 +178,7 @@ func TestFileConcurrentAccess(t *testing.T) {
 		defer wg.Done()
 
 		for range 100 {
-			f.SetClassification(pType, "go")
+			f.SetClassification("type", "go")
 		}
 	}()
 
@@ -437,7 +208,6 @@ Create `internal/model/file.go`:
 package model
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/bevan/code-visualizer/internal/metric"
@@ -486,12 +256,8 @@ func (f *File) Classification(name metric.Name) (string, bool) {
 	return v, ok
 }
 
-// SetQuantity stores an int metric value. Panics if the provider's Kind is not Quantity.
-func (f *File) SetQuantity(p metric.Provider, v int) {
-	if p.Kind() != metric.Quantity {
-		panic(fmt.Sprintf("SetQuantity called with %s provider %q (expected Quantity)", kindName(p.Kind()), p.Name()))
-	}
-
+// SetQuantity stores an int metric value identified by name.
+func (f *File) SetQuantity(name metric.Name, v int) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -499,15 +265,11 @@ func (f *File) SetQuantity(p metric.Provider, v int) {
 		f.quantities = make(map[metric.Name]int)
 	}
 
-	f.quantities[p.Name()] = v
+	f.quantities[name] = v
 }
 
-// SetMeasure stores a float64 metric value. Panics if the provider's Kind is not Measure.
-func (f *File) SetMeasure(p metric.Provider, v float64) {
-	if p.Kind() != metric.Measure {
-		panic(fmt.Sprintf("SetMeasure called with %s provider %q (expected Measure)", kindName(p.Kind()), p.Name()))
-	}
-
+// SetMeasure stores a float64 metric value identified by name.
+func (f *File) SetMeasure(name metric.Name, v float64) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -515,15 +277,11 @@ func (f *File) SetMeasure(p metric.Provider, v float64) {
 		f.measures = make(map[metric.Name]float64)
 	}
 
-	f.measures[p.Name()] = v
+	f.measures[name] = v
 }
 
-// SetClassification stores a string metric value. Panics if the provider's Kind is not Classification.
-func (f *File) SetClassification(p metric.Provider, v string) {
-	if p.Kind() != metric.Classification {
-		panic(fmt.Sprintf("SetClassification called with %s provider %q (expected Classification)", kindName(p.Kind()), p.Name()))
-	}
-
+// SetClassification stores a string metric value identified by name.
+func (f *File) SetClassification(name metric.Name, v string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -531,20 +289,7 @@ func (f *File) SetClassification(p metric.Provider, v string) {
 		f.classifications = make(map[metric.Name]string)
 	}
 
-	f.classifications[p.Name()] = v
-}
-
-func kindName(k metric.Kind) string {
-	switch k {
-	case metric.Quantity:
-		return "Quantity"
-	case metric.Measure:
-		return "Measure"
-	case metric.Classification:
-		return "Classification"
-	default:
-		return "Unknown"
-	}
+	f.classifications[name] = v
 }
 ```
 
@@ -569,8 +314,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-
-	"github.com/bevan/code-visualizer/internal/metric"
 )
 
 func TestDirectorySetAndGetQuantity(t *testing.T) {
@@ -578,9 +321,8 @@ func TestDirectorySetAndGetQuantity(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	d := &Directory{Path: "/src", Name: "src"}
-	p := &fakeProvider{name: "folder-size", kind: metric.Quantity}
 
-	d.SetQuantity(p, 9999)
+	d.SetQuantity("folder-size", 9999)
 
 	v, ok := d.Quantity("folder-size")
 	g.Expect(ok).To(BeTrue())
@@ -625,7 +367,6 @@ Create `internal/model/directory.go`:
 package model
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/bevan/code-visualizer/internal/metric"
@@ -674,12 +415,8 @@ func (d *Directory) Classification(name metric.Name) (string, bool) {
 	return v, ok
 }
 
-// SetQuantity stores an int metric value. Panics if the provider's Kind is not Quantity.
-func (d *Directory) SetQuantity(p metric.Provider, v int) {
-	if p.Kind() != metric.Quantity {
-		panic(fmt.Sprintf("SetQuantity called with %s provider %q (expected Quantity)", kindName(p.Kind()), p.Name()))
-	}
-
+// SetQuantity stores an int metric value identified by name.
+func (d *Directory) SetQuantity(name metric.Name, v int) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -687,15 +424,11 @@ func (d *Directory) SetQuantity(p metric.Provider, v int) {
 		d.quantities = make(map[metric.Name]int)
 	}
 
-	d.quantities[p.Name()] = v
+	d.quantities[name] = v
 }
 
-// SetMeasure stores a float64 metric value. Panics if the provider's Kind is not Measure.
-func (d *Directory) SetMeasure(p metric.Provider, v float64) {
-	if p.Kind() != metric.Measure {
-		panic(fmt.Sprintf("SetMeasure called with %s provider %q (expected Measure)", kindName(p.Kind()), p.Name()))
-	}
-
+// SetMeasure stores a float64 metric value identified by name.
+func (d *Directory) SetMeasure(name metric.Name, v float64) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -703,15 +436,11 @@ func (d *Directory) SetMeasure(p metric.Provider, v float64) {
 		d.measures = make(map[metric.Name]float64)
 	}
 
-	d.measures[p.Name()] = v
+	d.measures[name] = v
 }
 
-// SetClassification stores a string metric value. Panics if the provider's Kind is not Classification.
-func (d *Directory) SetClassification(p metric.Provider, v string) {
-	if p.Kind() != metric.Classification {
-		panic(fmt.Sprintf("SetClassification called with %s provider %q (expected Classification)", kindName(p.Kind()), p.Name()))
-	}
-
+// SetClassification stores a string metric value identified by name.
+func (d *Directory) SetClassification(name metric.Name, v string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -719,7 +448,7 @@ func (d *Directory) SetClassification(p metric.Provider, v string) {
 		d.classifications = make(map[metric.Name]string)
 	}
 
-	d.classifications[p.Name()] = v
+	d.classifications[name] = v
 }
 ```
 
@@ -753,29 +482,238 @@ Expected: All tests pass, no races.
 git add internal/model/
 git commit -m "feat(model): add File and Directory with typed metric storage
 
-Typed getters return (value, bool). Setters take metric.Provider and
-panic if Kind mismatches. Lazy map init and sync.RWMutex per node.
-WalkFiles utility for tree traversal.
+Typed getters return (value, bool). Setters take metric.Name directly.
+Lazy map init and sync.RWMutex per node. WalkFiles utility for tree
+traversal.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ```
 
 ---
 
-### Task 4: Metric Scheduler
+### Task 3: Provider Package
 
-Implement `metric.Run()` with dependency resolution, topological sort, and parallel execution.
+Create `internal/provider/` with the `Interface` definition, thread-safe registry, and test helpers.
 
 **Files:**
-- Create: `internal/metric/run.go`
-- Create: `internal/metric/run_test.go`
+- Create: `internal/provider/provider.go`
+- Create: `internal/provider/registry.go`
+- Create: `internal/provider/registry_test.go`
+
+- [ ] **Step 1: Write failing tests for Register/Get/All**
+
+Create `internal/provider/registry_test.go`:
+
+```go
+package provider
+
+import (
+	"testing"
+
+	. "github.com/onsi/gomega"
+
+	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/palette"
+)
+
+// stubProvider is a minimal Interface implementation for testing.
+type stubProvider struct {
+	name metric.Name
+	kind metric.Kind
+}
+
+func (s *stubProvider) Name() metric.Name                    { return s.name }
+func (s *stubProvider) Kind() metric.Kind                    { return s.kind }
+func (s *stubProvider) Dependencies() []metric.Name          { return nil }
+func (s *stubProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
+func (s *stubProvider) Load(_ *model.Directory) error        { return nil }
+
+func TestRegisterAndGet(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	p := &stubProvider{name: "test-metric", kind: metric.Quantity}
+	reg.register(p)
+
+	got, ok := reg.get("test-metric")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(got.Name()).To(Equal(metric.Name("test-metric")))
+	g.Expect(got.Kind()).To(Equal(metric.Quantity))
+}
+
+func TestGetUnregistered(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	_, ok := reg.get("nonexistent")
+	g.Expect(ok).To(BeFalse())
+}
+
+func TestAllProviders(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	reg.register(&stubProvider{name: "m1", kind: metric.Quantity})
+	reg.register(&stubProvider{name: "m2", kind: metric.Classification})
+
+	all := reg.all()
+	g.Expect(all).To(HaveLen(2))
+}
+
+func TestRegisterDuplicatePanics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	reg.register(&stubProvider{name: "dup", kind: metric.Quantity})
+
+	g.Expect(func() {
+		reg.register(&stubProvider{name: "dup", kind: metric.Quantity})
+	}).To(Panic())
+}
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `go test ./internal/provider/ -count=1 -run TestRegisterAndGet -v`
+Expected: FAIL — package does not exist.
+
+- [ ] **Step 3: Implement Interface definition**
+
+Create `internal/provider/provider.go`:
+
+```go
+// Package provider defines the metric provider interface, registry, and scheduler.
+package provider
+
+import (
+	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/palette"
+)
+
+// Interface is the contract every metric provider implements.
+type Interface interface {
+	Name() metric.Name
+	Kind() metric.Kind
+	Dependencies() []metric.Name
+	DefaultPalette() palette.PaletteName
+	Load(root *model.Directory) error
+}
+```
+
+- [ ] **Step 4: Implement registry**
+
+Create `internal/provider/registry.go`:
+
+```go
+package provider
+
+import (
+	"fmt"
+	"sync"
+
+	"github.com/bevan/code-visualizer/internal/metric"
+)
+
+// registry holds registered metric providers.
+type registry struct {
+	mu        sync.RWMutex
+	providers map[metric.Name]Interface
+}
+
+func newRegistry() *registry {
+	return &registry{providers: make(map[metric.Name]Interface)}
+}
+
+func (r *registry) register(p Interface) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, exists := r.providers[p.Name()]; exists {
+		panic(fmt.Sprintf("provider %q already registered", p.Name()))
+	}
+
+	r.providers[p.Name()] = p
+}
+
+func (r *registry) get(name metric.Name) (Interface, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	p, ok := r.providers[name]
+	return p, ok
+}
+
+func (r *registry) all() []Interface {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make([]Interface, 0, len(r.providers))
+	for _, p := range r.providers {
+		result = append(result, p)
+	}
+
+	return result
+}
+
+// globalRegistry is the process-wide provider registry.
+var globalRegistry = newRegistry()
+
+// Register adds a provider to the global registry. Panics on duplicate name.
+func Register(p Interface) { globalRegistry.register(p) }
+
+// Get retrieves a provider by name from the global registry.
+func Get(name metric.Name) (Interface, bool) { return globalRegistry.get(name) }
+
+// All returns all registered providers.
+func All() []Interface { return globalRegistry.all() }
+
+// ResetRegistryForTesting clears the global registry. Test use only.
+func ResetRegistryForTesting() {
+	globalRegistry = newRegistry()
+}
+```
+
+- [ ] **Step 5: Run tests**
+
+Run: `go test ./internal/provider/ -count=1 -v`
+Expected: All tests pass.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add internal/provider/provider.go internal/provider/registry.go internal/provider/registry_test.go
+git commit -m "feat(provider): add Interface definition and registry with Register/Get/All
+
+Interface defines Name, Kind, Dependencies, DefaultPalette, and
+Load(*model.Directory). Thread-safe registry backed by sync.RWMutex.
+Panics on duplicate registration. Global registry used by
+Register/Get/All package functions.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+```
+
+---
+
+### Task 4: Provider Scheduler
+
+Implement `provider.Run()` with dependency resolution, topological sort, and parallel execution.
+
+**Files:**
+- Create: `internal/provider/run.go`
+- Create: `internal/provider/run_test.go`
 
 - [ ] **Step 1: Write failing tests**
 
-Create `internal/metric/run_test.go`:
+Create `internal/provider/run_test.go`:
 
 ```go
-package metric
+package provider
 
 import (
 	"errors"
@@ -786,16 +724,18 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/palette"
 )
 
 // orderTracker records which providers ran and in what order.
 type orderTracker struct {
 	mu    sync.Mutex
-	calls []Name
+	calls []metric.Name
 }
 
-func (o *orderTracker) record(name Name) {
+func (o *orderTracker) record(name metric.Name) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -804,19 +744,19 @@ func (o *orderTracker) record(name Name) {
 
 // mockProvider records load calls and optionally returns an error.
 type mockProvider struct {
-	name    Name
-	kind    Kind
-	deps    []Name
+	name    metric.Name
+	kind    metric.Kind
+	deps    []metric.Name
 	loadErr error
 	tracker *orderTracker
 }
 
-func (m *mockProvider) Name() Name                    { return m.name }
-func (m *mockProvider) Kind() Kind                    { return m.kind }
-func (m *mockProvider) Dependencies() []Name          { return m.deps }
-func (m *mockProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
+func (m *mockProvider) Name() metric.Name                    { return m.name }
+func (m *mockProvider) Kind() metric.Kind                    { return m.kind }
+func (m *mockProvider) Dependencies() []metric.Name          { return m.deps }
+func (m *mockProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
 
-func (m *mockProvider) Load(_ any) error {
+func (m *mockProvider) Load(_ *model.Directory) error {
 	if m.tracker != nil {
 		m.tracker.record(m.name)
 	}
@@ -830,11 +770,11 @@ func TestRunBasicExecution(t *testing.T) {
 
 	reg := newRegistry()
 	tracker := &orderTracker{}
-	reg.register(&mockProvider{name: "m1", kind: Quantity, tracker: tracker})
+	reg.register(&mockProvider{name: "m1", kind: metric.Quantity, tracker: tracker})
 
-	err := runWithRegistry(reg, nil, []Name{"m1"})
+	err := runWithRegistry(reg, nil, []metric.Name{"m1"})
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(tracker.calls).To(Equal([]Name{"m1"}))
+	g.Expect(tracker.calls).To(Equal([]metric.Name{"m1"}))
 }
 
 func TestRunTransitiveDependencies(t *testing.T) {
@@ -843,10 +783,10 @@ func TestRunTransitiveDependencies(t *testing.T) {
 
 	reg := newRegistry()
 	tracker := &orderTracker{}
-	reg.register(&mockProvider{name: "base", kind: Quantity, tracker: tracker})
-	reg.register(&mockProvider{name: "derived", kind: Quantity, deps: []Name{"base"}, tracker: tracker})
+	reg.register(&mockProvider{name: "base", kind: metric.Quantity, tracker: tracker})
+	reg.register(&mockProvider{name: "derived", kind: metric.Quantity, deps: []metric.Name{"base"}, tracker: tracker})
 
-	err := runWithRegistry(reg, nil, []Name{"derived"})
+	err := runWithRegistry(reg, nil, []metric.Name{"derived"})
 	g.Expect(err).NotTo(HaveOccurred())
 
 	// "base" must run before "derived"
@@ -873,10 +813,10 @@ func TestRunCycleDetection(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	reg.register(&mockProvider{name: "a", kind: Quantity, deps: []Name{"b"}})
-	reg.register(&mockProvider{name: "b", kind: Quantity, deps: []Name{"a"}})
+	reg.register(&mockProvider{name: "a", kind: metric.Quantity, deps: []metric.Name{"b"}})
+	reg.register(&mockProvider{name: "b", kind: metric.Quantity, deps: []metric.Name{"a"}})
 
-	err := runWithRegistry(reg, nil, []Name{"a"})
+	err := runWithRegistry(reg, nil, []metric.Name{"a"})
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("circular dependency"))
 }
@@ -886,9 +826,9 @@ func TestRunUnknownDependency(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	reg.register(&mockProvider{name: "a", kind: Quantity, deps: []Name{"missing"}})
+	reg.register(&mockProvider{name: "a", kind: metric.Quantity, deps: []metric.Name{"missing"}})
 
-	err := runWithRegistry(reg, nil, []Name{"a"})
+	err := runWithRegistry(reg, nil, []metric.Name{"a"})
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("unknown metric"))
 }
@@ -899,7 +839,7 @@ func TestRunUnknownRequestedMetric(t *testing.T) {
 
 	reg := newRegistry()
 
-	err := runWithRegistry(reg, nil, []Name{"nonexistent"})
+	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"})
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("unknown metric"))
 }
@@ -909,26 +849,26 @@ func TestRunErrorPropagation(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	reg.register(&mockProvider{name: "fail", kind: Quantity, loadErr: errors.New("load failed")})
+	reg.register(&mockProvider{name: "fail", kind: metric.Quantity, loadErr: errors.New("load failed")})
 
-	err := runWithRegistry(reg, nil, []Name{"fail"})
+	err := runWithRegistry(reg, nil, []metric.Name{"fail"})
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("load failed"))
 }
 
 // concurrentProvider tracks concurrent Load calls via shared atomics.
 type concurrentProvider struct {
-	name          Name
+	name          metric.Name
 	counter       *atomic.Int32
 	maxConcurrent *atomic.Int32
 }
 
-func (c *concurrentProvider) Name() Name                    { return c.name }
-func (c *concurrentProvider) Kind() Kind                    { return Quantity }
-func (c *concurrentProvider) Dependencies() []Name          { return nil }
-func (c *concurrentProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
+func (c *concurrentProvider) Name() metric.Name                    { return c.name }
+func (c *concurrentProvider) Kind() metric.Kind                    { return metric.Quantity }
+func (c *concurrentProvider) Dependencies() []metric.Name          { return nil }
+func (c *concurrentProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
 
-func (c *concurrentProvider) Load(_ any) error {
+func (c *concurrentProvider) Load(_ *model.Directory) error {
 	cur := c.counter.Add(1)
 
 	for {
@@ -958,7 +898,7 @@ func TestRunParallelExecution(t *testing.T) {
 	reg.register(&concurrentProvider{name: "p2", counter: &counter, maxConcurrent: &maxConcurrent})
 	reg.register(&concurrentProvider{name: "p3", counter: &counter, maxConcurrent: &maxConcurrent})
 
-	err := runWithRegistry(reg, nil, []Name{"p1", "p2", "p3"})
+	err := runWithRegistry(reg, nil, []metric.Name{"p1", "p2", "p3"})
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(maxConcurrent.Load()).To(BeNumerically(">", 1), "expected concurrent execution")
 }
@@ -969,7 +909,7 @@ func TestRunEmptyRequest(t *testing.T) {
 
 	reg := newRegistry()
 
-	err := runWithRegistry(reg, nil, []Name{})
+	err := runWithRegistry(reg, nil, []metric.Name{})
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -979,12 +919,12 @@ func TestRunAutoExpandsDependencies(t *testing.T) {
 
 	reg := newRegistry()
 	tracker := &orderTracker{}
-	reg.register(&mockProvider{name: "base", kind: Quantity, tracker: tracker})
-	reg.register(&mockProvider{name: "mid", kind: Quantity, deps: []Name{"base"}, tracker: tracker})
-	reg.register(&mockProvider{name: "top", kind: Quantity, deps: []Name{"mid"}, tracker: tracker})
+	reg.register(&mockProvider{name: "base", kind: metric.Quantity, tracker: tracker})
+	reg.register(&mockProvider{name: "mid", kind: metric.Quantity, deps: []metric.Name{"base"}, tracker: tracker})
+	reg.register(&mockProvider{name: "top", kind: metric.Quantity, deps: []metric.Name{"mid"}, tracker: tracker})
 
 	// Only request "top" — "mid" and "base" should be auto-included
-	err := runWithRegistry(reg, nil, []Name{"top"})
+	err := runWithRegistry(reg, nil, []metric.Name{"top"})
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(tracker.calls).To(HaveLen(3))
 }
@@ -992,28 +932,31 @@ func TestRunAutoExpandsDependencies(t *testing.T) {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `go test ./internal/metric/ -count=1 -run TestRun -v`
+Run: `go test ./internal/provider/ -count=1 -run TestRun -v`
 Expected: FAIL — `runWithRegistry` not defined.
 
 - [ ] **Step 3: Implement Run**
 
-Create `internal/metric/run.go`:
+Create `internal/provider/run.go`:
 
 ```go
-package metric
+package provider
 
 import (
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/model"
 )
 
 // Run loads the requested metrics (plus transitive dependencies) onto the tree.
 // Providers run in parallel where dependency ordering allows.
-func Run(root any, requested []Name) error {
+func Run(root *model.Directory, requested []metric.Name) error {
 	return runWithRegistry(globalRegistry, root, requested)
 }
 
-func runWithRegistry(reg *registry, root any, requested []Name) error {
+func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Name) error {
 	if len(requested) == 0 {
 		return nil
 	}
@@ -1048,12 +991,12 @@ func runWithRegistry(reg *registry, root any, requested []Name) error {
 }
 
 // expandDeps returns the transitive closure of requested metric names.
-func expandDeps(reg *registry, requested []Name) ([]Name, error) {
-	seen := make(map[Name]bool)
-	var result []Name
+func expandDeps(reg *registry, requested []metric.Name) ([]metric.Name, error) {
+	seen := make(map[metric.Name]bool)
+	var result []metric.Name
 
-	var visit func(Name) error
-	visit = func(name Name) error {
+	var visit func(metric.Name) error
+	visit = func(name metric.Name) error {
 		if seen[name] {
 			return nil
 		}
@@ -1086,14 +1029,14 @@ func expandDeps(reg *registry, requested []Name) ([]Name, error) {
 
 // topoSort groups metrics into execution levels. Each level's metrics have
 // all dependencies satisfied by previous levels.
-func topoSort(reg *registry, names []Name) ([][]Name, error) {
-	nameSet := make(map[Name]bool, len(names))
+func topoSort(reg *registry, names []metric.Name) ([][]metric.Name, error) {
+	nameSet := make(map[metric.Name]bool, len(names))
 	for _, n := range names {
 		nameSet[n] = true
 	}
 
-	inDegree := make(map[Name]int, len(names))
-	dependents := make(map[Name][]Name)
+	inDegree := make(map[metric.Name]int, len(names))
+	dependents := make(map[metric.Name][]metric.Name)
 
 	for _, n := range names {
 		inDegree[n] = 0
@@ -1110,11 +1053,11 @@ func topoSort(reg *registry, names []Name) ([][]Name, error) {
 		}
 	}
 
-	var levels [][]Name
+	var levels [][]metric.Name
 	processed := 0
 
 	for processed < len(names) {
-		var level []Name
+		var level []metric.Name
 
 		for _, n := range names {
 			if inDegree[n] == 0 {
@@ -1150,7 +1093,7 @@ If `golang.org/x/sync` is already present transitively, `go mod tidy` alone suff
 
 - [ ] **Step 5: Run tests**
 
-Run: `go test ./internal/metric/ -count=1 -v`
+Run: `go test ./internal/provider/ -count=1 -v`
 Expected: All tests pass.
 
 - [ ] **Step 6: Run full test suite**
@@ -1161,8 +1104,8 @@ Expected: All packages pass.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add internal/metric/run.go internal/metric/run_test.go go.mod go.sum
-git commit -m "feat(metric): add scheduler with dependency resolution and parallel execution
+git add internal/provider/run.go internal/provider/run_test.go go.mod go.sum
+git commit -m "feat(provider): add scheduler with dependency resolution and parallel execution
 
 Run() expands transitive dependencies, topologically sorts into execution
 levels, and runs each level in parallel via errgroup. Detects cycles and
@@ -1341,7 +1284,7 @@ func (FileSizeProvider) Name() metric.Name                    { return FileSize 
 func (FileSizeProvider) Kind() metric.Kind                    { return metric.Quantity }
 func (FileSizeProvider) Dependencies() []metric.Name          { return nil }
 func (FileSizeProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
-func (FileSizeProvider) Load(_ any) error                     { return nil }
+func (FileSizeProvider) Load(_ *model.Directory) error        { return nil }
 
 // FileTypeProvider reports the file type classification. Value is set during scan; Load is a no-op.
 type FileTypeProvider struct{}
@@ -1350,7 +1293,7 @@ func (FileTypeProvider) Name() metric.Name                    { return FileType 
 func (FileTypeProvider) Kind() metric.Kind                    { return metric.Classification }
 func (FileTypeProvider) Dependencies() []metric.Name          { return nil }
 func (FileTypeProvider) DefaultPalette() palette.PaletteName  { return palette.Categorization }
-func (FileTypeProvider) Load(_ any) error                     { return nil }
+func (FileTypeProvider) Load(_ *model.Directory) error        { return nil }
 
 // FileLinesProvider counts lines in each text file.
 type FileLinesProvider struct{}
@@ -1360,9 +1303,8 @@ func (FileLinesProvider) Kind() metric.Kind                    { return metric.Q
 func (FileLinesProvider) Dependencies() []metric.Name          { return nil }
 func (FileLinesProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
 
-func (p FileLinesProvider) Load(root any) error {
-	dir := root.(*model.Directory)
-	model.WalkFiles(dir, func(f *model.File) {
+func (FileLinesProvider) Load(root *model.Directory) error {
+	model.WalkFiles(root, func(f *model.File) {
 		if f.IsBinary {
 			return
 		}
@@ -1380,7 +1322,7 @@ func (p FileLinesProvider) Load(root any) error {
 			return
 		}
 
-		f.SetQuantity(p, count)
+		f.SetQuantity(FileLines, count)
 	})
 
 	return nil
@@ -1415,13 +1357,13 @@ Create `internal/provider/filesystem/register.go`:
 ```go
 package filesystem
 
-import "github.com/bevan/code-visualizer/internal/metric"
+import "github.com/bevan/code-visualizer/internal/provider"
 
 // Register adds all filesystem metric providers to the global registry.
 func Register() {
-	metric.Register(FileSizeProvider{})
-	metric.Register(FileLinesProvider{})
-	metric.Register(FileTypeProvider{})
+	provider.Register(FileSizeProvider{})
+	provider.Register(FileLinesProvider{})
+	provider.Register(FileTypeProvider{})
 }
 ```
 
@@ -1438,6 +1380,7 @@ git commit -m "feat(provider): add filesystem providers (file-size, file-lines, 
 
 FileSizeProvider and FileTypeProvider are no-op (values set during scan).
 FileLinesProvider counts lines per file and detects binary files.
+Load takes *model.Directory directly; setters use metric Name constants.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ```
@@ -1804,16 +1747,14 @@ func (*FileAgeProvider) Kind() metric.Kind                    { return metric.Qu
 func (*FileAgeProvider) Dependencies() []metric.Name          { return nil }
 func (*FileAgeProvider) DefaultPalette() palette.PaletteName  { return palette.Temperature }
 
-func (p *FileAgeProvider) Load(root any) error {
-	dir := root.(*model.Directory)
-
-	s, err := getService(dir.Path)
+func (*FileAgeProvider) Load(root *model.Directory) error {
+	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrap(err, "file-age requires a git repository")
 	}
 
-	model.WalkFiles(dir, func(f *model.File) {
-		relPath, err := filepath.Rel(dir.Path, f.Path)
+	model.WalkFiles(root, func(f *model.File) {
+		relPath, err := filepath.Rel(root.Path, f.Path)
 		if err != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", err)
 
@@ -1829,7 +1770,7 @@ func (p *FileAgeProvider) Load(root any) error {
 			return
 		}
 
-		f.SetQuantity(p, age)
+		f.SetQuantity(FileAge, age)
 	})
 
 	return nil
@@ -1843,16 +1784,14 @@ func (*FileFreshnessProvider) Kind() metric.Kind                    { return met
 func (*FileFreshnessProvider) Dependencies() []metric.Name          { return nil }
 func (*FileFreshnessProvider) DefaultPalette() palette.PaletteName  { return palette.Temperature }
 
-func (p *FileFreshnessProvider) Load(root any) error {
-	dir := root.(*model.Directory)
-
-	s, err := getService(dir.Path)
+func (*FileFreshnessProvider) Load(root *model.Directory) error {
+	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrap(err, "file-freshness requires a git repository")
 	}
 
-	model.WalkFiles(dir, func(f *model.File) {
-		relPath, err := filepath.Rel(dir.Path, f.Path)
+	model.WalkFiles(root, func(f *model.File) {
+		relPath, err := filepath.Rel(root.Path, f.Path)
 		if err != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", err)
 
@@ -1868,7 +1807,7 @@ func (p *FileFreshnessProvider) Load(root any) error {
 			return
 		}
 
-		f.SetQuantity(p, freshness)
+		f.SetQuantity(FileFreshness, freshness)
 	})
 
 	return nil
@@ -1882,16 +1821,14 @@ func (*AuthorCountProvider) Kind() metric.Kind                    { return metri
 func (*AuthorCountProvider) Dependencies() []metric.Name          { return nil }
 func (*AuthorCountProvider) DefaultPalette() palette.PaletteName  { return palette.GoodBad }
 
-func (p *AuthorCountProvider) Load(root any) error {
-	dir := root.(*model.Directory)
-
-	s, err := getService(dir.Path)
+func (*AuthorCountProvider) Load(root *model.Directory) error {
+	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrap(err, "author-count requires a git repository")
 	}
 
-	model.WalkFiles(dir, func(f *model.File) {
-		relPath, err := filepath.Rel(dir.Path, f.Path)
+	model.WalkFiles(root, func(f *model.File) {
+		relPath, err := filepath.Rel(root.Path, f.Path)
 		if err != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", err)
 
@@ -1907,7 +1844,7 @@ func (p *AuthorCountProvider) Load(root any) error {
 			return
 		}
 
-		f.SetQuantity(p, count)
+		f.SetQuantity(AuthorCount, count)
 	})
 
 	return nil
@@ -1919,13 +1856,13 @@ Create `internal/provider/git/register.go`:
 ```go
 package git
 
-import "github.com/bevan/code-visualizer/internal/metric"
+import "github.com/bevan/code-visualizer/internal/provider"
 
 // Register adds all git metric providers to the global registry.
 func Register() {
-	metric.Register(&FileAgeProvider{})
-	metric.Register(&FileFreshnessProvider{})
-	metric.Register(&AuthorCountProvider{})
+	provider.Register(&FileAgeProvider{})
+	provider.Register(&FileFreshnessProvider{})
+	provider.Register(&AuthorCountProvider{})
 }
 ```
 
@@ -1947,7 +1884,8 @@ git commit -m "feat(provider): add git providers (file-age, file-freshness, auth
 
 Shared repoService via sync.Once. Each provider walks the tree and
 sets Quantity values in seconds (age/freshness) or count (authors).
-Untracked files are silently skipped.
+Untracked files are silently skipped. Load takes *model.Directory
+directly; setters use metric Name constants.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ```
@@ -1956,7 +1894,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 
 ### Task 7: Migrate Scanner
 
-Change `scan.Scan()` to return `*model.Directory`. Set file-size and file-type during the walk. Update FilterBinaryFiles. Delete old types.
+Change `scan.Scan()` to return `*model.Directory`. Set file-size and file-type during the walk using metric Name constants directly. Update FilterBinaryFiles. Delete old types.
 
 **Files:**
 - Modify: `internal/scan/scanner.go`
@@ -1985,12 +1923,6 @@ import (
 
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-)
-
-// fileSizeProvider and fileTypeProvider are used to set cheap metrics during scanning.
-var (
-	fileSizeProvider = filesystem.FileSizeProvider{}
-	fileTypeProvider = filesystem.FileTypeProvider{}
 )
 
 // Scan recursively scans the directory at path and returns a model.Directory tree.
@@ -2099,8 +2031,8 @@ func processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, ent
 		Extension: ext,
 	}
 
-	f.SetQuantity(fileSizeProvider, int(info.Size()))
-	f.SetClassification(fileTypeProvider, fileType)
+	f.SetQuantity(filesystem.FileSize, int(info.Size()))
+	f.SetClassification(filesystem.FileType, fileType)
 
 	node.Files = append(node.Files, f)
 }
@@ -2445,9 +2377,10 @@ git add internal/scan/
 git commit -m "refactor(scan): return *model.Directory, set file-size and file-type during walk
 
 Scanner now builds model.File/Directory pointers. Sets file-size (Quantity)
-and file-type (Classification) during the walk. FilterBinaryFiles works
-with pointer types. Removed FileNode, DirectoryNode, EnrichWithGitMetadata,
-PopulateLineCounts. Trimmed gitinfo.go to IsGitRepo only.
+and file-type (Classification) during the walk using metric Name constants.
+FilterBinaryFiles works with pointer types. Removed FileNode,
+DirectoryNode, EnrichWithGitMetadata, PopulateLineCounts. Trimmed
+gitinfo.go to IsGitRepo only.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ```
@@ -2637,7 +2570,7 @@ import (
 
 func makeFile(name string, size int) *model.File {
 	f := &model.File{Name: name}
-	f.SetQuantity(filesystem.FileSizeProvider{}, size)
+	f.SetQuantity(filesystem.FileSize, size)
 
 	return f
 }
@@ -2803,7 +2736,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 
 ### Task 10: Migrate CLI
 
-Rewrite the CLI flow to use provider registration and `metric.Run()`.
+Rewrite the CLI flow to use provider registration and `provider.Run()`.
 
 **Files:**
 - Modify: `cmd/codeviz/main.go`
@@ -2825,6 +2758,7 @@ import (
 	// ...
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/provider/git"
 )
@@ -2858,13 +2792,13 @@ type gitRequiredError struct {
 
 Major changes:
 - `Size` field type: `metric.Name` (was `metric.MetricName`)
-- `Validate()`: use `metric.Get(name)` to check validity and Kind instead of `IsValid()`/`IsNumeric()`/`IsGitRequired()`
-- `Run()`: call `scan.Scan()`, then `metric.Run(root, requested)`, then filter/layout/color/render
-- Delete `enrichGitMetadata`, `needsLineCounts`, `resolveGitMetric` — replaced by `metric.Run`
+- `Validate()`: use `provider.Get(name)` to check validity and Kind instead of `IsValid()`/`IsNumeric()`/`IsGitRequired()`
+- `Run()`: call `scan.Scan()`, then `provider.Run(root, requested)`, then filter/layout/color/render
+- Delete `enrichGitMetadata`, `needsLineCounts`, `resolveGitMetric` — replaced by `provider.Run`
 - Color mapping: `extractNumeric` reads from `f.Quantity(m)` / `f.Measure(m)`, `extractClassification` reads from `f.Classification(m)`
 - All recursive color functions take `*model.Directory` instead of `scan.DirectoryNode`
-- `collectRequestedMetrics(size, fill, border)` gathers the unique set of metrics to pass to `metric.Run`
-- `resolveFillPalette` and `applyBorderColours` use `metric.Get(name)` to look up `DefaultPalette()`
+- `collectRequestedMetrics(size, fill, border)` gathers the unique set of metrics to pass to `provider.Run`
+- `resolveFillPalette` and `applyBorderColours` use `provider.Get(name)` to look up `DefaultPalette()`
 
 Layout call: `treemap.Layout(root, width, height, c.Size)`
 
@@ -2891,10 +2825,10 @@ Expected: Build succeeds.
 
 ```bash
 git add cmd/codeviz/
-git commit -m "refactor(cli): use provider registration and metric.Run for all metrics
+git commit -m "refactor(cli): use provider registration and provider.Run for all metrics
 
 Registers filesystem and git providers at startup. Scan returns
-*model.Directory. metric.Run loads only requested metrics with
+*model.Directory. provider.Run loads only requested metrics with
 parallel execution. Color mapping reads from typed getters.
 Removed bespoke git/line-count enrichment pipeline.
 
@@ -2927,7 +2861,7 @@ In `internal/metric/metric.go`:
 - [ ] **Step 2: Clean registry.go**
 
 - Delete `metricDefaultPalette` map
-- Delete `DefaultPaletteFor()` function (replaced by `Provider.DefaultPalette()`)
+- Delete `DefaultPaletteFor()` function (replaced by `provider.Interface.DefaultPalette()`)
 
 - [ ] **Step 3: Update metric tests**
 
@@ -2986,10 +2920,10 @@ Expected: Build succeeds.
 
 - [ ] **Step 3: Run the binary against this repository**
 
-Run: `./bin/codeviz render treemap . -o /tmp/test-codeviz.png -s file-size`
+Run: `./bin/codeviz render treemap . -o test-codeviz.png -s file-size`
 Expected: Produces a valid PNG file.
 
-Run: `./bin/codeviz render treemap . -o /tmp/test-codeviz2.png -s file-lines -f file-type`
+Run: `./bin/codeviz render treemap . -o test-codeviz2.png -s file-lines -f file-type`
 Expected: Produces a valid PNG file.
 
 - [ ] **Step 4: Verify golden files still match**
