@@ -13,7 +13,8 @@
 		"--init" // runs an init process: https://docs.docker.com/engine/reference/run/#specify-an-init-process
 	],
 	"features": {
-		"ghcr.io/devcontainers/features/copilot-cli:1": {}
+		"ghcr.io/devcontainers/features/copilot-cli:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
 	"customizations": {
 		"vscode": {
