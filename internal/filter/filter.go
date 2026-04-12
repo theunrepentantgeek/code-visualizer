@@ -1,7 +1,11 @@
 package filter
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/rotisserie/eris"
 )
 
 // Mode indicates whether a rule includes or excludes matching paths.
@@ -37,4 +41,57 @@ func IsIncluded(relativePath string, rules []Rule) bool {
 	}
 
 	return true
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (m Mode) MarshalText() ([]byte, error) {
+	switch m {
+	case Include:
+		return []byte("include"), nil
+	case Exclude:
+		return []byte("exclude"), nil
+	default:
+		return nil, fmt.Errorf("unknown filter mode: %d", m)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (m *Mode) UnmarshalText(text []byte) error {
+	switch strings.ToLower(string(text)) {
+	case "include":
+		*m = Include
+	case "exclude":
+		*m = Exclude
+	default:
+		return fmt.Errorf("unknown filter mode: %q", string(text))
+	}
+
+	return nil
+}
+
+// ParseFilterFlag parses a CLI filter string into a Rule.
+// A leading ! marks an exclusion; anything else is an inclusion.
+func ParseFilterFlag(s string) (Rule, error) {
+	if s == "" {
+		return Rule{}, eris.New("empty filter string")
+	}
+
+	mode := Include
+	pattern := s
+
+	if strings.HasPrefix(s, "!") {
+		mode = Exclude
+		pattern = s[1:]
+	}
+
+	if pattern == "" {
+		return Rule{}, eris.New("empty filter pattern after prefix")
+	}
+
+	// Validate the glob pattern
+	if _, err := doublestar.Match(pattern, ""); err != nil {
+		return Rule{}, eris.Wrapf(err, "invalid glob pattern %q", pattern)
+	}
+
+	return Rule{Pattern: pattern, Mode: mode}, nil
 }

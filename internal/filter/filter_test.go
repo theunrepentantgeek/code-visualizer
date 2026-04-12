@@ -90,3 +90,94 @@ func TestIsIncluded_InvalidPattern_TreatedAsNoMatch(t *testing.T) {
 	// Invalid patterns never match, so default (include) applies
 	g.Expect(IsIncluded("anything", rules)).To(BeTrue())
 }
+
+func TestModeMarshaling_Include(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	text, err := Include.MarshalText()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(text)).To(Equal("include"))
+
+	var m Mode
+	g.Expect(m.UnmarshalText([]byte("include"))).To(Succeed())
+	g.Expect(m).To(Equal(Include))
+}
+
+func TestModeMarshaling_Exclude(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	text, err := Exclude.MarshalText()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(text)).To(Equal("exclude"))
+
+	var m Mode
+	g.Expect(m.UnmarshalText([]byte("exclude"))).To(Succeed())
+	g.Expect(m).To(Equal(Exclude))
+}
+
+func TestModeUnmarshaling_Invalid(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var m Mode
+	g.Expect(m.UnmarshalText([]byte("bogus"))).To(HaveOccurred())
+}
+
+func TestParseFilterFlag_ExcludeWithBang(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rule, err := ParseFilterFlag("!.*")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(rule.Pattern).To(Equal(".*"))
+	g.Expect(rule.Mode).To(Equal(Exclude))
+}
+
+func TestParseFilterFlag_IncludeWithoutPrefix(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rule, err := ParseFilterFlag("*.go")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(rule.Pattern).To(Equal("*.go"))
+	g.Expect(rule.Mode).To(Equal(Include))
+}
+
+func TestParseFilterFlag_DoublestarPattern(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rule, err := ParseFilterFlag("!**/*.log")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(rule.Pattern).To(Equal("**/*.log"))
+	g.Expect(rule.Mode).To(Equal(Exclude))
+}
+
+func TestParseFilterFlag_InvalidGlob(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	_, err := ParseFilterFlag("![invalid")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("invalid glob pattern"))
+}
+
+func TestParseFilterFlag_EmptyString(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	_, err := ParseFilterFlag("")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("empty filter"))
+}
+
+func TestParseFilterFlag_BangOnly(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	_, err := ParseFilterFlag("!")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("empty filter"))
+}
