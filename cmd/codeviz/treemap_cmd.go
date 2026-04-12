@@ -40,6 +40,7 @@ func (c *TreemapCmd) Validate() error {
 	if !ok {
 		return eris.Errorf("unknown size metric %q", c.Size)
 	}
+
 	if p.Kind() != metric.Quantity {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", c.Size, p.Kind())
 	}
@@ -47,12 +48,15 @@ func (c *TreemapCmd) Validate() error {
 	if err := validateMetricPalette(c.Fill, c.FillPalette, "fill"); err != nil {
 		return err
 	}
+
 	if err := validateMetricPalette(c.Border, c.BorderPalette, "border"); err != nil {
 		return err
 	}
+
 	if c.BorderPalette != "" && c.Border == "" {
 		return eris.New("--border-palette requires --border to be specified")
 	}
+
 	return nil
 }
 
@@ -62,19 +66,21 @@ func validateMetricPalette(metricStr, paletteStr, label string) error {
 			return eris.Errorf("invalid %s metric %q", label, metricStr)
 		}
 	}
+
 	if paletteStr != "" {
 		p := palette.PaletteName(paletteStr)
 		if !p.IsValid() {
 			return eris.Errorf("invalid %s palette %q", label, paletteStr)
 		}
 	}
+
 	return nil
 }
 
 func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Name {
 	seen := map[metric.Name]bool{size: true}
 	names := []metric.Name{size}
-	
+
 	for _, s := range []string{fill, border} {
 		if s != "" {
 			n := metric.Name(s)
@@ -84,6 +90,7 @@ func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Nam
 			}
 		}
 	}
+
 	return names
 }
 
@@ -113,12 +120,12 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	// Collect all requested metrics and run providers
 	requested := collectRequestedMetrics(c.Size, ptrString(cfg.Fill), ptrString(cfg.Border))
-	
+
 	// Check git requirement before running providers
 	if err := c.checkGitRequirement(requested); err != nil {
 		return err
 	}
-	
+
 	if err := provider.Run(root, requested); err != nil {
 		return eris.Wrap(err, "failed to load metrics")
 	}
@@ -154,27 +161,40 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 }
 
 func (c *TreemapCmd) checkGitRequirement(requested []metric.Name) error {
-	// Check if any requested metric is git-required
+	name, needsGit := findGitMetric(requested)
+	if !needsGit {
+		return nil
+	}
+
+	absPath, err := filepath.Abs(c.TargetPath)
+	if err != nil {
+		return eris.Wrap(err, "failed to resolve absolute path")
+	}
+
+	isGit, err := scan.IsGitRepo(absPath)
+	if err != nil {
+		return eris.Wrap(err, "git check failed")
+	}
+
+	if !isGit {
+		return &gitRequiredError{metric: name, target: c.TargetPath}
+	}
+
+	return nil
+}
+
+func findGitMetric(requested []metric.Name) (metric.Name, bool) {
 	gitMetrics := map[metric.Name]bool{
 		"file-age": true, "file-freshness": true, "author-count": true,
 	}
+
 	for _, name := range requested {
 		if gitMetrics[name] {
-			absPath, err := filepath.Abs(c.TargetPath)
-			if err != nil {
-				return eris.Wrap(err, "failed to resolve absolute path")
-			}
-			isGit, err := scan.IsGitRepo(absPath)
-			if err != nil {
-				return eris.Wrap(err, "git check failed")
-			}
-			if !isGit {
-				return &gitRequiredError{metric: name, target: c.TargetPath}
-			}
-			return nil // Only need to check once
+			return name, true
 		}
 	}
-	return nil
+
+	return "", false
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -284,13 +304,16 @@ func (c *TreemapCmd) filterBinaryFiles(_ *config.Treemap, root *model.Directory)
 	afterCount, _ := countAll(filtered)
 	excluded := beforeCount - afterCount
 	slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
+
 	if afterCount == 0 {
 		return &noFilesAfterFilterError{
 			msg: "no files available for visualization after excluding binary files",
 		}
 	}
-	// Copy filtered tree back — FilterBinaryFiles returns a new tree
-	*root = *filtered
+	// Update root in place — avoid struct copy which would copy the mutex.
+	root.Files = filtered.Files
+	root.Dirs = filtered.Dirs
+
 	return nil
 }
 
@@ -301,10 +324,12 @@ func applyFillColours(
 	fillPaletteName palette.PaletteName,
 ) {
 	fillPalette := palette.GetPalette(fillPaletteName)
+
 	p, ok := provider.Get(fillMetric)
 	if !ok {
 		return
 	}
+
 	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
@@ -319,7 +344,7 @@ func applyFillColours(
 	}
 }
 
-func (c *TreemapCmd) applyBorderColours(
+func (*TreemapCmd) applyBorderColours(
 	rects *treemap.TreemapRectangle,
 	root *model.Directory,
 	cfg *config.Treemap,
@@ -328,6 +353,7 @@ func (c *TreemapCmd) applyBorderColours(
 	if border == "" {
 		return "", ""
 	}
+
 	borderMetric := metric.Name(border)
 
 	borderPaletteName := palette.PaletteName(ptrString(cfg.BorderPalette))
@@ -407,31 +433,38 @@ func extractNumeric(f *model.File, m metric.Name) float64 {
 	if v, ok := f.Quantity(m); ok {
 		return float64(v)
 	}
+
 	if v, ok := f.Measure(m); ok {
 		return v
 	}
+
 	return 0
 }
 
 func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
 	var values []float64
+
 	model.WalkFiles(root, func(f *model.File) {
 		values = append(values, extractNumeric(f, m))
 	})
+
 	return values
 }
 
 func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	seen := map[string]bool{}
+
 	model.WalkFiles(root, func(f *model.File) {
 		if v, ok := f.Classification(m); ok {
 			seen[v] = true
 		}
 	})
+
 	types := make([]string, 0, len(seen))
 	for t := range seen {
 		types = append(types, t)
 	}
+
 	return types
 }
 
@@ -478,6 +511,7 @@ func applyCategoricalFillColours(
 			if v, ok := node.Files[fileIdx].Classification(m); ok {
 				child.FillColour = mapper.Map(v)
 			}
+
 			fileIdx++
 		}
 	}
@@ -528,6 +562,7 @@ func applyCategoricalBorderColours(
 				col := mapper.Map(v)
 				child.BorderColour = &col
 			}
+
 			fileIdx++
 		}
 	}

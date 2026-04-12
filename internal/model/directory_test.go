@@ -42,6 +42,8 @@ func TestDirectoryPointerSlices(t *testing.T) {
 		Dirs:  []*Directory{subdir},
 	}
 
+	g.Expect(d.Path).To(Equal("/src"))
+	g.Expect(d.Name).To(Equal("src"))
 	g.Expect(d.Files).To(HaveLen(1))
 	g.Expect(d.Dirs).To(HaveLen(1))
 	g.Expect(d.Files[0].Name).To(Equal("a.go"))

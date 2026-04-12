@@ -26,5 +26,11 @@ func TestScanPermissionDenied(t *testing.T) {
 
 	root, err := Scan(tmp)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).ToNot(BeNil())
+
+	if root == nil {
+		return
+	}
+
 	g.Expect(len(root.Files)).To(BeNumerically(">=", 1))
 }

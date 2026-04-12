@@ -36,10 +36,10 @@ type mockProvider struct {
 	tracker *orderTracker
 }
 
-func (m *mockProvider) Name() metric.Name                    { return m.name }
-func (m *mockProvider) Kind() metric.Kind                    { return m.kind }
-func (m *mockProvider) Dependencies() []metric.Name          { return m.deps }
-func (m *mockProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
+func (m *mockProvider) Name() metric.Name                 { return m.name }
+func (m *mockProvider) Kind() metric.Kind                 { return m.kind }
+func (m *mockProvider) Dependencies() []metric.Name       { return m.deps }
+func (*mockProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
 func (m *mockProvider) Load(_ *model.Directory) error {
 	if m.tracker != nil {
@@ -103,7 +103,7 @@ func TestRunCycleDetection(t *testing.T) {
 
 	err := runWithRegistry(reg, nil, []metric.Name{"a"})
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("circular dependency"))
+	g.Expect(err).To(MatchError(ContainSubstring("circular dependency")))
 }
 
 func TestRunUnknownDependency(t *testing.T) {
@@ -115,7 +115,7 @@ func TestRunUnknownDependency(t *testing.T) {
 
 	err := runWithRegistry(reg, nil, []metric.Name{"a"})
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("unknown metric"))
+	g.Expect(err).To(MatchError(ContainSubstring("unknown metric")))
 }
 
 func TestRunUnknownRequestedMetric(t *testing.T) {
@@ -126,7 +126,7 @@ func TestRunUnknownRequestedMetric(t *testing.T) {
 
 	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"})
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("unknown metric"))
+	g.Expect(err).To(MatchError(ContainSubstring("unknown metric")))
 }
 
 func TestRunErrorPropagation(t *testing.T) {
@@ -138,7 +138,7 @@ func TestRunErrorPropagation(t *testing.T) {
 
 	err := runWithRegistry(reg, nil, []metric.Name{"fail"})
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("load failed"))
+	g.Expect(err).To(MatchError(ContainSubstring("load failed")))
 }
 
 // concurrentProvider tracks concurrent Load calls via shared atomics.
@@ -148,10 +148,10 @@ type concurrentProvider struct {
 	maxConcurrent *atomic.Int32
 }
 
-func (c *concurrentProvider) Name() metric.Name                    { return c.name }
-func (c *concurrentProvider) Kind() metric.Kind                    { return metric.Quantity }
-func (c *concurrentProvider) Dependencies() []metric.Name          { return nil }
-func (c *concurrentProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
+func (c *concurrentProvider) Name() metric.Name                 { return c.name }
+func (*concurrentProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*concurrentProvider) Dependencies() []metric.Name         { return nil }
+func (*concurrentProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
 func (c *concurrentProvider) Load(_ *model.Directory) error {
 	cur := c.counter.Add(1)
@@ -175,10 +175,14 @@ func TestRunParallelExecution(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	var counter atomic.Int32
-	var maxConcurrent atomic.Int32
+
+	var (
+		counter       atomic.Int32
+		maxConcurrent atomic.Int32
+	)
 
 	// Register 3 independent providers — they should run concurrently
+
 	reg.register(&concurrentProvider{name: "p1", counter: &counter, maxConcurrent: &maxConcurrent})
 	reg.register(&concurrentProvider{name: "p2", counter: &counter, maxConcurrent: &maxConcurrent})
 	reg.register(&concurrentProvider{name: "p3", counter: &counter, maxConcurrent: &maxConcurrent})

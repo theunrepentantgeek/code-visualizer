@@ -16,11 +16,11 @@ type stubProvider struct {
 	kind metric.Kind
 }
 
-func (s *stubProvider) Name() metric.Name                    { return s.name }
-func (s *stubProvider) Kind() metric.Kind                    { return s.kind }
-func (s *stubProvider) Dependencies() []metric.Name          { return nil }
-func (s *stubProvider) DefaultPalette() palette.PaletteName  { return palette.Neutral }
-func (s *stubProvider) Load(_ *model.Directory) error        { return nil }
+func (s *stubProvider) Name() metric.Name                 { return s.name }
+func (s *stubProvider) Kind() metric.Kind                 { return s.kind }
+func (*stubProvider) Dependencies() []metric.Name         { return nil }
+func (*stubProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
+func (*stubProvider) Load(_ *model.Directory) error       { return nil }
 
 func TestRegisterAndGet(t *testing.T) {
 	t.Parallel()
@@ -32,6 +32,12 @@ func TestRegisterAndGet(t *testing.T) {
 
 	got, ok := reg.get("test-metric")
 	g.Expect(ok).To(BeTrue())
+	g.Expect(got).ToNot(BeNil())
+
+	if got == nil {
+		return
+	}
+
 	g.Expect(got.Name()).To(Equal(metric.Name("test-metric")))
 	g.Expect(got.Kind()).To(Equal(metric.Quantity))
 }

@@ -51,33 +51,11 @@ func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Na
 // expandDeps returns the transitive closure of requested metric names.
 func expandDeps(reg *registry, requested []metric.Name) ([]metric.Name, error) {
 	seen := make(map[metric.Name]bool)
+
 	var result []metric.Name
 
-	var visit func(metric.Name) error
-	visit = func(name metric.Name) error {
-		if seen[name] {
-			return nil
-		}
-
-		p, ok := reg.get(name)
-		if !ok {
-			return eris.Errorf("unknown metric %q — no provider registered", name)
-		}
-
-		seen[name] = true
-		result = append(result, name)
-
-		for _, dep := range p.Dependencies() {
-			if err := visit(dep); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-
 	for _, name := range requested {
-		if err := visit(name); err != nil {
+		if err := visitDep(reg, name, seen, &result); err != nil {
 			return nil, err
 		}
 	}
@@ -85,9 +63,37 @@ func expandDeps(reg *registry, requested []metric.Name) ([]metric.Name, error) {
 	return result, nil
 }
 
+func visitDep(reg *registry, name metric.Name, seen map[metric.Name]bool, result *[]metric.Name) error {
+	if seen[name] {
+		return nil
+	}
+
+	p, ok := reg.get(name)
+	if !ok || p == nil {
+		return eris.Errorf("unknown metric %q — no provider registered", name)
+	}
+
+	seen[name] = true
+	*result = append(*result, name)
+
+	for _, dep := range p.Dependencies() {
+		if err := visitDep(reg, dep, seen, result); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // topoSort groups metrics into execution levels. Each level's metrics have
 // all dependencies satisfied by previous levels.
 func topoSort(reg *registry, names []metric.Name) ([][]metric.Name, error) {
+	inDegree, dependents := buildDepGraph(reg, names)
+
+	return computeLevels(names, inDegree, dependents)
+}
+
+func buildDepGraph(reg *registry, names []metric.Name) (map[metric.Name]int, map[metric.Name][]metric.Name) {
 	nameSet := make(map[metric.Name]bool, len(names))
 	for _, n := range names {
 		nameSet[n] = true
@@ -101,27 +107,43 @@ func topoSort(reg *registry, names []metric.Name) ([][]metric.Name, error) {
 	}
 
 	for _, n := range names {
-		p, _ := reg.get(n)
-
-		for _, dep := range p.Dependencies() {
-			if nameSet[dep] {
-				inDegree[n]++
-				dependents[dep] = append(dependents[dep], n)
-			}
-		}
+		addEdges(reg, n, nameSet, inDegree, dependents)
 	}
 
+	return inDegree, dependents
+}
+
+func addEdges(
+	reg *registry,
+	n metric.Name,
+	nameSet map[metric.Name]bool,
+	inDegree map[metric.Name]int,
+	dependents map[metric.Name][]metric.Name,
+) {
+	p, ok := reg.get(n)
+	if !ok || p == nil {
+		return
+	}
+
+	for _, dep := range p.Dependencies() {
+		if nameSet[dep] {
+			inDegree[n]++
+			dependents[dep] = append(dependents[dep], n)
+		}
+	}
+}
+
+func computeLevels(
+	names []metric.Name,
+	inDegree map[metric.Name]int,
+	dependents map[metric.Name][]metric.Name,
+) ([][]metric.Name, error) {
 	var levels [][]metric.Name
+
 	processed := 0
 
 	for processed < len(names) {
-		var level []metric.Name
-
-		for _, n := range names {
-			if inDegree[n] == 0 {
-				level = append(level, n)
-			}
-		}
+		level := findReady(names, inDegree)
 
 		if len(level) == 0 {
 			return nil, eris.New("circular dependency detected among metric providers")
@@ -140,4 +162,16 @@ func topoSort(reg *registry, names []metric.Name) ([][]metric.Name, error) {
 	}
 
 	return levels, nil
+}
+
+func findReady(names []metric.Name, inDegree map[metric.Name]int) []metric.Name {
+	var level []metric.Name
+
+	for _, n := range names {
+		if inDegree[n] == 0 {
+			level = append(level, n)
+		}
+	}
+
+	return level
 }

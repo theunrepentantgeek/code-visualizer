@@ -70,23 +70,17 @@ func TestFileConcurrentAccess(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		for i := range 100 {
 			f.SetQuantity("size", i)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		for range 100 {
 			f.SetClassification("type", "go")
 		}
-	}()
+	})
 
 	wg.Wait()
 

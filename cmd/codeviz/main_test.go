@@ -59,7 +59,7 @@ func TestFilterAppliedRegardlessOfFillMetric(t *testing.T) {
 	fGo := &model.File{Path: "/project/main.go", Name: "main.go", IsBinary: false}
 	fGo.SetQuantity(filesystem.FileLines, 50)
 	fGo.SetClassification(filesystem.FileType, "go")
-	
+
 	fPng := &model.File{Path: "/project/image.png", Name: "image.png", IsBinary: true}
 	fPng.SetQuantity(filesystem.FileSize, 1024)
 	fPng.SetClassification(filesystem.FileType, "png")
@@ -81,7 +81,7 @@ func TestNoFilterWhenFileSizeWithFileTypeFill(t *testing.T) {
 	fGo := &model.File{Path: "/project/main.go", Name: "main.go", IsBinary: false}
 	fGo.SetQuantity(filesystem.FileSize, 100)
 	fGo.SetClassification(filesystem.FileType, "go")
-	
+
 	fPng := &model.File{Path: "/project/image.png", Name: "image.png", IsBinary: true}
 	fPng.SetQuantity(filesystem.FileSize, 1024)
 	fPng.SetClassification(filesystem.FileType, "png")

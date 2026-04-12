@@ -33,6 +33,7 @@ func (r *registry) get(name metric.Name) (Interface, bool) {
 	defer r.mu.RUnlock()
 
 	p, ok := r.providers[name]
+
 	return p, ok
 }
 

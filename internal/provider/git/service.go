@@ -7,6 +7,7 @@ import (
 	"time"
 
 	gogit "github.com/go-git/go-git/v5"
+
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
 )
@@ -37,11 +38,13 @@ func getService(repoPath string) (*repoService, error) {
 	if err != nil {
 		err = eris.Wrap(err, "failed to open git repository")
 		services[repoPath] = &serviceResult{nil, err}
+
 		return nil, err
 	}
 
 	svc := &repoService{repo: repo}
 	services[repoPath] = &serviceResult{svc, nil}
+
 	return svc, nil
 }
 
@@ -49,6 +52,7 @@ func getService(repoPath string) (*repoService, error) {
 func resetService() {
 	servicesMu.Lock()
 	defer servicesMu.Unlock()
+
 	services = make(map[string]*serviceResult)
 }
 

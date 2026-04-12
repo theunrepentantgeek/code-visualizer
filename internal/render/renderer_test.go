@@ -22,6 +22,7 @@ func makeFile(name, ext string, size int) *model.File {
 	f := &model.File{Name: name, Extension: ext}
 	f.SetQuantity(filesystem.FileSize, size)
 	f.SetClassification(filesystem.FileType, ext)
+
 	return f
 }
 

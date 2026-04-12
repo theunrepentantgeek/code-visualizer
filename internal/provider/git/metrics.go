@@ -21,10 +21,10 @@ const (
 // FileAgeProvider reports time since first commit in seconds.
 type FileAgeProvider struct{}
 
-func (*FileAgeProvider) Name() metric.Name                    { return FileAge }
-func (*FileAgeProvider) Kind() metric.Kind                    { return metric.Quantity }
-func (*FileAgeProvider) Dependencies() []metric.Name          { return nil }
-func (*FileAgeProvider) DefaultPalette() palette.PaletteName  { return palette.Temperature }
+func (*FileAgeProvider) Name() metric.Name                   { return FileAge }
+func (*FileAgeProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*FileAgeProvider) Dependencies() []metric.Name         { return nil }
+func (*FileAgeProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*FileAgeProvider) Load(root *model.Directory) error {
 	s, err := getService(root.Path)
@@ -58,10 +58,10 @@ func (*FileAgeProvider) Load(root *model.Directory) error {
 // FileFreshnessProvider reports time since most recent commit in seconds.
 type FileFreshnessProvider struct{}
 
-func (*FileFreshnessProvider) Name() metric.Name                    { return FileFreshness }
-func (*FileFreshnessProvider) Kind() metric.Kind                    { return metric.Quantity }
-func (*FileFreshnessProvider) Dependencies() []metric.Name          { return nil }
-func (*FileFreshnessProvider) DefaultPalette() palette.PaletteName  { return palette.Temperature }
+func (*FileFreshnessProvider) Name() metric.Name                   { return FileFreshness }
+func (*FileFreshnessProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*FileFreshnessProvider) Dependencies() []metric.Name         { return nil }
+func (*FileFreshnessProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*FileFreshnessProvider) Load(root *model.Directory) error {
 	s, err := getService(root.Path)
@@ -95,10 +95,10 @@ func (*FileFreshnessProvider) Load(root *model.Directory) error {
 // AuthorCountProvider reports the number of distinct commit authors.
 type AuthorCountProvider struct{}
 
-func (*AuthorCountProvider) Name() metric.Name                    { return AuthorCount }
-func (*AuthorCountProvider) Kind() metric.Kind                    { return metric.Quantity }
-func (*AuthorCountProvider) Dependencies() []metric.Name          { return nil }
-func (*AuthorCountProvider) DefaultPalette() palette.PaletteName  { return palette.GoodBad }
+func (*AuthorCountProvider) Name() metric.Name                   { return AuthorCount }
+func (*AuthorCountProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*AuthorCountProvider) Dependencies() []metric.Name         { return nil }
+func (*AuthorCountProvider) DefaultPalette() palette.PaletteName { return palette.GoodBad }
 
 func (*AuthorCountProvider) Load(root *model.Directory) error {
 	s, err := getService(root.Path)

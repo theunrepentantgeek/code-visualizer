@@ -20,14 +20,22 @@ func TestScanFlat(t *testing.T) {
 
 	root, err := Scan(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).ToNot(BeNil())
+
+	if root == nil {
+		return
+	}
+
 	g.Expect(root.Name).To(Equal("flat"))
 	g.Expect(root.Files).To(HaveLen(3))
 	g.Expect(root.Dirs).To(BeEmpty())
 
 	sizes := map[string]int{}
+
 	for _, f := range root.Files {
 		v, ok := f.Quantity(filesystem.FileSize)
 		g.Expect(ok).To(BeTrue())
+
 		sizes[f.Name] = v
 	}
 
@@ -43,6 +51,12 @@ func TestScanNested(t *testing.T) {
 
 	root, err := Scan(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).ToNot(BeNil())
+
+	if root == nil {
+		return
+	}
+
 	g.Expect(root.Name).To(Equal("nested"))
 	g.Expect(root.Files).To(HaveLen(1))
 	g.Expect(root.Dirs).To(HaveLen(1))
@@ -68,8 +82,7 @@ func TestScanEmptyDir(t *testing.T) {
 	}
 
 	_, err := Scan(dir)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("no files"))
+	g.Expect(err).To(MatchError(ContainSubstring("no files")))
 }
 
 func TestScanFollowsFileSymlinks(t *testing.T) {
@@ -79,6 +92,11 @@ func TestScanFollowsFileSymlinks(t *testing.T) {
 
 	root, err := Scan(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).ToNot(BeNil())
+
+	if root == nil {
+		return
+	}
 
 	fileNames := map[string]bool{}
 	for _, f := range root.Files {
@@ -96,6 +114,11 @@ func TestScanSkipsDirSymlinks(t *testing.T) {
 
 	root, err := Scan(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).ToNot(BeNil())
+
+	if root == nil {
+		return
+	}
 
 	dirNames := map[string]bool{}
 	for _, d := range root.Dirs {
@@ -113,6 +136,11 @@ func TestScanFileExtension(t *testing.T) {
 
 	root, err := Scan(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).ToNot(BeNil())
+
+	if root == nil {
+		return
+	}
 
 	exts := map[string]string{}
 	for _, f := range root.Files {
@@ -131,6 +159,11 @@ func TestScanSetsFileType(t *testing.T) {
 
 	root, err := Scan(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).ToNot(BeNil())
+
+	if root == nil {
+		return
+	}
 
 	for _, f := range root.Files {
 		ft, ok := f.Classification(filesystem.FileType)
@@ -190,8 +223,10 @@ func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	var buf bytes.Buffer
+
 	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	oldDefault := slog.Default()
+
 	slog.SetDefault(slog.New(handler))
 	defer slog.SetDefault(oldDefault)
 
@@ -205,5 +240,6 @@ func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
 	}
 
 	_ = FilterBinaryFiles(root)
+
 	g.Expect(buf.String()).To(ContainSubstring("excluding binary file"))
 }

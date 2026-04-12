@@ -26,6 +26,7 @@ func TestDirectoryHeaderBar(t *testing.T) {
 	rects := Layout(root, 1920, 1080, filesystem.FileSize)
 
 	var dirRect *TreemapRectangle
+
 	for i, c := range rects.Children {
 		if c.IsDirectory && c.Label == "mydir" {
 			dirRect = &rects.Children[i]

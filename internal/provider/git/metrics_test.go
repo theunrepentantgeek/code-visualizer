@@ -21,6 +21,7 @@ func setupTestGitRepo(t *testing.T) string {
 
 		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
 		cmd.Dir = dir
+
 		cmd.Env = append(os.Environ(),
 			"GIT_AUTHOR_NAME=Alice",
 			"GIT_AUTHOR_EMAIL=alice@example.com",
@@ -39,6 +40,7 @@ func setupTestGitRepo(t *testing.T) string {
 
 		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
 		cmd.Dir = dir
+
 		cmd.Env = append(os.Environ(),
 			"GIT_AUTHOR_NAME="+name,
 			"GIT_AUTHOR_EMAIL="+email,
@@ -58,14 +60,17 @@ func setupTestGitRepo(t *testing.T) string {
 
 	_ = os.WriteFile(filepath.Join(dir, "old.go"), []byte("package main\n"), 0o600)
 	_ = os.WriteFile(filepath.Join(dir, "shared.go"), []byte("package shared\n"), 0o600)
+
 	run("git", "add", ".")
 	run("git", "commit", "-m", "initial commit", "--date=2024-01-01T00:00:00+00:00")
 
 	_ = os.WriteFile(filepath.Join(dir, "shared.go"), []byte("package shared\n// updated by bob\n"), 0o600)
+
 	runAs("Bob", "bob@example.com", "git", "add", "shared.go")
 	runAs("Bob", "bob@example.com", "git", "commit", "-m", "bob update", "--date=2025-06-15T00:00:00+00:00")
 
 	_ = os.WriteFile(filepath.Join(dir, "new.go"), []byte("package new\n"), 0o600)
+
 	run("git", "add", "new.go")
 	run("git", "commit", "-m", "add new.go")
 
@@ -169,6 +174,5 @@ func TestGitProviderNotAGitRepo(t *testing.T) {
 
 	p := &FileAgeProvider{}
 	err := p.Load(root)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("git"))
+	g.Expect(err).To(MatchError(ContainSubstring("git")))
 }
