@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -13,7 +12,7 @@ import (
 
 func TestMain(m *testing.M) {
 	filesystem.Register()
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
