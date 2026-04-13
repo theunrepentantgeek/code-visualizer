@@ -18,7 +18,7 @@ import (
 	"github.com/bevan/code-visualizer/internal/treemap"
 )
 
-func makeFile(name, ext string, size int) *model.File {
+func makeFile(name, ext string, size int64) *model.File {
 	f := &model.File{Name: name, Extension: ext}
 	f.SetQuantity(filesystem.FileSize, size)
 	f.SetClassification(filesystem.FileType, ext)

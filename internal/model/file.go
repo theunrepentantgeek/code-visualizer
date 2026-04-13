@@ -15,13 +15,13 @@ type File struct {
 	IsBinary  bool
 
 	mu              sync.RWMutex
-	quantities      map[metric.Name]int
+	quantities      map[metric.Name]int64
 	measures        map[metric.Name]float64
 	classifications map[metric.Name]string
 }
 
-// Quantity returns the int value for the named metric and whether it was set.
-func (f *File) Quantity(name metric.Name) (int, bool) {
+// Quantity returns the int64 value for the named metric and whether it was set.
+func (f *File) Quantity(name metric.Name) (int64, bool) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
@@ -50,13 +50,13 @@ func (f *File) Classification(name metric.Name) (string, bool) {
 	return v, ok
 }
 
-// SetQuantity stores an int metric value identified by name.
-func (f *File) SetQuantity(name metric.Name, v int) {
+// SetQuantity stores an int64 metric value identified by name.
+func (f *File) SetQuantity(name metric.Name, v int64) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	if f.quantities == nil {
-		f.quantities = make(map[metric.Name]int)
+		f.quantities = make(map[metric.Name]int64)
 	}
 
 	f.quantities[name] = v

@@ -14,13 +14,13 @@ type Directory struct {
 	Dirs  []*Directory
 
 	mu              sync.RWMutex
-	quantities      map[metric.Name]int
+	quantities      map[metric.Name]int64
 	measures        map[metric.Name]float64
 	classifications map[metric.Name]string
 }
 
-// Quantity returns the int value for the named metric and whether it was set.
-func (d *Directory) Quantity(name metric.Name) (int, bool) {
+// Quantity returns the int64 value for the named metric and whether it was set.
+func (d *Directory) Quantity(name metric.Name) (int64, bool) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
@@ -49,13 +49,13 @@ func (d *Directory) Classification(name metric.Name) (string, bool) {
 	return v, ok
 }
 
-// SetQuantity stores an int metric value identified by name.
-func (d *Directory) SetQuantity(name metric.Name, v int) {
+// SetQuantity stores an int64 metric value identified by name.
+func (d *Directory) SetQuantity(name metric.Name, v int64) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	if d.quantities == nil {
-		d.quantities = make(map[metric.Name]int)
+		d.quantities = make(map[metric.Name]int64)
 	}
 
 	d.quantities[name] = v

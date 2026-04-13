@@ -136,7 +136,7 @@ func processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, ent
 		Extension: ext,
 	}
 
-	f.SetQuantity(filesystem.FileSize, int(info.Size()))
+	f.SetQuantity(filesystem.FileSize, info.Size())
 	f.SetClassification(filesystem.FileType, fileType)
 
 	node.Files = append(node.Files, f)

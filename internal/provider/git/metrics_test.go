@@ -155,12 +155,12 @@ func TestAuthorCountProvider(t *testing.T) {
 	// shared.go: 2 authors (Alice + Bob)
 	count, ok := root.Files[0].Quantity(AuthorCount)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(count).To(Equal(2))
+	g.Expect(count).To(Equal(int64(2)))
 
 	// old.go: 1 author (Alice)
 	count, ok = root.Files[1].Quantity(AuthorCount)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(count).To(Equal(1))
+	g.Expect(count).To(Equal(int64(1)))
 }
 
 func TestGitProviderNotAGitRepo(t *testing.T) {
