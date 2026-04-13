@@ -74,7 +74,7 @@ func (FileLinesProvider) Load(root *model.Directory) error {
 
 var errBinaryFile = errors.New("file appears to be binary (line exceeds 64KB)")
 
-func countLines(path string) (int, error) {
+func countLines(path string) (int64, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return 0, eris.Wrap(err, "opening file for line count")
@@ -83,7 +83,7 @@ func countLines(path string) (int, error) {
 
 	scanner := bufio.NewScanner(file)
 
-	count := 0
+	var count int64
 	for scanner.Scan() {
 		count++
 	}

@@ -17,7 +17,7 @@ func TestFileSetAndGetQuantity(t *testing.T) {
 
 	v, ok := f.Quantity("file-size")
 	g.Expect(ok).To(BeTrue())
-	g.Expect(v).To(Equal(1024))
+	g.Expect(v).To(Equal(int64(1024)))
 }
 
 func TestFileSetAndGetMeasure(t *testing.T) {
@@ -72,7 +72,7 @@ func TestFileConcurrentAccess(t *testing.T) {
 
 	wg.Go(func() {
 		for i := range 100 {
-			f.SetQuantity("size", i)
+			f.SetQuantity("size", int64(i))
 		}
 	})
 
@@ -86,7 +86,7 @@ func TestFileConcurrentAccess(t *testing.T) {
 
 	v, ok := f.Quantity("size")
 	g.Expect(ok).To(BeTrue())
-	g.Expect(v).To(Equal(99))
+	g.Expect(v).To(Equal(int64(99)))
 
 	s, ok := f.Classification("type")
 	g.Expect(ok).To(BeTrue())

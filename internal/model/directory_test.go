@@ -16,7 +16,7 @@ func TestDirectorySetAndGetQuantity(t *testing.T) {
 
 	v, ok := d.Quantity("folder-size")
 	g.Expect(ok).To(BeTrue())
-	g.Expect(v).To(Equal(9999))
+	g.Expect(v).To(Equal(int64(9999)))
 }
 
 func TestDirectoryGetUnsetMetric(t *testing.T) {

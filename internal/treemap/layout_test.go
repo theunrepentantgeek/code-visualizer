@@ -9,7 +9,7 @@ import (
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
 
-func makeFile(name string, size int) *model.File {
+func makeFile(name string, size int64) *model.File {
 	f := &model.File{Name: name}
 	f.SetQuantity(filesystem.FileSize, size)
 

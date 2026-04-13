@@ -31,7 +31,7 @@ func TestScanFlat(t *testing.T) {
 	g.Expect(root.Files).To(HaveLen(3))
 	g.Expect(root.Dirs).To(BeEmpty())
 
-	sizes := map[string]int{}
+	sizes := map[string]int64{}
 
 	for _, f := range root.Files {
 		v, ok := f.Quantity(filesystem.FileSize)
@@ -40,9 +40,9 @@ func TestScanFlat(t *testing.T) {
 		sizes[f.Name] = v
 	}
 
-	g.Expect(sizes["small.txt"]).To(Equal(5))
-	g.Expect(sizes["medium.go"]).To(Equal(100))
-	g.Expect(sizes["large.rs"]).To(Equal(1000))
+	g.Expect(sizes["small.txt"]).To(Equal(int64(5)))
+	g.Expect(sizes["medium.go"]).To(Equal(int64(100)))
+	g.Expect(sizes["large.rs"]).To(Equal(int64(1000)))
 }
 
 func TestScanNested(t *testing.T) {

@@ -59,11 +59,11 @@ func TestFileLinesProvider(t *testing.T) {
 
 	v1, ok := f1.Quantity(FileLines)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(v1).To(Equal(3))
+	g.Expect(v1).To(Equal(int64(3)))
 
 	v2, ok := f2.Quantity(FileLines)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(v2).To(Equal(1))
+	g.Expect(v2).To(Equal(int64(1)))
 }
 
 func TestFileLinesProviderSkipsBinaryFiles(t *testing.T) {
@@ -110,5 +110,5 @@ func TestFileLinesProviderNestedDirs(t *testing.T) {
 
 	v, ok := f.Quantity(FileLines)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(v).To(Equal(2))
+	g.Expect(v).To(Equal(int64(2)))
 }
