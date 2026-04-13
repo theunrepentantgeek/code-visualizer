@@ -17,8 +17,9 @@ import (
 // Config is the root configuration struct for the application.
 // It is the single source of truth for all configuration, regardless of
 // whether values came from defaults, a config file, or CLI flags.
-// All fields are pointers: nil means the field was not configured, non-nil
-// means it was explicitly set (by a config file or by a CLI flag override).
+// All fields are optional: nil or empty means the field was not configured,
+// non-nil or non-empty means it was explicitly set (by a config file or
+// by a CLI flag override).
 type Config struct {
 	Width      *int          `yaml:"width,omitempty"      json:"width,omitempty"`
 	Height     *int          `yaml:"height,omitempty"     json:"height,omitempty"`
