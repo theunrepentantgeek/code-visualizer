@@ -10,17 +10,21 @@ import (
 
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
+
+	"github.com/bevan/code-visualizer/internal/filter"
 )
 
 // Config is the root configuration struct for the application.
 // It is the single source of truth for all configuration, regardless of
 // whether values came from defaults, a config file, or CLI flags.
-// All fields are pointers: nil means the field was not configured, non-nil
-// means it was explicitly set (by a config file or by a CLI flag override).
+// All fields are optional: nil or empty means the field was not configured,
+// non-nil or non-empty means it was explicitly set (by a config file or
+// by a CLI flag override).
 type Config struct {
-	Width   *int     `yaml:"width,omitempty"   json:"width,omitempty"`
-	Height  *int     `yaml:"height,omitempty"  json:"height,omitempty"`
-	Treemap *Treemap `yaml:"treemap,omitempty" json:"treemap,omitempty"`
+	Width      *int          `yaml:"width,omitempty"      json:"width,omitempty"`
+	Height     *int          `yaml:"height,omitempty"     json:"height,omitempty"`
+	Treemap    *Treemap      `yaml:"treemap,omitempty"    json:"treemap,omitempty"`
+	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 }
 
 // New returns a Config populated with sensible defaults.
@@ -34,6 +38,9 @@ func New() *Config {
 		Width:   &width,
 		Height:  &height,
 		Treemap: &Treemap{},
+		FileFilter: []filter.Rule{
+			{Pattern: ".*", Mode: filter.Exclude},
+		},
 	}
 }
 

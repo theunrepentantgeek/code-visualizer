@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/bevan/code-visualizer/internal/filter"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
@@ -18,7 +19,7 @@ func TestScanFlat(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir)
+	root, err := Scan(dir, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -49,7 +50,7 @@ func TestScanNested(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "nested")
 
-	root, err := Scan(dir)
+	root, err := Scan(dir, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -81,7 +82,7 @@ func TestScanEmptyDir(t *testing.T) {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
 
-	_, err := Scan(dir)
+	_, err := Scan(dir, nil)
 	g.Expect(err).To(MatchError(ContainSubstring("no files")))
 }
 
@@ -90,7 +91,7 @@ func TestScanFollowsFileSymlinks(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
-	root, err := Scan(dir)
+	root, err := Scan(dir, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -112,7 +113,7 @@ func TestScanSkipsDirSymlinks(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
-	root, err := Scan(dir)
+	root, err := Scan(dir, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -134,7 +135,7 @@ func TestScanFileExtension(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir)
+	root, err := Scan(dir, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -157,7 +158,7 @@ func TestScanSetsFileType(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir)
+	root, err := Scan(dir, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -242,4 +243,147 @@ func TestFilterBinaryFilesLogsExcluded(t *testing.T) {
 	_ = FilterBinaryFiles(root)
 
 	g.Expect(buf.String()).To(ContainSubstring("excluding binary file"))
+}
+
+func TestScanWithRules_ExcludesDotfiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := filepath.Join("testdata", "with-dotfiles")
+
+	rules := []filter.Rule{
+		{Pattern: ".*", Mode: filter.Exclude},
+	}
+
+	root, err := Scan(dir, rules)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		return
+	}
+
+	// .hidden and .config/ should be excluded
+	// Only src/main.go and README.md should remain
+	allFiles := collectFileNames(root)
+	g.Expect(allFiles).To(ConsistOf("main.go", "README.md"))
+
+	allDirs := collectDirNames(root)
+	g.Expect(allDirs).To(ConsistOf("src"))
+}
+
+func TestScanWithRules_ExcludedDirNotDescended(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := filepath.Join("testdata", "with-dotfiles")
+
+	rules := []filter.Rule{
+		{Pattern: ".*", Mode: filter.Exclude},
+	}
+
+	root, err := Scan(dir, rules)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		return
+	}
+
+	// .config/ should not appear in the tree at all
+	allDirs := collectDirNames(root)
+	g.Expect(allDirs).NotTo(ContainElement(".config"))
+}
+
+func TestScanWithRules_NoRules_IncludesAll(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := filepath.Join("testdata", "with-dotfiles")
+
+	root, err := Scan(dir, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		return
+	}
+
+	allFiles := collectFileNames(root)
+	g.Expect(allFiles).To(ContainElement("main.go"))
+	g.Expect(allFiles).To(ContainElement("README.md"))
+	g.Expect(allFiles).To(ContainElement(".hidden"))
+	g.Expect(allFiles).To(ContainElement("settings.json"))
+}
+
+func TestScanWithRules_IncludeOverridesExclude(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := filepath.Join("testdata", "with-dotfiles")
+
+	rules := []filter.Rule{
+		{Pattern: ".config", Mode: filter.Include},
+		{Pattern: ".config/**", Mode: filter.Include},
+		{Pattern: ".*", Mode: filter.Exclude},
+	}
+
+	root, err := Scan(dir, rules)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		return
+	}
+
+	allFiles := collectFileNames(root)
+	g.Expect(allFiles).To(ContainElement("settings.json"))
+	g.Expect(allFiles).To(ContainElement("main.go"))
+	g.Expect(allFiles).To(ContainElement("README.md"))
+	g.Expect(allFiles).NotTo(ContainElement(".hidden"))
+}
+
+func TestScanWithRules_PrunesEmptyDirs(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := filepath.Join("testdata", "with-dotfiles")
+
+	// Exclude all .go and .json files — src/ and .config/ should be pruned
+	rules := []filter.Rule{
+		{Pattern: "**/*.go", Mode: filter.Exclude},
+		{Pattern: "**/*.json", Mode: filter.Exclude},
+	}
+
+	root, err := Scan(dir, rules)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		return
+	}
+
+	allDirs := collectDirNames(root)
+	g.Expect(allDirs).NotTo(ContainElement("src"))
+	g.Expect(allDirs).NotTo(ContainElement(".config"))
+}
+
+// collectFileNames collects all file names recursively.
+func collectFileNames(dir *model.Directory) []string {
+	names := make([]string, 0, len(dir.Files))
+	for _, f := range dir.Files {
+		names = append(names, f.Name)
+	}
+
+	for _, d := range dir.Dirs {
+		names = append(names, collectFileNames(d)...)
+	}
+
+	return names
+}
+
+// collectDirNames collects all directory names recursively (excludes root).
+func collectDirNames(dir *model.Directory) []string {
+	names := make([]string, 0, len(dir.Dirs))
+	for _, d := range dir.Dirs {
+		names = append(names, d.Name)
+		names = append(names, collectDirNames(d)...)
+	}
+
+	return names
 }

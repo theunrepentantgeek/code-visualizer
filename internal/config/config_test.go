@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/bevan/code-visualizer/internal/filter"
 )
 
 // New tests
@@ -293,4 +295,67 @@ func TestSave_OmitsNilFields(t *testing.T) {
 	// Assert: nil pointer fields should not appear in output
 	g.Expect(string(data)).NotTo(ContainSubstring("fill"))
 	g.Expect(string(data)).NotTo(ContainSubstring("border"))
+}
+
+func TestNew_DefaultFileFilter(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	g.Expect(cfg.FileFilter).To(HaveLen(1))
+	g.Expect(cfg.FileFilter[0].Pattern).To(Equal(".*"))
+	g.Expect(cfg.FileFilter[0].Mode).To(Equal(filter.Exclude))
+}
+
+func TestLoad_YAMLFileFilter_ReplacesDefaults(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := `fileFilter:
+  - pattern: ".github/**"
+    mode: include
+  - pattern: ".*"
+    mode: exclude
+  - pattern: "**/*.log"
+    mode: exclude
+`
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+	err := cfg.Load(path)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.FileFilter).To(HaveLen(3))
+	g.Expect(cfg.FileFilter[0].Pattern).To(Equal(".github/**"))
+	g.Expect(cfg.FileFilter[0].Mode).To(Equal(filter.Include))
+	g.Expect(cfg.FileFilter[1].Pattern).To(Equal(".*"))
+	g.Expect(cfg.FileFilter[2].Pattern).To(Equal("**/*.log"))
+}
+
+func TestSave_Load_RoundTripsFileFilter(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	original := New()
+	original.FileFilter = []filter.Rule{
+		{Pattern: ".*", Mode: filter.Exclude},
+		{Pattern: ".github/**", Mode: filter.Include},
+	}
+
+	g.Expect(original.Save(path)).To(Succeed())
+
+	loaded := New()
+	g.Expect(loaded.Load(path)).To(Succeed())
+
+	g.Expect(loaded.FileFilter).To(HaveLen(2))
+	g.Expect(loaded.FileFilter[0].Pattern).To(Equal(".*"))
+	g.Expect(loaded.FileFilter[0].Mode).To(Equal(filter.Exclude))
+	g.Expect(loaded.FileFilter[1].Pattern).To(Equal(".github/**"))
+	g.Expect(loaded.FileFilter[1].Mode).To(Equal(filter.Include))
 }

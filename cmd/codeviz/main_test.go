@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -9,6 +10,11 @@ import (
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
 )
+
+func TestMain(m *testing.M) {
+	filesystem.Register()
+	os.Exit(m.Run())
+}
 
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
 	t.Parallel()
@@ -103,4 +109,35 @@ func countFilesInTree(node *model.Directory) int {
 	}
 
 	return count
+}
+
+func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "file-size",
+		Filter:     []string{"![invalid"},
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring("invalid filter")))
+}
+
+func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "file-size",
+		Filter:     []string{"!.*", "*.go", "!**/*.log"},
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
 }
