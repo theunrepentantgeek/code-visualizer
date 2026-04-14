@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
