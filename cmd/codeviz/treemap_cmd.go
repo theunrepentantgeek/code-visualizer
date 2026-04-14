@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/rotisserie/eris"
 
@@ -488,6 +489,8 @@ func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	for t := range seen {
 		types = append(types, t)
 	}
+
+	sort.Strings(types)
 
 	return types
 }

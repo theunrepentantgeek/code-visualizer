@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
@@ -139,4 +140,31 @@ func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
 
 	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestCollectDistinctTypes_ReturnsSortedTypes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange - files with different file types added in non-alphabetical order
+	fZ := &model.File{Path: "/p/z.go", Name: "z.go"}
+	fZ.SetClassification(filesystem.FileType, "go")
+
+	fA := &model.File{Path: "/p/a.md", Name: "a.md"}
+	fA.SetClassification(filesystem.FileType, "md")
+
+	fM := &model.File{Path: "/p/m.txt", Name: "m.txt"}
+	fM.SetClassification(filesystem.FileType, "txt")
+
+	root := &model.Directory{
+		Path:  "/p",
+		Name:  "p",
+		Files: []*model.File{fZ, fA, fM},
+	}
+
+	// Act
+	types := collectDistinctTypes(root, metric.Name(filesystem.FileType))
+
+	// Assert
+	g.Expect(types).To(Equal([]string{"go", "md", "txt"}))
 }
