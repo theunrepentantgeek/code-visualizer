@@ -17,5 +17,7 @@ RUN task --completion bash > "/etc/.task.completion.sh" \
     && echo 'source /etc/.task.completion.sh' >> "/etc/bash.bashrc"
 
 # Pre-download Go modules for faster builds
+# Run as root, then fix ownership so the vscode user can write to the module cache
 COPY go.mod go.sum /tmp/mod-download/
-RUN cd /tmp/mod-download && go mod download && rm -rf /tmp/mod-download
+RUN cd /tmp/mod-download && go mod download && rm -rf /tmp/mod-download \
+    && chown -R vscode:golang /go/pkg
