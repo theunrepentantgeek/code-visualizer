@@ -163,7 +163,7 @@ func TestCollectDistinctTypes_ReturnsSortedTypes(t *testing.T) {
 	}
 
 	// Act
-	types := collectDistinctTypes(root, metric.Name(filesystem.FileType))
+	types := collectDistinctTypes(root, filesystem.FileType)
 
 	// Assert
 	g.Expect(types).To(Equal([]string{"go", "md", "txt"}))
