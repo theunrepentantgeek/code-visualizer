@@ -129,6 +129,19 @@ func TestRunUnknownRequestedMetric(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("unknown metric")))
 }
 
+func TestRunUnknownMetricListsAvailable(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	reg.register(&mockProvider{name: "alpha", kind: metric.Quantity})
+	reg.register(&mockProvider{name: "beta", kind: metric.Quantity})
+
+	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"})
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring("available metrics: alpha, beta")))
+}
+
 func TestRunErrorPropagation(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

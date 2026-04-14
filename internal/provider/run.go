@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"strings"
+
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 
@@ -70,7 +72,7 @@ func visitDep(reg *registry, name metric.Name, seen map[metric.Name]bool, result
 
 	p, ok := reg.get(name)
 	if !ok || p == nil {
-		return eris.Errorf("unknown metric %q — no provider registered", name)
+		return eris.Errorf("unknown metric %q; available metrics: %s", name, formatNames(reg.names()))
 	}
 
 	seen[name] = true
@@ -174,4 +176,13 @@ func findReady(names []metric.Name, inDegree map[metric.Name]int) []metric.Name 
 	}
 
 	return level
+}
+
+func formatNames(names []metric.Name) string {
+	strs := make([]string, len(names))
+	for i, n := range names {
+		strs[i] = string(n)
+	}
+
+	return strings.Join(strs, ", ")
 }

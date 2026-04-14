@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/bevan/code-visualizer/internal/metric"
@@ -49,6 +50,25 @@ func (r *registry) all() []Interface {
 	return result
 }
 
+func (r *registry) names() []metric.Name {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make([]string, 0, len(r.providers))
+	for n := range r.providers {
+		result = append(result, string(n))
+	}
+
+	sort.Strings(result)
+
+	names := make([]metric.Name, len(result))
+	for i, n := range result {
+		names[i] = metric.Name(n)
+	}
+
+	return names
+}
+
 // globalRegistry is the process-wide provider registry.
 var globalRegistry = newRegistry()
 
@@ -60,6 +80,9 @@ func Get(name metric.Name) (Interface, bool) { return globalRegistry.get(name) }
 
 // All returns all registered providers.
 func All() []Interface { return globalRegistry.all() }
+
+// Names returns the sorted names of all registered providers.
+func Names() []metric.Name { return globalRegistry.names() }
 
 // ResetRegistryForTesting clears the global registry. Test use only.
 func ResetRegistryForTesting() {

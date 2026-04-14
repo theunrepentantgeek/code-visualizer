@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/rotisserie/eris"
 
@@ -42,7 +43,7 @@ type TreemapCmd struct {
 func (c *TreemapCmd) Validate() error {
 	p, ok := provider.Get(c.Size)
 	if !ok {
-		return eris.Errorf("unknown size metric %q", c.Size)
+		return eris.Errorf("unknown size metric %q; available metrics: %s", c.Size, formatMetricNames())
 	}
 
 	if p.Kind() != metric.Quantity {
@@ -73,7 +74,7 @@ func (c *TreemapCmd) Validate() error {
 func validateMetricPalette(metricStr, paletteStr, label string) error {
 	if metricStr != "" {
 		if _, ok := provider.Get(metric.Name(metricStr)); !ok {
-			return eris.Errorf("invalid %s metric %q", label, metricStr)
+			return eris.Errorf("invalid %s metric %q; available metrics: %s", label, metricStr, formatMetricNames())
 		}
 	}
 
@@ -85,6 +86,17 @@ func validateMetricPalette(metricStr, paletteStr, label string) error {
 	}
 
 	return nil
+}
+
+func formatMetricNames() string {
+	names := provider.Names()
+	strs := make([]string, len(names))
+
+	for i, n := range names {
+		strs[i] = string(n)
+	}
+
+	return strings.Join(strs, ", ")
 }
 
 func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Name {
