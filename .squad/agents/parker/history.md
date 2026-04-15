@@ -23,3 +23,16 @@
 ## Learnings
 
 <!-- Append learnings below -->
+
+### RenderRadialPNG (2026-04-15)
+
+- **Signature:** `func RenderRadialPNG(root radialtree.RadialNode, canvasSize int, outputPath string) error`  
+  Located in `internal/render/radialtree.go`. Square canvas only; all node positions are offsets from canvas centre.
+
+- **Three-pass rendering:** edges → discs → labels. Each pass is a full recursive traversal of the tree. Required to avoid z-order issues (e.g., parent discs drawn over child edges).
+
+- **Label rotation:** Right half uses `RotateAbout(node.Angle)` + left anchor (ax=0). Left half uses `RotateAbout(node.Angle + π)` + right anchor (ax=1). This flips the baseline direction so characters stay upright. Root node (dist=0) gets an unrotated centred label.
+
+- **Colour defaults:** file fill `#CCCCCC`, directory fill `#444444`, border `#333333`, edge `#999999`. Custom colours applied if `FillColour.A > 0` (fill) or `BorderColour != nil` (border).
+
+- **Dallas's radialtree package** (`internal/radialtree/`) was already in progress when this renderer was written: `node.go` defines `RadialNode`, `layout.go` defines `Layout`. The `render_cmd.go` already references `RadialCmd` (pre-existing lint failure, not mine to fix).

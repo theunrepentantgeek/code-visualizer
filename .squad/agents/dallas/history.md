@@ -14,6 +14,15 @@
 
 <!-- Append learnings below -->
 
+### radialtree package (2026-04-15)
+
+- **Package path:** `github.com/bevan/code-visualizer/internal/radialtree` — files `node.go` and `layout.go`
+- **RadialNode fields:** `X, Y float64` (pixel offset from canvas centre), `DiscRadius float64` (disc pixel radius), `Angle float64` (radians, 0=east, π/2=down), `Label string`, `ShowLabel bool`, `IsDirectory bool`, `FillColour color.RGBA`, `BorderColour *color.RGBA`, `Children []RadialNode`
+- **Layout() signature:** `Layout(root *model.Directory, canvasSize int, discMetric metric.Name, labels LabelMode) RadialNode`
+- **LabelMode constants:** `LabelAll = "all"`, `LabelFoldersOnly = "folders"`, `LabelNone = "none"`
+- **Algorithm:** ring spacing = (canvasSize/2 - 40) / (maxDepth+1); angular sectors proportional to leaf counts; files placed before subdirs; disc sizes scaled by discMetric quantity/measure value
+- Removed pre-existing `radialtree.go` stub (replaced by `node.go`)
+
 ### PR #39 review fixes (2026-04-15)
 
 - **FolderAuthorCountProvider.Dependencies()**: Added `gitprovider.AuthorCount` dependency for correct scheduler ordering. Note: this provider queries git directly (not via file metrics) to compute author union sets — simple count summation wouldn't give correct cross-file deduplication.

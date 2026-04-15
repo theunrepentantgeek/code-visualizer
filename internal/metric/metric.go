@@ -5,9 +5,6 @@ package metric
 // Name identifies a metric. Provider packages define their own Name constants.
 type Name string
 
-// MetricName is a deprecated alias for Name.
-type MetricName = Name
-
 // Kind describes the value type of a metric.
 type Kind int
 

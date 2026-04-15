@@ -24,6 +24,7 @@ type Config struct {
 	Width      *int          `yaml:"width,omitempty"      json:"width,omitempty"`
 	Height     *int          `yaml:"height,omitempty"     json:"height,omitempty"`
 	Treemap    *Treemap      `yaml:"treemap,omitempty"    json:"treemap,omitempty"`
+	Radial     *Radial       `yaml:"radial,omitempty"     json:"radial,omitempty"`
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 }
 
@@ -38,6 +39,7 @@ func New() *Config {
 		Width:   &width,
 		Height:  &height,
 		Treemap: &Treemap{},
+		Radial:  &Radial{},
 		FileFilter: []filter.Rule{
 			{Pattern: ".*", Mode: filter.Exclude},
 		},
