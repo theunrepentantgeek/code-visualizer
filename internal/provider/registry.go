@@ -1,8 +1,10 @@
 package provider
 
 import (
+	"cmp"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"sync"
 
 	"github.com/bevan/code-visualizer/internal/metric"
@@ -42,10 +44,12 @@ func (r *registry) all() []Interface {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	result := make([]Interface, 0, len(r.providers))
-	for _, p := range r.providers {
-		result = append(result, p)
-	}
+	result := slices.Collect(maps.Values(r.providers))
+	slices.SortFunc(
+		result,
+		func(left Interface, right Interface) int {
+			return cmp.Compare(left.Name(), right.Name())
+		})
 
 	return result
 }
@@ -54,17 +58,9 @@ func (r *registry) names() []metric.Name {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	result := make([]string, 0, len(r.providers))
-	for n := range r.providers {
-		result = append(result, string(n))
-	}
+	names := slices.Collect(maps.Keys(r.providers))
 
-	sort.Strings(result)
-
-	names := make([]metric.Name, len(result))
-	for i, n := range result {
-		names[i] = metric.Name(n)
-	}
+	slices.SortFunc(names, cmp.Compare)
 
 	return names
 }
