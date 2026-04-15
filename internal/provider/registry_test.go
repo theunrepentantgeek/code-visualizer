@@ -74,3 +74,16 @@ func TestRegisterDuplicatePanics(t *testing.T) {
 		reg.register(&stubProvider{name: "dup", kind: metric.Quantity})
 	}).To(Panic())
 }
+
+func TestNamesSorted(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	reg.register(&stubProvider{name: "zebra", kind: metric.Quantity})
+	reg.register(&stubProvider{name: "alpha", kind: metric.Quantity})
+	reg.register(&stubProvider{name: "mid", kind: metric.Quantity})
+
+	names := reg.names()
+	g.Expect(names).To(Equal([]metric.Name{"alpha", "mid", "zebra"}))
+}
