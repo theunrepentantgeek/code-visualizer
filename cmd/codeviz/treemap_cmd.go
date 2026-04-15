@@ -381,6 +381,7 @@ func applyFillColours(
 	}
 }
 
+//nolint:dupl // structurally identical to RadialCmd.applyBorderColours by design
 func (*TreemapCmd) applyBorderColours(
 	rects *treemap.TreemapRectangle,
 	root *model.Directory,
@@ -435,7 +436,7 @@ type renderResult struct {
 }
 
 func (c *TreemapCmd) printResult(flags *Flags, r renderResult) error {
-	if flags.Format != "json" {
+	if flags.Format != outputFormatJSON {
 		fmt.Printf("Rendered treemap: %d files, %d directories → %s (%d×%d)\n",
 			r.files, r.dirs, c.Output, r.width, r.height)
 

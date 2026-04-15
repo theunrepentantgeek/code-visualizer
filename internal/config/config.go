@@ -28,8 +28,6 @@ type Config struct {
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 }
 
-func defaultStr(s string) *string { return &s }
-
 // New returns a Config populated with sensible defaults.
 // Call this unconditionally at startup; subsequent layers (config file, CLI
 // flags) overlay their values on top of the struct returned here.
@@ -41,7 +39,7 @@ func New() *Config {
 		Width:   &width,
 		Height:  &height,
 		Treemap: &Treemap{},
-		Radial:  &Radial{Labels: defaultStr("all")},
+		Radial:  &Radial{Labels: new("all")},
 		FileFilter: []filter.Rule{
 			{Pattern: ".*", Mode: filter.Exclude},
 		},

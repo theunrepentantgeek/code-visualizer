@@ -100,15 +100,18 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	requested := collectRequestedMetrics(c.DiscSize, ptrString(cfg.Fill), ptrString(cfg.Border))
 
-	if err := c.checkGitRequirement(requested); err != nil {
+	err = c.checkGitRequirement(requested)
+	if err != nil {
 		return err
 	}
 
-	if err := provider.Run(root, requested); err != nil {
+	err = provider.Run(root, requested)
+	if err != nil {
 		return eris.Wrap(err, "failed to load metrics")
 	}
 
-	if err := c.filterBinaryFiles(cfg, root); err != nil {
+	err = c.filterBinaryFiles(cfg, root)
+	if err != nil {
 		return err
 	}
 
@@ -117,18 +120,9 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
 
-	labels := c.resolveLabels(cfg)
-
-	nodes := radialtree.Layout(root, canvasSize, c.DiscSize, labels)
-
-	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
-
-	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
-
-	slog.Debug("rendering", "canvasSize", canvasSize, "output", c.Output)
-
-	if err := render.RenderRadialPNG(&nodes, canvasSize, c.Output); err != nil {
-		return eris.Wrap(err, "render failed")
+	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, canvasSize, fillMetric, fillPaletteName)
+	if err != nil {
+		return err
 	}
 
 	return c.printResult(flags, radialRenderResult{
@@ -140,6 +134,28 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		borderMetric:      borderMetric,
 		borderPaletteName: borderPaletteName,
 	})
+}
+
+// applyColoursAndRender lays out, colours, and renders the radial tree to disk.
+func (c *RadialCmd) applyColoursAndRender(
+	cfg *config.Radial,
+	root *model.Directory,
+	canvasSize int,
+	fillMetric metric.Name,
+	fillPaletteName palette.PaletteName,
+) (metric.Name, palette.PaletteName, error) {
+	labels := c.resolveLabels(cfg)
+	nodes := radialtree.Layout(root, canvasSize, c.DiscSize, labels)
+	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
+	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
+
+	slog.Debug("rendering", "canvasSize", canvasSize, "output", c.Output)
+
+	if err := render.RenderRadialPNG(&nodes, canvasSize, c.Output); err != nil {
+		return "", "", eris.Wrap(err, "render failed")
+	}
+
+	return borderMetric, borderPaletteName, nil
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -289,7 +305,7 @@ func (c *RadialCmd) filterBinaryFiles(_ *config.Radial, root *model.Directory) e
 }
 
 // resolveLabels converts the string labels flag to a radialtree.LabelMode.
-func (c *RadialCmd) resolveLabels(cfg *config.Radial) radialtree.LabelMode {
+func (*RadialCmd) resolveLabels(cfg *config.Radial) radialtree.LabelMode {
 	if lbl := ptrString(cfg.Labels); lbl != "" {
 		return radialtree.LabelMode(lbl)
 	}
@@ -324,6 +340,7 @@ func applyRadialFillColoursTop(
 	}
 }
 
+//nolint:dupl // structurally identical to TreemapCmd.applyBorderColours by design
 func (*RadialCmd) applyBorderColours(
 	nodes *radialtree.RadialNode,
 	root *model.Directory,
@@ -378,7 +395,7 @@ type radialRenderResult struct {
 }
 
 func (c *RadialCmd) printResult(flags *Flags, r radialRenderResult) error {
-	if flags.Format != "json" {
+	if flags.Format != outputFormatJSON {
 		fmt.Printf("Rendered radial tree: %d files, %d directories → %s (%d×%d)\n",
 			r.files, r.dirs, c.Output, r.canvasSize, r.canvasSize)
 

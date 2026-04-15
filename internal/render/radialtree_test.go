@@ -33,9 +33,11 @@ func TestRenderRadialPNG_FlatDir(t *testing.T) {
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(info).NotTo(BeNil())
+
 	if info == nil {
 		return
 	}
+
 	g.Expect(info.Size()).To(BeNumerically(">", 0))
 }
 
@@ -44,7 +46,7 @@ func TestRenderRadialPNG_NestedDir(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := &model.Directory{
-		Name: "root",
+		Name:  "root",
 		Files: []*model.File{makeFile("root.go", "go", 100)},
 		Dirs: []*model.Directory{
 			{
@@ -62,9 +64,11 @@ func TestRenderRadialPNG_NestedDir(t *testing.T) {
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(info).NotTo(BeNil())
+
 	if info == nil {
 		return
 	}
+
 	g.Expect(info.Size()).To(BeNumerically(">", 0))
 }
 
@@ -81,7 +85,6 @@ func TestRenderRadialPNG_LabelModes(t *testing.T) {
 		radialtree.LabelFoldersOnly,
 		radialtree.LabelNone,
 	} {
-		mode := mode
 		t.Run(string(mode), func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -94,9 +97,11 @@ func TestRenderRadialPNG_LabelModes(t *testing.T) {
 			info, err := os.Stat(out)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(info).NotTo(BeNil())
+
 			if info == nil {
 				return
 			}
+
 			g.Expect(info.Size()).To(BeNumerically(">", 0))
 		})
 	}
@@ -115,8 +120,10 @@ func TestRenderRadialPNG_EmptyDir(t *testing.T) {
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(info).NotTo(BeNil())
+
 	if info == nil {
 		return
 	}
+
 	g.Expect(info.Size()).To(BeNumerically(">", 0))
 }

@@ -67,7 +67,7 @@ type discEntry struct {
 // computing their absolute screen position from the canvas centre (cx, cy).
 func collectDiscs(node radialtree.RadialNode, cx, cy float64) []discEntry {
 	if node.DiscRadius <= 0 {
-		var result []discEntry
+		result := make([]discEntry, 0, len(node.Children))
 		for _, child := range node.Children {
 			result = append(result, collectDiscs(child, cx, cy)...)
 		}
@@ -81,7 +81,9 @@ func collectDiscs(node radialtree.RadialNode, cx, cy float64) []discEntry {
 		sy:   cy + node.Y,
 	}
 
-	result := []discEntry{entry}
+	result := make([]discEntry, 0, 1+len(node.Children))
+	result = append(result, entry)
+
 	for _, child := range node.Children {
 		result = append(result, collectDiscs(child, cx, cy)...)
 	}
@@ -144,38 +146,42 @@ func drawLabels(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
 			dc.SetColor(TextColourFor(fill))
 			dc.DrawStringAnchored(node.Label, sx, sy, 0.5, 0.5)
 		} else {
-			labelRadius := dist + node.DiscRadius + radialLabelGap
-			lx := cx + labelRadius*math.Cos(node.Angle)
-			ly := cy + labelRadius*math.Sin(node.Angle)
-
-			// Normalise angle to [0, 2π) for half-plane check.
-			angle := node.Angle
-			angle = math.Mod(angle, 2*math.Pi)
-			if angle < 0 {
-				angle += 2 * math.Pi
-			}
-
-			dc.SetColor(radialLabelColour)
-
-			dc.Push()
-
-			if angle <= math.Pi/2 || angle > 3*math.Pi/2 {
-				// Right half: rotate by the raw angle, anchor at left of text.
-				dc.RotateAbout(node.Angle, lx, ly)
-				dc.DrawStringAnchored(node.Label, lx, ly, 0.0, 0.5)
-			} else {
-				// Left half: add π to flip so characters stay upright, anchor at right.
-				dc.RotateAbout(node.Angle+math.Pi, lx, ly)
-				dc.DrawStringAnchored(node.Label, lx, ly, 1.0, 0.5)
-			}
-
-			dc.Pop()
+			drawExternalLabel(dc, node, cx, cy)
 		}
 	}
 
 	for _, child := range node.Children {
 		drawLabels(dc, child, cx, cy)
 	}
+}
+
+// drawExternalLabel draws a radially-oriented label outside the disc for non-root nodes.
+func drawExternalLabel(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
+	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
+	labelRadius := dist + node.DiscRadius + radialLabelGap
+	lx := cx + labelRadius*math.Cos(node.Angle)
+	ly := cy + labelRadius*math.Sin(node.Angle)
+
+	// Normalise angle to [0, 2π) for half-plane check.
+	angle := math.Mod(node.Angle, 2*math.Pi)
+	if angle < 0 {
+		angle += 2 * math.Pi
+	}
+
+	dc.SetColor(radialLabelColour)
+	dc.Push()
+
+	if angle <= math.Pi/2 || angle > 3*math.Pi/2 {
+		// Right half: rotate by the raw angle, anchor at left of text.
+		dc.RotateAbout(node.Angle, lx, ly)
+		dc.DrawStringAnchored(node.Label, lx, ly, 0.0, 0.5)
+	} else {
+		// Left half: add π to flip so characters stay upright, anchor at right.
+		dc.RotateAbout(node.Angle+math.Pi, lx, ly)
+		dc.DrawStringAnchored(node.Label, lx, ly, 1.0, 0.5)
+	}
+
+	dc.Pop()
 }
 
 // effectiveFill returns the fill colour that will be used for a node,
