@@ -159,3 +159,86 @@ func addSumCountFromDirs(sc *sumCount, d *model.Directory, stats map[string]*sum
 		}
 	}
 }
+
+// loadMaxQuantity sets dstMetric on each directory to the maximum srcMetric value across its file tree.
+func loadMaxQuantity(root *model.Directory, srcMetric, dstMetric metric.Name) {
+	model.WalkDirectories(root, func(d *model.Directory) {
+		maxVal, found := maxQuantityFromFiles(d, srcMetric)
+		if v, ok := maxQuantityFromDirs(d, dstMetric); ok && (!found || v > maxVal) {
+			maxVal = v
+			found = true
+		}
+
+		if found {
+			d.SetQuantity(dstMetric, maxVal)
+		}
+	})
+}
+
+// loadMinQuantity sets dstMetric on each directory to the minimum srcMetric value across its file tree.
+func loadMinQuantity(root *model.Directory, srcMetric, dstMetric metric.Name) {
+	model.WalkDirectories(root, func(d *model.Directory) {
+		minVal, found := minQuantityFromFiles(d, srcMetric)
+		if v, ok := minQuantityFromDirs(d, dstMetric); ok && (!found || v < minVal) {
+			minVal = v
+			found = true
+		}
+
+		if found {
+			d.SetQuantity(dstMetric, minVal)
+		}
+	})
+}
+
+// loadSumQuantity sets dstMetric on each directory to the sum of srcMetric values across its file tree.
+func loadSumQuantity(root *model.Directory, srcMetric, dstMetric metric.Name) {
+	model.WalkDirectories(root, func(d *model.Directory) {
+		total, found := sumQuantityFromFiles(d, srcMetric)
+		if v, ok := sumQuantityFromDirs(d, dstMetric); ok {
+			total += v
+			found = true
+		}
+
+		if found {
+			d.SetQuantity(dstMetric, total)
+		}
+	})
+}
+
+// loadMeanMeasure sets dstMetric on each directory to the arithmetic mean of srcMetric values across
+// its file tree, counting all files that have the metric set.
+func loadMeanMeasure(root *model.Directory, srcMetric, dstMetric metric.Name) {
+	stats := make(map[string]*sumCount)
+
+	model.WalkDirectories(root, func(d *model.Directory) {
+		sc := &sumCount{}
+
+		addSumCountFromFiles(sc, d, srcMetric)
+		addSumCountFromDirs(sc, d, stats)
+
+		stats[d.Path] = sc
+
+		if sc.count > 0 {
+			d.SetMeasure(dstMetric, sc.sum/float64(sc.count))
+		}
+	})
+}
+
+// loadPositiveMeanMeasure sets dstMetric on each directory to the arithmetic mean of srcMetric values
+// across its file tree, counting only files where the value is greater than zero (skips binary files).
+func loadPositiveMeanMeasure(root *model.Directory, srcMetric, dstMetric metric.Name) {
+	stats := make(map[string]*sumCount)
+
+	model.WalkDirectories(root, func(d *model.Directory) {
+		sc := &sumCount{}
+
+		addPositiveSumCountFromFiles(sc, d, srcMetric)
+		addSumCountFromDirs(sc, d, stats)
+
+		stats[d.Path] = sc
+
+		if sc.count > 0 {
+			d.SetMeasure(dstMetric, sc.sum/float64(sc.count))
+		}
+	})
+}
