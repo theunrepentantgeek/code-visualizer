@@ -32,7 +32,7 @@ type RadialCmd struct {
 	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
 	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for border colour." name:"border-palette" optional:""`            //nolint:revive // kong struct tags require long lines
 
-	Labels string `enum:",all,folders,none" help:"Labels to display: all, folders, or none." optional:""`
+	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1920" help:"Image height in pixels."`
