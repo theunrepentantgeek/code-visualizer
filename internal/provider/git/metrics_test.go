@@ -10,6 +10,7 @@ import (
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider"
 )
 
 func setupTestGitRepo(t *testing.T) string {
@@ -102,16 +103,18 @@ func TestFileAgeProvider(t *testing.T) {
 	p := &FileAgeProvider{}
 	g.Expect(p.Name()).To(Equal(FileAge))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Scope()).To(Equal(provider.ScopeFile))
+	g.Expect(p.Description()).NotTo(BeEmpty())
 
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	// old.go has age > 0
+	// old.go was committed 2024-01-01, so age should be > 365 days
 	ageOld, ok := root.Files[0].Quantity(FileAge)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(ageOld).To(BeNumerically(">", 0))
+	g.Expect(ageOld).To(BeNumerically(">", 365))
 
-	// new.go has age >= 0 (just committed)
+	// new.go was just committed, age in days >= 0
 	ageNew, ok := root.Files[1].Quantity(FileAge)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(ageNew).To(BeNumerically(">=", 0))
@@ -130,10 +133,12 @@ func TestFileFreshnessProvider(t *testing.T) {
 	resetService()
 
 	p := &FileFreshnessProvider{}
+	g.Expect(p.Scope()).To(Equal(provider.ScopeFile))
+	g.Expect(p.Description()).NotTo(BeEmpty())
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	// new.go was just committed — should be very fresh (small number)
+	// new.go was just committed — should be very fresh (0 days)
 	freshNew, ok := root.Files[1].Quantity(FileFreshness)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(freshNew).To(BeNumerically(">=", 0))
@@ -149,6 +154,8 @@ func TestAuthorCountProvider(t *testing.T) {
 	resetService()
 
 	p := &AuthorCountProvider{}
+	g.Expect(p.Scope()).To(Equal(provider.ScopeFile))
+	g.Expect(p.Description()).NotTo(BeEmpty())
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 

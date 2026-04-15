@@ -10,3 +10,13 @@ func WalkFiles(dir *Directory, fn func(*File)) {
 		WalkFiles(d, fn)
 	}
 }
+
+// WalkDirectories calls fn for every directory in the tree, post-order (deepest first).
+// This ensures child directories are visited before their parents, enabling bottom-up aggregation.
+func WalkDirectories(dir *Directory, fn func(*Directory)) {
+	for _, d := range dir.Dirs {
+		WalkDirectories(d, fn)
+	}
+
+	fn(dir)
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/bevan/code-visualizer/internal/provider/folder"
 	"github.com/bevan/code-visualizer/internal/provider/git"
 )
 
@@ -60,6 +61,7 @@ func countAll(node *model.Directory) (files int, dirs int) {
 func main() {
 	filesystem.Register()
 	git.Register()
+	folder.Register()
 
 	cli := CLI{}
 

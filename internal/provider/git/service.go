@@ -56,6 +56,25 @@ func resetService() {
 	services = make(map[string]*serviceResult)
 }
 
+// VerifyRepository returns an error if repoPath is not within a git repository.
+func VerifyRepository(repoPath string) error {
+	_, err := getService(repoPath)
+
+	return err
+}
+
+// FileAuthors returns the set of distinct author emails for the file at relPath.
+// relPath must be relative to the repository root. repoPath is searched upward for a .git directory.
+// Returns an empty map for untracked files (no error).
+func FileAuthors(repoPath, relPath string) (map[string]bool, error) {
+	s, err := getService(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.fileAuthors(relPath)
+}
+
 var errUntracked = errors.New("file has no git history")
 
 func (s *repoService) fileAge(relPath string) (int64, error) {
@@ -71,7 +90,7 @@ func (s *repoService) fileAge(relPath string) (int64, error) {
 	oldest := commits[len(commits)-1]
 	age := time.Since(oldest)
 
-	return int64(age.Seconds()), nil
+	return int64(age / (24 * time.Hour)), nil
 }
 
 func (s *repoService) fileFreshness(relPath string) (int64, error) {
@@ -87,25 +106,13 @@ func (s *repoService) fileFreshness(relPath string) (int64, error) {
 	newest := commits[0]
 	freshness := time.Since(newest)
 
-	return int64(freshness.Seconds()), nil
+	return int64(freshness / (24 * time.Hour)), nil
 }
 
 func (s *repoService) authorCount(relPath string) (int64, error) {
-	log, err := s.repo.Log(&gogit.LogOptions{FileName: &relPath})
+	authors, err := s.fileAuthors(relPath)
 	if err != nil {
-		return 0, eris.Wrap(err, "failed to get git log")
-	}
-	defer log.Close()
-
-	authors := map[string]bool{}
-
-	err = log.ForEach(func(c *object.Commit) error {
-		authors[c.Author.Email] = true
-
-		return nil
-	})
-	if err != nil {
-		return 0, eris.Wrap(err, "failed to iterate commits")
+		return 0, err
 	}
 
 	if len(authors) == 0 {
@@ -113,6 +120,27 @@ func (s *repoService) authorCount(relPath string) (int64, error) {
 	}
 
 	return int64(len(authors)), nil
+}
+
+func (s *repoService) fileAuthors(relPath string) (map[string]bool, error) {
+	log, err := s.repo.Log(&gogit.LogOptions{FileName: &relPath})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to get git log")
+	}
+	defer log.Close()
+
+	authors := make(map[string]bool)
+
+	err = log.ForEach(func(c *object.Commit) error {
+		authors[c.Author.Email] = true
+
+		return nil
+	})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to iterate commits")
+	}
+
+	return authors, nil
 }
 
 func (s *repoService) fileCommitTimes(relPath string) ([]time.Time, error) {

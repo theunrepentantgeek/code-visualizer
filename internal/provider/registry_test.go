@@ -18,6 +18,8 @@ type stubProvider struct {
 
 func (s *stubProvider) Name() metric.Name                 { return s.name }
 func (s *stubProvider) Kind() metric.Kind                 { return s.kind }
+func (*stubProvider) Scope() Scope                        { return ScopeFile }
+func (*stubProvider) Description() string                 { return "" }
 func (*stubProvider) Dependencies() []metric.Name         { return nil }
 func (*stubProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 func (*stubProvider) Load(_ *model.Directory) error       { return nil }
