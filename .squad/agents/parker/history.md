@@ -54,3 +54,19 @@
 - **Crowding prevention:** `Layout()` now adjusts `ringSpacing` upward when depth-1 has many children (ensures minimum circumference for `n * (2*minFileDisc + 4px)` nodes), and reduces `maxDiscFactor` via `adjustedDiscFactor()` when discs would overlap even after spacing is increased.
 
 - **computeLeafCount doc fix:** The old comment claimed it returned 1 for empty dirs — wrong. The function returns 0; callers guard with `if leafCount == 0 { leafCount = 1 }`. Comment corrected to match reality.
+### 2026-04-15: PR #39 Review — Provider Interface Extension
+
+Reviewed PR #39 (issue #38) adding `Scope()` and `Description()` to `provider.Interface` plus 9 new folder-level metrics.
+
+**Patterns worth preserving:**
+- Scope type uses string constants — extensible without interface changes
+- Helper functions in `folder/metrics.go` compose well for aggregation (sum, min, max, mean)
+- `model.WalkDirectories()` uses post-order traversal for bottom-up aggregation
+- Dependency declarations enable correct scheduling of file→folder metric chains
+
+**Minor debt identified (not blocking):**
+- `FolderAuthorCountProvider` doesn't declare dependency on file metrics (queries git directly)
+- Binary file handling differs between MeanFileLines (skips) and MeanFileSize (includes) — intentional but undocumented
+- Git error logging inconsistent across operations
+
+**Review output:** Orchestration log at `.squad/orchestration-log/2026-04-15T04:50:46Z-parker.md`
