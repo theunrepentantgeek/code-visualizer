@@ -27,3 +27,24 @@ Wrote `internal/radialtree/layout_test.go` (white-box, `package radialtree`) wit
 - Larger canvasSize produces larger child radii
 
 Followed the exact style from `internal/treemap/layout_test.go`: `t.Parallel()`, `NewGomegaWithT(t)`, nilaway-safe nil guards, no testify.
+
+### 2026-04-14 — PR review fixes: layout tests + render tests
+
+**Changes to `internal/radialtree/layout_test.go`:**
+- Added `"sort"` import
+- Replaced `TestLayoutAnglesFullCircle` body: now sorts the 4 angles and verifies consecutive gaps are ~π/2 (within 5% tolerance) instead of just checking uniqueness
+- Added `TestLayoutZeroMetricUsesMinDisc`: verifies file with no metric value gets `minFileDisc` radius (the floor)
+- Added `TestLayoutUniformMetricUsesMidpoint`: verifies files with equal metric values all receive the `(fileMin+fileMax)/2` midpoint radius, and it's > minFileDisc
+- Added `TestComputeLeafCountEmptyDir`: verifies `computeLeafCount` returns 0 for empty dir (actual behaviour, not the old misleading doc comment)
+- Added `TestComputeLeafCountWithFiles`: verifies `computeLeafCount` returns 2 for a dir with 2 files
+
+**New file `internal/render/radialtree_test.go`:**
+- 4 tests: FlatDir, NestedDir, LabelModes (3 subtests), EmptyDir
+- All use `&node` as per the pointer-receiver API Parker introduced
+- Tests use `makeFile(name, ext, size)` helper from `renderer_test.go` (same package)
+- Parker's `radialtree.go` had a pre-existing unused `sort` import (WIP) that blocks compilation of the render package; the render tests will compile once Parker resolves that
+
+**Key learnings:**
+- `computeLeafCount` returns actual 0 for empty dir; zero-guard happens at call site in `layoutDir`
+- `buildDiscParams` sets `useEqual=true` when all non-zero metric values are equal (single-value or uniform case)
+- Render test compilation depends on Parker completing their `sort`-usage addition to `radialtree.go`

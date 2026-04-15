@@ -14,6 +14,14 @@
 
 <!-- Append learnings below -->
 
+### PR review fixes — radialtree_cmd.go + config (2026-04-15)
+
+- **Kong defaults silently override config**: `default:"all"` on a Kong string field causes Kong to always set the value, so `applyOverrides` always writes over config file values. Fix: remove `default:` tags from Kong fields, add `""` to enum, set defaults in `config.New()` only.
+- **`defaultStr` helper**: Added `func defaultStr(s string) *string { return &s }` to `internal/config/config.go` for use in `New()`.
+- **`resolveLabels` simplification**: After config.New() guarantees `Labels` is always set, the `c.Labels != ""` fallback branch in `resolveLabels` is dead code and was removed.
+- **RenderRadialPNG pointer call site**: Changed `render.RenderRadialPNG(nodes, ...)` → `render.RenderRadialPNG(&nodes, ...)` to align with Parker's upcoming signature change. Build fails until Parker's change lands (expected).
+- **Colour-apply function invariant**: Documented in all four `applyRadial*` functions that `node.Children` must be files-first, then subdirectories — matching `layoutDir` output order.
+
 ### radialtree package (2026-04-15)
 
 - **Package path:** `github.com/bevan/code-visualizer/internal/radialtree` — files `node.go` and `layout.go`

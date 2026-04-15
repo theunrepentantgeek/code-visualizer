@@ -36,3 +36,21 @@
 - **Colour defaults:** file fill `#CCCCCC`, directory fill `#444444`, border `#333333`, edge `#999999`. Custom colours applied if `FillColour.A > 0` (fill) or `BorderColour != nil` (border).
 
 - **Dallas's radialtree package** (`internal/radialtree/`) was already in progress when this renderer was written: `node.go` defines `RadialNode`, `layout.go` defines `Layout`. The `render_cmd.go` already references `RadialCmd` (pre-existing lint failure, not mine to fix).
+
+### Render + Layout fixes (2026-04-15)
+
+- **RenderRadialPNG signature:** Updated to take `*radialtree.RadialNode` (pointer). Internal draw functions still take by value via `*root` dereference at the top level.
+
+- **Stroke batching:** `drawEdges` now calls `dc.Stroke()` once per node level (after the loop over children) rather than once per edge. The recursive call stays inside the loop so children are still fully processed. Net effect: one stroke call per tree node instead of one per edge.
+
+- **Z-order for discs:** `drawDiscs` was refactored from a recursive traversal into a two-phase collect-then-draw approach. `collectDiscs` gathers all `(node, sx, sy)` tuples; they are sorted by `DiscRadius` descending and drawn via `drawSingleDisc`. Larger nodes render first, so smaller nodes always appear on top.
+
+- **Label colour bug:** External labels (non-root nodes) were using `TextColourFor(fill)` against the disc fill colour, but the label is positioned on the white canvas — so dark-filled directory nodes produced white (invisible) text. Fixed by adding `radialLabelColour = #222222` used for all non-root labels. Root label (on-disc) still uses `TextColourFor(effectiveFill(node))`.
+
+- **Angle normalisation:** Replaced O(n) `for` loops in `drawLabels` with `math.Mod(angle, 2π)` + a single `if angle < 0` guard.
+
+- **dirDiscFactor reduced:** `0.12` → `0.06` in `layout.go` so directory dots are proportional to small file nodes.
+
+- **Crowding prevention:** `Layout()` now adjusts `ringSpacing` upward when depth-1 has many children (ensures minimum circumference for `n * (2*minFileDisc + 4px)` nodes), and reduces `maxDiscFactor` via `adjustedDiscFactor()` when discs would overlap even after spacing is increased.
+
+- **computeLeafCount doc fix:** The old comment claimed it returned 1 for empty dirs — wrong. The function returns 0; callers guard with `if leafCount == 0 { leafCount = 1 }`. Comment corrected to match reality.

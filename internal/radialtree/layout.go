@@ -10,7 +10,7 @@ import (
 
 const (
 	margin        = 40.0
-	dirDiscFactor = 0.12
+	dirDiscFactor = 0.06
 	minDirDisc    = 4.0
 	maxDiscFactor = 0.40
 	minFileDisc   = 3.0
@@ -31,7 +31,19 @@ func Layout(root *model.Directory, canvasSize int, discMetric metric.Name, label
 		ringSpacing = (float64(canvasSize)/2.0 - margin) / float64(maxDepth+1)
 	}
 
-	dp := buildDiscParams(root, discMetric, minFileDisc, ringSpacing*maxDiscFactor)
+	n1 := len(root.Files) + len(root.Dirs)
+	if n1 > 0 && maxDepth > 0 {
+		// Ensure ring 1 has enough circumference for n1 nodes at minimum disc size.
+		const minGapPixels = 4.0
+		minCircumference := float64(n1) * (2*minFileDisc + minGapPixels)
+		minRingSpacing := minCircumference / (2 * math.Pi)
+		if minRingSpacing > ringSpacing {
+			ringSpacing = minRingSpacing
+		}
+	}
+
+	effectiveMaxDiscFactor := adjustedDiscFactor(n1, ringSpacing, maxDiscFactor)
+	dp := buildDiscParams(root, discMetric, minFileDisc, ringSpacing*effectiveMaxDiscFactor)
 
 	// Start at top (−π/2) and sweep the full circle clockwise.
 	return layoutDir(root, 0, -math.Pi/2, 2*math.Pi, ringSpacing, discMetric, labels, dp)
@@ -185,7 +197,8 @@ func clamp(v, lo, hi float64) float64 {
 }
 
 // computeLeafCount returns the total number of file leaves under dir.
-// Empty directories are treated as having 1 leaf to avoid zero-division in sector math.
+// Returns 0 for empty directories; callers are responsible for handling the
+// zero case to avoid division by zero in sector calculations.
 func computeLeafCount(dir *model.Directory) int {
 	count := len(dir.Files)
 	for _, d := range dir.Dirs {
@@ -225,4 +238,30 @@ func collectFileMetricValues(root *model.Directory, discMetric metric.Name) []fl
 	})
 
 	return vals
+}
+
+// adjustedDiscFactor returns a maxDiscFactor scaled down so that n nodes
+// fit on a ring of radius ringSpacing without their full-size discs overlapping.
+// This ensures readable layout even when directories have many children.
+func adjustedDiscFactor(n int, ringSpacing, baseMaxDiscFactor float64) float64 {
+	if n <= 0 {
+		return baseMaxDiscFactor
+	}
+
+	// Each node needs arc >= 2*discRadius + minGap pixels.
+	// With n nodes on circumference 2π*ringSpacing:
+	// maxDiscRadius = (π * ringSpacing / n) - minGap/2
+	const minGap = 4.0
+
+	maxR := (math.Pi*ringSpacing/float64(n)) - minGap/2
+	if maxR <= 0 {
+		return baseMaxDiscFactor * 0.1 // hard minimum
+	}
+
+	factor := maxR / ringSpacing
+	if factor < baseMaxDiscFactor {
+		return factor
+	}
+
+	return baseMaxDiscFactor
 }

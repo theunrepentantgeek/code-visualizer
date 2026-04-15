@@ -3,6 +3,7 @@ package render
 import (
 	"image/color"
 	"math"
+	"sort"
 
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
@@ -15,6 +16,7 @@ var (
 	radialDefaultDirFill  = color.RGBA{R: 0x44, G: 0x44, B: 0x44, A: 0xFF}
 	radialDefaultBorder   = color.RGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xFF}
 	radialEdgeColour      = color.RGBA{R: 0x99, G: 0x99, B: 0x99, A: 0xFF}
+	radialLabelColour     = color.RGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xFF}
 )
 
 const radialLabelGap = 4.0
@@ -22,7 +24,7 @@ const radialLabelGap = 4.0
 // RenderRadialPNG renders the radial tree layout to a PNG file at the given path.
 // Drawing is done in three passes — edges, then discs, then labels — to ensure
 // correct z-ordering across the entire tree.
-func RenderRadialPNG(root radialtree.RadialNode, canvasSize int, outputPath string) error {
+func RenderRadialPNG(root *radialtree.RadialNode, canvasSize int, outputPath string) error {
 	dc := gg.NewContext(canvasSize, canvasSize)
 
 	dc.SetColor(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF})
@@ -30,9 +32,9 @@ func RenderRadialPNG(root radialtree.RadialNode, canvasSize int, outputPath stri
 
 	cx, cy := float64(canvasSize)/2.0, float64(canvasSize)/2.0
 
-	drawEdges(dc, root, cx, cy)
-	drawDiscs(dc, root, cx, cy)
-	drawLabels(dc, root, cx, cy)
+	drawEdges(dc, *root, cx, cy)
+	drawDiscs(dc, *root, cx, cy)
+	drawLabels(dc, *root, cx, cy)
 
 	return eris.Wrap(dc.SavePNG(outputPath), "failed to save PNG")
 }
@@ -49,25 +51,46 @@ func drawEdges(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
 		chx := cx + child.X
 		chy := cy + child.Y
 		dc.DrawLine(px, py, chx, chy)
-		dc.Stroke()
 		drawEdges(dc, child, cx, cy)
 	}
+
+	dc.Stroke()
 }
 
-// drawDiscs draws the filled circle and border for each node, recursively.
-func drawDiscs(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
+// discEntry holds a node and its computed screen position for deferred drawing.
+type discEntry struct {
+	node   radialtree.RadialNode
+	sx, sy float64
+}
+
+// collectDiscs recursively gathers all nodes with a positive DiscRadius,
+// computing their absolute screen position from the canvas centre (cx, cy).
+func collectDiscs(node radialtree.RadialNode, cx, cy float64) []discEntry {
 	if node.DiscRadius <= 0 {
+		var result []discEntry
 		for _, child := range node.Children {
-			drawDiscs(dc, child, cx, cy)
+			result = append(result, collectDiscs(child, cx, cy)...)
 		}
 
-		return
+		return result
 	}
 
-	sx := cx + node.X
-	sy := cy + node.Y
+	entry := discEntry{
+		node: node,
+		sx:   cx + node.X,
+		sy:   cy + node.Y,
+	}
 
-	// Fill
+	result := []discEntry{entry}
+	for _, child := range node.Children {
+		result = append(result, collectDiscs(child, cx, cy)...)
+	}
+
+	return result
+}
+
+// drawSingleDisc draws the filled circle and border for a single node at (sx, sy).
+func drawSingleDisc(dc *gg.Context, node radialtree.RadialNode, sx, sy float64) {
 	fill := radialDefaultFileFill
 	if node.IsDirectory {
 		fill = radialDefaultDirFill
@@ -81,7 +104,6 @@ func drawDiscs(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
 	dc.DrawCircle(sx, sy, node.DiscRadius)
 	dc.Fill()
 
-	// Border
 	border := radialDefaultBorder
 	if node.BorderColour != nil {
 		border = *node.BorderColour
@@ -91,9 +113,18 @@ func drawDiscs(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
 	dc.SetLineWidth(1.0)
 	dc.DrawCircle(sx, sy, node.DiscRadius)
 	dc.Stroke()
+}
 
-	for _, child := range node.Children {
-		drawDiscs(dc, child, cx, cy)
+// drawDiscs draws all disc nodes sorted by radius descending so smaller nodes
+// are never obscured by larger ones drawn later.
+func drawDiscs(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
+	entries := collectDiscs(node, cx, cy)
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].node.DiscRadius > entries[j].node.DiscRadius
+	})
+
+	for _, e := range entries {
+		drawSingleDisc(dc, e.node, e.sx, e.sy)
 	}
 }
 
@@ -119,15 +150,12 @@ func drawLabels(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
 
 			// Normalise angle to [0, 2π) for half-plane check.
 			angle := node.Angle
-			for angle < 0 {
+			angle = math.Mod(angle, 2*math.Pi)
+			if angle < 0 {
 				angle += 2 * math.Pi
 			}
-			for angle >= 2*math.Pi {
-				angle -= 2 * math.Pi
-			}
 
-			fill := effectiveFill(node)
-			dc.SetColor(TextColourFor(fill))
+			dc.SetColor(radialLabelColour)
 
 			dc.Push()
 

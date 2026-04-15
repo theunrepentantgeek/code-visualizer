@@ -32,7 +32,7 @@ type RadialCmd struct {
 	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
 	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for border colour." name:"border-palette" optional:""`            //nolint:revive // kong struct tags require long lines
 
-	Labels string `default:"all" enum:"all,folders,none" help:"Labels to display: all, folders, or none." optional:""`
+	Labels string `enum:",all,folders,none" help:"Labels to display: all, folders, or none." optional:""`
 
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1920" help:"Image height in pixels."`
@@ -127,7 +127,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	slog.Debug("rendering", "canvasSize", canvasSize, "output", c.Output)
 
-	if err := render.RenderRadialPNG(nodes, canvasSize, c.Output); err != nil {
+	if err := render.RenderRadialPNG(&nodes, canvasSize, c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
 
@@ -294,10 +294,6 @@ func (c *RadialCmd) resolveLabels(cfg *config.Radial) radialtree.LabelMode {
 		return radialtree.LabelMode(lbl)
 	}
 
-	if c.Labels != "" {
-		return radialtree.LabelMode(c.Labels)
-	}
-
 	return radialtree.LabelAll
 }
 
@@ -413,6 +409,10 @@ func (c *RadialCmd) printResult(flags *Flags, r radialRenderResult) error {
 	return eris.Wrap(enc.Encode(out), "failed to encode JSON output")
 }
 
+// applyRadialFillColours assigns fill colours to the RadialNode tree.
+// INVARIANT: node.Children must be ordered files-first, then subdirectories —
+// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
+// ordering to correctly pair nodes with their model counterparts.
 func applyRadialFillColours(
 	node *radialtree.RadialNode,
 	dir *model.Directory,
@@ -438,6 +438,10 @@ func applyRadialFillColours(
 	}
 }
 
+// applyCategoricalRadialFillColours assigns categorical fill colours to the RadialNode tree.
+// INVARIANT: node.Children must be ordered files-first, then subdirectories —
+// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
+// ordering to correctly pair nodes with their model counterparts.
 func applyCategoricalRadialFillColours(
 	node *radialtree.RadialNode,
 	dir *model.Directory,
@@ -462,6 +466,10 @@ func applyCategoricalRadialFillColours(
 	}
 }
 
+// applyRadialBorderColours assigns border colours to the RadialNode tree.
+// INVARIANT: node.Children must be ordered files-first, then subdirectories —
+// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
+// ordering to correctly pair nodes with their model counterparts.
 func applyRadialBorderColours(
 	node *radialtree.RadialNode,
 	dir *model.Directory,
@@ -488,6 +496,10 @@ func applyRadialBorderColours(
 	}
 }
 
+// applyCategoricalRadialBorderColours assigns categorical border colours to the RadialNode tree.
+// INVARIANT: node.Children must be ordered files-first, then subdirectories —
+// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
+// ordering to correctly pair nodes with their model counterparts.
 func applyCategoricalRadialBorderColours(
 	node *radialtree.RadialNode,
 	dir *model.Directory,
