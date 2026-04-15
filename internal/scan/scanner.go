@@ -123,7 +123,7 @@ func processDir(node *model.Directory, entry os.DirEntry, entryPath, rootPath st
 }
 
 func processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, entryPath string) {
-	ext := strings.TrimPrefix(filepath.Ext(entry.Name()), ".")
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(entry.Name()), "."))
 
 	fileType := ext
 	if fileType == "" {

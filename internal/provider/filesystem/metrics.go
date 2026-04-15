@@ -12,6 +12,7 @@ import (
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/bevan/code-visualizer/internal/provider"
 )
 
 // Metric name constants for filesystem metrics.
@@ -26,6 +27,8 @@ type FileSizeProvider struct{}
 
 func (FileSizeProvider) Name() metric.Name                   { return FileSize }
 func (FileSizeProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (FileSizeProvider) Scope() provider.Scope               { return provider.ScopeFile }
+func (FileSizeProvider) Description() string                 { return "Size in bytes" }
 func (FileSizeProvider) Dependencies() []metric.Name         { return nil }
 func (FileSizeProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 func (FileSizeProvider) Load(_ *model.Directory) error       { return nil }
@@ -35,6 +38,8 @@ type FileTypeProvider struct{}
 
 func (FileTypeProvider) Name() metric.Name                   { return FileType }
 func (FileTypeProvider) Kind() metric.Kind                   { return metric.Classification }
+func (FileTypeProvider) Scope() provider.Scope               { return provider.ScopeFile }
+func (FileTypeProvider) Description() string                 { return "File extension, normalized to lowercase" }
 func (FileTypeProvider) Dependencies() []metric.Name         { return nil }
 func (FileTypeProvider) DefaultPalette() palette.PaletteName { return palette.Categorization }
 func (FileTypeProvider) Load(_ *model.Directory) error       { return nil }
@@ -44,6 +49,8 @@ type FileLinesProvider struct{}
 
 func (FileLinesProvider) Name() metric.Name                   { return FileLines }
 func (FileLinesProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (FileLinesProvider) Scope() provider.Scope               { return provider.ScopeFile }
+func (FileLinesProvider) Description() string                 { return "Number of text lines in the file" }
 func (FileLinesProvider) Dependencies() []metric.Name         { return nil }
 func (FileLinesProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 

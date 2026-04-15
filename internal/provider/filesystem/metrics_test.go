@@ -9,6 +9,7 @@ import (
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/provider"
 )
 
 func TestFileSizeProvider(t *testing.T) {
@@ -18,6 +19,8 @@ func TestFileSizeProvider(t *testing.T) {
 	p := FileSizeProvider{}
 	g.Expect(p.Name()).To(Equal(FileSize))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Scope()).To(Equal(provider.ScopeFile))
+	g.Expect(p.Description()).NotTo(BeEmpty())
 	g.Expect(p.Dependencies()).To(BeNil())
 
 	root := &model.Directory{Path: "/root", Name: "root"}
@@ -31,6 +34,8 @@ func TestFileTypeProvider(t *testing.T) {
 	p := FileTypeProvider{}
 	g.Expect(p.Name()).To(Equal(FileType))
 	g.Expect(p.Kind()).To(Equal(metric.Classification))
+	g.Expect(p.Scope()).To(Equal(provider.ScopeFile))
+	g.Expect(p.Description()).NotTo(BeEmpty())
 	g.Expect(p.Dependencies()).To(BeNil())
 
 	root := &model.Directory{Path: "/root", Name: "root"}
@@ -54,6 +59,8 @@ func TestFileLinesProvider(t *testing.T) {
 	}
 
 	p := FileLinesProvider{}
+	g.Expect(p.Scope()).To(Equal(provider.ScopeFile))
+	g.Expect(p.Description()).NotTo(BeEmpty())
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
