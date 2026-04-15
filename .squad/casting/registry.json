@@ -30,6 +30,12 @@
       "universe": "Alien",
       "status": "active"
     },
+    "bishop": {
+      "created_at": "2026-04-15T03:45:04.000Z",
+      "persistent_name": "Bishop",
+      "universe": "Alien",
+      "status": "active"
+    },
     "scribe": {
       "created_at": "2026-04-14T09:49:33.751Z",
       "persistent_name": "Scribe",

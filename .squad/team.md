@@ -17,6 +17,7 @@
 | Kane | CLI Dev | `.squad/agents/kane/charter.md` | ✅ Active |
 | Lambert | Tester | `.squad/agents/lambert/charter.md` | ✅ Active |
 | Parker | Staff Developer | `.squad/agents/parker/charter.md` | ✅ Active |
+| Bishop | Artificer | `.squad/agents/bishop/charter.md` | ✅ Active |
 | Scribe | Session Logger | `.squad/agents/scribe/charter.md` | 📋 Silent |
 | Ralph | Work Monitor | `.squad/agents/ralph/charter.md` | 🔄 Monitor |
 

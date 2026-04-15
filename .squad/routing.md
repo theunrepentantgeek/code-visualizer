@@ -62,4 +62,5 @@ When triaging, the Lead should ask:
 | Commands, config, integration | Kane | — |
 | Tests, golden files, edge cases | Lambert | — |
 | Technical debt, code quality, maintainability, refactoring | Parker | — |
+| Abstractions, interfaces, types, code smells, design patterns, API design | Bishop | — |
 
