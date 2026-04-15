@@ -24,17 +24,7 @@ func (*TotalFolderLinesProvider) Dependencies() []metric.Name {
 func (*TotalFolderLinesProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
 func (*TotalFolderLinesProvider) Load(root *model.Directory) error {
-	model.WalkDirectories(root, func(d *model.Directory) {
-		total, found := sumQuantityFromFiles(d, filesystem.FileLines)
-		if v, ok := sumQuantityFromDirs(d, TotalFolderLines); ok {
-			total += v
-			found = true
-		}
-
-		if found {
-			d.SetQuantity(TotalFolderLines, total)
-		}
-	})
+	loadSumQuantity(root, filesystem.FileLines, TotalFolderLines)
 
 	return nil
 }
@@ -55,17 +45,7 @@ func (*TotalFolderSizeProvider) Dependencies() []metric.Name {
 func (*TotalFolderSizeProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
 func (*TotalFolderSizeProvider) Load(root *model.Directory) error {
-	model.WalkDirectories(root, func(d *model.Directory) {
-		total, found := sumQuantityFromFiles(d, filesystem.FileSize)
-		if v, ok := sumQuantityFromDirs(d, TotalFolderSize); ok {
-			total += v
-			found = true
-		}
-
-		if found {
-			d.SetQuantity(TotalFolderSize, total)
-		}
-	})
+	loadSumQuantity(root, filesystem.FileSize, TotalFolderSize)
 
 	return nil
 }
@@ -77,7 +57,7 @@ func (*MeanFileLinesProvider) Name() metric.Name     { return MeanFileLines }
 func (*MeanFileLinesProvider) Kind() metric.Kind     { return metric.Measure }
 func (*MeanFileLinesProvider) Scope() provider.Scope { return provider.ScopeFolder }
 func (*MeanFileLinesProvider) Description() string {
-	return "Mean count of file lines in all contained text files, including nested folders"
+	return "Mean count of file lines in all contained text files, including nested folders; skips binary files"
 }
 
 func (*MeanFileLinesProvider) Dependencies() []metric.Name {
@@ -86,20 +66,7 @@ func (*MeanFileLinesProvider) Dependencies() []metric.Name {
 func (*MeanFileLinesProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
 func (*MeanFileLinesProvider) Load(root *model.Directory) error {
-	stats := make(map[string]*sumCount)
-
-	model.WalkDirectories(root, func(d *model.Directory) {
-		sc := &sumCount{}
-
-		addPositiveSumCountFromFiles(sc, d, filesystem.FileLines)
-		addSumCountFromDirs(sc, d, stats)
-
-		stats[d.Path] = sc
-
-		if sc.count > 0 {
-			d.SetMeasure(MeanFileLines, sc.sum/float64(sc.count))
-		}
-	})
+	loadPositiveMeanMeasure(root, filesystem.FileLines, MeanFileLines)
 
 	return nil
 }
@@ -117,20 +84,7 @@ func (*MeanFileSizeProvider) Dependencies() []metric.Name         { return []met
 func (*MeanFileSizeProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
 func (*MeanFileSizeProvider) Load(root *model.Directory) error {
-	stats := make(map[string]*sumCount)
-
-	model.WalkDirectories(root, func(d *model.Directory) {
-		sc := &sumCount{}
-
-		addSumCountFromFiles(sc, d, filesystem.FileSize)
-		addSumCountFromDirs(sc, d, stats)
-
-		stats[d.Path] = sc
-
-		if sc.count > 0 {
-			d.SetMeasure(MeanFileSize, sc.sum/float64(sc.count))
-		}
-	})
+	loadMeanMeasure(root, filesystem.FileSize, MeanFileSize)
 
 	return nil
 }
