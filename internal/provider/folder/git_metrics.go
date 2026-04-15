@@ -22,7 +22,10 @@ func (*FolderAuthorCountProvider) Scope() provider.Scope { return provider.Scope
 func (*FolderAuthorCountProvider) Description() string {
 	return "Count of distinct authors who have contributed to folder"
 }
-func (*FolderAuthorCountProvider) Dependencies() []metric.Name         { return nil }
+
+func (*FolderAuthorCountProvider) Dependencies() []metric.Name {
+	return []metric.Name{gitprovider.AuthorCount}
+}
 func (*FolderAuthorCountProvider) DefaultPalette() palette.PaletteName { return palette.GoodBad }
 
 func (*FolderAuthorCountProvider) Load(root *model.Directory) error {
@@ -113,17 +116,7 @@ func (*FolderAgeProvider) Dependencies() []metric.Name         { return []metric
 func (*FolderAgeProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*FolderAgeProvider) Load(root *model.Directory) error {
-	model.WalkDirectories(root, func(d *model.Directory) {
-		maxVal, found := maxQuantityFromFiles(d, gitprovider.FileAge)
-		if v, ok := maxQuantityFromDirs(d, FolderAge); ok && (!found || v > maxVal) {
-			maxVal = v
-			found = true
-		}
-
-		if found {
-			d.SetQuantity(FolderAge, maxVal)
-		}
-	})
+	loadMaxQuantity(root, gitprovider.FileAge, FolderAge)
 
 	return nil
 }
@@ -144,17 +137,7 @@ func (*FolderFreshnessProvider) Dependencies() []metric.Name {
 func (*FolderFreshnessProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*FolderFreshnessProvider) Load(root *model.Directory) error {
-	model.WalkDirectories(root, func(d *model.Directory) {
-		minVal, found := minQuantityFromFiles(d, gitprovider.FileFreshness)
-		if v, ok := minQuantityFromDirs(d, FolderFreshness); ok && (!found || v < minVal) {
-			minVal = v
-			found = true
-		}
-
-		if found {
-			d.SetQuantity(FolderFreshness, minVal)
-		}
-	})
+	loadMinQuantity(root, gitprovider.FileFreshness, FolderFreshness)
 
 	return nil
 }
@@ -172,20 +155,7 @@ func (*MeanFileAgeProvider) Dependencies() []metric.Name         { return []metr
 func (*MeanFileAgeProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*MeanFileAgeProvider) Load(root *model.Directory) error {
-	stats := make(map[string]*sumCount)
-
-	model.WalkDirectories(root, func(d *model.Directory) {
-		sc := &sumCount{}
-
-		addSumCountFromFiles(sc, d, gitprovider.FileAge)
-		addSumCountFromDirs(sc, d, stats)
-
-		stats[d.Path] = sc
-
-		if sc.count > 0 {
-			d.SetMeasure(MeanFileAge, sc.sum/float64(sc.count))
-		}
-	})
+	loadMeanMeasure(root, gitprovider.FileAge, MeanFileAge)
 
 	return nil
 }
@@ -206,20 +176,7 @@ func (*MeanFileFreshnessProvider) Dependencies() []metric.Name {
 func (*MeanFileFreshnessProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*MeanFileFreshnessProvider) Load(root *model.Directory) error {
-	stats := make(map[string]*sumCount)
-
-	model.WalkDirectories(root, func(d *model.Directory) {
-		sc := &sumCount{}
-
-		addSumCountFromFiles(sc, d, gitprovider.FileFreshness)
-		addSumCountFromDirs(sc, d, stats)
-
-		stats[d.Path] = sc
-
-		if sc.count > 0 {
-			d.SetMeasure(MeanFileFreshness, sc.sum/float64(sc.count))
-		}
-	})
+	loadMeanMeasure(root, gitprovider.FileFreshness, MeanFileFreshness)
 
 	return nil
 }

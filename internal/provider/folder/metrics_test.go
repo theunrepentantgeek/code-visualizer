@@ -52,13 +52,20 @@ func setupGitRepo(t *testing.T) (dir string, sub string) {
 	run(dir, aliceEnv, "git", "config", "user.email", "alice@example.com")
 	run(dir, aliceEnv, "git", "config", "user.name", "Alice")
 
-	_ = os.WriteFile(filepath.Join(dir, "root.go"), []byte("package root\n"), 0o600)
-	_ = os.WriteFile(filepath.Join(sub, "pkg.go"), []byte("package pkg\n"), 0o600)
+	if err := os.WriteFile(filepath.Join(dir, "root.go"), []byte("package root\n"), 0o600); err != nil {
+		t.Fatalf("write root.go: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(sub, "pkg.go"), []byte("package pkg\n"), 0o600); err != nil {
+		t.Fatalf("write pkg.go: %v", err)
+	}
 
 	run(dir, aliceEnv, "git", "add", ".")
 	run(dir, aliceEnv, "git", "commit", "-m", "initial", "--date=2023-01-01T00:00:00+00:00")
 
-	_ = os.WriteFile(filepath.Join(sub, "pkg.go"), []byte("package pkg\n// updated\n"), 0o600)
+	if err := os.WriteFile(filepath.Join(sub, "pkg.go"), []byte("package pkg\n// updated\n"), 0o600); err != nil {
+		t.Fatalf("update pkg.go: %v", err)
+	}
 
 	run(dir, bobEnv, "git", "add", "pkg/pkg.go")
 	run(dir, bobEnv, "git", "commit", "-m", "bob update", "--date=2024-06-01T00:00:00+00:00")
@@ -93,7 +100,7 @@ func TestFolderAuthorCountProviderMetadata(t *testing.T) {
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 	g.Expect(p.Scope()).To(Equal(provider.ScopeFolder))
 	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeEmpty())
+	g.Expect(p.Dependencies()).To(ConsistOf(gitprovider.AuthorCount))
 }
 
 func TestFolderAuthorCountProvider(t *testing.T) {
