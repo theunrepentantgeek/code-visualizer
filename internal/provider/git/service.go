@@ -90,7 +90,7 @@ func (s *repoService) fileAge(relPath string) (int64, error) {
 	oldest := commits[len(commits)-1]
 	age := time.Since(oldest)
 
-	return int64(age.Hours() / 24), nil
+	return int64(age / (24 * time.Hour)), nil
 }
 
 func (s *repoService) fileFreshness(relPath string) (int64, error) {
@@ -106,7 +106,7 @@ func (s *repoService) fileFreshness(relPath string) (int64, error) {
 	newest := commits[0]
 	freshness := time.Since(newest)
 
-	return int64(freshness.Hours() / 24), nil
+	return int64(freshness / (24 * time.Hour)), nil
 }
 
 func (s *repoService) authorCount(relPath string) (int64, error) {

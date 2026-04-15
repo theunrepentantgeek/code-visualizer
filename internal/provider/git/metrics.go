@@ -1,7 +1,6 @@
 package git
 
 import (
-	"errors"
 	"log/slog"
 	"path/filepath"
 
@@ -47,9 +46,7 @@ func (*FileAgeProvider) Load(root *model.Directory) error {
 
 		age, err := s.fileAge(relPath)
 		if err != nil {
-			if !errors.Is(err, errUntracked) {
-				slog.Debug("could not get file age", "path", relPath, "error", err)
-			}
+			slog.Debug("could not get file age", "path", relPath, "error", err)
 
 			return
 		}
@@ -88,9 +85,7 @@ func (*FileFreshnessProvider) Load(root *model.Directory) error {
 
 		freshness, err := s.fileFreshness(relPath)
 		if err != nil {
-			if !errors.Is(err, errUntracked) {
-				slog.Debug("could not get file freshness", "path", relPath, "error", err)
-			}
+			slog.Debug("could not get file freshness", "path", relPath, "error", err)
 
 			return
 		}
@@ -129,9 +124,7 @@ func (*AuthorCountProvider) Load(root *model.Directory) error {
 
 		count, err := s.authorCount(relPath)
 		if err != nil {
-			if !errors.Is(err, errUntracked) {
-				slog.Debug("could not get author count", "path", relPath, "error", err)
-			}
+			slog.Debug("could not get author count", "path", relPath, "error", err)
 
 			return
 		}
