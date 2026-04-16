@@ -73,7 +73,7 @@ write-error() {
 if [ "$DEVCONTAINER" = true ]; then
     TOOL_DEST=/usr/local/bin
 else
-    TOOL_DEST=$(git rev-parse --show-toplevel)/hack/tools
+    TOOL_DEST=$(git rev-parse --show-toplevel)/tools
     mkdir -p "$TOOL_DEST"
 fi
 

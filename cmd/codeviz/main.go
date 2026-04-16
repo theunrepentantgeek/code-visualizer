@@ -157,8 +157,10 @@ type noFilesAfterFilterError struct {
 
 func (e *noFilesAfterFilterError) Error() string { return e.msg }
 
+const outputFormatJSON = "json"
+
 func exitWithError(format string, err error, code int) {
-	if format == "json" {
+	if format == outputFormatJSON {
 		out := struct {
 			Error string `json:"error"`
 			Code  int    `json:"code"`
