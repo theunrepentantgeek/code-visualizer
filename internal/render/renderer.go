@@ -1,5 +1,6 @@
-// Package render produces PNG images of treemap layouts using the
-// fogleman/gg graphics library.
+// Package render produces images of treemap and radial-tree layouts.
+// Raster formats (PNG, JPG) use the fogleman/gg graphics library;
+// SVG is generated directly as XML.
 package render
 
 import (
@@ -18,17 +19,40 @@ var (
 	bgColour         = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
-// RenderPNG renders the treemap layout to a PNG file at the given path.
-func RenderPNG(root treemap.TreemapRectangle, width, height int, outputPath string) error {
+// Render renders the treemap layout to an image file at the given path.
+// The output format is determined by the file extension (png, jpg/jpeg, svg).
+func Render(root treemap.TreemapRectangle, width, height int, outputPath string) error {
+	format, err := FormatFromPath(outputPath)
+	if err != nil {
+		return err
+	}
+
+	if format == FormatSVG {
+		return renderTreemapSVG(root, width, height, outputPath)
+	}
+
+	dc := renderTreemapImage(root, width, height)
+
+	switch format {
+	case FormatPNG:
+		return saveContextPNG(dc, outputPath)
+	case FormatJPG:
+		return saveContextJPG(dc, outputPath)
+	default:
+		return eris.Errorf("unexpected format: %d", format)
+	}
+}
+
+// renderTreemapImage draws the treemap to a gg context.
+func renderTreemapImage(root treemap.TreemapRectangle, width, height int) *gg.Context {
 	dc := gg.NewContext(width, height)
 
-	// Background
 	dc.SetColor(bgColour)
 	dc.Clear()
 
 	drawRect(dc, root)
 
-	return eris.Wrap(dc.SavePNG(outputPath), "failed to save PNG")
+	return dc
 }
 
 func drawRect(dc *gg.Context, rect treemap.TreemapRectangle) {

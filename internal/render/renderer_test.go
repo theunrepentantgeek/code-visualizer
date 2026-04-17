@@ -1,8 +1,13 @@
 package render
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
+	"image"
 	"image/color"
+	_ "image/jpeg"
+	_ "image/png"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,7 +46,7 @@ func TestRenderFlatDir(t *testing.T) {
 
 	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "flat.png")
-	err := RenderPNG(rects, 800, 600, out)
+	err := Render(rects, 800, 600, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -76,7 +81,7 @@ func TestRenderNestedDir(t *testing.T) {
 
 	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "nested.png")
-	err := RenderPNG(rects, 800, 600, out)
+	err := Render(rects, 800, 600, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -108,7 +113,7 @@ func TestRenderWithBorderColour(t *testing.T) {
 	}
 
 	out := filepath.Join(t.TempDir(), "border.png")
-	err := RenderPNG(rects, 800, 600, out)
+	err := Render(rects, 800, 600, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -139,7 +144,7 @@ func TestRenderNoBorderWhenNil(t *testing.T) {
 	}
 
 	out := filepath.Join(t.TempDir(), "noborder.png")
-	err := RenderPNG(rects, 400, 300, out)
+	err := Render(rects, 400, 300, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -201,7 +206,7 @@ func goldenPaletteTest(t *testing.T, name palette.PaletteName, fixtureName strin
 	p := palette.GetPalette(name)
 	root := paletteTreemap(p)
 	out := filepath.Join(t.TempDir(), fixtureName+".png")
-	err := RenderPNG(root, 800, 600, out)
+	err := Render(root, 800, 600, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	actual, err := os.ReadFile(out)
@@ -224,7 +229,7 @@ func BenchmarkScanAndRender(b *testing.B) {
 		}
 
 		rects := treemap.Layout(root, 1920, 1080, filesystem.FileSize)
-		if err := RenderPNG(rects, 1920, 1080, out); err != nil {
+		if err := Render(rects, 1920, 1080, out); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -252,4 +257,160 @@ func createBenchFixture(b *testing.B) string {
 	}
 
 	return dir
+}
+
+func TestRender_JPG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "flat",
+		Files: []*model.File{makeFile("a.go", "go", 100), makeFile("b.go", "go", 200)},
+	}
+
+	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
+	out := filepath.Join(t.TempDir(), "output.jpg")
+
+	err := Render(rects, 400, 300, out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	f, err := os.Open(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	defer f.Close()
+
+	_, format, err := image.DecodeConfig(f)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(format).To(Equal("jpeg"))
+}
+
+func TestRender_JPEG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "flat",
+		Files: []*model.File{makeFile("a.go", "go", 100)},
+	}
+
+	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
+	out := filepath.Join(t.TempDir(), "output.jpeg")
+
+	err := Render(rects, 400, 300, out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	f, err := os.Open(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	defer f.Close()
+
+	_, format, err := image.DecodeConfig(f)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(format).To(Equal("jpeg"))
+}
+
+func TestRender_SVG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "flat",
+		Files: []*model.File{
+			makeFile("a.go", "go", 100),
+			makeFile("b.go", "go", 200),
+		},
+	}
+
+	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
+	out := filepath.Join(t.TempDir(), "output.svg")
+
+	err := Render(rects, 400, 300, out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	data, err := os.ReadFile(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// Verify it's valid XML with an <svg> root element
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+
+	var foundSVG bool
+
+	for {
+		tok, xmlErr := decoder.Token()
+		if xmlErr != nil {
+			break
+		}
+
+		if se, ok := tok.(xml.StartElement); ok {
+			if se.Name.Local == "svg" {
+				foundSVG = true
+			}
+
+			break
+		}
+	}
+
+	g.Expect(foundSVG).To(BeTrue(), "SVG output should have an <svg> root element")
+}
+
+func TestRender_SVG_EscapesLabels(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rects := treemap.TreemapRectangle{
+		X: 0, Y: 0, W: 400, H: 300,
+		Label: "root", IsDirectory: true,
+		Children: []treemap.TreemapRectangle{
+			{
+				X: 4, Y: 20, W: 392, H: 276, Label: "a&b<c>.go",
+				FillColour: color.RGBA{R: 200, G: 200, B: 200, A: 255},
+			},
+		},
+	}
+
+	out := filepath.Join(t.TempDir(), "escape.svg")
+
+	err := Render(rects, 400, 300, out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	data, err := os.ReadFile(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// Must be valid XML (will fail if labels aren't escaped)
+	g.Expect(xml.Unmarshal(data, new(any))).To(Succeed())
+}
+
+func TestRender_UnsupportedFormat(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rects := treemap.TreemapRectangle{X: 0, Y: 0, W: 100, H: 100}
+	err := Render(rects, 100, 100, "output.bmp")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("unsupported image format"))
+}
+
+func TestRender_PNG_DecodesAsPNG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "flat",
+		Files: []*model.File{makeFile("a.go", "go", 100)},
+	}
+
+	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
+	out := filepath.Join(t.TempDir(), "output.png")
+
+	err := Render(rects, 400, 300, out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	f, err := os.Open(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	defer f.Close()
+
+	_, format, err := image.DecodeConfig(f)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(format).To(Equal("png"))
 }

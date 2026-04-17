@@ -25,7 +25,7 @@ import (
 
 type TreemapCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
-	Output     string `help:"Output PNG file path." required:"true" short:"o"`
+	Output     string `help:"Output image file path (png, jpg, svg)." required:"true" short:"o"`
 
 	Size metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." required:"true" short:"s"` //nolint:revive // kong struct tags require long lines
 
@@ -172,7 +172,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
 
-	if err := render.RenderPNG(rects, width, height, c.Output); err != nil {
+	if err := render.Render(rects, width, height, c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
 
@@ -280,7 +280,12 @@ func ptrInt(p *int, fallback int) int {
 	return *p
 }
 
+//nolint:dupl // mirrors RadialCmd.validatePaths by design
 func (c *TreemapCmd) validatePaths() error {
+	if _, err := render.FormatFromPath(c.Output); err != nil {
+		return &outputPathError{msg: err.Error()}
+	}
+
 	info, err := os.Stat(c.TargetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
