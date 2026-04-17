@@ -15,6 +15,38 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+func TestCLI_Validate_MutuallyExclusiveFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		quiet, verbose, debug bool
+		expectErr             bool
+	}{
+		{quiet: true, verbose: true, expectErr: true},
+		{quiet: true, debug: true, expectErr: true},
+		{verbose: true, debug: true, expectErr: true},
+		{quiet: true, verbose: true, debug: true, expectErr: true},
+		{quiet: true, expectErr: false},
+		{verbose: true, expectErr: false},
+		{debug: true, expectErr: false},
+		{expectErr: false},
+	}
+
+	for _, tc := range cases {
+		cli := &CLI{Quiet: tc.quiet, Verbose: tc.verbose, Debug: tc.debug}
+		err := cli.Validate()
+
+		if tc.expectErr {
+			g.Expect(err).To(HaveOccurred(),
+				"expected error for quiet=%v verbose=%v debug=%v", tc.quiet, tc.verbose, tc.debug)
+			g.Expect(err).To(MatchError(ContainSubstring("mutually exclusive")))
+		} else {
+			g.Expect(err).NotTo(HaveOccurred(),
+				"expected no error for quiet=%v verbose=%v debug=%v", tc.quiet, tc.verbose, tc.debug)
+		}
+	}
+}
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

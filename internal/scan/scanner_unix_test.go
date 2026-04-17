@@ -24,7 +24,7 @@ func TestScanPermissionDenied(t *testing.T) {
 	err = os.WriteFile(unreadable, []byte("secret"), 0o000)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	root, err := Scan(tmp, nil)
+	root, err := Scan(tmp, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 

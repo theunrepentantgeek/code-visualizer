@@ -1,13 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/alecthomas/kong"
+	"github.com/lmittmann/tint"
 
 	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/metric"
@@ -17,8 +17,9 @@ import (
 )
 
 type CLI struct {
-	Verbose bool   `help:"Enable debug-level logging." short:"v"`
-	Format  string `default:"text" enum:"text,json" help:"Diagnostic/error output format (text, json)."`
+	Quiet   bool   `help:"Suppress progress output; show only the final result." short:"q"`
+	Verbose bool   `help:"Show detailed progress during scanning and metric calculation." short:"v"`
+	Debug   bool   `help:"Show per-directory scan progress (implies verbose output)."`
 	Config  string `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
 
 	//nolint:revive // Long help text is more important than minimizing line length, and annotations can't be wrapped
@@ -27,21 +28,55 @@ type CLI struct {
 	Render RenderCmd `cmd:"" help:"Render a visualization."`
 }
 
+func (c *CLI) Validate() error {
+	count := 0
+	if c.Quiet {
+		count++
+	}
+
+	if c.Verbose {
+		count++
+	}
+
+	if c.Debug {
+		count++
+	}
+
+	if count > 1 {
+		return errors.New("--quiet, --verbose, and --debug are mutually exclusive")
+	}
+
+	return nil
+}
+
 // Flags bundles cross-cutting concerns that are passed to every command's Run method.
 type Flags struct {
+	Quiet        bool
 	Verbose      bool
-	Format       string
+	Debug        bool
 	ExportConfig string
 	Config       *config.Config
 }
 
-func setupLogger(verbose bool) { //nolint:revive // flag-parameter: boolean toggle is idiomatic for log verbosity
+// logPhase logs an Info-level phase message unless quiet mode is active.
+func (f *Flags) logPhase(msg string, args ...any) {
+	if !f.Quiet {
+		slog.Info(msg, args...)
+	}
+}
+
+func setupLogger(verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
 	level := slog.LevelInfo
-	if verbose {
+	if verbose || debug {
 		level = slog.LevelDebug
 	}
 
-	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+	noColor := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
+
+	handler := tint.NewHandler(os.Stderr, &tint.Options{
+		Level:   level,
+		NoColor: noColor,
+	})
 	slog.SetDefault(slog.New(handler))
 }
 
@@ -61,6 +96,9 @@ func main() {
 	filesystem.Register()
 	git.Register()
 
+	// Install tint early so bootstrap errors are formatted consistently.
+	setupLogger(false, false)
+
 	cli := CLI{}
 
 	parser, err := kong.New(&cli,
@@ -68,35 +106,37 @@ func main() {
 		kong.Description("Generate visualizations of file trees."),
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		slog.Error("failed to initialize CLI", "error", err)
 		os.Exit(5)
 	}
 
 	ctx, err := parser.Parse(os.Args[1:])
 	if err != nil {
-		// Kong parse/validation errors are argument failures → show help, then exit 1
 		var parseErr *kong.ParseError
 		if errors.As(err, &parseErr) && parseErr.Context != nil {
 			_ = parseErr.Context.PrintUsage(false)
 		}
 
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
-	setupLogger(cli.Verbose)
+	setupLogger(cli.Verbose, cli.Debug)
+
+	slog.Info("codeviz", "version", "dev")
 
 	cfg := config.New()
 
 	if cli.Config != "" {
 		if loadErr := cfg.Load(cli.Config); loadErr != nil {
-			exitWithError(cli.Format, loadErr, 5)
+			exitWithError(loadErr, 5)
 		}
 	}
 
 	flags := &Flags{
+		Quiet:        cli.Quiet,
 		Verbose:      cli.Verbose,
-		Format:       cli.Format,
+		Debug:        cli.Debug,
 		ExportConfig: cli.ExportConfig,
 		Config:       cfg,
 	}
@@ -104,7 +144,7 @@ func main() {
 	err = ctx.Run(flags)
 	if err != nil {
 		code := classifyError(err)
-		exitWithError(cli.Format, err, code)
+		exitWithError(err, code)
 	}
 }
 
@@ -157,27 +197,7 @@ type noFilesAfterFilterError struct {
 
 func (e *noFilesAfterFilterError) Error() string { return e.msg }
 
-const outputFormatJSON = "json"
-
-func exitWithError(format string, err error, code int) {
-	if format == outputFormatJSON {
-		out := struct {
-			Error string `json:"error"`
-			Code  int    `json:"code"`
-		}{
-			Error: err.Error(),
-			Code:  code,
-		}
-
-		enc := json.NewEncoder(os.Stderr)
-		enc.SetIndent("", "  ")
-
-		if encErr := enc.Encode(out); encErr != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
-		}
-	} else {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
-	}
-
+func exitWithError(err error, code int) {
+	slog.Error(err.Error())
 	os.Exit(code) //nolint:revive // deep-exit: intentional exit from CLI error handler called by main
 }
