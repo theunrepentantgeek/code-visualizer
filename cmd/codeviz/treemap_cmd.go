@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -135,9 +134,12 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	filterRules := c.buildFilterRules(flags.Config)
 
-	slog.Debug("scanning directory", "path", c.TargetPath)
+	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	root, err := scan.Scan(c.TargetPath, filterRules)
+	scanProg, stopTicker := buildScanProgress(flags)
+	defer stopTicker()
+
+	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
 	if err != nil {
 		return eris.Wrap(err, "scan failed")
 	}
@@ -150,7 +152,11 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	if err := provider.Run(root, requested); err != nil {
+	slog.Info("Calculating metrics")
+
+	metricProg := buildMetricProgress(flags)
+
+	if err := provider.Run(root, requested, metricProg); err != nil {
 		return eris.Wrap(err, "failed to load metrics")
 	}
 
@@ -158,11 +164,22 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	files, dirs := countAll(root)
-	slog.Debug("scan complete", "files", files, "directories", dirs)
-
 	width := ptrInt(flags.Config.Width, 1920)
 	height := ptrInt(flags.Config.Height, 1080)
+
+	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
+}
+
+func (c *TreemapCmd) renderAndLog(
+	root *model.Directory,
+	cfg *config.Treemap,
+	width, height int,
+	fillMetric metric.Name,
+	fillPaletteName palette.PaletteName,
+) error {
+	files, dirs := countAll(root)
+
+	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
 	rects := treemap.Layout(root, width, height, c.Size)
 
@@ -170,18 +187,24 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	borderMetric, borderPaletteName := c.applyBorderColours(&rects, root, cfg)
 
-	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
-
 	if err := render.RenderPNG(rects, width, height, c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
 
-	return c.printResult(flags, renderResult{
-		files: files, dirs: dirs,
-		width: width, height: height,
-		fillMetric: fillMetric, fillPaletteName: fillPaletteName,
-		borderMetric: borderMetric, borderPaletteName: borderPaletteName,
-	})
+	slog.Info("Rendered treemap",
+		"files", files,
+		"directories", dirs,
+		"output", c.Output,
+		"width", width,
+		"height", height,
+		"size_metric", string(c.Size),
+		"fill_metric", string(fillMetric),
+		"fill_palette", string(fillPaletteName),
+		"border_metric", string(borderMetric),
+		"border_palette", string(borderPaletteName),
+	)
+
+	return nil
 }
 
 func (c *TreemapCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
@@ -340,7 +363,7 @@ func (c *TreemapCmd) filterBinaryFiles(_ *config.Treemap, root *model.Directory)
 	filtered := scan.FilterBinaryFiles(root)
 	afterCount, _ := countAll(filtered)
 	excluded := beforeCount - afterCount
-	slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
+	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
 
 	if afterCount == 0 {
 		return &noFilesAfterFilterError{
@@ -424,47 +447,6 @@ func (*TreemapCmd) applyBorderColours(
 	}
 
 	return borderMetric, borderPaletteName
-}
-
-type renderResult struct {
-	files, dirs       int
-	width, height     int
-	fillMetric        metric.Name
-	fillPaletteName   palette.PaletteName
-	borderMetric      metric.Name
-	borderPaletteName palette.PaletteName
-}
-
-func (c *TreemapCmd) printResult(flags *Flags, r renderResult) error {
-	if flags.Format != outputFormatJSON {
-		fmt.Printf("Rendered treemap: %d files, %d directories → %s (%d×%d)\n",
-			r.files, r.dirs, c.Output, r.width, r.height)
-
-		return nil
-	}
-
-	var bm, bp any
-	if r.borderMetric != "" {
-		bm = string(r.borderMetric)
-		bp = string(r.borderPaletteName)
-	}
-
-	out := map[string]any{
-		"files":          r.files,
-		"directories":    r.dirs,
-		"output":         c.Output,
-		"width":          r.width,
-		"height":         r.height,
-		"size_metric":    string(c.Size),
-		"fill_metric":    string(r.fillMetric),
-		"fill_palette":   string(r.fillPaletteName),
-		"border_metric":  bm,
-		"border_palette": bp,
-	}
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-
-	return eris.Wrap(enc.Encode(out), "failed to encode JSON output")
 }
 
 func extractNumeric(f *model.File, m metric.Name) float64 {

@@ -218,7 +218,7 @@ func BenchmarkScanAndRender(b *testing.B) {
 	out := filepath.Join(b.TempDir(), "bench.png")
 
 	for b.Loop() {
-		root, err := scan.Scan(dir, nil)
+		root, err := scan.Scan(dir, nil, nil)
 		if err != nil {
 			b.Fatal(err)
 		}

@@ -10,13 +10,20 @@ import (
 	"github.com/bevan/code-visualizer/internal/model"
 )
 
-// Run loads the requested metrics (plus transitive dependencies) onto the tree.
-// Providers run in parallel where dependency ordering allows.
-func Run(root *model.Directory, requested []metric.Name) error {
-	return runWithRegistry(globalRegistry, root, requested)
+// MetricProgress receives notifications as metrics are calculated.
+// Callbacks may be called concurrently when providers run in parallel.
+type MetricProgress interface {
+	OnMetricStarted(name metric.Name)
+	OnMetricFinished(name metric.Name)
 }
 
-func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Name) error {
+// Run loads the requested metrics (plus transitive dependencies) onto the tree.
+// Providers run in parallel where dependency ordering allows.
+func Run(root *model.Directory, requested []metric.Name, progress MetricProgress) error {
+	return runWithRegistry(globalRegistry, root, requested, progress)
+}
+
+func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Name, progress MetricProgress) error {
 	if len(requested) == 0 {
 		return nil
 	}
@@ -38,13 +45,30 @@ func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Na
 			p, _ := reg.get(name)
 
 			g.Go(func() error {
-				return p.Load(root)
+				return runProvider(p, root, name, progress)
 			})
 		}
 
 		if err := g.Wait(); err != nil {
-			return eris.Wrap(err, "provider load failed")
+			return err //nolint:wrapcheck // error is wrapped inside runProvider
 		}
+	}
+
+	return nil
+}
+
+// runProvider executes a single provider, notifying progress before and after.
+func runProvider(p Interface, root *model.Directory, name metric.Name, progress MetricProgress) error {
+	if progress != nil {
+		progress.OnMetricStarted(name)
+	}
+
+	if err := p.Load(root); err != nil {
+		return eris.Wrapf(err, "provider load failed for metric %q", name)
+	}
+
+	if progress != nil {
+		progress.OnMetricFinished(name)
 	}
 
 	return nil

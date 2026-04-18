@@ -16,17 +16,24 @@ import (
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
 
+// Progress receives notifications as directories are scanned.
+type Progress interface {
+	// OnDirectoryScanned is called after each directory is fully processed.
+	// fileCount is the number of direct (non-recursive) files in that directory.
+	OnDirectoryScanned(path string, fileCount int)
+}
+
 // Scan recursively scans the directory at path and returns a model.Directory tree.
 // File symlinks are followed; directory symlinks are skipped.
 // Permission-denied errors are logged and scanning continues.
 // Returns an error if the directory contains no files.
-func Scan(path string, rules []filter.Rule) (*model.Directory, error) {
+func Scan(path string, rules []filter.Rule, progress Progress) (*model.Directory, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to resolve absolute path")
 	}
 
-	root, err := scanDir(absPath, absPath, rules)
+	root, err := scanDir(absPath, absPath, rules, progress)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +45,7 @@ func Scan(path string, rules []filter.Rule) (*model.Directory, error) {
 	return root, nil
 }
 
-func scanDir(dirPath, rootPath string, rules []filter.Rule) (*model.Directory, error) {
+func scanDir(dirPath, rootPath string, rules []filter.Rule, progress Progress) (*model.Directory, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, eris.Wrapf(err, "failed to read directory %s", dirPath)
@@ -52,15 +59,25 @@ func scanDir(dirPath, rootPath string, rules []filter.Rule) (*model.Directory, e
 	for _, entry := range entries {
 		entryPath := filepath.Join(dirPath, entry.Name())
 
-		if err := processEntry(node, entry, entryPath, rootPath, rules); err != nil {
+		if err := processEntry(node, entry, entryPath, rootPath, rules, progress); err != nil {
 			return nil, err
 		}
+	}
+
+	if progress != nil {
+		progress.OnDirectoryScanned(dirPath, len(node.Files))
 	}
 
 	return node, nil
 }
 
-func processEntry(node *model.Directory, entry os.DirEntry, entryPath, rootPath string, rules []filter.Rule) error {
+func processEntry(
+	node *model.Directory,
+	entry os.DirEntry,
+	entryPath, rootPath string,
+	rules []filter.Rule,
+	progress Progress,
+) error {
 	info, err := os.Stat(entryPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
@@ -86,7 +103,7 @@ func processEntry(node *model.Directory, entry os.DirEntry, entryPath, rootPath 
 	}
 
 	if info.IsDir() {
-		return processDir(node, entry, entryPath, rootPath, rules)
+		return processDir(node, entry, entryPath, rootPath, rules, progress)
 	}
 
 	if info.Mode().IsRegular() || isSymlink(entry) {
@@ -96,14 +113,20 @@ func processEntry(node *model.Directory, entry os.DirEntry, entryPath, rootPath 
 	return nil
 }
 
-func processDir(node *model.Directory, entry os.DirEntry, entryPath, rootPath string, rules []filter.Rule) error {
+func processDir(
+	node *model.Directory,
+	entry os.DirEntry,
+	entryPath, rootPath string,
+	rules []filter.Rule,
+	progress Progress,
+) error {
 	if isSymlink(entry) {
 		slog.Debug("skipping directory symlink", "path", entryPath)
 
 		return nil
 	}
 
-	child, err := scanDir(entryPath, rootPath, rules)
+	child, err := scanDir(entryPath, rootPath, rules, progress)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
 			slog.Warn("skipping directory: permission denied", "path", entryPath)

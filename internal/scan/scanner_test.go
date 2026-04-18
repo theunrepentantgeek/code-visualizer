@@ -19,7 +19,7 @@ func TestScanFlat(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil)
+	root, err := Scan(dir, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -50,7 +50,7 @@ func TestScanNested(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "nested")
 
-	root, err := Scan(dir, nil)
+	root, err := Scan(dir, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -82,7 +82,7 @@ func TestScanEmptyDir(t *testing.T) {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
 
-	_, err := Scan(dir, nil)
+	_, err := Scan(dir, nil, nil)
 	g.Expect(err).To(MatchError(ContainSubstring("no files")))
 }
 
@@ -91,7 +91,7 @@ func TestScanFollowsFileSymlinks(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
-	root, err := Scan(dir, nil)
+	root, err := Scan(dir, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -113,7 +113,7 @@ func TestScanSkipsDirSymlinks(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
-	root, err := Scan(dir, nil)
+	root, err := Scan(dir, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -135,7 +135,7 @@ func TestScanFileExtension(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil)
+	root, err := Scan(dir, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -158,7 +158,7 @@ func TestScanSetsFileType(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil)
+	root, err := Scan(dir, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -254,7 +254,7 @@ func TestScanWithRules_ExcludesDotfiles(t *testing.T) {
 		{Pattern: ".*", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules)
+	root, err := Scan(dir, rules, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -280,7 +280,7 @@ func TestScanWithRules_ExcludedDirNotDescended(t *testing.T) {
 		{Pattern: ".*", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules)
+	root, err := Scan(dir, rules, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -298,7 +298,7 @@ func TestScanWithRules_NoRules_IncludesAll(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-dotfiles")
 
-	root, err := Scan(dir, nil)
+	root, err := Scan(dir, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -324,7 +324,7 @@ func TestScanWithRules_IncludeOverridesExclude(t *testing.T) {
 		{Pattern: ".*", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules)
+	root, err := Scan(dir, rules, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -350,7 +350,7 @@ func TestScanWithRules_PrunesEmptyDirs(t *testing.T) {
 		{Pattern: "**/*.json", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules)
+	root, err := Scan(dir, rules, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
