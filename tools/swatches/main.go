@@ -24,21 +24,13 @@ const (
 	border    = 1
 )
 
-var paletteNames = []palette.PaletteName{
-	palette.Categorization,
-	palette.Temperature,
-	palette.GoodBad,
-	palette.Neutral,
-	palette.Foliage,
-}
-
 func main() {
 	outDir := "docs"
 	if len(os.Args) > 1 {
 		outDir = os.Args[1]
 	}
 
-	for _, name := range paletteNames {
+	for _, name := range palette.Names() {
 		p := palette.GetPalette(name)
 		if len(p.Colours) == 0 {
 			fmt.Fprintf(os.Stderr, "skipping empty palette %s\n", name)
@@ -54,6 +46,10 @@ func main() {
 }
 
 func writeSwatch(outDir string, p palette.ColourPalette) error {
+	if info, err := os.Stat(outDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("output directory does not exist: %s", outDir)
+	}
+
 	n := len(p.Colours)
 	totalWidth := n*stepWidth + (n+1)*border
 	totalHeight := height + 2*border
