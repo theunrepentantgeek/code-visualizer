@@ -50,6 +50,7 @@ func TestPaletteName_IsValid(t *testing.T) {
 	g.Expect(Categorization.IsValid()).To(BeTrue())
 	g.Expect(Temperature.IsValid()).To(BeTrue())
 	g.Expect(GoodBad.IsValid()).To(BeTrue())
+	g.Expect(Foliage.IsValid()).To(BeTrue())
 	g.Expect(PaletteName("invalid").IsValid()).To(BeFalse())
 }
 
@@ -100,11 +101,30 @@ func TestGoodBadPalette(t *testing.T) {
 	g.Expect(last.G).To(BeNumerically(">", last.R))
 }
 
+func TestFoliagePalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := GetPalette(Foliage)
+	g.Expect(p.Colours).To(HaveLen(11))
+	g.Expect(p.Ordered).To(BeTrue())
+	g.Expect(p.Name).To(Equal(Foliage))
+
+	// First step: near black
+	g.Expect(p.Colours[0].R).To(BeNumerically("<=", 30))
+	g.Expect(p.Colours[0].G).To(BeNumerically("<=", 30))
+	g.Expect(p.Colours[0].B).To(BeNumerically("<=", 30))
+	// Last step: green-dominant
+	last := p.Colours[10]
+	g.Expect(last.G).To(BeNumerically(">", last.R))
+	g.Expect(last.G).To(BeNumerically(">", last.B))
+}
+
 func TestWCAGContrastRatio(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	for _, name := range []PaletteName{Neutral, Temperature, GoodBad, Categorization} {
+	for _, name := range []PaletteName{Neutral, Temperature, GoodBad, Categorization, Foliage} {
 		p := GetPalette(name)
 		if !p.Ordered {
 			continue // skip unordered palettes for adjacent contrast check

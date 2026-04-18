@@ -48,3 +48,13 @@ Followed the exact style from `internal/treemap/layout_test.go`: `t.Parallel()`,
 - `computeLeafCount` returns actual 0 for empty dir; zero-guard happens at call site in `layoutDir`
 - `buildDiscParams` sets `useEqual=true` when all non-zero metric values are equal (single-value or uniform case)
 - Render test compilation depends on Parker completing their `sort`-usage addition to `radialtree.go`
+
+### 2026-04-18 — Foliage palette tests
+
+Added `TestFoliagePalette` to `internal/palette/palette_test.go` covering:
+- 11 colour steps, ordered, correct name
+- First step near-black (R, G, B all ≤ 30)
+- Last step green-dominant (G > R and G > B)
+- Foliage already included in `TestPaletteName_IsValid` and `TestWCAGContrastRatio` by Dallas
+
+Pattern: palette tests follow a consistent shape — step count, ordered flag, name check, then endpoint colour assertions. WCAG contrast test covers all ordered palettes via a shared loop.
