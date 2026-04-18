@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/fogleman/gg v1.3.0
-	github.com/go-git/go-git/v5 v5.17.2
+	github.com/go-git/go-git/v5 v5.18.0
 	github.com/lmittmann/tint v1.1.3
 	github.com/nikolaydubina/treemap v1.2.5
 	github.com/onsi/gomega v1.39.1
