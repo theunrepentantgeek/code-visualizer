@@ -377,7 +377,8 @@ func TestRender_SVG_EscapesLabels(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	// Must be valid XML (will fail if labels aren't escaped)
-	g.Expect(xml.Unmarshal(data, new(any))).To(Succeed())
+	var parsed struct{}
+	g.Expect(xml.Unmarshal(data, &parsed)).To(Succeed())
 }
 
 func TestRender_UnsupportedFormat(t *testing.T) {

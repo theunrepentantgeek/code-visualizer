@@ -25,7 +25,7 @@ import (
 
 type TreemapCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
-	Output     string `help:"Output image file path (png, jpg, svg)." required:"true" short:"o"`
+	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
 	Size metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." required:"true" short:"s"` //nolint:revive // kong struct tags require long lines
 

@@ -14,13 +14,17 @@ import (
 )
 
 // renderRadialSVG generates an SVG file from the radial tree layout.
-func renderRadialSVG(root *radialtree.RadialNode, canvasSize int, outputPath string) error {
+func renderRadialSVG(root *radialtree.RadialNode, canvasSize int, outputPath string) (err error) {
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return eris.Wrap(err, "failed to create SVG file")
 	}
 
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = eris.Wrap(closeErr, "failed to close SVG file")
+		}
+	}()
 
 	cs := float64(canvasSize)
 
@@ -41,7 +45,7 @@ func renderRadialSVG(root *radialtree.RadialNode, canvasSize int, outputPath str
 
 	fmt.Fprint(f, "</svg>\n")
 
-	return eris.Wrap(f.Close(), "failed to close SVG file")
+	return nil
 }
 
 func writeSVGEdges(f *os.File, node radialtree.RadialNode, cx, cy float64) {
