@@ -46,7 +46,12 @@ func (s *scanCounter) OnDirectoryScanned(path string, fileCount int) {
 	s.dirs.Add(1)
 
 	if s.debug {
-		slog.Debug("scanned directory", "path", path, "files", s.files.Load(), "dirs", s.dirs.Load())
+		slog.Debug(
+			"scanned directory",
+			"path", path,
+			"newfiles", fileCount,
+			"totalfiles", s.files.Load(),
+			"totaldirs", s.dirs.Load())
 	}
 }
 
@@ -62,7 +67,7 @@ func startScanTicker(counter *scanCounter) (stop func()) {
 		for {
 			select {
 			case <-ticker.C:
-				slog.Debug("scanning...", "files", counter.files.Load(), "dirs", counter.dirs.Load())
+				slog.Debug("scanning...", "totalfiles", counter.files.Load(), "totaldirs", counter.dirs.Load())
 
 			case <-done:
 				return
