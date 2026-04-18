@@ -25,14 +25,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build devcontainer image
-        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3.1900000417
+        uses: devcontainers/ci@b63b30de439b47a52267f241112c5b453b673db5 # v0.3.1900000449
         with:
           imageName: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
           cacheFrom: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
           push: never
 
       - name: Run task ci in devcontainer
-        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3.1900000417
+        uses: devcontainers/ci@b63b30de439b47a52267f241112c5b453b673db5 # v0.3.1900000449
         with:
           imageName: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
           push: never
