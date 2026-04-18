@@ -121,6 +121,7 @@ func (s *repoService) authorCount(relPath string) (int64, error) {
 // via singleflight so the git log is only read once per file per process run.
 func (s *repoService) getCommitData(relPath string) (*commitData, error) {
 	s.commitMu.RLock()
+
 	if cached, ok := s.commitCache[relPath]; ok {
 		s.commitMu.RUnlock()
 
@@ -141,12 +142,16 @@ func (s *repoService) getCommitData(relPath string) (*commitData, error) {
 
 		return data, nil
 	})
-
 	if err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "failed to get commit data")
 	}
 
-	return result.(*commitData), nil
+	cd, ok := result.(*commitData)
+	if !ok {
+		return nil, eris.New("unexpected commit cache result type")
+	}
+
+	return cd, nil
 }
 
 func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
