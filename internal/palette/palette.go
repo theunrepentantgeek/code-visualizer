@@ -85,6 +85,8 @@ var categorizationPalette = ColourPalette{
 }
 
 // Temperature palette: 11 steps, dark blue → white → bright red (ColorBrewer RdBu diverging).
+//
+//nolint:dupl // palette declarations are structurally identical by design
 var temperaturePalette = ColourPalette{
 	Name:    Temperature,
 	Ordered: true,
@@ -125,6 +127,8 @@ var goodBadPalette = ColourPalette{
 }
 
 // Foliage palette: 11 steps, black → brown → orange → yellow → green (plant health).
+//
+//nolint:dupl // palette declarations are structurally identical by design
 var foliagePalette = ColourPalette{
 	Name:    Foliage,
 	Ordered: true,
