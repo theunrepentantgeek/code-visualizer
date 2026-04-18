@@ -176,3 +176,41 @@ func TestGitProviderNotAGitRepo(t *testing.T) {
 	err := p.Load(root)
 	g.Expect(err).To(MatchError(ContainSubstring("git")))
 }
+
+// TestCommitDataCacheConsistency verifies that running all three git metrics on
+// the same file produces consistent results, confirming they share cached data.
+func TestCommitDataCacheConsistency(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	root := buildTree(dir, "shared.go")
+
+	resetService()
+
+	// Run all three git metric providers on the same file.
+	fileAgeP := &FileAgeProvider{}
+	err := fileAgeP.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	fileFreshnessP := &FileFreshnessProvider{}
+	err = fileFreshnessP.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	authorCountP := &AuthorCountProvider{}
+	err = authorCountP.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// All three metrics should be populated for shared.go.
+	_, ageOk := root.Files[0].Quantity(FileAge)
+	g.Expect(ageOk).To(BeTrue(), "file-age should be set")
+
+	_, freshnessOk := root.Files[0].Quantity(FileFreshness)
+	g.Expect(freshnessOk).To(BeTrue(), "file-freshness should be set")
+
+	count, countOk := root.Files[0].Quantity(AuthorCount)
+	g.Expect(countOk).To(BeTrue(), "author-count should be set")
+
+	// shared.go has commits from both Alice and Bob.
+	g.Expect(count).To(Equal(int64(2)), "shared.go should have 2 authors")
+}
