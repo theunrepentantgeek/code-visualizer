@@ -5,6 +5,7 @@ package palette
 import (
 	"image/color"
 	"math"
+	"slices"
 )
 
 // PaletteName identifies a colour palette.
@@ -145,6 +146,18 @@ var foliagePalette = ColourPalette{
 		{R: 80, G: 165, B: 40, A: 255},  // medium green
 		{R: 25, G: 120, B: 20, A: 255},  // intense green
 	},
+}
+
+// Names returns all registered palette names in sorted order.
+func Names() []PaletteName {
+	names := make([]PaletteName, 0, len(palettes))
+	for n := range palettes {
+		names = append(names, n)
+	}
+
+	slices.Sort(names)
+
+	return names
 }
 
 // GetPalette returns the ColourPalette for the given name.

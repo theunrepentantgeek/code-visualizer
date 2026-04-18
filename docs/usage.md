@@ -38,7 +38,9 @@ Note: `file-type` is only valid for `--fill` and `--border`, not `--size`.
 
 ### Palette values
 
-`categorization`, `temperature`, `good-bad`, `neutral`
+`categorization`, `temperature`, `good-bad`, `neutral`, `foliage`
+
+See [palettes.md](palettes.md) for detailed descriptions and colour samples.
 
 ## Examples
 
