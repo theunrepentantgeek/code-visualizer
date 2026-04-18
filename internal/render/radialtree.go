@@ -21,10 +21,34 @@ var (
 
 const radialLabelGap = 4.0
 
-// RenderRadialPNG renders the radial tree layout to a PNG file at the given path.
+// RenderRadial renders the radial tree layout to an image file at the given path.
+// The output format is determined by the file extension (png, jpg/jpeg, svg).
 // Drawing is done in three passes — edges, then discs, then labels — to ensure
 // correct z-ordering across the entire tree.
-func RenderRadialPNG(root *radialtree.RadialNode, canvasSize int, outputPath string) error {
+func RenderRadial(root *radialtree.RadialNode, canvasSize int, outputPath string) error {
+	format, err := FormatFromPath(outputPath)
+	if err != nil {
+		return err
+	}
+
+	if format == FormatSVG {
+		return renderRadialSVG(root, canvasSize, outputPath)
+	}
+
+	dc := renderRadialImage(root, canvasSize)
+
+	switch format {
+	case FormatPNG:
+		return saveContextPNG(dc, outputPath)
+	case FormatJPG:
+		return saveContextJPG(dc, outputPath)
+	default:
+		return eris.Errorf("unexpected format: %d", format)
+	}
+}
+
+// renderRadialImage draws the radial tree to a gg context.
+func renderRadialImage(root *radialtree.RadialNode, canvasSize int) *gg.Context {
 	dc := gg.NewContext(canvasSize, canvasSize)
 
 	dc.SetColor(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF})
@@ -36,7 +60,7 @@ func RenderRadialPNG(root *radialtree.RadialNode, canvasSize int, outputPath str
 	drawDiscs(dc, *root, cx, cy)
 	drawLabels(dc, *root, cx, cy)
 
-	return eris.Wrap(dc.SavePNG(outputPath), "failed to save PNG")
+	return dc
 }
 
 // drawEdges draws a straight line from each node to each of its children, recursively.

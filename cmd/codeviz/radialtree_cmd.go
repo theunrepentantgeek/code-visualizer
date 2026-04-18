@@ -22,7 +22,7 @@ import (
 
 type RadialCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
-	Output     string `help:"Output PNG file path." required:"true" short:"o"`
+	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
 	DiscSize metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for disc size." required:"true" short:"d"` //nolint:revive // kong struct tags require long lines
 
@@ -172,7 +172,7 @@ func (c *RadialCmd) applyColoursAndRender(
 
 	slog.Debug("rendering radial", "canvasSize", canvasSize, "output", c.Output)
 
-	if err := render.RenderRadialPNG(&nodes, canvasSize, c.Output); err != nil {
+	if err := render.RenderRadial(&nodes, canvasSize, c.Output); err != nil {
 		return "", "", eris.Wrap(err, "render failed")
 	}
 
@@ -215,7 +215,12 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	}
 }
 
+//nolint:dupl // mirrors TreemapCmd.validatePaths by design
 func (c *RadialCmd) validatePaths() error {
+	if _, err := render.FormatFromPath(c.Output); err != nil {
+		return &outputPathError{msg: err.Error()}
+	}
+
 	info, err := os.Stat(c.TargetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
