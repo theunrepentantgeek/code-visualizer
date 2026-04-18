@@ -133,6 +133,27 @@ This keeps text upright on both canvas halves.
 
 **Docs:** `layout.go` computeLeafCount doc fixed (returns 0; callers guard).
 
+---
+
+### Foliage Palette — Issue #46
+
+**Author:** Dallas  
+**Date:** 2026-04-18  
+**Status:** Implemented  
+**Files:** `internal/palette/palette.go`, `internal/palette/palette_test.go`
+
+**Decision:**
+Added `Foliage` palette (`"foliage"`) — an 11-step ordered colour ramp from near-black (dead plant) through brown, orange, yellow, to intense green (healthy plant). Intended for "health" visualisations where low values = dead/brown and high values = healthy green.
+
+**Colour Progression:**
+Black → dark brown → brown → dark orange → orange → yellow-orange → yellow → yellow-green → medium green → intense green.
+
+**Rationale:**
+- Plant-health metaphor is intuitive for code-health metrics (age, churn, coverage).
+- 11 steps matches the temperature palette granularity.
+- All adjacent steps pass WCAG 2.0 contrast ratio >= 1.0.
+- Palette is `Ordered: true` so it works with the existing numeric metric mapper.
+
 ## Governance
 
 - All meaningful changes require team consensus

@@ -14,6 +14,13 @@
 
 <!-- Append learnings below -->
 
+### Foliage palette — issue #46 (2026-04-18)
+
+- **New palette added:** `Foliage` (`"foliage"`) in `internal/palette/palette.go` — 11-step ordered palette progressing black → brown → orange → yellow → green for plant-health visualisation.
+- **Pattern:** Adding a palette requires changes in four places: const block, `validPalettes` map, `palettes` map, and the `ColourPalette` var definition. Tests need updating in `palette_test.go` for both `IsValid` and the WCAG contrast loop.
+- **WCAG constraint:** All ordered palettes must pass adjacent-step contrast ratio >= 1.0 (checked in `TestWCAGContrastRatio`). The foliage colours were chosen with sufficient luminance steps to satisfy this.
+- **Environment note:** `gofumpt` and `golangci-lint-custom` aren't available in this shell; rely on `task test` for validation.
+
 ### PR review fixes — radialtree_cmd.go + config (2026-04-15)
 
 - **Kong defaults silently override config**: `default:"all"` on a Kong string field causes Kong to always set the value, so `applyOverrides` always writes over config file values. Fix: remove `default:` tags from Kong fields, add `""` to enum, set defaults in `config.New()` only.

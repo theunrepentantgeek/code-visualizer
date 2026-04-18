@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -28,9 +27,9 @@ type RadialCmd struct {
 	DiscSize metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for disc size." required:"true" short:"d"` //nolint:revive // kong struct tags require long lines
 
 	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive // kong struct tags require long lines
-	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for fill colour." name:"fill-palette" optional:""`                //nolint:revive // kong struct tags require long lines
+	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for fill colour." name:"fill-palette" optional:""`        //nolint:revive // kong struct tags require long lines
 	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
-	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral" help:"Palette for border colour." name:"border-palette" optional:""`            //nolint:revive // kong struct tags require long lines
+	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for border colour." name:"border-palette" optional:""`    //nolint:revive // kong struct tags require long lines
 
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
@@ -91,9 +90,12 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	filterRules := c.buildFilterRules(flags.Config)
 
-	slog.Debug("scanning directory", "path", c.TargetPath)
+	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	root, err := scan.Scan(c.TargetPath, filterRules)
+	scanProg, stopTicker := buildScanProgress(flags)
+	defer stopTicker()
+
+	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
 	if err != nil {
 		return eris.Wrap(err, "scan failed")
 	}
@@ -105,7 +107,11 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	err = provider.Run(root, requested)
+	slog.Info("Calculating metrics")
+
+	metricProg := buildMetricProgress(flags)
+
+	err = provider.Run(root, requested, metricProg)
 	if err != nil {
 		return eris.Wrap(err, "failed to load metrics")
 	}
@@ -116,24 +122,39 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	}
 
 	files, dirs := countAll(root)
-	slog.Debug("scan complete", "files", files, "directories", dirs)
 
 	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
+
+	return c.renderAndLog(root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
+}
+
+func (c *RadialCmd) renderAndLog(
+	root *model.Directory,
+	cfg *config.Radial,
+	files, dirs, canvasSize int,
+	fillMetric metric.Name,
+	fillPaletteName palette.PaletteName,
+) error {
+	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
 	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, canvasSize, fillMetric, fillPaletteName)
 	if err != nil {
 		return err
 	}
 
-	return c.printResult(flags, radialRenderResult{
-		files:             files,
-		dirs:              dirs,
-		canvasSize:        canvasSize,
-		fillMetric:        fillMetric,
-		fillPaletteName:   fillPaletteName,
-		borderMetric:      borderMetric,
-		borderPaletteName: borderPaletteName,
-	})
+	slog.Info("Rendered radial tree",
+		"files", files,
+		"directories", dirs,
+		"output", c.Output,
+		"canvas_size", canvasSize,
+		"disc_metric", string(c.DiscSize),
+		"fill_metric", string(fillMetric),
+		"fill_palette", string(fillPaletteName),
+		"border_metric", string(borderMetric),
+		"border_palette", string(borderPaletteName),
+	)
+
+	return nil
 }
 
 // applyColoursAndRender lays out, colours, and renders the radial tree to disk.
@@ -149,7 +170,7 @@ func (c *RadialCmd) applyColoursAndRender(
 	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
-	slog.Debug("rendering", "canvasSize", canvasSize, "output", c.Output)
+	slog.Debug("rendering radial", "canvasSize", canvasSize, "output", c.Output)
 
 	if err := render.RenderRadial(&nodes, canvasSize, c.Output); err != nil {
 		return "", "", eris.Wrap(err, "render failed")
@@ -295,7 +316,7 @@ func (c *RadialCmd) filterBinaryFiles(_ *config.Radial, root *model.Directory) e
 	filtered := scan.FilterBinaryFiles(root)
 	afterCount, _ := countAll(filtered)
 	excluded := beforeCount - afterCount
-	slog.Debug("binary file filter complete", "excluded", excluded, "remaining", afterCount)
+	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
 
 	if afterCount == 0 {
 		return &noFilesAfterFilterError{
@@ -388,47 +409,6 @@ func (*RadialCmd) applyBorderColours(
 	}
 
 	return borderMetric, borderPaletteName
-}
-
-type radialRenderResult struct {
-	files, dirs       int
-	canvasSize        int
-	fillMetric        metric.Name
-	fillPaletteName   palette.PaletteName
-	borderMetric      metric.Name
-	borderPaletteName palette.PaletteName
-}
-
-func (c *RadialCmd) printResult(flags *Flags, r radialRenderResult) error {
-	if flags.Format != outputFormatJSON {
-		fmt.Printf("Rendered radial tree: %d files, %d directories → %s (%d×%d)\n",
-			r.files, r.dirs, c.Output, r.canvasSize, r.canvasSize)
-
-		return nil
-	}
-
-	var bm, bp any
-	if r.borderMetric != "" {
-		bm = string(r.borderMetric)
-		bp = string(r.borderPaletteName)
-	}
-
-	out := map[string]any{
-		"files":          r.files,
-		"directories":    r.dirs,
-		"output":         c.Output,
-		"canvas_size":    r.canvasSize,
-		"disc_metric":    string(c.DiscSize),
-		"fill_metric":    string(r.fillMetric),
-		"fill_palette":   string(r.fillPaletteName),
-		"border_metric":  bm,
-		"border_palette": bp,
-	}
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-
-	return eris.Wrap(enc.Encode(out), "failed to encode JSON output")
 }
 
 // applyRadialFillColours assigns fill colours to the RadialNode tree.

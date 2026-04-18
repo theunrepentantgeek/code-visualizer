@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/alecthomas/kong"
+
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
@@ -13,6 +15,45 @@ import (
 func TestMain(m *testing.M) {
 	filesystem.Register()
 	m.Run()
+}
+
+func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := []string{"render", "treemap", ".", "-o", "out.png", "-s", "file-size"}
+
+	cases := []struct {
+		args      []string
+		expectErr bool
+	}{
+		{args: append([]string{"--quiet", "--verbose"}, cmd...), expectErr: true},
+		{args: append([]string{"--quiet", "--debug"}, cmd...), expectErr: true},
+		{args: append([]string{"--verbose", "--debug"}, cmd...), expectErr: true},
+		{args: append([]string{"--quiet"}, cmd...), expectErr: false},
+		{args: append([]string{"--verbose"}, cmd...), expectErr: false},
+		{args: append([]string{"--debug"}, cmd...), expectErr: false},
+	}
+
+	for _, tc := range cases {
+		cli := CLI{}
+
+		parser, err := kong.New(&cli,
+			kong.Name("codeviz"),
+			kong.Exit(func(int) {}),
+		)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		_, err = parser.Parse(tc.args)
+
+		if tc.expectErr {
+			g.Expect(err).To(HaveOccurred(),
+				"expected error for args %v", tc.args)
+		} else {
+			g.Expect(err).NotTo(HaveOccurred(),
+				"expected no error for args %v", tc.args)
+		}
+	}
 }
 
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
