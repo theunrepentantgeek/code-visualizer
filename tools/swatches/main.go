@@ -1,0 +1,94 @@
+// Command swatches generates PNG colour-bar images for every registered palette.
+//
+// Usage:
+//
+//	go run ./tools/swatches [output-dir]
+//
+// If output-dir is omitted it defaults to docs/.
+package main
+
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"os"
+	"path/filepath"
+
+	"github.com/bevan/code-visualizer/internal/palette"
+)
+
+const (
+	stepWidth = 60
+	height    = 30
+	border    = 1
+)
+
+var paletteNames = []palette.PaletteName{
+	palette.Categorization,
+	palette.Temperature,
+	palette.GoodBad,
+	palette.Neutral,
+	palette.Foliage,
+}
+
+func main() {
+	outDir := "docs"
+	if len(os.Args) > 1 {
+		outDir = os.Args[1]
+	}
+
+	for _, name := range paletteNames {
+		p := palette.GetPalette(name)
+		if len(p.Colours) == 0 {
+			fmt.Fprintf(os.Stderr, "skipping empty palette %s\n", name)
+
+			continue
+		}
+
+		if err := writeSwatch(outDir, p); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+	}
+}
+
+func writeSwatch(outDir string, p palette.ColourPalette) error {
+	n := len(p.Colours)
+	totalWidth := n*stepWidth + (n+1)*border
+	totalHeight := height + 2*border
+
+	img := image.NewRGBA(image.Rect(0, 0, totalWidth, totalHeight))
+
+	borderColour := color.RGBA{R: 80, G: 80, B: 80, A: 255}
+	for y := range totalHeight {
+		for x := range totalWidth {
+			img.Set(x, y, borderColour)
+		}
+	}
+
+	for i, c := range p.Colours {
+		x0 := border + i*(stepWidth+border)
+		for y := border; y < border+height; y++ {
+			for x := x0; x < x0+stepWidth; x++ {
+				img.Set(x, y, c)
+			}
+		}
+	}
+
+	path := filepath.Join(outDir, fmt.Sprintf("palette-%s.png", p.Name))
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create %s: %w", path, err)
+	}
+	defer f.Close()
+
+	if err := png.Encode(f, img); err != nil {
+		return fmt.Errorf("encode %s: %w", path, err)
+	}
+
+	fmt.Printf("wrote %s (%dx%d)\n", path, totalWidth, totalHeight)
+
+	return nil
+}
