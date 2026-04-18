@@ -5,7 +5,7 @@ package palette
 import (
 	"image/color"
 	"math"
-	"sort"
+	"slices"
 )
 
 // PaletteName identifies a colour palette.
@@ -155,9 +155,7 @@ func Names() []PaletteName {
 		names = append(names, n)
 	}
 
-	sort.Slice(names, func(i, j int) bool {
-		return names[i] < names[j]
-	})
+	slices.Sort(names)
 
 	return names
 }
