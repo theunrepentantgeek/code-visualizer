@@ -17,36 +17,15 @@ import (
 )
 
 type CLI struct {
-	Quiet   bool   `help:"Suppress progress output; show only the final result." short:"q"`
-	Verbose bool   `help:"Show detailed progress during scanning and metric calculation." short:"v"`
-	Debug   bool   `help:"Show per-directory scan progress (implies verbose output)."`
+	Quiet   bool   `help:"Suppress all non-essential output; only warnings and errors are shown." short:"q" xor:"verbosity"` //nolint:revive // kong struct tags require long lines
+	Verbose bool   `help:"Show detailed progress during scanning and metric calculation." short:"v" xor:"verbosity"`
+	Debug   bool   `help:"Show per-directory scan progress (implies verbose output)." xor:"verbosity"`
 	Config  string `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
 
 	//nolint:revive // Long help text is more important than minimizing line length, and annotations can't be wrapped
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 
 	Render RenderCmd `cmd:"" help:"Render a visualization."`
-}
-
-func (c *CLI) Validate() error {
-	count := 0
-	if c.Quiet {
-		count++
-	}
-
-	if c.Verbose {
-		count++
-	}
-
-	if c.Debug {
-		count++
-	}
-
-	if count > 1 {
-		return errors.New("--quiet, --verbose, and --debug are mutually exclusive")
-	}
-
-	return nil
 }
 
 // Flags bundles cross-cutting concerns that are passed to every command's Run method.
@@ -58,16 +37,12 @@ type Flags struct {
 	Config       *config.Config
 }
 
-// logPhase logs an Info-level phase message unless quiet mode is active.
-func (f *Flags) logPhase(msg string, args ...any) {
-	if !f.Quiet {
-		slog.Info(msg, args...)
-	}
-}
-
-func setupLogger(verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
+func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
 	level := slog.LevelInfo
-	if verbose || debug {
+
+	if quiet {
+		level = slog.LevelWarn
+	} else if verbose || debug {
 		level = slog.LevelDebug
 	}
 
@@ -97,7 +72,7 @@ func main() {
 	git.Register()
 
 	// Install tint early so bootstrap errors are formatted consistently.
-	setupLogger(false, false)
+	setupLogger(false, false, false)
 
 	cli := CLI{}
 
@@ -121,7 +96,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLogger(cli.Verbose, cli.Debug)
+	setupLogger(cli.Quiet, cli.Verbose, cli.Debug)
 
 	slog.Info("codeviz", "version", "dev")
 
@@ -129,7 +104,8 @@ func main() {
 
 	if cli.Config != "" {
 		if loadErr := cfg.Load(cli.Config); loadErr != nil {
-			exitWithError(loadErr, 5)
+			slog.Error(loadErr.Error())
+			os.Exit(5)
 		}
 	}
 
@@ -144,7 +120,8 @@ func main() {
 	err = ctx.Run(flags)
 	if err != nil {
 		code := classifyError(err)
-		exitWithError(err, code)
+		slog.Error(err.Error())
+		os.Exit(code)
 	}
 }
 
@@ -196,8 +173,3 @@ type noFilesAfterFilterError struct {
 }
 
 func (e *noFilesAfterFilterError) Error() string { return e.msg }
-
-func exitWithError(err error, code int) {
-	slog.Error(err.Error())
-	os.Exit(code) //nolint:revive // deep-exit: intentional exit from CLI error handler called by main
-}

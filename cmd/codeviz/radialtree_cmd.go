@@ -90,7 +90,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	filterRules := c.buildFilterRules(flags.Config)
 
-	flags.logPhase("Scanning filesystem", "path", c.TargetPath)
+	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
 	scanProg, stopTicker := buildScanProgress(flags)
 	defer stopTicker()
@@ -107,7 +107,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	flags.logPhase("Calculating metrics")
+	slog.Info("Calculating metrics")
 
 	metricProg := buildMetricProgress(flags)
 
@@ -125,18 +125,17 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
 
-	return c.renderAndLog(flags, root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
 }
 
 func (c *RadialCmd) renderAndLog(
-	flags *Flags,
 	root *model.Directory,
 	cfg *config.Radial,
 	files, dirs, canvasSize int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) error {
-	flags.logPhase("Rendering image", "output", c.Output, "canvas_size", canvasSize)
+	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
 	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, canvasSize, fillMetric, fillPaletteName)
 	if err != nil {

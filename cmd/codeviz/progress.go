@@ -78,9 +78,9 @@ func startScanTicker(counter *scanCounter) (stop func()) {
 type metricProgressLogger struct{}
 
 func (*metricProgressLogger) OnMetricStarted(name metric.Name) {
-	slog.Debug("Started " + string(name))
+	slog.Debug("metric started", "metric", string(name))
 }
 
 func (*metricProgressLogger) OnMetricFinished(name metric.Name) {
-	slog.Debug("Finished " + string(name))
+	slog.Debug("metric finished", "metric", string(name))
 }

@@ -134,7 +134,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	filterRules := c.buildFilterRules(flags.Config)
 
-	flags.logPhase("Scanning filesystem", "path", c.TargetPath)
+	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
 	scanProg, stopTicker := buildScanProgress(flags)
 	defer stopTicker()
@@ -152,7 +152,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	flags.logPhase("Calculating metrics")
+	slog.Info("Calculating metrics")
 
 	metricProg := buildMetricProgress(flags)
 
@@ -167,11 +167,10 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	width := ptrInt(flags.Config.Width, 1920)
 	height := ptrInt(flags.Config.Height, 1080)
 
-	return c.renderAndLog(flags, root, cfg, width, height, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
 }
 
 func (c *TreemapCmd) renderAndLog(
-	flags *Flags,
 	root *model.Directory,
 	cfg *config.Treemap,
 	width, height int,
@@ -180,7 +179,7 @@ func (c *TreemapCmd) renderAndLog(
 ) error {
 	files, dirs := countAll(root)
 
-	flags.logPhase("Rendering image", "output", c.Output, "width", width, "height", height)
+	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
 	rects := treemap.Layout(root, width, height, c.Size)
 

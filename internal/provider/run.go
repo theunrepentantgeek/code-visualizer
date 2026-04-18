@@ -64,7 +64,7 @@ func runProvider(p Interface, root *model.Directory, name metric.Name, progress 
 	}
 
 	if err := p.Load(root); err != nil {
-		return eris.Wrap(err, "provider load failed")
+		return eris.Wrapf(err, "provider load failed for metric %q", name)
 	}
 
 	if progress != nil {

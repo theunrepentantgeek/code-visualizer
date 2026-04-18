@@ -7,6 +7,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/fogleman/gg v1.3.0
 	github.com/go-git/go-git/v5 v5.17.2
+	github.com/lmittmann/tint v1.1.3
 	github.com/nikolaydubina/treemap v1.2.5
 	github.com/onsi/gomega v1.39.1
 	github.com/rotisserie/eris v0.5.4
@@ -29,7 +30,6 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/lmittmann/tint v1.1.3 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect

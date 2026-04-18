@@ -71,8 +71,13 @@ func scanDir(dirPath, rootPath string, rules []filter.Rule, progress Progress) (
 	return node, nil
 }
 
-//nolint:revive // line-length: progress parameter is required; signature cannot be shortened without losing clarity
-func processEntry(node *model.Directory, entry os.DirEntry, entryPath, rootPath string, rules []filter.Rule, progress Progress) error {
+func processEntry(
+	node *model.Directory,
+	entry os.DirEntry,
+	entryPath, rootPath string,
+	rules []filter.Rule,
+	progress Progress,
+) error {
 	info, err := os.Stat(entryPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
@@ -108,8 +113,13 @@ func processEntry(node *model.Directory, entry os.DirEntry, entryPath, rootPath 
 	return nil
 }
 
-//nolint:revive // line-length: progress parameter is required; signature cannot be shortened without losing clarity
-func processDir(node *model.Directory, entry os.DirEntry, entryPath, rootPath string, rules []filter.Rule, progress Progress) error {
+func processDir(
+	node *model.Directory,
+	entry os.DirEntry,
+	entryPath, rootPath string,
+	rules []filter.Rule,
+	progress Progress,
+) error {
 	if isSymlink(entry) {
 		slog.Debug("skipping directory symlink", "path", entryPath)
 

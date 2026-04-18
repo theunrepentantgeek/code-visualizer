@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/alecthomas/kong"
+
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
@@ -15,38 +17,45 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestCLI_Validate_MutuallyExclusiveFlags(t *testing.T) {
+func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
+	cmd := []string{"render", "treemap", ".", "-o", "out.png", "-s", "file-size"}
+
 	cases := []struct {
-		quiet, verbose, debug bool
-		expectErr             bool
+		args      []string
+		expectErr bool
 	}{
-		{quiet: true, verbose: true, expectErr: true},
-		{quiet: true, debug: true, expectErr: true},
-		{verbose: true, debug: true, expectErr: true},
-		{quiet: true, verbose: true, debug: true, expectErr: true},
-		{quiet: true, expectErr: false},
-		{verbose: true, expectErr: false},
-		{debug: true, expectErr: false},
-		{expectErr: false},
+		{args: append([]string{"--quiet", "--verbose"}, cmd...), expectErr: true},
+		{args: append([]string{"--quiet", "--debug"}, cmd...), expectErr: true},
+		{args: append([]string{"--verbose", "--debug"}, cmd...), expectErr: true},
+		{args: append([]string{"--quiet"}, cmd...), expectErr: false},
+		{args: append([]string{"--verbose"}, cmd...), expectErr: false},
+		{args: append([]string{"--debug"}, cmd...), expectErr: false},
 	}
 
 	for _, tc := range cases {
-		cli := &CLI{Quiet: tc.quiet, Verbose: tc.verbose, Debug: tc.debug}
-		err := cli.Validate()
+		cli := CLI{}
+
+		parser, err := kong.New(&cli,
+			kong.Name("codeviz"),
+			kong.Exit(func(int) {}),
+		)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		_, err = parser.Parse(tc.args)
 
 		if tc.expectErr {
 			g.Expect(err).To(HaveOccurred(),
-				"expected error for quiet=%v verbose=%v debug=%v", tc.quiet, tc.verbose, tc.debug)
-			g.Expect(err).To(MatchError(ContainSubstring("mutually exclusive")))
+				"expected error for args %v", tc.args)
 		} else {
 			g.Expect(err).NotTo(HaveOccurred(),
-				"expected no error for quiet=%v verbose=%v debug=%v", tc.quiet, tc.verbose, tc.debug)
+				"expected no error for args %v", tc.args)
 		}
 	}
 }
+
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
