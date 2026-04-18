@@ -27,3 +27,11 @@
 - **Pattern:** CI runs `task ci` inside devcontainer; local lint requires `golangci-lint-custom` with nilaway plugin. Use `go vet` locally as smoke check.
 - **Palette package:** `palettes` map is source of truth. `Names()` returns sorted slice from it — single source of truth for tooling.
 - **Result:** Build and tests pass. 2 commits pushed to `docs/palette-documentation`.
+
+### Merge Conflict Resolution — PR #45 vs PR #51 (2026-04-18)
+
+- **Cause:** PR #51 (palette documentation) merged into `main` while PR #45 (image format support) was still open. Both PRs touched `cmd/codeviz/treemap_cmd.go`. PR #51's `main` kept the old `render.RenderPNG` call; PR #45 had replaced it with the format-aware `render.Render`. Git couldn't auto-merge the overlapping hunk.
+- **Conflict scope:** Single file (`cmd/codeviz/treemap_cmd.go`), single hunk — the render call inside `renderAndLog()`.
+- **Resolution:** Kept PR #45's `render.Render` call (multi-format entrypoint) with its debug log line, discarding the stale `render.RenderPNG` reference from main. Both branches' intent preserved.
+- **Verification:** `task build` and `task test` pass. All 14 packages green. Pushed merge commit to origin.
+- **Process learning:** Always rebase PR branches onto latest main before pushing fixes, especially when multiple PRs are in flight touching related code. A quick `git fetch origin && git merge origin/main` (or rebase) before pushing would have caught this conflict locally instead of leaving the PR in a dirty state on GitHub.
