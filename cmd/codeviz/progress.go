@@ -46,7 +46,12 @@ func (s *scanCounter) OnDirectoryScanned(path string, fileCount int) {
 	s.dirs.Add(1)
 
 	if s.debug {
-		slog.Debug("scanned directory", "path", path, "newfiles", fileCount, "totalfiles", s.files.Load(), "totaldirs", s.dirs.Load())
+		slog.Debug(
+			"scanned directory",
+			"path", path,
+			"newfiles", fileCount,
+			"totalfiles", s.files.Load(),
+			"totaldirs", s.dirs.Load())
 	}
 }
 
