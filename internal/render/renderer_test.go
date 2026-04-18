@@ -387,7 +387,10 @@ func TestRender_UnsupportedFormat(t *testing.T) {
 
 	rects := treemap.TreemapRectangle{X: 0, Y: 0, W: 100, H: 100}
 	err := Render(rects, 100, 100, "output.bmp")
-	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).ToNot(BeNil())
+	if err == nil {
+		return
+	}
 	g.Expect(err.Error()).To(ContainSubstring("unsupported image format"))
 }
 
