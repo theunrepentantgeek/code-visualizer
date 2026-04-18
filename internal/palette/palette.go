@@ -15,6 +15,7 @@ const (
 	Temperature    PaletteName = "temperature"
 	GoodBad        PaletteName = "good-bad"
 	Neutral        PaletteName = "neutral"
+	Foliage        PaletteName = "foliage"
 )
 
 var validPalettes = map[PaletteName]struct{}{
@@ -22,6 +23,7 @@ var validPalettes = map[PaletteName]struct{}{
 	Temperature:    {},
 	GoodBad:        {},
 	Neutral:        {},
+	Foliage:        {},
 }
 
 func (p PaletteName) IsValid() bool {
@@ -59,6 +61,7 @@ var palettes = map[PaletteName]ColourPalette{
 	Categorization: categorizationPalette,
 	Temperature:    temperaturePalette,
 	GoodBad:        goodBadPalette,
+	Foliage:        foliagePalette,
 }
 
 // Categorization palette: 12 visually distinct unordered colours (ColorBrewer Paired).
@@ -118,6 +121,25 @@ var goodBadPalette = ColourPalette{
 		{R: 26, G: 152, B: 80, A: 255},
 		{R: 0, G: 104, B: 55, A: 255},
 		{R: 0, G: 68, B: 27, A: 255},
+	},
+}
+
+// Foliage palette: 11 steps, black → brown → orange → yellow → green (plant health).
+var foliagePalette = ColourPalette{
+	Name:    Foliage,
+	Ordered: true,
+	Colours: []color.RGBA{
+		{R: 15, G: 10, B: 5, A: 255},    // near black (dead)
+		{R: 45, G: 25, B: 10, A: 255},   // very dark brown
+		{R: 85, G: 45, B: 15, A: 255},   // dark brown
+		{R: 130, G: 70, B: 20, A: 255},  // brown
+		{R: 175, G: 95, B: 25, A: 255},  // dark orange
+		{R: 210, G: 130, B: 30, A: 255}, // orange
+		{R: 230, G: 175, B: 40, A: 255}, // yellow-orange
+		{R: 240, G: 215, B: 50, A: 255}, // yellow
+		{R: 165, G: 200, B: 50, A: 255}, // yellow-green
+		{R: 80, G: 165, B: 40, A: 255},  // medium green
+		{R: 25, G: 120, B: 20, A: 255},  // intense green
 	},
 }
 
