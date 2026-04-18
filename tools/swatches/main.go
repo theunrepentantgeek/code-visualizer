@@ -54,23 +54,7 @@ func writeSwatch(outDir string, p palette.ColourPalette) error {
 	totalWidth := n*stepWidth + (n+1)*border
 	totalHeight := height + 2*border
 
-	img := image.NewRGBA(image.Rect(0, 0, totalWidth, totalHeight))
-
-	borderColour := color.RGBA{R: 80, G: 80, B: 80, A: 255}
-	for y := range totalHeight {
-		for x := range totalWidth {
-			img.Set(x, y, borderColour)
-		}
-	}
-
-	for i, c := range p.Colours {
-		x0 := border + i*(stepWidth+border)
-		for y := border; y < border+height; y++ {
-			for x := x0; x < x0+stepWidth; x++ {
-				img.Set(x, y, c)
-			}
-		}
-	}
+	img := createSwatchImage(p.Colours, totalWidth, totalHeight)
 
 	path := filepath.Join(outDir, fmt.Sprintf("palette-%s.png", p.Name))
 
@@ -87,4 +71,27 @@ func writeSwatch(outDir string, p palette.ColourPalette) error {
 	fmt.Printf("wrote %s (%dx%d)\n", path, totalWidth, totalHeight)
 
 	return nil
+}
+
+func createSwatchImage(colours []color.RGBA, totalWidth, totalHeight int) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, totalWidth, totalHeight))
+
+	borderColour := color.RGBA{R: 80, G: 80, B: 80, A: 255}
+
+	for y := range totalHeight {
+		for x := range totalWidth {
+			img.Set(x, y, borderColour)
+		}
+	}
+
+	for i, c := range colours {
+		x0 := border + i*(stepWidth+border)
+		for y := border; y < border+height; y++ {
+			for x := x0; x < x0+stepWidth; x++ {
+				img.Set(x, y, c)
+			}
+		}
+	}
+
+	return img
 }
