@@ -1,34 +1,16 @@
 {
-  "last_run": "2026-04-18T23:01:14Z",
-  "run_id": "24615831213",
-  "comments_made": {
-    "49": {
-      "comment_id": "aw_ZBP9muE0",
-      "timestamp": "2026-04-18T23:01:14Z",
-      "summary": "Linked to fix PR branch repo-assist/fix-issue-49-directory-logging"
-    }
-  },
+  "last_run": "2026-04-19T22:31:47Z",
+  "run_id": "24640709943",
+  "comments_made": {},
   "prs_created": [
     {
-      "branch": "repo-assist/perf-cache-git-commit-data-2ca3f9f1812eee6a",
-      "pr_number": 61,
-      "title": "[Repo Assist] perf(git): cache per-file commit data to eliminate redundant git log calls",
-      "status": "open",
-      "lint_fixes_pushed": true
-    },
-    {
-      "branch": "repo-assist/fix-issue-49-directory-logging",
-      "title": "[Repo Assist] fix(logging): clarify directory scan log fields",
-      "closes_issue": 49,
-      "status": "pending_creation"
+      "branch": "repo-assist/improve-usage-docs-20260419",
+      "title": "[Repo Assist] docs: rewrite usage.md for current CLI structure",
+      "status": "pending_creation",
+      "type": "docs"
     }
   ],
-  "issues_actioned": {
-    "49": {
-      "comment": "2026-04-18T23:01:14Z",
-      "pr_branch": "repo-assist/fix-issue-49-directory-logging"
-    }
-  },
+  "issues_actioned": {},
   "monthly_summary_issue": {
     "title": "[Repo Assist] Monthly Activity 2026-04",
     "number": 59,
@@ -36,8 +18,13 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 49,
-    "prs": 61
+    "issues": 72,
+    "prs": 69
   },
-  "notes": "Issue #57 (bundle Dependabot) was closed - protected files blocked push. Issue #58 is a duplicate/fallback issue from the perf PR that could not be auto-created; PR #61 was created by maintainer from the same branch. Logging fix for #49 pushed to branch - PR pending. Issue #33 (Add Bubble visualization) still unaddressed."
+  "checked_off_items": [
+    "PR #61: perf(git) cache per-file commit data (merged)",
+    "PR #62: fix(logging) clarify directory scan log fields (merged)",
+    "Issue #58: duplicate of PR #61 (closed)"
+  ],
+  "notes": "PR #69 (feat: add legend) is open with all CI passing - ready for maintainer review. Issue #68 closed when PR #69 merges. Previous Repo Assist PRs #61 and #62 were merged. Issue #33 (Add Bubble visualization) was closed via PR #64 by maintainer. docs/usage.md was significantly out of date - rewrote for current CLI structure."
 }
