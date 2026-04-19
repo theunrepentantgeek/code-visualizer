@@ -81,3 +81,15 @@ Wrote `internal/bubbletree/layout_test.go` (white-box, `package bubbletree`) wit
 Helper functions: `assertContainment` (recursive parent-child geometric check), `assertNoOverlap` (recursive sibling pair distance check), `allChildren` (depth-first collector).
 
 Tests follow exact style from radialtree/treemap: `t.Parallel()`, `NewGomegaWithT(t)`, nilaway-safe nil guards, dot-imported gomega matchers. Tests won't compile until Dallas delivers the layout engine — that's expected.
+
+### 2026-04-19 — bubbletree render smoke tests
+
+Wrote `internal/render/bubbletree_test.go` with 4 smoke tests:
+- **TestRenderBubble_PNG**: renders sample tree to .png, decodes with `image.DecodeConfig`, asserts format == "png"
+- **TestRenderBubble_JPG**: renders to .jpg, asserts format == "jpeg"
+- **TestRenderBubble_SVG**: renders to .svg, XML-parses to find `<svg>` root element
+- **TestRenderBubble_GoldenFile**: renders to .png, compares against golden file via `goldie.New(t, WithFixtureDir("testdata"), WithNameSuffix(".png"))` with fixture name "bubble-tree"
+
+Shared helper `sampleBubbleTree()` builds a deterministic `BubbleNode` tree directly (root dir with nested "src" subdir + 2 file children + 1 sibling file). No Layout call — these are pure render tests.
+
+Pattern follows `radialtree_test.go` and `renderer_test.go` exactly: `t.Parallel()`, `NewGomegaWithT(t)`, dot-imported gomega, `t.TempDir()` for output. `RenderBubble` signature: `func RenderBubble(root *bubbletree.BubbleNode, width, height int, outputPath string) error`. Tests won't compile until Dallas delivers the render implementation — that's expected.

@@ -41,3 +41,12 @@
 - **Key files to create/update:** `cmd/codeviz/bubbletree_cmd.go` (new), `cmd/codeviz/render_cmd.go` (register subcommand), `internal/config/bubbletree.go` (new, with Bubbletree struct), `internal/config/config.go` (add Bubbletree field, update New()).
 - **Dependency:** Awaits Phase 1 (Dallas) — `internal/bubbletree/layout.go` must exist before you can call Layout() in Run().
 
+### Bubble Tree — Phase 4 CLI + Config Complete (2026-04-19)
+
+- **Created `cmd/codeviz/bubbletree_cmd.go`:** Full BubbletreeCmd with Validate, Run, applyOverrides, validatePaths, buildFilterRules, checkGitRequirement, filterBinaryFiles, resolveLabels, and all colour application functions (numeric + categorical for both fill and border).
+- **Created `internal/config/bubbletree.go`:** Bubbletree config struct with pointer fields (Fill, FillPalette, Border, BorderPalette, Labels).
+- **Updated `internal/config/config.go`:** Added Bubbletree field to Config struct and initialized in New() with Labels default "folders".
+- **Updated `cmd/codeviz/render_cmd.go`:** Registered BubbletreeCmd as `bubbletree` subcommand.
+- **Key pattern differences from radial:** Size flag is `--size/-s` (not `--disc-size/-d`); default 1920×1080 (not square); Layout takes width+height (not canvasSize); LabelMode defaults to "folders" (not "all").
+- **Won't compile yet:** Imports `internal/bubbletree` (Layout, BubbleNode, LabelMode) and `render.RenderBubble` — Dallas is building these in parallel.
+
