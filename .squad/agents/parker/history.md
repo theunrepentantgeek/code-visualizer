@@ -82,3 +82,27 @@ Reviewed PR #39 (issue #38) adding `Scope()` and `Description()` to `provider.In
 - **Flag-parameter pattern:** `collectBubblesByType(node, isDir bool)` flagged by revive. Split into `collectBubbleDirs` and `collectBubbleFiles` — used by both PNG and SVG renderers.
 
 - **Pre-existing lint issues:** `goconst` in `renderer_test.go` and `unparam` in `svg_helpers.go` are known and not ours to fix.
+
+### SVG Legend Support (2026-04-21)
+
+- **Pattern:** SVG renderers use raw `fmt.Fprintf` to `*os.File` — no templates, no SVG library. The SVG legend follows the same approach: `writeSVGLegend` writes a `<g>` group with `<rect>` swatches and `<text>` labels.
+
+- **Signature expansion:** `Render`, `RenderRadial`, `RenderBubble` all gained a `*LegendInfo` parameter. Nil is a no-op (0 extra height, no legend elements). Both SVG and PNG/JPG paths handle legend identically — expand canvas/viewBox, render legend at `(0, vizHeight)`.
+
+- **SVG viewBox strategy:** `totalHeight = vizHeight + ComputeLegendHeight(legend)`. Background `<rect>` also uses `totalHeight` so the legend area has a white backdrop.
+
+- **Reuse of constants:** `svg_legend.go` reuses all legend layout constants from `legend.go` (legendRowHeight, legendSwatchHeight, legendLabelWidth, etc.) and the existing `formatBreakpoint` function. `legendTextColour` is defined as a package-level var in `svg_legend.go` matching the PNG legend's `#222222`.
+
+- **Line-length lint:** Long function signatures (>120 chars) need multi-line formatting. Revive's `line-length-limit` catches these.
+
+- **Key files:** `internal/render/svg_legend.go` (new), `internal/render/legend.go` (shared types+constants), `internal/render/svg_helpers.go` (writeSVGText helper).
+
+### Legend Phase 2+4 Complete (2026-04-19)
+
+- **Phase 2 (Dallas):** Legend builder API in cmd package, config wiring, NoLegend flag. All three viz commands updated. PNG/JPG paths fully integrated.
+- **Phase 4 (our branch):** SVG legend rendering via `fmt.Fprintf` (raw elements, no templates). `writeSVGLegend` writes `<g>` groups with `<rect>` swatches and `<text>` labels. Nil legend no-op.
+- **Signature expansion:** All three public render functions (`Render`, `RenderRadial`, `RenderBubble`) gained `*LegendInfo` parameter. PNG and SVG paths handle identically — expand canvas/viewBox, render legend at `(0, vizHeight)`.
+- **Shared constants:** `legendRowHeight`, `legendSwatchHeight`, `legendLabelWidth`, `formatBreakpoint` used by both PNG and SVG. Reuse avoids duplication.
+- **Key insight:** SVG legend is a direct mirror of PNG legend — same layout logic, same LegendInfo struct. Only rendering mechanism differs (fmt.Fprintf vs gg drawing calls).
+- **Testing:** Nil legend tests unchanged (golden files unchanged). Full build and lint passes.
+

@@ -239,6 +239,72 @@ Anytime changes are pushed to address PR review comments, always reply to the re
 
 **Rationale:** User request — reinforces existing team practice of maintaining clear communication on review threads.
 
+---
+
+### Legend Wiring — Phase 2 Complete
+
+**Author:** Dallas  
+**Date:** 2026-04-19  
+**Status:** Implemented  
+**Issue:** #68  
+**Branch:** `squad/68-legend-core`
+
+**Summary:** Wired the legend into the PNG/JPG/SVG render pipeline for all three visualization types (treemap, radial, bubbletree).
+
+**Architecture:**
+1. CLI commands build `render.LegendInfo` from fill and border metrics using `buildLegendRow()` helper
+2. `buildLegendRow()` replicates the bucket/category computation from colour-application functions
+3. `buildLegendInfo()` respects `NoLegend *bool` config flag — returns nil to suppress
+4. Render functions accept `*LegendInfo`, extend canvas height, draw legend band below viz
+
+**API additions:**
+- `render.BuildNumericLegendRow(name, kind, buckets, numBuckets, palette) LegendRow`
+- `render.BuildCategoricalLegendRow(name, categories, palette) LegendRow`
+- `buildLegendRow(root, metricName, paletteName) *LegendRow` (cmd package, shared)
+- `buildLegendInfo(noLegend, rows...) *LegendInfo` (cmd package, shared)
+
+**Config changes:**
+- Added `NoLegend *bool` to `config.Treemap`, `config.Radial`, `config.Bubbletree`
+- Added `--no-legend` CLI flag to all three commands
+
+**Impact on other phases:**
+- Phase 3 (Kane): NoLegend flag now implemented on this branch; merge resolution needed
+- Phase 4 (SVG): SVG legend rendering complete via `svg_legend.go` (Parker's work)
+- Phase 5 (Lambert): Integration tests can verify legend presence/absence by canvas dimensions
+
+---
+
+### SVG Legend Rendering Approach
+
+**Author:** Parker  
+**Date:** 2026-04-19  
+**Status:** Implemented  
+**Issue:** #68  
+**Branch:** `squad/68-legend-svg` (merged into `squad/68-legend-core`)
+
+**Decision:** SVG legend rendering uses the same raw `fmt.Fprintf` approach as all other SVG renderers in this codebase. No templates, no SVG library — just direct XML element writing.
+
+**Signature change:** All three public render functions now accept `*LegendInfo`:
+- `Render(root, width, height, legend, outputPath)`
+- `RenderRadial(root, canvasSize, legend, outputPath)`
+- `RenderBubble(root, width, height, legend, outputPath)`
+
+Nil legend is a no-op — zero extra height, no legend elements rendered.
+
+**Implementation:**
+- `writeSVGLegend` function in `internal/render/svg_legend.go` generates:
+  - A `<g>` group with `translate(x, y)` positioning at the bottom of the viewport
+  - Coloured `<rect>` elements for each swatch with `#808080` borders
+  - `<text>` elements for breakpoint values (numeric) or category labels
+  - Metric name `<text>` label on the left of each row
+
+**Rationale:**
+- Consistent with existing SVG rendering patterns (no templates or libraries elsewhere)
+- Shared `LegendInfo` struct and layout constants between PNG and SVG avoids duplication
+- ViewBox expansion strategy (`totalHeight = vizHeight + legendHeight`) keeps visualization coordinates unchanged
+
+**Impact:** Callers must pass `nil` or a `*LegendInfo` as the new parameter. All existing tests updated to pass `nil`.
+
 ## Governance
 
 - All meaningful changes require team consensus
