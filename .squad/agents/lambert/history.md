@@ -58,3 +58,26 @@ Added `TestFoliagePalette` to `internal/palette/palette_test.go` covering:
 - Foliage already included in `TestPaletteName_IsValid` and `TestWCAGContrastRatio` by Dallas
 
 Pattern: palette tests follow a consistent shape — step count, ordered flag, name check, then endpoint colour assertions. WCAG contrast test covers all ordered palettes via a shared loop.
+
+### 2026-04-19 — bubbletree layout tests
+
+Wrote `internal/bubbletree/layout_test.go` (white-box, `package bubbletree`) with 16 test cases covering:
+- Root enclosure (radius > 0, IsDirectory true, all children geometrically contained)
+- No overlap (sibling circles don't overlap within 1px tolerance)
+- Radius scaling (larger metric → larger radius)
+- Nesting depth (nested dirs produce nested circles, containment holds at every level)
+- Label modes (LabelAll, LabelFoldersOnly, LabelNone each set ShowLabel correctly)
+- Empty directory (non-panic, positive radius, no children)
+- Single file (centred in parent, contained)
+- Large flat directory (20 files pack without overlap)
+- Zero metric (missing value gets positive radius floor)
+- Uniform metric (equal values → equal radii)
+- Canvas bounds (root circle fits within width × height)
+- Root label (matches directory name)
+- Root IsDirectory (root true, file child false)
+- Deep nesting (3-level tree, containment at every level)
+- Mixed files and dirs (file + subdir siblings, no overlap, containment)
+
+Helper functions: `assertContainment` (recursive parent-child geometric check), `assertNoOverlap` (recursive sibling pair distance check), `allChildren` (depth-first collector).
+
+Tests follow exact style from radialtree/treemap: `t.Parallel()`, `NewGomegaWithT(t)`, nilaway-safe nil guards, dot-imported gomega matchers. Tests won't compile until Dallas delivers the layout engine — that's expected.
