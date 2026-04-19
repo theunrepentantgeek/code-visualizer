@@ -93,3 +93,39 @@ Wrote `internal/render/bubbletree_test.go` with 4 smoke tests:
 Shared helper `sampleBubbleTree()` builds a deterministic `BubbleNode` tree directly (root dir with nested "src" subdir + 2 file children + 1 sibling file). No Layout call — these are pure render tests.
 
 Pattern follows `radialtree_test.go` and `renderer_test.go` exactly: `t.Parallel()`, `NewGomegaWithT(t)`, dot-imported gomega, `t.TempDir()` for output. `RenderBubble` signature: `func RenderBubble(root *bubbletree.BubbleNode, width, height int, outputPath string) error`. Tests won't compile until Dallas delivers the render implementation — that's expected.
+
+### 2026-04-19 — Legend feature tests (issue #68)
+
+Wrote 47 new tests across 3 files for the legend feature on `squad/68-legend-core`:
+
+**`cmd/codeviz/legend_builder_test.go` (19 tests):**
+- `BuildNumericLegendRow`: Quantity, Measure, single-bucket (all-same values), 4 palette variants (Temperature, Neutral, GoodBad, Foliage)
+- `BuildCategoricalLegendRow`: basic (4 categories), single category, many categories (20, triggers wrap warning), colours match `CategoricalMapper.Map()`
+- `buildLegendRow`: empty metric → nil, unknown metric → nil, Quantity metric with files, Classification metric with files, no files → nil
+- `buildLegendInfo`: NoLegend=true → nil, NoLegend=false → builds, nil flag → builds, all-nil rows → nil, mixed nil/real → filters, two rows preserved in order
+
+**`internal/render/svg_legend_test.go` (14 tests):**
+- nil/empty info writes nothing
+- Numeric row: contains `<g>`, 3 `<rect>`, metric name, breakpoint values
+- Categorical row: contains category labels
+- Multiple rows (Quantity+Measure+Classification): 9 rects, all metric names
+- HTML escaping: `<`, `&`, `>` properly escaped
+- Single colour row, empty colours row (skips swatches)
+- Many categories (20), narrow width (no swatches when < legendLabelWidth)
+- Swatch stroke colour `#808080` present
+
+**`internal/render/legend_test.go` (14 new, added to Dallas's 11):**
+- `ComputeLegendHeight` 3-row formula check (116px)
+- `DrawLegendBand` 3-row, single-colour, very long metric name, narrow width
+- Integration: treemap/radial/bubble PNG with legend taller than without
+- Integration: nil legend preserves original 300px height
+- SVG integration: treemap/radial/bubble with legend contain `<g>` group + metric name
+- SVG integration: treemap/bubble without legend have no `translate` group
+- White-box: `BuildNumericLegendRow`/`BuildCategoricalLegendRow` bucket count
+
+**Key learnings:**
+- All renderers (Render, RenderRadial, RenderBubble) accept `*LegendInfo` and increase image height by `ComputeLegendHeight(legend)` for raster output
+- SVG legend uses a `<g transform="translate(x,y)">` wrapper — its presence/absence is a clean integration test signal
+- `writeSVGLegend` takes `*os.File` directly (not a buffer), so SVG legend tests create temp files in the working directory
+- Pre-existing `unparam` lint on `svg_legend.go:20` (`x always receives 0`) — not introduced by tests
+- `palette.NewCategoricalMapper` logs a warning when categories > palette capacity but doesn't error
