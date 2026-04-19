@@ -496,3 +496,54 @@ func TestLayoutPathPopulated(t *testing.T) {
 	g.Expect(paths).To(HaveKey("root/top.go"))
 	g.Expect(paths).To(HaveKey("root/sub/inner.go"))
 }
+
+// assertLabelBandClear verifies that for labelled directory nodes, all children
+// are packed inside the label-reserved zone: each child must satisfy
+// distance(child, parent) + child.Radius <= parent.Radius - LabelReservation.
+func assertLabelBandClear(g Gomega, parent BubbleNode) {
+	if parent.ShowLabel && parent.IsDirectory && len(parent.Children) > 0 {
+		for _, child := range parent.Children {
+			dist := math.Sqrt(
+				(child.X-parent.X)*(child.X-parent.X) +
+					(child.Y-parent.Y)*(child.Y-parent.Y),
+			)
+			g.Expect(dist+child.Radius).To(
+				BeNumerically("<=", parent.Radius-LabelReservation+1.0),
+				"child %q intrudes into label band of parent %q",
+				child.Label, parent.Label,
+			)
+		}
+	}
+
+	for _, child := range parent.Children {
+		if child.IsDirectory {
+			assertLabelBandClear(g, child)
+		}
+	}
+}
+
+func TestLayoutLabelBandReservation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Path: "root",
+		Dirs: []*model.Directory{
+			{
+				Name: "sub",
+				Path: "root/sub",
+				Files: []*model.File{
+					makeFile("sub/a.go", 500),
+					makeFile("sub/b.go", 300),
+				},
+			},
+		},
+		Files: []*model.File{
+			makeFile("root/c.go", 400),
+		},
+	}
+
+	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
+	assertLabelBandClear(g, node)
+}

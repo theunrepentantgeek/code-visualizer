@@ -14,6 +14,17 @@
 
 <!-- Append learnings below -->
 
+### Curved bubble labels — issue #65 (2026-04-20)
+
+- **New file:** `internal/render/bubble_font.go` — shared TrueType font helpers for bubble tree arc labels.
+- **Font dependency:** `golang.org/x/image/font/gofont/goregular` provides embedded TrueType font; `github.com/golang/freetype/truetype` parses it. Both were already indirect deps, now promoted to direct.
+- **Arc sizing algorithm:** `computeArcFontSize` iteratively shrinks font until text width ≤ `arcRadius × π/2` (90° arc constraint). Returns 0 to hide labels below 7px minimum.
+- **Glyph positioning:** `computeGlyphPositions` uses `font.Face.GlyphAdvance` + `Kern` for per-character widths, placing each glyph at the midpoint of its angular span on the arc. Arc centred at top of circle (-π/2 radians).
+- **PNG rendering:** Each glyph drawn individually with `dc.Push()/RotateAbout(angle + π/2, gx, gy)/DrawStringAnchored/Pop()`. Must call `dc.SetFontFace(face)` before drawing.
+- **SVG rendering:** Uses `<defs>` block with `<path>` arcs (top semicircle, left to right), then `<textPath href="#arc-{idx}" startOffset="50%" text-anchor="middle">`. Traversal indices for path IDs, not node paths.
+- **Lint note:** `fixed.Int26_6` is the return type for `font.Face.GlyphAdvance` and `Kern`, not `font.MeasureUnit`. Accumulate in fixed-point then convert to float64 at the end.
+- **Cognitive complexity:** Split arc computation into small helpers (`clampFontToArc`, `measureStringWidth`, `collectAdvances`, `sumAdvances`, `placeGlyphs`) to stay under revive's max-10 limit.
+
 ### Foliage palette — issue #46 (2026-04-18)
 
 - **New palette added:** `Foliage` (`"foliage"`) in `internal/palette/palette.go` — 11-step ordered palette progressing black → brown → orange → yellow → green for plant-health visualisation.

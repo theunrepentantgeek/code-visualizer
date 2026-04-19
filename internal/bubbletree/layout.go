@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	minFileRadius  = 2.0 // minimum circle radius for any file node
-	siblingPadding = 3.0 // gap between sibling circles at the same level
-	parentPadding  = 6.0 // inset from parent circle edge (space for labels)
+	minFileRadius    = 2.0  // minimum circle radius for any file node
+	siblingPadding   = 3.0  // gap between sibling circles at the same level
+	parentPadding    = 6.0  // inset from parent circle edge (space for labels)
+	LabelReservation = 14.0 // extra radius for directories that show a label
 )
 
 // Layout builds a bubble tree from root, positioning circles to fit within
@@ -73,6 +74,10 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 	}
 
 	node.Radius = enc.radius + parentPadding
+	if node.ShowLabel {
+		node.Radius += LabelReservation
+	}
+
 	node.Children = children
 
 	return node
