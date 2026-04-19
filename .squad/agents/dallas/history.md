@@ -102,3 +102,16 @@
 - **Shared helpers:** `collectBubblesByType`, `resolveDirFill`, `resolveFileFill`, `resolveBorder` used by both PNG and SVG renderers.
 - **Golden file:** Created `internal/render/testdata/bubble-tree.png` via `-update` flag.
 - **Full build + all tests pass** (`go build ./...` and `go test ./...` clean).
+
+### Legend Wiring — Issue #68 (Phase 2)
+
+- **New file:** `cmd/codeviz/legend_builder.go` — shared helpers `buildLegendRow` and `buildLegendInfo` used by all three viz commands.
+- **New file:** `internal/render/svg_legend.go` — SVG legend renderer (fixed from broken untracked stub; uses `metric.Kind`, `color.RGBA`).
+- **Legend builder API:** `render.BuildNumericLegendRow(name, kind, buckets, numBuckets, palette)` and `render.BuildCategoricalLegendRow(name, categories, palette)` in `legend.go`.
+- **Config:** Added `NoLegend *bool` to `config.Treemap`, `config.Radial`, `config.Bubbletree`.
+- **CLI flags:** Added `--no-legend` (`NoLegend bool`) to `TreemapCmd`, `RadialCmd`, `BubbletreeCmd` with corresponding `applyOverrides` wiring.
+- **Render function signatures:** All three renderers already accepted `*LegendInfo` param (pre-existing partial work). Replaced `nil` with actual legend info built from fill and border metrics.
+- **Legend flow:** CLI builds legend rows from the same metric/palette/buckets used for colour application, assembles `LegendInfo`, passes to renderer. Renderer extends canvas height by `ComputeLegendHeight`, draws viz in original area, draws legend band below.
+- **NoLegend semantics:** `nil` or `false` → legend shown (default). `true` → skip legend entirely, full canvas for viz.
+- **Gotcha:** `svg_legend.go` was a broken untracked file using wrong type names (`metricKind`, `colourRGBA`). Fixed to use `metric.Kind`, `color.RGBA`.
+- **No golden file changes needed:** Existing tests pass `nil` legend (no fill/border metric specified in tests), so canvas dimensions unchanged.
