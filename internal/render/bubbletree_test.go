@@ -107,7 +107,7 @@ func TestRenderBubble_SVG(t *testing.T) {
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 
-	var foundSVG bool
+	var rootElement string
 
 	for {
 		tok, xmlErr := decoder.Token()
@@ -116,15 +116,13 @@ func TestRenderBubble_SVG(t *testing.T) {
 		}
 
 		if se, ok := tok.(xml.StartElement); ok {
-			if se.Name.Local == "svg" {
-				foundSVG = true
-			}
+			rootElement = se.Name.Local
 
 			break
 		}
 	}
 
-	g.Expect(foundSVG).To(BeTrue(), "SVG output should have an <svg> root element")
+	g.Expect(rootElement).To(Equal("svg"), "SVG output should have an <svg> root element")
 }
 
 func TestRenderBubble_GoldenFile(t *testing.T) {
