@@ -8,4 +8,5 @@ type Radial struct {
 	Border        *string `yaml:"border,omitempty"        json:"border,omitempty"`
 	BorderPalette *string `yaml:"borderPalette,omitempty" json:"borderPalette,omitempty"`
 	Labels        *string `yaml:"labels,omitempty"        json:"labels,omitempty"`
+	NoLegend      *bool   `yaml:"noLegend,omitempty"      json:"noLegend,omitempty"`
 }

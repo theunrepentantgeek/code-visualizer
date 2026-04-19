@@ -21,17 +21,23 @@ var (
 
 // Render renders the treemap layout to an image file at the given path.
 // The output format is determined by the file extension (png, jpg/jpeg, svg).
-func Render(root treemap.TreemapRectangle, width, height int, outputPath string) error {
+// If legend is non-nil, a legend band is appended below the visualization.
+func Render(root treemap.TreemapRectangle, width, height int, legend *LegendInfo, outputPath string) error {
 	format, err := FormatFromPath(outputPath)
 	if err != nil {
 		return err
 	}
 
 	if format == FormatSVG {
-		return renderTreemapSVG(root, width, height, outputPath)
+		return renderTreemapSVG(root, width, height, legend, outputPath)
 	}
 
-	dc := renderTreemapImage(root, width, height)
+	legendH := ComputeLegendHeight(legend)
+	dc := renderTreemapImage(root, width, height+legendH)
+
+	if err := DrawLegendBand(dc, legend, 0, float64(height), float64(width)); err != nil {
+		return err
+	}
 
 	switch format {
 	case FormatPNG:

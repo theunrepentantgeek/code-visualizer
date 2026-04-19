@@ -32,7 +32,7 @@ func TestRenderRadial_FlatDir(t *testing.T) {
 
 	node := radialtree.Layout(root, 800, filesystem.FileSize, radialtree.LabelAll)
 	out := filepath.Join(t.TempDir(), "flat-radial.png")
-	err := RenderRadial(&node, 800, out)
+	err := RenderRadial(&node, 800, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -63,7 +63,7 @@ func TestRenderRadial_NestedDir(t *testing.T) {
 
 	node := radialtree.Layout(root, 800, filesystem.FileSize, radialtree.LabelAll)
 	out := filepath.Join(t.TempDir(), "nested-radial.png")
-	err := RenderRadial(&node, 800, out)
+	err := RenderRadial(&node, 800, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -96,7 +96,7 @@ func TestRenderRadial_LabelModes(t *testing.T) {
 
 			node := radialtree.Layout(root, 400, filesystem.FileSize, mode)
 			out := filepath.Join(t.TempDir(), "labels-"+string(mode)+".png")
-			err := RenderRadial(&node, 400, out)
+			err := RenderRadial(&node, 400, nil, out)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			info, err := os.Stat(out)
@@ -119,7 +119,7 @@ func TestRenderRadial_EmptyDir(t *testing.T) {
 	root := &model.Directory{Name: "empty"}
 	node := radialtree.Layout(root, 400, filesystem.FileSize, radialtree.LabelAll)
 	out := filepath.Join(t.TempDir(), "empty-radial.png")
-	err := RenderRadial(&node, 400, out)
+	err := RenderRadial(&node, 400, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -145,7 +145,7 @@ func TestRenderRadial_JPG(t *testing.T) {
 	node := radialtree.Layout(root, 400, filesystem.FileSize, radialtree.LabelAll)
 	out := filepath.Join(t.TempDir(), "radial.jpg")
 
-	err := RenderRadial(&node, 400, out)
+	err := RenderRadial(&node, 400, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f, err := os.Open(out)
@@ -170,7 +170,7 @@ func TestRenderRadial_SVG(t *testing.T) {
 	node := radialtree.Layout(root, 400, filesystem.FileSize, radialtree.LabelAll)
 	out := filepath.Join(t.TempDir(), "radial.svg")
 
-	err := RenderRadial(&node, 400, out)
+	err := RenderRadial(&node, 400, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	data, err := os.ReadFile(out)
@@ -208,7 +208,7 @@ func TestRenderRadial_PNG_DecodesAsPNG(t *testing.T) {
 	node := radialtree.Layout(root, 400, filesystem.FileSize, radialtree.LabelAll)
 	out := filepath.Join(t.TempDir(), "radial.png")
 
-	err := RenderRadial(&node, 400, out)
+	err := RenderRadial(&node, 400, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f, err := os.Open(out)

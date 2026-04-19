@@ -36,6 +36,8 @@ type TreemapCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
+	NoLegend bool `name:"no-legend" help:"Disable the legend bar."`
+
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
@@ -187,9 +189,13 @@ func (c *TreemapCmd) renderAndLog(
 
 	borderMetric, borderPaletteName := c.applyBorderColours(&rects, root, cfg)
 
+	fillRow := buildLegendRow(root, fillMetric, fillPaletteName)
+	borderRow := buildLegendRow(root, borderMetric, borderPaletteName)
+	legend := buildLegendInfo(cfg.NoLegend, fillRow, borderRow)
+
 	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
 
-	if err := render.Render(rects, width, height, c.Output); err != nil {
+	if err := render.Render(rects, width, height, legend, c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
 
@@ -284,6 +290,10 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 
 	if c.BorderPalette != "" {
 		cfg.Treemap.BorderPalette = &c.BorderPalette
+	}
+
+	if c.NoLegend {
+		cfg.Treemap.NoLegend = &c.NoLegend
 	}
 }
 

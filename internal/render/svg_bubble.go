@@ -12,7 +12,12 @@ import (
 )
 
 // renderBubbleSVG generates an SVG file from the bubble tree layout.
-func renderBubbleSVG(root *bubbletree.BubbleNode, width, height int, outputPath string) (err error) {
+func renderBubbleSVG(
+	root *bubbletree.BubbleNode, width, height int, legend *LegendInfo, outputPath string,
+) (err error) {
+	legendH := ComputeLegendHeight(legend)
+	totalHeight := height + legendH
+
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return eris.Wrap(err, "failed to create SVG file")
@@ -30,11 +35,11 @@ func renderBubbleSVG(root *bubbletree.BubbleNode, width, height int, outputPath 
 			" xmlns:xlink=\"http://www.w3.org/1999/xlink\""+
 			" width=\"%d\" height=\"%d\""+
 			" viewBox=\"0 0 %d %d\">\n",
-		width, height, width, height)
+		width, totalHeight, width, totalHeight)
 
 	fmt.Fprintf(f,
 		"<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" fill=\"#ffffff\"/>\n",
-		width, height)
+		width, totalHeight)
 
 	labelledDirs := collectLabelledDirs(*root)
 	writeSVGArcDefs(f, labelledDirs)
@@ -43,6 +48,8 @@ func renderBubbleSVG(root *bubbletree.BubbleNode, width, height int, outputPath 
 	writeSVGBubbleFiles(f, *root)
 	writeSVGBubbleDirLabels(f, labelledDirs)
 	writeSVGBubbleFileLabels(f, *root)
+
+	writeSVGLegend(f, legend, 0, float64(height), float64(width))
 
 	fmt.Fprint(f, "</svg>\n")
 

@@ -10,6 +10,7 @@ import (
 	"golang.org/x/image/font"
 
 	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/palette"
 )
 
 // Legend layout constants.
@@ -213,4 +214,48 @@ func formatBreakpoint(v float64, kind metric.Kind) string {
 	}
 
 	return strconv.FormatFloat(v, 'g', 2, 64)
+}
+
+// BuildNumericLegendRow creates a LegendRow for a numeric (Quantity or Measure) metric.
+// It computes one colour per bucket using the same palette mapping as the renderers.
+func BuildNumericLegendRow(
+	metricName string,
+	kind metric.Kind,
+	buckets metric.BucketBoundaries,
+	numBuckets int,
+	p palette.ColourPalette,
+) LegendRow {
+	colours := make([]color.RGBA, numBuckets)
+	for i := range numBuckets {
+		colours[i] = palette.MapNumericToColour(i, numBuckets, p)
+	}
+
+	return LegendRow{
+		MetricName:  metricName,
+		Kind:        kind,
+		Colours:     colours,
+		Breakpoints: buckets.Boundaries,
+	}
+}
+
+// BuildCategoricalLegendRow creates a LegendRow for a Classification metric.
+// Categories must be sorted consistently with the CategoricalMapper used for rendering.
+func BuildCategoricalLegendRow(
+	metricName string,
+	categories []string,
+	p palette.ColourPalette,
+) LegendRow {
+	mapper := palette.NewCategoricalMapper(categories, p)
+	colours := make([]color.RGBA, len(categories))
+
+	for i, cat := range categories {
+		colours[i] = mapper.Map(cat)
+	}
+
+	return LegendRow{
+		MetricName: metricName,
+		Kind:       metric.Classification,
+		Colours:    colours,
+		Categories: categories,
+	}
 }

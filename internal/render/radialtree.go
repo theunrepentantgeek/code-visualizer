@@ -25,17 +25,23 @@ const radialLabelGap = 4.0
 // The output format is determined by the file extension (png, jpg/jpeg, svg).
 // Drawing is done in three passes — edges, then discs, then labels — to ensure
 // correct z-ordering across the entire tree.
-func RenderRadial(root *radialtree.RadialNode, canvasSize int, outputPath string) error {
+// If legend is non-nil, a legend band is appended below the visualization.
+func RenderRadial(root *radialtree.RadialNode, canvasSize int, legend *LegendInfo, outputPath string) error {
 	format, err := FormatFromPath(outputPath)
 	if err != nil {
 		return err
 	}
 
 	if format == FormatSVG {
-		return renderRadialSVG(root, canvasSize, outputPath)
+		return renderRadialSVG(root, canvasSize, legend, outputPath)
 	}
 
-	dc := renderRadialImage(root, canvasSize)
+	legendH := ComputeLegendHeight(legend)
+	dc := renderRadialImage(root, canvasSize, legendH)
+
+	if err := DrawLegendBand(dc, legend, 0, float64(canvasSize), float64(canvasSize)); err != nil {
+		return err
+	}
 
 	switch format {
 	case FormatPNG:
@@ -48,8 +54,9 @@ func RenderRadial(root *radialtree.RadialNode, canvasSize int, outputPath string
 }
 
 // renderRadialImage draws the radial tree to a gg context.
-func renderRadialImage(root *radialtree.RadialNode, canvasSize int) *gg.Context {
-	dc := gg.NewContext(canvasSize, canvasSize)
+// extraHeight is added below the square canvas for the legend band.
+func renderRadialImage(root *radialtree.RadialNode, canvasSize int, extraHeight int) *gg.Context {
+	dc := gg.NewContext(canvasSize, canvasSize+extraHeight)
 
 	dc.SetColor(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF})
 	dc.Clear()

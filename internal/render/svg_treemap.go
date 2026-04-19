@@ -12,7 +12,12 @@ import (
 )
 
 // renderTreemapSVG generates an SVG file from the treemap layout.
-func renderTreemapSVG(root treemap.TreemapRectangle, width, height int, outputPath string) (err error) {
+func renderTreemapSVG(
+	root treemap.TreemapRectangle, width, height int, legend *LegendInfo, outputPath string,
+) (err error) {
+	legendH := ComputeLegendHeight(legend)
+	totalHeight := height + legendH
+
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return eris.Wrap(err, "failed to create SVG file")
@@ -26,13 +31,15 @@ func renderTreemapSVG(root treemap.TreemapRectangle, width, height int, outputPa
 
 	fmt.Fprintf(f, `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">
-`, width, height, width, height)
+`, width, totalHeight, width, totalHeight)
 
 	// Background
 	fmt.Fprintf(f, `<rect x="0" y="0" width="%d" height="%d" fill="%s"/>
-`, width, height, colourToHex(bgColour))
+`, width, totalHeight, colourToHex(bgColour))
 
 	writeSVGRect(f, root)
+
+	writeSVGLegend(f, legend, 0, float64(height), float64(width))
 
 	fmt.Fprint(f, "</svg>\n")
 

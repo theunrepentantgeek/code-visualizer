@@ -8,4 +8,5 @@ type Treemap struct {
 	FillPalette   *string `yaml:"fillPalette,omitempty"   json:"fillPalette,omitempty"`
 	Border        *string `yaml:"border,omitempty"        json:"border,omitempty"`
 	BorderPalette *string `yaml:"borderPalette,omitempty" json:"borderPalette,omitempty"`
+	NoLegend      *bool   `yaml:"noLegend,omitempty"      json:"noLegend,omitempty"`
 }

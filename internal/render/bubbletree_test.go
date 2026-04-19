@@ -59,7 +59,7 @@ func TestRenderBubble_PNG(t *testing.T) {
 	root := sampleBubbleTree()
 	out := filepath.Join(t.TempDir(), "bubble.png")
 
-	err := RenderBubble(&root, 800, 600, out)
+	err := RenderBubble(&root, 800, 600, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f, err := os.Open(out)
@@ -79,7 +79,7 @@ func TestRenderBubble_JPG(t *testing.T) {
 	root := sampleBubbleTree()
 	out := filepath.Join(t.TempDir(), "bubble.jpg")
 
-	err := RenderBubble(&root, 800, 600, out)
+	err := RenderBubble(&root, 800, 600, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f, err := os.Open(out)
@@ -99,7 +99,7 @@ func TestRenderBubble_SVG(t *testing.T) {
 	root := sampleBubbleTree()
 	out := filepath.Join(t.TempDir(), "bubble.svg")
 
-	err := RenderBubble(&root, 800, 600, out)
+	err := RenderBubble(&root, 800, 600, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	data, err := os.ReadFile(out)
@@ -132,7 +132,7 @@ func TestRenderBubble_GoldenFile(t *testing.T) {
 	root := sampleBubbleTree()
 	out := filepath.Join(t.TempDir(), "bubble-golden.png")
 
-	err := RenderBubble(&root, 800, 600, out)
+	err := RenderBubble(&root, 800, 600, nil, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	actual, err := os.ReadFile(out)

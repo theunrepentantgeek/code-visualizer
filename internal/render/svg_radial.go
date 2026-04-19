@@ -14,7 +14,10 @@ import (
 )
 
 // renderRadialSVG generates an SVG file from the radial tree layout.
-func renderRadialSVG(root *radialtree.RadialNode, canvasSize int, outputPath string) (err error) {
+func renderRadialSVG(root *radialtree.RadialNode, canvasSize int, legend *LegendInfo, outputPath string) (err error) {
+	legendH := ComputeLegendHeight(legend)
+	totalHeight := canvasSize + legendH
+
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return eris.Wrap(err, "failed to create SVG file")
@@ -30,18 +33,20 @@ func renderRadialSVG(root *radialtree.RadialNode, canvasSize int, outputPath str
 
 	fmt.Fprintf(f, `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">
-`, canvasSize, canvasSize, canvasSize, canvasSize)
+`, canvasSize, totalHeight, canvasSize, totalHeight)
 
 	fmt.Fprintf(f,
 		"<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\""+
 			" fill=\"#ffffff\"/>\n",
-		canvasSize, canvasSize)
+		canvasSize, totalHeight)
 
 	cx, cy := cs/2.0, cs/2.0
 
 	writeSVGEdges(f, *root, cx, cy)
 	writeSVGDiscs(f, *root, cx, cy)
 	writeSVGLabels(f, *root, cx, cy)
+
+	writeSVGLegend(f, legend, 0, cs, cs)
 
 	fmt.Fprint(f, "</svg>\n")
 

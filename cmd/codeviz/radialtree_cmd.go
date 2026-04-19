@@ -36,6 +36,8 @@ type RadialCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1920" help:"Image height in pixels."`
 
+	NoLegend bool `name:"no-legend" help:"Disable the legend bar."`
+
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
@@ -171,9 +173,13 @@ func (c *RadialCmd) applyColoursAndRender(
 	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
+	fillRow := buildLegendRow(root, fillMetric, fillPaletteName)
+	borderRow := buildLegendRow(root, borderMetric, borderPaletteName)
+	legend := buildLegendInfo(cfg.NoLegend, fillRow, borderRow)
+
 	slog.Debug("rendering radial", "canvasSize", canvasSize, "output", c.Output)
 
-	if err := render.RenderRadial(&nodes, canvasSize, c.Output); err != nil {
+	if err := render.RenderRadial(&nodes, canvasSize, legend, c.Output); err != nil {
 		return "", "", eris.Wrap(err, "render failed")
 	}
 
@@ -213,6 +219,10 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 
 	if c.Labels != "" {
 		cfg.Radial.Labels = &c.Labels
+	}
+
+	if c.NoLegend {
+		cfg.Radial.NoLegend = &c.NoLegend
 	}
 }
 
