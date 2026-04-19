@@ -154,6 +154,56 @@ Black → dark brown → brown → dark orange → orange → yellow-orange → 
 - All adjacent steps pass WCAG 2.0 contrast ratio >= 1.0.
 - Palette is `Ordered: true` so it works with the existing numeric metric mapper.
 
+---
+
+### Bubble Tree Visualization — Architecture Proposal
+
+**Author:** Ripley  
+**Date:** 2026-04-19  
+**Status:** Proposed  
+**Issue:** #33 — Add Bubble visualization
+
+**Summary:**
+Add `codeviz render bubbletree` — a circle-packing visualization where directories are labelled circles containing nested child circles, and files are unlabelled dots. This follows patterns from GitHub Next and repo-visualizer.
+
+**Architecture highlights:**
+- **Package:** `internal/bubbletree/` (mirrors radialtree/treemap pattern)
+- **Node type:** `BubbleNode` with `X, Y, Radius` (single radius primitive vs RadialNode's Angle+DiscRadius)
+- **Algorithm:** Front-chain circle packing (Wang et al. 2006) + Welzl's enclosing circle — implement in pure Go, no D3 dependency
+- **Layout function:** `Layout(root, width, height, sizeMetric, labels) BubbleNode` — takes width/height like treemap (non-square canvas support)
+- **CLI:** `BubbletreeCmd` with `--size` flag (not `--disc-size` as in radial); default 1920×1080 (like treemap)
+- **Config:** `Bubbletree` struct with Fill/Border/Labels; defaults to `Labels="folders"` (file dots unlabelled)
+- **Rendering:** Three-pass PNG (directories→files→labels for z-order); SVG with nested `<g>` groups
+- **Reuse:** All existing packages (model, metric, palette, scan, render infrastructure); no new dependencies
+
+**Implementation phases:**
+1. Layout engine (front-chain + enclosing circle)
+2. PNG rendering (three-pass with fogleman/gg)
+3. SVG rendering (nested groups)
+4. CLI + Config wiring
+5. Optional: curved labels, force-sim polish
+
+**No force-simulation required for v1** — front-chain alone produces good results; polish is a follow-up.
+
+**Open questions:** Minimum file radius, directory transparency alpha, max-depth support, root-level file grouping.
+
+**Risk:** Low (algorithm well-documented, O(n²) is acceptable for typical codebases). Visual quality without force-sim is medium risk — mitigated by front-chain being proven good.
+
+**Decision:** Proceed with this architecture.
+
+---
+
+### User Directive — PR Review Thread Replies
+
+**Author:** Bevan (via Copilot)  
+**Date:** 2026-04-18  
+**Status:** Active
+
+**Directive:**
+Anytime changes are pushed to address PR review comments, always reply to the review thread confirming the action taken (or explaining why no change was needed).
+
+**Rationale:** User request — reinforces existing team practice of maintaining clear communication on review threads.
+
 ## Governance
 
 - All meaningful changes require team consensus

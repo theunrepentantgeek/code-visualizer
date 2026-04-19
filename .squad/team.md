@@ -21,6 +21,12 @@
 | Scribe | Session Logger | `.squad/agents/scribe/charter.md` | 📋 Silent |
 | Ralph | Work Monitor | `.squad/agents/ralph/charter.md` | 🔄 Monitor |
 
+## Issue Source
+
+- **Repository:** theunrepentantgeek/code-visualizer
+- **Connected:** 2026-04-19
+- **Filters:** all open issues
+
 ## Project Context
 
 - **Project:** code-visualizer
