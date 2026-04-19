@@ -45,6 +45,7 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 	}
 
 	node := BubbleNode{
+		Path:        dir.Path,
 		Label:       dir.Name,
 		IsDirectory: true,
 		ShowLabel:   labels == LabelAll || labels == LabelFoldersOnly,
@@ -85,6 +86,7 @@ func layoutFile(f *model.File, sizeMetric metric.Name, labels LabelMode) BubbleN
 
 	return BubbleNode{
 		Radius:    r,
+		Path:      f.Path,
 		Label:     f.Name,
 		ShowLabel: labels == LabelAll,
 	}

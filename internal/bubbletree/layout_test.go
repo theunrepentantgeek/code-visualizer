@@ -11,7 +11,7 @@ import (
 )
 
 func makeFile(name string, size int64) *model.File {
-	f := &model.File{Name: name}
+	f := &model.File{Name: name, Path: name}
 	f.SetQuantity(filesystem.FileSize, size)
 
 	return f
@@ -407,10 +407,12 @@ func TestLayoutMixedFilesAndDirs(t *testing.T) {
 
 	sub := &model.Directory{
 		Name:  "pkg",
+		Path:  "root/pkg",
 		Files: []*model.File{makeFile("lib.go", 300)},
 	}
 	root := &model.Directory{
 		Name:  "root",
+		Path:  "root",
 		Files: []*model.File{makeFile("main.go", 200)},
 		Dirs:  []*model.Directory{sub},
 	}
@@ -440,4 +442,57 @@ func TestLayoutMixedFilesAndDirs(t *testing.T) {
 	// No overlap between the file and the directory bubble.
 	assertNoOverlap(g, node)
 	assertContainment(g, node)
+}
+
+func TestLayoutPathPopulated(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	inner := &model.Directory{
+		Name:  "sub",
+		Path:  "root/sub",
+		Files: []*model.File{{Name: "inner.go", Path: "root/sub/inner.go"}},
+	}
+	root := &model.Directory{
+		Name:  "root",
+		Path:  "root",
+		Files: []*model.File{{Name: "top.go", Path: "root/top.go"}},
+		Dirs:  []*model.Directory{inner},
+	}
+
+	// Set metric so files get non-zero radii.
+	for _, f := range root.Files {
+		f.SetQuantity(filesystem.FileSize, 100)
+	}
+
+	for _, f := range inner.Files {
+		f.SetQuantity(filesystem.FileSize, 100)
+	}
+
+	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
+
+	// Root directory Path.
+	g.Expect(node.Path).To(Equal("root"))
+
+	// Collect all children by Path using a recursive walk.
+	paths := make(map[string]bool)
+
+	var walk func(n BubbleNode)
+
+	walk = func(n BubbleNode) {
+		if n.Path != "" {
+			paths[n.Path] = true
+		}
+
+		for _, c := range n.Children {
+			walk(c)
+		}
+	}
+
+	walk(node)
+
+	g.Expect(paths).To(HaveKey("root"))
+	g.Expect(paths).To(HaveKey("root/sub"))
+	g.Expect(paths).To(HaveKey("root/top.go"))
+	g.Expect(paths).To(HaveKey("root/sub/inner.go"))
 }

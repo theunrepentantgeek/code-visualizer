@@ -416,118 +416,178 @@ func (*BubbletreeCmd) applyBorderColours(
 	return borderMetric, borderPaletteName
 }
 
-// applyBubbleFillColours assigns fill colours to the BubbleNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by Layout. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
+// indexBubbleNodesByPath recursively walks the BubbleNode tree and indexes
+// all nodes by their Path, separating directories and files.
+func indexBubbleNodesByPath(
+	node *bubbletree.BubbleNode,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for i := range node.Children {
+		child := &node.Children[i]
+		if child.IsDirectory {
+			dirs[child.Path] = child
+			indexBubbleNodesByPath(child, dirs, files)
+		} else {
+			files[child.Path] = child
+		}
+	}
+}
+
+// applyBubbleFillColours assigns fill colours to the BubbleNode tree using
+// path-based lookup, decoupled from Children ordering.
 func applyBubbleFillColours(
 	node *bubbletree.BubbleNode,
-	dir *model.Directory,
+	root *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
 	numBuckets int,
 	p palette.ColourPalette,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyBubbleFillColours(child, dir.Dirs[dirIdx], m, buckets, numBuckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			val := extractNumeric(dir.Files[fileIdx], m)
+	applyBubbleFillColoursWalk(root, m, buckets, numBuckets, p, dirs, files)
+}
+
+func applyBubbleFillColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	buckets metric.BucketBoundaries,
+	numBuckets int,
+	p palette.ColourPalette,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			val := extractNumeric(f, m)
 			idx := buckets.BucketIndex(val)
-			child.FillColour = palette.MapNumericToColour(idx, numBuckets, p)
-			fileIdx++
+			bn.FillColour = palette.MapNumericToColour(idx, numBuckets, p)
+		}
+	}
+
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyBubbleFillColoursWalk(d, m, buckets, numBuckets, p, dirs, files)
 		}
 	}
 }
 
-// applyCategoricalBubbleFillColours assigns categorical fill colours to the BubbleNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by Layout. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
+// applyCategoricalBubbleFillColours assigns categorical fill colours to the
+// BubbleNode tree using path-based lookup.
 func applyCategoricalBubbleFillColours(
 	node *bubbletree.BubbleNode,
-	dir *model.Directory,
+	root *model.Directory,
 	m metric.Name,
 	mapper *palette.CategoricalMapper,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyCategoricalBubbleFillColours(child, dir.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			if v, ok := dir.Files[fileIdx].Classification(m); ok {
-				child.FillColour = mapper.Map(v)
+	applyCategoricalBubbleFillColoursWalk(root, m, mapper, dirs, files)
+}
+
+func applyCategoricalBubbleFillColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	mapper *palette.CategoricalMapper,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			if v, ok := f.Classification(m); ok {
+				bn.FillColour = mapper.Map(v)
 			}
+		}
+	}
 
-			fileIdx++
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyCategoricalBubbleFillColoursWalk(d, m, mapper, dirs, files)
 		}
 	}
 }
 
-// applyBubbleBorderColours assigns border colours to the BubbleNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by Layout. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
+// applyBubbleBorderColours assigns border colours to the BubbleNode tree using
+// path-based lookup.
 func applyBubbleBorderColours(
 	node *bubbletree.BubbleNode,
-	dir *model.Directory,
+	root *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
 	numBuckets int,
 	p palette.ColourPalette,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyBubbleBorderColours(child, dir.Dirs[dirIdx], m, buckets, numBuckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			val := extractNumeric(dir.Files[fileIdx], m)
+	applyBubbleBorderColoursWalk(root, m, buckets, numBuckets, p, dirs, files)
+}
+
+func applyBubbleBorderColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	buckets metric.BucketBoundaries,
+	numBuckets int,
+	p palette.ColourPalette,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			val := extractNumeric(f, m)
 			idx := buckets.BucketIndex(val)
 			col := palette.MapNumericToColour(idx, numBuckets, p)
-			child.BorderColour = &col
-			fileIdx++
+			bn.BorderColour = &col
+		}
+	}
+
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyBubbleBorderColoursWalk(d, m, buckets, numBuckets, p, dirs, files)
 		}
 	}
 }
 
-// applyCategoricalBubbleBorderColours assigns categorical border colours to the BubbleNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by Layout. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
+// applyCategoricalBubbleBorderColours assigns categorical border colours to the
+// BubbleNode tree using path-based lookup.
 func applyCategoricalBubbleBorderColours(
 	node *bubbletree.BubbleNode,
-	dir *model.Directory,
+	root *model.Directory,
 	m metric.Name,
 	mapper *palette.CategoricalMapper,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyCategoricalBubbleBorderColours(child, dir.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			if v, ok := dir.Files[fileIdx].Classification(m); ok {
+	applyCategoricalBubbleBorderColoursWalk(root, m, mapper, dirs, files)
+}
+
+func applyCategoricalBubbleBorderColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	mapper *palette.CategoricalMapper,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			if v, ok := f.Classification(m); ok {
 				col := mapper.Map(v)
-				child.BorderColour = &col
+				bn.BorderColour = &col
 			}
+		}
+	}
 
-			fileIdx++
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyCategoricalBubbleBorderColoursWalk(d, m, mapper, dirs, files)
 		}
 	}
 }
