@@ -49,3 +49,4 @@
 - **Config pattern:** All pointer fields (nil = unset). `config.New()` sets defaults. CLI `applyOverrides()` only writes non-zero values.
 - **Key files for implementation:** `render_cmd.go` (add `Bubbletree` subcommand), `config.go` (add `Bubbletree` field to `Config` struct and `New()`).
 - **Proposal written to:** `.squad/decisions/inbox/ripley-bubble-architecture.md`
+- **Result:** Architecture adopted. PR #64 created on branch `squad/33-bubble-visualization` with full implementation (layout engine, PNG+SVG rendering, CLI, config, 20 tests). CI green.

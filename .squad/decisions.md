@@ -193,6 +193,41 @@ Add `codeviz render bubbletree` — a circle-packing visualization where directo
 
 ---
 
+### Bubble Tree Layout Engine — Algorithm & Constants
+
+**Author:** Dallas  
+**Date:** 2026-04-19  
+**Status:** Implemented (Phase 1)  
+**Issue:** #33
+
+**BubbleNode struct:**
+```go
+type BubbleNode struct {
+    X, Y         float64
+    Radius       float64
+    Label        string
+    ShowLabel    bool
+    IsDirectory  bool
+    FillColour   color.RGBA
+    BorderColour *color.RGBA
+    Children     []BubbleNode
+}
+```
+
+**Layout() signature:** `func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, labels LabelMode) BubbleNode`
+- Takes width+height (like treemap, non-square canvas). Returns value type.
+
+**Algorithm choices:**
+- **Front-chain packing** without chain pruning. O(n³) per level, acceptable for typical directory sizes (<100 direct children).
+- **Welzl's enclosing circle** adapted for circles (not points). Falls back to pairwise enclosing when degenerate.
+- **Leaf sizing:** `radius = sqrt(metricValue)` with `minFileRadius = 2px` floor.
+- **Padding constants:** `siblingPadding = 3px`, `parentPadding = 6px`.
+- **Fallback placement:** Golden angle distribution on outer edge when no valid tangent position found.
+
+**Consequence:** Renderers receive a fully-positioned tree with absolute pixel coordinates. Colours set by renderer/CLI, not layout.
+
+---
+
 ### User Directive — PR Review Thread Replies
 
 **Author:** Bevan (via Copilot)  
