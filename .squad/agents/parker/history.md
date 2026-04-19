@@ -70,3 +70,15 @@ Reviewed PR #39 (issue #38) adding `Scope()` and `Description()` to `provider.In
 - Git error logging inconsistent across operations
 
 **Review output:** Orchestration log at `.squad/orchestration-log/2026-04-15T04:50:46Z-parker.md`
+
+### Bubble tree lint fixes (2026-04-19)
+
+- **Front-chain decomposition:** `packCircles` (cognitive complexity 34) split into four helpers: `placeInitialCircles` (initial 0-2 placement), `initFrontChain` (linked list setup), `findBestPlacement` (chain scan loop), `bestTangentPosition` (per-pair overlap check). Each stays well under complexity 10.
+
+- **Quadratic solver extraction:** `enclosingThree` (cyclomatic 11) reduced to 3 by extracting `solveQuadraticForRadius`. The solver also absorbs the `R < minR` post-check for the linear case, keeping behavior identical.
+
+- **Uppercase local variables in geometry code:** Go's `unexported-naming` rule bans uppercase locals in unexported functions. Renamed: `P`→`pts`, `R`→`r`/`boundary`, `A/B/C/D` eliminated by inlining (`fu`, `fv` used directly, offsets renamed to `u0`, `v0`).
+
+- **Flag-parameter pattern:** `collectBubblesByType(node, isDir bool)` flagged by revive. Split into `collectBubbleDirs` and `collectBubbleFiles` — used by both PNG and SVG renderers.
+
+- **Pre-existing lint issues:** `goconst` in `renderer_test.go` and `unparam` in `svg_helpers.go` are known and not ours to fix.
