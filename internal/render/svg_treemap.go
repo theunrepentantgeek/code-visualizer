@@ -39,7 +39,7 @@ func renderTreemapSVG(
 
 	writeSVGRect(f, root)
 
-	writeSVGLegend(f, legend, 0, float64(height), float64(width))
+	writeSVGLegend(f, legend, float64(height), float64(width))
 
 	fmt.Fprint(f, "</svg>\n")
 

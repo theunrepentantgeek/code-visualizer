@@ -17,12 +17,12 @@ var svgLegendTextColour = color.RGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xFF}
 // within the given width. Each LegendRow becomes a horizontal swatch bar
 // with a metric label and breakpoint/category labels.
 // This is the SVG equivalent of DrawLegendBand (which operates on a gg.Context).
-func writeSVGLegend(f *os.File, info *LegendInfo, x, y, width float64) {
+func writeSVGLegend(f *os.File, info *LegendInfo, y, width float64) {
 	if info == nil || len(info.Rows) == 0 {
 		return
 	}
 
-	fmt.Fprintf(f, "<g transform=\"translate(%.2f,%.2f)\">\n", x, y)
+	fmt.Fprintf(f, "<g transform=\"translate(0,%.2f)\">\n", y)
 
 	rowY := legendPaddingTop
 

@@ -46,7 +46,7 @@ func renderRadialSVG(root *radialtree.RadialNode, canvasSize int, legend *Legend
 	writeSVGDiscs(f, *root, cx, cy)
 	writeSVGLabels(f, *root, cx, cy)
 
-	writeSVGLegend(f, legend, 0, cs, cs)
+	writeSVGLegend(f, legend, cs, cs)
 
 	fmt.Fprint(f, "</svg>\n")
 

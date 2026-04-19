@@ -20,7 +20,7 @@ func TestWriteSVGLegend_Nil(t *testing.T) {
 	f, err := os.Create(out)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	writeSVGLegend(f, nil, 0, 0, 800)
+	writeSVGLegend(f, nil, 0, 800)
 	g.Expect(f.Close()).To(Succeed())
 
 	data, err := os.ReadFile(out)
@@ -38,7 +38,7 @@ func TestWriteSVGLegend_EmptyRows(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info := &LegendInfo{}
-	writeSVGLegend(f, info, 0, 0, 800)
+	writeSVGLegend(f, info, 0, 800)
 	g.Expect(f.Close()).To(Succeed())
 
 	data, err := os.ReadFile(out)
@@ -300,7 +300,7 @@ func renderSVGLegendToString(g Gomega, info *LegendInfo, width float64) string {
 	f, err := os.Create(path)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	writeSVGLegend(f, info, 0, 0, width)
+	writeSVGLegend(f, info, 0, width)
 	g.Expect(f.Close()).To(Succeed())
 
 	data, err := os.ReadFile(path)
