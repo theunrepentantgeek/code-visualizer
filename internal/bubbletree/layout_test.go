@@ -507,7 +507,7 @@ func assertLabelBandClear(g Gomega, parent BubbleNode) {
 				(child.X-parent.X)*(child.X-parent.X) +
 					(child.Y-parent.Y)*(child.Y-parent.Y),
 			)
-			g.Expect(dist + child.Radius).To(
+			g.Expect(dist+child.Radius).To(
 				BeNumerically("<=", parent.Radius-LabelReservation+1.0),
 				"child %q intrudes into label band of parent %q",
 				child.Label, parent.Label,

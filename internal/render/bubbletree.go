@@ -2,6 +2,7 @@ package render
 
 import (
 	"image/color"
+	"math"
 	"sort"
 
 	"github.com/fogleman/gg"
@@ -169,7 +170,7 @@ func drawBubbleFiles(dc *gg.Context, root bubbletree.BubbleNode) {
 }
 
 // drawBubbleLabels draws labels for all nodes with ShowLabel set.
-// Directory labels sit inside the circle near the top edge;
+// Directory labels follow the curve of the circle boundary;
 // file labels are centred on the circle.
 func drawBubbleLabels(dc *gg.Context, root bubbletree.BubbleNode) {
 	drawBubbleLabelRecursive(dc, root)
@@ -177,12 +178,10 @@ func drawBubbleLabels(dc *gg.Context, root bubbletree.BubbleNode) {
 
 func drawBubbleLabelRecursive(dc *gg.Context, node bubbletree.BubbleNode) {
 	if node.ShowLabel && node.Label != "" {
-		dc.SetColor(bubbleLabelColour)
-
 		if node.IsDirectory {
-			ly := node.Y - node.Radius + bubbleLabelInset
-			dc.DrawStringAnchored(node.Label, node.X, ly, 0.5, 0.5)
+			drawBubbleDirLabel(dc, node)
 		} else {
+			dc.SetColor(bubbleLabelColour)
 			dc.DrawStringAnchored(node.Label, node.X, node.Y, 0.5, 0.5)
 		}
 	}
@@ -190,4 +189,34 @@ func drawBubbleLabelRecursive(dc *gg.Context, node bubbletree.BubbleNode) {
 	for _, child := range node.Children {
 		drawBubbleLabelRecursive(dc, child)
 	}
+}
+
+// drawBubbleDirLabel renders a directory label curving along the top of the circle.
+func drawBubbleDirLabel(dc *gg.Context, node bubbletree.BubbleNode) {
+	fontSize := computeArcFontSize(node.Label, node.Radius)
+	if fontSize == 0 {
+		return
+	}
+
+	face := loadBubbleFontFace(fontSize)
+	arcR := node.Radius - bubbleLabelInset
+	positions := computeGlyphPositions(node.Label, face, arcR)
+
+	dc.SetFontFace(face)
+	dc.SetColor(bubbleLabelColour)
+
+	for _, gp := range positions {
+		drawArcGlyph(dc, gp, node.X, node.Y)
+	}
+}
+
+// drawArcGlyph draws a single character rotated tangent to the arc.
+func drawArcGlyph(dc *gg.Context, gp glyphPos, cx, cy float64) {
+	gx := cx + gp.X
+	gy := cy + gp.Y
+
+	dc.Push()
+	dc.RotateAbout(gp.Angle+math.Pi/2, gx, gy)
+	dc.DrawStringAnchored(string(gp.Char), gx, gy, 0.5, 0.5)
+	dc.Pop()
 }

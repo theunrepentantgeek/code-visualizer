@@ -24,17 +24,25 @@ func renderBubbleSVG(root *bubbletree.BubbleNode, width, height int, outputPath 
 		}
 	}()
 
-	fmt.Fprintf(f, `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">
-`, width, height, width, height)
+	fmt.Fprintf(f,
+		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
+			"<svg xmlns=\"http://www.w3.org/2000/svg\""+
+			" xmlns:xlink=\"http://www.w3.org/1999/xlink\""+
+			" width=\"%d\" height=\"%d\""+
+			" viewBox=\"0 0 %d %d\">\n",
+		width, height, width, height)
 
 	fmt.Fprintf(f,
 		"<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" fill=\"#ffffff\"/>\n",
 		width, height)
 
+	labelledDirs := collectLabelledDirs(*root)
+	writeSVGArcDefs(f, labelledDirs)
+
 	writeSVGBubbleDirs(f, *root)
 	writeSVGBubbleFiles(f, *root)
-	writeSVGBubbleLabels(f, *root)
+	writeSVGBubbleDirLabels(f, labelledDirs)
+	writeSVGBubbleFileLabels(f, *root)
 
 	fmt.Fprint(f, "</svg>\n")
 
@@ -84,31 +92,82 @@ func writeSVGBubbleFiles(f *os.File, root bubbletree.BubbleNode) {
 	}
 }
 
-// writeSVGBubbleLabels writes text labels for nodes with ShowLabel set.
-func writeSVGBubbleLabels(f *os.File, root bubbletree.BubbleNode) {
-	writeSVGBubbleLabelRecursive(f, root)
-}
+// collectLabelledDirs recursively gathers directory nodes that have a visible label.
+func collectLabelledDirs(node bubbletree.BubbleNode) []bubbletree.BubbleNode {
+	var result []bubbletree.BubbleNode
 
-func writeSVGBubbleLabelRecursive(f *os.File, node bubbletree.BubbleNode) {
-	if node.ShowLabel && node.Label != "" {
-		if node.IsDirectory {
-			ly := node.Y - node.Radius + bubbleLabelInset
-
-			writeSVGText(f,
-				node.X, ly,
-				colourToHex(bubbleLabelColour),
-				"middle",
-				html.EscapeString(node.Label))
-		} else {
-			writeSVGText(f,
-				node.X, node.Y,
-				colourToHex(bubbleLabelColour),
-				"middle",
-				html.EscapeString(node.Label))
-		}
+	if node.IsDirectory && node.ShowLabel && node.Label != "" {
+		result = append(result, node)
 	}
 
 	for _, child := range node.Children {
-		writeSVGBubbleLabelRecursive(f, child)
+		result = append(result, collectLabelledDirs(child)...)
+	}
+
+	return result
+}
+
+// writeSVGArcDefs writes a <defs> block with one arc <path> per labelled directory.
+// Each arc traces the top semicircle from left to right.
+func writeSVGArcDefs(f *os.File, dirs []bubbletree.BubbleNode) {
+	if len(dirs) == 0 {
+		return
+	}
+
+	fmt.Fprint(f, "<defs>\n")
+
+	for idx, n := range dirs {
+		arcR := n.Radius - bubbleLabelInset
+		if arcR <= 0 {
+			continue
+		}
+
+		// Arc from (cx - arcR, cy) to (cx + arcR, cy) — top semicircle.
+		fmt.Fprintf(f,
+			"<path id=\"arc-%d\" d=\"M %.2f,%.2f A %.2f,%.2f 0 0,1 %.2f,%.2f\" fill=\"none\"/>\n",
+			idx,
+			n.X-arcR, n.Y,
+			arcR, arcR,
+			n.X+arcR, n.Y)
+	}
+
+	fmt.Fprint(f, "</defs>\n")
+}
+
+// writeSVGBubbleDirLabels writes curved <textPath> labels for directory nodes.
+func writeSVGBubbleDirLabels(f *os.File, dirs []bubbletree.BubbleNode) {
+	for idx, n := range dirs {
+		fontSize := computeArcFontSize(n.Label, n.Radius)
+		if fontSize == 0 {
+			continue
+		}
+
+		fmt.Fprintf(f,
+			"<text font-size=\"%.1f\" font-family=\"sans-serif\" fill=\"%s\">"+
+				"<textPath href=\"#arc-%d\" startOffset=\"50%%\" text-anchor=\"middle\">%s</textPath>"+
+				"</text>\n",
+			fontSize,
+			colourToHex(bubbleLabelColour),
+			idx,
+			html.EscapeString(n.Label))
+	}
+}
+
+// writeSVGBubbleFileLabels writes centred text labels for file nodes.
+func writeSVGBubbleFileLabels(f *os.File, root bubbletree.BubbleNode) {
+	writeSVGBubbleFileLabelRecursive(f, root)
+}
+
+func writeSVGBubbleFileLabelRecursive(f *os.File, node bubbletree.BubbleNode) {
+	if !node.IsDirectory && node.ShowLabel && node.Label != "" {
+		writeSVGText(f,
+			node.X, node.Y,
+			colourToHex(bubbleLabelColour),
+			"middle",
+			html.EscapeString(node.Label))
+	}
+
+	for _, child := range node.Children {
+		writeSVGBubbleFileLabelRecursive(f, child)
 	}
 }
