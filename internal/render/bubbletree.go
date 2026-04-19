@@ -103,15 +103,15 @@ func collectBubbleFiles(node bubbletree.BubbleNode) []bubbletree.BubbleNode {
 
 // resolveDirFill returns the fill colour for a directory circle, applying a
 // low alpha so nested circles remain visible through their parents.
-func resolveDirFill(node bubbletree.BubbleNode) color.RGBA {
+// Returns color.NRGBA (non-premultiplied) because we set R/G/B to full-intensity
+// values and rely on Go's draw pipeline to premultiply during compositing.
+func resolveDirFill(node bubbletree.BubbleNode) color.NRGBA {
 	fill := bubbleDefaultDirFill
 	if node.FillColour.A > 0 {
 		fill = node.FillColour
 	}
 
-	fill.A = bubbleDirAlpha
-
-	return fill
+	return color.NRGBA{R: fill.R, G: fill.G, B: fill.B, A: bubbleDirAlpha}
 }
 
 // resolveFileFill returns the solid fill colour for a file circle.
