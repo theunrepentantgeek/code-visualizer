@@ -97,13 +97,13 @@ func writeSVGBubbleLabelRecursive(f *os.File, node bubbletree.BubbleNode) {
 			writeSVGText(f,
 				node.X, ly,
 				colourToHex(bubbleLabelColour),
-				"middle", "central",
+				"middle",
 				html.EscapeString(node.Label))
 		} else {
 			writeSVGText(f,
 				node.X, node.Y,
 				colourToHex(bubbleLabelColour),
-				"middle", "central",
+				"middle",
 				html.EscapeString(node.Label))
 		}
 	}

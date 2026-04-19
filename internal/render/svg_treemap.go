@@ -63,7 +63,7 @@ func writeSVGDirectoryHeader(f *os.File, rect treemap.TreemapRectangle) {
 		writeSVGText(f,
 			rect.X+4, rect.Y+treemap.HeaderHeight/2,
 			colourToHex(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
-			"", "central",
+			"",
 			html.EscapeString(rect.Label))
 	}
 
@@ -101,7 +101,7 @@ func writeSVGFileRect(f *os.File, rect treemap.TreemapRectangle) {
 		writeSVGText(f,
 			rect.X+rect.W/2, rect.Y+rect.H/2,
 			colourToHex(textCol),
-			"middle", "central",
+			"middle",
 			html.EscapeString(rect.Label))
 	}
 }
