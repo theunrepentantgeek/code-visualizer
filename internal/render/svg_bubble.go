@@ -43,7 +43,7 @@ func renderBubbleSVG(root *bubbletree.BubbleNode, width, height int, outputPath 
 
 // writeSVGBubbleDirs writes directory circle elements, outermost (largest) first.
 func writeSVGBubbleDirs(f *os.File, root bubbletree.BubbleNode) {
-	dirs := collectBubblesByType(root, true)
+	dirs := collectBubbleDirs(root)
 	sort.Slice(dirs, func(i, j int) bool {
 		return dirs[i].Radius > dirs[j].Radius
 	})
@@ -70,7 +70,7 @@ func writeSVGBubbleDirs(f *os.File, root bubbletree.BubbleNode) {
 
 // writeSVGBubbleFiles writes file circle elements with solid fills.
 func writeSVGBubbleFiles(f *os.File, root bubbletree.BubbleNode) {
-	files := collectBubblesByType(root, false)
+	files := collectBubbleFiles(root)
 
 	for _, n := range files {
 		fill := resolveFileFill(n)

@@ -39,6 +39,7 @@ type RadialCmd struct {
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
+//nolint:dupl // Validate mirrors BubbletreeCmd.Validate; kept separate per architecture proposal
 func (c *RadialCmd) Validate() error {
 	p, ok := provider.Get(c.DiscSize)
 	if !ok {

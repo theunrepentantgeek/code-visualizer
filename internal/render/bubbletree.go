@@ -71,17 +71,31 @@ func renderBubbleImage(root *bubbletree.BubbleNode, width, height int) *gg.Conte
 	return dc
 }
 
-// collectBubblesByType recursively gathers all nodes where IsDirectory matches isDir
-// and Radius is positive.
-func collectBubblesByType(node bubbletree.BubbleNode, isDir bool) []bubbletree.BubbleNode {
+// collectBubbleDirs recursively gathers all directory nodes with positive radius.
+func collectBubbleDirs(node bubbletree.BubbleNode) []bubbletree.BubbleNode {
 	var result []bubbletree.BubbleNode
 
-	if node.IsDirectory == isDir && node.Radius > 0 {
+	if node.IsDirectory && node.Radius > 0 {
 		result = append(result, node)
 	}
 
 	for _, child := range node.Children {
-		result = append(result, collectBubblesByType(child, isDir)...)
+		result = append(result, collectBubbleDirs(child)...)
+	}
+
+	return result
+}
+
+// collectBubbleFiles recursively gathers all file nodes with positive radius.
+func collectBubbleFiles(node bubbletree.BubbleNode) []bubbletree.BubbleNode {
+	var result []bubbletree.BubbleNode
+
+	if !node.IsDirectory && node.Radius > 0 {
+		result = append(result, node)
+	}
+
+	for _, child := range node.Children {
+		result = append(result, collectBubbleFiles(child)...)
 	}
 
 	return result
@@ -121,7 +135,7 @@ func resolveBorder(node bubbletree.BubbleNode) color.RGBA {
 // drawBubbleDirs draws all directory circles sorted by radius descending
 // (outermost first) so inner circles are never obscured.
 func drawBubbleDirs(dc *gg.Context, root bubbletree.BubbleNode) {
-	dirs := collectBubblesByType(root, true)
+	dirs := collectBubbleDirs(root)
 	sort.Slice(dirs, func(i, j int) bool {
 		return dirs[i].Radius > dirs[j].Radius
 	})
@@ -140,7 +154,7 @@ func drawBubbleDirs(dc *gg.Context, root bubbletree.BubbleNode) {
 
 // drawBubbleFiles draws all file circles with solid fills.
 func drawBubbleFiles(dc *gg.Context, root bubbletree.BubbleNode) {
-	files := collectBubblesByType(root, false)
+	files := collectBubbleFiles(root)
 
 	for _, n := range files {
 		dc.SetColor(resolveFileFill(n))

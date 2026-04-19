@@ -17,24 +17,12 @@ func makeFile(name string, size int64) *model.File {
 	return f
 }
 
-// allChildren collects every descendant BubbleNode via depth-first walk.
-func allChildren(node *BubbleNode) []BubbleNode {
-	var result []BubbleNode
-
-	for i := range node.Children {
-		result = append(result, node.Children[i])
-		result = append(result, allChildren(&node.Children[i])...)
-	}
-
-	return result
-}
-
 // assertContainment verifies that every child circle is geometrically inside its
 // parent circle (distance + childRadius <= parentRadius + tolerance).
 func assertContainment(g Gomega, parent BubbleNode) {
 	for _, child := range parent.Children {
 		dist := math.Sqrt((child.X-parent.X)*(child.X-parent.X) + (child.Y-parent.Y)*(child.Y-parent.Y))
-		g.Expect(dist + child.Radius).To(
+		g.Expect(dist+child.Radius).To(
 			BeNumerically("<=", parent.Radius+1.0),
 			"child %q must be contained in parent %q", child.Label, parent.Label,
 		)
@@ -46,7 +34,7 @@ func assertContainment(g Gomega, parent BubbleNode) {
 // assertNoOverlap verifies that no two sibling circles overlap
 // (distance between centres >= sum of radii - tolerance).
 func assertNoOverlap(g Gomega, parent BubbleNode) {
-	for i := 0; i < len(parent.Children); i++ {
+	for i := range len(parent.Children) {
 		for j := i + 1; j < len(parent.Children); j++ {
 			a := parent.Children[i]
 			b := parent.Children[j]

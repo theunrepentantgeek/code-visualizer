@@ -39,6 +39,7 @@ type BubbletreeCmd struct {
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
+//nolint:dupl // Validate mirrors RadialCmd.Validate; kept separate per architecture proposal
 func (c *BubbletreeCmd) Validate() error {
 	p, ok := provider.Get(c.Size)
 	if !ok {
@@ -138,7 +139,9 @@ func (c *BubbletreeCmd) renderAndLog(
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, width, height, fillMetric, fillPaletteName)
+	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
+		cfg, root, width, height, fillMetric, fillPaletteName,
+	)
 	if err != nil {
 		return err
 	}
