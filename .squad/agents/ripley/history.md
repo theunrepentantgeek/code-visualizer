@@ -35,3 +35,18 @@
 - **Resolution:** Kept PR #45's `render.Render` call (multi-format entrypoint) with its debug log line, discarding the stale `render.RenderPNG` reference from main. Both branches' intent preserved.
 - **Verification:** `task build` and `task test` pass. All 14 packages green. Pushed merge commit to origin.
 - **Process learning:** Always rebase PR branches onto latest main before pushing fixes, especially when multiple PRs are in flight touching related code. A quick `git fetch origin && git merge origin/main` (or rebase) before pushing would have caught this conflict locally instead of leaving the PR in a dirty state on GitHub.
+
+### Issue #33 — Bubble Visualization Architecture (2026-07-15)
+
+- **Task:** Research and architecture proposal for circle-packing bubble tree visualization.
+- **Codebase pattern:** All visualizations follow the same structure: `internal/{viz}/node.go` (node type) + `layout.go` (Layout function) + `layout_test.go` (Gomega tests); renderer has `internal/render/{viz}.go` (PNG) + `svg_{viz}.go` (SVG); CLI has `cmd/codeviz/{viz}_cmd.go`; config has `internal/config/{viz}.go`.
+- **Layout signatures:** Treemap takes `(root, width, height, sizeMetric)`, Radial takes `(root, canvasSize, discMetric, labels)`. Bubble proposed as `(root, width, height, sizeMetric, labels)`.
+- **Node types:** Each viz has its own: `TreemapRectangle` (X/Y/W/H), `RadialNode` (X/Y/DiscRadius/Angle), proposed `BubbleNode` (X/Y/Radius).
+- **Circle-packing algorithm:** Front-chain (Wang et al. 2006) + Welzl's enclosing circle. D3's `pack()` uses the same approach. No Go library exists; implement from scratch.
+- **Reference implementation:** `githubocto/repo-visualizer` uses D3 `pack()` + custom force-simulation reflow (280 ticks). Force sim is polish, not essential for v1.
+- **Renderer pattern:** Three-pass rendering (background → shapes → labels) for z-order correctness. Used by radial; bubble should follow same pattern.
+- **Colour application:** Parallel walk of layout node tree + model.Directory tree, applying fill/border via bucket (numeric) or categorical mapping. Pattern duplicated per viz — acceptable for now.
+- **Config pattern:** All pointer fields (nil = unset). `config.New()` sets defaults. CLI `applyOverrides()` only writes non-zero values.
+- **Key files for implementation:** `render_cmd.go` (add `Bubbletree` subcommand), `config.go` (add `Bubbletree` field to `Config` struct and `New()`).
+- **Proposal written to:** `.squad/decisions/inbox/ripley-bubble-architecture.md`
+- **Result:** Architecture adopted. PR #64 created on branch `squad/33-bubble-visualization` with full implementation (layout engine, PNG+SVG rendering, CLI, config, 20 tests). CI green.

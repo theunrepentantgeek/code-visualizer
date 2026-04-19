@@ -8,6 +8,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/bevan/code-visualizer/internal/bubbletree"
 	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/filter"
 	"github.com/bevan/code-visualizer/internal/metric"
@@ -15,16 +16,15 @@ import (
 	"github.com/bevan/code-visualizer/internal/palette"
 	"github.com/bevan/code-visualizer/internal/provider"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/radialtree"
 	"github.com/bevan/code-visualizer/internal/render"
 	"github.com/bevan/code-visualizer/internal/scan"
 )
 
-type RadialCmd struct {
+type BubbletreeCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
-	DiscSize metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for disc size." required:"true" short:"d"` //nolint:revive // kong struct tags require long lines
+	Size metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for circle size." required:"true" short:"s"` //nolint:revive // kong struct tags require long lines
 
 	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive // kong struct tags require long lines
 	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for fill colour." name:"fill-palette" optional:""`        //nolint:revive // kong struct tags require long lines
@@ -34,20 +34,20 @@ type RadialCmd struct {
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
 	Width  int `default:"1920" help:"Image width in pixels."`
-	Height int `default:"1920" help:"Image height in pixels."`
+	Height int `default:"1080" help:"Image height in pixels."`
 
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
-//nolint:dupl // Validate mirrors BubbletreeCmd.Validate; kept separate per architecture proposal
-func (c *RadialCmd) Validate() error {
-	p, ok := provider.Get(c.DiscSize)
+//nolint:dupl // Validate mirrors RadialCmd.Validate; kept separate per architecture proposal
+func (c *BubbletreeCmd) Validate() error {
+	p, ok := provider.Get(c.Size)
 	if !ok {
-		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", c.DiscSize, formatMetricNames())
+		return eris.Errorf("unknown size metric %q; available metrics: %s", c.Size, formatMetricNames())
 	}
 
 	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", c.DiscSize, p.Kind())
+		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", c.Size, p.Kind())
 	}
 
 	if err := validateMetricPalette(c.Fill, c.FillPalette, "fill"); err != nil {
@@ -71,10 +71,10 @@ func (c *RadialCmd) Validate() error {
 	return nil
 }
 
-func (c *RadialCmd) Run(flags *Flags) error {
+func (c *BubbletreeCmd) Run(flags *Flags) error {
 	c.applyOverrides(flags.Config)
 
-	cfg := flags.Config.Radial
+	cfg := flags.Config.Bubbletree
 
 	if err := c.validatePaths(); err != nil {
 		return err
@@ -101,7 +101,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(c.DiscSize, ptrString(cfg.Fill), ptrString(cfg.Border))
+	requested := collectRequestedMetrics(c.Size, ptrString(cfg.Fill), ptrString(cfg.Border))
 
 	err = c.checkGitRequirement(requested)
 	if err != nil {
@@ -122,33 +122,37 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	files, dirs := countAll(root)
+	width := ptrInt(flags.Config.Width, 1920)
+	height := ptrInt(flags.Config.Height, 1080)
 
-	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
-
-	return c.renderAndLog(root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
 }
 
-func (c *RadialCmd) renderAndLog(
+func (c *BubbletreeCmd) renderAndLog(
 	root *model.Directory,
-	cfg *config.Radial,
-	files, dirs, canvasSize int,
+	cfg *config.Bubbletree,
+	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) error {
-	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
+	files, dirs := countAll(root)
 
-	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, canvasSize, fillMetric, fillPaletteName)
+	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
+
+	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
+		cfg, root, width, height, fillMetric, fillPaletteName,
+	)
 	if err != nil {
 		return err
 	}
 
-	slog.Info("Rendered radial tree",
+	slog.Info("Rendered bubble tree",
 		"files", files,
 		"directories", dirs,
 		"output", c.Output,
-		"canvas_size", canvasSize,
-		"disc_metric", string(c.DiscSize),
+		"width", width,
+		"height", height,
+		"size_metric", string(c.Size),
 		"fill_metric", string(fillMetric),
 		"fill_palette", string(fillPaletteName),
 		"border_metric", string(borderMetric),
@@ -158,22 +162,22 @@ func (c *RadialCmd) renderAndLog(
 	return nil
 }
 
-// applyColoursAndRender lays out, colours, and renders the radial tree to disk.
-func (c *RadialCmd) applyColoursAndRender(
-	cfg *config.Radial,
+// applyColoursAndRender lays out, colours, and renders the bubble tree to disk.
+func (c *BubbletreeCmd) applyColoursAndRender(
+	cfg *config.Bubbletree,
 	root *model.Directory,
-	canvasSize int,
+	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) (metric.Name, palette.PaletteName, error) {
 	labels := c.resolveLabels(cfg)
-	nodes := radialtree.Layout(root, canvasSize, c.DiscSize, labels)
-	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
+	nodes := bubbletree.Layout(root, width, height, c.Size, labels)
+	applyBubbleFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
-	slog.Debug("rendering radial", "canvasSize", canvasSize, "output", c.Output)
+	slog.Debug("rendering bubble tree", "width", width, "height", height, "output", c.Output)
 
-	if err := render.RenderRadial(&nodes, canvasSize, c.Output); err != nil {
+	if err := render.RenderBubble(&nodes, width, height, c.Output); err != nil {
 		return "", "", eris.Wrap(err, "render failed")
 	}
 
@@ -182,7 +186,7 @@ func (c *RadialCmd) applyColoursAndRender(
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
-func (c *RadialCmd) applyOverrides(cfg *config.Config) {
+func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 	if c.Width != 0 {
 		cfg.Width = &c.Width
 	}
@@ -191,33 +195,33 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 		cfg.Height = &c.Height
 	}
 
-	if cfg.Radial == nil {
-		cfg.Radial = &config.Radial{}
+	if cfg.Bubbletree == nil {
+		cfg.Bubbletree = &config.Bubbletree{}
 	}
 
 	if c.Fill != "" {
-		cfg.Radial.Fill = &c.Fill
+		cfg.Bubbletree.Fill = &c.Fill
 	}
 
 	if c.FillPalette != "" {
-		cfg.Radial.FillPalette = &c.FillPalette
+		cfg.Bubbletree.FillPalette = &c.FillPalette
 	}
 
 	if c.Border != "" {
-		cfg.Radial.Border = &c.Border
+		cfg.Bubbletree.Border = &c.Border
 	}
 
 	if c.BorderPalette != "" {
-		cfg.Radial.BorderPalette = &c.BorderPalette
+		cfg.Bubbletree.BorderPalette = &c.BorderPalette
 	}
 
 	if c.Labels != "" {
-		cfg.Radial.Labels = &c.Labels
+		cfg.Bubbletree.Labels = &c.Labels
 	}
 }
 
 //nolint:dupl // mirrors TreemapCmd.validatePaths by design
-func (c *RadialCmd) validatePaths() error {
+func (c *BubbletreeCmd) validatePaths() error {
 	if _, err := render.FormatFromPath(c.Output); err != nil {
 		return &outputPathError{msg: err.Error()}
 	}
@@ -252,7 +256,7 @@ func (c *RadialCmd) validatePaths() error {
 	return nil
 }
 
-func (c *RadialCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
+func (c *BubbletreeCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
 	rules := make([]filter.Rule, 0, len(cfg.FileFilter)+len(c.Filter))
 	rules = append(rules, cfg.FileFilter...)
 
@@ -265,7 +269,7 @@ func (c *RadialCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
 	return rules
 }
 
-func (c *RadialCmd) checkGitRequirement(requested []metric.Name) error {
+func (c *BubbletreeCmd) checkGitRequirement(requested []metric.Name) error {
 	name, needsGit := findGitMetric(requested)
 	if !needsGit {
 		return nil
@@ -288,15 +292,15 @@ func (c *RadialCmd) checkGitRequirement(requested []metric.Name) error {
 	return nil
 }
 
-func (c *RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
+func (c *BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
 	if fill := ptrString(cfg.Fill); fill != "" {
 		return metric.Name(fill)
 	}
 
-	return c.DiscSize
+	return c.Size
 }
 
-func (*RadialCmd) resolveFillPalette(cfg *config.Radial, fillMetric metric.Name) palette.PaletteName {
+func (*BubbletreeCmd) resolveFillPalette(cfg *config.Bubbletree, fillMetric metric.Name) palette.PaletteName {
 	if fp := ptrString(cfg.FillPalette); fp != "" {
 		return palette.PaletteName(fp)
 	}
@@ -308,8 +312,8 @@ func (*RadialCmd) resolveFillPalette(cfg *config.Radial, fillMetric metric.Name)
 	return palette.Neutral
 }
 
-func (c *RadialCmd) filterBinaryFiles(_ *config.Radial, root *model.Directory) error {
-	if c.DiscSize != filesystem.FileLines {
+func (c *BubbletreeCmd) filterBinaryFiles(_ *config.Bubbletree, root *model.Directory) error {
+	if c.Size != filesystem.FileLines {
 		return nil
 	}
 
@@ -331,17 +335,17 @@ func (c *RadialCmd) filterBinaryFiles(_ *config.Radial, root *model.Directory) e
 	return nil
 }
 
-// resolveLabels converts the string labels flag to a radialtree.LabelMode.
-func (*RadialCmd) resolveLabels(cfg *config.Radial) radialtree.LabelMode {
+// resolveLabels converts the string labels flag to a bubbletree.LabelMode.
+func (*BubbletreeCmd) resolveLabels(cfg *config.Bubbletree) bubbletree.LabelMode {
 	if lbl := ptrString(cfg.Labels); lbl != "" {
-		return radialtree.LabelMode(lbl)
+		return bubbletree.LabelMode(lbl)
 	}
 
-	return radialtree.LabelAll
+	return bubbletree.LabelFoldersOnly
 }
 
-func applyRadialFillColoursTop(
-	nodes *radialtree.RadialNode,
+func applyBubbleFillColoursTop(
+	nodes *bubbletree.BubbleNode,
 	root *model.Directory,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
@@ -358,20 +362,20 @@ func applyRadialFillColoursTop(
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
 			numBuckets := len(buckets.Boundaries) + 1
-			applyRadialFillColours(nodes, root, fillMetric, buckets, numBuckets, fillPalette)
+			applyBubbleFillColours(nodes, root, fillMetric, buckets, numBuckets, fillPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, fillMetric)
 		mapper := palette.NewCategoricalMapper(types, fillPalette)
-		applyCategoricalRadialFillColours(nodes, root, fillMetric, mapper)
+		applyCategoricalBubbleFillColours(nodes, root, fillMetric, mapper)
 	}
 }
 
 //nolint:dupl // structurally identical to TreemapCmd.applyBorderColours by design
-func (*RadialCmd) applyBorderColours(
-	nodes *radialtree.RadialNode,
+func (*BubbletreeCmd) applyBorderColours(
+	nodes *bubbletree.BubbleNode,
 	root *model.Directory,
-	cfg *config.Radial,
+	cfg *config.Bubbletree,
 ) (metric.Name, palette.PaletteName) {
 	border := ptrString(cfg.Border)
 	if border == "" {
@@ -401,129 +405,189 @@ func (*RadialCmd) applyBorderColours(
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
 			numBuckets := len(buckets.Boundaries) + 1
-			applyRadialBorderColours(nodes, root, borderMetric, buckets, numBuckets, borderPalette)
+			applyBubbleBorderColours(nodes, root, borderMetric, buckets, numBuckets, borderPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, borderMetric)
 		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalRadialBorderColours(nodes, root, borderMetric, mapper)
+		applyCategoricalBubbleBorderColours(nodes, root, borderMetric, mapper)
 	}
 
 	return borderMetric, borderPaletteName
 }
 
-// applyRadialFillColours assigns fill colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyRadialFillColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
+// indexBubbleNodesByPath recursively walks the BubbleNode tree and indexes
+// all nodes by their Path, separating directories and files.
+func indexBubbleNodesByPath(
+	node *bubbletree.BubbleNode,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for i := range node.Children {
+		child := &node.Children[i]
+		if child.IsDirectory {
+			dirs[child.Path] = child
+			indexBubbleNodesByPath(child, dirs, files)
+		} else {
+			files[child.Path] = child
+		}
+	}
+}
+
+// applyBubbleFillColours assigns fill colours to the BubbleNode tree using
+// path-based lookup, decoupled from Children ordering.
+func applyBubbleFillColours(
+	node *bubbletree.BubbleNode,
+	root *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
 	numBuckets int,
 	p palette.ColourPalette,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyRadialFillColours(child, dir.Dirs[dirIdx], m, buckets, numBuckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			val := extractNumeric(dir.Files[fileIdx], m)
+	applyBubbleFillColoursWalk(root, m, buckets, numBuckets, p, dirs, files)
+}
+
+func applyBubbleFillColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	buckets metric.BucketBoundaries,
+	numBuckets int,
+	p palette.ColourPalette,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			val := extractNumeric(f, m)
 			idx := buckets.BucketIndex(val)
-			child.FillColour = palette.MapNumericToColour(idx, numBuckets, p)
-			fileIdx++
+			bn.FillColour = palette.MapNumericToColour(idx, numBuckets, p)
+		}
+	}
+
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyBubbleFillColoursWalk(d, m, buckets, numBuckets, p, dirs, files)
 		}
 	}
 }
 
-// applyCategoricalRadialFillColours assigns categorical fill colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyCategoricalRadialFillColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
+// applyCategoricalBubbleFillColours assigns categorical fill colours to the
+// BubbleNode tree using path-based lookup.
+func applyCategoricalBubbleFillColours(
+	node *bubbletree.BubbleNode,
+	root *model.Directory,
 	m metric.Name,
 	mapper *palette.CategoricalMapper,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyCategoricalRadialFillColours(child, dir.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			if v, ok := dir.Files[fileIdx].Classification(m); ok {
-				child.FillColour = mapper.Map(v)
+	applyCategoricalBubbleFillColoursWalk(root, m, mapper, dirs, files)
+}
+
+func applyCategoricalBubbleFillColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	mapper *palette.CategoricalMapper,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			if v, ok := f.Classification(m); ok {
+				bn.FillColour = mapper.Map(v)
 			}
+		}
+	}
 
-			fileIdx++
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyCategoricalBubbleFillColoursWalk(d, m, mapper, dirs, files)
 		}
 	}
 }
 
-// applyRadialBorderColours assigns border colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyRadialBorderColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
+// applyBubbleBorderColours assigns border colours to the BubbleNode tree using
+// path-based lookup.
+func applyBubbleBorderColours(
+	node *bubbletree.BubbleNode,
+	root *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
 	numBuckets int,
 	p palette.ColourPalette,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyRadialBorderColours(child, dir.Dirs[dirIdx], m, buckets, numBuckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			val := extractNumeric(dir.Files[fileIdx], m)
+	applyBubbleBorderColoursWalk(root, m, buckets, numBuckets, p, dirs, files)
+}
+
+func applyBubbleBorderColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	buckets metric.BucketBoundaries,
+	numBuckets int,
+	p palette.ColourPalette,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			val := extractNumeric(f, m)
 			idx := buckets.BucketIndex(val)
 			col := palette.MapNumericToColour(idx, numBuckets, p)
-			child.BorderColour = &col
-			fileIdx++
+			bn.BorderColour = &col
+		}
+	}
+
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyBubbleBorderColoursWalk(d, m, buckets, numBuckets, p, dirs, files)
 		}
 	}
 }
 
-// applyCategoricalRadialBorderColours assigns categorical border colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyCategoricalRadialBorderColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
+// applyCategoricalBubbleBorderColours assigns categorical border colours to the
+// BubbleNode tree using path-based lookup.
+func applyCategoricalBubbleBorderColours(
+	node *bubbletree.BubbleNode,
+	root *model.Directory,
 	m metric.Name,
 	mapper *palette.CategoricalMapper,
 ) {
-	fileIdx := 0
-	dirIdx := 0
+	dirs := make(map[string]*bubbletree.BubbleNode)
+	files := make(map[string]*bubbletree.BubbleNode)
+	indexBubbleNodesByPath(node, dirs, files)
 
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyCategoricalRadialBorderColours(child, dir.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			if v, ok := dir.Files[fileIdx].Classification(m); ok {
+	applyCategoricalBubbleBorderColoursWalk(root, m, mapper, dirs, files)
+}
+
+func applyCategoricalBubbleBorderColoursWalk(
+	dir *model.Directory,
+	m metric.Name,
+	mapper *palette.CategoricalMapper,
+	dirs map[string]*bubbletree.BubbleNode,
+	files map[string]*bubbletree.BubbleNode,
+) {
+	for _, f := range dir.Files {
+		if bn, ok := files[f.Path]; ok {
+			if v, ok := f.Classification(m); ok {
 				col := mapper.Map(v)
-				child.BorderColour = &col
+				bn.BorderColour = &col
 			}
+		}
+	}
 
-			fileIdx++
+	for _, d := range dir.Dirs {
+		if _, ok := dirs[d.Path]; ok {
+			applyCategoricalBubbleBorderColoursWalk(d, m, mapper, dirs, files)
 		}
 	}
 }

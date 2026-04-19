@@ -333,7 +333,7 @@ func TestRender_SVG(t *testing.T) {
 	// Verify it's valid XML with an <svg> root element
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 
-	var foundSVG bool
+	var rootElement string
 
 	for {
 		tok, xmlErr := decoder.Token()
@@ -342,15 +342,13 @@ func TestRender_SVG(t *testing.T) {
 		}
 
 		if se, ok := tok.(xml.StartElement); ok {
-			if se.Name.Local == "svg" {
-				foundSVG = true
-			}
+			rootElement = se.Name.Local
 
 			break
 		}
 	}
 
-	g.Expect(foundSVG).To(BeTrue(), "SVG output should have an <svg> root element")
+	g.Expect(rootElement).To(Equal("svg"), "SVG output should have an <svg> root element")
 }
 
 func TestRender_SVG_EscapesLabels(t *testing.T) {

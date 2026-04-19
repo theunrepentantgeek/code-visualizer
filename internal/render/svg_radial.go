@@ -132,7 +132,7 @@ func writeSVGLabels(f *os.File, node radialtree.RadialNode, cx, cy float64) {
 			writeSVGText(f,
 				cx+node.X, cy+node.Y,
 				colourToHex(textCol),
-				"middle", "central",
+				"middle",
 				html.EscapeString(node.Label))
 		} else {
 			writeSVGExternalLabel(f, node, cx, cy)
@@ -172,7 +172,7 @@ func writeSVGExternalLabel(
 	writeSVGTextRotated(f,
 		lx, ly,
 		colourToHex(radialLabelColour),
-		anchor, "central",
+		anchor,
 		rotDeg,
 		html.EscapeString(node.Label))
 }
