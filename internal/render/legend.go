@@ -70,9 +70,6 @@ type LegendInfo struct {
 	Entries     []LegendEntry
 }
 
-// maxCategorySwatches limits how many categories are shown before truncating.
-const maxCategorySwatches = 10
-
 const (
 	legendPadding    = 12.0 // padding inside legend box
 	legendMargin     = 16.0 // margin from canvas edge

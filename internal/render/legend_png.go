@@ -173,23 +173,11 @@ func drawCategorySwatches(
 	x, y float64,
 ) float64 {
 	cats := entry.Categories
-	truncated := 0
-
-	if len(cats) > maxCategorySwatches {
-		truncated = len(cats) - maxCategorySwatches
-		cats = cats[:maxCategorySwatches]
-	}
 
 	if orientation == LegendOrientationHorizontal {
 		y = drawCategorySwatchesH(dc, cats, x, y)
 	} else {
 		y = drawCategorySwatchesV(dc, cats, x, y)
-	}
-
-	if truncated > 0 {
-		dc.SetRGB(0.4, 0.4, 0.4)
-		dc.DrawString(fmt.Sprintf("+%d more", truncated), x, y+legendFontSize)
-		y += legendLineHeight
 	}
 
 	return y
@@ -372,9 +360,6 @@ func measureNumericH(_ *gg.Context, entry LegendEntry) (width, height float64) {
 // measureCategoryV measures category entry in vertical layout.
 func measureCategoryV(dc *gg.Context, entry LegendEntry) (width, height float64) {
 	cats := entry.Categories
-	if len(cats) > maxCategorySwatches {
-		cats = cats[:maxCategorySwatches]
-	}
 
 	w := swatchSize
 	h := float64(len(cats)) * (swatchSize + swatchGap)
@@ -387,19 +372,12 @@ func measureCategoryV(dc *gg.Context, entry LegendEntry) (width, height float64)
 		}
 	}
 
-	if len(entry.Categories) > maxCategorySwatches {
-		h += legendLineHeight
-	}
-
 	return w, h
 }
 
 // measureCategoryH measures category entry in horizontal layout.
 func measureCategoryH(dc *gg.Context, entry LegendEntry) (width, height float64) {
 	cats := entry.Categories
-	if len(cats) > maxCategorySwatches {
-		cats = cats[:maxCategorySwatches]
-	}
 
 	w := 0.0
 
@@ -409,10 +387,6 @@ func measureCategoryH(dc *gg.Context, entry LegendEntry) (width, height float64)
 	}
 
 	h := swatchSize + legendLineHeight + labelGap
-
-	if len(entry.Categories) > maxCategorySwatches {
-		h += legendLineHeight
-	}
 
 	return w, h
 }

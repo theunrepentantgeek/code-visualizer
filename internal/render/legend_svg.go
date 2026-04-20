@@ -158,28 +158,11 @@ func writeSVGCategorySwatches(
 	x, y float64,
 ) float64 {
 	cats := entry.Categories
-	truncated := 0
-
-	if len(cats) > maxCategorySwatches {
-		truncated = len(cats) - maxCategorySwatches
-		cats = cats[:maxCategorySwatches]
-	}
 
 	if orientation == LegendOrientationHorizontal {
 		y = writeSVGCategoryH(f, dc, cats, x, y)
 	} else {
 		y = writeSVGCategoryV(f, cats, x, y)
-	}
-
-	if truncated > 0 {
-		label := html.EscapeString(fmt.Sprintf("+%d more", truncated))
-		fmt.Fprintf(f,
-			"<text x=\"%.2f\" y=\"%.2f\""+
-				" font-family=\"sans-serif\" font-size=\"%.1f\""+
-				" fill=\"#666666\">%s</text>\n",
-			x, y+legendFontSize, legendFontSize, label)
-
-		y += legendLineHeight
 	}
 
 	return y
