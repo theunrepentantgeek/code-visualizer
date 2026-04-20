@@ -33,6 +33,9 @@ type RadialCmd struct {
 
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
+	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive // kong struct tags require long lines
+	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive // kong struct tags require long lines
+
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1920" help:"Image height in pixels."`
 
@@ -171,9 +174,16 @@ func (c *RadialCmd) applyColoursAndRender(
 	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
+	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	borderName := metric.Name(ptrString(cfg.Border))
+	legend := buildLegendInfo(
+		legendPos, legendOrient, fillMetric, fillPaletteName,
+		borderName, borderPaletteName, c.DiscSize, root,
+	)
+
 	slog.Debug("rendering radial", "canvasSize", canvasSize, "output", c.Output)
 
-	if err := render.RenderRadial(&nodes, canvasSize, c.Output); err != nil {
+	if err := render.RenderRadial(&nodes, canvasSize, c.Output, legend); err != nil {
 		return "", "", eris.Wrap(err, "render failed")
 	}
 
@@ -213,6 +223,18 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 
 	if c.Labels != "" {
 		cfg.Radial.Labels = &c.Labels
+	}
+
+	c.applyLegendOverrides(cfg.Radial)
+}
+
+func (c *RadialCmd) applyLegendOverrides(cfg *config.Radial) {
+	if c.Legend != "" {
+		cfg.Legend = &c.Legend
+	}
+
+	if c.LegendOrientation != "" {
+		cfg.LegendOrientation = &c.LegendOrientation
 	}
 }
 

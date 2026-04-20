@@ -25,17 +25,19 @@ const radialLabelGap = 4.0
 // The output format is determined by the file extension (png, jpg/jpeg, svg).
 // Drawing is done in three passes — edges, then discs, then labels — to ensure
 // correct z-ordering across the entire tree.
-func RenderRadial(root *radialtree.RadialNode, canvasSize int, outputPath string) error {
+// If legend is non-nil and has a valid position, a legend overlay is drawn.
+func RenderRadial(root *radialtree.RadialNode, canvasSize int, outputPath string, legend *LegendInfo) error {
 	format, err := FormatFromPath(outputPath)
 	if err != nil {
 		return err
 	}
 
 	if format == FormatSVG {
-		return renderRadialSVG(root, canvasSize, outputPath)
+		return renderRadialSVG(root, canvasSize, outputPath, legend)
 	}
 
 	dc := renderRadialImage(root, canvasSize)
+	drawLegend(dc, legend, canvasSize, canvasSize)
 
 	switch format {
 	case FormatPNG:

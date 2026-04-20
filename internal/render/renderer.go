@@ -21,17 +21,19 @@ var (
 
 // Render renders the treemap layout to an image file at the given path.
 // The output format is determined by the file extension (png, jpg/jpeg, svg).
-func Render(root treemap.TreemapRectangle, width, height int, outputPath string) error {
+// If legend is non-nil and has a valid position, a legend overlay is drawn.
+func Render(root treemap.TreemapRectangle, width, height int, outputPath string, legend *LegendInfo) error {
 	format, err := FormatFromPath(outputPath)
 	if err != nil {
 		return err
 	}
 
 	if format == FormatSVG {
-		return renderTreemapSVG(root, width, height, outputPath)
+		return renderTreemapSVG(root, width, height, outputPath, legend)
 	}
 
 	dc := renderTreemapImage(root, width, height)
+	drawLegend(dc, legend, width, height)
 
 	switch format {
 	case FormatPNG:

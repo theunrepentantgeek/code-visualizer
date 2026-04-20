@@ -33,6 +33,9 @@ type TreemapCmd struct {
 	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
 	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for border colour." name:"border-palette" optional:""`    //nolint:revive // kong struct tags require long lines
 
+	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive // kong struct tags require long lines
+	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive // kong struct tags require long lines
+
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
@@ -187,9 +190,16 @@ func (c *TreemapCmd) renderAndLog(
 
 	borderMetric, borderPaletteName := c.applyBorderColours(&rects, root, cfg)
 
+	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	borderName := metric.Name(ptrString(cfg.Border))
+	legend := buildLegendInfo(
+		legendPos, legendOrient, fillMetric, fillPaletteName,
+		borderName, borderPaletteName, c.Size, root,
+	)
+
 	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
 
-	if err := render.Render(rects, width, height, c.Output); err != nil {
+	if err := render.Render(rects, width, height, c.Output, legend); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
 
@@ -284,6 +294,14 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 
 	if c.BorderPalette != "" {
 		cfg.Treemap.BorderPalette = &c.BorderPalette
+	}
+
+	if c.Legend != "" {
+		cfg.Treemap.Legend = &c.Legend
+	}
+
+	if c.LegendOrientation != "" {
+		cfg.Treemap.LegendOrientation = &c.LegendOrientation
 	}
 }
 

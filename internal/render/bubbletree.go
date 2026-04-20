@@ -32,7 +32,8 @@ const (
 // The output format is determined by the file extension (png, jpg/jpeg, svg).
 // Drawing uses three passes — directory circles, file circles, then labels —
 // to ensure correct z-ordering.
-func RenderBubble(root *bubbletree.BubbleNode, width, height int, outputPath string) error {
+// If legend is non-nil and has a valid position, a legend overlay is drawn.
+func RenderBubble(root *bubbletree.BubbleNode, width, height int, outputPath string, legend *LegendInfo) error {
 	if root == nil {
 		return eris.New("nil root node")
 	}
@@ -43,10 +44,11 @@ func RenderBubble(root *bubbletree.BubbleNode, width, height int, outputPath str
 	}
 
 	if format == FormatSVG {
-		return renderBubbleSVG(root, width, height, outputPath)
+		return renderBubbleSVG(root, width, height, outputPath, legend)
 	}
 
 	dc := renderBubbleImage(root, width, height)
+	drawLegend(dc, legend, width, height)
 
 	switch format {
 	case FormatPNG:
