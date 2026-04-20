@@ -35,15 +35,17 @@ func (p PaletteName) IsValid() bool {
 
 // ColourPalette is the runtime representation of a palette.
 type ColourPalette struct {
-	Name    PaletteName
-	Colours []color.RGBA
-	Ordered bool
+	Name        PaletteName
+	Description string
+	Colours     []color.RGBA
+	Ordered     bool
 }
 
 // Neutral palette: 9 monochromatic steps from black to white.
 var neutralPalette = ColourPalette{
-	Name:    Neutral,
-	Ordered: true,
+	Name:        Neutral,
+	Description: "Monochromatic greyscale (black → white). Good for quantity metrics with no directional meaning.",
+	Ordered:     true,
 	Colours: []color.RGBA{
 		{R: 0, G: 0, B: 0, A: 255}, // black
 		{R: 32, G: 32, B: 32, A: 255},
@@ -67,8 +69,9 @@ var palettes = map[PaletteName]ColourPalette{
 
 // Categorization palette: 12 visually distinct unordered colours (ColorBrewer Paired).
 var categorizationPalette = ColourPalette{
-	Name:    Categorization,
-	Ordered: false,
+	Name:        Categorization,
+	Description: "12 visually distinct unordered colours (ColorBrewer Paired). Best for classification metrics.",
+	Ordered:     false,
 	Colours: []color.RGBA{
 		{R: 166, G: 206, B: 227, A: 255},
 		{R: 31, G: 120, B: 180, A: 255},
@@ -89,8 +92,9 @@ var categorizationPalette = ColourPalette{
 //
 //nolint:dupl // palette declarations are structurally identical by design
 var temperaturePalette = ColourPalette{
-	Name:    Temperature,
-	Ordered: true,
+	Name:        Temperature,
+	Description: "Diverging blue → white → red (ColorBrewer RdBu). Useful for bidirectional or time-based metrics.",
+	Ordered:     true,
 	Colours: []color.RGBA{
 		{R: 5, G: 48, B: 97, A: 255},
 		{R: 33, G: 102, B: 172, A: 255},
@@ -108,8 +112,9 @@ var temperaturePalette = ColourPalette{
 
 // Good/Bad palette: 13 steps, red → orange → yellow → green (ColorBrewer RdYlGn).
 var goodBadPalette = ColourPalette{
-	Name:    GoodBad,
-	Ordered: true,
+	Name:        GoodBad,
+	Description: "Sequential red → orange → yellow → green (ColorBrewer RdYlGn). Good for health or quality metrics.",
+	Ordered:     true,
 	Colours: []color.RGBA{
 		{R: 165, G: 0, B: 38, A: 255},
 		{R: 215, G: 48, B: 39, A: 255},
@@ -131,8 +136,9 @@ var goodBadPalette = ColourPalette{
 //
 //nolint:dupl // palette declarations are structurally identical by design
 var foliagePalette = ColourPalette{
-	Name:    Foliage,
-	Ordered: true,
+	Name:        Foliage,
+	Description: "Sequential dead → brown → orange → yellow → green (plant health). Evokes code vitality.",
+	Ordered:     true,
 	Colours: []color.RGBA{
 		{R: 15, G: 10, B: 5, A: 255},    // near black (dead)
 		{R: 45, G: 25, B: 10, A: 255},   // very dark brown
@@ -158,6 +164,25 @@ func Names() []PaletteName {
 	slices.Sort(names)
 
 	return names
+}
+
+// PaletteInfo holds the name and description of a palette.
+type PaletteInfo struct {
+	Name        PaletteName
+	Description string
+}
+
+// Infos returns name and description for all registered palettes, sorted by name.
+func Infos() []PaletteInfo {
+	names := Names()
+	infos := make([]PaletteInfo, 0, len(names))
+
+	for _, n := range names {
+		p := palettes[n]
+		infos = append(infos, PaletteInfo{Name: n, Description: p.Description})
+	}
+
+	return infos
 }
 
 // GetPalette returns the ColourPalette for the given name.

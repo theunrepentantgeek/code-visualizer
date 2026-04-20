@@ -26,6 +26,7 @@ type CLI struct {
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 
 	Render RenderCmd `cmd:"" help:"Render a visualization."`
+	Help   HelpCmd   `cmd:"" help:"Display help information about metrics and palettes."`
 }
 
 // Flags bundles cross-cutting concerns that are passed to every command's Run method.
