@@ -173,6 +173,66 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
 }
 
+// minReservableSize is the smallest treemap dimension (px) that still
+// produces a usable visualization. If reserving legend space would shrink
+// either dimension below this, we fall back to overlay behavior.
+const minReservableSize = 100
+
+// reserveAndLayout computes the effective layout dimensions after reserving
+// space for the legend. Falls back to full canvas if the remaining area
+// would be too small for a useful treemap.
+func reserveAndLayout(legend *render.LegendInfo, width, height int) (layoutW, layoutH int) {
+	wReduce, hReduce := render.ReserveLegendSpace(legend)
+
+	w := width - int(wReduce)
+	h := height - int(hReduce)
+
+	if w < minReservableSize || h < minReservableSize {
+		return width, height
+	}
+
+	return w, h
+}
+
+// legendLayoutOffset returns the (dx, dy) offset to apply to treemap rects
+// when space has been reserved for the legend.
+func legendLayoutOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, dy float64) {
+	if info == nil {
+		return 0, 0
+	}
+
+	switch info.Position {
+	case render.LegendPositionTopLeft, render.LegendPositionTopCenter, render.LegendPositionTopRight:
+		return 0, hReduce
+	case render.LegendPositionCenterLeft:
+		return wReduce, 0
+	default:
+		return 0, 0
+	}
+}
+
+// resolveBorderPaletteName determines the effective border metric name and
+// palette, using provider defaults when no explicit palette is configured.
+// Shared by legend building and colour application to ensure consistency.
+func resolveBorderPaletteName(cfg *config.Treemap) (metric.Name, palette.PaletteName) {
+	border := ptrString(cfg.Border)
+	if border == "" {
+		return "", ""
+	}
+
+	borderMetric := metric.Name(border)
+
+	if bp := ptrString(cfg.BorderPalette); bp != "" {
+		return borderMetric, palette.PaletteName(bp)
+	}
+
+	if p, ok := provider.Get(borderMetric); ok {
+		return borderMetric, p.DefaultPalette()
+	}
+
+	return borderMetric, palette.Neutral
+}
+
 func (c *TreemapCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Treemap,
@@ -184,18 +244,26 @@ func (c *TreemapCmd) renderAndLog(
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	rects := treemap.Layout(root, width, height, c.Size)
-
-	applyFillColours(&rects, root, fillMetric, fillPaletteName)
-
-	borderMetric, borderPaletteName := c.applyBorderColours(&rects, root, cfg)
-
+	// Build legend info before layout so we can reserve space for it.
 	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	borderName := metric.Name(ptrString(cfg.Border))
+	borderName, borderPaletteName := resolveBorderPaletteName(cfg)
 	legend := buildLegendInfo(
 		legendPos, legendOrient, fillMetric, fillPaletteName,
 		borderName, borderPaletteName, c.Size, root,
 	)
+
+	layoutW, layoutH := reserveAndLayout(legend, width, height)
+
+	rects := treemap.Layout(root, layoutW, layoutH, c.Size)
+
+	applyFillColours(&rects, root, fillMetric, fillPaletteName)
+	c.applyBorderColours(&rects, root, cfg)
+
+	if layoutW < width || layoutH < height {
+		wReduce, hReduce := render.ReserveLegendSpace(legend)
+		dx, dy := legendLayoutOffset(legend, wReduce, hReduce)
+		treemap.OffsetRects(&rects, dx, dy)
+	}
 
 	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
 
@@ -212,7 +280,7 @@ func (c *TreemapCmd) renderAndLog(
 		"size_metric", string(c.Size),
 		"fill_metric", string(fillMetric),
 		"fill_palette", string(fillPaletteName),
-		"border_metric", string(borderMetric),
+		"border_metric", string(borderName),
 		"border_palette", string(borderPaletteName),
 	)
 

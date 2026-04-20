@@ -291,3 +291,81 @@ func writeSVGLegendToString(t *testing.T, info *LegendInfo) string {
 
 	return string(content)
 }
+
+func TestReserveLegendSpace_NilInfo_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	wReduce, hReduce := ReserveLegendSpace(nil)
+	g.Expect(wReduce).To(BeZero())
+	g.Expect(hReduce).To(BeZero())
+}
+
+func TestReserveLegendSpace_NonePosition_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := &LegendInfo{Position: LegendPositionNone}
+	wReduce, hReduce := ReserveLegendSpace(info)
+	g.Expect(wReduce).To(BeZero())
+	g.Expect(hReduce).To(BeZero())
+}
+
+func TestReserveLegendSpace_BottomRight_ReducesHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := makeSampleLegendInfo(LegendOrientationVertical)
+	info.Position = LegendPositionBottomRight
+	wReduce, hReduce := ReserveLegendSpace(info)
+	g.Expect(hReduce).To(BeNumerically(">", 0))
+	g.Expect(wReduce).To(BeZero())
+}
+
+func TestReserveLegendSpace_TopLeft_ReducesHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := makeSampleLegendInfo(LegendOrientationVertical)
+	info.Position = LegendPositionTopLeft
+	wReduce, hReduce := ReserveLegendSpace(info)
+	g.Expect(hReduce).To(BeNumerically(">", 0))
+	g.Expect(wReduce).To(BeZero())
+}
+
+func TestReserveLegendSpace_CenterRight_ReducesWidth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := makeSampleLegendInfo(LegendOrientationVertical)
+	info.Position = LegendPositionCenterRight
+	wReduce, hReduce := ReserveLegendSpace(info)
+	g.Expect(wReduce).To(BeNumerically(">", 0))
+	g.Expect(hReduce).To(BeZero())
+}
+
+func TestReserveLegendSpace_CenterLeft_ReducesWidth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := makeSampleLegendInfo(LegendOrientationVertical)
+	info.Position = LegendPositionCenterLeft
+	wReduce, hReduce := ReserveLegendSpace(info)
+	g.Expect(wReduce).To(BeNumerically(">", 0))
+	g.Expect(hReduce).To(BeZero())
+}
+
+func TestReserveLegendSpace_EmptyEntries_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := &LegendInfo{
+		Position:    LegendPositionBottomRight,
+		Orientation: LegendOrientationVertical,
+		Entries:     []LegendEntry{},
+	}
+
+	wReduce, hReduce := ReserveLegendSpace(info)
+	g.Expect(wReduce).To(BeZero())
+	g.Expect(hReduce).To(BeZero())
+}

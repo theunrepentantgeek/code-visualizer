@@ -3,6 +3,8 @@ package render
 import (
 	"image/color"
 
+	"github.com/fogleman/gg"
+
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/palette"
 )
@@ -81,6 +83,25 @@ const (
 	titleFontSize    = 13.0 // entry title text size
 	legendLineHeight = 16.0 // approximate text line height
 )
+
+// ReserveLegendSpace computes the width and height reductions needed to
+// reserve space for the legend within the canvas. Returns zeros if info is
+// nil, position is "none", or there are no entries.
+func ReserveLegendSpace(info *LegendInfo) (widthReduction, heightReduction float64) {
+	if info == nil || info.Position == LegendPositionNone || len(info.Entries) == 0 {
+		return 0, 0
+	}
+
+	dc := gg.NewContext(1, 1)
+	w, h := measureLegend(dc, info)
+
+	switch info.Position {
+	case LegendPositionCenterLeft, LegendPositionCenterRight:
+		return w + 2*legendMargin, 0
+	default:
+		return 0, h + 2*legendMargin
+	}
+}
 
 // legendOrigin computes the top-left (x, y) for the legend box.
 func legendOrigin(
