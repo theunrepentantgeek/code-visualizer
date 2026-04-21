@@ -46,7 +46,7 @@ func TestRenderFlatDir(t *testing.T) {
 
 	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "flat.png")
-	err := Render(rects, 800, 600, out)
+	err := Render(rects, 800, 600, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -81,7 +81,7 @@ func TestRenderNestedDir(t *testing.T) {
 
 	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "nested.png")
-	err := Render(rects, 800, 600, out)
+	err := Render(rects, 800, 600, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -113,7 +113,7 @@ func TestRenderWithBorderColour(t *testing.T) {
 	}
 
 	out := filepath.Join(t.TempDir(), "border.png")
-	err := Render(rects, 800, 600, out)
+	err := Render(rects, 800, 600, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -144,7 +144,7 @@ func TestRenderNoBorderWhenNil(t *testing.T) {
 	}
 
 	out := filepath.Join(t.TempDir(), "noborder.png")
-	err := Render(rects, 400, 300, out)
+	err := Render(rects, 400, 300, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	info, err := os.Stat(out)
@@ -206,7 +206,7 @@ func goldenPaletteTest(t *testing.T, name palette.PaletteName, fixtureName strin
 	p := palette.GetPalette(name)
 	root := paletteTreemap(p)
 	out := filepath.Join(t.TempDir(), fixtureName+".png")
-	err := Render(root, 800, 600, out)
+	err := Render(root, 800, 600, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	actual, err := os.ReadFile(out)
@@ -229,7 +229,7 @@ func BenchmarkScanAndRender(b *testing.B) {
 		}
 
 		rects := treemap.Layout(root, 1920, 1080, filesystem.FileSize)
-		if err := Render(rects, 1920, 1080, out); err != nil {
+		if err := Render(rects, 1920, 1080, out, nil); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -271,7 +271,7 @@ func TestRender_JPG(t *testing.T) {
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "output.jpg")
 
-	err := Render(rects, 400, 300, out)
+	err := Render(rects, 400, 300, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f, err := os.Open(out)
@@ -296,7 +296,7 @@ func TestRender_JPEG(t *testing.T) {
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "output.jpeg")
 
-	err := Render(rects, 400, 300, out)
+	err := Render(rects, 400, 300, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f, err := os.Open(out)
@@ -324,7 +324,7 @@ func TestRender_SVG(t *testing.T) {
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "output.svg")
 
-	err := Render(rects, 400, 300, out)
+	err := Render(rects, 400, 300, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	data, err := os.ReadFile(out)
@@ -368,7 +368,7 @@ func TestRender_SVG_EscapesLabels(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "escape.svg")
 
-	err := Render(rects, 400, 300, out)
+	err := Render(rects, 400, 300, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	data, err := os.ReadFile(out)
@@ -384,7 +384,7 @@ func TestRender_UnsupportedFormat(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	rects := treemap.TreemapRectangle{X: 0, Y: 0, W: 100, H: 100}
-	err := Render(rects, 100, 100, "output.bmp")
+	err := Render(rects, 100, 100, "output.bmp", nil)
 	g.Expect(err).ToNot(BeNil())
 
 	if err == nil {
@@ -406,7 +406,7 @@ func TestRender_PNG_DecodesAsPNG(t *testing.T) {
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
 	out := filepath.Join(t.TempDir(), "output.png")
 
-	err := Render(rects, 400, 300, out)
+	err := Render(rects, 400, 300, out, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f, err := os.Open(out)

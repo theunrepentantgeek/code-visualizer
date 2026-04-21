@@ -12,7 +12,9 @@ import (
 )
 
 // renderBubbleSVG generates an SVG file from the bubble tree layout.
-func renderBubbleSVG(root *bubbletree.BubbleNode, width, height int, outputPath string) (err error) {
+func renderBubbleSVG(
+	root *bubbletree.BubbleNode, width, height int, outputPath string, legend *LegendInfo,
+) (err error) {
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return eris.Wrap(err, "failed to create SVG file")
@@ -43,6 +45,8 @@ func renderBubbleSVG(root *bubbletree.BubbleNode, width, height int, outputPath 
 	writeSVGBubbleFiles(f, *root)
 	writeSVGBubbleDirLabels(f, labelledDirs)
 	writeSVGBubbleFileLabels(f, *root)
+
+	writeSVGLegend(f, legend, width, height)
 
 	fmt.Fprint(f, "</svg>\n")
 

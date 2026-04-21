@@ -132,3 +132,53 @@ func TestLayoutZeroSizeFile(t *testing.T) {
 	g.Expect(emptyRect.W).To(BeNumerically(">", 0))
 	g.Expect(emptyRect.H).To(BeNumerically(">", 0))
 }
+
+func TestOffsetRects_ShiftsCoordinates(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rect := TreemapRectangle{X: 10, Y: 20, W: 100, H: 50}
+	OffsetRects(&rect, 30, 40)
+	g.Expect(rect.X).To(Equal(40.0))
+	g.Expect(rect.Y).To(Equal(60.0))
+	g.Expect(rect.W).To(Equal(100.0))
+	g.Expect(rect.H).To(Equal(50.0))
+}
+
+func TestOffsetRects_ShiftsChildrenRecursively(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rect := TreemapRectangle{
+		X: 0, Y: 0, W: 200, H: 100,
+		Children: []TreemapRectangle{
+			{X: 5, Y: 5, W: 90, H: 90},
+			{
+				X: 100, Y: 5, W: 90, H: 90,
+				Children: []TreemapRectangle{
+					{X: 105, Y: 10, W: 40, H: 40},
+				},
+			},
+		},
+	}
+
+	OffsetRects(&rect, 50, 100)
+	g.Expect(rect.X).To(Equal(50.0))
+	g.Expect(rect.Y).To(Equal(100.0))
+	g.Expect(rect.Children[0].X).To(Equal(55.0))
+	g.Expect(rect.Children[0].Y).To(Equal(105.0))
+	g.Expect(rect.Children[1].X).To(Equal(150.0))
+	g.Expect(rect.Children[1].Y).To(Equal(105.0))
+	g.Expect(rect.Children[1].Children[0].X).To(Equal(155.0))
+	g.Expect(rect.Children[1].Children[0].Y).To(Equal(110.0))
+}
+
+func TestOffsetRects_ZeroOffset_NoChange(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rect := TreemapRectangle{X: 10, Y: 20, W: 100, H: 50}
+	OffsetRects(&rect, 0, 0)
+	g.Expect(rect.X).To(Equal(10.0))
+	g.Expect(rect.Y).To(Equal(20.0))
+}

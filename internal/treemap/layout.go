@@ -127,6 +127,17 @@ func insetBox(b layout.Box, inset float64) layout.Box {
 	}
 }
 
+// OffsetRects shifts all rectangle coordinates by (dx, dy), recursively
+// adjusting every child in the tree.
+func OffsetRects(rect *TreemapRectangle, dx, dy float64) {
+	rect.X += dx
+	rect.Y += dy
+
+	for i := range rect.Children {
+		OffsetRects(&rect.Children[i], dx, dy)
+	}
+}
+
 func dirTotalSize(dir *model.Directory, sizeMetric metric.Name) float64 {
 	var total float64
 
