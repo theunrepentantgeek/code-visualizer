@@ -75,6 +75,16 @@ func (c *BubbletreeCmd) Validate() error {
 }
 
 func (c *BubbletreeCmd) Run(flags *Flags) error {
+	if !flags.ConfigExplicit {
+		if autoPath := config.FindAutoConfig(c.Output); autoPath != "" {
+			slog.Info("auto-loading config", "path", autoPath)
+
+			if err := flags.Config.Load(autoPath); err != nil {
+				return eris.Wrap(err, "auto-config load failed")
+			}
+		}
+	}
+
 	c.applyOverrides(flags.Config)
 
 	cfg := flags.Config.Bubbletree

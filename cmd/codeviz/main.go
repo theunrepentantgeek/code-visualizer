@@ -30,11 +30,12 @@ type CLI struct {
 
 // Flags bundles cross-cutting concerns that are passed to every command's Run method.
 type Flags struct {
-	Quiet        bool
-	Verbose      bool
-	Debug        bool
-	ExportConfig string
-	Config       *config.Config
+	Quiet          bool
+	Verbose        bool
+	Debug          bool
+	ExportConfig   string
+	Config         *config.Config
+	ConfigExplicit bool // true when --config was explicitly provided on the command line
 }
 
 func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
@@ -110,11 +111,12 @@ func main() {
 	}
 
 	flags := &Flags{
-		Quiet:        cli.Quiet,
-		Verbose:      cli.Verbose,
-		Debug:        cli.Debug,
-		ExportConfig: cli.ExportConfig,
-		Config:       cfg,
+		Quiet:          cli.Quiet,
+		Verbose:        cli.Verbose,
+		Debug:          cli.Debug,
+		ExportConfig:   cli.ExportConfig,
+		Config:         cfg,
+		ConfigExplicit: cli.Config != "",
 	}
 
 	err = ctx.Run(flags)
