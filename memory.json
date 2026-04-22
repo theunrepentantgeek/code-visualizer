@@ -1,9 +1,10 @@
 {
-  "last_run": "2026-04-21T12:49:02Z",
-  "run_id": "24723171715",
+  "last_run": "2026-04-22T04:58:03Z",
+  "run_id": "24760964694",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
-    "77": "2026-04-21T07:39:14Z"
+    "77": "2026-04-21T07:39:14Z",
+    "75": "2026-04-22T04:58:03Z"
   },
   "prs_created": [
     {
@@ -57,9 +58,7 @@
   ],
   "recently_merged": [
     "PR #76: feat: Add Legends (closes #68) - merged 2026-04-21T04:29:52Z",
-    "PR #81: chore(deps) bump x/image to v0.39.0 - merged 2026-04-21T08:14:42Z",
-    "PR #62: fix(logging) - merged previously",
-    "PR #61: perf(git) - merged previously"
+    "PR #81: chore(deps) bump x/image to v0.39.0 - merged 2026-04-21T08:14:42Z"
   ],
-  "notes": "PRs #73 (docs), #75 (help commands), #79 (auto-config) are open and pending maintainer review. Maintainer checked off all suggested actions. Issue #80 (dep update tracking) still open - should be closed since PR #81 was merged. Issue #68 (Legend) was resolved by PR #76 which was merged. No new bugs found in code inspection this run."
+  "notes": "PRs #73 (docs), #75 (help commands, updated with codeviz-help-no-subcommand fix), #79 (auto-config) are open and pending maintainer review. Issues #74 and #77 still open pending PR merge. Triggered by PR #75 comment: fixed codeviz help requiring subcommand."
 }
