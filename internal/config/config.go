@@ -111,19 +111,19 @@ func (c *Config) Save(path string) error {
 	return nil
 }
 
-// FindAutoConfig returns the path of an auto-detected config file based on the
-// output file path, or an empty string if none is found.
+// FindAutoConfig looks for a config file alongside the output file.
 // It strips the output file extension, appends "-config", and probes for
 // .yml, .yaml, and .json variants in that order.
-func FindAutoConfig(outputPath string) string {
+// Returns the path and true if found, or ("", false) if none exists.
+func FindAutoConfig(outputPath string) (string, bool) {
 	base := strings.TrimSuffix(outputPath, filepath.Ext(outputPath))
 
 	for _, ext := range []string{".yml", ".yaml", ".json"} {
 		candidate := base + "-config" + ext
 		if _, err := os.Stat(candidate); err == nil {
-			return candidate
+			return candidate, true
 		}
 	}
 
-	return ""
+	return "", false
 }

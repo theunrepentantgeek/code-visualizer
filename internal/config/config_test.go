@@ -366,8 +366,9 @@ func TestFindAutoConfig_NoFileExists_ReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	result := FindAutoConfig("/tmp/nonexistent-output.png")
+	result, ok := FindAutoConfig("/tmp/nonexistent-output.png")
 
+	g.Expect(ok).To(BeFalse())
 	g.Expect(result).To(BeEmpty())
 }
 
@@ -380,8 +381,9 @@ func TestFindAutoConfig_YMLExists_ReturnsYMLPath(t *testing.T) {
 	configPath := filepath.Join(dir, "my-output-config.yml")
 	g.Expect(os.WriteFile(configPath, []byte("width: 800\n"), 0o600)).To(Succeed())
 
-	result := FindAutoConfig(outputPath)
+	result, ok := FindAutoConfig(outputPath)
 
+	g.Expect(ok).To(BeTrue())
 	g.Expect(result).To(Equal(configPath))
 }
 
@@ -394,8 +396,9 @@ func TestFindAutoConfig_YAMLExists_ReturnsYAMLPath(t *testing.T) {
 	configPath := filepath.Join(dir, "my-output-config.yaml")
 	g.Expect(os.WriteFile(configPath, []byte("width: 800\n"), 0o600)).To(Succeed())
 
-	result := FindAutoConfig(outputPath)
+	result, ok := FindAutoConfig(outputPath)
 
+	g.Expect(ok).To(BeTrue())
 	g.Expect(result).To(Equal(configPath))
 }
 
@@ -408,8 +411,9 @@ func TestFindAutoConfig_JSONExists_ReturnsJSONPath(t *testing.T) {
 	configPath := filepath.Join(dir, "my-output-config.json")
 	g.Expect(os.WriteFile(configPath, []byte(`{"width":800}`), 0o600)).To(Succeed())
 
-	result := FindAutoConfig(outputPath)
+	result, ok := FindAutoConfig(outputPath)
 
+	g.Expect(ok).To(BeTrue())
 	g.Expect(result).To(Equal(configPath))
 }
 
@@ -424,8 +428,9 @@ func TestFindAutoConfig_YMLTakesPrecedenceOverYAML(t *testing.T) {
 	g.Expect(os.WriteFile(ymlPath, []byte("width: 800\n"), 0o600)).To(Succeed())
 	g.Expect(os.WriteFile(yamlPath, []byte("width: 900\n"), 0o600)).To(Succeed())
 
-	result := FindAutoConfig(outputPath)
+	result, ok := FindAutoConfig(outputPath)
 
+	g.Expect(ok).To(BeTrue())
 	g.Expect(result).To(Equal(ymlPath))
 }
 
@@ -438,7 +443,8 @@ func TestFindAutoConfig_SVGOutput_StillFindsConfig(t *testing.T) {
 	configPath := filepath.Join(dir, "my-output-config.yml")
 	g.Expect(os.WriteFile(configPath, []byte("width: 800\n"), 0o600)).To(Succeed())
 
-	result := FindAutoConfig(outputPath)
+	result, ok := FindAutoConfig(outputPath)
 
+	g.Expect(ok).To(BeTrue())
 	g.Expect(result).To(Equal(configPath))
 }
