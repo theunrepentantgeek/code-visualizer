@@ -25,8 +25,9 @@ type CLI struct {
 	//nolint:revive // Long help text is more important than minimizing line length, and annotations can't be wrapped
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 
-	Render RenderCmd `cmd:"" help:"Render a visualization."`
-	Help   HelpCmd   `cmd:"" help:"Display help information about metrics and palettes."`
+	Render       RenderCmd       `cmd:"" help:"Render a visualization."`
+	HelpMetrics  HelpMetricsCmd  `cmd:"" help:"List all available metrics."`
+	HelpPalettes HelpPalettesCmd `cmd:"" help:"List all available colour palettes."`
 }
 
 // Flags bundles cross-cutting concerns that are passed to every command's Run method.
