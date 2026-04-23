@@ -1,45 +1,29 @@
 {
-  "last_run": "2026-04-22T12:48:49Z",
-  "run_id": "24779065119",
+  "last_run": "2026-04-23T12:47:49Z",
+  "run_id": "24836016010",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/improve-usage-docs-20260419",
-      "pr_number": 73,
-      "title": "[Repo Assist] docs: rewrite usage.md for current CLI structure",
-      "status": "open",
-      "type": "docs"
-    },
-    {
-      "branch": "repo-assist/fix-issue-74-help-commands-d435fda45ab3fd70",
-      "pr_number": 75,
-      "title": "[Repo Assist] feat: add help metrics and help palettes subcommands",
-      "status": "open",
-      "type": "feat",
-      "closes": 74
-    },
-    {
-      "branch": "repo-assist/fix-issue-77-auto-config-e9ffa32f92adaf68",
-      "pr_number": 79,
-      "title": "[Repo Assist] feat(config): auto-load config file based on output path",
-      "status": "open",
-      "type": "feat",
-      "closes": 77
-    },
-    {
-      "branch": "repo-assist/test-improvements-20260422",
-      "pr_number": null,
+      "branch": "repo-assist/test-improvements-20260422-b8ac25f7451ad3f7",
+      "pr_number": 82,
       "title": "[Repo Assist] test: add missing tests for model, palette, and scan packages",
       "status": "open",
       "type": "test"
+    },
+    {
+      "branch": "repo-assist/improve-git-metric-source-of-truth",
+      "pr_number": null,
+      "title": "[Repo Assist] refactor(git): add IsGitMetric; eliminate duplicate metric name lists",
+      "status": "open",
+      "type": "refactor"
     }
   ],
   "issues_actioned": {
-    "74": "labelled enhancement, commented, PR #75 submitted",
-    "77": "labelled enhancement, commented, PR #79 submitted"
+    "74": "labelled enhancement, commented, PR #75 submitted (merged 2026-04-23)",
+    "77": "labelled enhancement, commented, PR #79 submitted (merged 2026-04-23)"
   },
   "monthly_summary_issue": {
     "title": "[Repo Assist] Monthly Activity 2026-04",
@@ -48,25 +32,27 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 80,
-    "prs": 79
+    "issues": 83,
+    "prs": 83
   },
   "checked_off_items": [
     "PR #61: perf(git) cache per-file commit data (merged)",
     "PR #62: fix(logging) clarify directory scan log fields (merged)",
     "Issue #58: duplicate of PR #61 (closed)",
-    "PR #73: docs/usage.md (checked off by maintainer 2026-04-21)",
-    "PR #75: help commands for #74 (checked off by maintainer 2026-04-21)",
-    "PR #79: auto-config for #77 (checked off as 'auto-config PR' by maintainer 2026-04-21)",
+    "PR #73: docs/usage.md (merged by maintainer 2026-04-23)",
+    "PR #75: help commands for #74 (merged by maintainer 2026-04-23)",
+    "PR #79: auto-config for #77 (merged by maintainer 2026-04-23)",
     "PR #81: chore(deps) x/image v0.39.0 (merged by maintainer 2026-04-21)",
     "Issue #80: dep update tracking (PR #81 merged, suggest closing)",
-    "Check comment on #77 (checked off by maintainer 2026-04-21)"
+    "Check comment on #77 (checked off by maintainer 2026-04-21)",
+    "Review PR test improvements (monthly summary item checked off 2026-04-22)"
   ],
   "recently_merged": [
-    "PR #76: feat: Add Legends (closes #68) - merged 2026-04-21T04:29:52Z",
-    "PR #81: chore(deps) bump x/image to v0.39.0 - merged 2026-04-21T08:14:42Z",
-    "PR #62: fix(logging) - merged previously",
-    "PR #61: perf(git) - merged previously"
+    "PR #73: docs: rewrite usage.md (merged 2026-04-23)",
+    "PR #75: feat: help metrics and palettes subcommands (merged 2026-04-23)",
+    "PR #79: feat(config): auto-load config file based on output path (merged 2026-04-23)",
+    "PR #76: feat: Add Legends (closes #68) - merged 2026-04-21",
+    "PR #81: chore(deps) bump x/image to v0.39.0 - merged 2026-04-21"
   ],
-  "notes": "PRs #73 (docs), #75 (help commands), #79 (auto-config), test-improvements (branch repo-assist/test-improvements-20260422, PR TBD) are open and pending maintainer review. Issues #74 and #77 still open with PRs submitted. No new bugs found. Test PR covers: internal/model 62%->100%, internal/palette 68%->79%, internal/scan 71%->77%."
+  "notes": "PR #82 (test improvements) still open pending review. New refactor PR created this run: IsGitMetric eliminates duplicate git metric name lists. Issues #74 and #77 closed. No open bugs. Next runs should look for more improvements."
 }
