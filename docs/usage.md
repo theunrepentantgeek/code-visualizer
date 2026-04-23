@@ -12,13 +12,13 @@ Subcommands: `treemap`, `radial`, `bubbletree`
 
 These flags apply to all subcommands.
 
-| Flag              | Short | Description                                           |
-|-------------------|-------|-------------------------------------------------------|
+| Flag              | Short | Description                                              |
+| ----------------- | ----- | -------------------------------------------------------- |
 | `--quiet`         | `-q`  | Suppress all non-essential output (warnings/errors only) |
-| `--verbose`       | `-v`  | Show detailed progress during scanning and metrics    |
-| `--debug`         |       | Show per-directory scan progress (implies `--verbose`) |
+| `--verbose`       | `-v`  | Show detailed progress during scanning and metrics       |
+| `--debug`         |       | Show per-directory scan progress (implies `--verbose`)   |
 | `--config`        |       | Path to configuration file (`.yaml`, `.yml`, or `.json`) |
-| `--export-config` |       | Write effective configuration to file                 |
+| `--export-config` |       | Write effective configuration to file                    |
 
 ## `render treemap`
 
@@ -32,22 +32,22 @@ codeviz render treemap [flags] <target-path>
 
 ### Required Flags
 
-| Flag       | Short | Values                                                          | Description              |
-|------------|-------|-----------------------------------------------------------------|--------------------------|
-| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                 | Output image file path   |
+| Flag       | Short | Values                                                                  | Description               |
+| ---------- | ----- | ----------------------------------------------------------------------- | ------------------------- |
+| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                         | Output image file path    |
 | `--size`   | `-s`  | `file-size`, `file-lines`, `file-age`, `file-freshness`, `author-count` | Metric for rectangle area |
 
 ### Optional Flags
 
-| Flag               | Short | Default        | Description                                 |
-|--------------------|-------|----------------|---------------------------------------------|
-| `--fill`           | `-f`  | same as `--size` | Metric for fill colour                    |
-| `--fill-palette`   |       | metric default | Palette for fill colour                     |
-| `--border`         | `-b`  | none           | Metric for border colour                    |
-| `--border-palette` |       | metric default | Palette for border colour                   |
-| `--width`          |       | `1920`         | Image width in pixels                       |
-| `--height`         |       | `1080`         | Image height in pixels                      |
-| `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
+| Flag               | Short | Default          | Description                                                   |
+| ------------------ | ----- | ---------------- | ------------------------------------------------------------- |
+| `--fill`           | `-f`  | same as `--size` | Metric for fill colour                                        |
+| `--fill-palette`   |       | metric default   | Palette for fill colour                                       |
+| `--border`         | `-b`  | none             | Metric for border colour                                      |
+| `--border-palette` |       | metric default   | Palette for border colour                                     |
+| `--width`          |       | `1920`           | Image width in pixels                                         |
+| `--height`         |       | `1080`           | Image height in pixels                                        |
+| `--filter`         |       | none             | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
 ## `render radial`
 
@@ -61,22 +61,22 @@ codeviz render radial [flags] <target-path>
 
 ### Required Flags
 
-| Flag          | Short | Values                                                          | Description         |
-|---------------|-------|-----------------------------------------------------------------|---------------------|
-| `--output`    | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                 | Output image file path |
-| `--disc-size` | `-d`  | `file-size`, `file-lines`, `file-age`, `file-freshness`, `author-count` | Metric for disc size |
+| Flag          | Short | Values                                                                  | Description            |
+| ------------- | ----- | ----------------------------------------------------------------------- | ---------------------- |
+| `--output`    | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                         | Output image file path |
+| `--disc-size` | `-d`  | `file-size`, `file-lines`, `file-age`, `file-freshness`, `author-count` | Metric for disc size   |
 
 ### Optional Flags
 
-| Flag               | Short | Default        | Description                                 |
-|--------------------|-------|----------------|---------------------------------------------|
-| `--fill`           | `-f`  | none           | Metric for fill colour                      |
-| `--fill-palette`   |       | metric default | Palette for fill colour                     |
-| `--border`         | `-b`  | none           | Metric for border colour                    |
-| `--border-palette` |       | metric default | Palette for border colour                   |
-| `--labels`         |       | none           | Labels to display: `all`, `folders`, or `none` |
-| `--width`          |       | `1920`         | Image width in pixels                       |
-| `--height`         |       | `1920`         | Image height in pixels                      |
+| Flag               | Short | Default        | Description                                                   |
+| ------------------ | ----- | -------------- | ------------------------------------------------------------- |
+| `--fill`           | `-f`  | none           | Metric for fill colour                                        |
+| `--fill-palette`   |       | metric default | Palette for fill colour                                       |
+| `--border`         | `-b`  | none           | Metric for border colour                                      |
+| `--border-palette` |       | metric default | Palette for border colour                                     |
+| `--labels`         |       | none           | Labels to display: `all`, `folders`, or `none`                |
+| `--width`          |       | `1920`         | Image width in pixels                                         |
+| `--height`         |       | `1920`         | Image height in pixels                                        |
 | `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
 ## `render bubbletree`
@@ -91,36 +91,36 @@ codeviz render bubbletree [flags] <target-path>
 
 ### Required Flags
 
-| Flag       | Short | Values                                                          | Description          |
-|------------|-------|-----------------------------------------------------------------|----------------------|
-| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                 | Output image file path |
+| Flag       | Short | Values                                                                  | Description            |
+| ---------- | ----- | ----------------------------------------------------------------------- | ---------------------- |
+| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                         | Output image file path |
 | `--size`   | `-s`  | `file-size`, `file-lines`, `file-age`, `file-freshness`, `author-count` | Metric for circle size |
 
 ### Optional Flags
 
-| Flag               | Short | Default        | Description                                 |
-|--------------------|-------|----------------|---------------------------------------------|
-| `--fill`           | `-f`  | none           | Metric for fill colour                      |
-| `--fill-palette`   |       | metric default | Palette for fill colour                     |
-| `--border`         | `-b`  | none           | Metric for border colour                    |
-| `--border-palette` |       | metric default | Palette for border colour                   |
-| `--labels`         |       | none           | Labels to display: `all`, `folders`, or `none` |
-| `--width`          |       | `1920`         | Image width in pixels                       |
-| `--height`         |       | `1080`         | Image height in pixels                      |
+| Flag               | Short | Default        | Description                                                   |
+| ------------------ | ----- | -------------- | ------------------------------------------------------------- |
+| `--fill`           | `-f`  | none           | Metric for fill colour                                        |
+| `--fill-palette`   |       | metric default | Palette for fill colour                                       |
+| `--border`         | `-b`  | none           | Metric for border colour                                      |
+| `--border-palette` |       | metric default | Palette for border colour                                     |
+| `--labels`         |       | none           | Labels to display: `all`, `folders`, or `none`                |
+| `--width`          |       | `1920`         | Image width in pixels                                         |
+| `--height`         |       | `1080`         | Image height in pixels                                        |
 | `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
 ## Shared Concepts
 
 ### Metric values
 
-| Metric           | Valid for `--size`/`--disc-size` | Valid for `--fill`/`--border` | Description                        |
-|------------------|:--------------------------------:|:-----------------------------:|------------------------------------|
-| `file-size`      | ✓                                | ✓                             | File size in bytes                 |
-| `file-lines`     | ✓                                | ✓                             | Number of non-binary lines         |
-| `file-age`       | ✓ *(git)*                        | ✓ *(git)*                     | Time since first commit (seconds)  |
-| `file-freshness` | ✓ *(git)*                        | ✓ *(git)*                     | Time since last commit (seconds)   |
-| `author-count`   | ✓ *(git)*                        | ✓ *(git)*                     | Number of distinct commit authors  |
-| `file-type`      | —                                | ✓                             | File extension category            |
+| Metric           | Valid for `--size`/`--disc-size` | Valid for `--fill`/`--border` | Description                       |
+| ---------------- | :------------------------------: | :---------------------------: | --------------------------------- |
+| `file-size`      |                ✓                 |               ✓               | File size in bytes                |
+| `file-lines`     |                ✓                 |               ✓               | Number of non-binary lines        |
+| `file-age`       |            ✓ *(git)*             |           ✓ *(git)*           | Time since first commit (days)    |
+| `file-freshness` |            ✓ *(git)*             |           ✓ *(git)*           | Time since last commit (days)     |
+| `author-count`   |            ✓ *(git)*             |           ✓ *(git)*           | Number of distinct commit authors |
+| `file-type`      |                —                 |               ✓               | File extension category           |
 
 Metrics marked *(git)* require the target directory to be inside a git repository.
 
@@ -137,10 +137,10 @@ Multiple `--filter` flags are evaluated in order, like a `.gitignore`.
 
 ```sh
 # Include only Go files
-codeviz render treemap ./src -o out.png -s file-size --filter '*.go'
+codeviz render treemap ./src -o out.png -s file-size --filter '*.go' --filter '!*'
 
-# Exclude generated files
-codeviz render treemap ./src -o out.png -s file-size --filter '!*.pb.go'
+# Exclude generated Go files
+codeviz render treemap ./src -o out.png -s file-size --filter '!*_gen.go' --filter '!*_gen_test.go'
 ```
 
 ## Examples
@@ -207,12 +207,12 @@ codeviz --export-config config.yaml render treemap ./src -o treemap.png -s file-
 
 ## Exit Codes
 
-| Code | Meaning                                            |
-|------|----------------------------------------------------|
-| 0    | Success — image written to output path             |
-| 1    | Invalid arguments or validation failure            |
-| 2    | Target path does not exist or is not a directory   |
-| 3    | Git-required metric used on non-git directory      |
-| 4    | Output path error (parent missing, permission)     |
-| 5    | Internal error during scan/render                  |
+| Code | Meaning                                              |
+| ---- | ---------------------------------------------------- |
+| 0    | Success — image written to output path               |
+| 1    | Invalid arguments or validation failure              |
+| 2    | Target path does not exist or is not a directory     |
+| 3    | Git-required metric used on non-git directory        |
+| 4    | Output path error (parent missing, permission)       |
+| 5    | Internal error during scan/render                    |
 | 6    | No files available after filtering (e.g. all binary) |
