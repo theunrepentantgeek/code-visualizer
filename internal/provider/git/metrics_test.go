@@ -90,6 +90,18 @@ func buildTree(dir string, files ...string) *model.Directory {
 	return root
 }
 
+func TestIsGitMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(IsGitMetric(FileAge)).To(BeTrue())
+	g.Expect(IsGitMetric(FileFreshness)).To(BeTrue())
+	g.Expect(IsGitMetric(AuthorCount)).To(BeTrue())
+	g.Expect(IsGitMetric("file-size")).To(BeFalse())
+	g.Expect(IsGitMetric("file-lines")).To(BeFalse())
+	g.Expect(IsGitMetric("unknown-metric")).To(BeFalse())
+}
+
 func TestFileAgeProvider(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

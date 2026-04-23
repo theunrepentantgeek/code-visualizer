@@ -98,6 +98,16 @@ func (*FileFreshnessProvider) Load(root *model.Directory) error {
 	return nil
 }
 
+// IsGitMetric reports whether name is a metric that requires a git repository.
+func IsGitMetric(name metric.Name) bool {
+	switch name {
+	case FileAge, FileFreshness, AuthorCount:
+		return true
+	default:
+		return false
+	}
+}
+
 // AuthorCountProvider reports the number of distinct commit authors.
 type AuthorCountProvider struct{}
 

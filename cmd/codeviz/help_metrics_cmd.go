@@ -6,16 +6,12 @@ import (
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/provider"
+	"github.com/bevan/code-visualizer/internal/provider/git"
 	"github.com/bevan/code-visualizer/internal/table"
 )
 
 // HelpMetricsCmd prints a table of all registered metrics.
 type HelpMetricsCmd struct{}
-
-// gitMetricNames is the set of metrics that require a git repository.
-var gitMetricNames = map[metric.Name]bool{
-	"file-age": true, "file-freshness": true, "author-count": true,
-}
 
 //nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpMetricsCmd) Run(_ *Flags) error {
@@ -28,9 +24,8 @@ func (HelpMetricsCmd) Run(_ *Flags) error {
 	for _, p := range providers {
 		k := kindLabel(p.Kind())
 		desc := p.Description()
-		isGit := gitMetricNames[p.Name()]
 
-		if isGit {
+		if git.IsGitMetric(p.Name()) {
 			hasGit = true
 			desc += " †"
 		}
