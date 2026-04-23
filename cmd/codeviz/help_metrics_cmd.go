@@ -17,6 +17,7 @@ var gitMetricNames = map[metric.Name]bool{
 	"file-age": true, "file-freshness": true, "author-count": true,
 }
 
+//nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpMetricsCmd) Run(_ *Flags) error {
 	providers := provider.All()
 

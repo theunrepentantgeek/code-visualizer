@@ -13,6 +13,7 @@ type HelpPalettesCmd struct{}
 
 const palettesDocURL = "https://github.com/theunrepentantgeek/code-visualizer/blob/main/docs/palettes.md"
 
+//nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpPalettesCmd) Run(_ *Flags) error {
 	infos := palette.Infos()
 
