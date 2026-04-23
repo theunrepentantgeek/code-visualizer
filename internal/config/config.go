@@ -4,6 +4,7 @@ package config
 
 import (
 	"encoding/json"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,9 @@ type Config struct {
 	Radial     *Radial       `yaml:"radial,omitempty"     json:"radial,omitempty"`
 	Bubbletree *Bubbletree   `yaml:"bubbletree,omitempty" json:"bubbletree,omitempty"`
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
+
+	// Source is the path of the config file from which this Config was loaded, or nil if it was not loaded from a file.
+	Source *string `yaml:"-" json:"-"`
 }
 
 // New returns a Config populated with sensible defaults.
@@ -71,6 +75,26 @@ func (c *Config) Load(path string) error {
 		}
 	default:
 		return eris.Errorf("unsupported config file extension %q (use .yaml, .yml, or .json)", ext)
+	}
+
+	// Record the source path for informational purposes.
+	c.Source = &path
+
+	return nil
+}
+
+func (c *Config) TryAutoLoad(outputPath string) error {
+	if c.Source != nil {
+		// Already loaded from a file, no need to autoload
+		return nil
+	}
+
+	if autoPath, ok := FindAutoConfig(outputPath); ok {
+		slog.Info("Auto-loading config", "path", autoPath)
+
+		if err := c.Load(autoPath); err != nil {
+			return eris.Wrap(err, "auto-config load failed")
+		}
 	}
 
 	return nil

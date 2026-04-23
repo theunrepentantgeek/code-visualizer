@@ -119,14 +119,8 @@ func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Nam
 }
 
 func (c *TreemapCmd) Run(flags *Flags) error {
-	if !flags.HasExplicitConfig() {
-		if autoPath, ok := config.FindAutoConfig(c.Output); ok {
-			slog.Info("Auto-loading config", "path", autoPath)
-
-			if err := flags.Config.Load(autoPath); err != nil {
-				return eris.Wrap(err, "auto-config load failed")
-			}
-		}
+	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
+		return eris.Wrap(err, "auto-config load failed")
 	}
 
 	c.applyOverrides(flags.Config)

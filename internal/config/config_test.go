@@ -425,6 +425,7 @@ func TestFindAutoConfig_YMLTakesPrecedenceOverYAML(t *testing.T) {
 	outputPath := filepath.Join(dir, "my-output.png")
 	ymlPath := filepath.Join(dir, "my-output-config.yml")
 	yamlPath := filepath.Join(dir, "my-output-config.yaml")
+
 	g.Expect(os.WriteFile(ymlPath, []byte("width: 800\n"), 0o600)).To(Succeed())
 	g.Expect(os.WriteFile(yamlPath, []byte("width: 900\n"), 0o600)).To(Succeed())
 
