@@ -17,6 +17,7 @@ import (
 	"github.com/bevan/code-visualizer/internal/palette"
 	"github.com/bevan/code-visualizer/internal/provider"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/bevan/code-visualizer/internal/provider/git"
 	"github.com/bevan/code-visualizer/internal/render"
 	"github.com/bevan/code-visualizer/internal/scan"
 	"github.com/bevan/code-visualizer/internal/treemap"
@@ -328,12 +329,8 @@ func (c *TreemapCmd) checkGitRequirement(requested []metric.Name) error {
 }
 
 func findGitMetric(requested []metric.Name) (metric.Name, bool) {
-	gitMetrics := map[metric.Name]bool{
-		"file-age": true, "file-freshness": true, "author-count": true,
-	}
-
 	for _, name := range requested {
-		if gitMetrics[name] {
+		if git.IsGitMetric(name) {
 			return name, true
 		}
 	}
