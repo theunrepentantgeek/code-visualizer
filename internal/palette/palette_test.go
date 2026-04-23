@@ -140,3 +140,23 @@ func TestWCAGContrastRatio(t *testing.T) {
 		}
 	}
 }
+
+func TestNames_ReturnsAllPaletteNames(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	names := Names()
+	g.Expect(names).To(HaveLen(5))
+	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage))
+}
+
+func TestNames_ReturnsSortedSlice(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	names := Names()
+	for i := 1; i < len(names); i++ {
+		g.Expect(string(names[i]) >= string(names[i-1])).To(BeTrue(),
+			"Names() should be sorted: %s should come after %s", names[i], names[i-1])
+	}
+}

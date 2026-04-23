@@ -29,6 +29,45 @@ func TestDirectoryGetUnsetMetric(t *testing.T) {
 	g.Expect(ok).To(BeFalse())
 }
 
+func TestDirectorySetAndGetMeasure(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	d := &Directory{Path: "/src", Name: "src"}
+
+	d.SetMeasure("complexity", 2.718)
+
+	v, ok := d.Measure("complexity")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(v).To(Equal(2.718))
+}
+
+func TestDirectorySetAndGetClassification(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	d := &Directory{Path: "/src", Name: "src"}
+
+	d.SetClassification("file-type", "go")
+
+	v, ok := d.Classification("file-type")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(v).To(Equal("go"))
+}
+
+func TestDirectoryGetUnsetMeasureAndClassification(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	d := &Directory{Path: "/src", Name: "src"}
+
+	_, ok := d.Measure("unset")
+	g.Expect(ok).To(BeFalse())
+
+	_, ok = d.Classification("unset")
+	g.Expect(ok).To(BeFalse())
+}
+
 func TestDirectoryPointerSlices(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
