@@ -17,6 +17,7 @@ func TestWalkFiles_FlatDir(t *testing.T) {
 	}
 
 	var names []string
+
 	WalkFiles(root, func(f *File) { names = append(names, f.Name) })
 
 	g.Expect(names).To(ConsistOf("a.go", "b.go"))
@@ -39,6 +40,7 @@ func TestWalkFiles_Nested(t *testing.T) {
 	}
 
 	var names []string
+
 	WalkFiles(root, func(f *File) { names = append(names, f.Name) })
 
 	g.Expect(names).To(ConsistOf("a.go", "c.go"))
@@ -51,6 +53,7 @@ func TestWalkFiles_Empty(t *testing.T) {
 	root := &Directory{Path: "/root", Name: "root"}
 
 	var count int
+
 	WalkFiles(root, func(_ *File) { count++ })
 
 	g.Expect(count).To(Equal(0))
@@ -79,6 +82,7 @@ func TestWalkFiles_DeepNesting(t *testing.T) {
 	}
 
 	var names []string
+
 	WalkFiles(root, func(f *File) { names = append(names, f.Name) })
 
 	g.Expect(names).To(ConsistOf("root.go", "mid.go", "leaf.go"))
