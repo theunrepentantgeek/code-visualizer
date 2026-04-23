@@ -11,6 +11,7 @@ import (
 type Interface interface {
 	Name() metric.Name
 	Kind() metric.Kind
+	Description() string
 	Dependencies() []metric.Name
 	DefaultPalette() palette.PaletteName
 	Load(root *model.Directory) error

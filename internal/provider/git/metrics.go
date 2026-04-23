@@ -21,8 +21,11 @@ const (
 // FileAgeProvider reports time since first commit in seconds.
 type FileAgeProvider struct{}
 
-func (*FileAgeProvider) Name() metric.Name                   { return FileAge }
-func (*FileAgeProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*FileAgeProvider) Name() metric.Name { return FileAge }
+func (*FileAgeProvider) Kind() metric.Kind { return metric.Quantity }
+func (*FileAgeProvider) Description() string {
+	return "Time since first commit (seconds); older files score higher."
+}
 func (*FileAgeProvider) Dependencies() []metric.Name         { return nil }
 func (*FileAgeProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
@@ -58,8 +61,11 @@ func (*FileAgeProvider) Load(root *model.Directory) error {
 // FileFreshnessProvider reports time since most recent commit in seconds.
 type FileFreshnessProvider struct{}
 
-func (*FileFreshnessProvider) Name() metric.Name                   { return FileFreshness }
-func (*FileFreshnessProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*FileFreshnessProvider) Name() metric.Name { return FileFreshness }
+func (*FileFreshnessProvider) Kind() metric.Kind { return metric.Quantity }
+func (*FileFreshnessProvider) Description() string {
+	return "Time since most recent commit (seconds); recently changed files score higher."
+}
 func (*FileFreshnessProvider) Dependencies() []metric.Name         { return nil }
 func (*FileFreshnessProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
@@ -95,8 +101,11 @@ func (*FileFreshnessProvider) Load(root *model.Directory) error {
 // AuthorCountProvider reports the number of distinct commit authors.
 type AuthorCountProvider struct{}
 
-func (*AuthorCountProvider) Name() metric.Name                   { return AuthorCount }
-func (*AuthorCountProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*AuthorCountProvider) Name() metric.Name { return AuthorCount }
+func (*AuthorCountProvider) Kind() metric.Kind { return metric.Quantity }
+func (*AuthorCountProvider) Description() string {
+	return "Number of distinct commit authors; files touched by many people score higher."
+}
 func (*AuthorCountProvider) Dependencies() []metric.Name         { return nil }
 func (*AuthorCountProvider) DefaultPalette() palette.PaletteName { return palette.GoodBad }
 
