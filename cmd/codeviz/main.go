@@ -37,6 +37,12 @@ type Flags struct {
 	Debug        bool
 	ExportConfig string
 	Config       *config.Config
+	configPath   string // path passed to --config, empty if not explicitly provided
+}
+
+// HasExplicitConfig reports whether --config was explicitly provided on the command line.
+func (f *Flags) HasExplicitConfig() bool {
+	return f.configPath != ""
 }
 
 func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
@@ -117,6 +123,7 @@ func main() {
 		Debug:        cli.Debug,
 		ExportConfig: cli.ExportConfig,
 		Config:       cfg,
+		configPath:   cli.Config,
 	}
 
 	err = ctx.Run(flags)

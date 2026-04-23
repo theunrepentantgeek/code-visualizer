@@ -119,6 +119,10 @@ func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Nam
 }
 
 func (c *TreemapCmd) Run(flags *Flags) error {
+	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
+		return eris.Wrap(err, "auto-config load failed")
+	}
+
 	c.applyOverrides(flags.Config)
 	cfg := flags.Config.Treemap
 
