@@ -87,3 +87,76 @@ func TestWalkFiles_DeepNesting(t *testing.T) {
 
 	g.Expect(names).To(ConsistOf("root.go", "mid.go", "leaf.go"))
 }
+
+func TestWalkDirectories_FlatDir(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &Directory{Path: "/root", Name: "root"}
+
+	var names []string
+
+	WalkDirectories(root, func(d *Directory) { names = append(names, d.Name) })
+
+	g.Expect(names).To(Equal([]string{"root"}))
+}
+
+func TestWalkDirectories_IncludesRoot(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	child := &Directory{Path: "/root/sub", Name: "sub"}
+	root := &Directory{Path: "/root", Name: "root", Dirs: []*Directory{child}}
+
+	var names []string
+
+	WalkDirectories(root, func(d *Directory) { names = append(names, d.Name) })
+
+	g.Expect(names).To(ConsistOf("root", "sub"))
+}
+
+func TestWalkDirectories_PostOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Build a two-level tree: root → [a, b]
+	a := &Directory{Path: "/root/a", Name: "a"}
+	b := &Directory{Path: "/root/b", Name: "b"}
+	root := &Directory{Path: "/root", Name: "root", Dirs: []*Directory{a, b}}
+
+	var names []string
+
+	WalkDirectories(root, func(d *Directory) { names = append(names, d.Name) })
+
+	// Post-order: children before parent
+	g.Expect(names).To(HaveLen(3))
+	g.Expect(names[len(names)-1]).To(Equal("root"), "root must be visited last (post-order)")
+}
+
+func TestWalkDirectories_DeepNesting_PostOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	leaf := &Directory{Path: "/root/a/b", Name: "b"}
+	mid := &Directory{Path: "/root/a", Name: "a", Dirs: []*Directory{leaf}}
+	root := &Directory{Path: "/root", Name: "root", Dirs: []*Directory{mid}}
+
+	var names []string
+
+	WalkDirectories(root, func(d *Directory) { names = append(names, d.Name) })
+
+	g.Expect(names).To(Equal([]string{"b", "a", "root"}))
+}
+
+func TestWalkDirectories_Empty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &Directory{Path: "/root", Name: "root"}
+
+	var count int
+
+	WalkDirectories(root, func(_ *Directory) { count++ })
+
+	g.Expect(count).To(Equal(1)) // only root
+}
