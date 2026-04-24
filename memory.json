@@ -1,24 +1,24 @@
 {
-  "last_run": "2026-04-23T12:47:49Z",
-  "run_id": "24836016010",
+  "last_run": "2026-04-24T12:47:29Z",
+  "run_id": "24890217893",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/test-improvements-20260422-b8ac25f7451ad3f7",
-      "pr_number": 82,
-      "title": "[Repo Assist] test: add missing tests for model, palette, and scan packages",
+      "branch": "repo-assist/test-improvements-20260424",
+      "pr_number": null,
+      "title": "[Repo Assist] test: expand coverage — table (0→100%), palette.Infos, config.TryAutoLoad, provider metadata",
       "status": "open",
       "type": "test"
     },
     {
-      "branch": "repo-assist/improve-git-metric-source-of-truth",
+      "branch": "repo-assist/model-walk-directories",
       "pr_number": null,
-      "title": "[Repo Assist] refactor(git): add IsGitMetric; eliminate duplicate metric name lists",
+      "title": "[Repo Assist] feat(model): add WalkDirectories for post-order directory traversal",
       "status": "open",
-      "type": "refactor"
+      "type": "feat"
     }
   ],
   "issues_actioned": {
@@ -45,14 +45,16 @@
     "PR #81: chore(deps) x/image v0.39.0 (merged by maintainer 2026-04-21)",
     "Issue #80: dep update tracking (PR #81 merged, suggest closing)",
     "Check comment on #77 (checked off by maintainer 2026-04-21)",
-    "Review PR test improvements (monthly summary item checked off 2026-04-22)"
+    "Review PR test improvements PR #82 (checked off and merged 2026-04-23)",
+    "Review PR refactor IsGitMetric (checked off by maintainer 2026-04-23)"
   ],
   "recently_merged": [
+    "PR #82: test: add missing tests for model, palette, and scan packages (merged 2026-04-23)",
     "PR #73: docs: rewrite usage.md (merged 2026-04-23)",
     "PR #75: feat: help metrics and palettes subcommands (merged 2026-04-23)",
     "PR #79: feat(config): auto-load config file based on output path (merged 2026-04-23)",
     "PR #76: feat: Add Legends (closes #68) - merged 2026-04-21",
     "PR #81: chore(deps) bump x/image to v0.39.0 - merged 2026-04-21"
   ],
-  "notes": "PR #82 (test improvements) still open pending review. New refactor PR created this run: IsGitMetric eliminates duplicate git metric name lists. Issues #74 and #77 closed. No open bugs. Next runs should look for more improvements."
+  "notes": "Two new PRs created this run. Branch repo-assist/test-improvements-20260424: table 0→100%, palette.Infos, config.TryAutoLoad, provider metadata. Branch repo-assist/model-walk-directories: WalkDirectories post-order traversal. No open issues. Next runs: look for more improvements, check if WalkDirectories can be used for directory roll-up metrics."
 }
