@@ -160,3 +160,40 @@ func TestNames_ReturnsSortedSlice(t *testing.T) {
 			"Names() should be sorted: %s should come after %s", names[i], names[i-1])
 	}
 }
+
+func TestInfos_ReturnsAllPalettes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	infos := Infos()
+
+	g.Expect(infos).To(HaveLen(5))
+
+	names := make([]PaletteName, 0, len(infos))
+	for _, info := range infos {
+		names = append(names, info.Name)
+	}
+
+	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage))
+}
+
+func TestInfos_EachEntryHasNonEmptyDescription(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	for _, info := range Infos() {
+		g.Expect(info.Description).NotTo(BeEmpty(),
+			"palette %s should have a non-empty description", info.Name)
+	}
+}
+
+func TestInfos_ReturnsSortedByName(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	infos := Infos()
+	for i := 1; i < len(infos); i++ {
+		g.Expect(string(infos[i].Name) >= string(infos[i-1].Name)).To(BeTrue(),
+			"Infos() should be sorted: %s should come after %s", infos[i].Name, infos[i-1].Name)
+	}
+}

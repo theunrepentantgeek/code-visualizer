@@ -226,3 +226,39 @@ func TestCommitDataCacheConsistency(t *testing.T) {
 	// shared.go has commits from both Alice and Bob.
 	g.Expect(count).To(Equal(int64(2)), "shared.go should have 2 authors")
 }
+
+func TestFileAgeProviderMetadata(t *testing.T) {
+t.Parallel()
+g := NewGomegaWithT(t)
+
+p := &FileAgeProvider{}
+g.Expect(p.Name()).To(Equal(FileAge))
+g.Expect(p.Kind()).To(Equal(metric.Quantity))
+g.Expect(p.Description()).NotTo(BeEmpty())
+g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+g.Expect(p.Dependencies()).To(BeNil())
+}
+
+func TestFileFreshnessProviderMetadata(t *testing.T) {
+t.Parallel()
+g := NewGomegaWithT(t)
+
+p := &FileFreshnessProvider{}
+g.Expect(p.Name()).To(Equal(FileFreshness))
+g.Expect(p.Kind()).To(Equal(metric.Quantity))
+g.Expect(p.Description()).NotTo(BeEmpty())
+g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+g.Expect(p.Dependencies()).To(BeNil())
+}
+
+func TestAuthorCountProviderMetadata(t *testing.T) {
+t.Parallel()
+g := NewGomegaWithT(t)
+
+p := &AuthorCountProvider{}
+g.Expect(p.Name()).To(Equal(AuthorCount))
+g.Expect(p.Kind()).To(Equal(metric.Quantity))
+g.Expect(p.Description()).NotTo(BeEmpty())
+g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+g.Expect(p.Dependencies()).To(BeNil())
+}
