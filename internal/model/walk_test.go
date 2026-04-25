@@ -130,7 +130,10 @@ func TestWalkDirectories_PostOrder(t *testing.T) {
 
 	// Post-order: children before parent
 	g.Expect(names).To(HaveLen(3))
-	g.Expect(names[len(names)-1]).To(Equal("root"), "root must be visited last (post-order)")
+
+	if names != nil { // Keeping nilaway happy
+		g.Expect(names[len(names)-1]).To(Equal("root"), "root must be visited last (post-order)")
+	}
 }
 
 func TestWalkDirectories_DeepNesting_PostOrder(t *testing.T) {
