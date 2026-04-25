@@ -1,22 +1,45 @@
 {
-  "last_run": "2026-04-25T12:31:20Z",
-  "run_id": "24930928076",
+  "last_run": "2026-04-25T23:04:34Z",
+  "run_id": "24942774350",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/perf-scan-optimizations-20260425",
-      "pr_number": null,
+      "branch": "repo-assist/perf-scan-optimizations-20260425-27c6206ac24fa305",
+      "pr_number": 87,
       "title": "[Repo Assist] perf(scan): filter before stat; short-circuit hasFiles check",
       "status": "open",
       "type": "perf"
+    },
+    {
+      "branch": "repo-assist/improve-config-export-and-logging-20260425",
+      "pr_number": null,
+      "title": "[Repo Assist] fix: improve config export completeness and logging",
+      "status": "open",
+      "type": "fix",
+      "closes": [88, 92, 94]
+    },
+    {
+      "branch": "repo-assist/fix-file-age-days-20260425",
+      "pr_number": null,
+      "title": "[Repo Assist] fix(git): measure file-age and file-freshness in days",
+      "status": "open",
+      "type": "fix",
+      "closes": [91]
     }
   ],
   "issues_actioned": {
     "74": "labelled enhancement, commented, PR #75 submitted (merged 2026-04-23)",
-    "77": "labelled enhancement, commented, PR #79 submitted (merged 2026-04-23)"
+    "77": "labelled enhancement, commented, PR #79 submitted (merged 2026-04-23)",
+    "88": "labelled bug, fix in improve-config-export-and-logging PR",
+    "89": "labelled bug",
+    "90": "labelled bug",
+    "91": "labelled bug, fix in fix-file-age-days PR",
+    "92": "labelled enhancement, fix in improve-config-export-and-logging PR",
+    "93": "labelled bug",
+    "94": "labelled bug, fix in improve-config-export-and-logging PR"
   },
   "monthly_summary_issue": {
     "title": "[Repo Assist] Monthly Activity 2026-04",
@@ -25,8 +48,8 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 86,
-    "prs": 86
+    "issues": 94,
+    "prs": 87
   },
   "checked_off_items": [
     "PR #61: perf(git) cache per-file commit data (merged)",
@@ -44,15 +67,15 @@
     "Review PR model-walk-directories (checked off by maintainer 2026-04-25)"
   ],
   "recently_merged": [
-    "PR #84: test: expand coverage (table, palette.Infos, config.TryAutoLoad) (merged 2026-04-25)",
+    "PR #84: test: expand coverage (merged 2026-04-25)",
     "PR #85: feat(model): add WalkDirectories (merged 2026-04-25)",
     "PR #83: refactor(git): add IsGitMetric (merged 2026-04-23)",
-    "PR #82: test: add missing tests for model, palette, and scan packages (merged 2026-04-23)",
+    "PR #82: test: add missing tests (merged 2026-04-23)",
     "PR #73: docs: rewrite usage.md (merged 2026-04-23)",
-    "PR #75: feat: help metrics and palettes subcommands (merged 2026-04-23)",
-    "PR #79: feat(config): auto-load config file based on output path (merged 2026-04-23)",
-    "PR #76: feat: Add Legends (closes #68) - merged 2026-04-21",
-    "PR #81: chore(deps) bump x/image to v0.39.0 - merged 2026-04-21"
+    "PR #75: feat: help metrics and palettes (merged 2026-04-23)",
+    "PR #79: feat(config): auto-load config (merged 2026-04-23)",
+    "PR #76: feat: Add Legends (merged 2026-04-21)",
+    "PR #81: chore(deps) x/image v0.39.0 (merged 2026-04-21)"
   ],
-  "notes": "New perf PR created this run: branch repo-assist/perf-scan-optimizations-20260425. Moves filter check before os.Stat in scanner (saves syscalls for excluded entries); replaces countFiles O(N) with hasFiles O(1). Dependabot PR #86 open (gh-aw-actions bump) — not a Repo Assist concern. No user issues open. Next runs: engineering improvements, more perf work, or testing improvements."
+  "notes": "This run: labelled #88-94; created 2 new fix PRs (config export + file-age days). Remaining open bugs: #89 (horizontal legend too tall - complex), #90 (legend orientation margin - complex), #93 (PNG not detected as binary - needs magic-byte/extension detection). Next runs: investigate #93 (PNG binary detection - possibly simple extension list), #89/#90 (legend fixes - more complex)."
 }
