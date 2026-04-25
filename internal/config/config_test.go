@@ -449,3 +449,61 @@ func TestFindAutoConfig_SVGOutput_StillFindsConfig(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(result).To(Equal(configPath))
 }
+
+// TryAutoLoad tests
+
+func TestTryAutoLoad_NoConfigFile_NoChange(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	outputPath := filepath.Join(dir, "output.png")
+
+	cfg := New()
+	err := cfg.TryAutoLoad(outputPath)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Source).To(BeNil())
+}
+
+func TestTryAutoLoad_ConfigFilePresent_LoadsIt(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	outputPath := filepath.Join(dir, "output.png")
+	configPath := filepath.Join(dir, "output-config.yml")
+	g.Expect(os.WriteFile(configPath, []byte("width: 800\n"), 0o600)).To(Succeed())
+
+	cfg := New()
+	err := cfg.TryAutoLoad(outputPath)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Source).NotTo(BeNil())
+	g.Expect(*cfg.Source).To(Equal(configPath))
+	g.Expect(*cfg.Width).To(Equal(800))
+}
+
+func TestTryAutoLoad_AlreadyLoaded_SkipsAutoLoad(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	outputPath := filepath.Join(dir, "output.png")
+
+	// Write an auto-config that would set width=800
+	autoConfigPath := filepath.Join(dir, "output-config.yml")
+	g.Expect(os.WriteFile(autoConfigPath, []byte("width: 800\n"), 0o600)).To(Succeed())
+
+	// Manually load a different config first (sets Source)
+	manualConfigPath := filepath.Join(dir, "manual.yml")
+	g.Expect(os.WriteFile(manualConfigPath, []byte("width: 1600\n"), 0o600)).To(Succeed())
+
+	cfg := New()
+	g.Expect(cfg.Load(manualConfigPath)).To(Succeed())
+
+	// TryAutoLoad should be a no-op because Source is already set
+	err := cfg.TryAutoLoad(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(*cfg.Width).To(Equal(1600)) // unchanged
+}

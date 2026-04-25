@@ -18,6 +18,8 @@ func TestFileSizeProvider(t *testing.T) {
 	p := FileSizeProvider{}
 	g.Expect(p.Name()).To(Equal(FileSize))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
 	g.Expect(p.Dependencies()).To(BeNil())
 
 	root := &model.Directory{Path: "/root", Name: "root"}
@@ -31,6 +33,8 @@ func TestFileTypeProvider(t *testing.T) {
 	p := FileTypeProvider{}
 	g.Expect(p.Name()).To(Equal(FileType))
 	g.Expect(p.Kind()).To(Equal(metric.Classification))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
 	g.Expect(p.Dependencies()).To(BeNil())
 
 	root := &model.Directory{Path: "/root", Name: "root"}
@@ -111,4 +115,16 @@ func TestFileLinesProviderNestedDirs(t *testing.T) {
 	v, ok := f.Quantity(FileLines)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(Equal(int64(2)))
+}
+
+func TestFileLinesProviderMetadata(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := FileLinesProvider{}
+	g.Expect(p.Name()).To(Equal(FileLines))
+	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+	g.Expect(p.Dependencies()).To(BeNil())
 }
