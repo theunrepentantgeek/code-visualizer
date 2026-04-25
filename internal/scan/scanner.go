@@ -38,9 +38,12 @@ func Scan(path string, rules []filter.Rule, progress Progress) (*model.Directory
 		return nil, err
 	}
 
-	if countFiles(root) == 0 {
+	files := countFiles(root)
+	if files == 0 {
 		return nil, errors.New("no files found in directory")
 	}
+
+	slog.Info("Scan complete", "files", files, "directories", countDirs(root))
 
 	return root, nil
 }
@@ -173,6 +176,15 @@ func countFiles(node *model.Directory) int {
 	count := len(node.Files)
 	for _, d := range node.Dirs {
 		count += countFiles(d)
+	}
+
+	return count
+}
+
+func countDirs(node *model.Directory) int {
+	count := len(node.Dirs)
+	for _, d := range node.Dirs {
+		count += countDirs(d)
 	}
 
 	return count

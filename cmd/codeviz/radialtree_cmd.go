@@ -209,6 +209,11 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 		cfg.Radial = &config.Radial{}
 	}
 
+	discSize := string(c.DiscSize)
+	if discSize != "" {
+		cfg.Radial.DiscSize = &discSize
+	}
+
 	if c.Fill != "" {
 		cfg.Radial.Fill = &c.Fill
 	}

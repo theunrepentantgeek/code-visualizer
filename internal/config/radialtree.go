@@ -3,6 +3,7 @@ package config
 // Radial holds persistent configuration for radial tree visualizations.
 // All fields are pointers: nil means not configured, non-nil means explicitly set.
 type Radial struct {
+	DiscSize          *string `yaml:"discSize,omitempty"          json:"discSize,omitempty"`
 	Fill              *string `yaml:"fill,omitempty"              json:"fill,omitempty"`
 	FillPalette       *string `yaml:"fillPalette,omitempty"       json:"fillPalette,omitempty"`
 	Border            *string `yaml:"border,omitempty"            json:"border,omitempty"`
