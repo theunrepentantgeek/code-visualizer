@@ -55,6 +55,7 @@ func TestWriteTo_OutputContainsHeader(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	tbl := New("Name", "Count")
+
 	var buf strings.Builder
 	tbl.WriteTo(&buf)
 
@@ -68,6 +69,7 @@ func TestWriteTo_OutputContainsDivider(t *testing.T) {
 
 	tbl := New("Name", "Count")
 	tbl.AddRow("foo", "1")
+
 	var buf strings.Builder
 	tbl.WriteTo(&buf)
 
@@ -120,6 +122,7 @@ func TestWriteTo_EmptyTable(t *testing.T) {
 
 	// A table with only a header should produce header + divider
 	tbl := New("Name")
+
 	var buf strings.Builder
 	tbl.WriteTo(&buf)
 
@@ -155,7 +158,7 @@ func TestWriteTo_PipeDelimited(t *testing.T) {
 	tbl.WriteTo(&buf)
 
 	// Every line should start and end with |
-	for _, line := range strings.Split(strings.TrimRight(buf.String(), "\n"), "\n") {
+	for line := range strings.SplitSeq(strings.TrimRight(buf.String(), "\n"), "\n") {
 		g.Expect(line).To(HavePrefix("|"))
 		g.Expect(line).To(HaveSuffix("|"))
 	}

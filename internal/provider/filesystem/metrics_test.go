@@ -118,13 +118,13 @@ func TestFileLinesProviderNestedDirs(t *testing.T) {
 }
 
 func TestFileLinesProviderMetadata(t *testing.T) {
-t.Parallel()
-g := NewGomegaWithT(t)
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-p := FileLinesProvider{}
-g.Expect(p.Name()).To(Equal(FileLines))
-g.Expect(p.Kind()).To(Equal(metric.Quantity))
-g.Expect(p.Description()).NotTo(BeEmpty())
-g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-g.Expect(p.Dependencies()).To(BeNil())
+	p := FileLinesProvider{}
+	g.Expect(p.Name()).To(Equal(FileLines))
+	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+	g.Expect(p.Dependencies()).To(BeNil())
 }
