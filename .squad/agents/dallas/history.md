@@ -102,3 +102,10 @@
 - **Shared helpers:** `collectBubblesByType`, `resolveDirFill`, `resolveFileFill`, `resolveBorder` used by both PNG and SVG renderers.
 - **Golden file:** Created `internal/render/testdata/bubble-tree.png` via `-update` flag.
 - **Full build + all tests pass** (`go build ./...` and `go test ./...` clean).
+
+### Bubble Tree — PR #64 colour-mapping bug fix (2026-04-20)
+
+- **Bug:** `layoutDir` sorts children by radius for packing density, which mutates `node.Children` order. The four colour-mapping functions (`applyBubbleFillColours`, `applyCategoricalBubbleFillColours`, `applyBubbleBorderColours`, `applyCategoricalBubbleBorderColours`) used index-based pairing (`fileIdx`/`dirIdx` counters) to match BubbleNode children with `model.Directory` dirs/files. After sorting, indices no longer corresponded — colours were applied to the wrong nodes.
+- **Fix:** Added `Path string` field to `BubbleNode` (populated from `model.Directory.Path` and `model.File.Path` during layout). Replaced all four index-based colour walkers with path-indexed lookup via `indexBubbleNodesByPath` helper. Sort stays — it's good for packing. Path makes ordering irrelevant for colour mapping.
+- **Key pattern:** Use direct references (paths, pointers), not positional indices, when correlating two trees that may be independently reordered.
+- **Test added:** `TestLayoutPathPopulated` verifies that Path is propagated through the full tree.
