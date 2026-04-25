@@ -18,13 +18,13 @@ const (
 	AuthorCount   metric.Name = "author-count"
 )
 
-// FileAgeProvider reports time since first commit in seconds.
+// FileAgeProvider reports time since first commit in days.
 type FileAgeProvider struct{}
 
 func (*FileAgeProvider) Name() metric.Name { return FileAge }
 func (*FileAgeProvider) Kind() metric.Kind { return metric.Quantity }
 func (*FileAgeProvider) Description() string {
-	return "Time since first commit (seconds); older files score higher."
+	return "Time since first commit (days); older files score higher."
 }
 func (*FileAgeProvider) Dependencies() []metric.Name         { return nil }
 func (*FileAgeProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
@@ -58,13 +58,13 @@ func (*FileAgeProvider) Load(root *model.Directory) error {
 	return nil
 }
 
-// FileFreshnessProvider reports time since most recent commit in seconds.
+// FileFreshnessProvider reports time since most recent commit in days.
 type FileFreshnessProvider struct{}
 
 func (*FileFreshnessProvider) Name() metric.Name { return FileFreshness }
 func (*FileFreshnessProvider) Kind() metric.Kind { return metric.Quantity }
 func (*FileFreshnessProvider) Description() string {
-	return "Time since most recent commit (seconds); recently changed files score higher."
+	return "Time since most recent commit (days); recently changed files score higher."
 }
 func (*FileFreshnessProvider) Dependencies() []metric.Name         { return nil }
 func (*FileFreshnessProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
