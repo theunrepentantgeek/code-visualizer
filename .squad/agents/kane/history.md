@@ -50,3 +50,11 @@
 - **Key pattern differences from radial:** Size flag is `--size/-s` (not `--disc-size/-d`); default 1920×1080 (not square); Layout takes width+height (not canvasSize); LabelMode defaults to "folders" (not "all").
 - **Won't compile yet:** Imports `internal/bubbletree` (Layout, BubbleNode, LabelMode) and `render.RenderBubble` — Dallas is building these in parallel.
 
+### Validate() vs Run() ordering with Kong (Issue #99)
+
+- **Problem:** Kong calls `Validate()` before `Run()`, but config file loading happens inside `Run()`. Size fields that come from config are empty at `Validate()` time, causing false "unknown metric" errors.
+- **Fix pattern:** `Validate()` now only checks CLI-only concerns (filter glob syntax). A new `validateEffective()` method runs inside `Run()` after `TryAutoLoad()` + `applyOverrides()` + config backfill, handling all config-dependent validation (size metric, fill/border metric-palette, border-palette-requires-border).
+- **Kong struct tag requirement:** Enum fields without `required:"true"` need both `default:""` and a leading comma in the enum list (e.g., `enum:",file-size,..."`) to accept empty values.
+- **Applied to:** `TreemapCmd`, `RadialCmd`, `BubbletreeCmd` — all three have the same structural pattern.
+- **Key files:** `cmd/codeviz/treemap_cmd.go`, `cmd/codeviz/radialtree_cmd.go`, `cmd/codeviz/bubbletree_cmd.go`.
+
