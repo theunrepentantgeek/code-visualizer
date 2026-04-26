@@ -3,8 +3,9 @@
 package bubbletree
 
 import (
+	"cmp"
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
@@ -59,8 +60,8 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 	}
 
 	// Sort by radius descending — improves packing density.
-	sort.Slice(children, func(i, j int) bool {
-		return children[i].Radius > children[j].Radius
+	slices.SortFunc(children, func(a, b BubbleNode) int {
+		return cmp.Compare(b.Radius, a.Radius)
 	})
 
 	packCircles(children)

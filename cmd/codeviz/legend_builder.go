@@ -1,7 +1,7 @@
 package main
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
@@ -140,7 +140,7 @@ func buildCategorySwatches(
 	types []string,
 	mapper *palette.CategoricalMapper,
 ) []render.CategorySwatch {
-	sort.Strings(types)
+	slices.Sort(types)
 
 	swatches := make([]render.CategorySwatch, len(types))
 	for i, t := range types {

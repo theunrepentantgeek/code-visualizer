@@ -1,9 +1,10 @@
 package render
 
 import (
+	"cmp"
 	"image/color"
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
@@ -147,8 +148,8 @@ func drawSingleDisc(dc *gg.Context, node radialtree.RadialNode, sx, sy float64) 
 // are never obscured by larger ones drawn later.
 func drawDiscs(dc *gg.Context, node radialtree.RadialNode, cx, cy float64) {
 	entries := collectDiscs(node, cx, cy)
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].node.DiscRadius > entries[j].node.DiscRadius
+	slices.SortFunc(entries, func(a, b discEntry) int {
+		return cmp.Compare(b.node.DiscRadius, a.node.DiscRadius)
 	})
 
 	for _, e := range entries {

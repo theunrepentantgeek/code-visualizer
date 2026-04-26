@@ -1,12 +1,13 @@
 package render
 
 import (
+	"cmp"
 	"fmt"
 	"html"
 	"image/color"
 	"math"
 	"os"
-	"sort"
+	"slices"
 
 	"github.com/rotisserie/eris"
 
@@ -96,8 +97,8 @@ func collectSVGDiscs(
 func writeSVGDiscs(f *os.File, node radialtree.RadialNode, cx, cy float64) {
 	discs := collectSVGDiscs(node, cx, cy)
 
-	sort.Slice(discs, func(i, j int) bool {
-		return discs[i].node.DiscRadius > discs[j].node.DiscRadius
+	slices.SortFunc(discs, func(a, b svgDisc) int {
+		return cmp.Compare(b.node.DiscRadius, a.node.DiscRadius)
 	})
 
 	for _, d := range discs {
