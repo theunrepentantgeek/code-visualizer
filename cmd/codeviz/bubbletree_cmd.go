@@ -88,8 +88,8 @@ func (c *BubbletreeCmd) validateEffective() error {
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides, backfills
-// the size metric from config when omitted on the CLI, and validates the
-// effective configuration. Called at the start of Run().
+// config-driven fields when omitted on the CLI, and validates the effective
+// configuration. Called at the start of Run().
 func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
@@ -97,12 +97,17 @@ func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 
 	c.applyOverrides(flags.Config)
 
-	// Backfill size from config when CLI flag was omitted.
+	cfg := flags.Config.Bubbletree
+
+	// Backfill fields from config when CLI flags were omitted.
 	if c.Size == "" {
-		if s := ptrString(flags.Config.Bubbletree.Size); s != "" {
-			c.Size = metric.Name(s)
-		}
+		c.Size = metric.Name(ptrString(cfg.Size))
 	}
+
+	backfillString(&c.Fill, cfg.Fill)
+	backfillString(&c.FillPalette, cfg.FillPalette)
+	backfillString(&c.Border, cfg.Border)
+	backfillString(&c.BorderPalette, cfg.BorderPalette)
 
 	return c.validateEffective()
 }

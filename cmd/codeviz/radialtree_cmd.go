@@ -80,8 +80,8 @@ func (c *RadialCmd) validateEffective() error {
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides, backfills
-// the disc-size metric from config when omitted on the CLI, and validates the
-// effective configuration. Called at the start of Run().
+// config-driven fields when omitted on the CLI, and validates the effective
+// configuration. Called at the start of Run().
 func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
@@ -89,12 +89,17 @@ func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 
 	c.applyOverrides(flags.Config)
 
-	// Backfill disc-size from config when CLI flag was omitted.
+	cfg := flags.Config.Radial
+
+	// Backfill fields from config when CLI flags were omitted.
 	if c.DiscSize == "" {
-		if s := ptrString(flags.Config.Radial.DiscSize); s != "" {
-			c.DiscSize = metric.Name(s)
-		}
+		c.DiscSize = metric.Name(ptrString(cfg.DiscSize))
 	}
+
+	backfillString(&c.Fill, cfg.Fill)
+	backfillString(&c.FillPalette, cfg.FillPalette)
+	backfillString(&c.Border, cfg.Border)
+	backfillString(&c.BorderPalette, cfg.BorderPalette)
 
 	return c.validateEffective()
 }

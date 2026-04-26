@@ -126,8 +126,8 @@ func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Nam
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides, backfills
-// the size metric from config when omitted on the CLI, and validates the
-// effective configuration. Called at the start of Run().
+// config-driven fields when omitted on the CLI, and validates the effective
+// configuration. Called at the start of Run().
 func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
@@ -135,12 +135,17 @@ func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 
 	c.applyOverrides(flags.Config)
 
-	// Backfill size from config when CLI flag was omitted.
+	cfg := flags.Config.Treemap
+
+	// Backfill fields from config when CLI flags were omitted.
 	if c.Size == "" {
-		if s := ptrString(flags.Config.Treemap.Size); s != "" {
-			c.Size = metric.Name(s)
-		}
+		c.Size = metric.Name(ptrString(cfg.Size))
 	}
+
+	backfillString(&c.Fill, cfg.Fill)
+	backfillString(&c.FillPalette, cfg.FillPalette)
+	backfillString(&c.Border, cfg.Border)
+	backfillString(&c.BorderPalette, cfg.BorderPalette)
 
 	return c.validateEffective()
 }
@@ -401,6 +406,14 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 
 	if c.LegendOrientation != "" {
 		cfg.Treemap.LegendOrientation = &c.LegendOrientation
+	}
+}
+
+// backfillString copies the config value into the CLI field when the CLI flag
+// was not provided (empty). This ensures validateEffective sees the merged value.
+func backfillString(target *string, src *string) {
+	if *target == "" {
+		*target = ptrString(src)
 	}
 }
 
