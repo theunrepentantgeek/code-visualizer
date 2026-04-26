@@ -52,36 +52,37 @@ func (c *RadialCmd) Validate() error {
 	return nil
 }
 
-// validateEffective checks fields that may be populated by config file merge.
-// Called from Run() after TryAutoLoad + applyOverrides + size backfill.
-func (c *RadialCmd) validateEffective() error {
-	p, ok := provider.Get(c.DiscSize)
+// validateConfig checks the effective configuration after all sources have been
+// merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
+func (*RadialCmd) validateConfig(cfg *config.Radial) error {
+	discSize := ptrString(cfg.DiscSize)
+
+	p, ok := provider.Get(metric.Name(discSize))
 	if !ok {
-		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", c.DiscSize, formatMetricNames())
+		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", discSize, formatMetricNames())
 	}
 
 	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", c.DiscSize, p.Kind())
+		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", discSize, p.Kind())
 	}
 
-	if err := validateMetricPalette(c.Fill, c.FillPalette, "fill"); err != nil {
+	if err := validateMetricPalette(ptrString(cfg.Fill), ptrString(cfg.FillPalette), "fill"); err != nil {
 		return err
 	}
 
-	if err := validateMetricPalette(c.Border, c.BorderPalette, "border"); err != nil {
+	if err := validateMetricPalette(ptrString(cfg.Border), ptrString(cfg.BorderPalette), "border"); err != nil {
 		return err
 	}
 
-	if c.BorderPalette != "" && c.Border == "" {
+	if ptrString(cfg.BorderPalette) != "" && ptrString(cfg.Border) == "" {
 		return eris.New("--border-palette requires --border to be specified")
 	}
 
 	return nil
 }
 
-// mergeConfigAndValidate loads the config file, merges CLI overrides, backfills
-// config-driven fields when omitted on the CLI, and validates the effective
-// configuration. Called at the start of Run().
+// mergeConfigAndValidate loads the config file, merges CLI overrides on top,
+// and validates the effective configuration. Called at the start of Run().
 func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
@@ -89,19 +90,7 @@ func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 
 	c.applyOverrides(flags.Config)
 
-	cfg := flags.Config.Radial
-
-	// Backfill fields from config when CLI flags were omitted.
-	if c.DiscSize == "" {
-		c.DiscSize = metric.Name(ptrString(cfg.DiscSize))
-	}
-
-	backfillString(&c.Fill, cfg.Fill)
-	backfillString(&c.FillPalette, cfg.FillPalette)
-	backfillString(&c.Border, cfg.Border)
-	backfillString(&c.BorderPalette, cfg.BorderPalette)
-
-	return c.validateEffective()
+	return c.validateConfig(flags.Config.Radial)
 }
 
 func (c *RadialCmd) Run(flags *Flags) error {
@@ -110,6 +99,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	}
 
 	cfg := flags.Config.Radial
+	discSize := metric.Name(ptrString(cfg.DiscSize))
 
 	if err := c.validatePaths(); err != nil {
 		return err
@@ -136,7 +126,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(c.DiscSize, ptrString(cfg.Fill), ptrString(cfg.Border))
+	requested := collectRequestedMetrics(discSize, ptrString(cfg.Fill), ptrString(cfg.Border))
 
 	err = c.checkGitRequirement(requested)
 	if err != nil {
@@ -161,19 +151,20 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
 
-	return c.renderAndLog(root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, discSize, files, dirs, canvasSize, fillMetric, fillPaletteName)
 }
 
 func (c *RadialCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Radial,
+	discSize metric.Name,
 	files, dirs, canvasSize int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) error {
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
-	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, canvasSize, fillMetric, fillPaletteName)
+	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, discSize, canvasSize, fillMetric, fillPaletteName)
 	if err != nil {
 		return err
 	}
@@ -183,7 +174,7 @@ func (c *RadialCmd) renderAndLog(
 		"directories", dirs,
 		"output", c.Output,
 		"canvas_size", canvasSize,
-		"disc_metric", string(c.DiscSize),
+		"disc_metric", string(discSize),
 		"fill_metric", string(fillMetric),
 		"fill_palette", string(fillPaletteName),
 		"border_metric", string(borderMetric),
@@ -197,12 +188,13 @@ func (c *RadialCmd) renderAndLog(
 func (c *RadialCmd) applyColoursAndRender(
 	cfg *config.Radial,
 	root *model.Directory,
+	discSize metric.Name,
 	canvasSize int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) (metric.Name, palette.PaletteName, error) {
 	labels := c.resolveLabels(cfg)
-	nodes := radialtree.Layout(root, canvasSize, c.DiscSize, labels)
+	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
 	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
@@ -210,7 +202,7 @@ func (c *RadialCmd) applyColoursAndRender(
 	borderName := metric.Name(ptrString(cfg.Border))
 	legend := buildLegendInfo(
 		legendPos, legendOrient, fillMetric, fillPaletteName,
-		borderName, borderPaletteName, c.DiscSize, root,
+		borderName, borderPaletteName, discSize, root,
 	)
 
 	slog.Debug("rendering radial", "canvasSize", canvasSize, "output", c.Output)
@@ -347,12 +339,12 @@ func (c *RadialCmd) checkGitRequirement(requested []metric.Name) error {
 	return nil
 }
 
-func (c *RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
+func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
 	if fill := ptrString(cfg.Fill); fill != "" {
 		return metric.Name(fill)
 	}
 
-	return c.DiscSize
+	return metric.Name(ptrString(cfg.DiscSize))
 }
 
 func (*RadialCmd) resolveFillPalette(cfg *config.Radial, fillMetric metric.Name) palette.PaletteName {
@@ -367,8 +359,8 @@ func (*RadialCmd) resolveFillPalette(cfg *config.Radial, fillMetric metric.Name)
 	return palette.Neutral
 }
 
-func (c *RadialCmd) filterBinaryFiles(_ *config.Radial, root *model.Directory) error {
-	if c.DiscSize != filesystem.FileLines {
+func (*RadialCmd) filterBinaryFiles(cfg *config.Radial, root *model.Directory) error {
+	if metric.Name(ptrString(cfg.DiscSize)) != filesystem.FileLines {
 		return nil
 	}
 
