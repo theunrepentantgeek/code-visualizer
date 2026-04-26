@@ -349,6 +349,11 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 		cfg.Height = &c.Height
 	}
 
+	size := string(c.Size)
+	if size != "" {
+		cfg.Treemap.Size = &size
+	}
+
 	if c.Fill != "" {
 		cfg.Treemap.Fill = &c.Fill
 	}

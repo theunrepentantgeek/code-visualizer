@@ -213,6 +213,11 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 		cfg.Bubbletree = &config.Bubbletree{}
 	}
 
+	size := string(c.Size)
+	if size != "" {
+		cfg.Bubbletree.Size = &size
+	}
+
 	if c.Fill != "" {
 		cfg.Bubbletree.Fill = &c.Fill
 	}

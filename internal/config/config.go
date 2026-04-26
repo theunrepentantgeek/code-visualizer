@@ -132,6 +132,8 @@ func (c *Config) Save(path string) error {
 		return eris.Wrapf(err, "failed to write config file %q", path)
 	}
 
+	slog.Info("Config saved", "path", path)
+
 	return nil
 }
 
