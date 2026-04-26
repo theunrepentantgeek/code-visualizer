@@ -156,10 +156,8 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	if flags.ExportData != "" {
-		if err := export.Export(root, requested, flags.ExportData); err != nil {
-			return eris.Wrap(err, "failed to export data")
-		}
+	if err := export.Export(root, requested, flags.ExportData); err != nil {
+		return eris.Wrap(err, "failed to export data")
 	}
 
 	width := ptrInt(flags.Config.Width, 1920)

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	"go.yaml.in/yaml/v3"
 
 	"github.com/bevan/code-visualizer/internal/metric"
@@ -262,6 +263,7 @@ func TestExport_NestedDirectories(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = json.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -324,6 +326,7 @@ func TestExport_BinaryFileFlag(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = json.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -352,6 +355,8 @@ func TestExport_BinaryFileFlag(t *testing.T) {
 			bin = fe
 		case "notes.txt":
 			txt = fe
+		default:
+			// ignore other files
 		}
 	}
 
@@ -395,6 +400,7 @@ func TestExport_AllMetricTypes(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = json.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred())
 

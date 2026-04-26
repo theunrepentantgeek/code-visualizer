@@ -46,11 +46,16 @@ type FileExport struct {
 // Export serializes the model tree and computed metrics to a file.
 // Format is inferred from the file extension (.json or .yaml/.yml).
 // Only metrics in the requested list are included in the output.
+// If outputPath is empty, Export is a no-op and returns nil.
 func Export(
 	root *model.Directory,
 	requested []metric.Name,
 	outputPath string,
 ) error {
+	if outputPath == "" {
+		return nil
+	}
+
 	format, err := formatFromPath(outputPath)
 	if err != nil {
 		return err
@@ -60,29 +65,39 @@ func Export(
 		Root: exportDirectory(root, requested),
 	}
 
-	var content []byte
-
-	switch format {
-	case formatJSON:
-		content, err = json.MarshalIndent(data, "", "  ")
-		if err != nil {
-			return eris.Wrap(err, "failed to marshal JSON")
-		}
-
-		// Append trailing newline for POSIX compliance.
-		content = append(content, '\n')
-	case formatYAML:
-		content, err = yaml.Marshal(data)
-		if err != nil {
-			return eris.Wrap(err, "failed to marshal YAML")
-		}
+	content, err := marshalExport(data, format)
+	if err != nil {
+		return err
 	}
 
-	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
+	if err := os.WriteFile(outputPath, content, 0o600); err != nil {
 		return eris.Wrap(err, "failed to write export file")
 	}
 
 	return nil
+}
+
+// marshalExport serializes the export data in the specified format.
+func marshalExport(data ExportData, format exportFormat) ([]byte, error) {
+	switch format {
+	case formatJSON:
+		content, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return nil, eris.Wrap(err, "failed to marshal JSON")
+		}
+
+		// Append trailing newline for POSIX compliance.
+		return append(content, '\n'), nil
+	case formatYAML:
+		content, err := yaml.Marshal(data)
+		if err != nil {
+			return nil, eris.Wrap(err, "failed to marshal YAML")
+		}
+
+		return content, nil
+	default:
+		return nil, eris.Errorf("unsupported export format: %d", format)
+	}
 }
 
 // exportFormat represents a supported export file format.
@@ -152,27 +167,15 @@ func collectDirectoryMetrics(
 ) {
 	for _, name := range requested {
 		if q, ok := dir.Quantity(name); ok {
-			if de.Quantities == nil {
-				de.Quantities = make(map[string]int64)
-			}
-
-			de.Quantities[string(name)] = q
+			de.Quantities = addQuantity(de.Quantities, string(name), q)
 		}
 
 		if m, ok := dir.Measure(name); ok {
-			if de.Measures == nil {
-				de.Measures = make(map[string]float64)
-			}
-
-			de.Measures[string(name)] = m
+			de.Measures = addMeasure(de.Measures, string(name), m)
 		}
 
 		if c, ok := dir.Classification(name); ok {
-			if de.Classifications == nil {
-				de.Classifications = make(map[string]string)
-			}
-
-			de.Classifications[string(name)] = c
+			de.Classifications = addClassification(de.Classifications, string(name), c)
 		}
 	}
 }
@@ -186,27 +189,45 @@ func collectFileMetrics(
 ) {
 	for _, name := range requested {
 		if q, ok := f.Quantity(name); ok {
-			if fe.Quantities == nil {
-				fe.Quantities = make(map[string]int64)
-			}
-
-			fe.Quantities[string(name)] = q
+			fe.Quantities = addQuantity(fe.Quantities, string(name), q)
 		}
 
 		if m, ok := f.Measure(name); ok {
-			if fe.Measures == nil {
-				fe.Measures = make(map[string]float64)
-			}
-
-			fe.Measures[string(name)] = m
+			fe.Measures = addMeasure(fe.Measures, string(name), m)
 		}
 
 		if c, ok := f.Classification(name); ok {
-			if fe.Classifications == nil {
-				fe.Classifications = make(map[string]string)
-			}
-
-			fe.Classifications[string(name)] = c
+			fe.Classifications = addClassification(fe.Classifications, string(name), c)
 		}
 	}
+}
+
+func addQuantity(m map[string]int64, key string, value int64) map[string]int64 {
+	if m == nil {
+		m = make(map[string]int64)
+	}
+
+	m[key] = value
+
+	return m
+}
+
+func addMeasure(m map[string]float64, key string, value float64) map[string]float64 {
+	if m == nil {
+		m = make(map[string]float64)
+	}
+
+	m[key] = value
+
+	return m
+}
+
+func addClassification(m map[string]string, key, value string) map[string]string {
+	if m == nil {
+		m = make(map[string]string)
+	}
+
+	m[key] = value
+
+	return m
 }
