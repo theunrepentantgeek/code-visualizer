@@ -8,6 +8,7 @@ import (
 
 	gogit "github.com/go-git/go-git/v5"
 
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/singleflight"
@@ -184,6 +185,13 @@ func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
 	}
 
 	err = log.ForEach(func(c *object.Commit) error {
+		// go-git's FileName filter includes merge commits that didn't
+		// actually modify the file. Skip those to avoid polluting
+		// the newest timestamp with unrelated commit dates.
+		if !commitModifiedFile(c, relPath) {
+			return nil
+		}
+
 		when := c.Author.When
 		if data.oldest.IsZero() || when.Before(data.oldest) {
 			data.oldest = when
@@ -202,4 +210,60 @@ func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
 	}
 
 	return data, nil
+}
+
+// commitModifiedFile returns true if the commit actually changed the file at
+// relPath, as opposed to merely having it in the tree (which happens with merge
+// commits). A commit modified the file if:
+//   - it is a root commit (no parents), or
+//   - the file's blob hash differs from at least one parent.
+func commitModifiedFile(c *object.Commit, relPath string) bool {
+	fileHash, err := blobHash(c, relPath)
+	if err != nil {
+		return true // conservative: include on error
+	}
+
+	parents := c.Parents()
+	defer parents.Close()
+
+	hasParent := false
+
+	err = parents.ForEach(func(parent *object.Commit) error {
+		hasParent = true
+
+		parentHash, hashErr := blobHash(parent, relPath)
+		if hashErr != nil {
+			// File missing in parent → commit added it.
+			return errFileModified
+		}
+
+		if parentHash != fileHash {
+			return errFileModified
+		}
+
+		return nil
+	})
+
+	if !hasParent {
+		return true // root commit — file was introduced
+	}
+
+	return errors.Is(err, errFileModified)
+}
+
+var errFileModified = errors.New("file modified")
+
+// blobHash returns the blob hash of the file at relPath within the commit's tree.
+func blobHash(c *object.Commit, relPath string) (plumbing.Hash, error) {
+	tree, err := c.Tree()
+	if err != nil {
+		return plumbing.ZeroHash, err //nolint:wrapcheck // internal helper
+	}
+
+	entry, err := tree.File(relPath)
+	if err != nil {
+		return plumbing.ZeroHash, err //nolint:wrapcheck // internal helper
+	}
+
+	return entry.Hash, nil
 }

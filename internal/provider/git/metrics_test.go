@@ -145,10 +145,18 @@ func TestFileFreshnessProvider(t *testing.T) {
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
+	// old.go was committed at 2024-01-01 and never modified — should have freshness > 0
+	freshOld, ok := root.Files[0].Quantity(FileFreshness)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(freshOld).To(BeNumerically(">", 0), "old.go last modified 2024-01-01 should have freshness > 0")
+
 	// new.go was just committed — should be very fresh (small number)
 	freshNew, ok := root.Files[1].Quantity(FileFreshness)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(freshNew).To(BeNumerically(">=", 0))
+
+	// old.go should be staler than new.go (higher freshness = more days since last change)
+	g.Expect(freshOld).To(BeNumerically(">", freshNew))
 }
 
 func TestAuthorCountProvider(t *testing.T) {
@@ -357,4 +365,142 @@ func TestAuthorCountProvider_SubdirectoryScanning(t *testing.T) {
 	count, ok := root.Files[0].Quantity(AuthorCount)
 	g.Expect(ok).To(BeTrue(), "author-count metric should be set for file in subdirectory")
 	g.Expect(count).To(Equal(int64(1)), "code.go should have 1 author (Alice)")
+}
+
+// setupMergeRepo creates a git repo where a merge commit touches both files
+// in the tree but only actually modifies one of them. This reproduces the
+// bug where go-git's FileName log filter includes merge commits that didn't
+// change the file, polluting the "newest" timestamp.
+func setupMergeRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+
+	run := func(args ...string) {
+		t.Helper()
+
+		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
+		cmd.Dir = dir
+
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=Alice",
+			"GIT_AUTHOR_EMAIL=alice@example.com",
+			"GIT_COMMITTER_NAME=Alice",
+			"GIT_COMMITTER_EMAIL=alice@example.com",
+		)
+
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("command %v failed: %s\n%s", args, err, out)
+		}
+	}
+
+	// Create initial commit with two files, backdated.
+	run("git", "init")
+	run("git", "config", "user.name", "Alice")
+	run("git", "config", "user.email", "alice@example.com")
+
+	_ = os.WriteFile(filepath.Join(dir, "stable.go"), []byte("package stable\n"), 0o600)
+	_ = os.WriteFile(filepath.Join(dir, "active.go"), []byte("package active\n"), 0o600)
+
+	run("git", "add", ".")
+	run("git", "commit", "-m", "initial commit", "--date=2024-01-01T00:00:00+00:00")
+
+	// Create a feature branch that modifies only active.go.
+	run("git", "checkout", "-b", "feature")
+	_ = os.WriteFile(filepath.Join(dir, "active.go"), []byte("package active\n// feature\n"), 0o600)
+	run("git", "add", "active.go")
+	run("git", "commit", "-m", "feature change", "--date=2025-12-01T00:00:00+00:00")
+
+	// Merge back to main — creates a merge commit that includes stable.go
+	// in its tree but doesn't modify it.
+	run("git", "checkout", "master")
+	run("git", "merge", "feature", "--no-ff", "-m", "merge feature")
+
+	return dir
+}
+
+// TestFileFreshness_MergeCommitDoesNotPollute verifies that a merge commit
+// touching stable.go's tree entry (but not its content) doesn't update the
+// freshness timestamp for stable.go. This was the root cause of #114.
+func TestFileFreshness_MergeCommitDoesNotPollute(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupMergeRepo(t)
+	root := buildTree(dir, "stable.go", "active.go")
+
+	resetService()
+
+	p := &FileFreshnessProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// stable.go was only committed at 2024-01-01 and never actually modified
+	// after that. Its freshness (days since last real change) should be > 300.
+	freshStable, ok := root.Files[0].Quantity(FileFreshness)
+	g.Expect(ok).To(BeTrue(), "file-freshness should be set for stable.go")
+	g.Expect(freshStable).To(BeNumerically(">", 300),
+		"stable.go last modified 2024-01-01 should have high freshness (days since change)")
+
+	// active.go was modified at 2025-12-01 — should have a moderate freshness.
+	freshActive, ok := root.Files[1].Quantity(FileFreshness)
+	g.Expect(ok).To(BeTrue(), "file-freshness should be set for active.go")
+	g.Expect(freshActive).To(BeNumerically(">", 0),
+		"active.go last modified 2025-12-01 should have freshness > 0")
+
+	// stable.go must be staler than active.go.
+	g.Expect(freshStable).To(BeNumerically(">", freshActive),
+		"stable.go should be staler than active.go")
+}
+
+// TestFileAge_MergeCommitDoesNotPollute verifies that a merge commit doesn't
+// shift the oldest timestamp for files it didn't modify.
+func TestFileAge_MergeCommitDoesNotPollute(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupMergeRepo(t)
+	root := buildTree(dir, "stable.go", "active.go")
+
+	resetService()
+
+	p := &FileAgeProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// Both files were created at 2024-01-01 — same age.
+	ageStable, ok := root.Files[0].Quantity(FileAge)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(ageStable).To(BeNumerically(">", 300))
+
+	ageActive, ok := root.Files[1].Quantity(FileAge)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(ageActive).To(BeNumerically(">", 300))
+}
+
+// TestAuthorCount_MergeCommitDoesNotPollute verifies that the merge commit
+// author is not counted for files the merge didn't actually modify.
+func TestAuthorCount_MergeCommitDoesNotPollute(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupMergeRepo(t)
+	root := buildTree(dir, "stable.go", "active.go")
+
+	resetService()
+
+	p := &AuthorCountProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// stable.go was only committed by Alice — the merge didn't change it.
+	count, ok := root.Files[0].Quantity(AuthorCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(1)), "stable.go should have 1 author")
+
+	// active.go was committed by Alice initially — the feature branch commit
+	// was also by Alice (our test setup uses Alice for all commits).
+	countActive, ok := root.Files[1].Quantity(AuthorCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(countActive).To(Equal(int64(1)), "active.go should have 1 author (all commits by Alice)")
 }
