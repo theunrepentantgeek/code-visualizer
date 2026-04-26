@@ -67,3 +67,15 @@
 - **Status:** Lambert completed Phase 5 comprehensive test suite (47 tests across 3 files) for legend feature on squad/68-legend-core.
 - **Validation:** All tests passing, build clean, lint clean. Validates renderer signatures (all accept `*LegendInfo`) and integration points from phases 2–4.
 - **Readiness:** Test suite is comprehensive; ready for PR review and merge. No blockers identified.
+
+### PR #98 Review — Legend Rendering Bugs #89, #90 (2026-04-26) — APPROVED
+
+- **Issues:** #89 (horizontal legend too tall), #90 (orientation-aware margin carve-out)
+- **Branch:** `squad/89-90-legend-fixes`, Author: Dallas
+- **Correctness:** Both fixes verified correct. `measureLegendH` now sums entry widths (was stacking heights). `ReserveLegendSpace` corner positions now check orientation (vertical→carve width, horizontal→carve height). `legendLayoutOffset` mirrors the new carve-out logic.
+- **Symmetry:** PNG (`drawLegendEntriesH`) and SVG (`writeSVGLegendEntriesH`) paths updated identically.
+- **Architecture:** `measureSingleEntryH` helper cleanly shared between measurement and drawing. Fits existing legend patterns.
+- **Minor suggestions:** 3 duplicate test pairs (updated old tests + new issue-specific tests test the same combos), stale "Currently fails" comments in new tests, TopRight corner not tested.
+- **Key files:** `legend.go` (ReserveLegendSpace), `legend_png.go` (measureLegendH, measureSingleEntryH, drawLegendEntriesH), `legend_svg.go` (writeSVGLegendEntriesH), `treemap_cmd.go` (legendLayoutOffset), `legend_test.go`.
+- **CI:** All tests pass, `go vet` clean. `golangci-lint-custom` only available in CI.
+- **Result:** APPROVED with minor suggestions.

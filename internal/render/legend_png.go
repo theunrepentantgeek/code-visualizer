@@ -45,6 +45,7 @@ func drawLegendBackground(dc *gg.Context, x, y, w, h float64) {
 func drawLegendEntries(dc *gg.Context, info *LegendInfo, x, y float64) {
 	if info.Orientation == LegendOrientationHorizontal {
 		drawLegendEntriesH(dc, info, x, y)
+
 		return
 	}
 

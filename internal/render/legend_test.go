@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/fogleman/gg"
 	. "github.com/onsi/gomega"
+
+	"github.com/fogleman/gg"
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
@@ -312,50 +313,6 @@ func TestReserveLegendSpace_NonePosition_ReturnsZero(t *testing.T) {
 	g.Expect(hReduce).To(BeZero())
 }
 
-func TestReserveLegendSpace_BottomRight_VerticalReducesWidth(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	info := makeSampleLegendInfo(LegendOrientationVertical)
-	info.Position = LegendPositionBottomRight
-	wReduce, hReduce := ReserveLegendSpace(info)
-	g.Expect(wReduce).To(BeNumerically(">", 0))
-	g.Expect(hReduce).To(BeZero())
-}
-
-func TestReserveLegendSpace_BottomRight_HorizontalReducesHeight(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	info := makeSampleLegendInfo(LegendOrientationHorizontal)
-	info.Position = LegendPositionBottomRight
-	wReduce, hReduce := ReserveLegendSpace(info)
-	g.Expect(hReduce).To(BeNumerically(">", 0))
-	g.Expect(wReduce).To(BeZero())
-}
-
-func TestReserveLegendSpace_TopLeft_VerticalReducesWidth(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	info := makeSampleLegendInfo(LegendOrientationVertical)
-	info.Position = LegendPositionTopLeft
-	wReduce, hReduce := ReserveLegendSpace(info)
-	g.Expect(wReduce).To(BeNumerically(">", 0))
-	g.Expect(hReduce).To(BeZero())
-}
-
-func TestReserveLegendSpace_TopLeft_HorizontalReducesHeight(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	info := makeSampleLegendInfo(LegendOrientationHorizontal)
-	info.Position = LegendPositionTopLeft
-	wReduce, hReduce := ReserveLegendSpace(info)
-	g.Expect(hReduce).To(BeNumerically(">", 0))
-	g.Expect(wReduce).To(BeZero())
-}
-
 func TestReserveLegendSpace_CenterRight_ReducesWidth(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -393,12 +350,11 @@ func TestReserveLegendSpace_EmptyEntries_ReturnsZero(t *testing.T) {
 	g.Expect(hReduce).To(BeZero())
 }
 
-// --- Tests for issue #89: Horizontal legend is too tall ---
+// --- Regression tests for issue #89: Horizontal legend layout ---
 //
-// Bug: measureLegendH stacks entries (Fill, Border, etc.) vertically even
-// in horizontal mode. This makes horizontal legends unnecessarily tall.
-// When horizontal, entries should be placed side-by-side so the legend is
-// wide and short, not tall.
+// measureLegendH used to stack entries vertically even in horizontal mode,
+// making horizontal legends unnecessarily tall. The fix ensures entries are
+// placed side-by-side so the legend is wide and short.
 
 func TestMeasureLegendH_MultipleEntries_HeightSmallerThanVertical(t *testing.T) {
 	t.Parallel()
@@ -411,9 +367,8 @@ func TestMeasureLegendH_MultipleEntries_HeightSmallerThanVertical(t *testing.T) 
 	_, hH := measureLegend(dc, info)
 	_, hV := measureLegend(dc, infoV)
 
-	// Horizontal layout should be shorter than vertical when there are
-	// multiple entries because entries are side-by-side, not stacked.
-	// Currently fails: measureLegendH stacks entries vertically.
+	// Regression test for #89: horizontal layout should be shorter than
+	// vertical when there are multiple entries (side-by-side, not stacked).
 	g.Expect(hH).To(BeNumerically("<", hV),
 		"horizontal legend height (%.1f) should be less than vertical (%.1f)", hH, hV)
 }
@@ -429,17 +384,15 @@ func TestMeasureLegendH_MultipleEntries_WiderThanVertical(t *testing.T) {
 	wH, _ := measureLegend(dc, info)
 	wV, _ := measureLegend(dc, infoV)
 
-	// Horizontal layout with multiple entries should be wider than vertical,
-	// because entries are placed side-by-side.
-	// Currently fails: measureLegendH computes width the same as vertical.
+	// Regression test for #89: horizontal layout with multiple entries
+	// should be wider than vertical (entries placed side-by-side).
 	g.Expect(wH).To(BeNumerically(">", wV),
 		"horizontal legend width (%.1f) should be greater than vertical (%.1f)", wH, wV)
 }
 
-// --- Tests for issue #90: Legend orientation should impact margin carve out ---
+// --- Regression tests for issue #90: Legend orientation impacts margin carve out ---
 //
-// Bug: ReserveLegendSpace only considers Position (center-left/center-right
-// → reduce width; all other positions → reduce height). It ignores Orientation.
+// ReserveLegendSpace used to only consider Position, ignoring Orientation.
 // A vertical (tall, narrow) legend in a corner should carve out width, not
 // height. A horizontal (wide, short) legend in a corner should carve out
 // height, not width.
@@ -453,9 +406,8 @@ func TestReserveLegendSpace_BottomRight_VerticalOrientation_ReducesWidth(t *test
 
 	wReduce, hReduce := ReserveLegendSpace(info)
 
-	// A vertical (tall, narrow) legend at bottom-right should carve out
-	// width on the right side, not height below. Currently fails because
-	// ReserveLegendSpace always reduces height for corner positions.
+	// Regression test for #90: vertical orientation at bottom-right should
+	// carve out width on the right side, not height below.
 	g.Expect(wReduce).To(BeNumerically(">", 0),
 		"vertical legend at bottom-right should reduce width")
 	g.Expect(hReduce).To(BeZero(),
@@ -488,8 +440,8 @@ func TestReserveLegendSpace_TopLeft_VerticalOrientation_ReducesWidth(t *testing.
 
 	wReduce, hReduce := ReserveLegendSpace(info)
 
-	// Vertical legend at top-left: carve out width on the left side.
-	// Currently fails — reduces height instead.
+	// Regression test for #90: vertical orientation at top-left should
+	// carve out width on the left side.
 	g.Expect(wReduce).To(BeNumerically(">", 0),
 		"vertical legend at top-left should reduce width")
 	g.Expect(hReduce).To(BeZero(),
@@ -505,9 +457,44 @@ func TestReserveLegendSpace_BottomLeft_HorizontalOrientation_ReducesHeight(t *te
 
 	wReduce, hReduce := ReserveLegendSpace(info)
 
-	// Horizontal legend at bottom-left: carve out height below.
+	// Regression test for #90: horizontal orientation at bottom-left should
+	// carve out height below.
 	g.Expect(hReduce).To(BeNumerically(">", 0),
 		"horizontal legend at bottom-left should reduce height")
 	g.Expect(wReduce).To(BeZero(),
 		"horizontal legend at bottom-left should NOT reduce width")
+}
+
+func TestReserveLegendSpace_TopRight_VerticalOrientation_ReducesWidth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := makeSampleLegendInfo(LegendOrientationVertical)
+	info.Position = LegendPositionTopRight
+
+	wReduce, hReduce := ReserveLegendSpace(info)
+
+	// Regression test for #90: vertical orientation at top-right should
+	// carve out width on the right side.
+	g.Expect(wReduce).To(BeNumerically(">", 0),
+		"vertical legend at top-right should reduce width")
+	g.Expect(hReduce).To(BeZero(),
+		"vertical legend at top-right should NOT reduce height")
+}
+
+func TestReserveLegendSpace_TopRight_HorizontalOrientation_ReducesHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	info := makeSampleLegendInfo(LegendOrientationHorizontal)
+	info.Position = LegendPositionTopRight
+
+	wReduce, hReduce := ReserveLegendSpace(info)
+
+	// Regression test for #90: horizontal orientation at top-right should
+	// carve out height above.
+	g.Expect(hReduce).To(BeNumerically(">", 0),
+		"horizontal legend at top-right should reduce height")
+	g.Expect(wReduce).To(BeZero(),
+		"horizontal legend at top-right should NOT reduce width")
 }

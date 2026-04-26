@@ -209,33 +209,32 @@ func legendLayoutOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, 
 	switch info.Position {
 	case render.LegendPositionTopCenter:
 		return 0, hReduce
-	case render.LegendPositionBottomCenter:
-		return 0, 0
 	case render.LegendPositionCenterLeft:
 		return wReduce, 0
-	case render.LegendPositionCenterRight:
-		return 0, 0
 	default:
-		// Corner positions: orientation determines carve-out direction.
-		isTop := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionTopRight
-		isLeft := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionBottomLeft
+		return cornerLegendOffset(info, wReduce, hReduce)
+	}
+}
 
-		if info.Orientation == render.LegendOrientationVertical {
-			// Width was reduced; offset when legend is on the left.
-			if isLeft {
-				return wReduce, 0
-			}
+// cornerLegendOffset returns the offset for corner legend positions,
+// where orientation determines the carve-out direction.
+func cornerLegendOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, dy float64) {
+	isTop := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionTopRight
+	isLeft := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionBottomLeft
 
-			return 0, 0
-		}
-
-		// Height was reduced; offset when legend is on top.
-		if isTop {
-			return 0, hReduce
+	if info.Orientation == render.LegendOrientationVertical {
+		if isLeft {
+			return wReduce, 0
 		}
 
 		return 0, 0
 	}
+
+	if isTop {
+		return 0, hReduce
+	}
+
+	return 0, 0
 }
 
 // resolveBorderPaletteName determines the effective border metric name and

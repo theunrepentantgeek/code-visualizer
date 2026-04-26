@@ -49,6 +49,7 @@ func writeSVGLegendBackground(f *os.File, w, h float64) {
 func writeSVGLegendEntries(f *os.File, dc *gg.Context, info *LegendInfo) {
 	if info.Orientation == LegendOrientationHorizontal {
 		writeSVGLegendEntriesH(f, dc, info)
+
 		return
 	}
 
