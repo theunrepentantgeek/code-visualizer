@@ -87,6 +87,11 @@ const (
 // ReserveLegendSpace computes the width and height reductions needed to
 // reserve space for the legend within the canvas. Returns zeros if info is
 // nil, position is "none", or there are no entries.
+//
+// For center positions the carve-out direction is fixed (center-left/right
+// reduce width; top/bottom-center reduce height). For corner positions the
+// orientation decides: a vertical (tall) legend carves out side space; a
+// horizontal (wide) legend carves out top/bottom space.
 func ReserveLegendSpace(info *LegendInfo) (widthReduction, heightReduction float64) {
 	if info == nil || info.Position == LegendPositionNone || len(info.Entries) == 0 {
 		return 0, 0
@@ -98,7 +103,14 @@ func ReserveLegendSpace(info *LegendInfo) (widthReduction, heightReduction float
 	switch info.Position {
 	case LegendPositionCenterLeft, LegendPositionCenterRight:
 		return w + 2*legendMargin, 0
+	case LegendPositionTopCenter, LegendPositionBottomCenter:
+		return 0, h + 2*legendMargin
 	default:
+		// Corner positions: let the orientation decide.
+		if info.Orientation == LegendOrientationVertical {
+			return w + 2*legendMargin, 0
+		}
+
 		return 0, h + 2*legendMargin
 	}
 }

@@ -207,11 +207,33 @@ func legendLayoutOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, 
 	}
 
 	switch info.Position {
-	case render.LegendPositionTopLeft, render.LegendPositionTopCenter, render.LegendPositionTopRight:
+	case render.LegendPositionTopCenter:
 		return 0, hReduce
+	case render.LegendPositionBottomCenter:
+		return 0, 0
 	case render.LegendPositionCenterLeft:
 		return wReduce, 0
+	case render.LegendPositionCenterRight:
+		return 0, 0
 	default:
+		// Corner positions: orientation determines carve-out direction.
+		isTop := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionTopRight
+		isLeft := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionBottomLeft
+
+		if info.Orientation == render.LegendOrientationVertical {
+			// Width was reduced; offset when legend is on the left.
+			if isLeft {
+				return wReduce, 0
+			}
+
+			return 0, 0
+		}
+
+		// Height was reduced; offset when legend is on top.
+		if isTop {
+			return 0, hReduce
+		}
+
 		return 0, 0
 	}
 }
