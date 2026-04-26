@@ -111,3 +111,27 @@ Key learnings:
 - Tests 1–3 won't pass until Kane removes size validation from Validate() (that's the fix)
 - Tests 4–6 pass on current code — they exercise applyOverrides and config.Load independently of the Validate fix
 - `go vet ./cmd/codeviz/` confirmed all 6 tests compile cleanly
+
+### 2026-04-26 — export feature tests (issue #107)
+
+Wrote `internal/export/export_test.go` (white-box, `package export`) with 9 test cases covering:
+- **TestExport_JSON**: exports simple tree to JSON, unmarshals and verifies structure (root name, file count, metric values)
+- **TestExport_YAML**: same tree to .yaml, verifies valid YAML output
+- **TestExport_YML**: .yml extension accepted as YAML
+- **TestExport_UnsupportedFormat**: .txt returns an error
+- **TestExport_MetricFiltering**: sets fileSize + lineCount + fileType, requests only fileSize; verifies unrequested metrics are absent from both directory and file exports
+- **TestExport_EmptyDirectory**: empty dir produces valid JSON with no files/directories
+- **TestExport_NestedDirectories**: 3-level deep tree (root → mid → deep), verifies hierarchy preserved
+- **TestExport_BinaryFileFlag**: binary file has isBinary=true, text file has isBinary=false
+- **TestExport_AllMetricTypes**: quantity + measure + classification all present on both directory and file level
+
+Dallas had already delivered `export.go` — all 9 tests pass on first run. Test patterns follow the project standard: `t.Parallel()`, `NewGomegaWithT(t)`, dot-imported gomega, nilaway-safe nil guards before dereferencing, `t.TempDir()` for output files. Used `go.yaml.in/yaml/v3` for YAML unmarshalling (same as config package).
+
+### Issue #107 — Export Test Suite Complete (2026-04-26)
+
+- **File:** `internal/export/export_test.go` with 9 comprehensive tests.
+- **Test coverage:** JSON format, YAML format, unsupported format error, metric filtering (requested list respected), empty directories (omitted via omitempty), nested structures (3 levels deep), binary file flag preservation, all metric types (Quantity int64, Measure float64, Classification string).
+- **Build status:** Pass. All 9 tests pass.
+- **No regressions:** Tests validate Dallas's implementation was correct on first delivery.
+- **Pattern compliance:** Gomega assertions, t.Parallel(), nil-safe guards, temp directories for file I/O, JSON/YAML round-trip validation.
+

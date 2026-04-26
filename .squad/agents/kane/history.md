@@ -58,3 +58,22 @@
 - **Applied to:** `TreemapCmd`, `RadialCmd`, `BubbletreeCmd` — all three have the same structural pattern.
 - **Key files:** `cmd/codeviz/treemap_cmd.go`, `cmd/codeviz/radialtree_cmd.go`, `cmd/codeviz/bubbletree_cmd.go`.
 
+### Export Data CLI Flag — Issue #107 (2026-04-26)
+
+- **Added `--export-data` flag** to `CLI` struct and `Flags` struct in `cmd/codeviz/main.go`, following the `--export-config` pattern.
+- **Wired `export.Export()` call** into all three visualization commands (`TreemapCmd`, `RadialCmd`, `BubbletreeCmd`).
+- **Placement:** After `filterBinaryFiles()` and before render/layout, matching the design spec (after metrics computed, before rendering).
+- **Import:** `github.com/bevan/code-visualizer/internal/export` added to all three command files.
+- **Won't compile yet:** Depends on Dallas's `internal/export/` package (parallel work).
+- **Error message:** Uses `"failed to export data"` consistently across all three commands.
+
+### Issue #107 — CLI Integration Complete (2026-04-26)
+
+- **Added to Flags struct:** ExportData string field (consistent with ExportConfig pattern).
+- **Added to CLI struct:** ExportData string field with Kong tag `help:"Write computed metrics to file (.json or .yaml/.yml)." name:"export-data" optional:""`.
+- **Updated all 3 commands:** treemap_cmd.go, radial_cmd.go, bubbletree_cmd.go each check flags.ExportData after provider.Run() and call export.Export() with requested metrics.
+- **Integration pattern:** Consistent across all commands — collect requested metrics, call export after metric computation, before render.
+- **Build status:** Passes. All three commands wired correctly.
+- **Flag design rationale:** Cross-cutting flag on Flags struct allows any visualization command to export metrics without duplication.
+
+
