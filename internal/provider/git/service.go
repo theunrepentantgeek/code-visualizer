@@ -214,9 +214,11 @@ func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
 
 // commitModifiedFile returns true if the commit actually changed the file at
 // relPath, as opposed to merely having it in the tree (which happens with merge
-// commits). A commit modified the file if:
-//   - it is a root commit (no parents), or
-//   - the file's blob hash differs from at least one parent.
+// commits). A commit modified the file only if it is NOT TREESAME to any parent,
+// matching git's history simplification semantics. Specifically:
+//   - root commits (no parents) are always considered as modifying the file,
+//   - a commit is TREESAME to a parent when the file's blob hash is identical,
+//   - a commit is "modified" only when it differs from ALL parents.
 func commitModifiedFile(c *object.Commit, relPath string) bool {
 	fileHash, err := blobHash(c, relPath)
 	if err != nil {
@@ -227,18 +229,14 @@ func commitModifiedFile(c *object.Commit, relPath string) bool {
 	defer parents.Close()
 
 	hasParent := false
+	treesameToAny := false
 
-	err = parents.ForEach(func(parent *object.Commit) error {
+	_ = parents.ForEach(func(parent *object.Commit) error {
 		hasParent = true
 
 		parentHash, hashErr := blobHash(parent, relPath)
-		if hashErr != nil {
-			// File missing in parent → commit added it.
-			return errFileModified
-		}
-
-		if parentHash != fileHash {
-			return errFileModified
+		if hashErr == nil && parentHash == fileHash {
+			treesameToAny = true
 		}
 
 		return nil
@@ -248,10 +246,8 @@ func commitModifiedFile(c *object.Commit, relPath string) bool {
 		return true // root commit — file was introduced
 	}
 
-	return errors.Is(err, errFileModified)
+	return !treesameToAny
 }
-
-var errFileModified = errors.New("file modified")
 
 // blobHash returns the blob hash of the file at relPath within the commit's tree.
 func blobHash(c *object.Commit, relPath string) (plumbing.Hash, error) {

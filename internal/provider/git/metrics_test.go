@@ -367,10 +367,11 @@ func TestAuthorCountProvider_SubdirectoryScanning(t *testing.T) {
 	g.Expect(count).To(Equal(int64(1)), "code.go should have 1 author (Alice)")
 }
 
-// setupMergeRepo creates a git repo where a merge commit touches both files
-// in the tree but only actually modifies one of them. This reproduces the
-// bug where go-git's FileName log filter includes merge commits that didn't
-// change the file, polluting the "newest" timestamp.
+// setupMergeRepo creates a git repo where main has two files, stable.go
+// is modified once on main, and a feature branch modifies only active.go
+// before being merged back. The modification of stable.go on main gives
+// go-git a clear commit that's NOT TREESAME for stable.go, ensuring the
+// commit is returned even with history simplification.
 func setupMergeRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -394,8 +395,8 @@ func setupMergeRepo(t *testing.T) string {
 		}
 	}
 
-	// Create initial commit with two files, backdated.
-	run("git", "init")
+	// Commit 1: create both files (backdated).
+	run("git", "init", "-b", "main")
 	run("git", "config", "user.name", "Alice")
 	run("git", "config", "user.email", "alice@example.com")
 
@@ -405,15 +406,23 @@ func setupMergeRepo(t *testing.T) string {
 	run("git", "add", ".")
 	run("git", "commit", "-m", "initial commit", "--date=2024-01-01T00:00:00+00:00")
 
+	// Commit 2 (on main): modify stable.go at a known date.
+	_ = os.WriteFile(filepath.Join(dir, "stable.go"), []byte("package stable\n// updated\n"), 0o600)
+
+	run("git", "add", "stable.go")
+	run("git", "commit", "-m", "update stable", "--date=2024-06-01T00:00:00+00:00")
+
 	// Create a feature branch that modifies only active.go.
 	run("git", "checkout", "-b", "feature")
+
 	_ = os.WriteFile(filepath.Join(dir, "active.go"), []byte("package active\n// feature\n"), 0o600)
+
 	run("git", "add", "active.go")
 	run("git", "commit", "-m", "feature change", "--date=2025-12-01T00:00:00+00:00")
 
 	// Merge back to main — creates a merge commit that includes stable.go
 	// in its tree but doesn't modify it.
-	run("git", "checkout", "master")
+	run("git", "checkout", "main")
 	run("git", "merge", "feature", "--no-ff", "-m", "merge feature")
 
 	return dir
@@ -435,12 +444,13 @@ func TestFileFreshness_MergeCommitDoesNotPollute(t *testing.T) {
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	// stable.go was only committed at 2024-01-01 and never actually modified
-	// after that. Its freshness (days since last real change) should be > 300.
+	// stable.go was last truly modified at 2024-06-01. Its freshness (days
+	// since last real change) should be > 300. Without the fix, the merge
+	// commit's timestamp (today) would pollute this to ~0.
 	freshStable, ok := root.Files[0].Quantity(FileFreshness)
 	g.Expect(ok).To(BeTrue(), "file-freshness should be set for stable.go")
 	g.Expect(freshStable).To(BeNumerically(">", 300),
-		"stable.go last modified 2024-01-01 should have high freshness (days since change)")
+		"stable.go last modified 2024-06-01 should have high freshness (days since change)")
 
 	// active.go was modified at 2025-12-01 — should have a moderate freshness.
 	freshActive, ok := root.Files[1].Quantity(FileFreshness)
@@ -503,4 +513,31 @@ func TestAuthorCount_MergeCommitDoesNotPollute(t *testing.T) {
 	countActive, ok := root.Files[1].Quantity(AuthorCount)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(countActive).To(Equal(int64(1)), "active.go should have 1 author (all commits by Alice)")
+}
+
+// TestFileFreshnessEqualsAgeForSingleCommit verifies that for a file with
+// exactly one commit, file-freshness equals file-age (both measure days since
+// the same single commit).
+func TestFileFreshnessEqualsAgeForSingleCommit(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupSubdirRepo(t) // code.go committed once at 2024-01-01
+	root := buildTree(dir, "code.go")
+
+	resetService()
+
+	ageP := &FileAgeProvider{}
+	g.Expect(ageP.Load(root)).To(Succeed())
+
+	freshP := &FileFreshnessProvider{}
+	g.Expect(freshP.Load(root)).To(Succeed())
+
+	age, ageOk := root.Files[0].Quantity(FileAge)
+	freshness, freshOk := root.Files[0].Quantity(FileFreshness)
+
+	g.Expect(ageOk).To(BeTrue())
+	g.Expect(freshOk).To(BeTrue())
+	g.Expect(age).To(Equal(freshness),
+		"single-commit file should have identical age and freshness")
 }
