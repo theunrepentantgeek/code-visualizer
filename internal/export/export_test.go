@@ -99,6 +99,7 @@ func TestExport_YAML(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = yaml.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred(), "output must be valid YAML")
 
@@ -122,6 +123,7 @@ func TestExport_YML(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = yaml.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred(), ".yml must produce valid YAML")
 
@@ -171,6 +173,7 @@ func TestExport_MetricFiltering(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = json.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred())
 
