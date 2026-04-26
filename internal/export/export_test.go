@@ -75,6 +75,7 @@ func TestExport_JSON(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = json.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred(), "output must be valid JSON")
 
@@ -221,6 +222,7 @@ func TestExport_EmptyDirectory(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var data ExportData
+
 	err = json.Unmarshal(raw, &data)
 	g.Expect(err).NotTo(HaveOccurred())
 
