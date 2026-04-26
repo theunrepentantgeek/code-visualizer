@@ -24,7 +24,7 @@ type RadialCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
-	DiscSize metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for disc size." required:"true" short:"d"` //nolint:revive // kong struct tags require long lines
+	DiscSize metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for disc size." short:"d"` //nolint:revive // kong struct tags require long lines
 
 	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive // kong struct tags require long lines
 	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for fill colour." name:"fill-palette" optional:""`        //nolint:revive // kong struct tags require long lines
@@ -42,8 +42,19 @@ type RadialCmd struct {
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
-//nolint:dupl // Validate mirrors BubbletreeCmd.Validate; kept separate per architecture proposal
 func (c *RadialCmd) Validate() error {
+	for _, f := range c.Filter {
+		if _, err := filter.ParseFilterFlag(f); err != nil {
+			return eris.Wrapf(err, "invalid filter %q", f)
+		}
+	}
+
+	return nil
+}
+
+// validateEffective checks fields that may be populated by config file merge.
+// Called from Run() after TryAutoLoad + applyOverrides + size backfill.
+func (c *RadialCmd) validateEffective() error {
 	p, ok := provider.Get(c.DiscSize)
 	if !ok {
 		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", c.DiscSize, formatMetricNames())
@@ -65,21 +76,33 @@ func (c *RadialCmd) Validate() error {
 		return eris.New("--border-palette requires --border to be specified")
 	}
 
-	for _, f := range c.Filter {
-		if _, err := filter.ParseFilterFlag(f); err != nil {
-			return eris.Wrapf(err, "invalid filter %q", f)
-		}
-	}
-
 	return nil
 }
 
-func (c *RadialCmd) Run(flags *Flags) error {
+// mergeConfigAndValidate loads the config file, merges CLI overrides, backfills
+// the disc-size metric from config when omitted on the CLI, and validates the
+// effective configuration. Called at the start of Run().
+func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}
 
 	c.applyOverrides(flags.Config)
+
+	// Backfill disc-size from config when CLI flag was omitted.
+	if c.DiscSize == "" {
+		if s := ptrString(flags.Config.Radial.DiscSize); s != "" {
+			c.DiscSize = metric.Name(s)
+		}
+	}
+
+	return c.validateEffective()
+}
+
+func (c *RadialCmd) Run(flags *Flags) error {
+	if err := c.mergeConfigAndValidate(flags); err != nil {
+		return err
+	}
 
 	cfg := flags.Config.Radial
 

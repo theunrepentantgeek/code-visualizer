@@ -1,12 +1,15 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/alecthomas/kong"
 
+	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
@@ -207,4 +210,117 @@ func TestCollectDistinctTypes_ReturnsSortedTypes(t *testing.T) {
 
 	// Assert
 	g.Expect(types).To(Equal([]string{"go", "md", "txt"}))
+}
+
+// Issue #99 — config-supplied parameters bypass early validation.
+// After the fix, Validate() no longer checks size/disc-size metrics;
+// that validation moves to Run() after config loading and merging.
+
+func TestTreemapCmd_Validate_EmptySize_Passes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // will be supplied by config file later in Run()
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestRadialCmd_Validate_EmptyDiscSize_Passes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &RadialCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		DiscSize:   "", // will be supplied by config file later in Run()
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestBubbletreeCmd_Validate_EmptySize_Passes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &BubbletreeCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // will be supplied by config file later in Run()
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestTreemapCmd_ConfigSuppliesSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("treemap:\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // not supplied on CLI
+	}
+
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Treemap).NotTo(BeNil())
+	g.Expect(cfg.Treemap.Size).NotTo(BeNil())
+	g.Expect(*cfg.Treemap.Size).To(Equal("file-size"))
+}
+
+func TestTreemapCmd_CLISizeOverridesConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("treemap:\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "file-lines", // explicit CLI flag
+	}
+
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Treemap).NotTo(BeNil())
+	g.Expect(cfg.Treemap.Size).NotTo(BeNil())
+	g.Expect(*cfg.Treemap.Size).To(Equal("file-lines"))
+}
+
+func TestTreemapCmd_MissingSizeEverywhere_NilAfterMerge(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New() // default config does not set treemap.size
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // not supplied on CLI
+	}
+
+	cmd.applyOverrides(cfg)
+
+	// After merge with no size from either source, effective size is nil.
+	// Kane's validateEffective (called from Run) should surface a clear error.
+	g.Expect(cfg.Treemap.Size).To(BeNil())
 }

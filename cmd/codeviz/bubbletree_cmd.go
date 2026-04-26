@@ -25,7 +25,7 @@ type BubbletreeCmd struct {
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
 	//nolint:revive // kong struct tags require long lines
-	Size metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for circle size." required:"true" short:"s"`
+	Size metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for circle size." short:"s"`
 
 	//nolint:revive // kong struct tags require long lines
 	Fill string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`
@@ -50,8 +50,19 @@ type BubbletreeCmd struct {
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
-//nolint:dupl // Validate mirrors RadialCmd.Validate; kept separate per architecture proposal
 func (c *BubbletreeCmd) Validate() error {
+	for _, f := range c.Filter {
+		if _, err := filter.ParseFilterFlag(f); err != nil {
+			return eris.Wrapf(err, "invalid filter %q", f)
+		}
+	}
+
+	return nil
+}
+
+// validateEffective checks fields that may be populated by config file merge.
+// Called from Run() after TryAutoLoad + applyOverrides + size backfill.
+func (c *BubbletreeCmd) validateEffective() error {
 	p, ok := provider.Get(c.Size)
 	if !ok {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", c.Size, formatMetricNames())
@@ -73,21 +84,33 @@ func (c *BubbletreeCmd) Validate() error {
 		return eris.New("--border-palette requires --border to be specified")
 	}
 
-	for _, f := range c.Filter {
-		if _, err := filter.ParseFilterFlag(f); err != nil {
-			return eris.Wrapf(err, "invalid filter %q", f)
-		}
-	}
-
 	return nil
 }
 
-func (c *BubbletreeCmd) Run(flags *Flags) error {
+// mergeConfigAndValidate loads the config file, merges CLI overrides, backfills
+// the size metric from config when omitted on the CLI, and validates the
+// effective configuration. Called at the start of Run().
+func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}
 
 	c.applyOverrides(flags.Config)
+
+	// Backfill size from config when CLI flag was omitted.
+	if c.Size == "" {
+		if s := ptrString(flags.Config.Bubbletree.Size); s != "" {
+			c.Size = metric.Name(s)
+		}
+	}
+
+	return c.validateEffective()
+}
+
+func (c *BubbletreeCmd) Run(flags *Flags) error {
+	if err := c.mergeConfigAndValidate(flags); err != nil {
+		return err
+	}
 
 	cfg := flags.Config.Bubbletree
 
