@@ -43,6 +43,11 @@ func drawLegendBackground(dc *gg.Context, x, y, w, h float64) {
 
 // drawLegendEntries renders all entries within the legend box.
 func drawLegendEntries(dc *gg.Context, info *LegendInfo, x, y float64) {
+	if info.Orientation == LegendOrientationHorizontal {
+		drawLegendEntriesH(dc, info, x, y)
+		return
+	}
+
 	cy := y
 
 	for i, entry := range info.Entries {
@@ -51,6 +56,21 @@ func drawLegendEntries(dc *gg.Context, info *LegendInfo, x, y float64) {
 		}
 
 		cy = drawSingleEntry(dc, info.Orientation, entry, x, cy)
+	}
+}
+
+// drawLegendEntriesH renders entries side-by-side for horizontal layout.
+func drawLegendEntriesH(dc *gg.Context, info *LegendInfo, x, y float64) {
+	cx := x
+
+	for i, entry := range info.Entries {
+		if i > 0 {
+			cx += entryGap
+		}
+
+		ew, _ := measureSingleEntryH(dc, entry)
+		drawSingleEntry(dc, info.Orientation, entry, cx, y)
+		cx += ew
 	}
 }
 
@@ -285,32 +305,40 @@ func measureLegendV(dc *gg.Context, info *LegendInfo) (width, height float64) {
 }
 
 // measureLegendH computes legend size for horizontal layout.
+// Entries are arranged side-by-side, so total width is the sum of all entry
+// widths and total height is the tallest single entry.
 func measureLegendH(dc *gg.Context, info *LegendInfo) (width, height float64) {
-	var totalH float64
+	var totalW float64
 
-	maxW := 0.0
+	maxH := 0.0
 
 	for i, entry := range info.Entries {
 		if i > 0 {
-			totalH += entryGap
+			totalW += entryGap
 		}
 
-		tw, _ := dc.MeasureString(fmt.Sprintf("%s: %s", entry.Role, entry.MetricName))
-		totalH += titleFontSize + labelGap
+		entryW, entryH := measureSingleEntryH(dc, entry)
+		totalW += entryW
 
-		if tw > maxW {
-			maxW = tw
-		}
-
-		entryW, entryH := measureEntryH(dc, entry)
-		totalH += entryH
-
-		if entryW > maxW {
-			maxW = entryW
+		if entryH > maxH {
+			maxH = entryH
 		}
 	}
 
-	return maxW + 2*legendPadding, totalH + 2*legendPadding
+	return totalW + 2*legendPadding, maxH + 2*legendPadding
+}
+
+// measureSingleEntryH measures one entry including its title for horizontal layout.
+func measureSingleEntryH(dc *gg.Context, entry LegendEntry) (width, height float64) {
+	tw, _ := dc.MeasureString(fmt.Sprintf("%s: %s", entry.Role, entry.MetricName))
+	titleH := titleFontSize + labelGap
+
+	entryW, entryH := measureEntryH(dc, entry)
+
+	w := max(tw, entryW)
+	h := titleH + entryH
+
+	return w, h
 }
 
 // measureEntryV measures a single entry in vertical layout.
