@@ -158,23 +158,23 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	width := ptrInt(flags.Config.Width, 1920)
 	height := ptrInt(flags.Config.Height, 1080)
 
-	return c.renderAndLog(root, cfg, size, width, height, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
 }
 
 func (c *BubbletreeCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Bubbletree,
-	size metric.Name,
 	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) error {
+	size := metric.Name(ptrString(cfg.Size))
 	files, dirs := countAll(root)
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
 	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
-		cfg, root, size, width, height, fillMetric, fillPaletteName,
+		cfg, root, width, height, fillMetric, fillPaletteName,
 	)
 	if err != nil {
 		return err
@@ -200,11 +200,11 @@ func (c *BubbletreeCmd) renderAndLog(
 func (c *BubbletreeCmd) applyColoursAndRender(
 	cfg *config.Bubbletree,
 	root *model.Directory,
-	size metric.Name,
 	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) (metric.Name, palette.PaletteName, error) {
+	size := metric.Name(ptrString(cfg.Size))
 	labels := c.resolveLabels(cfg)
 	nodes := bubbletree.Layout(root, width, height, size, labels)
 	applyBubbleFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
