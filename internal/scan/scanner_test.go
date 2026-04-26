@@ -363,6 +363,48 @@ func TestScanWithRules_PrunesEmptyDirs(t *testing.T) {
 	g.Expect(allDirs).NotTo(ContainElement(".config"))
 }
 
+func TestHasFiles_EmptyTree(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{Path: "/empty", Name: "empty"}
+	g.Expect(hasFiles(root)).To(BeFalse())
+}
+
+func TestHasFiles_FilesInRoot(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Path:  "/root",
+		Name:  "root",
+		Files: []*model.File{{Path: "/root/a.go", Name: "a.go"}},
+	}
+	g.Expect(hasFiles(root)).To(BeTrue())
+}
+
+func TestHasFiles_FilesOnlyInSubDir(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	child := &model.Directory{
+		Path:  "/root/sub",
+		Name:  "sub",
+		Files: []*model.File{{Path: "/root/sub/b.go", Name: "b.go"}},
+	}
+	root := &model.Directory{Path: "/root", Name: "root", Dirs: []*model.Directory{child}}
+	g.Expect(hasFiles(root)).To(BeTrue())
+}
+
+func TestHasFiles_EmptyDirsOnly(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	child := &model.Directory{Path: "/root/sub", Name: "sub"}
+	root := &model.Directory{Path: "/root", Name: "root", Dirs: []*model.Directory{child}}
+	g.Expect(hasFiles(root)).To(BeFalse())
+}
+
 // collectFileNames collects all file names recursively.
 func collectFileNames(dir *model.Directory) []string {
 	names := make([]string, 0, len(dir.Files))

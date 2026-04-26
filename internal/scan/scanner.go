@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/rotisserie/eris"
@@ -38,12 +39,11 @@ func Scan(path string, rules []filter.Rule, progress Progress) (*model.Directory
 		return nil, err
 	}
 
-	files := countFiles(root)
-	if files == 0 {
+	if !hasFiles(root) {
 		return nil, errors.New("no files found in directory")
 	}
 
-	slog.Info("Scan complete", "files", files, "directories", countDirs(root))
+	slog.Info("Scan complete", "files", countFiles(root), "directories", countDirs(root))
 
 	return root, nil
 }
@@ -81,6 +81,58 @@ func processEntry(
 	rules []filter.Rule,
 	progress Progress,
 ) error {
+	// Compute relative path first (cheap string operation) so we can apply the
+	// filter rule before paying the cost of os.Stat.
+	relPath, err := filepath.Rel(rootPath, entryPath)
+	if err != nil {
+		return eris.Wrapf(err, "failed to compute relative path for %s", entryPath)
+	}
+
+	if !filter.IsIncluded(relPath, rules) {
+		slog.Debug("excluding by filter rule", "path", relPath)
+
+		return nil
+	}
+
+	// For symlinks we must call os.Stat to follow the link and discover the
+	// real type; non-symlinks can use the type information from ReadDir directly.
+	if isSymlink(entry) {
+		return processSymlink(node, entry, entryPath, rootPath, rules, progress)
+	}
+
+	if entry.Type().IsDir() {
+		return processDir(node, entry, entryPath, rootPath, rules, progress)
+	}
+
+	if entry.Type().IsRegular() {
+		info, err := entry.Info()
+		if err != nil {
+			if errors.Is(err, fs.ErrPermission) {
+				slog.Warn("skipping file: permission denied", "path", entryPath)
+
+				return nil
+			}
+
+			slog.Warn("skipping file", "path", entryPath, "error", err)
+
+			return nil
+		}
+
+		processFile(node, entry, info, entryPath)
+	}
+
+	return nil
+}
+
+// processSymlink resolves a symlink via os.Stat and handles it as either a
+// file (processed) or a directory (skipped, matching processDir behaviour).
+func processSymlink(
+	node *model.Directory,
+	entry os.DirEntry,
+	entryPath, rootPath string,
+	rules []filter.Rule,
+	progress Progress,
+) error {
 	info, err := os.Stat(entryPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
@@ -94,22 +146,11 @@ func processEntry(
 		return nil
 	}
 
-	relPath, err := filepath.Rel(rootPath, entryPath)
-	if err != nil {
-		return eris.Wrapf(err, "failed to compute relative path for %s", entryPath)
-	}
-
-	if !filter.IsIncluded(relPath, rules) {
-		slog.Debug("excluding by filter rule", "path", relPath)
-
-		return nil
-	}
-
 	if info.IsDir() {
 		return processDir(node, entry, entryPath, rootPath, rules, progress)
 	}
 
-	if info.Mode().IsRegular() || isSymlink(entry) {
+	if info.Mode().IsRegular() {
 		processFile(node, entry, info, entryPath)
 	}
 
@@ -170,6 +211,17 @@ func processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, ent
 
 func isSymlink(entry os.DirEntry) bool {
 	return entry.Type()&os.ModeSymlink != 0
+}
+
+// hasFiles reports whether the directory tree rooted at node contains at least
+// one file. It returns true as soon as the first file is found, avoiding a full
+// traversal of large trees.
+func hasFiles(node *model.Directory) bool {
+	if len(node.Files) > 0 {
+		return true
+	}
+
+	return slices.ContainsFunc(node.Dirs, hasFiles)
 }
 
 func countFiles(node *model.Directory) int {
