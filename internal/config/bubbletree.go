@@ -4,6 +4,7 @@ package config
 // All fields are pointers: nil means the field was not configured, non-nil
 // means it was explicitly set (by a config file or by a CLI flag override).
 type Bubbletree struct {
+	Size              *string `yaml:"size,omitempty"              json:"size,omitempty"`
 	Fill              *string `yaml:"fill,omitempty"              json:"fill,omitempty"`
 	FillPalette       *string `yaml:"fillPalette,omitempty"       json:"fillPalette,omitempty"`
 	Border            *string `yaml:"border,omitempty"            json:"border,omitempty"`

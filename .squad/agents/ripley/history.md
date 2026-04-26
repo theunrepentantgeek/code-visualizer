@@ -50,3 +50,20 @@
 - **Key files for implementation:** `render_cmd.go` (add `Bubbletree` subcommand), `config.go` (add `Bubbletree` field to `Config` struct and `New()`).
 - **Proposal written to:** `.squad/decisions/inbox/ripley-bubble-architecture.md`
 - **Result:** Architecture adopted. PR #64 created on branch `squad/33-bubble-visualization` with full implementation (layout engine, PNG+SVG rendering, CLI, config, 20 tests). CI green.
+
+### PR #69 Review — Legend Feature (2026-04-19) — COMPLETED
+
+- **Issue:** #68 — All visualizations should have a Legend
+- **Branch:** `squad/68-legend-core` (consolidated from 5 phases)
+- **Review finding:** One `unparam` lint issue — `writeSVGLegend` had an unused `x` parameter (always `0`). Fixed by removing the parameter from function signature and all 6 call sites (3 SVG renderers + 3 tests).
+- **Architecture assessment:** Clean. Legend is a composable `*LegendInfo` struct — nil means no legend. Canvas height extension strategy (viz height + legend height) preserves all existing coordinate systems. Shared constants between PNG and SVG keep visual parity. `buildLegendRow` in cmd package correctly replicates the bucket/category computation from the colour-application functions.
+- **Pattern:** Legend wiring follows the established pattern of building data structures in cmd, passing them to render functions. `--no-legend` uses `*bool` config field — consistent with the Kong pointer-field convention.
+- **Key files:** `internal/render/legend.go`, `internal/render/svg_legend.go`, `cmd/codeviz/legend_builder.go`, all `*_cmd.go` files, all `config/*.go` files.
+- **CI status:** Build, 15 test packages, and lint all green after fix.
+- **Result:** PR #69 opened against main.
+
+### Legend Phase 5 — Test Suite Complete (2026-04-19)
+
+- **Status:** Lambert completed Phase 5 comprehensive test suite (47 tests across 3 files) for legend feature on squad/68-legend-core.
+- **Validation:** All tests passing, build clean, lint clean. Validates renderer signatures (all accept `*LegendInfo`) and integration points from phases 2–4.
+- **Readiness:** Test suite is comprehensive; ready for PR review and merge. No blockers identified.
