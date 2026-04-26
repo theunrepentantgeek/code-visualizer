@@ -410,8 +410,7 @@ func applyRadialFillColoursTop(
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			numBuckets := len(buckets.Boundaries) + 1
-			applyRadialFillColours(nodes, root, fillMetric, buckets, numBuckets, fillPalette)
+			applyRadialFillColours(nodes, root, fillMetric, buckets, fillPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, fillMetric)
@@ -453,8 +452,7 @@ func (*RadialCmd) applyBorderColours(
 		values := collectNumericValues(root, borderMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			numBuckets := len(buckets.Boundaries) + 1
-			applyRadialBorderColours(nodes, root, borderMetric, buckets, numBuckets, borderPalette)
+			applyRadialBorderColours(nodes, root, borderMetric, buckets, borderPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, borderMetric)
@@ -474,7 +472,6 @@ func applyRadialFillColours(
 	dir *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 ) {
 	fileIdx := 0
@@ -483,12 +480,12 @@ func applyRadialFillColours(
 	for i := range node.Children {
 		child := &node.Children[i]
 		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyRadialFillColours(child, dir.Dirs[dirIdx], m, buckets, numBuckets, p)
+			applyRadialFillColours(child, dir.Dirs[dirIdx], m, buckets, p)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
 			val := extractNumeric(dir.Files[fileIdx], m)
 			idx := buckets.BucketIndex(val)
-			child.FillColour = palette.MapNumericToColour(idx, numBuckets, p)
+			child.FillColour = palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
 			fileIdx++
 		}
 	}
@@ -531,7 +528,6 @@ func applyRadialBorderColours(
 	dir *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 ) {
 	fileIdx := 0
@@ -540,12 +536,12 @@ func applyRadialBorderColours(
 	for i := range node.Children {
 		child := &node.Children[i]
 		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyRadialBorderColours(child, dir.Dirs[dirIdx], m, buckets, numBuckets, p)
+			applyRadialBorderColours(child, dir.Dirs[dirIdx], m, buckets, p)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
 			val := extractNumeric(dir.Files[fileIdx], m)
 			idx := buckets.BucketIndex(val)
-			col := palette.MapNumericToColour(idx, numBuckets, p)
+			col := palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
 			child.BorderColour = &col
 			fileIdx++
 		}

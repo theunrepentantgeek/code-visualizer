@@ -62,6 +62,11 @@ func ComputeBuckets(values []float64, steps int) BucketBoundaries {
 	}
 }
 
+// NumBuckets returns the total number of buckets (len(Boundaries) + 1).
+func (b BucketBoundaries) NumBuckets() int {
+	return len(b.Boundaries) + 1
+}
+
 // BucketIndex returns the bucket index (0-based) for the given value.
 func (b BucketBoundaries) BucketIndex(value float64) int {
 	for i, boundary := range b.Boundaries {

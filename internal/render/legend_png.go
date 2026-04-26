@@ -101,7 +101,7 @@ func drawNumericSwatches(
 	entry LegendEntry,
 	x, y float64,
 ) float64 {
-	if entry.NumBuckets <= 0 || len(entry.Palette.Colours) == 0 {
+	if entry.NumBuckets() <= 0 || len(entry.Palette.Colours) == 0 {
 		return y
 	}
 
@@ -118,7 +118,7 @@ func drawNumericSwatchesV(
 	entry LegendEntry,
 	x, y float64,
 ) float64 {
-	for i := range entry.NumBuckets {
+	for i := range entry.NumBuckets() {
 		colour := mapBucketColour(i, entry)
 		dc.SetColor(colour)
 		dc.DrawRectangle(x, y, swatchSize, swatchSize)
@@ -156,7 +156,7 @@ func drawNumericSwatchesH(
 ) float64 {
 	cx := x
 
-	for i := range entry.NumBuckets {
+	for i := range entry.NumBuckets() {
 		colour := mapBucketColour(i, entry)
 		dc.SetColor(colour)
 		dc.DrawRectangle(cx, y, swatchSize, swatchSize)
@@ -362,7 +362,7 @@ func measureEntryH(dc *gg.Context, entry LegendEntry) (width, height float64) {
 
 // measureNumericV measures numeric entry in vertical layout.
 func measureNumericV(dc *gg.Context, entry LegendEntry) (width, height float64) {
-	h := float64(entry.NumBuckets) * swatchSize
+	h := float64(entry.NumBuckets()) * swatchSize
 	w := swatchSize
 
 	if entry.Buckets != nil {
@@ -380,7 +380,7 @@ func measureNumericV(dc *gg.Context, entry LegendEntry) (width, height float64) 
 
 // measureNumericH measures numeric entry in horizontal layout.
 func measureNumericH(_ *gg.Context, entry LegendEntry) (width, height float64) {
-	w := float64(entry.NumBuckets) * swatchSize
+	w := float64(entry.NumBuckets()) * swatchSize
 	h := swatchSize + legendLineHeight + labelGap
 
 	return w, h
@@ -426,7 +426,7 @@ func mapBucketColour(bucketIdx int, entry LegendEntry) color.RGBA {
 		return color.RGBA{R: 128, G: 128, B: 128, A: 255}
 	}
 
-	return palette.MapNumericToColour(bucketIdx, entry.NumBuckets, entry.Palette)
+	return palette.MapNumericToColour(bucketIdx, entry.NumBuckets(), entry.Palette)
 }
 
 // formatBreakpoint formats a numeric breakpoint for display.
