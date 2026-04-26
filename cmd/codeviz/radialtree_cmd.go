@@ -164,7 +164,9 @@ func (c *RadialCmd) renderAndLog(
 ) error {
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
-	borderMetric, borderPaletteName, err := c.applyColoursAndRender(cfg, root, discSize, canvasSize, fillMetric, fillPaletteName)
+	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
+		cfg, root, discSize, canvasSize, fillMetric, fillPaletteName,
+	)
 	if err != nil {
 		return err
 	}

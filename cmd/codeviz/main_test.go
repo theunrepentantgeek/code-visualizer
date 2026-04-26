@@ -357,15 +357,12 @@ func TestTreemapCmd_ValidateConfig_BorderPaletteWithoutBorder(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cfg := config.New()
-	size := "file-size"
-	borderPalette := "temperature"
-	cfg.Treemap.Size = &size
-	cfg.Treemap.BorderPalette = &borderPalette // no Border set
+	cfg.Treemap.Size = new("file-size")
+	cfg.Treemap.BorderPalette = new("temperature") // no Border set
 
 	cmd := &TreemapCmd{}
 	err := cmd.validateConfig(cfg.Treemap)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("--border-palette requires --border"))
+	g.Expect(err).To(MatchError(ContainSubstring("--border-palette requires --border")))
 }
 
 func TestTreemapCmd_ValidateConfig_InvalidFillMetric(t *testing.T) {
@@ -373,15 +370,12 @@ func TestTreemapCmd_ValidateConfig_InvalidFillMetric(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cfg := config.New()
-	size := "file-size"
-	fill := "not-a-real-metric"
-	cfg.Treemap.Size = &size
-	cfg.Treemap.Fill = &fill
+	cfg.Treemap.Size = new("file-size")
+	cfg.Treemap.Fill = new("not-a-real-metric")
 
 	cmd := &TreemapCmd{}
 	err := cmd.validateConfig(cfg.Treemap)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("invalid fill metric"))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid fill metric")))
 }
 
 func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
@@ -389,15 +383,11 @@ func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cfg := config.New()
-	size := "file-size"
-	fill := "file-lines"
-	fillPalette := "not-a-real-palette"
-	cfg.Treemap.Size = &size
-	cfg.Treemap.Fill = &fill
-	cfg.Treemap.FillPalette = &fillPalette
+	cfg.Treemap.Size = new("file-size")
+	cfg.Treemap.Fill = new("file-lines")
+	cfg.Treemap.FillPalette = new("not-a-real-palette")
 
 	cmd := &TreemapCmd{}
 	err := cmd.validateConfig(cfg.Treemap)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("invalid fill palette"))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
 }
