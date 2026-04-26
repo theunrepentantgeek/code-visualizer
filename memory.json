@@ -1,45 +1,32 @@
 {
-  "last_run": "2026-04-25T23:04:34Z",
-  "run_id": "24942774350",
+  "last_run": "2026-04-26T12:33:18Z",
+  "run_id": "24956694709",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
-    "77": "2026-04-21T07:39:14Z"
+    "77": "2026-04-21T07:39:14Z",
+    "105": "2026-04-26T12:33:18Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/perf-scan-optimizations-20260425-27c6206ac24fa305",
-      "pr_number": 87,
-      "title": "[Repo Assist] perf(scan): filter before stat; short-circuit hasFiles check",
-      "status": "open",
-      "type": "perf"
-    },
-    {
-      "branch": "repo-assist/improve-config-export-and-logging-20260425",
+      "branch": "repo-assist/fix-utf16-line-count-20260426",
       "pr_number": null,
-      "title": "[Repo Assist] fix: improve config export completeness and logging",
+      "title": "[Repo Assist] fix(filesystem): correctly count lines in UTF-16 encoded text files",
       "status": "open",
       "type": "fix",
-      "closes": [88, 92, 94]
-    },
-    {
-      "branch": "repo-assist/fix-file-age-days-20260425",
-      "pr_number": null,
-      "title": "[Repo Assist] fix(git): measure file-age and file-freshness in days",
-      "status": "open",
-      "type": "fix",
-      "closes": [91]
+      "closes": [105]
     }
   ],
   "issues_actioned": {
     "74": "labelled enhancement, commented, PR #75 submitted (merged 2026-04-23)",
     "77": "labelled enhancement, commented, PR #79 submitted (merged 2026-04-23)",
-    "88": "labelled bug, fix in improve-config-export-and-logging PR",
-    "89": "labelled bug",
-    "90": "labelled bug",
-    "91": "labelled bug, fix in fix-file-age-days PR",
-    "92": "labelled enhancement, fix in improve-config-export-and-logging PR",
-    "93": "labelled bug",
-    "94": "labelled bug, fix in improve-config-export-and-logging PR"
+    "88": "labelled bug, fixed via PR #95 (merged 2026-04-26)",
+    "89": "labelled bug, fixed via PR #98 by maintainer (merged 2026-04-26)",
+    "90": "labelled bug, fixed via PR #98 by maintainer (merged 2026-04-26)",
+    "91": "labelled bug, fixed via PR #96 (merged 2026-04-26)",
+    "92": "labelled enhancement, fixed via PR #95 (merged 2026-04-26)",
+    "93": "labelled bug, fixed via PR #106 by maintainer (merged 2026-04-26)",
+    "94": "labelled bug, fixed via PR #95 (merged 2026-04-26)",
+    "105": "labelled bug, fix PR submitted (branch repo-assist/fix-utf16-line-count-20260426), commented"
   },
   "monthly_summary_issue": {
     "title": "[Repo Assist] Monthly Activity 2026-04",
@@ -48,8 +35,8 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 94,
-    "prs": 87
+    "issues": 105,
+    "prs": 111
   },
   "checked_off_items": [
     "PR #61: perf(git) cache per-file commit data (merged)",
@@ -64,18 +51,29 @@
     "Review PR test improvements PR #82 (checked off and merged 2026-04-23)",
     "Review PR refactor IsGitMetric (checked off by maintainer 2026-04-23)",
     "Review PR test-improvements-20260424 (checked off by maintainer 2026-04-25)",
-    "Review PR model-walk-directories (checked off by maintainer 2026-04-25)"
+    "Review PR model-walk-directories (checked off by maintainer 2026-04-25)",
+    "PR #87: perf(scan) filter+stat optimizations (merged 2026-04-26)",
+    "PR #95: fix config export + logging (merged 2026-04-26)",
+    "PR #96: fix file-age in days (merged 2026-04-26)",
+    "Investigate #89: legend too tall (fixed by maintainer PR #98, merged 2026-04-26)",
+    "Investigate #90: legend orientation margin (fixed by maintainer PR #98, merged 2026-04-26)",
+    "Investigate #93: PNG binary detection (fixed by maintainer PR #106, merged 2026-04-26)"
   ],
   "recently_merged": [
-    "PR #84: test: expand coverage (merged 2026-04-25)",
-    "PR #85: feat(model): add WalkDirectories (merged 2026-04-25)",
-    "PR #83: refactor(git): add IsGitMetric (merged 2026-04-23)",
-    "PR #82: test: add missing tests (merged 2026-04-23)",
-    "PR #73: docs: rewrite usage.md (merged 2026-04-23)",
-    "PR #75: feat: help metrics and palettes (merged 2026-04-23)",
-    "PR #79: feat(config): auto-load config (merged 2026-04-23)",
-    "PR #76: feat: Add Legends (merged 2026-04-21)",
-    "PR #81: chore(deps) x/image v0.39.0 (merged 2026-04-21)"
+    "PR #111: fix: min/max author times (merged 2026-04-26)",
+    "PR #110: fix: file-age zero in subdirectory (merged 2026-04-26)",
+    "PR #108: feat: --export-data flag (merged 2026-04-26)",
+    "PR #106: fix binary detection for PNG (merged 2026-04-26)",
+    "PR #104: remove redundant numBuckets param (merged 2026-04-26)",
+    "PR #103: remove redundant size/discSize params (merged 2026-04-26)",
+    "PR #100: fix early CLI validation (merged 2026-04-26)",
+    "PR #98: fix legend rendering #89 #90 (merged 2026-04-26)",
+    "PR #97: fix CI checks trigger (merged 2026-04-26)",
+    "PR #96: fix file-age days (merged 2026-04-26)",
+    "PR #95: fix config export (merged 2026-04-26)",
+    "PR #87: perf scan (merged 2026-04-26)",
+    "PR #84: test expand coverage (merged 2026-04-25)",
+    "PR #85: feat model WalkDirectories (merged 2026-04-25)"
   ],
-  "notes": "This run: labelled #88-94; created 2 new fix PRs (config export + file-age days). Remaining open bugs: #89 (horizontal legend too tall - complex), #90 (legend orientation margin - complex), #93 (PNG not detected as binary - needs magic-byte/extension detection). Next runs: investigate #93 (PNG binary detection - possibly simple extension list), #89/#90 (legend fixes - more complex)."
+  "notes": "This run: created fix PR for #105 (UTF-16 line counting) — wraps file in x/text unicode decoder when BOM detected. No other open issues. Maintainer very active today: merged 11 PRs including PRs #95, #96, #87 from Repo Assist plus many of their own fixes."
 }
