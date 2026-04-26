@@ -27,10 +27,8 @@ type RadialCmd struct {
 
 	DiscSize metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for disc size." short:"d"` //nolint:revive // kong struct tags require long lines
 
-	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive // kong struct tags require long lines
-	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for fill colour." name:"fill-palette" optional:""`        //nolint:revive // kong struct tags require long lines
-	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
-	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for border colour." name:"border-palette" optional:""`    //nolint:revive // kong struct tags require long lines
+	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
@@ -67,19 +65,11 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", discSize, p.Kind())
 	}
 
-	if err := validateMetricPalette(ptrString(cfg.Fill), ptrString(cfg.FillPalette), "fill"); err != nil {
+	if err := validateMetricPalette(specMetric(cfg.Fill), specPalette(cfg.Fill), "fill"); err != nil {
 		return err
 	}
 
-	if err := validateMetricPalette(ptrString(cfg.Border), ptrString(cfg.BorderPalette), "border"); err != nil {
-		return err
-	}
-
-	if ptrString(cfg.BorderPalette) != "" && ptrString(cfg.Border) == "" {
-		return eris.New("--border-palette requires --border to be specified")
-	}
-
-	return nil
+	return validateMetricPalette(specMetric(cfg.Border), specPalette(cfg.Border), "border")
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
@@ -127,7 +117,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(discSize, ptrString(cfg.Fill), ptrString(cfg.Border))
+	requested := collectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
 
 	err = c.checkGitRequirement(requested)
 	if err != nil {
@@ -207,7 +197,7 @@ func (c *RadialCmd) applyColoursAndRender(
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
 	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	borderName := metric.Name(ptrString(cfg.Border))
+	borderName := metric.Name(specMetric(cfg.Border))
 	legend := buildLegendInfo(
 		legendPos, legendOrient, fillMetric, fillPaletteName,
 		borderName, borderPaletteName, discSize, root,
@@ -242,20 +232,12 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 		cfg.Radial.DiscSize = &discSize
 	}
 
-	if c.Fill != "" {
+	if !c.Fill.IsZero() {
 		cfg.Radial.Fill = &c.Fill
 	}
 
-	if c.FillPalette != "" {
-		cfg.Radial.FillPalette = &c.FillPalette
-	}
-
-	if c.Border != "" {
+	if !c.Border.IsZero() {
 		cfg.Radial.Border = &c.Border
-	}
-
-	if c.BorderPalette != "" {
-		cfg.Radial.BorderPalette = &c.BorderPalette
 	}
 
 	if c.Labels != "" {
@@ -348,7 +330,7 @@ func (c *RadialCmd) checkGitRequirement(requested []metric.Name) error {
 }
 
 func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
-	if fill := ptrString(cfg.Fill); fill != "" {
+	if fill := specMetric(cfg.Fill); fill != "" {
 		return metric.Name(fill)
 	}
 
@@ -356,7 +338,7 @@ func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
 }
 
 func (*RadialCmd) resolveFillPalette(cfg *config.Radial, fillMetric metric.Name) palette.PaletteName {
-	if fp := ptrString(cfg.FillPalette); fp != "" {
+	if fp := specPalette(cfg.Fill); fp != "" {
 		return palette.PaletteName(fp)
 	}
 
@@ -431,15 +413,15 @@ func (*RadialCmd) applyBorderColours(
 	root *model.Directory,
 	cfg *config.Radial,
 ) (metric.Name, palette.PaletteName) {
-	border := ptrString(cfg.Border)
+	border := specMetric(cfg.Border)
 	if border == "" {
 		return "", ""
 	}
 
 	borderMetric := metric.Name(border)
 
-	borderPaletteName := palette.PaletteName(ptrString(cfg.BorderPalette))
-	if ptrString(cfg.BorderPalette) == "" {
+	borderPaletteName := palette.PaletteName(specPalette(cfg.Border))
+	if specPalette(cfg.Border) == "" {
 		if p, ok := provider.Get(borderMetric); ok {
 			borderPaletteName = p.DefaultPalette()
 		} else {

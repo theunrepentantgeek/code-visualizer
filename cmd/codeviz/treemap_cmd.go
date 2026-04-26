@@ -30,10 +30,8 @@ type TreemapCmd struct {
 
 	Size metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
 
-	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive,nolintlint // kong struct tags require long lines
-	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for fill colour." name:"fill-palette" optional:""`        //nolint:revive,nolintlint // kong struct tags require long lines
-	Border        string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"` //nolint:revive // kong struct tags require long lines
-	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for border colour." name:"border-palette" optional:""`    //nolint:revive // kong struct tags require long lines
+	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive // kong struct tags require long lines
 	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive // kong struct tags require long lines
@@ -68,19 +66,11 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
 	}
 
-	if err := validateMetricPalette(ptrString(cfg.Fill), ptrString(cfg.FillPalette), "fill"); err != nil {
+	if err := validateMetricPalette(specMetric(cfg.Fill), specPalette(cfg.Fill), "fill"); err != nil {
 		return err
 	}
 
-	if err := validateMetricPalette(ptrString(cfg.Border), ptrString(cfg.BorderPalette), "border"); err != nil {
-		return err
-	}
-
-	if ptrString(cfg.BorderPalette) != "" && ptrString(cfg.Border) == "" {
-		return eris.New("--border-palette requires --border to be specified")
-	}
-
-	return nil
+	return validateMetricPalette(specMetric(cfg.Border), specPalette(cfg.Border), "border")
 }
 
 func validateMetricPalette(metricStr, paletteStr, label string) error {
@@ -111,13 +101,13 @@ func formatMetricNames() string {
 	return strings.Join(strs, ", ")
 }
 
-func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Name {
+func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) []metric.Name {
 	seen := map[metric.Name]bool{size: true}
 	names := []metric.Name{size}
 
-	for _, s := range []string{fill, border} {
-		if s != "" {
-			n := metric.Name(s)
+	for _, spec := range []*config.MetricSpec{fill, border} {
+		if spec != nil && spec.Metric != "" {
+			n := metric.Name(spec.Metric)
 			if !seen[n] {
 				seen[n] = true
 				names = append(names, n)
@@ -126,6 +116,24 @@ func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Nam
 	}
 
 	return names
+}
+
+// specMetric returns the metric name from a *MetricSpec, or "" if nil.
+func specMetric(s *config.MetricSpec) string {
+	if s == nil {
+		return ""
+	}
+
+	return s.Metric
+}
+
+// specPalette returns the palette name from a *MetricSpec, or "" if nil.
+func specPalette(s *config.MetricSpec) string {
+	if s == nil {
+		return ""
+	}
+
+	return s.Palette
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
@@ -174,7 +182,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	// Collect all requested metrics and run providers
-	requested := collectRequestedMetrics(size, ptrString(cfg.Fill), ptrString(cfg.Border))
+	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
 	// Check git requirement before running providers
 	if err := c.checkGitRequirement(requested); err != nil {
@@ -266,14 +274,14 @@ func cornerLegendOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, 
 // palette, using provider defaults when no explicit palette is configured.
 // Shared by legend building and colour application to ensure consistency.
 func resolveBorderPaletteName(cfg *config.Treemap) (metric.Name, palette.PaletteName) {
-	border := ptrString(cfg.Border)
+	border := specMetric(cfg.Border)
 	if border == "" {
 		return "", ""
 	}
 
 	borderMetric := metric.Name(border)
 
-	if bp := ptrString(cfg.BorderPalette); bp != "" {
+	if bp := specPalette(cfg.Border); bp != "" {
 		return borderMetric, palette.PaletteName(bp)
 	}
 
@@ -401,20 +409,12 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 		cfg.Treemap.Size = &size
 	}
 
-	if c.Fill != "" {
+	if !c.Fill.IsZero() {
 		cfg.Treemap.Fill = &c.Fill
 	}
 
-	if c.FillPalette != "" {
-		cfg.Treemap.FillPalette = &c.FillPalette
-	}
-
-	if c.Border != "" {
+	if !c.Border.IsZero() {
 		cfg.Treemap.Border = &c.Border
-	}
-
-	if c.BorderPalette != "" {
-		cfg.Treemap.BorderPalette = &c.BorderPalette
 	}
 
 	if c.Legend != "" {
@@ -481,7 +481,7 @@ func (c *TreemapCmd) validatePaths() error {
 }
 
 func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
-	if fill := ptrString(cfg.Fill); fill != "" {
+	if fill := specMetric(cfg.Fill); fill != "" {
 		return metric.Name(fill)
 	}
 
@@ -489,7 +489,7 @@ func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
 }
 
 func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.Name) palette.PaletteName {
-	if fp := ptrString(cfg.FillPalette); fp != "" {
+	if fp := specPalette(cfg.Fill); fp != "" {
 		return palette.PaletteName(fp)
 	}
 
@@ -555,15 +555,15 @@ func (*TreemapCmd) applyBorderColours(
 	root *model.Directory,
 	cfg *config.Treemap,
 ) (metric.Name, palette.PaletteName) {
-	border := ptrString(cfg.Border)
+	border := specMetric(cfg.Border)
 	if border == "" {
 		return "", ""
 	}
 
 	borderMetric := metric.Name(border)
 
-	borderPaletteName := palette.PaletteName(ptrString(cfg.BorderPalette))
-	if ptrString(cfg.BorderPalette) == "" {
+	borderPaletteName := palette.PaletteName(specPalette(cfg.Border))
+	if specPalette(cfg.Border) == "" {
 		if p, ok := provider.Get(borderMetric); ok {
 			borderPaletteName = p.DefaultPalette()
 		} else {

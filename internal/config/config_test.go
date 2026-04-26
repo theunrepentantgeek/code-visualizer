@@ -57,9 +57,7 @@ func TestNew_OptionalFieldsNil(t *testing.T) {
 
 	// Assert
 	g.Expect(cfg.Treemap.Fill).To(BeNil())
-	g.Expect(cfg.Treemap.FillPalette).To(BeNil())
 	g.Expect(cfg.Treemap.Border).To(BeNil())
-	g.Expect(cfg.Treemap.BorderPalette).To(BeNil())
 }
 
 // Load tests
@@ -145,7 +143,7 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"treemap":{"fill":"file-type","fillPalette":"categorization"}}`
+	content := `{"treemap":{"fill":"file-type,categorization"}}`
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
@@ -156,9 +154,8 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	// Assert
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cfg.Treemap.Fill).NotTo(BeNil())
-	g.Expect(*cfg.Treemap.Fill).To(Equal("file-type"))
-	g.Expect(cfg.Treemap.FillPalette).NotTo(BeNil())
-	g.Expect(*cfg.Treemap.FillPalette).To(Equal("categorization"))
+	g.Expect(cfg.Treemap.Fill.Metric).To(Equal("file-type"))
+	g.Expect(cfg.Treemap.Fill.Palette).To(Equal("categorization"))
 }
 
 func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
@@ -260,9 +257,8 @@ func TestSave_ThenLoad_RoundTrips(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 
-	fill := "file-type"
 	original := New()
-	original.Treemap.Fill = &fill
+	original.Treemap.Fill = &MetricSpec{Metric: "file-type"}
 
 	// Act: save then load into fresh config
 	g.Expect(original.Save(path)).To(Succeed())
@@ -274,7 +270,7 @@ func TestSave_ThenLoad_RoundTrips(t *testing.T) {
 	g.Expect(*loaded.Width).To(Equal(1920))
 	g.Expect(*loaded.Height).To(Equal(1080))
 	g.Expect(loaded.Treemap.Fill).NotTo(BeNil())
-	g.Expect(*loaded.Treemap.Fill).To(Equal("file-type"))
+	g.Expect(loaded.Treemap.Fill.Metric).To(Equal("file-type"))
 }
 
 func TestSave_OmitsNilFields(t *testing.T) {
