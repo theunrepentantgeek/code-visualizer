@@ -21,9 +21,15 @@ type commitData struct {
 
 type repoService struct {
 	repo        *gogit.Repository
+	rootPath    string // git worktree root (absolute path)
 	commitGroup singleflight.Group
 	commitMu    sync.RWMutex
 	commitCache map[string]*commitData
+}
+
+// RepoRoot returns the absolute path to the git worktree root.
+func (s *repoService) RepoRoot() string {
+	return s.rootPath
 }
 
 var (
@@ -52,8 +58,21 @@ func getService(repoPath string) (*repoService, error) {
 		return nil, err
 	}
 
+	rootPath := repoPath
+
+	wt, err := repo.Worktree()
+	if err == nil {
+		rootPath = wt.Filesystem.Root()
+	} else if !errors.Is(err, gogit.ErrIsBareRepository) {
+		err = eris.Wrap(err, "failed to get git worktree")
+		services[repoPath] = &serviceResult{nil, err}
+
+		return nil, err
+	}
+
 	svc := &repoService{
 		repo:        repo,
+		rootPath:    rootPath,
 		commitCache: make(map[string]*commitData),
 	}
 	services[repoPath] = &serviceResult{svc, nil}

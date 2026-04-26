@@ -30,32 +30,7 @@ func (*FileAgeProvider) Dependencies() []metric.Name         { return nil }
 func (*FileAgeProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*FileAgeProvider) Load(root *model.Directory) error {
-	s, err := getService(root.Path)
-	if err != nil {
-		return eris.Wrap(err, "file-age requires a git repository")
-	}
-
-	model.WalkFiles(root, func(f *model.File) {
-		relPath, err := filepath.Rel(root.Path, f.Path)
-		if err != nil {
-			slog.Warn("could not compute relative path", "path", f.Path, "error", err)
-
-			return
-		}
-
-		age, err := s.fileAge(relPath)
-		if err != nil {
-			if !errors.Is(err, errUntracked) {
-				slog.Debug("could not get file age", "path", relPath, "error", err)
-			}
-
-			return
-		}
-
-		f.SetQuantity(FileAge, age)
-	})
-
-	return nil
+	return loadGitMetric(root, FileAge, "file-age", (*repoService).fileAge)
 }
 
 // FileFreshnessProvider reports time since most recent commit in days.
@@ -70,32 +45,7 @@ func (*FileFreshnessProvider) Dependencies() []metric.Name         { return nil 
 func (*FileFreshnessProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
 
 func (*FileFreshnessProvider) Load(root *model.Directory) error {
-	s, err := getService(root.Path)
-	if err != nil {
-		return eris.Wrap(err, "file-freshness requires a git repository")
-	}
-
-	model.WalkFiles(root, func(f *model.File) {
-		relPath, err := filepath.Rel(root.Path, f.Path)
-		if err != nil {
-			slog.Warn("could not compute relative path", "path", f.Path, "error", err)
-
-			return
-		}
-
-		freshness, err := s.fileFreshness(relPath)
-		if err != nil {
-			if !errors.Is(err, errUntracked) {
-				slog.Debug("could not get file freshness", "path", relPath, "error", err)
-			}
-
-			return
-		}
-
-		f.SetQuantity(FileFreshness, freshness)
-	})
-
-	return nil
+	return loadGitMetric(root, FileFreshness, "file-freshness", (*repoService).fileFreshness)
 }
 
 // IsGitMetric reports whether name is a metric that requires a git repository.
@@ -120,29 +70,41 @@ func (*AuthorCountProvider) Dependencies() []metric.Name         { return nil }
 func (*AuthorCountProvider) DefaultPalette() palette.PaletteName { return palette.GoodBad }
 
 func (*AuthorCountProvider) Load(root *model.Directory) error {
+	return loadGitMetric(root, AuthorCount, "author-count", (*repoService).authorCount)
+}
+
+// loadGitMetric is the shared implementation for all git-based metric providers.
+// It opens the repo service, walks all files, computes paths relative to the git
+// worktree root (not the scan root), and sets the metric via the supplied fn.
+func loadGitMetric(
+	root *model.Directory,
+	name metric.Name,
+	desc string,
+	fn func(*repoService, string) (int64, error),
+) error {
 	s, err := getService(root.Path)
 	if err != nil {
-		return eris.Wrap(err, "author-count requires a git repository")
+		return eris.Wrapf(err, "%s requires a git repository", desc)
 	}
 
 	model.WalkFiles(root, func(f *model.File) {
-		relPath, err := filepath.Rel(root.Path, f.Path)
+		relPath, err := filepath.Rel(s.RepoRoot(), f.Path)
 		if err != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", err)
 
 			return
 		}
 
-		count, err := s.authorCount(relPath)
+		val, err := fn(s, relPath)
 		if err != nil {
 			if !errors.Is(err, errUntracked) {
-				slog.Debug("could not get author count", "path", relPath, "error", err)
+				slog.Debug("could not get "+desc, "path", relPath, "error", err)
 			}
 
 			return
 		}
 
-		f.SetQuantity(AuthorCount, count)
+		f.SetQuantity(name, val)
 	})
 
 	return nil

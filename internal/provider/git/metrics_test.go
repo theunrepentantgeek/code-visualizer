@@ -262,3 +262,99 @@ func TestAuthorCountProviderMetadata(t *testing.T) {
 	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
 	g.Expect(p.Dependencies()).To(BeNil())
 }
+
+// setupSubdirRepo creates a git repo with a file inside a subdirectory,
+// committed at a fixed old date. It returns the subdirectory path.
+func setupSubdirRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+
+	run := func(args ...string) {
+		t.Helper()
+
+		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
+		cmd.Dir = dir
+
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=Alice",
+			"GIT_AUTHOR_EMAIL=alice@example.com",
+			"GIT_COMMITTER_NAME=Alice",
+			"GIT_COMMITTER_EMAIL=alice@example.com",
+		)
+
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("command %v failed: %s\n%s", args, err, out)
+		}
+	}
+
+	run("git", "init")
+	run("git", "config", "user.name", "Alice")
+	run("git", "config", "user.email", "alice@example.com")
+
+	sub := filepath.Join(dir, "subdir")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatalf("mkdir: %s", err)
+	}
+
+	_ = os.WriteFile(filepath.Join(sub, "code.go"), []byte("package code\n"), 0o600)
+
+	run("git", "add", ".")
+	run("git", "commit", "-m", "initial commit", "--date=2024-01-01T00:00:00+00:00")
+
+	return sub
+}
+
+func TestFileAgeProvider_SubdirectoryScanning(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	subdir := setupSubdirRepo(t)
+	root := buildTree(subdir, "code.go")
+
+	resetService()
+
+	p := &FileAgeProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	age, ok := root.Files[0].Quantity(FileAge)
+	g.Expect(ok).To(BeTrue(), "file-age metric should be set for file in subdirectory")
+	g.Expect(age).To(BeNumerically(">", 0), "file committed 2024-01-01 should have age > 0")
+}
+
+func TestFileFreshnessProvider_SubdirectoryScanning(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	subdir := setupSubdirRepo(t)
+	root := buildTree(subdir, "code.go")
+
+	resetService()
+
+	p := &FileFreshnessProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	freshness, ok := root.Files[0].Quantity(FileFreshness)
+	g.Expect(ok).To(BeTrue(), "file-freshness metric should be set for file in subdirectory")
+	g.Expect(freshness).To(BeNumerically(">", 0), "file committed 2024-01-01 should have freshness > 0")
+}
+
+func TestAuthorCountProvider_SubdirectoryScanning(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	subdir := setupSubdirRepo(t)
+	root := buildTree(subdir, "code.go")
+
+	resetService()
+
+	p := &AuthorCountProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	count, ok := root.Files[0].Quantity(AuthorCount)
+	g.Expect(ok).To(BeTrue(), "author-count metric should be set for file in subdirectory")
+	g.Expect(count).To(Equal(int64(1)), "code.go should have 1 author (Alice)")
+}
