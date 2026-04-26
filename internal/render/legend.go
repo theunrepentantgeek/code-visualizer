@@ -51,12 +51,20 @@ type LegendEntry struct {
 	Kind       metric.Kind
 
 	// For Quantity/Measure metrics:
-	Buckets    *metric.BucketBoundaries
-	NumBuckets int
-	Palette    palette.ColourPalette
+	Buckets *metric.BucketBoundaries
+	Palette palette.ColourPalette
 
 	// For Classification metrics:
 	Categories []CategorySwatch
+}
+
+// NumBuckets returns the total number of buckets for this entry.
+func (e LegendEntry) NumBuckets() int {
+	if e.Buckets == nil {
+		return 0
+	}
+
+	return e.Buckets.NumBuckets()
 }
 
 // CategorySwatch pairs a category label with its colour.

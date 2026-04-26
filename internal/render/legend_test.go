@@ -118,7 +118,6 @@ func makeSampleLegendInfo(orient LegendOrientation) *LegendInfo {
 				Role:       "Fill",
 				MetricName: "file-size",
 				Kind:       metric.Quantity,
-				NumBuckets: 5,
 				Palette:    pal,
 				Buckets: &metric.BucketBoundaries{
 					Boundaries: []float64{100, 500, 1000, 5000},

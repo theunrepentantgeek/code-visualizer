@@ -420,8 +420,7 @@ func applyBubbleFillColoursTop(
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			numBuckets := len(buckets.Boundaries) + 1
-			applyBubbleFillColours(nodes, root, fillMetric, buckets, numBuckets, fillPalette)
+			applyBubbleFillColours(nodes, root, fillMetric, buckets, fillPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, fillMetric)
@@ -463,8 +462,7 @@ func (*BubbletreeCmd) applyBorderColours(
 		values := collectNumericValues(root, borderMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			numBuckets := len(buckets.Boundaries) + 1
-			applyBubbleBorderColours(nodes, root, borderMetric, buckets, numBuckets, borderPalette)
+			applyBubbleBorderColours(nodes, root, borderMetric, buckets, borderPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, borderMetric)
@@ -500,21 +498,19 @@ func applyBubbleFillColours(
 	root *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 ) {
 	dirs := make(map[string]*bubbletree.BubbleNode)
 	files := make(map[string]*bubbletree.BubbleNode)
 	indexBubbleNodesByPath(node, dirs, files)
 
-	applyBubbleFillColoursWalk(root, m, buckets, numBuckets, p, dirs, files)
+	applyBubbleFillColoursWalk(root, m, buckets, p, dirs, files)
 }
 
 func applyBubbleFillColoursWalk(
 	dir *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 	dirs map[string]*bubbletree.BubbleNode,
 	files map[string]*bubbletree.BubbleNode,
@@ -523,13 +519,13 @@ func applyBubbleFillColoursWalk(
 		if bn, ok := files[f.Path]; ok {
 			val := extractNumeric(f, m)
 			idx := buckets.BucketIndex(val)
-			bn.FillColour = palette.MapNumericToColour(idx, numBuckets, p)
+			bn.FillColour = palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
 		}
 	}
 
 	for _, d := range dir.Dirs {
 		if _, ok := dirs[d.Path]; ok {
-			applyBubbleFillColoursWalk(d, m, buckets, numBuckets, p, dirs, files)
+			applyBubbleFillColoursWalk(d, m, buckets, p, dirs, files)
 		}
 	}
 }
@@ -578,21 +574,19 @@ func applyBubbleBorderColours(
 	root *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 ) {
 	dirs := make(map[string]*bubbletree.BubbleNode)
 	files := make(map[string]*bubbletree.BubbleNode)
 	indexBubbleNodesByPath(node, dirs, files)
 
-	applyBubbleBorderColoursWalk(root, m, buckets, numBuckets, p, dirs, files)
+	applyBubbleBorderColoursWalk(root, m, buckets, p, dirs, files)
 }
 
 func applyBubbleBorderColoursWalk(
 	dir *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 	dirs map[string]*bubbletree.BubbleNode,
 	files map[string]*bubbletree.BubbleNode,
@@ -601,14 +595,14 @@ func applyBubbleBorderColoursWalk(
 		if bn, ok := files[f.Path]; ok {
 			val := extractNumeric(f, m)
 			idx := buckets.BucketIndex(val)
-			col := palette.MapNumericToColour(idx, numBuckets, p)
+			col := palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
 			bn.BorderColour = &col
 		}
 	}
 
 	for _, d := range dir.Dirs {
 		if _, ok := dirs[d.Path]; ok {
-			applyBubbleBorderColoursWalk(d, m, buckets, numBuckets, p, dirs, files)
+			applyBubbleBorderColoursWalk(d, m, buckets, p, dirs, files)
 		}
 	}
 }

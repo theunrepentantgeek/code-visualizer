@@ -112,7 +112,7 @@ func writeSVGNumericSwatches(
 	entry LegendEntry,
 	x, y float64,
 ) float64 {
-	if entry.NumBuckets <= 0 || len(entry.Palette.Colours) == 0 {
+	if entry.NumBuckets() <= 0 || len(entry.Palette.Colours) == 0 {
 		return y
 	}
 
@@ -125,7 +125,7 @@ func writeSVGNumericSwatches(
 
 // writeSVGNumericV writes vertically stacked numeric swatches.
 func writeSVGNumericV(f *os.File, entry LegendEntry, x, y float64) float64 {
-	for i := range entry.NumBuckets {
+	for i := range entry.NumBuckets() {
 		colour := mapBucketColour(i, entry)
 		writeSVGSwatch(f, x, y, colourToHex(colour))
 
@@ -149,7 +149,7 @@ func writeSVGNumericV(f *os.File, entry LegendEntry, x, y float64) float64 {
 func writeSVGNumericH(f *os.File, entry LegendEntry, x, y float64) float64 {
 	cx := x
 
-	for i := range entry.NumBuckets {
+	for i := range entry.NumBuckets() {
 		colour := mapBucketColour(i, entry)
 		writeSVGSwatch(f, cx, y, colourToHex(colour))
 

@@ -535,8 +535,7 @@ func applyFillColours(
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			numBuckets := len(buckets.Boundaries) + 1
-			applyNumericFillColours(rects, root, fillMetric, buckets, numBuckets, fillPalette)
+			applyNumericFillColours(rects, root, fillMetric, buckets, fillPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, fillMetric)
@@ -578,8 +577,7 @@ func (*TreemapCmd) applyBorderColours(
 		values := collectNumericValues(root, borderMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			numBuckets := len(buckets.Boundaries) + 1
-			applyNumericBorderColours(rects, root, borderMetric, buckets, numBuckets, borderPalette)
+			applyNumericBorderColours(rects, root, borderMetric, buckets, borderPalette)
 		}
 	} else {
 		types := collectDistinctTypes(root, borderMetric)
@@ -636,7 +634,6 @@ func applyNumericFillColours(
 	node *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 ) {
 	fileIdx := 0
@@ -645,12 +642,12 @@ func applyNumericFillColours(
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyNumericFillColours(child, node.Dirs[dirIdx], m, buckets, numBuckets, p)
+			applyNumericFillColours(child, node.Dirs[dirIdx], m, buckets, p)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			val := extractNumeric(node.Files[fileIdx], m)
 			idx := buckets.BucketIndex(val)
-			child.FillColour = palette.MapNumericToColour(idx, numBuckets, p)
+			child.FillColour = palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
 			fileIdx++
 		}
 	}
@@ -685,7 +682,6 @@ func applyNumericBorderColours(
 	node *model.Directory,
 	m metric.Name,
 	buckets metric.BucketBoundaries,
-	numBuckets int,
 	p palette.ColourPalette,
 ) {
 	fileIdx := 0
@@ -694,12 +690,12 @@ func applyNumericBorderColours(
 	for i := range rect.Children {
 		child := &rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyNumericBorderColours(child, node.Dirs[dirIdx], m, buckets, numBuckets, p)
+			applyNumericBorderColours(child, node.Dirs[dirIdx], m, buckets, p)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			val := extractNumeric(node.Files[fileIdx], m)
 			idx := buckets.BucketIndex(val)
-			col := palette.MapNumericToColour(idx, numBuckets, p)
+			col := palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
 			child.BorderColour = &col
 			fileIdx++
 		}

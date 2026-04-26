@@ -125,7 +125,6 @@ func buildLegendEntry(
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(pal.Colours))
 			entry.Buckets = &buckets
-			entry.NumBuckets = len(buckets.Boundaries) + 1
 		}
 	} else {
 		types := collectDistinctTypes(root, metricName)
