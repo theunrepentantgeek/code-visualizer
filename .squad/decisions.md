@@ -276,6 +276,120 @@ Anytime changes are pushed to address PR review comments, always reply to the re
 
 **Rationale:** User request — reinforces existing team practice of maintaining clear communication on review threads.
 
+### Export Data — Issue #107
+
+**Author:** Ripley  
+**Date:** 2026-04-26  
+**Status:** Implemented
+
+#### Overview
+
+Feature adds `--export-data` CLI flag to save computed metrics to JSON or YAML files after metrics computation but before rendering.
+
+#### 1. Export Data Structure
+
+```go
+type ExportData struct {
+	Directory *DirectoryExport `json:"directory"`
+}
+
+type DirectoryExport struct {
+	Name         string                   `json:"name"`
+	Path         string                   `json:"path"`
+	Files        []*FileExport            `json:"files"`
+	Directories  []*DirectoryExport       `json:"directories"`
+	Quantities   map[string]int64         `json:"quantities"`
+	Measures     map[string]float64       `json:"measures"`
+	Classifications map[string]string     `json:"classifications"`
+}
+
+type FileExport struct {
+	Name            string                 `json:"name"`
+	Path            string                 `json:"path"`
+	Extension       string                 `json:"extension"`
+	IsBinary        bool                   `json:"isBinary"`
+	Quantities      map[string]int64       `json:"quantities"`
+	Measures        map[string]float64     `json:"measures"`
+	Classifications map[string]string      `json:"classifications"`
+}
+```
+
+**Rationale:**
+- Flat metric maps simplify JSON/YAML serialization and make output self-describing
+- String keys preserve human readability instead of using `metric.Name` constants
+- Full paths enable post-export filtering or analysis without tree reconstruction
+- IsBinary flag preserved for debugging verification
+- Structure mirrors model tree (recursive directories + flat files)
+
+#### 2. Package Location
+
+**Decision:** `internal/export/` with single `Export()` function
+
+**Rationale:**
+- Mirrors existing package patterns (render, scan, config)
+- Clear separation of concerns independent of CLI, rendering, and metric computation
+- Allows independent implementation and testing
+- Easy to extend with new formats
+
+#### 3. API Signature
+
+```go
+func Export(root *model.Directory, requested []metric.Name, outputPath string) error
+```
+
+**Design points:**
+- Format inferred from file extension (.json or .yaml/.yml)
+- Takes requested metric names to ensure only computed metrics exported
+- Returns error wrapped with eris for consistency
+- No config dependency; export agnostic to visualization type
+
+#### 4. Flag Placement
+
+**Decision:** `--export-data` added to `Flags` struct (not per-command)
+
+**Rationale:**
+- Consistency with existing `--export-config` pattern
+- Export works on any visualization command (treemap, radial, bubble)
+- Avoids duplication; each command checks `flags.ExportData` after `provider.Run()`
+
+#### 5. Metric Visibility
+
+**Decision:** Use requested metric names passed to `Export()`
+
+**Implementation:** 
+- Each command collects requested metrics (e.g., `collectRequestedMetrics(size, fill, border)`)
+- Passed to `export.Export()` along with root tree
+- Export logic iterates through requested names and extracts values only for those metrics
+- No new model methods required; leverages existing getters
+
+**Rationale:**
+- No model changes needed
+- Explicit control; only metrics actually requested are exported
+- Clean separation; export doesn't need metric registry knowledge
+
+#### 6. Integration Flow
+
+Each command's `Run()` method follows this pattern:
+
+```
+1. Merge config and validate
+2. Scan filesystem
+3. Compute metrics (collect requested list)
+4. [NEW] Export metrics if --export-data flag provided
+5. Render visualization
+```
+
+#### Summary Table
+
+| Aspect | Decision |
+|--------|----------|
+| **Data structure** | Recursive `DirectoryExport` + flat `FileExport` with metric maps |
+| **Package** | `internal/export/` with single `Export()` function |
+| **API** | `Export(root *model.Directory, requested []metric.Name, outputPath string) error` |
+| **Flag** | `--export-data` on `Flags` struct (like `--export-config`) |
+| **Metrics** | Use requested list passed to Export; no new model methods |
+| **Integration** | Call after `provider.Run()`, before render |
+
 ## Governance
 
 - All meaningful changes require team consensus

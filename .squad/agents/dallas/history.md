@@ -9,10 +9,21 @@
 ## Recent Work
 
 - **PR #39 resolution (2026-04-15)**: Fixed FolderAuthorCountProvider dependencies, mean-file-lines description, git error logging. Extracted folder load helpers. Fixed float-to-days conversion and test error handling. Branch squad/38-extend-provider-capabilities task ci passed and pushed.
+- **PR #98 — Legend fixes (#89, #90)**: Fixed horizontal legend layout to arrange entries side-by-side instead of stacking vertically. Made legend margin carve-out respect orientation at corner positions. Branch squad/89-90-legend-fixes.
 
 ## Learnings
 
 <!-- Append learnings below -->
+
+### Export package — issue #107 (2026-04-26)
+
+- **New package:** `internal/export/` — serializes model tree + computed metrics to JSON or YAML files.
+- **Public API:** `Export(root *model.Directory, requested []metric.Name, outputPath string) error` — walks tree recursively, collects only requested metrics, infers format from file extension.
+- **Data structures:** `ExportData` (wrapper with `Root`), `DirectoryExport` (recursive), `FileExport` (leaf) — all carry `json` + `yaml` struct tags with `omitempty` on collection fields.
+- **Format inference:** `.json` → `json.MarshalIndent` (2-space indent + trailing newline), `.yaml`/`.yml` → `gopkg.in/yaml.v3`. Unsupported/missing extensions return descriptive eris errors.
+- **Metric collection pattern:** Lazy-init maps — only allocate `Quantities`/`Measures`/`Classifications` maps when a metric value is actually present. Combined with `omitempty`, this keeps output clean.
+- **Dependency added:** `gopkg.in/yaml.v3` (direct dependency in go.mod).
+- **No tests created** — Lambert owns the test suite. No CLI wiring — Kane handles that.
 
 ### Curved bubble labels — issue #65 (2026-04-20)
 
@@ -109,3 +120,23 @@
 - **Fix:** Added `Path string` field to `BubbleNode` (populated from `model.Directory.Path` and `model.File.Path` during layout). Replaced all four index-based colour walkers with path-indexed lookup via `indexBubbleNodesByPath` helper. Sort stays — it's good for packing. Path makes ordering irrelevant for colour mapping.
 - **Key pattern:** Use direct references (paths, pointers), not positional indices, when correlating two trees that may be independently reordered.
 - **Test added:** `TestLayoutPathPopulated` verifies that Path is propagated through the full tree.
+
+### Legend rendering fixes — issues #89, #90
+
+- **Legend code structure:** Legend rendering is split across four files: `legend.go` (types, constants, `ReserveLegendSpace`, `legendOrigin`), `legend_png.go` (PNG draw + measure), `legend_svg.go` (SVG write), `legend_test.go`.
+- **Horizontal layout bug:** `drawLegendEntries` and `writeSVGLegendEntries` always stacked entries vertically (incrementing Y). Added `drawLegendEntriesH`/`writeSVGLegendEntriesH` that increment X for horizontal orientation.
+- **Measurement symmetry:** `measureLegendH` was structurally identical to `measureLegendV` (summing heights). Fixed to sum widths and take max height. Added `measureSingleEntryH` to measure one entry including title for reuse by both PNG and SVG draw paths.
+- **Orientation-aware carve-out:** `ReserveLegendSpace` only used position (center-left/right → width, everything else → height). For corner positions, vertical legends now carve width; horizontal legends carve height. Center positions remain fixed.
+- **`legendLayoutOffset` in `treemap_cmd.go`:** Updated to handle the new orientation-based offsets for corner positions — left corners offset by wReduce when vertical, top corners offset by hReduce when horizontal.
+- **Key pattern:** When rendering code has H/V variants for swatches but not for the entry-level layout loop, bugs silently produce correct-looking but suboptimal output. Always verify the outer loop handles orientation too.
+
+### Issue #107 — Export Package Implementation (2026-04-26)
+
+- **New package:** `internal/export/` containing `export.go` with main Export() function.
+- **Public API:** `Export(root *model.Directory, requested []metric.Name, outputPath string) error` — recursive tree walk, format inference from extension.
+- **Data structures:** ExportData wrapper, DirectoryExport (recursive), FileExport (leaf) with Quantities/Measures/Classifications maps. All use json+yaml struct tags with omitempty on collection fields.
+- **Format handling:** .json → json.MarshalIndent (2-space indent, trailing newline), .yaml/.yml → gopkg.in/yaml.v3. Unsupported extensions return descriptive eris errors.
+- **Metric collection:** Lazy-init approach — only allocate maps when metric values exist. Combined with omitempty tags, output stays clean.
+- **Dependencies added:** gopkg.in/yaml.v3 (direct, added to go.mod).
+- **Test suite:** Left to Lambert. CLI wiring left to Kane. Focus: export logic only.
+

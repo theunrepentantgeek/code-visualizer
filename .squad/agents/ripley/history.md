@@ -79,3 +79,24 @@
 - **Key files:** `legend.go` (ReserveLegendSpace), `legend_png.go` (measureLegendH, measureSingleEntryH, drawLegendEntriesH), `legend_svg.go` (writeSVGLegendEntriesH), `treemap_cmd.go` (legendLayoutOffset), `legend_test.go`.
 - **CI:** All tests pass, `go vet` clean. `golangci-lint-custom` only available in CI.
 - **Result:** APPROVED with minor suggestions.
+
+### Issue #107 — Design Review: Export Metrics Feature (2026-04-26)
+
+- **Task:** Architectural decisions for `--export-data` CLI flag to export computed metrics (JSON/YAML).
+- **Data structure:** Recursive `DirectoryExport` tree with flat `FileExport` leaves; metric maps use string keys (human-readable) to simplify JSON/YAML serialization. Preserves paths and binary flags for post-export analysis.
+- **Package placement:** New `internal/export/` package (mirrors existing patterns: render, scan, config). Single `Export()` function independent of CLI, visualization type, and metric registry.
+- **API signature:** `Export(root *model.Directory, requested []metric.Name, outputPath string) error`. Format inferred from file extension (like `render.FormatFromPath`).
+- **Flag design:** `--export-data` added to `Flags` struct (not per-command), consistent with existing `--export-config` pattern. Enables cross-cutting export on any visualization command.
+- **Metric visibility:** No new model methods. Export logic iterates through requested metric names and calls existing getters (`Quantity`, `Measure`, `Classification`). Only metrics actually requested are exported.
+- **Integration point:** Export called after `provider.Run()` (metrics computed) but before render, following the established command flow in treemap_cmd.go.
+- **Team ownership:** Dallas (export implementation), Kane (CLI wiring), Lambert (tests).
+- **Output:** Design decisions written to `.squad/decisions/inbox/ripley-export-data-design.md`.
+
+### Issue #107 — Export Feature Implementation Complete (2026-04-26)
+
+- **Status:** Feature fully implemented and integrated. All team members completed their assigned work.
+- **Dallas (Go Dev):** Implemented `internal/export/` package with recursive tree walking. Export() function handles JSON/YAML format inference, lazy-init metric maps, proper error handling with eris. Dependency added: gopkg.in/yaml.v3.
+- **Kane (CLI Dev):** Wired `--export-data` flag into Flags struct and CLI struct. Updated all 3 command Run() methods (treemap, radial, bubbletree). Export called after provider.Run(), before render. Consistent integration pattern across all commands.
+- **Lambert (QA):** Comprehensive test suite created: 9 tests covering JSON export, YAML export, format error handling, metric filtering, empty directories, nested structures, binary flags, and all metric types. All tests pass. Build green.
+- **Integration:** Feature ready for deployment. Design decisions merged into decisions.md.
+

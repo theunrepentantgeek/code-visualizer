@@ -9,6 +9,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/bevan/code-visualizer/internal/config"
+	"github.com/bevan/code-visualizer/internal/export"
 	"github.com/bevan/code-visualizer/internal/filter"
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
@@ -145,6 +146,10 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	err = c.filterBinaryFiles(cfg, root)
 	if err != nil {
 		return err
+	}
+
+	if err := export.Export(root, requested, flags.ExportData); err != nil {
+		return eris.Wrap(err, "failed to export data")
 	}
 
 	files, dirs := countAll(root)
