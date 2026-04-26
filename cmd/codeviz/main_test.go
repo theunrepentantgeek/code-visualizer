@@ -1,12 +1,15 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/alecthomas/kong"
 
+	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/scan"
@@ -207,4 +210,184 @@ func TestCollectDistinctTypes_ReturnsSortedTypes(t *testing.T) {
 
 	// Assert
 	g.Expect(types).To(Equal([]string{"go", "md", "txt"}))
+}
+
+// Issue #99 — config-supplied parameters bypass early validation.
+// After the fix, Validate() no longer checks size/disc-size metrics;
+// that validation moves to validateConfig() which validates the merged
+// config (the single source of truth) rather than CLI struct fields.
+
+func TestTreemapCmd_Validate_EmptySize_Passes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // will be supplied by config file later in Run()
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestRadialCmd_Validate_EmptyDiscSize_Passes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &RadialCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		DiscSize:   "", // will be supplied by config file later in Run()
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestBubbletreeCmd_Validate_EmptySize_Passes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &BubbletreeCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // will be supplied by config file later in Run()
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestTreemapCmd_ConfigSuppliesSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("treemap:\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // not supplied on CLI
+	}
+
+	cmd.applyOverrides(cfg)
+
+	// Config supplies the size — it stays on the config, not the CLI struct.
+	g.Expect(cfg.Treemap).NotTo(BeNil())
+	g.Expect(cfg.Treemap.Size).NotTo(BeNil())
+	g.Expect(*cfg.Treemap.Size).To(Equal("file-size"))
+}
+
+func TestTreemapCmd_CLISizeOverridesConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("treemap:\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "file-lines", // explicit CLI flag
+	}
+
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Treemap).NotTo(BeNil())
+	g.Expect(cfg.Treemap.Size).NotTo(BeNil())
+	g.Expect(*cfg.Treemap.Size).To(Equal("file-lines"))
+}
+
+func TestTreemapCmd_MissingSizeEverywhere_NilAfterMerge(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New() // default config does not set treemap.size
+
+	cmd := &TreemapCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // not supplied on CLI
+	}
+
+	cmd.applyOverrides(cfg)
+
+	// After merge with no size from either source, effective size is nil.
+	// validateConfig (called from Run) should surface a clear error.
+	g.Expect(cfg.Treemap.Size).To(BeNil())
+}
+
+// validateConfig validates the merged config (single source of truth).
+
+func TestTreemapCmd_ValidateConfig_ConfigSuppliesFillAndPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(
+		cfgPath,
+		[]byte("treemap:\n  size: file-size\n  fill: file-lines\n  fillPalette: temperature\n"),
+		0o600,
+	)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &TreemapCmd{Output: "out.png"}
+	cmd.applyOverrides(cfg)
+
+	// Validation passes with values from config only — no CLI fill/palette needed.
+	err := cmd.validateConfig(cfg.Treemap)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestTreemapCmd_ValidateConfig_BorderPaletteWithoutBorder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Treemap.Size = new("file-size")
+	cfg.Treemap.BorderPalette = new("temperature") // no Border set
+
+	cmd := &TreemapCmd{}
+	err := cmd.validateConfig(cfg.Treemap)
+	g.Expect(err).To(MatchError(ContainSubstring("--border-palette requires --border")))
+}
+
+func TestTreemapCmd_ValidateConfig_InvalidFillMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Treemap.Size = new("file-size")
+	cfg.Treemap.Fill = new("not-a-real-metric")
+
+	cmd := &TreemapCmd{}
+	err := cmd.validateConfig(cfg.Treemap)
+	g.Expect(err).To(MatchError(ContainSubstring("invalid fill metric")))
+}
+
+func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Treemap.Size = new("file-size")
+	cfg.Treemap.Fill = new("file-lines")
+	cfg.Treemap.FillPalette = new("not-a-real-palette")
+
+	cmd := &TreemapCmd{}
+	err := cmd.validateConfig(cfg.Treemap)
+	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
 }

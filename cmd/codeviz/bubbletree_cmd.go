@@ -25,7 +25,7 @@ type BubbletreeCmd struct {
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
 	//nolint:revive // kong struct tags require long lines
-	Size metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for circle size." required:"true" short:"s"`
+	Size metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for circle size." short:"s"`
 
 	//nolint:revive // kong struct tags require long lines
 	Fill string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`
@@ -50,29 +50,7 @@ type BubbletreeCmd struct {
 	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
 }
 
-//nolint:dupl // Validate mirrors RadialCmd.Validate; kept separate per architecture proposal
 func (c *BubbletreeCmd) Validate() error {
-	p, ok := provider.Get(c.Size)
-	if !ok {
-		return eris.Errorf("unknown size metric %q; available metrics: %s", c.Size, formatMetricNames())
-	}
-
-	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", c.Size, p.Kind())
-	}
-
-	if err := validateMetricPalette(c.Fill, c.FillPalette, "fill"); err != nil {
-		return err
-	}
-
-	if err := validateMetricPalette(c.Border, c.BorderPalette, "border"); err != nil {
-		return err
-	}
-
-	if c.BorderPalette != "" && c.Border == "" {
-		return eris.New("--border-palette requires --border to be specified")
-	}
-
 	for _, f := range c.Filter {
 		if _, err := filter.ParseFilterFlag(f); err != nil {
 			return eris.Wrapf(err, "invalid filter %q", f)
@@ -82,14 +60,54 @@ func (c *BubbletreeCmd) Validate() error {
 	return nil
 }
 
-func (c *BubbletreeCmd) Run(flags *Flags) error {
+// validateConfig checks the effective configuration after all sources have been
+// merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
+func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {
+	size := ptrString(cfg.Size)
+
+	p, ok := provider.Get(metric.Name(size))
+	if !ok {
+		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
+	}
+
+	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
+		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
+	}
+
+	if err := validateMetricPalette(ptrString(cfg.Fill), ptrString(cfg.FillPalette), "fill"); err != nil {
+		return err
+	}
+
+	if err := validateMetricPalette(ptrString(cfg.Border), ptrString(cfg.BorderPalette), "border"); err != nil {
+		return err
+	}
+
+	if ptrString(cfg.BorderPalette) != "" && ptrString(cfg.Border) == "" {
+		return eris.New("--border-palette requires --border to be specified")
+	}
+
+	return nil
+}
+
+// mergeConfigAndValidate loads the config file, merges CLI overrides on top,
+// and validates the effective configuration. Called at the start of Run().
+func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}
 
 	c.applyOverrides(flags.Config)
 
+	return c.validateConfig(flags.Config.Bubbletree)
+}
+
+func (c *BubbletreeCmd) Run(flags *Flags) error {
+	if err := c.mergeConfigAndValidate(flags); err != nil {
+		return err
+	}
+
 	cfg := flags.Config.Bubbletree
+	size := metric.Name(ptrString(cfg.Size))
 
 	if err := c.validatePaths(); err != nil {
 		return err
@@ -116,7 +134,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(c.Size, ptrString(cfg.Fill), ptrString(cfg.Border))
+	requested := collectRequestedMetrics(size, ptrString(cfg.Fill), ptrString(cfg.Border))
 
 	err = c.checkGitRequirement(requested)
 	if err != nil {
@@ -140,12 +158,13 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	width := ptrInt(flags.Config.Width, 1920)
 	height := ptrInt(flags.Config.Height, 1080)
 
-	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, size, width, height, fillMetric, fillPaletteName)
 }
 
 func (c *BubbletreeCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Bubbletree,
+	size metric.Name,
 	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
@@ -155,7 +174,7 @@ func (c *BubbletreeCmd) renderAndLog(
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
 	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
-		cfg, root, width, height, fillMetric, fillPaletteName,
+		cfg, root, size, width, height, fillMetric, fillPaletteName,
 	)
 	if err != nil {
 		return err
@@ -167,7 +186,7 @@ func (c *BubbletreeCmd) renderAndLog(
 		"output", c.Output,
 		"width", width,
 		"height", height,
-		"size_metric", string(c.Size),
+		"size_metric", string(size),
 		"fill_metric", string(fillMetric),
 		"fill_palette", string(fillPaletteName),
 		"border_metric", string(borderMetric),
@@ -181,12 +200,13 @@ func (c *BubbletreeCmd) renderAndLog(
 func (c *BubbletreeCmd) applyColoursAndRender(
 	cfg *config.Bubbletree,
 	root *model.Directory,
+	size metric.Name,
 	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) (metric.Name, palette.PaletteName, error) {
 	labels := c.resolveLabels(cfg)
-	nodes := bubbletree.Layout(root, width, height, c.Size, labels)
+	nodes := bubbletree.Layout(root, width, height, size, labels)
 	applyBubbleFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
@@ -194,7 +214,7 @@ func (c *BubbletreeCmd) applyColoursAndRender(
 	borderName := metric.Name(ptrString(cfg.Border))
 	legend := buildLegendInfo(
 		legendPos, legendOrient, fillMetric, fillPaletteName,
-		borderName, borderPaletteName, c.Size, root,
+		borderName, borderPaletteName, size, root,
 	)
 
 	slog.Debug("rendering bubble tree", "width", width, "height", height, "output", c.Output)
@@ -331,12 +351,12 @@ func (c *BubbletreeCmd) checkGitRequirement(requested []metric.Name) error {
 	return nil
 }
 
-func (c *BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
+func (*BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
 	if fill := ptrString(cfg.Fill); fill != "" {
 		return metric.Name(fill)
 	}
 
-	return c.Size
+	return metric.Name(ptrString(cfg.Size))
 }
 
 func (*BubbletreeCmd) resolveFillPalette(cfg *config.Bubbletree, fillMetric metric.Name) palette.PaletteName {
@@ -351,8 +371,8 @@ func (*BubbletreeCmd) resolveFillPalette(cfg *config.Bubbletree, fillMetric metr
 	return palette.Neutral
 }
 
-func (c *BubbletreeCmd) filterBinaryFiles(_ *config.Bubbletree, root *model.Directory) error {
-	if c.Size != filesystem.FileLines {
+func (*BubbletreeCmd) filterBinaryFiles(cfg *config.Bubbletree, root *model.Directory) error {
+	if metric.Name(ptrString(cfg.Size)) != filesystem.FileLines {
 		return nil
 	}
 

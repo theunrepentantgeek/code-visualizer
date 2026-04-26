@@ -93,3 +93,21 @@ Wrote `internal/render/bubbletree_test.go` with 4 smoke tests:
 Shared helper `sampleBubbleTree()` builds a deterministic `BubbleNode` tree directly (root dir with nested "src" subdir + 2 file children + 1 sibling file). No Layout call — these are pure render tests.
 
 Pattern follows `radialtree_test.go` and `renderer_test.go` exactly: `t.Parallel()`, `NewGomegaWithT(t)`, dot-imported gomega, `t.TempDir()` for output. `RenderBubble` signature: `func RenderBubble(root *bubbletree.BubbleNode, width, height int, outputPath string) error`. Tests won't compile until Dallas delivers the render implementation — that's expected.
+
+### 2026-04-20 — issue #99 config-bypass validation tests
+
+Added 6 tests to `cmd/codeviz/main_test.go` for issue #99 (config-supplied parameters bypass early validation):
+
+- **TestTreemapCmd_Validate_EmptySize_Passes**: Validate() accepts empty Size (deferred to Run)
+- **TestRadialCmd_Validate_EmptyDiscSize_Passes**: Validate() accepts empty DiscSize (deferred to Run)
+- **TestBubbletreeCmd_Validate_EmptySize_Passes**: Validate() accepts empty Size (deferred to Run)
+- **TestTreemapCmd_ConfigSuppliesSize**: config file's `treemap.size` survives applyOverrides when CLI omits `--size`
+- **TestTreemapCmd_CLISizeOverridesConfig**: CLI `--size` overwrites config file value via applyOverrides
+- **TestTreemapCmd_MissingSizeEverywhere_NilAfterMerge**: when neither CLI nor config provides size, `cfg.Treemap.Size` is nil after merge
+
+Key learnings:
+- `config.New()` initialises `Treemap: &Treemap{}` with all pointer fields nil — no default size
+- `applyOverrides` guards each field with `if != ""` / `if != 0`, so empty CLI values are transparent
+- Tests 1–3 won't pass until Kane removes size validation from Validate() (that's the fix)
+- Tests 4–6 pass on current code — they exercise applyOverrides and config.Load independently of the Validate fix
+- `go vet ./cmd/codeviz/` confirmed all 6 tests compile cleanly

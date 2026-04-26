@@ -27,7 +27,7 @@ type TreemapCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
-	Size metric.Name `enum:"file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." required:"true" short:"s"` //nolint:revive // kong struct tags require long lines
+	Size metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for rectangle area." short:"s"` //nolint:revive // kong struct tags require long lines
 
 	Fill          string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`   //nolint:revive // kong struct tags require long lines
 	FillPalette   string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for fill colour." name:"fill-palette" optional:""`        //nolint:revive // kong struct tags require long lines
@@ -44,31 +44,39 @@ type TreemapCmd struct {
 }
 
 func (c *TreemapCmd) Validate() error {
-	p, ok := provider.Get(c.Size)
-	if !ok {
-		return eris.Errorf("unknown size metric %q; available metrics: %s", c.Size, formatMetricNames())
-	}
-
-	if p.Kind() != metric.Quantity {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", c.Size, p.Kind())
-	}
-
-	if err := validateMetricPalette(c.Fill, c.FillPalette, "fill"); err != nil {
-		return err
-	}
-
-	if err := validateMetricPalette(c.Border, c.BorderPalette, "border"); err != nil {
-		return err
-	}
-
-	if c.BorderPalette != "" && c.Border == "" {
-		return eris.New("--border-palette requires --border to be specified")
-	}
-
 	for _, f := range c.Filter {
 		if _, err := filter.ParseFilterFlag(f); err != nil {
 			return eris.Wrapf(err, "invalid filter %q", f)
 		}
+	}
+
+	return nil
+}
+
+// validateConfig checks the effective configuration after all sources have been
+// merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
+func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
+	size := ptrString(cfg.Size)
+
+	p, ok := provider.Get(metric.Name(size))
+	if !ok {
+		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
+	}
+
+	if p.Kind() != metric.Quantity {
+		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
+	}
+
+	if err := validateMetricPalette(ptrString(cfg.Fill), ptrString(cfg.FillPalette), "fill"); err != nil {
+		return err
+	}
+
+	if err := validateMetricPalette(ptrString(cfg.Border), ptrString(cfg.BorderPalette), "border"); err != nil {
+		return err
+	}
+
+	if ptrString(cfg.BorderPalette) != "" && ptrString(cfg.Border) == "" {
+		return eris.New("--border-palette requires --border to be specified")
 	}
 
 	return nil
@@ -119,13 +127,25 @@ func collectRequestedMetrics(size metric.Name, fill, border string) []metric.Nam
 	return names
 }
 
-func (c *TreemapCmd) Run(flags *Flags) error {
+// mergeConfigAndValidate loads the config file, merges CLI overrides on top,
+// and validates the effective configuration. Called at the start of Run().
+func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}
 
 	c.applyOverrides(flags.Config)
+
+	return c.validateConfig(flags.Config.Treemap)
+}
+
+func (c *TreemapCmd) Run(flags *Flags) error {
+	if err := c.mergeConfigAndValidate(flags); err != nil {
+		return err
+	}
+
 	cfg := flags.Config.Treemap
+	size := metric.Name(ptrString(cfg.Size))
 
 	if err := c.validatePaths(); err != nil {
 		return err
@@ -153,7 +173,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	// Collect all requested metrics and run providers
-	requested := collectRequestedMetrics(c.Size, ptrString(cfg.Fill), ptrString(cfg.Border))
+	requested := collectRequestedMetrics(size, ptrString(cfg.Fill), ptrString(cfg.Border))
 
 	// Check git requirement before running providers
 	if err := c.checkGitRequirement(requested); err != nil {
@@ -175,7 +195,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	width := ptrInt(flags.Config.Width, 1920)
 	height := ptrInt(flags.Config.Height, 1080)
 
-	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, size, width, height, fillMetric, fillPaletteName)
 }
 
 // minReservableSize is the smallest treemap dimension (px) that still
@@ -262,6 +282,7 @@ func resolveBorderPaletteName(cfg *config.Treemap) (metric.Name, palette.Palette
 func (c *TreemapCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Treemap,
+	size metric.Name,
 	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
@@ -275,12 +296,12 @@ func (c *TreemapCmd) renderAndLog(
 	borderName, borderPaletteName := resolveBorderPaletteName(cfg)
 	legend := buildLegendInfo(
 		legendPos, legendOrient, fillMetric, fillPaletteName,
-		borderName, borderPaletteName, c.Size, root,
+		borderName, borderPaletteName, size, root,
 	)
 
 	layoutW, layoutH := reserveAndLayout(legend, width, height)
 
-	rects := treemap.Layout(root, layoutW, layoutH, c.Size)
+	rects := treemap.Layout(root, layoutW, layoutH, size)
 
 	applyFillColours(&rects, root, fillMetric, fillPaletteName)
 	c.applyBorderColours(&rects, root, cfg)
@@ -303,7 +324,7 @@ func (c *TreemapCmd) renderAndLog(
 		"output", c.Output,
 		"width", width,
 		"height", height,
-		"size_metric", string(c.Size),
+		"size_metric", string(size),
 		"fill_metric", string(fillMetric),
 		"fill_palette", string(fillPaletteName),
 		"border_metric", string(borderName),
@@ -454,12 +475,12 @@ func (c *TreemapCmd) validatePaths() error {
 	return nil
 }
 
-func (c *TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
+func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
 	if fill := ptrString(cfg.Fill); fill != "" {
 		return metric.Name(fill)
 	}
 
-	return c.Size
+	return metric.Name(ptrString(cfg.Size))
 }
 
 func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.Name) palette.PaletteName {
@@ -474,8 +495,8 @@ func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.Nam
 	return palette.Neutral
 }
 
-func (c *TreemapCmd) filterBinaryFiles(_ *config.Treemap, root *model.Directory) error {
-	if c.Size != filesystem.FileLines {
+func (*TreemapCmd) filterBinaryFiles(cfg *config.Treemap, root *model.Directory) error {
+	if metric.Name(ptrString(cfg.Size)) != filesystem.FileLines {
 		return nil
 	}
 

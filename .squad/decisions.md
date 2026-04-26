@@ -228,6 +228,43 @@ type BubbleNode struct {
 
 ---
 
+### Validation Ordering — Validate() vs validateEffective()
+
+**Author:** Kane  
+**Date:** 2026-04-26  
+**Status:** Implemented  
+**Issue:** #99
+
+**Problem:**
+Kong calls `Validate()` on command structs during `ctx.Run()`, BEFORE the command's `Run()` method executes. Config file loading (`TryAutoLoad`) and CLI→config merging (`applyOverrides`) happen inside `Run()`. This means `Validate()` sees empty size fields when `--size`/`--disc-size`/`--bubble-size` wasn't passed on CLI, even though the config file supplies them.
+
+**Decision:**
+Split validation into two phases:
+
+1. **`Validate()`** — Only checks CLI-only concerns that don't depend on config file values. Currently: filter glob syntax validation.
+2. **`validateEffective()`** — Called from `Run()` after config load + merge + size backfill. Checks size metric existence and kind, fill/border metric-palette validity, and border-palette-requires-border constraint.
+
+**Kong struct tag changes:**
+- Removed `required:"true"` from size fields
+- Added `default:""` (Kong requires either required or default for enum fields)
+- Added leading comma to enum list: `enum:",file-size,file-lines,..."` to accept empty values
+
+**Size backfill pattern in Run():**
+After `applyOverrides()`, if the size field is still empty, read it back from the merged config:
+```go
+if c.Size == "" {
+    if s := ptrString(flags.Config.Treemap.Size); s != "" {
+        c.Size = metric.Name(s)
+    }
+}
+```
+
+**Applies to:** `TreemapCmd`, `RadialCmd`, `BubbletreeCmd`
+
+**Consequence:** Any future command with config-dependent fields must follow this pattern — keep `Validate()` for CLI-only checks, defer config-dependent validation to `Run()`.
+
+---
+
 ### User Directive — PR Review Thread Replies
 
 **Author:** Bevan (via Copilot)  
