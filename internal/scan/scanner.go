@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/rotisserie/eris"
@@ -220,13 +221,7 @@ func hasFiles(node *model.Directory) bool {
 		return true
 	}
 
-	for _, d := range node.Dirs {
-		if hasFiles(d) {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(node.Dirs, hasFiles)
 }
 
 func countFiles(node *model.Directory) int {
