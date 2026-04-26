@@ -195,7 +195,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	width := ptrInt(flags.Config.Width, 1920)
 	height := ptrInt(flags.Config.Height, 1080)
 
-	return c.renderAndLog(root, cfg, size, width, height, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
 }
 
 // minReservableSize is the smallest treemap dimension (px) that still
@@ -282,11 +282,11 @@ func resolveBorderPaletteName(cfg *config.Treemap) (metric.Name, palette.Palette
 func (c *TreemapCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Treemap,
-	size metric.Name,
 	width, height int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) error {
+	size := metric.Name(ptrString(cfg.Size))
 	files, dirs := countAll(root)
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)

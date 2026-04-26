@@ -151,21 +151,22 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
 
-	return c.renderAndLog(root, cfg, discSize, files, dirs, canvasSize, fillMetric, fillPaletteName)
+	return c.renderAndLog(root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
 }
 
 func (c *RadialCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Radial,
-	discSize metric.Name,
 	files, dirs, canvasSize int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) error {
+	discSize := metric.Name(ptrString(cfg.DiscSize))
+
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
 	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
-		cfg, root, discSize, canvasSize, fillMetric, fillPaletteName,
+		cfg, root, canvasSize, fillMetric, fillPaletteName,
 	)
 	if err != nil {
 		return err
@@ -190,11 +191,11 @@ func (c *RadialCmd) renderAndLog(
 func (c *RadialCmd) applyColoursAndRender(
 	cfg *config.Radial,
 	root *model.Directory,
-	discSize metric.Name,
 	canvasSize int,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 ) (metric.Name, palette.PaletteName, error) {
+	discSize := metric.Name(ptrString(cfg.DiscSize))
 	labels := c.resolveLabels(cfg)
 	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
 	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
