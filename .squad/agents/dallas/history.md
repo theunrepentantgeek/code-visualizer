@@ -15,6 +15,12 @@
 
 <!-- Append learnings below -->
 
+### MetricSpec type — Issue #118 (2026-04-27)
+
+- **CLI integration with Kane:** Kane's new `config.MetricSpec` type bundles metric+palette into single parameters (`--fill metric,palette`). This affects all metric validation in provider work — when checking metric names against `metric.Provider`, extract via `specMetric()` helper.
+- **Config struct impact:** All visualization config structs (`Treemap`, `Radial`, `Bubbletree`) now use `*MetricSpec` for Fill/Border fields instead of separate palette pointers. Check any metric validation code that reads these config fields.
+- **Helper functions:** Use `specMetric(spec)` and `specPalette(spec)` instead of `ptrString()` to safely extract metric/palette values.
+
 ### go-git FileName filter bug — issue #114 (2026-04-27)
 
 - **Root cause:** go-git's `LogOptions{FileName: &path}` includes merge commits that didn't modify the file, inflating the commit set. This made `data.newest` reflect the repo's most recent commit, not the file's last change.
