@@ -47,6 +47,12 @@ func writeSVGLegendBackground(f *os.File, w, h float64) {
 
 // writeSVGLegendEntries renders all entries inside the legend group.
 func writeSVGLegendEntries(f *os.File, dc *gg.Context, info *LegendInfo) {
+	if info.Orientation == LegendOrientationHorizontal {
+		writeSVGLegendEntriesH(f, dc, info)
+
+		return
+	}
+
 	cy := legendPadding
 
 	for i, entry := range info.Entries {
@@ -55,6 +61,21 @@ func writeSVGLegendEntries(f *os.File, dc *gg.Context, info *LegendInfo) {
 		}
 
 		cy = writeSVGSingleEntry(f, dc, info.Orientation, entry, legendPadding, cy)
+	}
+}
+
+// writeSVGLegendEntriesH renders entries side-by-side for horizontal layout.
+func writeSVGLegendEntriesH(f *os.File, dc *gg.Context, info *LegendInfo) {
+	cx := legendPadding
+
+	for i, entry := range info.Entries {
+		if i > 0 {
+			cx += entryGap
+		}
+
+		ew, _ := measureSingleEntryH(dc, entry)
+		writeSVGSingleEntry(f, dc, info.Orientation, entry, cx, legendPadding)
+		cx += ew
 	}
 }
 

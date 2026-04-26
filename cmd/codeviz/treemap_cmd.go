@@ -207,13 +207,34 @@ func legendLayoutOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, 
 	}
 
 	switch info.Position {
-	case render.LegendPositionTopLeft, render.LegendPositionTopCenter, render.LegendPositionTopRight:
+	case render.LegendPositionTopCenter:
 		return 0, hReduce
 	case render.LegendPositionCenterLeft:
 		return wReduce, 0
 	default:
+		return cornerLegendOffset(info, wReduce, hReduce)
+	}
+}
+
+// cornerLegendOffset returns the offset for corner legend positions,
+// where orientation determines the carve-out direction.
+func cornerLegendOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, dy float64) {
+	isTop := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionTopRight
+	isLeft := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionBottomLeft
+
+	if info.Orientation == render.LegendOrientationVertical {
+		if isLeft {
+			return wReduce, 0
+		}
+
 		return 0, 0
 	}
+
+	if isTop {
+		return 0, hReduce
+	}
+
+	return 0, 0
 }
 
 // resolveBorderPaletteName determines the effective border metric name and
