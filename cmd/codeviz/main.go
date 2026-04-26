@@ -24,6 +24,7 @@ type CLI struct {
 
 	//nolint:revive // Long help text is more important than minimizing line length, and annotations can't be wrapped
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
+	ExportData   string `help:"Write computed metrics to file (.json or .yaml/.yml)." name:"export-data" optional:""`
 
 	Render       RenderCmd       `cmd:"" help:"Render a visualization."`
 	HelpMetrics  HelpMetricsCmd  `cmd:"" help:"List all available metrics."`
@@ -36,6 +37,7 @@ type Flags struct {
 	Verbose      bool
 	Debug        bool
 	ExportConfig string
+	ExportData   string
 	Config       *config.Config
 	configPath   string // path passed to --config, empty if not explicitly provided
 }
@@ -122,6 +124,7 @@ func main() {
 		Verbose:      cli.Verbose,
 		Debug:        cli.Debug,
 		ExportConfig: cli.ExportConfig,
+		ExportData:   cli.ExportData,
 		Config:       cfg,
 		configPath:   cli.Config,
 	}
