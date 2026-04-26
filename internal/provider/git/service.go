@@ -15,7 +15,8 @@ import (
 
 // commitData holds all per-file commit information collected in a single git log pass.
 type commitData struct {
-	times   []time.Time
+	oldest  time.Time
+	newest  time.Time
 	authors map[string]bool
 }
 
@@ -96,12 +97,11 @@ func (s *repoService) fileAge(relPath string) (int64, error) {
 		return 0, err
 	}
 
-	if len(data.times) == 0 {
+	if data.oldest.IsZero() {
 		return 0, errUntracked
 	}
 
-	oldest := data.times[len(data.times)-1]
-	age := time.Since(oldest)
+	age := time.Since(data.oldest)
 
 	return int64(age.Hours() / 24), nil
 }
@@ -112,12 +112,11 @@ func (s *repoService) fileFreshness(relPath string) (int64, error) {
 		return 0, err
 	}
 
-	if len(data.times) == 0 {
+	if data.newest.IsZero() {
 		return 0, errUntracked
 	}
 
-	newest := data.times[0]
-	freshness := time.Since(newest)
+	freshness := time.Since(data.newest)
 
 	return int64(freshness.Hours() / 24), nil
 }
@@ -185,7 +184,15 @@ func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
 	}
 
 	err = log.ForEach(func(c *object.Commit) error {
-		data.times = append(data.times, c.Author.When)
+		when := c.Author.When
+		if data.oldest.IsZero() || when.Before(data.oldest) {
+			data.oldest = when
+		}
+
+		if data.newest.IsZero() || when.After(data.newest) {
+			data.newest = when
+		}
+
 		data.authors[c.Author.Email] = true
 
 		return nil
