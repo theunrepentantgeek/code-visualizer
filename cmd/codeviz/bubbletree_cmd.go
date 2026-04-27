@@ -133,7 +133,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := buildMetricProgress(flags)
+	metricProg, stopMetricTicker := buildMetricProgress(flags, model.CountFiles(root))
 
 	if err := provider.Run(root, requested, metricProg); err != nil {
 		stopMetricTicker()
