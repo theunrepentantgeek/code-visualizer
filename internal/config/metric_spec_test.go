@@ -164,7 +164,8 @@ func TestMetricSpec_YAML_RoundTrip_MetricOnly(t *testing.T) {
 
 	data, err := yaml.Marshal(original)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(string(data)).To(ContainSubstring("file-lines"))
+	g.Expect(string(data)).To(ContainSubstring("metric: file-lines"))
+	g.Expect(string(data)).NotTo(ContainSubstring("palette"))
 
 	var loaded MetricSpec
 	g.Expect(yaml.Unmarshal(data, &loaded)).To(Succeed())
@@ -179,7 +180,8 @@ func TestMetricSpec_YAML_RoundTrip_MetricAndPalette(t *testing.T) {
 
 	data, err := yaml.Marshal(original)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(string(data)).To(ContainSubstring("file-type,categorization"))
+	g.Expect(string(data)).To(ContainSubstring("metric: file-type"))
+	g.Expect(string(data)).To(ContainSubstring("palette: categorization"))
 
 	var loaded MetricSpec
 	g.Expect(yaml.Unmarshal(data, &loaded)).To(Succeed())
@@ -196,7 +198,7 @@ func TestMetricSpec_JSON_RoundTrip_MetricOnly(t *testing.T) {
 
 	data, err := json.Marshal(original)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(string(data)).To(Equal(`"file-lines"`))
+	g.Expect(string(data)).To(Equal(`{"metric":"file-lines"}`))
 
 	var loaded MetricSpec
 	g.Expect(json.Unmarshal(data, &loaded)).To(Succeed())
@@ -211,7 +213,7 @@ func TestMetricSpec_JSON_RoundTrip_MetricAndPalette(t *testing.T) {
 
 	data, err := json.Marshal(original)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(string(data)).To(Equal(`"file-type,categorization"`))
+	g.Expect(string(data)).To(Equal(`{"metric":"file-type","palette":"categorization"}`))
 
 	var loaded MetricSpec
 	g.Expect(json.Unmarshal(data, &loaded)).To(Succeed())
@@ -250,9 +252,49 @@ func TestMetricSpec_YAML_Pointer_RoundTrips(t *testing.T) {
 
 	data, err := yaml.Marshal(original)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(ContainSubstring("metric: file-type"))
+	g.Expect(string(data)).To(ContainSubstring("palette: categorization"))
 
 	var loaded wrapper
 	g.Expect(yaml.Unmarshal(data, &loaded)).To(Succeed())
 	g.Expect(loaded.Fill).NotTo(BeNil())
 	g.Expect(*loaded.Fill).To(Equal(*original.Fill))
+}
+
+// Zero/omitempty tests
+
+func TestMetricSpec_YAML_OmitsEmptyPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := MetricSpec{Metric: metric.Name("file-size")}
+
+	data, err := yaml.Marshal(ms)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(ContainSubstring("metric: file-size"))
+	g.Expect(string(data)).NotTo(ContainSubstring("palette"))
+}
+
+func TestMetricSpec_JSON_OmitsEmptyPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := MetricSpec{Metric: metric.Name("file-size")}
+
+	data, err := json.Marshal(ms)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(Equal(`{"metric":"file-size"}`))
+	g.Expect(string(data)).NotTo(ContainSubstring("palette"))
+}
+
+// YAML scalar fallback test (backward compatibility)
+
+func TestMetricSpec_YAML_UnmarshalScalar_Fallback(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var ms MetricSpec
+	g.Expect(yaml.Unmarshal([]byte(`"file-type,categorization"`), &ms)).To(Succeed())
+	g.Expect(ms.Metric).To(Equal(metric.Name("file-type")))
+	g.Expect(ms.Palette).To(Equal(palette.PaletteName("categorization")))
 }

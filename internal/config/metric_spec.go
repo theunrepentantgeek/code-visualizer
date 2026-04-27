@@ -18,8 +18,8 @@ import (
 //
 // Format: "metric" or "metric,palette".
 type MetricSpec struct { //nolint:recvcheck // marshal methods need value receivers, unmarshal need pointer
-	Metric  metric.Name
-	Palette palette.PaletteName
+	Metric  metric.Name         `json:"metric" yaml:"metric"`
+	Palette palette.PaletteName `json:"palette,omitempty" yaml:"palette,omitempty"`
 }
 
 // IsZero reports whether the MetricSpec is empty (no metric specified).
@@ -106,23 +106,37 @@ func (m MetricSpec) MarshalText() ([]byte, error) {
 	return []byte(m.String()), nil
 }
 
-// MarshalYAML produces a scalar string for YAML output.
+// MarshalYAML produces a YAML mapping with metric and palette fields.
 func (m MetricSpec) MarshalYAML() (any, error) {
-	return m.String(), nil
+	type plain MetricSpec // strips methods to avoid recursion via TextMarshaler
+
+	return plain(m), nil
 }
 
-// UnmarshalYAML reads a MetricSpec from a YAML scalar string.
+// UnmarshalYAML reads a MetricSpec from a YAML mapping with metric and palette fields.
+// Also accepts a scalar string for backward compatibility (delegating to UnmarshalText).
 func (m *MetricSpec) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.ScalarNode {
-		return eris.New("metric spec must be a string")
+	if value.Kind == yaml.ScalarNode {
+		return m.UnmarshalText([]byte(value.Value))
 	}
 
-	return m.UnmarshalText([]byte(value.Value))
+	type plain MetricSpec // strips methods to avoid recursion via TextUnmarshaler
+
+	var p plain
+	if err := value.Decode(&p); err != nil {
+		return eris.Wrap(err, "failed to decode metric spec from YAML")
+	}
+
+	*m = MetricSpec(p)
+
+	return nil
 }
 
-// MarshalJSON produces a JSON string.
+// MarshalJSON produces a JSON object with metric and palette fields.
 func (m MetricSpec) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(m.String())
+	type plain MetricSpec // strips methods to avoid recursion via TextMarshaler
+
+	data, err := json.Marshal(plain(m))
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to marshal metric spec to JSON")
 	}
@@ -130,12 +144,23 @@ func (m MetricSpec) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-// UnmarshalJSON reads a MetricSpec from a JSON string.
+// UnmarshalJSON reads a MetricSpec from a JSON object with metric and palette fields.
+// Also accepts a JSON string for backward compatibility (delegating to UnmarshalText).
 func (m *MetricSpec) UnmarshalJSON(data []byte) error {
+	// Try string first for backward compatibility.
 	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return eris.Wrap(err, "metric spec must be a JSON string")
+	if json.Unmarshal(data, &s) == nil {
+		return m.UnmarshalText([]byte(s))
 	}
 
-	return m.UnmarshalText([]byte(s))
+	type plain MetricSpec // strips methods to avoid recursion via TextUnmarshaler
+
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return eris.Wrap(err, "failed to decode metric spec from JSON")
+	}
+
+	*m = MetricSpec(p)
+
+	return nil
 }
