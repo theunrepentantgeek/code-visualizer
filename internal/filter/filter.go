@@ -29,7 +29,7 @@ type Rule struct {
 // Default (no match) is include.
 func IsIncluded(relativePath string, rules []Rule) bool {
 	for _, r := range rules {
-		matched, err := doublestar.Match(r.Pattern, relativePath)
+		matched, err := matchPattern(r.Pattern, relativePath)
 		if err != nil {
 			// Invalid pattern → skip this rule
 			continue
@@ -41,6 +41,24 @@ func IsIncluded(relativePath string, rules []Rule) bool {
 	}
 
 	return true
+}
+
+func matchPattern(pattern, relativePath string) (bool, error) {
+	matched, err := doublestar.Match(pattern, relativePath)
+	if err != nil {
+		return false, err
+	}
+
+	if matched {
+		return matched, nil
+	}
+
+	if strings.HasPrefix(pattern, "/") || strings.HasPrefix(pattern, "**/") {
+		return false, nil
+	}
+
+	// For unanchored patterns, also match at any depth (gitignore-like behavior).
+	return doublestar.Match("**/"+pattern, relativePath)
 }
 
 // MarshalText implements encoding.TextMarshaler.
