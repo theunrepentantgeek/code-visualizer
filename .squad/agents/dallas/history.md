@@ -86,3 +86,9 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Lint note:** `fixed.Int26_6` is the return type for `font.Face.GlyphAdvance` and `Kern`, not `font.MeasureUnit`. Accumulate in fixed-point then convert to float64 at the end.
 - **Cognitive complexity:** Split arc computation into small helpers (`clampFontToArc`, `measureStringWidth`, `collectAdvances`, `sumAdvances`, `placeGlyphs`) to stay under revive's max-10 limit.
 
+### Funlen limits in cmd Run methods (2026-04-28)
+
+- **funlen config:** `lines: 65, ignore-comments: true` in `.golangci.yml`. The line count includes blanks but excludes the func signature and closing brace. Comments are free.
+- **Pattern:** The three `Run()` methods in `bubbletree_cmd.go`, `radialtree_cmd.go`, and `treemap_cmd.go` follow an identical scan-and-load pipeline. Use inline `if err := ...; err != nil` (not separate `err = ...` / `if err != nil`) to stay under the limit — each combined check saves one line.
+- **dupl interaction:** Matching the inline style across cmd types makes their Run methods token-identical, triggering the `dupl` linter. Suppressed with `//nolint:dupl` since the methods genuinely operate on different config types and can't easily be unified without adding interface complexity.
+
