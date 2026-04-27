@@ -159,10 +159,12 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	scanProg, stopTicker := buildScanProgress(flags)
-	defer stopTicker()
+	scanProg, stopScanTicker := buildScanProgress(flags)
 
 	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
+
+	stopScanTicker()
+
 	if err != nil {
 		return eris.Wrap(err, "scan failed")
 	}
@@ -177,11 +179,15 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	slog.Info("Calculating metrics")
 
-	metricProg := buildMetricProgress(flags)
+	metricProg, stopMetricTicker := buildMetricProgress(flags)
 
 	if err := provider.Run(root, requested, metricProg); err != nil {
+		stopMetricTicker()
+
 		return eris.Wrap(err, "failed to load metrics")
 	}
+
+	stopMetricTicker()
 
 	if err := c.filterBinaryFiles(cfg, root); err != nil {
 		return err

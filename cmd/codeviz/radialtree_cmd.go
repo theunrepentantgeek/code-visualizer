@@ -113,10 +113,12 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	scanProg, stopTicker := buildScanProgress(flags)
-	defer stopTicker()
+	scanProg, stopScanTicker := buildScanProgress(flags)
 
 	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
+
+	stopScanTicker()
+
 	if err != nil {
 		return eris.Wrap(err, "scan failed")
 	}
@@ -130,12 +132,16 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	slog.Info("Calculating metrics")
 
-	metricProg := buildMetricProgress(flags)
+	metricProg, stopMetricTicker := buildMetricProgress(flags)
 
 	err = provider.Run(root, requested, metricProg)
 	if err != nil {
+		stopMetricTicker()
+
 		return eris.Wrap(err, "failed to load metrics")
 	}
+
+	stopMetricTicker()
 
 	err = c.filterBinaryFiles(cfg, root)
 	if err != nil {
