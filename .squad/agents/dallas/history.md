@@ -44,6 +44,14 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Name collision:** `formatMetricNames` already exists in `treemap_cmd.go` (returns all available metrics). Named the progress helper `joinMetricNames` to avoid collision within the `main` package.
 - **PR:** #122 (draft), branch `squad/121-fix-metric-scanning-logs`.
 
+### Per-file progress tracking — Issue #121 follow-up (2026-04-28)
+
+- **Optional interface pattern:** Used `FileProgressReporter` interface (with `SetOnFileProcessed(fn func())`) to thread per-file callbacks into providers without changing the core `Interface.Load()` signature. `runProvider` checks for this via type assertion before calling Load.
+- **sync.Map for hot-path counters:** Per-metric file counts use `sync.Map` (metric.Name → `*atomic.Int64`) because the write pattern is few stores in `OnMetricStarted` with many concurrent loads in `OnFileProcessed`. Cheaper than mutex for this read-heavy pattern.
+- **Callback placement:** `defer onFile()` at the top of each WalkFiles callback ensures every file increments progress regardless of early returns (errors, binary skips).
+- **FileLinesProvider receiver change:** Changed from value receiver to pointer receiver for `Load` and added `SetOnFileProcessed`. Registration changed from `FileLinesProvider{}` to `&FileLinesProvider{}`. Value receiver methods still satisfy the interface through the pointer.
+- **Removed `joinMetricNames`:** The ticker now logs one line per active metric instead of joining all names into one line. This made `joinMetricNames` unused — lint caught it.
+
 ### MetricSpec type — Issue #118 (2026-04-27)
 
 - **CLI integration with Kane:** Kane's new `config.MetricSpec` type bundles metric+palette into single parameters (`--fill metric,palette`). This affects all metric validation in provider work — when checking metric names against `metric.Provider`, extract via `specMetric()` helper.
