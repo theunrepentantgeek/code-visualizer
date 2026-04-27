@@ -8,11 +8,11 @@
 
 ## Recent Work
 
+- **Issue #121 — Metric scanning logs fix (2026-04-27):** PR #122 (draft) standardized log messages, added metric name context, implemented progress tracking. Branch squad/121-fix-metric-scanning-logs.
 - **Issue #114 — File freshness fix (2026-04-27):** PR #119 (draft) implements TREESAME check for go-git FileName bug.
 - **Issue #107 — Export package (2026-04-26):** Created `internal/export/` with Export() function for JSON/YAML metrics export.
 - **Issue #118 — MetricSpec integration (2026-04-27):** Noted Kane's MetricSpec type changes affecting metric validation.
 - **PR #98 — Legend fixes (#89, #90) (2026-04-18)**: Fixed horizontal legend layout and orientation-aware carve-out. Branch squad/89-90-legend-fixes.
-- **PR #39 resolution (2026-04-15)**: Fixed FolderAuthorCountProvider dependencies, mean-file-lines description, git error logging. Branch squad/38-extend-provider-capabilities.
 
 ## Core Context
 
@@ -35,6 +35,14 @@ This is an accumulation of foundational learnings and architecture decisions fro
 ## Learnings
 
 <!-- Append learnings below -->
+
+### Metric scanning logs — Issue #121 (2026-04-28)
+
+- **Progress architecture:** `cmd/codeviz/progress.go` contains all verbose/debug progress tracking. Two phases: filesystem scan (`scanCounter` + `startScanTicker`) and metric calculation (`metricProgressTracker` + `startMetricTicker`). Both use 1-second ticker goroutines with channel-based stop.
+- **Bug root cause:** The scan ticker was deferred until function return, so it kept firing during metric loading with frozen file/dir counts. Fix: explicit `stopScanTicker()` call after `scan.Scan()` returns, before metric phase.
+- **Concurrency note:** `metricProgressTracker` uses `sync.Mutex` for the active-metric slice (not atomic — slice ops aren't atomic) plus `atomic.Int64` for the completed counter. Providers run concurrently via `errgroup` in `internal/provider/run.go`, so `OnMetricStarted`/`OnMetricFinished` are called from multiple goroutines.
+- **Name collision:** `formatMetricNames` already exists in `treemap_cmd.go` (returns all available metrics). Named the progress helper `joinMetricNames` to avoid collision within the `main` package.
+- **PR:** #122 (draft), branch `squad/121-fix-metric-scanning-logs`.
 
 ### MetricSpec type — Issue #118 (2026-04-27)
 
