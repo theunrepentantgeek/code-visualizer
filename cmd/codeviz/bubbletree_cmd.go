@@ -28,17 +28,8 @@ type BubbletreeCmd struct {
 	//nolint:revive // kong struct tags require long lines
 	Size metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Metric for circle size." short:"s"`
 
-	//nolint:revive // kong struct tags require long lines
-	Fill string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for fill colour." optional:"" short:"f"`
-
-	//nolint:revive // kong struct tags require long lines
-	FillPalette string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for fill colour." name:"fill-palette" optional:""`
-
-	//nolint:revive // kong struct tags require long lines
-	Border string `default:"" enum:",file-size,file-lines,file-type,file-age,file-freshness,author-count" help:"Metric for border colour." optional:"" short:"b"`
-
-	//nolint:revive // kong struct tags require long lines
-	BorderPalette string `default:"" enum:",categorization,temperature,good-bad,neutral,foliage" help:"Palette for border colour." name:"border-palette" optional:""`
+	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
@@ -75,16 +66,12 @@ func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
 	}
 
-	if err := validateMetricPalette(ptrString(cfg.Fill), ptrString(cfg.FillPalette), "fill"); err != nil {
-		return err
+	if err := cfg.Fill.Validate("fill"); err != nil {
+		return eris.Wrap(err, "invalid fill spec")
 	}
 
-	if err := validateMetricPalette(ptrString(cfg.Border), ptrString(cfg.BorderPalette), "border"); err != nil {
-		return err
-	}
-
-	if ptrString(cfg.BorderPalette) != "" && ptrString(cfg.Border) == "" {
-		return eris.New("--border-palette requires --border to be specified")
+	if err := cfg.Border.Validate("border"); err != nil {
+		return eris.Wrap(err, "invalid border spec")
 	}
 
 	return nil
@@ -135,7 +122,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(size, ptrString(cfg.Fill), ptrString(cfg.Border))
+	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
 	err = c.checkGitRequirement(requested)
 	if err != nil {
@@ -216,7 +203,7 @@ func (c *BubbletreeCmd) applyColoursAndRender(
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
 	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	borderName := metric.Name(ptrString(cfg.Border))
+	borderName := specMetric(cfg.Border)
 	legend := buildLegendInfo(
 		legendPos, legendOrient, fillMetric, fillPaletteName,
 		borderName, borderPaletteName, size, root,
@@ -251,20 +238,12 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 		cfg.Bubbletree.Size = &size
 	}
 
-	if c.Fill != "" {
+	if !c.Fill.IsZero() {
 		cfg.Bubbletree.Fill = &c.Fill
 	}
 
-	if c.FillPalette != "" {
-		cfg.Bubbletree.FillPalette = &c.FillPalette
-	}
-
-	if c.Border != "" {
+	if !c.Border.IsZero() {
 		cfg.Bubbletree.Border = &c.Border
-	}
-
-	if c.BorderPalette != "" {
-		cfg.Bubbletree.BorderPalette = &c.BorderPalette
 	}
 
 	if c.Labels != "" {
@@ -357,16 +336,16 @@ func (c *BubbletreeCmd) checkGitRequirement(requested []metric.Name) error {
 }
 
 func (*BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
-	if fill := ptrString(cfg.Fill); fill != "" {
-		return metric.Name(fill)
+	if fill := specMetric(cfg.Fill); fill != "" {
+		return fill
 	}
 
 	return metric.Name(ptrString(cfg.Size))
 }
 
 func (*BubbletreeCmd) resolveFillPalette(cfg *config.Bubbletree, fillMetric metric.Name) palette.PaletteName {
-	if fp := ptrString(cfg.FillPalette); fp != "" {
-		return palette.PaletteName(fp)
+	if fp := specPalette(cfg.Fill); fp != "" {
+		return fp
 	}
 
 	if p, ok := provider.Get(fillMetric); ok {
@@ -440,16 +419,14 @@ func (*BubbletreeCmd) applyBorderColours(
 	root *model.Directory,
 	cfg *config.Bubbletree,
 ) (metric.Name, palette.PaletteName) {
-	border := ptrString(cfg.Border)
+	border := specMetric(cfg.Border)
 	if border == "" {
 		return "", ""
 	}
 
-	borderMetric := metric.Name(border)
-
-	borderPaletteName := palette.PaletteName(ptrString(cfg.BorderPalette))
-	if ptrString(cfg.BorderPalette) == "" {
-		if p, ok := provider.Get(borderMetric); ok {
+	borderPaletteName := specPalette(cfg.Border)
+	if borderPaletteName == "" {
+		if p, ok := provider.Get(border); ok {
 			borderPaletteName = p.DefaultPalette()
 		} else {
 			borderPaletteName = palette.Neutral
@@ -458,24 +435,24 @@ func (*BubbletreeCmd) applyBorderColours(
 
 	borderPalette := palette.GetPalette(borderPaletteName)
 
-	p, ok := provider.Get(borderMetric)
+	p, ok := provider.Get(border)
 	if !ok {
-		return borderMetric, borderPaletteName
+		return border, borderPaletteName
 	}
 
 	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, borderMetric)
+		values := collectNumericValues(root, border)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			applyBubbleBorderColours(nodes, root, borderMetric, buckets, borderPalette)
+			applyBubbleBorderColours(nodes, root, border, buckets, borderPalette)
 		}
 	} else {
-		types := collectDistinctTypes(root, borderMetric)
+		types := collectDistinctTypes(root, border)
 		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalBubbleBorderColours(nodes, root, borderMetric, mapper)
+		applyCategoricalBubbleBorderColours(nodes, root, border, mapper)
 	}
 
-	return borderMetric, borderPaletteName
+	return border, borderPaletteName
 }
 
 // indexBubbleNodesByPath recursively walks the BubbleNode tree and indexes

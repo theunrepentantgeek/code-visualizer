@@ -76,4 +76,16 @@
 - **Build status:** Passes. All three commands wired correctly.
 - **Flag design rationale:** Cross-cutting flag on Flags struct allows any visualization command to export metrics without duplication.
 
+### MetricSpec — Combined metric+palette CLI parameter (Issue #118, 2026-07-06)
+
+- **New type `config.MetricSpec`** (`internal/config/metric_spec.go`): Bundles metric name and palette name. Parsed from "metric,palette" or just "metric" format.
+- **Kong integration:** Implements `encoding.TextUnmarshaler` — Kong automatically calls `UnmarshalText` for CLI parsing. No custom mapper needed.
+- **Config serialization:** Custom `MarshalYAML`/`UnmarshalYAML` and `MarshalJSON`/`UnmarshalJSON` for config file support.
+- **CLI struct changes:** `Fill` and `Border` fields changed from `string` to `config.MetricSpec`. Removed separate `FillPalette` and `BorderPalette` fields from all three commands.
+- **Config struct changes:** `Treemap`, `Radial`, `Bubbletree` now use `*MetricSpec` for Fill and Border instead of separate `*string` fields.
+- **Helper functions:** `specMetric(s *MetricSpec) string` and `specPalette(s *MetricSpec) string` replace `ptrString` for MetricSpec access.
+- **Validation:** `--border-palette requires --border` check removed (palette is always bundled with metric). Validation uses `validateMetricPalette()` with extracted metric/palette strings.
+- **Lint:** Used `//nolint:recvcheck` on MetricSpec struct because marshal methods need value receivers while unmarshal methods need pointer receivers.
+- **Key files:** `internal/config/metric_spec.go`, `internal/config/metric_spec_test.go`, all three `*_cmd.go` files, config structs.
+- **PR:** #120
 

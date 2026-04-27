@@ -10,6 +10,12 @@
 
 <!-- Append learnings below -->
 
+### MetricSpec type — Issue #118 (2026-04-27)
+
+- **Kane's new type:** `config.MetricSpec` bundles metric name + palette into single string (format: "metric,palette" or just "metric"). Implemented with `TextUnmarshaler` for Kong CLI and custom YAML/JSON marshaling.
+- **Test impact:** All CLI and config struct tests that mock Fill/Border metrics need updating to use `config.MetricSpec` instead of `*string`. The type has its own test suite with 22 cases covering parsing, serialization, and marshaling.
+- **Test patterns:** Look for tests creating TreemapCmd, RadialCmd, BubbletreeCmd fixtures with Fill/Border fields — they now take `MetricSpec` values.
+
 ### 2026-04-14 — radialtree layout tests
 
 Wrote `internal/radialtree/layout_test.go` (white-box, `package radialtree`) with 12 test cases covering:
@@ -135,3 +141,20 @@ Dallas had already delivered `export.go` — all 9 tests pass on first run. Test
 - **No regressions:** Tests validate Dallas's implementation was correct on first delivery.
 - **Pattern compliance:** Gomega assertions, t.Parallel(), nil-safe guards, temp directories for file I/O, JSON/YAML round-trip validation.
 
+
+### 2026-04-27 — issue #114 file-freshness always zero
+
+**Root cause:** go-git's `Log` with `FileName` option includes merge commits that didn't actually modify the file. These merge commits have recent timestamps that pollute `commitData.newest`, making `time.Since(newest)` truncate to 0 days for every file. The `oldest` field was less affected because unrelated merge timestamps are always newer than or equal to the real oldest.
+
+**Fix:** Added `commitModifiedFile()` to `internal/provider/git/service.go` — a TREESAME check comparing each commit's blob hash against all parent commits. Merge commits where the file is identical to any parent are filtered out.
+
+**Key files:**
+- `internal/provider/git/service.go` — `fetchCommitData()`, `commitModifiedFile()`, `blobHash()`
+- `internal/provider/git/metrics_test.go` — 5 new/strengthened tests
+
+**Key learning:** go-git's `FileName` log filter has two quirks vs `git log -- <file>`:
+1. Includes merge commits that didn't modify the file (TREESAME merges)
+2. Uses aggressive history simplification that may miss some commits in complex merge topologies
+The TREESAME blob-hash check fixes (1); (2) is a go-git limitation that doesn't affect practical usage.
+
+**PR:** #119

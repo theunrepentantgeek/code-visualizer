@@ -493,3 +493,51 @@ Each command's `Run()` method follows this pattern:
 2. Run module tidy so `gopkg.in/yaml.v3` is removed from `go.mod`/`go.sum`
 3. Re-run the targeted export and CLI tests, then let CI confirm the full suite
 
+---
+
+### MetricSpec — Combined metric+palette type
+
+**Author:** Kane
+**Status:** Implemented (PR #120)
+**Issue:** #118
+
+**Decision:** Introduced `config.MetricSpec` type to bundle metric name and palette name into a single value. This replaces the four separate fields (`Fill`, `FillPalette`, `Border`, `BorderPalette`) on both CLI structs and config structs with two `MetricSpec` fields (`Fill`, `Border`).
+
+**CLI format:**
+```
+--fill file-type,categorization --border file-lines,foliage
+```
+Palette is optional — `--fill file-type` uses the provider's default palette.
+
+**Config format:**
+```yaml
+treemap:
+  fill: file-type,categorization
+  border: file-lines,foliage
+```
+
+**Breaking changes:**
+- `--fill-palette` and `--border-palette` CLI flags removed.
+- Config file fields `fillPalette` and `borderPalette` removed (combine into `fill`/`border` values).
+
+**Impact:**
+- **All command structs** (`TreemapCmd`, `RadialCmd`, `BubbletreeCmd`): Updated to use `MetricSpec`.
+- **Config structs** (`Treemap`, `Radial`, `Bubbletree`): `*MetricSpec` replaces separate pointer strings.
+- **Helper functions**: `specMetric()` and `specPalette()` replace `ptrString()` for MetricSpec access.
+- **Existing config files** using old `fillPalette`/`borderPalette` format will need migration.
+
+---
+
+### go-git FileName log includes non-modifying merge commits
+
+**Author:** Lambert
+**Status:** Implemented (PR #119, fixes #114)
+
+**Context:** go-git's `repo.Log(&LogOptions{FileName: &path})` returns merge commits that have the file in their tree but didn't actually change it. This pollutes `commitData.newest` with very recent timestamps, causing `file-freshness` to always be 0.
+
+**Decision:** Added `commitModifiedFile()` TREESAME check to `fetchCommitData()` in `internal/provider/git/service.go`. Each commit's blob hash is compared against all parent commits; if the hash matches any parent, the commit is skipped. This correctly filters merge commits that merely carried the file through.
+
+**Impact:** All three git metrics (file-age, file-freshness, author-count) now correctly exclude non-modifying merge commits. This is most visible for file-freshness but also improves accuracy for file-age and author-count.
+
+**Known limitation:** go-git's history simplification may still miss some commits in complex merge topologies. This hasn't been observed to cause practical issues.
+

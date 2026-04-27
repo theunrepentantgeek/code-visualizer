@@ -337,7 +337,7 @@ func TestTreemapCmd_ValidateConfig_ConfigSuppliesFillAndPalette(t *testing.T) {
 	cfgPath := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(
 		cfgPath,
-		[]byte("treemap:\n  size: file-size\n  fill: file-lines\n  fillPalette: temperature\n"),
+		[]byte("treemap:\n  size: file-size\n  fill: file-lines,temperature\n"),
 		0o600,
 	)).To(Succeed())
 
@@ -352,26 +352,13 @@ func TestTreemapCmd_ValidateConfig_ConfigSuppliesFillAndPalette(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
-func TestTreemapCmd_ValidateConfig_BorderPaletteWithoutBorder(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := config.New()
-	cfg.Treemap.Size = new("file-size")
-	cfg.Treemap.BorderPalette = new("temperature") // no Border set
-
-	cmd := &TreemapCmd{}
-	err := cmd.validateConfig(cfg.Treemap)
-	g.Expect(err).To(MatchError(ContainSubstring("--border-palette requires --border")))
-}
-
 func TestTreemapCmd_ValidateConfig_InvalidFillMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	cfg := config.New()
 	cfg.Treemap.Size = new("file-size")
-	cfg.Treemap.Fill = new("not-a-real-metric")
+	cfg.Treemap.Fill = &config.MetricSpec{Metric: "not-a-real-metric"}
 
 	cmd := &TreemapCmd{}
 	err := cmd.validateConfig(cfg.Treemap)
@@ -384,8 +371,7 @@ func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 
 	cfg := config.New()
 	cfg.Treemap.Size = new("file-size")
-	cfg.Treemap.Fill = new("file-lines")
-	cfg.Treemap.FillPalette = new("not-a-real-palette")
+	cfg.Treemap.Fill = &config.MetricSpec{Metric: "file-lines", Palette: "not-a-real-palette"}
 
 	cmd := &TreemapCmd{}
 	err := cmd.validateConfig(cfg.Treemap)
