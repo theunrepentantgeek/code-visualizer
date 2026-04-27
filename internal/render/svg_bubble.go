@@ -1,10 +1,11 @@
 package render
 
 import (
+	"cmp"
 	"fmt"
 	"html"
 	"os"
-	"sort"
+	"slices"
 
 	"github.com/rotisserie/eris"
 
@@ -56,8 +57,8 @@ func renderBubbleSVG(
 // writeSVGBubbleDirs writes directory circle elements, outermost (largest) first.
 func writeSVGBubbleDirs(f *os.File, root bubbletree.BubbleNode) {
 	dirs := collectBubbleDirs(root)
-	sort.Slice(dirs, func(i, j int) bool {
-		return dirs[i].Radius > dirs[j].Radius
+	slices.SortFunc(dirs, func(a, b bubbletree.BubbleNode) int {
+		return cmp.Compare(b.Radius, a.Radius)
 	})
 
 	dirOpacity := float64(bubbleDirAlpha) / 255.0

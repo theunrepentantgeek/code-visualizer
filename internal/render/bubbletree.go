@@ -1,9 +1,10 @@
 package render
 
 import (
+	"cmp"
 	"image/color"
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
@@ -139,8 +140,8 @@ func resolveBorder(node bubbletree.BubbleNode) color.RGBA {
 // (outermost first) so inner circles are never obscured.
 func drawBubbleDirs(dc *gg.Context, root bubbletree.BubbleNode) {
 	dirs := collectBubbleDirs(root)
-	sort.Slice(dirs, func(i, j int) bool {
-		return dirs[i].Radius > dirs[j].Radius
+	slices.SortFunc(dirs, func(a, b bubbletree.BubbleNode) int {
+		return cmp.Compare(b.Radius, a.Radius)
 	})
 
 	for _, n := range dirs {

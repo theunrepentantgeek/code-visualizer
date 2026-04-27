@@ -2,7 +2,7 @@ package radialtree
 
 import (
 	"math"
-	"sort"
+	"slices"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -101,7 +101,7 @@ func TestLayoutAnglesFullCircle(t *testing.T) {
 		angles[i] = child.Angle
 	}
 
-	sort.Float64s(angles)
+	slices.Sort(angles)
 
 	// 4 equal-weight files should be spaced ~π/2 apart
 	expectedGap := 2 * math.Pi / 4

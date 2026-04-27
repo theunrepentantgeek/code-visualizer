@@ -2,7 +2,7 @@ package metric
 
 import (
 	"math"
-	"sort"
+	"slices"
 )
 
 // BucketBoundaries holds quantile-based breakpoints for mapping metric values to palette steps.
@@ -22,7 +22,7 @@ func ComputeBuckets(values []float64, steps int) BucketBoundaries {
 
 	sorted := make([]float64, len(values))
 	copy(sorted, values)
-	sort.Float64s(sorted)
+	slices.Sort(sorted)
 
 	minVal := sorted[0]
 	maxVal := sorted[len(sorted)-1]

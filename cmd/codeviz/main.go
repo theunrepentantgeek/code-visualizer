@@ -102,7 +102,7 @@ func main() {
 			_ = parseErr.Context.PrintUsage(false)
 		}
 
-		slog.Error(err.Error())
+		slog.Error("failed to parse arguments", "err", err)
 		os.Exit(1)
 	}
 
@@ -132,7 +132,7 @@ func main() {
 	err = ctx.Run(flags)
 	if err != nil {
 		code := classifyError(err)
-		slog.Error(err.Error())
+		slog.Error("command failed", "err", err)
 		os.Exit(code)
 	}
 }
