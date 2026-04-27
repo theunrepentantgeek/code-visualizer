@@ -46,7 +46,7 @@ func IsIncluded(relativePath string, rules []Rule) bool {
 func matchPattern(pattern, relativePath string) (bool, error) {
 	matched, err := doublestar.Match(pattern, relativePath)
 	if err != nil {
-		return false, err
+		return false, eris.Wrapf(err, "Failed to match pattern %q against path %q", pattern, relativePath)
 	}
 
 	if matched {
@@ -58,7 +58,12 @@ func matchPattern(pattern, relativePath string) (bool, error) {
 	}
 
 	// For unanchored patterns, also match at any depth (gitignore-like behavior).
-	return doublestar.Match("**/"+pattern, relativePath)
+	matched, err = doublestar.Match("**/"+pattern, relativePath)
+	if err != nil {
+		return false, eris.Wrapf(err, "Failed to match pattern %q against path %q", pattern, relativePath)
+	}
+
+	return matched, nil
 }
 
 // MarshalText implements encoding.TextMarshaler.
