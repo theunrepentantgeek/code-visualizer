@@ -1,0 +1,78 @@
+{
+  "last_run": "2026-04-27T13:10:33Z",
+  "run_id": "24996909087",
+  "comments_made": {
+    "74": "2026-04-20T12:54:26Z",
+    "77": "2026-04-21T07:39:14Z",
+    "105": "2026-04-26T12:33:18Z",
+    "112": "2026-04-27T13:10:33Z",
+    "116": "2026-04-27T13:10:33Z"
+  },
+  "prs_created": [
+    {
+      "branch": "repo-assist/fix-utf16-line-count-v2",
+      "pr_number": null,
+      "title": "[Repo Assist] fix(filesystem): correctly count lines in UTF-16 encoded text files",
+      "status": "open",
+      "type": "fix",
+      "closes": [105]
+    }
+  ],
+  "issues_actioned": {
+    "74": "labelled enhancement, commented, PR #75 submitted (merged 2026-04-23)",
+    "77": "labelled enhancement, commented, PR #79 submitted (merged 2026-04-23)",
+    "88": "labelled bug, fixed via PR #95 (merged 2026-04-26)",
+    "89": "labelled bug, fixed via PR #98 by maintainer (merged 2026-04-26)",
+    "90": "labelled bug, fixed via PR #98 by maintainer (merged 2026-04-26)",
+    "91": "labelled bug, fixed via PR #96 (merged 2026-04-26)",
+    "92": "labelled enhancement, fixed via PR #95 (merged 2026-04-26)",
+    "93": "labelled bug, fixed via PR #106 by maintainer (merged 2026-04-26)",
+    "94": "labelled bug, fixed via PR #95 (merged 2026-04-26)",
+    "105": "labelled bug, fix PR submitted (branch repo-assist/fix-utf16-line-count-v2), commented",
+    "112": "commented: new PR supersedes blocked review issue",
+    "116": "commented with analysis of new linter rules"
+  },
+  "monthly_summary_issue": {
+    "title": "[Repo Assist] Monthly Activity 2026-04",
+    "number": 59,
+    "month": "2026-04",
+    "status": "open"
+  },
+  "backlog_cursor": {
+    "issues": 116,
+    "prs": 123
+  },
+  "checked_off_items": [
+    "PR #61: perf(git) cache per-file commit data (merged)",
+    "PR #62: fix(logging) clarify directory scan log fields (merged)",
+    "Issue #58: duplicate of PR #61 (closed)",
+    "PR #73: docs/usage.md (merged by maintainer 2026-04-23)",
+    "PR #75: help commands for #74 (merged by maintainer 2026-04-23)",
+    "PR #79: auto-config for #77 (merged by maintainer 2026-04-23)",
+    "PR #81: chore(deps) x/image v0.39.0 (merged by maintainer 2026-04-21)",
+    "Issue #80: dep update tracking (PR #81 merged, suggest closing)",
+    "Check comment on #77 (checked off by maintainer 2026-04-21)",
+    "Review PR test improvements PR #82 (checked off and merged 2026-04-23)",
+    "Review PR refactor IsGitMetric (checked off by maintainer 2026-04-23)",
+    "Review PR test-improvements-20260424 (checked off by maintainer 2026-04-25)",
+    "Review PR model-walk-directories (checked off by maintainer 2026-04-25)",
+    "PR #87: perf(scan) filter+stat optimizations (merged 2026-04-26)",
+    "PR #95: fix config export + logging (merged 2026-04-26)",
+    "PR #96: fix file-age in days (merged 2026-04-26)",
+    "Investigate #89: legend too tall (fixed by maintainer PR #98, merged 2026-04-26)",
+    "Investigate #90: legend orientation margin (fixed by maintainer PR #98, merged 2026-04-26)",
+    "Investigate #93: PNG binary detection (fixed by maintainer PR #106, merged 2026-04-26)"
+  ],
+  "recently_merged": [
+    "PR #123: improve/filtering (merged 2026-04-27)",
+    "PR #122: fix metric scanning logs (merged 2026-04-27)",
+    "PR #120: MetricSpec combine metric+palette (merged 2026-04-27)",
+    "PR #119: fix file-freshness always zero (merged 2026-04-27)",
+    "PR #115: upgrade golangci-lint v2.11.4 (merged 2026-04-27)",
+    "PR #111: fix min/max author times (merged 2026-04-26)",
+    "PR #110: fix file-age zero in subdirectory (merged 2026-04-26)",
+    "PR #108: feat --export-data flag (merged 2026-04-26)",
+    "PR #106: fix binary detection for PNG (merged 2026-04-26)"
+  ],
+  "notes": "Maintainer very active 2026-04-27: merged 5 more PRs (115, 119, 120, 122, 123). New issue #116 from maintainer about enabling additional revive linter rules. Commented on #116 with analysis. Created fresh fix PR for #105 (UTF-16 line counting) on branch repo-assist/fix-utf16-line-count-v2 rebased on current main. Old blocked review issue #112 still open - commented directing to new PR."
+}
