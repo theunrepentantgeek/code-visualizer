@@ -395,3 +395,101 @@ Each command's `Run()` method follows this pattern:
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+
+---
+
+### Git providers: use worktree root for relative paths
+
+**Author:** Dallas
+**Date:** 2026-07-21
+**Status:** Implemented
+
+**Context:** All git metric providers (file-age, file-freshness, author-count) were computing file paths relative to the scan root (`root.Path`), but go-git expects paths relative to the git worktree root. This caused zero-value metrics when scanning a subdirectory.
+
+**Decision:** `repoService` now stores the worktree root path (via `Worktree().Filesystem.Root()`) and exposes it as `RepoRoot()`. All path computations use `RepoRoot()` as the base.
+
+**Also:** Factored the triplicated Load() walk-and-compute pattern into a single `loadGitMetric()` helper to prevent this class of bug from recurring if new git providers are added.
+
+---
+
+### Decision: Filter false-positive commits in git metric providers
+
+**Author:** Dallas
+**Date:** 2026-04-27
+**Issue:** #114
+**PR:** #119
+
+**Context:** go-git's `LogOptions{FileName}` filter includes merge commits that didn't modify the target file. This caused `file-freshness` to always return 0 because `data.newest` reflected the repo's most recent commit, not the file's last actual change.
+
+**Decision:** Added `commitModifiedFile()` to `fetchCommitData` in `internal/provider/git/service.go`. Each commit returned by go-git is verified by comparing the file's blob hash against the first parent's tree. Commits where the file hash is unchanged are skipped.
+
+**Impact:**
+- Fixes `file-freshness` (was always 0, now returns correct days-since-last-change).
+- Also improves accuracy of `file-age` and `author-count` — they shared the same inflated commit set, but the impact was less visible.
+- Small performance cost: each commit now does a tree lookup + parent tree lookup. Acceptable for correctness.
+
+---
+
+### Decision: Replace times slice with explicit oldest/newest in commitData
+
+**Author:** Dallas  
+**Date:** 2026-07-21  
+**Status:** Implemented  
+**Scope:** `internal/provider/git/service.go`
+
+**Context:** The `commitData` struct stored commit timestamps in a `times []time.Time` slice, then used positional indexing (`times[0]` for newest, `times[len-1]` for oldest) to compute file-age and file-freshness. This assumed go-git's iteration order (by committer time descending) matched author-time order. It doesn't — author time ≠ committer time for merge commits, rebases, cherry-picks, and PRs.
+
+**Decision:** Replaced `times []time.Time` with two explicit fields: `oldest time.Time` and `newest time.Time`. During `fetchCommitData()` iteration, track min/max with `Before()`/`After()` comparisons. This eliminates any dependency on iteration order.
+
+**Rationale:**
+- Correct by construction — no ordering assumption, just min/max.
+- Simpler — two fields instead of a growing slice. Less memory, no `len()` checks.
+- All existing tests pass unchanged (synthetic repos have correctly ordered timestamps, but the fix is still correct for them).
+
+---
+
+### golangci-lint upgraded to v2.11.4
+
+**Author:** Lambert
+**Date:** 2026-04-26
+**Issue:** #113
+**PR:** #115
+
+**What changed:**
+- golangci-lint and golangci-lint-custom (nilaway) upgraded from v2.8.0 to v2.11.4
+- All `sort.Slice`/`sort.Strings`/`sort.Float64s` replaced with `slices.SortFunc`/`slices.Sort` (new revive `use-slices-sort` rule)
+- `slog.Error(err.Error())` replaced with structured `slog.Error("msg", "err", err)` (gosec G706)
+- `filepath.Clean()` added for user-supplied paths (gosec G703)
+- Nil guard added to `provider/registry.go:get()` for nilaway safety
+
+**Impact on team:**
+- **All code must now use `slices.Sort`/`slices.SortFunc` instead of `sort.Slice`/`sort.Strings`/`sort.Float64s`**. The linter will enforce this.
+- **Use structured slog logging** (`slog.Error("message", "err", err)`) instead of `slog.Error(err.Error())`.
+- **Sanitise user-supplied file paths** with `filepath.Clean()` before use.
+- New revive rules suggested for adoption in issue #116.
+
+**Version references:**
+- `.devcontainer/install-dependencies.sh` line 149
+- `.devcontainer/.custom-gcl.template.yml` line 1
+
+---
+
+### Ripley Review Verdict — PR #108 Export Metrics
+
+**Author:** Ripley
+**Date:** 2026-04-26
+**PR:** #108
+**Issue:** #107
+**Verdict:** REJECT
+
+**Decision:** Standardize YAML usage for export code on the repository's existing package:
+- Use `go.yaml.in/yaml/v3`
+- Do not introduce `gopkg.in/yaml.v3` alongside it
+
+**Why:** The codebase already uses `go.yaml.in/yaml/v3` in config loading/saving and in the new export tests. Adding `gopkg.in/yaml.v3` in `internal/export/export.go` introduces a second YAML library with the same API surface for no functional gain, increases dependency surface, and breaks consistency.
+
+**Required follow-up:**
+1. Change `internal/export/export.go` to import `go.yaml.in/yaml/v3`
+2. Run module tidy so `gopkg.in/yaml.v3` is removed from `go.mod`/`go.sum`
+3. Re-run the targeted export and CLI tests, then let CI confirm the full suite
+

@@ -15,6 +15,14 @@
 
 <!-- Append learnings below -->
 
+### go-git FileName filter bug — issue #114 (2026-04-27)
+
+- **Root cause:** go-git's `LogOptions{FileName: &path}` includes merge commits that didn't modify the file, inflating the commit set. This made `data.newest` reflect the repo's most recent commit, not the file's last change.
+- **Fix location:** `internal/provider/git/service.go` — added `commitModifiedFile()` and `blobHash()` to verify each commit by comparing blob hashes with the first parent's tree.
+- **Impact:** Affected all three git metrics (file-age, file-freshness, author-count) since they share `fetchCommitData`. file-freshness was most visibly broken because `newest` was always near-now, truncating to 0 days.
+- **Key insight:** `file-age` appeared correct only by coincidence — for files present since the initial commit, `oldest` happened to match the repo's oldest commit.
+- **PR:** #119 (draft), branch `squad/114-fix-file-freshness`.
+
 ### Export package — issue #107 (2026-04-26)
 
 - **New package:** `internal/export/` — serializes model tree + computed metrics to JSON or YAML files.
