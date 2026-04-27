@@ -66,11 +66,15 @@ func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
 	}
 
-	if err := validateMetricPalette(specMetric(cfg.Fill), specPalette(cfg.Fill), "fill"); err != nil {
-		return err
+	if err := cfg.Fill.Validate("fill"); err != nil {
+		return eris.Wrap(err, "invalid fill spec")
 	}
 
-	return validateMetricPalette(specMetric(cfg.Border), specPalette(cfg.Border), "border")
+	if err := cfg.Border.Validate("border"); err != nil {
+		return eris.Wrap(err, "invalid border spec")
+	}
+
+	return nil
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
@@ -199,7 +203,7 @@ func (c *BubbletreeCmd) applyColoursAndRender(
 	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
 
 	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	borderName := metric.Name(specMetric(cfg.Border))
+	borderName := specMetric(cfg.Border)
 	legend := buildLegendInfo(
 		legendPos, legendOrient, fillMetric, fillPaletteName,
 		borderName, borderPaletteName, size, root,
@@ -333,7 +337,7 @@ func (c *BubbletreeCmd) checkGitRequirement(requested []metric.Name) error {
 
 func (*BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
 	if fill := specMetric(cfg.Fill); fill != "" {
-		return metric.Name(fill)
+		return fill
 	}
 
 	return metric.Name(ptrString(cfg.Size))
@@ -341,7 +345,7 @@ func (*BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
 
 func (*BubbletreeCmd) resolveFillPalette(cfg *config.Bubbletree, fillMetric metric.Name) palette.PaletteName {
 	if fp := specPalette(cfg.Fill); fp != "" {
-		return palette.PaletteName(fp)
+		return fp
 	}
 
 	if p, ok := provider.Get(fillMetric); ok {
@@ -420,11 +424,9 @@ func (*BubbletreeCmd) applyBorderColours(
 		return "", ""
 	}
 
-	borderMetric := metric.Name(border)
-
-	borderPaletteName := palette.PaletteName(specPalette(cfg.Border))
-	if specPalette(cfg.Border) == "" {
-		if p, ok := provider.Get(borderMetric); ok {
+	borderPaletteName := specPalette(cfg.Border)
+	if borderPaletteName == "" {
+		if p, ok := provider.Get(border); ok {
 			borderPaletteName = p.DefaultPalette()
 		} else {
 			borderPaletteName = palette.Neutral
@@ -433,24 +435,24 @@ func (*BubbletreeCmd) applyBorderColours(
 
 	borderPalette := palette.GetPalette(borderPaletteName)
 
-	p, ok := provider.Get(borderMetric)
+	p, ok := provider.Get(border)
 	if !ok {
-		return borderMetric, borderPaletteName
+		return border, borderPaletteName
 	}
 
 	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, borderMetric)
+		values := collectNumericValues(root, border)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			applyBubbleBorderColours(nodes, root, borderMetric, buckets, borderPalette)
+			applyBubbleBorderColours(nodes, root, border, buckets, borderPalette)
 		}
 	} else {
-		types := collectDistinctTypes(root, borderMetric)
+		types := collectDistinctTypes(root, border)
 		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalBubbleBorderColours(nodes, root, borderMetric, mapper)
+		applyCategoricalBubbleBorderColours(nodes, root, border, mapper)
 	}
 
-	return borderMetric, borderPaletteName
+	return border, borderPaletteName
 }
 
 // indexBubbleNodesByPath recursively walks the BubbleNode tree and indexes

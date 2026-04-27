@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/bevan/code-visualizer/internal/filter"
+	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/palette"
 )
 
 // New tests
@@ -154,8 +156,8 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	// Assert
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cfg.Treemap.Fill).NotTo(BeNil())
-	g.Expect(cfg.Treemap.Fill.Metric).To(Equal("file-type"))
-	g.Expect(cfg.Treemap.Fill.Palette).To(Equal("categorization"))
+	g.Expect(cfg.Treemap.Fill.Metric).To(Equal(metric.Name("file-type")))
+	g.Expect(cfg.Treemap.Fill.Palette).To(Equal(palette.PaletteName("categorization")))
 }
 
 func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
@@ -258,7 +260,7 @@ func TestSave_ThenLoad_RoundTrips(t *testing.T) {
 	path := filepath.Join(dir, "config.yaml")
 
 	original := New()
-	original.Treemap.Fill = &MetricSpec{Metric: "file-type"}
+	original.Treemap.Fill = &MetricSpec{Metric: metric.Name("file-type")}
 
 	// Act: save then load into fresh config
 	g.Expect(original.Save(path)).To(Succeed())
@@ -270,7 +272,7 @@ func TestSave_ThenLoad_RoundTrips(t *testing.T) {
 	g.Expect(*loaded.Width).To(Equal(1920))
 	g.Expect(*loaded.Height).To(Equal(1080))
 	g.Expect(loaded.Treemap.Fill).NotTo(BeNil())
-	g.Expect(loaded.Treemap.Fill.Metric).To(Equal("file-type"))
+	g.Expect(loaded.Treemap.Fill.Metric).To(Equal(metric.Name("file-type")))
 }
 
 func TestSave_OmitsNilFields(t *testing.T) {

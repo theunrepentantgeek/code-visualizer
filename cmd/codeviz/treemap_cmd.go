@@ -66,25 +66,12 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
 	}
 
-	if err := validateMetricPalette(specMetric(cfg.Fill), specPalette(cfg.Fill), "fill"); err != nil {
-		return err
+	if err := cfg.Fill.Validate("fill"); err != nil {
+		return eris.Wrap(err, "invalid fill spec")
 	}
 
-	return validateMetricPalette(specMetric(cfg.Border), specPalette(cfg.Border), "border")
-}
-
-func validateMetricPalette(metricStr, paletteStr, label string) error {
-	if metricStr != "" {
-		if _, ok := provider.Get(metric.Name(metricStr)); !ok {
-			return eris.Errorf("invalid %s metric %q; available metrics: %s", label, metricStr, formatMetricNames())
-		}
-	}
-
-	if paletteStr != "" {
-		p := palette.PaletteName(paletteStr)
-		if !p.IsValid() {
-			return eris.Errorf("invalid %s palette %q", label, paletteStr)
-		}
+	if err := cfg.Border.Validate("border"); err != nil {
+		return eris.Wrap(err, "invalid border spec")
 	}
 
 	return nil
@@ -107,10 +94,9 @@ func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) 
 
 	for _, spec := range []*config.MetricSpec{fill, border} {
 		if spec != nil && spec.Metric != "" {
-			n := metric.Name(spec.Metric)
-			if !seen[n] {
-				seen[n] = true
-				names = append(names, n)
+			if !seen[spec.Metric] {
+				seen[spec.Metric] = true
+				names = append(names, spec.Metric)
 			}
 		}
 	}
@@ -119,7 +105,7 @@ func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) 
 }
 
 // specMetric returns the metric name from a *MetricSpec, or "" if nil.
-func specMetric(s *config.MetricSpec) string {
+func specMetric(s *config.MetricSpec) metric.Name {
 	if s == nil {
 		return ""
 	}
@@ -128,7 +114,7 @@ func specMetric(s *config.MetricSpec) string {
 }
 
 // specPalette returns the palette name from a *MetricSpec, or "" if nil.
-func specPalette(s *config.MetricSpec) string {
+func specPalette(s *config.MetricSpec) palette.PaletteName {
 	if s == nil {
 		return ""
 	}
@@ -279,17 +265,15 @@ func resolveBorderPaletteName(cfg *config.Treemap) (metric.Name, palette.Palette
 		return "", ""
 	}
 
-	borderMetric := metric.Name(border)
-
 	if bp := specPalette(cfg.Border); bp != "" {
-		return borderMetric, palette.PaletteName(bp)
+		return border, bp
 	}
 
-	if p, ok := provider.Get(borderMetric); ok {
-		return borderMetric, p.DefaultPalette()
+	if p, ok := provider.Get(border); ok {
+		return border, p.DefaultPalette()
 	}
 
-	return borderMetric, palette.Neutral
+	return border, palette.Neutral
 }
 
 func (c *TreemapCmd) renderAndLog(
@@ -482,7 +466,7 @@ func (c *TreemapCmd) validatePaths() error {
 
 func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
 	if fill := specMetric(cfg.Fill); fill != "" {
-		return metric.Name(fill)
+		return fill
 	}
 
 	return metric.Name(ptrString(cfg.Size))
@@ -490,7 +474,7 @@ func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
 
 func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.Name) palette.PaletteName {
 	if fp := specPalette(cfg.Fill); fp != "" {
-		return palette.PaletteName(fp)
+		return fp
 	}
 
 	if p, ok := provider.Get(fillMetric); ok {
@@ -560,11 +544,9 @@ func (*TreemapCmd) applyBorderColours(
 		return "", ""
 	}
 
-	borderMetric := metric.Name(border)
-
-	borderPaletteName := palette.PaletteName(specPalette(cfg.Border))
-	if specPalette(cfg.Border) == "" {
-		if p, ok := provider.Get(borderMetric); ok {
+	borderPaletteName := specPalette(cfg.Border)
+	if borderPaletteName == "" {
+		if p, ok := provider.Get(border); ok {
 			borderPaletteName = p.DefaultPalette()
 		} else {
 			borderPaletteName = palette.Neutral
@@ -573,24 +555,24 @@ func (*TreemapCmd) applyBorderColours(
 
 	borderPalette := palette.GetPalette(borderPaletteName)
 
-	p, ok := provider.Get(borderMetric)
+	p, ok := provider.Get(border)
 	if !ok {
-		return borderMetric, borderPaletteName
+		return border, borderPaletteName
 	}
 
 	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, borderMetric)
+		values := collectNumericValues(root, border)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			applyNumericBorderColours(rects, root, borderMetric, buckets, borderPalette)
+			applyNumericBorderColours(rects, root, border, buckets, borderPalette)
 		}
 	} else {
-		types := collectDistinctTypes(root, borderMetric)
+		types := collectDistinctTypes(root, border)
 		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalBorderColours(rects, root, borderMetric, mapper)
+		applyCategoricalBorderColours(rects, root, border, mapper)
 	}
 
-	return borderMetric, borderPaletteName
+	return border, borderPaletteName
 }
 
 func extractNumeric(f *model.File, m metric.Name) float64 {

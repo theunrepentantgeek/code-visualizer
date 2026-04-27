@@ -6,6 +6,10 @@ import (
 
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
+
+	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/bevan/code-visualizer/internal/provider"
 )
 
 // MetricSpec combines a metric name and an optional palette name into a single
@@ -14,8 +18,8 @@ import (
 //
 // Format: "metric" or "metric,palette".
 type MetricSpec struct { //nolint:recvcheck // marshal methods need value receivers, unmarshal need pointer
-	Metric  string
-	Palette string
+	Metric  metric.Name
+	Palette palette.PaletteName
 }
 
 // IsZero reports whether the MetricSpec is empty (no metric specified).
@@ -26,10 +30,10 @@ func (m MetricSpec) IsZero() bool {
 // String returns the canonical text form: "metric,palette" or just "metric".
 func (m MetricSpec) String() string {
 	if m.Palette != "" {
-		return m.Metric + "," + m.Palette
+		return string(m.Metric) + "," + string(m.Palette)
 	}
 
-	return m.Metric
+	return string(m.Metric)
 }
 
 // UnmarshalText parses "metric,palette" or "metric" from text.
@@ -42,18 +46,54 @@ func (m *MetricSpec) UnmarshalText(text []byte) error {
 		return nil
 	}
 
-	parts := strings.SplitN(s, ",", 2)
-	m.Metric = strings.TrimSpace(parts[0])
+	metricPart, rest, hasSep := strings.Cut(s, ",")
+	m.Metric = metric.Name(strings.TrimSpace(metricPart))
 
 	if m.Metric == "" {
 		return eris.New("metric name must not be empty in metric spec")
 	}
 
-	if len(parts) == 2 {
-		m.Palette = strings.TrimSpace(parts[1])
+	if hasSep {
+		palettePart, extra, hasExtra := strings.Cut(rest, ",")
+		m.Palette = palette.PaletteName(strings.TrimSpace(palettePart))
 
 		if m.Palette == "" {
 			return eris.Errorf("palette name must not be empty after comma in %q", s)
+		}
+
+		if hasExtra {
+			return eris.Errorf("unexpected extra content %q after palette in %q", strings.TrimSpace(extra), s)
+		}
+	}
+
+	return nil
+}
+
+// Validate checks that the metric name (if set) is a known metric and that
+// the palette name (if set) is a valid palette. The label describes the field
+// being validated (e.g. "fill" or "border") for error messages.
+// A nil receiver is valid (no metric specified).
+func (m *MetricSpec) Validate(label string) error {
+	if m == nil {
+		return nil
+	}
+
+	if m.Metric != "" {
+		if _, ok := provider.Get(m.Metric); !ok {
+			names := provider.Names()
+			strs := make([]string, len(names))
+
+			for i, n := range names {
+				strs[i] = string(n)
+			}
+
+			return eris.Errorf("invalid %s metric %q; available metrics: %s", label, m.Metric, strings.Join(strs, ", "))
+		}
+	}
+
+	if m.Palette != "" {
+		if !m.Palette.IsValid() {
+			return eris.Errorf("invalid %s palette %q", label, m.Palette)
 		}
 	}
 
