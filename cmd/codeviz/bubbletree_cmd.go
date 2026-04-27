@@ -89,6 +89,7 @@ func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Bubbletree)
 }
 
+//nolint:dupl // parallel Run methods on different config types share the same workflow
 func (c *BubbletreeCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -126,8 +127,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 
 	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
-	err = c.checkGitRequirement(requested)
-	if err != nil {
+	if err := c.checkGitRequirement(requested); err != nil {
 		return err
 	}
 
@@ -135,8 +135,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 
 	metricProg, stopMetricTicker := buildMetricProgress(flags)
 
-	err = provider.Run(root, requested, metricProg)
-	if err != nil {
+	if err := provider.Run(root, requested, metricProg); err != nil {
 		stopMetricTicker()
 
 		return eris.Wrap(err, "failed to load metrics")
@@ -144,8 +143,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 
 	stopMetricTicker()
 
-	err = c.filterBinaryFiles(cfg, root)
-	if err != nil {
+	if err := c.filterBinaryFiles(cfg, root); err != nil {
 		return err
 	}
 

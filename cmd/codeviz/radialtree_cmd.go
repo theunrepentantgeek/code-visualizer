@@ -125,8 +125,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	requested := collectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
 
-	err = c.checkGitRequirement(requested)
-	if err != nil {
+	if err := c.checkGitRequirement(requested); err != nil {
 		return err
 	}
 
@@ -134,8 +133,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	metricProg, stopMetricTicker := buildMetricProgress(flags)
 
-	err = provider.Run(root, requested, metricProg)
-	if err != nil {
+	if err := provider.Run(root, requested, metricProg); err != nil {
 		stopMetricTicker()
 
 		return eris.Wrap(err, "failed to load metrics")
@@ -143,8 +141,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	stopMetricTicker()
 
-	err = c.filterBinaryFiles(cfg, root)
-	if err != nil {
+	if err := c.filterBinaryFiles(cfg, root); err != nil {
 		return err
 	}
 

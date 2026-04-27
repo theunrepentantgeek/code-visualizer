@@ -134,6 +134,7 @@ func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Treemap)
 }
 
+//nolint:dupl // parallel Run methods on different config types share the same workflow
 func (c *TreemapCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
