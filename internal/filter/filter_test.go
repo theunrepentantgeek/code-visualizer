@@ -81,6 +81,27 @@ func TestIsIncluded_DoublestarPattern(t *testing.T) {
 	g.Expect(IsIncluded("debug.log", rules)).To(BeFalse())
 }
 
+func TestIsIncluded_SlashlessPatternMatchesNestedPath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rules := []Rule{{Pattern: ".*", Mode: Exclude}}
+
+	g.Expect(IsIncluded("docs/.cache", rules)).To(BeFalse())
+	g.Expect(IsIncluded("docs/notes.md", rules)).To(BeTrue())
+}
+
+func TestIsIncluded_SuperpowersPatternMatchesNestedDirectory(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rules := []Rule{{Pattern: "superpowers/**", Mode: Exclude}}
+
+	g.Expect(IsIncluded("docs/superpowers", rules)).To(BeFalse())
+	g.Expect(IsIncluded("docs/superpowers/specs/design.md", rules)).To(BeFalse())
+	g.Expect(IsIncluded("docs/specs/design.md", rules)).To(BeTrue())
+}
+
 func TestIsIncluded_InvalidPattern_TreatedAsNoMatch(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
