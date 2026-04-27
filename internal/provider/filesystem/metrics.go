@@ -44,16 +44,24 @@ func (FileTypeProvider) DefaultPalette() palette.PaletteName { return palette.Ca
 func (FileTypeProvider) Load(_ *model.Directory) error       { return nil }
 
 // FileLinesProvider counts lines in each text file.
-type FileLinesProvider struct{}
+type FileLinesProvider struct {
+	onFile func()
+}
 
-func (FileLinesProvider) Name() metric.Name                   { return FileLines }
-func (FileLinesProvider) Kind() metric.Kind                   { return metric.Quantity }
-func (FileLinesProvider) Description() string                 { return "Number of lines in each text file." }
-func (FileLinesProvider) Dependencies() []metric.Name         { return nil }
-func (FileLinesProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
+func (*FileLinesProvider) Name() metric.Name                   { return FileLines }
+func (*FileLinesProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*FileLinesProvider) Description() string                 { return "Number of lines in each text file." }
+func (*FileLinesProvider) Dependencies() []metric.Name         { return nil }
+func (*FileLinesProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
-func (FileLinesProvider) Load(root *model.Directory) error {
+func (p *FileLinesProvider) SetOnFileProcessed(fn func()) { p.onFile = fn }
+
+func (p *FileLinesProvider) Load(root *model.Directory) error {
 	model.WalkFiles(root, func(f *model.File) {
+		if p.onFile != nil {
+			defer p.onFile()
+		}
+
 		if f.IsBinary {
 			return
 		}

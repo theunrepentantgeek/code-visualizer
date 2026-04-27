@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -25,12 +27,18 @@ func buildScanProgress(flags *Flags) (scan.Progress, func()) {
 }
 
 // buildMetricProgress creates a provider.MetricProgress adapter for verbose mode.
-func buildMetricProgress(flags *Flags) provider.MetricProgress {
+// totalFiles is the number of files in the scanned tree, used as the denominator
+// for per-file progress reporting.
+// The caller must invoke the returned stop function when metric calculation completes.
+func buildMetricProgress(flags *Flags, totalFiles int) (provider.MetricProgress, func()) {
 	if !flags.Verbose && !flags.Debug {
-		return nil
+		return nil, func() {}
 	}
 
-	return &metricProgressLogger{}
+	tracker := &metricProgressTracker{totalFiles: totalFiles}
+	stop := startMetricTicker(tracker)
+
+	return tracker, stop
 }
 
 // scanCounter implements scan.Progress and tracks cumulative scan totals.
@@ -47,7 +55,7 @@ func (s *scanCounter) OnDirectoryScanned(path string, fileCount int) {
 
 	if s.debug {
 		slog.Debug(
-			"scanned directory",
+			"Scanned directory",
 			"path", path,
 			"newfiles", fileCount,
 			"totalfiles", s.files.Load(),
@@ -67,7 +75,7 @@ func startScanTicker(counter *scanCounter) (stop func()) {
 		for {
 			select {
 			case <-ticker.C:
-				slog.Debug("scanning...", "totalfiles", counter.files.Load(), "totaldirs", counter.dirs.Load())
+				slog.Debug("Scanning...", "files", counter.files.Load(), "dirs", counter.dirs.Load())
 
 			case <-done:
 				return
@@ -78,14 +86,107 @@ func startScanTicker(counter *scanCounter) (stop func()) {
 	return func() { close(done) }
 }
 
-// metricProgressLogger implements provider.MetricProgress for verbose mode.
-// OnMetricStarted and OnMetricFinished may be called concurrently.
-type metricProgressLogger struct{}
-
-func (*metricProgressLogger) OnMetricStarted(name metric.Name) {
-	slog.Debug("metric started", "metric", string(name))
+// metricProgressTracker implements provider.MetricProgress for verbose mode.
+// It tracks which metrics are active, how many have completed, and per-file
+// progress within each running metric.
+type metricProgressTracker struct {
+	mu         sync.Mutex
+	active     []metric.Name
+	completed  atomic.Int64
+	totalFiles int
+	fileCounts sync.Map // metric.Name -> *atomic.Int64
 }
 
-func (*metricProgressLogger) OnMetricFinished(name metric.Name) {
-	slog.Debug("metric finished", "metric", string(name))
+func (t *metricProgressTracker) OnMetricStarted(name metric.Name) {
+	t.fileCounts.Store(name, &atomic.Int64{})
+
+	t.mu.Lock()
+	t.active = append(t.active, name)
+	t.mu.Unlock()
+
+	slog.Debug("Metric started", "metric", string(name))
+}
+
+func (t *metricProgressTracker) OnMetricFinished(name metric.Name) {
+	t.mu.Lock()
+	t.active = removeMetric(t.active, name)
+	t.mu.Unlock()
+
+	t.completed.Add(1)
+
+	slog.Debug("Metric finished", "metric", string(name))
+}
+
+func (t *metricProgressTracker) OnFileProcessed(name metric.Name) {
+	if v, ok := t.fileCounts.Load(name); ok {
+		v.(*atomic.Int64).Add(1)
+	}
+}
+
+// filesProcessed returns the number of files processed for the given metric.
+func (t *metricProgressTracker) filesProcessed(name metric.Name) int64 {
+	if v, ok := t.fileCounts.Load(name); ok {
+		return v.(*atomic.Int64).Load()
+	}
+
+	return 0
+}
+
+// activeNames returns a snapshot of the currently active metric names.
+func (t *metricProgressTracker) activeNames() []metric.Name {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	result := make([]metric.Name, len(t.active))
+	copy(result, t.active)
+
+	return result
+}
+
+// startMetricTicker starts a goroutine that logs metric calculation progress every second.
+// Call the returned stop function when metric calculation is done.
+func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
+	done := make(chan struct{})
+
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				logMetricProgress(tracker)
+
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	return func() { close(done) }
+}
+
+func logMetricProgress(tracker *metricProgressTracker) {
+	active := tracker.activeNames()
+
+	for _, name := range active {
+		files := tracker.filesProcessed(name)
+		if files > 0 {
+			slog.Debug("Calculating...",
+				"metric", string(name),
+				"files", fmt.Sprintf("%d/%d", files, tracker.totalFiles))
+		} else {
+			slog.Debug("Calculating...", "metric", string(name))
+		}
+	}
+}
+
+func removeMetric(names []metric.Name, target metric.Name) []metric.Name {
+	for i, n := range names {
+		if n == target {
+			return append(names[:i], names[i+1:]...)
+		}
+	}
+
+	return names
 }

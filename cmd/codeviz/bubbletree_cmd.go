@@ -89,6 +89,7 @@ func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Bubbletree)
 }
 
+//nolint:dupl // parallel Run methods on different config types share the same workflow
 func (c *BubbletreeCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -114,32 +115,35 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	scanProg, stopTicker := buildScanProgress(flags)
-	defer stopTicker()
+	scanProg, stopScanTicker := buildScanProgress(flags)
 
 	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
+
+	stopScanTicker()
+
 	if err != nil {
 		return eris.Wrap(err, "scan failed")
 	}
 
 	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
-	err = c.checkGitRequirement(requested)
-	if err != nil {
+	if err := c.checkGitRequirement(requested); err != nil {
 		return err
 	}
 
 	slog.Info("Calculating metrics")
 
-	metricProg := buildMetricProgress(flags)
+	metricProg, stopMetricTicker := buildMetricProgress(flags, model.CountFiles(root))
 
-	err = provider.Run(root, requested, metricProg)
-	if err != nil {
+	if err := provider.Run(root, requested, metricProg); err != nil {
+		stopMetricTicker()
+
 		return eris.Wrap(err, "failed to load metrics")
 	}
 
-	err = c.filterBinaryFiles(cfg, root)
-	if err != nil {
+	stopMetricTicker()
+
+	if err := c.filterBinaryFiles(cfg, root); err != nil {
 		return err
 	}
 

@@ -15,6 +15,13 @@ import (
 type MetricProgress interface {
 	OnMetricStarted(name metric.Name)
 	OnMetricFinished(name metric.Name)
+	OnFileProcessed(name metric.Name)
+}
+
+// FileProgressReporter is optionally implemented by providers that report
+// per-file progress during Load. runProvider sets the callback before Load.
+type FileProgressReporter interface {
+	SetOnFileProcessed(fn func())
 }
 
 // Run loads the requested metrics (plus transitive dependencies) onto the tree.
@@ -61,6 +68,12 @@ func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Na
 func runProvider(p Interface, root *model.Directory, name metric.Name, progress MetricProgress) error {
 	if progress != nil {
 		progress.OnMetricStarted(name)
+	}
+
+	if reporter, ok := p.(FileProgressReporter); ok && progress != nil {
+		reporter.SetOnFileProcessed(func() {
+			progress.OnFileProcessed(name)
+		})
 	}
 
 	if err := p.Load(root); err != nil {

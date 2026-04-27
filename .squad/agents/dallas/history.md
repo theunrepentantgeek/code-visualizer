@@ -8,11 +8,11 @@
 
 ## Recent Work
 
+- **Issue #121 — Metric scanning logs fix (2026-04-27):** PR #122 (draft) standardized log messages, added metric name context, implemented progress tracking. Branch squad/121-fix-metric-scanning-logs.
 - **Issue #114 — File freshness fix (2026-04-27):** PR #119 (draft) implements TREESAME check for go-git FileName bug.
 - **Issue #107 — Export package (2026-04-26):** Created `internal/export/` with Export() function for JSON/YAML metrics export.
 - **Issue #118 — MetricSpec integration (2026-04-27):** Noted Kane's MetricSpec type changes affecting metric validation.
 - **PR #98 — Legend fixes (#89, #90) (2026-04-18)**: Fixed horizontal legend layout and orientation-aware carve-out. Branch squad/89-90-legend-fixes.
-- **PR #39 resolution (2026-04-15)**: Fixed FolderAuthorCountProvider dependencies, mean-file-lines description, git error logging. Branch squad/38-extend-provider-capabilities.
 
 ## Core Context
 
@@ -35,6 +35,22 @@ This is an accumulation of foundational learnings and architecture decisions fro
 ## Learnings
 
 <!-- Append learnings below -->
+
+### Metric scanning logs — Issue #121 (2026-04-28)
+
+- **Progress architecture:** `cmd/codeviz/progress.go` contains all verbose/debug progress tracking. Two phases: filesystem scan (`scanCounter` + `startScanTicker`) and metric calculation (`metricProgressTracker` + `startMetricTicker`). Both use 1-second ticker goroutines with channel-based stop.
+- **Bug root cause:** The scan ticker was deferred until function return, so it kept firing during metric loading with frozen file/dir counts. Fix: explicit `stopScanTicker()` call after `scan.Scan()` returns, before metric phase.
+- **Concurrency note:** `metricProgressTracker` uses `sync.Mutex` for the active-metric slice (not atomic — slice ops aren't atomic) plus `atomic.Int64` for the completed counter. Providers run concurrently via `errgroup` in `internal/provider/run.go`, so `OnMetricStarted`/`OnMetricFinished` are called from multiple goroutines.
+- **Name collision:** `formatMetricNames` already exists in `treemap_cmd.go` (returns all available metrics). Named the progress helper `joinMetricNames` to avoid collision within the `main` package.
+- **PR:** #122 (draft), branch `squad/121-fix-metric-scanning-logs`.
+
+### Per-file progress tracking — Issue #121 follow-up (2026-04-28)
+
+- **Optional interface pattern:** Used `FileProgressReporter` interface (with `SetOnFileProcessed(fn func())`) to thread per-file callbacks into providers without changing the core `Interface.Load()` signature. `runProvider` checks for this via type assertion before calling Load.
+- **sync.Map for hot-path counters:** Per-metric file counts use `sync.Map` (metric.Name → `*atomic.Int64`) because the write pattern is few stores in `OnMetricStarted` with many concurrent loads in `OnFileProcessed`. Cheaper than mutex for this read-heavy pattern.
+- **Callback placement:** `defer onFile()` at the top of each WalkFiles callback ensures every file increments progress regardless of early returns (errors, binary skips).
+- **FileLinesProvider receiver change:** Changed from value receiver to pointer receiver for `Load` and added `SetOnFileProcessed`. Registration changed from `FileLinesProvider{}` to `&FileLinesProvider{}`. Value receiver methods still satisfy the interface through the pointer.
+- **Removed `joinMetricNames`:** The ticker now logs one line per active metric instead of joining all names into one line. This made `joinMetricNames` unused — lint caught it.
 
 ### MetricSpec type — Issue #118 (2026-04-27)
 
@@ -77,4 +93,10 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **SVG rendering:** Uses `<defs>` block with `<path>` arcs (top semicircle, left to right), then `<textPath href="#arc-{idx}" startOffset="50%" text-anchor="middle">`. Traversal indices for path IDs, not node paths.
 - **Lint note:** `fixed.Int26_6` is the return type for `font.Face.GlyphAdvance` and `Kern`, not `font.MeasureUnit`. Accumulate in fixed-point then convert to float64 at the end.
 - **Cognitive complexity:** Split arc computation into small helpers (`clampFontToArc`, `measureStringWidth`, `collectAdvances`, `sumAdvances`, `placeGlyphs`) to stay under revive's max-10 limit.
+
+### Funlen limits in cmd Run methods (2026-04-28)
+
+- **funlen config:** `lines: 65, ignore-comments: true` in `.golangci.yml`. The line count includes blanks but excludes the func signature and closing brace. Comments are free.
+- **Pattern:** The three `Run()` methods in `bubbletree_cmd.go`, `radialtree_cmd.go`, and `treemap_cmd.go` follow an identical scan-and-load pipeline. Use inline `if err := ...; err != nil` (not separate `err = ...` / `if err != nil`) to stay under the limit — each combined check saves one line.
+- **dupl interaction:** Matching the inline style across cmd types makes their Run methods token-identical, triggering the `dupl` linter. Suppressed with `//nolint:dupl` since the methods genuinely operate on different config types and can't easily be unified without adding interface complexity.
 
