@@ -18,6 +18,7 @@ import (
 type commitData struct {
 	oldest  time.Time
 	newest  time.Time
+	count   int64
 	authors map[string]bool
 }
 
@@ -135,6 +136,19 @@ func (s *repoService) authorCount(relPath string) (int64, error) {
 	return int64(len(data.authors)), nil
 }
 
+func (s *repoService) commitCount(relPath string) (int64, error) {
+	data, err := s.getCommitData(relPath)
+	if err != nil {
+		return 0, err
+	}
+
+	if data.count == 0 {
+		return 0, errUntracked
+	}
+
+	return data.count, nil
+}
+
 // getCommitData returns cached commit data for the given file path, fetching it
 // from git on first access. Concurrent requests for the same path are coalesced
 // via singleflight so the git log is only read once per file per process run.
@@ -202,6 +216,7 @@ func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
 		}
 
 		data.authors[c.Author.Email] = true
+		data.count++
 
 		return nil
 	})
