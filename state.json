@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-04-27T13:10:33Z",
-  "run_id": "24996909087",
+  "last_run": "2026-04-28T13:20:57Z",
+  "run_id": "25055187677",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -16,6 +16,20 @@
       "status": "open",
       "type": "fix",
       "closes": [105]
+    },
+    {
+      "branch": "repo-assist/improve-remove-scan-countfiles-duplication",
+      "pr_number": null,
+      "title": "[Repo Assist] refactor(model): add CountDirs; remove duplicate scan functions",
+      "status": "open",
+      "type": "refactor"
+    },
+    {
+      "branch": "repo-assist/feat-commit-count-metric",
+      "pr_number": null,
+      "title": "[Repo Assist] feat(git): add commit-count metric",
+      "status": "open",
+      "type": "feature"
     }
   ],
   "issues_actioned": {
@@ -40,7 +54,7 @@
   },
   "backlog_cursor": {
     "issues": 116,
-    "prs": 123
+    "prs": 124
   },
   "checked_off_items": [
     "PR #61: perf(git) cache per-file commit data (merged)",
@@ -74,5 +88,5 @@
     "PR #108: feat --export-data flag (merged 2026-04-26)",
     "PR #106: fix binary detection for PNG (merged 2026-04-26)"
   ],
-  "notes": "Maintainer very active 2026-04-27: merged 5 more PRs (115, 119, 120, 122, 123). New issue #116 from maintainer about enabling additional revive linter rules. Commented on #116 with analysis. Created fresh fix PR for #105 (UTF-16 line counting) on branch repo-assist/fix-utf16-line-count-v2 rebased on current main. Old blocked review issue #112 still open - commented directing to new PR."
+  "notes": "This run: Task5=refactor(remove scan countFiles/countDirs duplication, add model.CountDirs), Task10=feat(add commit-count git metric). Issues #112 and #124 are review issues for UTF-16 fix - blocked by protected go.mod. #105 still open. #116 linter research still open."
 }
