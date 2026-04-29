@@ -158,3 +158,27 @@ Dallas had already delivered `export.go` — all 9 tests pass on first run. Test
 The TREESAME blob-hash check fixes (1); (2) is a go-git limitation that doesn't affect practical usage.
 
 **PR:** #119
+
+### 2026-04-29 — spiral visualization test spec (issue #127)
+
+Wrote `.squad/agents/lambert/spiral-test-spec.md` with 50 test specifications across 10 categories for the upcoming spiral visualization (issue #127). This is a spec-only deliverable — no Go code yet, pending architecture decisions.
+
+**Key differences from existing visualizations:**
+- The spiral visualizes **time-series data**, not directory trees. Input is timestamps + metrics, not `model.Directory`. This fundamentally changes the Layout function signature and test helpers.
+- Time resolution (hourly / daily) determines two things: aggregation window size AND spots per lap (24 hourly, 28 daily). Both must be tested independently.
+- Half-open interval aggregation `[start, end)` is critical: boundary events (exactly on the hour, exactly at midnight) must be tested explicitly to avoid off-by-one bugs.
+- Empty time buckets (gaps in the time series) should still produce spots with zero/default metrics — the spiral is a continuous path, not sparse.
+
+**Edge cases identified:**
+- Midnight wrap for hourly resolution (23:00→00:00 crosses lap boundary)
+- Inner diameter ratio constraint (≈1/3 of outer) may be hard to maintain with very few spots
+- Many-lap overlap risk: spots on adjacent laps at the same angle could visually overlap
+- Single timestamp edge case: spiral degenerates to a single point
+- Gap in time series: intermediate empty spots must be rendered
+
+**Test patterns observed across existing visualizations:**
+- All layout tests are white-box (same package), use `t.Parallel()`, `NewGomegaWithT(t)`, dot-imported Gomega
+- Render smoke tests build node trees directly (no Layout call) — isolates render from layout
+- Helper functions (`makeFile`, `assertContainment`, `assertNoOverlap`) are defined per test file, not shared across packages
+- Golden file tests use `goldie.New(t)` with fixture directory and name suffix
+- nilaway-safe nil guards before dereferencing (pattern: assert NotNil, then `if x == nil { return }`)

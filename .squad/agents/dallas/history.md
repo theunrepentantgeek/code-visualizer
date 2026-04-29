@@ -100,3 +100,25 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Pattern:** The three `Run()` methods in `bubbletree_cmd.go`, `radialtree_cmd.go`, and `treemap_cmd.go` follow an identical scan-and-load pipeline. Use inline `if err := ...; err != nil` (not separate `err = ...` / `if err != nil`) to stay under the limit — each combined check saves one line.
 - **dupl interaction:** Matching the inline style across cmd types makes their Run methods token-identical, triggering the `dupl` linter. Suppressed with `//nolint:dupl` since the methods genuinely operate on different config types and can't easily be unified without adding interface complexity.
 
+### Spiral Visualization — Architecture Ready for Phase 1 (2026-04-29)
+
+- **Ripley (Architect) delivered comprehensive proposal** for Issue #127 spiral visualization. See `.squad/decisions.md` → "Spiral Visualization — Architecture Proposal" for full details.
+- **Your Phase 1 task:** Build `internal/spiral/` package:
+  - `node.go`: `SpiralNode` struct with X, Y, DiscRadius, Angle, SpiralRadius, TimeStart, TimeEnd, Label, ShowLabel, FillColour, BorderColour fields. Fundamentally different from tree nodes — no Children field.
+  - `layout.go`: `Resolution` enum (Hourly/Daily), `LabelMode` enum (All/Laps/None), and `Layout(buckets []TimeBucket, width, height, resolution, labels) []SpiralNode` function. Implements Archimedean spiral with inner diameter = 1/3 outer. Returns flat list, not tree. Angular spacing uniform.
+  - `timebucket.go`: `TimeBucket` struct (Start, End, Files, SizeValue, FillValue, FillLabel, BorderValue, BorderLabel) and `BuildTimeBuckets(root, resolution, startTime, endTime) []TimeBucket`. Aggregates file metrics into time buckets.
+  - `githistory.go`: `CommitRecord` struct and `LoadCommitHistory(root) []CommitRecord` function. Fetches commit timestamps from git service for time-bucket assignment.
+  - `layout_test.go`: 8+ tests for spiral geometry, angular distribution, radius progression, edge cases, boundary handling.
+- **Key design decisions (Ripley D1–D8):**
+  - D1: Flat node list (no tree) — Layout returns `[]SpiralNode`
+  - D2: Clockwise from north angle (matches clock reading)
+  - D3: Inner diameter = 1/3 outer (from spec)
+  - D4: Spots-per-lap fixed by resolution (24 hourly, 28 daily)
+  - D5: Three metric destinations (size/fill/border) reuse existing metric pipeline
+  - D6: Default size metric = commit count
+  - D7: Empty buckets render as grey dots (preserve time axis)
+  - D8: LabelLaps is v1 default (LabelAll too crowded)
+- **Test coverage (Lambert):** 50 test specs ready in `.squad/agents/lambert/spiral-test-spec.md`. Once your layout signature is final, Lambert will convert to Go tests with Gomega assertions.
+- **Risks & mitigations:** Git history perf (caching), time zone boundaries (careful interval logic), dense spirals (auto-resolution hints), aggregation semantics (pragmatic sum/mode, historic metrics v2+).
+- **Next:** Phase 2 is rendering (`internal/render/spiral.go` + SVG). Phase 3 (Kane) is CLI command and config. Phase 4 (Lambert) is tests. Phase 5 (Bishop) is polish.
+

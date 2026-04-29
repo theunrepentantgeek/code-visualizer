@@ -2,6 +2,111 @@
 
 ## Active Decisions
 
+### Spiral Visualization — Architecture Proposal
+
+**Author:** Ripley  
+**Date:** 2026-04-29  
+**Status:** Proposed  
+**Issue:** #127 — Add spiral visualization  
+
+**Summary:**  
+Add `codeviz render spiral` — a time-based visualization where data points are placed along a clockwise outward Archimedean spiral. Time starts at the centre and moves outward. Each point represents a time bucket (hour or day) and carries three metric destinations: disc size (numeric), fill colour (any kind), and border colour (any kind).
+
+This is fundamentally different from treemap/radial/bubbletree — those visualize a file tree structure. The spiral visualizes a **time series**, which means new data infrastructure is required.
+
+**Integration Points (5):**
+1. **Layout Package — `internal/spiral/`**
+   - `node.go`: `SpiralNode` struct with X, Y, DiscRadius, Angle, SpiralRadius, TimeStart, TimeEnd, Label, ShowLabel, FillColour, BorderColour
+   - `layout.go`: `Layout(buckets []TimeBucket, width, height, resolution, labels) []SpiralNode`
+   - Algorithm: Archimedean spiral with inner diameter = 1/3 outer, uniform angular spacing
+   - `layout_test.go`: 8+ tests covering spiral geometry, angular distribution, edge cases
+
+2. **Config — `internal/config/spiral.go`**
+   - `Spiral` struct with Resolution, Size, Fill, FillPalette, Border, BorderPalette, Labels, Legend fields
+   - Add `Spiral *Spiral` to root Config struct
+   - Defaults: `Resolution: "daily"`, `Labels: "laps"`
+
+3. **Renderer — `internal/render/`**
+   - `spiral.go`: `RenderSpiral(nodes, width, height, outputPath, legend) error`
+   - Three-pass PNG rendering: background → discs → labels
+   - `svg_spiral.go`: SVG with `<circle>` elements and spiral path
+
+4. **CLI Command — `cmd/codeviz/spiral_cmd.go`**
+   - `SpiralCmd` struct with TargetPath, Output, Resolution, Size, Fill, FillPalette, Border, BorderPalette, Labels, Width, Height, Filter
+   - Register in render_cmd.go
+   - Run() flow: scan → build time buckets → aggregate metrics → Layout → render
+
+5. **Time Bucketing — `internal/spiral/`**
+   - `timebucket.go`: `TimeBucket` struct (Start, End, Files, SizeValue, FillValue, FillLabel, BorderValue, BorderLabel)
+   - `BuildTimeBuckets(root, resolution, startTime, endTime) []TimeBucket`
+   - `githistory.go`: `LoadCommitHistory(root) ([]CommitRecord, error)` — fetches commit timestamps from git service
+
+**Design Decisions (8):**
+- D1: Flat node list, not a tree (`[]SpiralNode` vs tree with children)
+- D2: Clockwise from north angle convention (matches clock reading)
+- D3: Inner diameter = 1/3 outer (from spec)
+- D4: Resolution determines spots-per-lap (24 hourly, 28 daily)
+- D5: Three metric destinations (size/fill/border) map to existing metric pipeline
+- D6: Default size metric is commit count (natural "activity" measure)
+- D7: Empty time buckets rendered as grey dots (preserve temporal fidelity)
+- D8: LabelLaps is v1 default (full labels too crowded; users can override)
+
+**Risks (5):**
+1. **Git history performance (MEDIUM):** Large repos with deep history could be slow. Mitigated by git service caching and optional `--since`/`--until` flags.
+2. **Non-git targets (LOW):** Spiral requires git. Fail gracefully if no repo found.
+3. **Dense spirals (MEDIUM):** 10+ years of daily history = 130+ laps at 1920px. Mitigated by auto-resolution or range suggestions.
+4. **Aggregation semantics (LOW):** "Sum of file-lines" is pragmatic; historic metric computation is v2+ scope.
+5. **No time-series in model (ADDRESSED):** Spiral package owns its bucketing; doesn't extend core model.
+
+**Implementation Phases:**
+| Phase | Owner | Description |
+|-------|-------|-------------|
+| 1 | Dallas | `internal/spiral/` — node, time buckets, layout, tests |
+| 2 | Dallas | `internal/render/spiral.go` + SVG rendering |
+| 3 | Kane | CLI command + config + colour application |
+| 4 | Lambert | Comprehensive test suite |
+| 5 | Bishop | Visual polish |
+
+---
+
+### Spiral Tests Expect Time-Series Input
+
+**Author:** Lambert  
+**Date:** 2026-04-29  
+**Context:** Issue #127 — Spiral Visualization  
+
+**Observation:**  
+The spiral visualization is the first viz type that operates on **time-series data** rather than a directory tree (`model.Directory`). The Layout function will need a fundamentally different input type — something like a slice of timestamped metric entries rather than a `*model.Directory`.
+
+**Implications for Architecture:**
+1. **Layout signature differs from existing visualizations.** It won't take `*model.Directory`. Tests assume a time-series input type and time-resolution parameter.
+2. **Empty time buckets matter.** Gaps (e.g., no events between hours 2–4) must render as spots with zero/default metrics. The spiral is a continuous path.
+3. **Half-open aggregation intervals** (`[start, end)`) need careful boundary handling. Events at exact boundaries (midnight, on-the-hour) must land in the correct bucket.
+4. **Two geometric constraints unique to spiral:** inner diameter ≈ 1/3 outer, and consistent angular spacing. These don't exist in treemap/radialtree/bubbletree.
+
+**Test Specification:**  
+`.squad/agents/lambert/spiral-test-spec.md` contains 50 test cases across 10 categories:
+- Time-series input validation (4 tests)
+- Bucket aggregation (6 tests)
+- Angular spacing (5 tests)
+- Spiral geometry (6 tests)
+- Disc sizing constraints (5 tests)
+- Label placement modes (5 tests)
+- Empty/edge-case buckets (4 tests)
+- Colour mapping (4 tests)
+- Rendering output (3 tests)
+- CLI integration (3 tests)
+
+**Assumed Node Structure:**  
+`SpiralNode` with at minimum: `X`, `Y`, `DiscRadius`, `FillColour`, `BorderColour`, `Label`, `ShowLabel` fields.  
+`TimeResolution` type (hourly/daily) as a parameter.  
+Time-series input with timestamps and per-timestamp metric values.
+
+**Next Steps:**  
+Once Ripley's layout signature is finalized, Lambert will adapt the 50 specs into compilable Go tests with Gomega assertions and Goldie golden-file snapshots.
+
+---
+
 ### Radial Tree — Type Reference and Layout
 
 **Author:** Dallas  

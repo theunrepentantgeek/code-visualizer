@@ -89,3 +89,22 @@
 - **Key files:** `internal/config/metric_spec.go`, `internal/config/metric_spec_test.go`, all three `*_cmd.go` files, config structs.
 - **PR:** #120
 
+### Spiral Visualization — Phase 3 CLI + Config Ready (2026-04-29)
+
+- **Ripley (Architect) delivered comprehensive proposal** for Issue #127 spiral visualization. See `.squad/decisions.md` → "Spiral Visualization — Architecture Proposal" for full details.
+- **Lambert (Tester) delivered 50 test specs** in `.squad/agents/lambert/spiral-test-spec.md` covering time-series input validation, bucket aggregation, angular spacing, geometry, disc sizing, label modes, empty buckets, colour mapping, rendering, and CLI integration.
+- **Your Phase 3 task (CLI + Config):** Build spiral command and config integration:
+  - `cmd/codeviz/spiral_cmd.go` (new): `SpiralCmd` struct with fields TargetPath, Output, Resolution (enum: "", "hourly", "daily"), Size (metric.Name), Fill/Border (MetricSpec), Labels (enum: "", "all", "laps", "none"), Width/Height (default 1920×1920), Filter. Implement Validate(), Run(), applyOverrides(), resolveLabels(), and colour application (numeric + categorical for both fill and border). Run() flow: scan → load config → apply overrides → load metrics → **build time buckets from git history** → call spiral.Layout() → apply disc sizes from metrics → apply fill/border colours → render.
+  - `internal/config/spiral.go` (new): `Spiral` struct with pointer fields Resolution, Size, Fill, Border, Labels, Legend, LegendOrientation (matching existing config pattern).
+  - `cmd/codeviz/render_cmd.go`: Add `Spiral SpiralCmd` field to `RenderCmd`, register as `spiral` subcommand.
+  - `internal/config/config.go`: Add `Spiral *Spiral` field to Config struct, set defaults in New(): `Resolution: "daily"`, `Labels: "laps"`, `Legend: true`.
+- **Key differences from Radial/Treemap:**
+  - Time-series input instead of file tree (will use Dallas's `spiral.Layout()` and time-bucketing infrastructure)
+  - No square-canvas constraint (1920×1920 default, but flexible)
+  - Three metric destinations (size/fill/border) all already supported by existing metric pipeline
+  - Default size metric = commit count (not required to specify)
+- **Metric aggregation:** In Run(), after building time buckets from git history, apply metric aggregation: sum for numeric metrics (Quantity/Measure), mode for categorical. This happens before colour application.
+- **Test integration:** Lambert will write 50 Go tests once your CLI command is wired. Tests will use Gomega assertions and Goldie snapshots.
+- **Dependency:** Awaits Phase 1 (Dallas) — `internal/spiral/` package must exist before you can call Layout() and time-bucketing functions.
+- **Next phases:** Phase 2 (Dallas) renders to PNG/SVG. Phase 4 (Lambert) writes Go test suite. Phase 5 (Bishop) polishes visuals.
+
