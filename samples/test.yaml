@@ -1,0 +1,16 @@
+width: 2048
+height: 2048
+treemap:
+    size: file-lines
+    fill: file-freshness
+    fillPalette: foliage
+    border: file-type
+    borderPalette: categorization
+    legend: bottom-center
+radial:
+    labels: all
+bubbletree:
+    labels: folders
+fileFilter:
+    - pattern: .*
+      mode: exclude

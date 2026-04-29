@@ -154,3 +154,12 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - Resolution internal-only (Hourly/Daily iota, CLI maps strings)
 
 **Next:** Await Kane's CLI integration for full pipeline.
+
+### Spiral Phase 1b + Phase 2 — git history & renderer (2026-07-08)
+
+- **Git history loader:** `internal/spiral/githistory.go` — `CommitRecord` struct (FilePath, Timestamp, File pointer) and `LoadCommitHistory(root)` function. Walks model tree, calls into git package for per-file commit timestamps.
+- **Git package extension:** Added `FileCommitTimestamps()` and `RepoRootFor()` exports to `internal/provider/git/service.go`. Uses the same TREESAME filtering as metric providers via `fetchCommitTimestamps()` on `repoService`.
+- **Spiral PNG renderer:** `internal/render/spiral.go` — three-pass rendering: guide track curve (Archimedean spiral reconstruction), discs (fill + border), labels (tangent-oriented with upright flipping). Uses `inferTrackParams()` to reconstruct spiral geometry from positioned nodes.
+- **Spiral SVG renderer:** `internal/render/svg_spiral.go` — SVG `<path>` for guide curve, `<circle>` elements for spots, rotated `<text>` for labels. Reuses `colourToHex()`, `writeSVGTextRotated()` from shared helpers.
+- **Key pattern:** For flat-sequence visualizations, the renderer takes a `[]SpiralNode` slice (not a tree root). No recursive traversal needed — simple range loops over the slice for all three passes.
+- **Label orientation:** Spiral labels use clockwise-from-north angle convention (matching layout). Half-plane check at π (not π/2) because the spiral coordinate system differs from the radial tree's east-based system.
