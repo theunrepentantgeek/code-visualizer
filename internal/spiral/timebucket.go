@@ -66,7 +66,7 @@ func BuildTimeBuckets(
 	dur := resolution.bucketDuration()
 	start := truncateToResolution(startTime, resolution)
 
-	var buckets []TimeBucket
+	buckets := make([]TimeBucket, 0)
 
 	for t := start; t.Before(endTime); t = t.Add(dur) {
 		buckets = append(buckets, TimeBucket{

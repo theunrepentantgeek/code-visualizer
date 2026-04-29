@@ -634,7 +634,7 @@ func applySpiralCategoricalFill(
 }
 
 // applyBorder applies border colours to spiral nodes based on the configured border metric.
-func (_ *SpiralCmd) applyBorder(
+func (*SpiralCmd) applyBorder(
 	nodes []spiral.SpiralNode,
 	buckets []spiral.TimeBucket,
 	cfg *config.Spiral,
