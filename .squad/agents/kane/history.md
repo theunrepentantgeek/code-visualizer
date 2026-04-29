@@ -108,3 +108,20 @@
 - **Dependency:** Awaits Phase 1 (Dallas) — `internal/spiral/` package must exist before you can call Layout() and time-bucketing functions.
 - **Next phases:** Phase 2 (Dallas) renders to PNG/SVG. Phase 4 (Lambert) writes Go test suite. Phase 5 (Bishop) polishes visuals.
 
+### Spiral Visualization — Phase 3 Implementation Complete
+
+- **Created `internal/config/spiral.go`:** Spiral config struct with pointer fields: Resolution, Size (`*string`), Fill/Border (`*MetricSpec` — consistent with post-#118 convention, not separate FillPalette/BorderPalette), Labels, Legend, LegendOrientation.
+- **Updated `internal/config/config.go`:** Added `Spiral *Spiral` field to Config struct. Initialized in `New()` with `Resolution: new("daily")`, `Labels: new("laps")`.
+- **Created `cmd/codeviz/spiral_cmd.go`:** Full SpiralCmd with Kong struct, Validate, Run, mergeConfigAndValidate, applyOverrides, validatePaths, buildFilterRules, checkGitRepo, collectSpiralMetrics, resolveResolution, resolveLabels, resolveFillMetric, resolveFillPalette, filterBinaryFiles, scanAndRunProviders, buildTimeBuckets, aggregateBucketMetrics, layoutAndRender, logRendered, applyFill, applyBorder, and all helper functions.
+- **Updated `cmd/codeviz/render_cmd.go`:** Registered `SpiralCmd` as `spiral` subcommand.
+- **Key architectural differences from tree-based visualizations:**
+  - Spiral always requires git (checkGitRepo replaces per-metric git check).
+  - Size metric is optional — default disc size = commit count per bucket (`len(b.Files)`).
+  - Run() has extra steps: build time buckets from git history → aggregate per-file metrics into buckets → layout and render.
+  - Colour application iterates flat slices (not parallel tree walk). Much simpler.
+  - New functions: `aggregateBucketMetrics`, `aggregateColourMetric`, `sumNumericMetric`, `modeCategory`, `commitTimeRange`, `assignFilesToBuckets`, `applySpiralDiscSizes`, `collectBucketCategories`.
+  - `applySpiralDiscSizes` scales layout-assigned disc radii by sqrt(sizeValue/maxSize) for area-proportional discs.
+- **API adjustment from architecture doc:** `spiral.BuildTimeBuckets` actual signature is `(resolution, startTime, endTime)` without `root` param. The file assignment is handled separately by `assignFilesToBuckets` using CommitRecords.
+- **Expected compile errors (4):** `spiral.LoadCommitHistory`, `spiral.CommitRecord` (Dallas Phase 1 — githistory.go), `render.RenderSpiral` (Dallas Phase 2). All config and non-cmd packages compile and pass tests.
+- **Default canvas:** 1920×1920 (square, not 1920×1080) per architecture spec for spiral geometry.
+
