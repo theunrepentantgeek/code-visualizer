@@ -1,19 +1,44 @@
 {
-  "last_run": "2026-04-26T12:33:18Z",
-  "run_id": "24956694709",
+  "last_run": "2026-04-29T13:13:03Z",
+  "run_id": "25110835355",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
-    "105": "2026-04-26T12:33:18Z"
+    "105": "2026-04-26T12:33:18Z",
+    "112": "2026-04-27T13:10:33Z",
+    "116": "2026-04-27T13:10:33Z",
+    "128": "2026-04-29T13:13:03Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/fix-utf16-line-count-20260426",
+      "branch": "repo-assist/fix-utf16-line-count-v2",
       "pr_number": null,
       "title": "[Repo Assist] fix(filesystem): correctly count lines in UTF-16 encoded text files",
       "status": "open",
       "type": "fix",
       "closes": [105]
+    },
+    {
+      "branch": "repo-assist/improve-remove-scan-countfiles-duplication",
+      "pr_number": 125,
+      "title": "[Repo Assist] refactor(model): add CountDirs; remove duplicate scan functions",
+      "status": "open",
+      "type": "refactor"
+    },
+    {
+      "branch": "repo-assist/feat-commit-count-metric",
+      "pr_number": 126,
+      "title": "[Repo Assist] feat(git): add commit-count metric",
+      "status": "open",
+      "type": "feature"
+    },
+    {
+      "branch": "repo-assist/fix-metric-help-text-128",
+      "pr_number": null,
+      "title": "[Repo Assist] fix(cmd): remove hardcoded metric enum from CLI flags",
+      "status": "open",
+      "type": "fix",
+      "closes": [128]
     }
   ],
   "issues_actioned": {
@@ -26,7 +51,11 @@
     "92": "labelled enhancement, fixed via PR #95 (merged 2026-04-26)",
     "93": "labelled bug, fixed via PR #106 by maintainer (merged 2026-04-26)",
     "94": "labelled bug, fixed via PR #95 (merged 2026-04-26)",
-    "105": "labelled bug, fix PR submitted (branch repo-assist/fix-utf16-line-count-20260426), commented"
+    "105": "labelled bug, fix PR submitted (branch repo-assist/fix-utf16-line-count-v2), commented",
+    "112": "commented: new PR supersedes blocked review issue",
+    "116": "commented with analysis of new linter rules",
+    "127": "labelled enhancement",
+    "128": "labelled enhancement+refactor, commented, fix PR submitted (branch repo-assist/fix-metric-help-text-128)"
   },
   "monthly_summary_issue": {
     "title": "[Repo Assist] Monthly Activity 2026-04",
@@ -35,8 +64,8 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 105,
-    "prs": 111
+    "issues": 128,
+    "prs": 129
   },
   "checked_off_items": [
     "PR #61: perf(git) cache per-file commit data (merged)",
@@ -60,20 +89,15 @@
     "Investigate #93: PNG binary detection (fixed by maintainer PR #106, merged 2026-04-26)"
   ],
   "recently_merged": [
-    "PR #111: fix: min/max author times (merged 2026-04-26)",
-    "PR #110: fix: file-age zero in subdirectory (merged 2026-04-26)",
-    "PR #108: feat: --export-data flag (merged 2026-04-26)",
-    "PR #106: fix binary detection for PNG (merged 2026-04-26)",
-    "PR #104: remove redundant numBuckets param (merged 2026-04-26)",
-    "PR #103: remove redundant size/discSize params (merged 2026-04-26)",
-    "PR #100: fix early CLI validation (merged 2026-04-26)",
-    "PR #98: fix legend rendering #89 #90 (merged 2026-04-26)",
-    "PR #97: fix CI checks trigger (merged 2026-04-26)",
-    "PR #96: fix file-age days (merged 2026-04-26)",
-    "PR #95: fix config export (merged 2026-04-26)",
-    "PR #87: perf scan (merged 2026-04-26)",
-    "PR #84: test expand coverage (merged 2026-04-25)",
-    "PR #85: feat model WalkDirectories (merged 2026-04-25)"
+    "PR #123: improve/filtering (merged 2026-04-27)",
+    "PR #122: fix metric scanning logs (merged 2026-04-27)",
+    "PR #120: MetricSpec combine metric+palette (merged 2026-04-27)",
+    "PR #119: fix file-freshness always zero (merged 2026-04-27)",
+    "PR #115: upgrade golangci-lint v2.11.4 (merged 2026-04-27)",
+    "PR #111: fix min/max author times (merged 2026-04-26)",
+    "PR #110: fix file-age zero in subdirectory (merged 2026-04-26)",
+    "PR #108: feat --export-data flag (merged 2026-04-26)",
+    "PR #106: fix binary detection for PNG (merged 2026-04-26)"
   ],
-  "notes": "This run: created fix PR for #105 (UTF-16 line counting) — wraps file in x/text unicode decoder when BOM detected. No other open issues. Maintainer very active today: merged 11 PRs including PRs #95, #96, #87 from Repo Assist plus many of their own fixes."
+  "notes": "Spiral PR #129 by maintainer is open (non-draft). Issue #128 fixed by removing hardcoded metric enum. PRs #125, #126 still awaiting review. UTF-16 fix PR still in branch repo-assist/fix-utf16-line-count-v2."
 }
