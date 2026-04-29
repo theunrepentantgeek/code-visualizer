@@ -329,6 +329,7 @@ func TestLayoutCentreOfSpiral(t *testing.T) {
 
 	avgX := sumX / float64(len(nodes))
 	avgY := sumY / float64(len(nodes))
+
 	g.Expect(avgX).To(BeNumerically("~", cx, cx*0.15),
 		"average X should be near canvas centre")
 	g.Expect(avgY).To(BeNumerically("~", cy, cy*0.15),
@@ -464,7 +465,7 @@ func TestLayoutManyLapsNoOverlap(t *testing.T) {
 
 	// For spots at the same angular position on adjacent laps, the radial gap
 	// must be greater than the sum of their disc radii (no overlap).
-	for i := 0; i < len(nodes)-spotsPerLap; i++ {
+	for i := range len(nodes) - spotsPerLap {
 		current := nodes[i]
 		nextLap := nodes[i+spotsPerLap]
 		radialGap := nextLap.SpiralRadius - current.SpiralRadius

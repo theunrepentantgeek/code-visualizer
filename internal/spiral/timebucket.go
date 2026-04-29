@@ -83,6 +83,7 @@ func truncateToResolution(t time.Time, r Resolution) time.Time {
 	switch r {
 	case Daily:
 		y, m, d := t.Date()
+
 		return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 	default:
 		return t.Truncate(time.Hour)

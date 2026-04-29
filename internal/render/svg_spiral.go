@@ -61,6 +61,7 @@ func writeSpiralSVGTrack(f *os.File, nodes []spiral.SpiralNode, width, height in
 	}
 
 	params := inferTrackParams(nodes, width, height)
+
 	fmt.Fprint(f, "<path d=\"")
 
 	for i := range spiralTrackSteps {

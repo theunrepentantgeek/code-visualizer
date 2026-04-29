@@ -77,6 +77,7 @@ func drawSpiralTrack(dc *gg.Context, nodes []spiral.SpiralNode, width, height in
 	}
 
 	params := inferTrackParams(nodes, width, height)
+
 	dc.SetColor(spiralTrackColour)
 	dc.SetLineWidth(spiralTrackWidth)
 
