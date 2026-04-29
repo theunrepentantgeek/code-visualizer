@@ -122,3 +122,35 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Risks & mitigations:** Git history perf (caching), time zone boundaries (careful interval logic), dense spirals (auto-resolution hints), aggregation semantics (pragmatic sum/mode, historic metrics v2+).
 - **Next:** Phase 2 is rendering (`internal/render/spiral.go` + SVG). Phase 3 (Kane) is CLI command and config. Phase 4 (Lambert) is tests. Phase 5 (Bishop) is polish.
 
+### Spiral Phase 1 — Core package built (2026-07-19)
+
+- **Package delivered:** `internal/spiral/` with four files:
+  - `node.go`: `SpiralNode` struct, `LabelMode` type (string-based: `"all"`, `"laps"`, `"none"`).
+  - `timebucket.go`: `Resolution` type (Hourly=24/lap, Daily=28/lap), `TimeBucket` struct with aggregated metric fields, `BuildTimeBuckets()` function with start-time truncation.
+  - `layout.go`: `Layout()` function implementing Archimedean spiral (`r = a + b*θ`), clockwise from north, inner/outer ratio 1:3, uniform angular spacing. Functions kept small (all under funlen 65).
+  - `layout_test.go` + `timebucket_test.go`: 28 tests total — covers node count, monotonic radius, inner/outer ratio, spots per lap, uniform spacing, clockwise-from-north, all three label modes, edge cases (0/1/exact/partial lap), rectangular canvas, time field preservation, label formatting, bucketing logic.
+- **Design choices:**
+  - `LabelMode` is `string`-based (matching radialtree/bubbletree pattern), not `int`-based as in Ripley's proposal. Easier for Kong enum tags.
+  - `Resolution` is `int`-based (not exported as string) since it's internal to the layout engine.
+  - `BuildTimeBuckets` does NOT take `*model.Directory` — it only needs start/end times and resolution. File assignment to buckets is the CLI layer's job (per the architecture: layout only positions).
+  - `computeTotalAngle` uses `n-1` (not `n`) since angles are 0-indexed; bucket 0 is at θ=0.
+  - Disc radius defaults to a small fixed value; the CLI layer overrides from the size metric.
+- **Key file paths:** `internal/spiral/node.go`, `internal/spiral/timebucket.go`, `internal/spiral/layout.go`, `internal/spiral/layout_test.go`, `internal/spiral/timebucket_test.go`.
+
+
+## 2026-04-29 — Spiral Phase 1
+
+**Completed:** Spiral layout engine (node.go, timebucket.go, layout.go)
+- SpiralNode struct with position and label mode
+- TimeBucket for grouping files by time ranges
+- BuildTimeBuckets for creating n buckets over time range
+- Layout function computing spiral positions (angle, radius, depth)
+- 28 tests passing (19 layout, 9 bucket tests)
+
+**Key decisions:**
+- LabelMode string-typed ("all", "laps", "none") for Kong integration
+- BuildTimeBuckets drops *model.Directory param — CLI layer handles binding
+- n-1 angle spacing for 0-indexed bucket positioning
+- Resolution internal-only (Hourly/Daily iota, CLI maps strings)
+
+**Next:** Await Kane's CLI integration for full pipeline.

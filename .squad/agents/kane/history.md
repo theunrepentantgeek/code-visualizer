@@ -125,3 +125,17 @@
 - **Expected compile errors (4):** `spiral.LoadCommitHistory`, `spiral.CommitRecord` (Dallas Phase 1 — githistory.go), `render.RenderSpiral` (Dallas Phase 2). All config and non-cmd packages compile and pass tests.
 - **Default canvas:** 1920×1920 (square, not 1920×1080) per architecture spec for spiral geometry.
 
+
+## 2026-04-29 — Spiral Phase 1 CLI
+
+**Completed:** Spiral config and CLI command scaffold
+- `internal/config/spiral.go` with *MetricSpec for Fill/Border
+- `cmd/codeviz/spiral_cmd.go` with CLI flags and command struct
+- Updated command registration and wiring
+
+**Key decision:**
+- *MetricSpec for Fill/Border (not separate fields) — consistent with Treemap/Radial/Bubbletree post-issue #118
+
+**Expected compile errors:** 4 (layout, provider, result type definitions)
+
+**Next:** Bind Dallas's layout output to CLI result. Provider integration for file → bucket → node → position flow.

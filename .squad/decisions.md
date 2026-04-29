@@ -646,3 +646,60 @@ treemap:
 
 **Known limitation:** go-git's history simplification may still miss some commits in complex merge topologies. This hasn't been observed to cause practical issues.
 
+
+---
+
+### Spiral Layout — Phase 1 Implementation Decisions
+
+**Author:** Dallas
+**Date:** 2026-04-29
+**Status:** Implemented
+**Issue:** #127 — Add spiral visualization
+
+## Decisions
+
+### LabelMode is string-typed, not int-typed
+
+Ripley's architecture proposed `LabelMode int` with iota constants. String type was used (`"all"`, `"laps"`, `"none"`) — matching the radialtree and bubbletree packages. This makes Kong enum integration straightforward and avoids a string-to-int conversion layer.
+
+### BuildTimeBuckets does not take *model.Directory
+
+The architecture showed `BuildTimeBuckets(root *model.Directory, resolution, start, end)`. The `root` parameter was dropped because bucket construction only needs time range and resolution. File assignment to buckets happens in the CLI layer, consistent with the principle that layout computes positions and the CLI layer handles data binding.
+
+### Resolution type is int-based (internal)
+
+Resolution uses `iota` (Hourly=0, Daily=1) because it's internal to the spiral engine and never exposed as a CLI string directly. The CLI command will map `"hourly"/"daily"` strings to these constants.
+
+### Total angle uses n-1 for 0-indexed spacing
+
+For n buckets, the last bucket sits at angle `(n-1) * step` (not `n * step`), since bucket 0 is at θ=0. This means the inner/outer ratio holds precisely at the endpoints of the placed sequence.
+
+## Files
+
+- `internal/spiral/node.go` — SpiralNode struct, LabelMode type
+- `internal/spiral/timebucket.go` — Resolution, TimeBucket, BuildTimeBuckets
+- `internal/spiral/layout.go` — Layout function, spiral geometry
+- `internal/spiral/layout_test.go` — 19 layout tests
+- `internal/spiral/timebucket_test.go` — 9 bucket tests
+
+---
+
+### Spiral Config Uses MetricSpec (Not Separate Fields)
+
+**Author:** Kane
+**Date:** 2026-04-29
+**Status:** Implemented
+
+## Decision
+
+The `config.Spiral` struct uses `*MetricSpec` for Fill and Border fields (matching Treemap, Radial, and Bubbletree post-issue #118), instead of separate `*string` fields for Fill/FillPalette/Border/BorderPalette.
+
+## Rationale
+
+The architecture proposal was written before MetricSpec consolidation (#118/#120). All three existing visualization config structs now use `*MetricSpec`. Keeping spiral consistent avoids a special case and ensures the CLI `--fill metric,palette` syntax works the same way everywhere.
+
+## Impact
+
+- `cmd/codeviz/spiral_cmd.go` uses `config.MetricSpec` for Fill/Border CLI flags
+- `internal/config/spiral.go` uses `*MetricSpec` for Fill/Border config fields
+- No `FillPalette`/`BorderPalette` separate fields exist on spiral config or CLI
