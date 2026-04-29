@@ -42,7 +42,7 @@ func TestBuildTimeBucketsEndBeforeStart(t *testing.T) {
 	end := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	buckets := BuildTimeBuckets(Hourly, start, end)
-	g.Expect(buckets).To(BeNil())
+	g.Expect(buckets).To(BeEmpty())
 }
 
 func TestBuildTimeBucketsEqualStartEnd(t *testing.T) {
@@ -52,7 +52,7 @@ func TestBuildTimeBucketsEqualStartEnd(t *testing.T) {
 	t0 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	buckets := BuildTimeBuckets(Daily, t0, t0)
-	g.Expect(buckets).To(BeNil())
+	g.Expect(buckets).To(BeEmpty())
 }
 
 func TestBuildTimeBucketsTruncatesStart(t *testing.T) {

@@ -19,8 +19,6 @@ const (
 // SpotsPerLap returns the number of time buckets in one full revolution.
 func (r Resolution) SpotsPerLap() int {
 	switch r {
-	case Hourly:
-		return 24
 	case Daily:
 		return 28
 	default:
@@ -31,8 +29,6 @@ func (r Resolution) SpotsPerLap() int {
 // bucketDuration returns the duration of a single time bucket at this resolution.
 func (r Resolution) bucketDuration() time.Duration {
 	switch r {
-	case Hourly:
-		return time.Hour
 	case Daily:
 		return 24 * time.Hour
 	default:
@@ -64,7 +60,7 @@ func BuildTimeBuckets(
 	endTime time.Time,
 ) []TimeBucket {
 	if !endTime.After(startTime) {
-		return nil
+		return []TimeBucket{}
 	}
 
 	dur := resolution.bucketDuration()
@@ -85,8 +81,6 @@ func BuildTimeBuckets(
 // truncateToResolution rounds t down to the start of its resolution unit.
 func truncateToResolution(t time.Time, r Resolution) time.Time {
 	switch r {
-	case Hourly:
-		return t.Truncate(time.Hour)
 	case Daily:
 		y, m, d := t.Date()
 		return time.Date(y, m, d, 0, 0, 0, 0, t.Location())

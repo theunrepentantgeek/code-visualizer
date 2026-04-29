@@ -27,7 +27,7 @@ func Layout(
 	labels LabelMode,
 ) []SpiralNode {
 	if len(buckets) == 0 {
-		return nil
+		return []SpiralNode{}
 	}
 
 	nodes := make([]SpiralNode, len(buckets))
@@ -143,8 +143,6 @@ func computeLabelVisibility(i, spotsPerLap int, labels LabelMode) bool {
 		return true
 	case LabelLaps:
 		return i%spotsPerLap == 0
-	case LabelNone:
-		return false
 	default:
 		return false
 	}
@@ -155,8 +153,6 @@ func formatBucketLabel(bucket TimeBucket, resolution Resolution) string {
 	switch resolution {
 	case Hourly:
 		return bucket.Start.Format("3pm")
-	case Daily:
-		return bucket.Start.Format("Jan 2")
 	default:
 		return bucket.Start.Format("Jan 2")
 	}

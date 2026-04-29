@@ -36,15 +36,15 @@ func TestLayoutNodeCountMatchesBuckets(t *testing.T) {
 	}
 }
 
-func TestLayoutZeroBucketsReturnsNil(t *testing.T) {
+func TestLayoutZeroBucketsReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	nodes := Layout(nil, 1920, 1920, Hourly, LabelAll)
-	g.Expect(nodes).To(BeNil())
+	g.Expect(nodes).To(BeEmpty())
 
 	nodes = Layout([]TimeBucket{}, 1920, 1920, Daily, LabelNone)
-	g.Expect(nodes).To(BeNil())
+	g.Expect(nodes).To(BeEmpty())
 }
 
 func TestLayoutSingleBucket(t *testing.T) {

@@ -183,6 +183,10 @@ func (c *SpiralCmd) buildTimeBuckets(root *model.Directory, cfg *config.Spiral) 
 	resolution := c.resolveResolution(cfg)
 
 	buckets := spiral.BuildTimeBuckets(resolution, startTime, endTime)
+	if len(buckets) == 0 {
+		return nil, eris.New("no time buckets created from commit time range")
+	}
+
 	assignFilesToBuckets(buckets, records)
 
 	return buckets, nil
@@ -517,7 +521,7 @@ func modeCategory(files []*model.File, m metric.Name) string {
 }
 
 // commitTimeRange returns the earliest and latest timestamps from commit records.
-func commitTimeRange(records []spiral.CommitRecord) (time.Time, time.Time) {
+func commitTimeRange(records []spiral.CommitRecord) (earliest time.Time, latest time.Time) {
 	minT := records[0].Timestamp
 	maxT := records[0].Timestamp
 
@@ -630,7 +634,7 @@ func applySpiralCategoricalFill(
 }
 
 // applyBorder applies border colours to spiral nodes based on the configured border metric.
-func (c *SpiralCmd) applyBorder(
+func (_ *SpiralCmd) applyBorder(
 	nodes []spiral.SpiralNode,
 	buckets []spiral.TimeBucket,
 	cfg *config.Spiral,
