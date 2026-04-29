@@ -82,3 +82,15 @@ Reviewed PR #39 (issue #38) adding `Scope()` and `Description()` to `provider.In
 - **Flag-parameter pattern:** `collectBubblesByType(node, isDir bool)` flagged by revive. Split into `collectBubbleDirs` and `collectBubbleFiles` — used by both PNG and SVG renderers.
 
 - **Pre-existing lint issues:** `goconst` in `renderer_test.go` and `unparam` in `svg_helpers.go` are known and not ours to fix.
+
+### Spiral lint fixes (PR #129, issue #127)
+
+- **nilaway nil-source elimination:** Changed `BuildTimeBuckets` and `Layout` to return empty slices (`[]TimeBucket{}`, `[]SpiralNode{}`) instead of `nil` for zero-length input. This eliminates nilaway nil-flow warnings at the source rather than adding guards at every call site (28+ in layout_test, 18+ in timebucket_test). Updated tests to assert `BeEmpty()` instead of `BeNil()`.
+
+- **Belt-and-suspenders check:** Added `len(buckets) == 0` guard in `buildTimeBuckets` (spiral_cmd.go) returning an eris-wrapped error, so callers always receive non-empty buckets.
+
+- **revive identical-switch-branches:** Removed redundant explicit cases where the branch body matched `default` — `case Hourly` in `SpotsPerLap()`, `bucketDuration()`, `truncateToResolution()`; `case LabelNone` in `computeLabelVisibility()`; `case Daily` in `formatBucketLabel()`.
+
+- **revive confusing-results:** Named return values on `commitTimeRange` (`earliest`, `latest`).
+
+- **revive unused-receiver:** Renamed `c` to `_` on `applyBorder` method.

@@ -249,6 +249,53 @@ func commitModifiedFile(c *object.Commit, relPath string) bool {
 	return !treesameToAny
 }
 
+// FileCommitTimestamps returns the author timestamps for all commits that modified
+// the file at relPath, relative to the git worktree root discovered from repoPath.
+// It uses the same TREESAME filtering as the metric providers.
+func FileCommitTimestamps(repoPath, relPath string) ([]time.Time, error) {
+	s, err := getService(repoPath)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to open git repository")
+	}
+
+	return s.fetchCommitTimestamps(relPath)
+}
+
+// RepoRootFor returns the git worktree root for the given path.
+func RepoRootFor(repoPath string) (string, error) {
+	s, err := getService(repoPath)
+	if err != nil {
+		return "", eris.Wrap(err, "failed to open git repository")
+	}
+
+	return s.RepoRoot(), nil
+}
+
+func (s *repoService) fetchCommitTimestamps(relPath string) ([]time.Time, error) {
+	log, err := s.repo.Log(&gogit.LogOptions{FileName: &relPath})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to get git log")
+	}
+	defer log.Close()
+
+	var timestamps []time.Time
+
+	err = log.ForEach(func(c *object.Commit) error {
+		if !commitModifiedFile(c, relPath) {
+			return nil
+		}
+
+		timestamps = append(timestamps, c.Author.When)
+
+		return nil
+	})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to iterate commits")
+	}
+
+	return timestamps, nil
+}
+
 // blobHash returns the blob hash of the file at relPath within the commit's tree.
 func blobHash(c *object.Commit, relPath string) (plumbing.Hash, error) {
 	tree, err := c.Tree()
