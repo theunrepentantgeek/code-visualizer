@@ -191,22 +191,22 @@ func removeMetric(names []metric.Name, target metric.Name) []metric.Name {
 	return names
 }
 
-// buildHistoryProgress creates a per-file callback and (if applicable) starts a
+// buildHistoryProgress creates a per-commit callback and (if applicable) starts a
 // ticker goroutine that logs commit history loading progress every second.
 // The caller must invoke the returned stop function when loading completes.
-func buildHistoryProgress(flags *Flags, totalFiles int) (func(), func()) {
+func buildHistoryProgress(flags *Flags) (func(), func()) {
 	if !flags.Verbose && !flags.Debug {
 		return nil, func() {}
 	}
 
 	counter := &atomic.Int64{}
-	stop := startHistoryTicker(counter, totalFiles)
+	stop := startHistoryTicker(counter)
 
 	return func() { counter.Add(1) }, stop
 }
 
 // startHistoryTicker starts a goroutine that logs commit history progress every second.
-func startHistoryTicker(counter *atomic.Int64, totalFiles int) (stop func()) {
+func startHistoryTicker(counter *atomic.Int64) (stop func()) {
 	done := make(chan struct{})
 
 	go func() {
@@ -217,7 +217,7 @@ func startHistoryTicker(counter *atomic.Int64, totalFiles int) (stop func()) {
 			select {
 			case <-ticker.C:
 				slog.Debug("Loading history...",
-					"files", fmt.Sprintf("%d/%d", counter.Load(), totalFiles))
+					"commits", counter.Load())
 
 			case <-done:
 				return

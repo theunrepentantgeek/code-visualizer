@@ -170,11 +170,9 @@ func (c *SpiralCmd) buildTimeBuckets(flags *Flags, root *model.Directory, cfg *c
 		return nil, err
 	}
 
-	totalFiles := model.CountFiles(root)
+	slog.Info("Loading commit history")
 
-	slog.Info("Loading commit history", "files", totalFiles)
-
-	histProg, stopHistTicker := buildHistoryProgress(flags, totalFiles)
+	histProg, stopHistTicker := buildHistoryProgress(flags)
 
 	records, err := spiral.LoadCommitHistory(root, histProg)
 

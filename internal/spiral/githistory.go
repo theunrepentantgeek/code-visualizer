@@ -18,17 +18,19 @@ type CommitRecord struct {
 	File      *model.File
 }
 
-// LoadCommitHistory walks the model tree and returns one CommitRecord per
-// file-commit pair. It uses the git provider to fetch commit timestamps
-// for every file in the tree.
-// The optional onFileProcessed callback is invoked after each file is processed.
-func LoadCommitHistory(root *model.Directory, onFileProcessed func()) ([]CommitRecord, error) {
+// LoadCommitHistory walks the entire commit graph once and returns one
+// CommitRecord per file-commit pair. It uses a bulk tree-diff approach that is
+// dramatically faster than per-file log queries.
+// The optional onCommitProcessed callback is invoked after each commit is examined.
+func LoadCommitHistory(root *model.Directory, onCommitProcessed func()) ([]CommitRecord, error) {
 	repoRoot, err := git.RepoRootFor(root.Path)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to resolve git root")
 	}
 
-	var records []CommitRecord
+	// Build index: slash-separated relative path -> *model.File
+	filesByPath := make(map[string]*model.File)
+	pathSet := make(map[string]bool)
 
 	model.WalkFiles(root, func(f *model.File) {
 		relPath, relErr := filepath.Rel(repoRoot, f.Path)
@@ -38,12 +40,22 @@ func LoadCommitHistory(root *model.Directory, onFileProcessed func()) ([]CommitR
 			return
 		}
 
-		timestamps, tsErr := git.FileCommitTimestamps(root.Path, relPath)
-		if tsErr != nil {
-			slog.Debug("could not get commit timestamps", "path", relPath, "error", tsErr)
+		key := filepath.ToSlash(relPath)
+		filesByPath[key] = f
+		pathSet[key] = true
+	})
 
-			return
-		}
+	// Single-pass bulk extraction
+	history, err := git.BulkFileHistory(root.Path, pathSet, onCommitProcessed)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to load bulk commit history")
+	}
+
+	// Convert to records
+	var records []CommitRecord
+
+	for path, timestamps := range history {
+		f := filesByPath[path]
 
 		for _, ts := range timestamps {
 			records = append(records, CommitRecord{
@@ -52,11 +64,7 @@ func LoadCommitHistory(root *model.Directory, onFileProcessed func()) ([]CommitR
 				File:      f,
 			})
 		}
-
-		if onFileProcessed != nil {
-			onFileProcessed()
-		}
-	})
+	}
 
 	return records, nil
 }
