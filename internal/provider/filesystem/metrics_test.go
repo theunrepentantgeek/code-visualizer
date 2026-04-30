@@ -150,13 +150,14 @@ func TestFileLinesProviderDetectsBinaryByNullByte(t *testing.T) {
 	g.Expect(f.IsBinary).To(BeTrue())
 }
 
-func TestFileLinesProviderAllowsUTF16LEWithBOM(t *testing.T) {
+func TestFileLinesProviderCountsUTF16LELines(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()
 
-	// UTF-16 LE BOM (FF FE) followed by ASCII 'a' in UTF-16 LE (61 00) + newline (0A 00)
+	// UTF-16 LE BOM (FF FE) followed by "a\nb\n" encoded in UTF-16 LE:
+	// 'a'=61 00, '\n'=0A 00, 'b'=62 00, '\n'=0A 00  →  2 lines
 	content := []byte{0xFF, 0xFE, 0x61, 0x00, 0x0A, 0x00, 0x62, 0x00, 0x0A, 0x00}
 	_ = os.WriteFile(filepath.Join(dir, "code.cs"), content, 0o600)
 
@@ -168,15 +169,20 @@ func TestFileLinesProviderAllowsUTF16LEWithBOM(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	g.Expect(f.IsBinary).To(BeFalse())
+
+	v, ok := f.Quantity(FileLines)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(v).To(Equal(int64(2)))
 }
 
-func TestFileLinesProviderAllowsUTF16BEWithBOM(t *testing.T) {
+func TestFileLinesProviderCountsUTF16BELines(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()
 
-	// UTF-16 BE BOM (FE FF) followed by ASCII 'a' in UTF-16 BE (00 61) + newline (00 0A)
+	// UTF-16 BE BOM (FE FF) followed by "a\nb\n" encoded in UTF-16 BE:
+	// 'a'=00 61, '\n'=00 0A, 'b'=00 62, '\n'=00 0A  →  2 lines
 	content := []byte{0xFE, 0xFF, 0x00, 0x61, 0x00, 0x0A, 0x00, 0x62, 0x00, 0x0A}
 	_ = os.WriteFile(filepath.Join(dir, "code.cs"), content, 0o600)
 
@@ -188,6 +194,10 @@ func TestFileLinesProviderAllowsUTF16BEWithBOM(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	g.Expect(f.IsBinary).To(BeFalse())
+
+	v, ok := f.Quantity(FileLines)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(v).To(Equal(int64(2)))
 }
 
 func TestFileLinesProviderHandlesEmptyFile(t *testing.T) {
