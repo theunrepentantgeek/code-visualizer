@@ -18,10 +18,22 @@ var (
 )
 
 const (
-	spiralTrackWidth = 1.0
-	spiralLabelGap   = 4.0
-	spiralTrackSteps = 500
+	spiralTrackWidth    = 1.0
+	spiralLabelGap      = 4.0
+	spiralTrackMinSteps = 500
 )
+
+// spiralTrackSteps returns the number of interpolation steps for the track curve.
+// Uses the greater of 500 and 3× the node count to ensure the track never skips
+// over nodes on tightly-wound spirals.
+func spiralTrackSteps(nodeCount int) int {
+	steps := 3 * nodeCount
+	if steps < spiralTrackMinSteps {
+		return spiralTrackMinSteps
+	}
+
+	return steps
+}
 
 // RenderSpiral renders the spiral layout to an image file at the given path.
 // The output format is determined by the file extension (png, jpg/jpeg, svg).
@@ -77,12 +89,13 @@ func drawSpiralTrack(dc *gg.Context, nodes []spiral.SpiralNode, width, height in
 	}
 
 	params := inferTrackParams(nodes, width, height)
+	steps := spiralTrackSteps(len(nodes))
 
 	dc.SetColor(spiralTrackColour)
 	dc.SetLineWidth(spiralTrackWidth)
 
-	for i := range spiralTrackSteps {
-		t := float64(i) / float64(spiralTrackSteps-1)
+	for i := range steps {
+		t := float64(i) / float64(steps-1)
 		theta := t * params.maxTheta
 		r := params.a + params.b*theta
 		x := params.cx + r*math.Sin(theta)

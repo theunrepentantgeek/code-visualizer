@@ -61,11 +61,12 @@ func writeSpiralSVGTrack(f *os.File, nodes []spiral.SpiralNode, width, height in
 	}
 
 	params := inferTrackParams(nodes, width, height)
+	steps := spiralTrackSteps(len(nodes))
 
 	fmt.Fprint(f, "<path d=\"")
 
-	for i := range spiralTrackSteps {
-		t := float64(i) / float64(spiralTrackSteps-1)
+	for i := range steps {
+		t := float64(i) / float64(steps-1)
 		theta := t * params.maxTheta
 		r := params.a + params.b*theta
 		x := params.cx + r*math.Sin(theta)
