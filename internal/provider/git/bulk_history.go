@@ -4,6 +4,7 @@ import (
 	"time"
 
 	gogit "github.com/go-git/go-git/v5"
+
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
 )
@@ -125,11 +126,7 @@ func changedVsParent(c *object.Commit, commitTree *object.Tree, filePaths map[st
 	var result []string
 
 	for _, change := range changes {
-		name := change.To.Name
-		if name == "" {
-			name = change.From.Name
-		}
-
+		name := changeName(change)
 		if filePaths[name] {
 			result = append(result, name)
 		}
@@ -138,66 +135,90 @@ func changedVsParent(c *object.Commit, commitTree *object.Tree, filePaths map[st
 	return result
 }
 
+// changeName returns the file path affected by a tree change entry.
+func changeName(change *object.Change) string {
+	if change.To.Name != "" {
+		return change.To.Name
+	}
+
+	return change.From.Name
+}
+
 // changedInMergeCommit returns tracked files that differ from ALL parents
 // (not TREESAME to any parent). This matches git's history simplification.
 func changedInMergeCommit(c *object.Commit, commitTree *object.Tree, filePaths map[string]bool) []string {
-	// Collect files changed vs each parent
-	parents := c.Parents()
-	defer parents.Close()
-
-	// Track which files differ from each parent
-	diffFromParent := make([]map[string]bool, 0, c.NumParents())
-
-	_ = parents.ForEach(func(parent *object.Commit) error {
-		parentTree, err := parent.Tree()
-		if err != nil {
-			return nil //nolint:nilerr // skip parent on error
-		}
-
-		changes, err := object.DiffTree(parentTree, commitTree)
-		if err != nil {
-			return nil //nolint:nilerr // skip parent on error
-		}
-
-		diffs := make(map[string]bool, len(changes))
-		for _, change := range changes {
-			name := change.To.Name
-			if name == "" {
-				name = change.From.Name
-			}
-
-			if filePaths[name] {
-				diffs[name] = true
-			}
-		}
-
-		diffFromParent = append(diffFromParent, diffs)
-
-		return nil
-	})
-
+	diffFromParent := collectParentDiffs(c, commitTree, filePaths)
 	if len(diffFromParent) == 0 {
 		return nil
 	}
 
-	// A file is modified only if it differs from ALL parents
+	return filesChangedVsAllParents(filePaths, diffFromParent)
+}
+
+// collectParentDiffs returns one diff-set per parent: the tracked files that
+// differ between the parent and commitTree.
+func collectParentDiffs(c *object.Commit, commitTree *object.Tree, filePaths map[string]bool) []map[string]bool {
+	parents := c.Parents()
+	defer parents.Close()
+
+	result := make([]map[string]bool, 0, c.NumParents())
+
+	_ = parents.ForEach(func(parent *object.Commit) error {
+		diffs := diffTrackedFiles(parent, commitTree, filePaths)
+		if diffs != nil {
+			result = append(result, diffs)
+		}
+
+		return nil
+	})
+
+	return result
+}
+
+// diffTrackedFiles returns the set of tracked files that differ between
+// the parent commit's tree and commitTree.
+func diffTrackedFiles(parent *object.Commit, commitTree *object.Tree, filePaths map[string]bool) map[string]bool {
+	parentTree, err := parent.Tree()
+	if err != nil {
+		return nil
+	}
+
+	changes, err := object.DiffTree(parentTree, commitTree)
+	if err != nil {
+		return nil
+	}
+
+	diffs := make(map[string]bool, len(changes))
+
+	for _, change := range changes {
+		name := changeName(change)
+		if filePaths[name] {
+			diffs[name] = true
+		}
+	}
+
+	return diffs
+}
+
+// filesChangedVsAllParents returns files that differ from every parent.
+func filesChangedVsAllParents(filePaths map[string]bool, diffFromParent []map[string]bool) []string {
 	var result []string
 
 	for path := range filePaths {
-		differsFromAll := true
-
-		for _, diffs := range diffFromParent {
-			if !diffs[path] {
-				differsFromAll = false
-
-				break
-			}
-		}
-
-		if differsFromAll {
+		if differsFromAllParents(path, diffFromParent) {
 			result = append(result, path)
 		}
 	}
 
 	return result
+}
+
+func differsFromAllParents(path string, diffFromParent []map[string]bool) bool {
+	for _, diffs := range diffFromParent {
+		if !diffs[path] {
+			return false
+		}
+	}
+
+	return true
 }

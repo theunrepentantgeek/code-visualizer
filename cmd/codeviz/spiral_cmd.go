@@ -165,7 +165,11 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 	return root, nil
 }
 
-func (c *SpiralCmd) buildTimeBuckets(flags *Flags, root *model.Directory, cfg *config.Spiral) ([]spiral.TimeBucket, error) {
+func (c *SpiralCmd) buildTimeBuckets(
+	flags *Flags,
+	root *model.Directory,
+	cfg *config.Spiral,
+) ([]spiral.TimeBucket, error) {
 	if err := c.checkGitRepo(); err != nil {
 		return nil, err
 	}

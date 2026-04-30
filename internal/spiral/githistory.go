@@ -55,7 +55,10 @@ func LoadCommitHistory(root *model.Directory, onCommitProcessed func()) ([]Commi
 	var records []CommitRecord
 
 	for path, timestamps := range history {
-		f := filesByPath[path]
+		f, ok := filesByPath[path]
+		if !ok {
+			continue
+		}
 
 		for _, ts := range timestamps {
 			records = append(records, CommitRecord{
