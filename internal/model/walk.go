@@ -21,6 +21,17 @@ func CountFiles(dir *Directory) int {
 	return count
 }
 
+// CountDirs returns the total number of subdirectories in the tree,
+// not counting dir itself. This is the counterpart to CountFiles.
+func CountDirs(dir *Directory) int {
+	count := len(dir.Dirs)
+	for _, d := range dir.Dirs {
+		count += CountDirs(d)
+	}
+
+	return count
+}
+
 // WalkDirectories calls fn for every directory in the tree, in post-order
 // (children before parents). The root directory itself is included as the
 // final call. Post-order guarantees that child metrics are fully populated

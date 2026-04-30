@@ -43,7 +43,7 @@ func Scan(path string, rules []filter.Rule, progress Progress) (*model.Directory
 		return nil, errors.New("no files found in directory")
 	}
 
-	slog.Info("Scan complete", "files", countFiles(root), "directories", countDirs(root))
+	slog.Info("Scan complete", "files", model.CountFiles(root), "directories", model.CountDirs(root))
 
 	return root, nil
 }
@@ -222,24 +222,6 @@ func hasFiles(node *model.Directory) bool {
 	}
 
 	return slices.ContainsFunc(node.Dirs, hasFiles)
-}
-
-func countFiles(node *model.Directory) int {
-	count := len(node.Files)
-	for _, d := range node.Dirs {
-		count += countFiles(d)
-	}
-
-	return count
-}
-
-func countDirs(node *model.Directory) int {
-	count := len(node.Dirs)
-	for _, d := range node.Dirs {
-		count += countDirs(d)
-	}
-
-	return count
 }
 
 // FilterBinaryFiles returns a copy of the directory tree with binary files removed.
