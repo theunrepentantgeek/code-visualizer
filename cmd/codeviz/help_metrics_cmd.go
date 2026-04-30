@@ -17,7 +17,7 @@ type HelpMetricsCmd struct{}
 func (HelpMetricsCmd) Run(_ *Flags) error {
 	providers := provider.All()
 
-	tbl := table.New("Metric", "Kind", "Description")
+	tbl := table.New("Metric", "Kind", "Default Palette", "Description")
 
 	hasGit := false
 
@@ -30,7 +30,7 @@ func (HelpMetricsCmd) Run(_ *Flags) error {
 			desc += " †"
 		}
 
-		tbl.AddRow(string(p.Name()), k, desc)
+		tbl.AddRow(string(p.Name()), k, string(p.DefaultPalette()), desc)
 	}
 
 	content := &strings.Builder{}
