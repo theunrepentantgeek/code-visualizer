@@ -18,7 +18,8 @@ These flags apply to all subcommands.
 | `--verbose`       | `-v`  | Show detailed progress during scanning and metrics       |
 | `--debug`         |       | Show per-directory scan progress (implies `--verbose`)   |
 | `--config`        |       | Path to configuration file (`.yaml`, `.yml`, or `.json`) |
-| `--export-config` |       | Write effective configuration to file                    |
+| `--export-config` |       | Write effective configuration to file (`.yaml`, `.yml`, or `.json`) |
+| `--export-data`   |       | Write computed metrics to file (`.json` or `.yaml`/`.yml`) |
 
 ## `render treemap`
 
@@ -203,6 +204,21 @@ codeviz -v render treemap ./src -o treemap.png -s file-size --width 3840 --heigh
 
 ```sh
 codeviz --export-config config.yaml render treemap ./src -o treemap.png -s file-size
+```
+
+### Export computed metrics to JSON
+
+Writes a JSON file containing the full file tree and all computed metric values.
+Useful for downstream analysis or building custom visualizations.
+
+```sh
+codeviz --export-data metrics.json render treemap ./src -o treemap.png -s file-size -f file-type
+```
+
+### Export computed metrics to YAML
+
+```sh
+codeviz --export-data metrics.yaml render treemap ./src -o treemap.png -s file-lines
 ```
 
 ## Exit Codes
