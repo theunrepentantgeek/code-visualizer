@@ -21,7 +21,8 @@ type CommitRecord struct {
 // LoadCommitHistory walks the model tree and returns one CommitRecord per
 // file-commit pair. It uses the git provider to fetch commit timestamps
 // for every file in the tree.
-func LoadCommitHistory(root *model.Directory) ([]CommitRecord, error) {
+// The optional onFileProcessed callback is invoked after each file is processed.
+func LoadCommitHistory(root *model.Directory, onFileProcessed func()) ([]CommitRecord, error) {
 	repoRoot, err := git.RepoRootFor(root.Path)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to resolve git root")
@@ -50,6 +51,10 @@ func LoadCommitHistory(root *model.Directory) ([]CommitRecord, error) {
 				Timestamp: ts,
 				File:      f,
 			})
+		}
+
+		if onFileProcessed != nil {
+			onFileProcessed()
 		}
 	})
 

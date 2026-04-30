@@ -115,7 +115,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	buckets, err := c.buildTimeBuckets(root, cfg)
+	buckets, err := c.buildTimeBuckets(flags, root, cfg)
 	if err != nil {
 		return err
 	}
@@ -165,12 +165,21 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 	return root, nil
 }
 
-func (c *SpiralCmd) buildTimeBuckets(root *model.Directory, cfg *config.Spiral) ([]spiral.TimeBucket, error) {
+func (c *SpiralCmd) buildTimeBuckets(flags *Flags, root *model.Directory, cfg *config.Spiral) ([]spiral.TimeBucket, error) {
 	if err := c.checkGitRepo(); err != nil {
 		return nil, err
 	}
 
-	records, err := spiral.LoadCommitHistory(root)
+	totalFiles := model.CountFiles(root)
+
+	slog.Info("Loading commit history", "files", totalFiles)
+
+	histProg, stopHistTicker := buildHistoryProgress(flags, totalFiles)
+
+	records, err := spiral.LoadCommitHistory(root, histProg)
+
+	stopHistTicker()
+
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to load commit history")
 	}
