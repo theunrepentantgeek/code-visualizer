@@ -558,7 +558,12 @@ func assignFilesToBuckets(buckets []spiral.TimeBucket, records []spiral.CommitRe
 	}
 }
 
+// emptyBucketRadius is the small disc radius for time buckets with no activity.
+// These are still drawn to preserve the smooth spiral shape.
+const emptyBucketRadius = 2.0
+
 // applySpiralDiscSizes sets disc radii on nodes proportional to their size values.
+// Empty buckets (no activity) keep a small fixed radius to maintain spiral continuity.
 func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket) {
 	maxSize := 0.0
 
@@ -573,9 +578,13 @@ func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket
 	}
 
 	for i := range nodes {
-		ratio := buckets[i].SizeValue / maxSize
-		// sqrt scaling gives area-proportional discs
-		nodes[i].DiscRadius *= math.Sqrt(ratio)
+		if buckets[i].SizeValue == 0 {
+			nodes[i].DiscRadius = emptyBucketRadius
+		} else {
+			ratio := buckets[i].SizeValue / maxSize
+			// sqrt scaling gives area-proportional discs
+			nodes[i].DiscRadius *= math.Sqrt(ratio)
+		}
 	}
 }
 
