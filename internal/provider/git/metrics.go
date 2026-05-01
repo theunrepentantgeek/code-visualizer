@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	FileAge      metric.Name = "file-age"
+	FileAge       metric.Name = "file-age"
 	FileFreshness metric.Name = "file-freshness"
-	AuthorCount  metric.Name = "author-count"
-	CommitCount  metric.Name = "commit-count"
+	AuthorCount   metric.Name = "author-count"
+	CommitCount   metric.Name = "commit-count"
 )
 
 // FileAgeProvider reports time since first commit in days.
