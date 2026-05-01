@@ -89,3 +89,53 @@
 - **Key files:** `internal/config/metric_spec.go`, `internal/config/metric_spec_test.go`, all three `*_cmd.go` files, config structs.
 - **PR:** #120
 
+### Spiral Visualization — Phase 3 CLI + Config Ready (2026-04-29)
+
+- **Ripley (Architect) delivered comprehensive proposal** for Issue #127 spiral visualization. See `.squad/decisions.md` → "Spiral Visualization — Architecture Proposal" for full details.
+- **Lambert (Tester) delivered 50 test specs** in `.squad/agents/lambert/spiral-test-spec.md` covering time-series input validation, bucket aggregation, angular spacing, geometry, disc sizing, label modes, empty buckets, colour mapping, rendering, and CLI integration.
+- **Your Phase 3 task (CLI + Config):** Build spiral command and config integration:
+  - `cmd/codeviz/spiral_cmd.go` (new): `SpiralCmd` struct with fields TargetPath, Output, Resolution (enum: "", "hourly", "daily"), Size (metric.Name), Fill/Border (MetricSpec), Labels (enum: "", "all", "laps", "none"), Width/Height (default 1920×1920), Filter. Implement Validate(), Run(), applyOverrides(), resolveLabels(), and colour application (numeric + categorical for both fill and border). Run() flow: scan → load config → apply overrides → load metrics → **build time buckets from git history** → call spiral.Layout() → apply disc sizes from metrics → apply fill/border colours → render.
+  - `internal/config/spiral.go` (new): `Spiral` struct with pointer fields Resolution, Size, Fill, Border, Labels, Legend, LegendOrientation (matching existing config pattern).
+  - `cmd/codeviz/render_cmd.go`: Add `Spiral SpiralCmd` field to `RenderCmd`, register as `spiral` subcommand.
+  - `internal/config/config.go`: Add `Spiral *Spiral` field to Config struct, set defaults in New(): `Resolution: "daily"`, `Labels: "laps"`, `Legend: true`.
+- **Key differences from Radial/Treemap:**
+  - Time-series input instead of file tree (will use Dallas's `spiral.Layout()` and time-bucketing infrastructure)
+  - No square-canvas constraint (1920×1920 default, but flexible)
+  - Three metric destinations (size/fill/border) all already supported by existing metric pipeline
+  - Default size metric = commit count (not required to specify)
+- **Metric aggregation:** In Run(), after building time buckets from git history, apply metric aggregation: sum for numeric metrics (Quantity/Measure), mode for categorical. This happens before colour application.
+- **Test integration:** Lambert will write 50 Go tests once your CLI command is wired. Tests will use Gomega assertions and Goldie snapshots.
+- **Dependency:** Awaits Phase 1 (Dallas) — `internal/spiral/` package must exist before you can call Layout() and time-bucketing functions.
+- **Next phases:** Phase 2 (Dallas) renders to PNG/SVG. Phase 4 (Lambert) writes Go test suite. Phase 5 (Bishop) polishes visuals.
+
+### Spiral Visualization — Phase 3 Implementation Complete
+
+- **Created `internal/config/spiral.go`:** Spiral config struct with pointer fields: Resolution, Size (`*string`), Fill/Border (`*MetricSpec` — consistent with post-#118 convention, not separate FillPalette/BorderPalette), Labels, Legend, LegendOrientation.
+- **Updated `internal/config/config.go`:** Added `Spiral *Spiral` field to Config struct. Initialized in `New()` with `Resolution: new("daily")`, `Labels: new("laps")`.
+- **Created `cmd/codeviz/spiral_cmd.go`:** Full SpiralCmd with Kong struct, Validate, Run, mergeConfigAndValidate, applyOverrides, validatePaths, buildFilterRules, checkGitRepo, collectSpiralMetrics, resolveResolution, resolveLabels, resolveFillMetric, resolveFillPalette, filterBinaryFiles, scanAndRunProviders, buildTimeBuckets, aggregateBucketMetrics, layoutAndRender, logRendered, applyFill, applyBorder, and all helper functions.
+- **Updated `cmd/codeviz/render_cmd.go`:** Registered `SpiralCmd` as `spiral` subcommand.
+- **Key architectural differences from tree-based visualizations:**
+  - Spiral always requires git (checkGitRepo replaces per-metric git check).
+  - Size metric is optional — default disc size = commit count per bucket (`len(b.Files)`).
+  - Run() has extra steps: build time buckets from git history → aggregate per-file metrics into buckets → layout and render.
+  - Colour application iterates flat slices (not parallel tree walk). Much simpler.
+  - New functions: `aggregateBucketMetrics`, `aggregateColourMetric`, `sumNumericMetric`, `modeCategory`, `commitTimeRange`, `assignFilesToBuckets`, `applySpiralDiscSizes`, `collectBucketCategories`.
+  - `applySpiralDiscSizes` scales layout-assigned disc radii by sqrt(sizeValue/maxSize) for area-proportional discs.
+- **API adjustment from architecture doc:** `spiral.BuildTimeBuckets` actual signature is `(resolution, startTime, endTime)` without `root` param. The file assignment is handled separately by `assignFilesToBuckets` using CommitRecords.
+- **Expected compile errors (4):** `spiral.LoadCommitHistory`, `spiral.CommitRecord` (Dallas Phase 1 — githistory.go), `render.RenderSpiral` (Dallas Phase 2). All config and non-cmd packages compile and pass tests.
+- **Default canvas:** 1920×1920 (square, not 1920×1080) per architecture spec for spiral geometry.
+
+
+## 2026-04-29 — Spiral Phase 1 CLI
+
+**Completed:** Spiral config and CLI command scaffold
+- `internal/config/spiral.go` with *MetricSpec for Fill/Border
+- `cmd/codeviz/spiral_cmd.go` with CLI flags and command struct
+- Updated command registration and wiring
+
+**Key decision:**
+- *MetricSpec for Fill/Border (not separate fields) — consistent with Treemap/Radial/Bubbletree post-issue #118
+
+**Expected compile errors:** 4 (layout, provider, result type definitions)
+
+**Next:** Bind Dallas's layout output to CLI result. Provider integration for file → bucket → node → position flow.

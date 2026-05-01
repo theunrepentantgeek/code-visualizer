@@ -100,3 +100,66 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Pattern:** The three `Run()` methods in `bubbletree_cmd.go`, `radialtree_cmd.go`, and `treemap_cmd.go` follow an identical scan-and-load pipeline. Use inline `if err := ...; err != nil` (not separate `err = ...` / `if err != nil`) to stay under the limit — each combined check saves one line.
 - **dupl interaction:** Matching the inline style across cmd types makes their Run methods token-identical, triggering the `dupl` linter. Suppressed with `//nolint:dupl` since the methods genuinely operate on different config types and can't easily be unified without adding interface complexity.
 
+### Spiral Visualization — Architecture Ready for Phase 1 (2026-04-29)
+
+- **Ripley (Architect) delivered comprehensive proposal** for Issue #127 spiral visualization. See `.squad/decisions.md` → "Spiral Visualization — Architecture Proposal" for full details.
+- **Your Phase 1 task:** Build `internal/spiral/` package:
+  - `node.go`: `SpiralNode` struct with X, Y, DiscRadius, Angle, SpiralRadius, TimeStart, TimeEnd, Label, ShowLabel, FillColour, BorderColour fields. Fundamentally different from tree nodes — no Children field.
+  - `layout.go`: `Resolution` enum (Hourly/Daily), `LabelMode` enum (All/Laps/None), and `Layout(buckets []TimeBucket, width, height, resolution, labels) []SpiralNode` function. Implements Archimedean spiral with inner diameter = 1/3 outer. Returns flat list, not tree. Angular spacing uniform.
+  - `timebucket.go`: `TimeBucket` struct (Start, End, Files, SizeValue, FillValue, FillLabel, BorderValue, BorderLabel) and `BuildTimeBuckets(root, resolution, startTime, endTime) []TimeBucket`. Aggregates file metrics into time buckets.
+  - `githistory.go`: `CommitRecord` struct and `LoadCommitHistory(root) []CommitRecord` function. Fetches commit timestamps from git service for time-bucket assignment.
+  - `layout_test.go`: 8+ tests for spiral geometry, angular distribution, radius progression, edge cases, boundary handling.
+- **Key design decisions (Ripley D1–D8):**
+  - D1: Flat node list (no tree) — Layout returns `[]SpiralNode`
+  - D2: Clockwise from north angle (matches clock reading)
+  - D3: Inner diameter = 1/3 outer (from spec)
+  - D4: Spots-per-lap fixed by resolution (24 hourly, 28 daily)
+  - D5: Three metric destinations (size/fill/border) reuse existing metric pipeline
+  - D6: Default size metric = commit count
+  - D7: Empty buckets render as grey dots (preserve time axis)
+  - D8: LabelLaps is v1 default (LabelAll too crowded)
+- **Test coverage (Lambert):** 50 test specs ready in `.squad/agents/lambert/spiral-test-spec.md`. Once your layout signature is final, Lambert will convert to Go tests with Gomega assertions.
+- **Risks & mitigations:** Git history perf (caching), time zone boundaries (careful interval logic), dense spirals (auto-resolution hints), aggregation semantics (pragmatic sum/mode, historic metrics v2+).
+- **Next:** Phase 2 is rendering (`internal/render/spiral.go` + SVG). Phase 3 (Kane) is CLI command and config. Phase 4 (Lambert) is tests. Phase 5 (Bishop) is polish.
+
+### Spiral Phase 1 — Core package built (2026-07-19)
+
+- **Package delivered:** `internal/spiral/` with four files:
+  - `node.go`: `SpiralNode` struct, `LabelMode` type (string-based: `"all"`, `"laps"`, `"none"`).
+  - `timebucket.go`: `Resolution` type (Hourly=24/lap, Daily=28/lap), `TimeBucket` struct with aggregated metric fields, `BuildTimeBuckets()` function with start-time truncation.
+  - `layout.go`: `Layout()` function implementing Archimedean spiral (`r = a + b*θ`), clockwise from north, inner/outer ratio 1:3, uniform angular spacing. Functions kept small (all under funlen 65).
+  - `layout_test.go` + `timebucket_test.go`: 28 tests total — covers node count, monotonic radius, inner/outer ratio, spots per lap, uniform spacing, clockwise-from-north, all three label modes, edge cases (0/1/exact/partial lap), rectangular canvas, time field preservation, label formatting, bucketing logic.
+- **Design choices:**
+  - `LabelMode` is `string`-based (matching radialtree/bubbletree pattern), not `int`-based as in Ripley's proposal. Easier for Kong enum tags.
+  - `Resolution` is `int`-based (not exported as string) since it's internal to the layout engine.
+  - `BuildTimeBuckets` does NOT take `*model.Directory` — it only needs start/end times and resolution. File assignment to buckets is the CLI layer's job (per the architecture: layout only positions).
+  - `computeTotalAngle` uses `n-1` (not `n`) since angles are 0-indexed; bucket 0 is at θ=0.
+  - Disc radius defaults to a small fixed value; the CLI layer overrides from the size metric.
+- **Key file paths:** `internal/spiral/node.go`, `internal/spiral/timebucket.go`, `internal/spiral/layout.go`, `internal/spiral/layout_test.go`, `internal/spiral/timebucket_test.go`.
+
+
+## 2026-04-29 — Spiral Phase 1
+
+**Completed:** Spiral layout engine (node.go, timebucket.go, layout.go)
+- SpiralNode struct with position and label mode
+- TimeBucket for grouping files by time ranges
+- BuildTimeBuckets for creating n buckets over time range
+- Layout function computing spiral positions (angle, radius, depth)
+- 28 tests passing (19 layout, 9 bucket tests)
+
+**Key decisions:**
+- LabelMode string-typed ("all", "laps", "none") for Kong integration
+- BuildTimeBuckets drops *model.Directory param — CLI layer handles binding
+- n-1 angle spacing for 0-indexed bucket positioning
+- Resolution internal-only (Hourly/Daily iota, CLI maps strings)
+
+**Next:** Await Kane's CLI integration for full pipeline.
+
+### Spiral Phase 1b + Phase 2 — git history & renderer (2026-07-08)
+
+- **Git history loader:** `internal/spiral/githistory.go` — `CommitRecord` struct (FilePath, Timestamp, File pointer) and `LoadCommitHistory(root)` function. Walks model tree, calls into git package for per-file commit timestamps.
+- **Git package extension:** Added `FileCommitTimestamps()` and `RepoRootFor()` exports to `internal/provider/git/service.go`. Uses the same TREESAME filtering as metric providers via `fetchCommitTimestamps()` on `repoService`.
+- **Spiral PNG renderer:** `internal/render/spiral.go` — three-pass rendering: guide track curve (Archimedean spiral reconstruction), discs (fill + border), labels (tangent-oriented with upright flipping). Uses `inferTrackParams()` to reconstruct spiral geometry from positioned nodes.
+- **Spiral SVG renderer:** `internal/render/svg_spiral.go` — SVG `<path>` for guide curve, `<circle>` elements for spots, rotated `<text>` for labels. Reuses `colourToHex()`, `writeSVGTextRotated()` from shared helpers.
+- **Key pattern:** For flat-sequence visualizations, the renderer takes a `[]SpiralNode` slice (not a tree root). No recursive traversal needed — simple range loops over the slice for all three passes.
+- **Label orientation:** Spiral labels use clockwise-from-north angle convention (matching layout). Half-plane check at π (not π/2) because the spiral coordinate system differs from the radial tree's east-based system.

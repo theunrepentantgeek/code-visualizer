@@ -158,3 +158,65 @@ Dallas had already delivered `export.go` — all 9 tests pass on first run. Test
 The TREESAME blob-hash check fixes (1); (2) is a go-git limitation that doesn't affect practical usage.
 
 **PR:** #119
+
+### 2026-04-29 — spiral visualization test spec (issue #127)
+
+Wrote `.squad/agents/lambert/spiral-test-spec.md` with 50 test specifications across 10 categories for the upcoming spiral visualization (issue #127). This is a spec-only deliverable — no Go code yet, pending architecture decisions.
+
+**Key differences from existing visualizations:**
+- The spiral visualizes **time-series data**, not directory trees. Input is timestamps + metrics, not `model.Directory`. This fundamentally changes the Layout function signature and test helpers.
+- Time resolution (hourly / daily) determines two things: aggregation window size AND spots per lap (24 hourly, 28 daily). Both must be tested independently.
+- Half-open interval aggregation `[start, end)` is critical: boundary events (exactly on the hour, exactly at midnight) must be tested explicitly to avoid off-by-one bugs.
+- Empty time buckets (gaps in the time series) should still produce spots with zero/default metrics — the spiral is a continuous path, not sparse.
+
+**Edge cases identified:**
+- Midnight wrap for hourly resolution (23:00→00:00 crosses lap boundary)
+- Inner diameter ratio constraint (≈1/3 of outer) may be hard to maintain with very few spots
+- Many-lap overlap risk: spots on adjacent laps at the same angle could visually overlap
+- Single timestamp edge case: spiral degenerates to a single point
+- Gap in time series: intermediate empty spots must be rendered
+
+**Test patterns observed across existing visualizations:**
+- All layout tests are white-box (same package), use `t.Parallel()`, `NewGomegaWithT(t)`, dot-imported Gomega
+- Render smoke tests build node trees directly (no Layout call) — isolates render from layout
+- Helper functions (`makeFile`, `assertContainment`, `assertNoOverlap`) are defined per test file, not shared across packages
+- Golden file tests use `goldie.New(t)` with fixture directory and name suffix
+- nilaway-safe nil guards before dereferencing (pattern: assert NotNil, then `if x == nil { return }`)
+
+### 2026-07-20 — spiral layout + timebucket gap tests (issue #127 Phase 4)
+
+Added gap tests to both `internal/spiral/layout_test.go` and `internal/spiral/timebucket_test.go`. Dallas had already delivered a solid baseline (18 layout tests, 9 timebucket tests). I added coverage for spec items Dallas didn't cover.
+
+**Layout tests added (13 tests):**
+- `TestLayoutCentreOfSpiral` — first node above centre, average position near centre
+- `TestLayoutScalesWithCanvasSize` — doubling canvas ≈ doubles outer radius (within 15% tolerance due to fixed 40px margin)
+- `TestLayoutDailyUniformAngularSpacing` — daily resolution angular step = 2π/28
+- `TestLayoutExactlyOneLapDaily` — 28 daily spots, angular range check
+- `TestLayoutPartialLapDaily` — 7 daily spots, angular span ≈ π/2
+- `TestLayoutArchimedeanProperty` — verify r = a + b*θ for all nodes
+- `TestLayoutManyLaps` — 100 hourly spots, monotonically increasing, last > 2× inner radius
+- `TestLayoutManyLapsNoOverlap` — same-angle spots on adjacent laps don't overlap
+- `TestLayoutFitsWithinCanvasIncludingDisc` — positions ± discRadius within canvas bounds
+- `TestLayoutPartialLapHourly` — 6 hourly spots, angular span check
+- `TestLayoutLabelLapsDaily` — LabelLaps mode with daily resolution (28-spot boundary)
+- `TestLayoutDiscRadiusPositive` — all nodes have positive disc radius
+
+**TimeBucket tests added (10 tests):**
+- `TestBuildTimeBucketsHourly24Hours` — exactly 24 hours → 24 buckets
+- `TestBuildTimeBucketsDaily28Days` — exactly 28 days → 28 buckets
+- `TestBuildTimeBucketsHalfOpenIntervals` — [start, end) structure, contiguous, boundary checks
+- `TestBuildTimeBucketsMidnightBoundary` — 23:00→00:00 hourly wrap
+- `TestBuildTimeBucketsDailyMidnightBoundary` — midnight-aligned daily boundaries
+- `TestBuildTimeBucketsSingleUnit` — sub-hour range produces 1 bucket
+- `TestBuildTimeBucketsContiguous` — no gaps between consecutive hourly buckets
+- `TestBuildTimeBucketsDailyContiguous` — no gaps between consecutive daily buckets
+- `TestBuildTimeBucketsDailyEachSpans24Hours` — each daily bucket spans exactly 24h
+
+**Key learnings:**
+- Canvas scaling tolerance must account for the fixed 40px `margin` constant — 800→1600 canvas gives ratio ~2.11 not 2.0
+- The Archimedean spiral property (r = a + b*θ) is directly testable from the node output since `SpiralRadius` and `Angle` are exposed
+- Disc sizes are NOT computed by Layout — they use `defaultDiscRadius` (4.0). Metric-driven disc sizing is the CLI layer's responsibility
+- `BuildTimeBuckets` returns nil for empty/inverted ranges (not empty slice) — test with BeNil not BeEmpty
+- Render smoke tests and config/CLI tests are deferred — no `RenderSpiral` implementation yet (`cmd/codeviz/spiral_cmd.go:217` references `render.RenderSpiral` which doesn't exist)
+
+**Total spiral test count:** 34 tests (18 Dallas + 13 Lambert layout + 10 Lambert timebucket - 7 Dallas timebucket overlap = 34 total across both files)

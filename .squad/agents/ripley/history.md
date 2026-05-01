@@ -100,3 +100,16 @@
 - **Lambert (QA):** Comprehensive test suite created: 9 tests covering JSON export, YAML export, format error handling, metric filtering, empty directories, nested structures, binary flags, and all metric types. All tests pass. Build green.
 - **Integration:** Feature ready for deployment. Design decisions merged into decisions.md.
 
+### Issue #127 — Spiral Visualization Architecture (2026-07-19)
+
+- **Task:** Architecture proposal for time-based spiral visualization — a fundamentally different viz type from the existing tree-based ones.
+- **Key departure:** Spiral visualizes a time series, not a file tree. Returns `[]SpiralNode` (flat slice), not a tree. Requires new time-bucketing infrastructure in `internal/spiral/` that doesn't extend the core model.
+- **New infrastructure:** `TimeBucket` struct aggregates per-file metrics into time windows. `LoadCommitHistory()` reuses existing `repoService` from `internal/provider/git/` to fetch commit timestamps without adding a new metric provider.
+- **Spiral geometry:** Archimedean spiral `r = a + b*θ` with inner radius = outer/3. Clockwise from north. Hourly = 24 spots/lap, Daily = 28 spots/lap.
+- **Three metric destinations:** Disc size (numeric, bucket-mapped), fill (any kind), border (any kind) — all reuse existing colour pipeline. Values come from time-bucket aggregation instead of direct file metrics.
+- **Aggregation semantics:** Numeric = sum, Categorical = mode. Empty buckets rendered as small grey dots to preserve temporal fidelity.
+- **Label strategy:** Default LabelLaps (only at lap boundaries) because dense spiral makes full labelling unreadable.
+- **Risks:** Git history performance on large repos (mitigated by --since/--until), very long time ranges producing dense spirals (mitigated by auto-resolution selection), aggregation semantics may need user feedback.
+- **Proposal written to:** `.squad/decisions/inbox/ripley-spiral-architecture.md`
+- **Key files for implementation:** `internal/spiral/` (new package), `internal/config/spiral.go`, `internal/render/spiral.go`, `internal/render/svg_spiral.go`, `cmd/codeviz/spiral_cmd.go`, `cmd/codeviz/render_cmd.go` (add subcommand), `internal/config/config.go` (add Spiral field).
+
