@@ -9,9 +9,8 @@ import (
 	"log/slog"
 	"os"
 
-	"golang.org/x/text/encoding/unicode"
-
 	"github.com/rotisserie/eris"
+	"golang.org/x/text/encoding/unicode"
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
