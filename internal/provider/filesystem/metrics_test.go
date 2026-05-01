@@ -150,44 +150,45 @@ func TestFileLinesProviderDetectsBinaryByNullByte(t *testing.T) {
 	g.Expect(f.IsBinary).To(BeTrue())
 }
 
-func TestFileLinesProviderAllowsUTF16LEWithBOM(t *testing.T) {
+func TestFileLinesProviderCountsUTF16Lines(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	dir := t.TempDir()
+	tests := []struct {
+		name    string
+		content []byte
+	}{
+		{
+			name:    "little-endian",
+			content: []byte{0xFF, 0xFE, 0x61, 0x00, 0x0A, 0x00, 0x62, 0x00, 0x0A, 0x00},
+		},
+		{
+			name:    "big-endian",
+			content: []byte{0xFE, 0xFF, 0x00, 0x61, 0x00, 0x0A, 0x00, 0x62, 0x00, 0x0A},
+		},
+	}
 
-	// UTF-16 LE BOM (FF FE) followed by ASCII 'a' in UTF-16 LE (61 00) + newline (0A 00)
-	content := []byte{0xFF, 0xFE, 0x61, 0x00, 0x0A, 0x00, 0x62, 0x00, 0x0A, 0x00}
-	_ = os.WriteFile(filepath.Join(dir, "code.cs"), content, 0o600)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-	f := &model.File{Path: filepath.Join(dir, "code.cs"), Name: "code.cs"}
-	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
+			dir := t.TempDir()
+			_ = os.WriteFile(filepath.Join(dir, "code.cs"), tt.content, 0o600)
 
-	p := FileLinesProvider{}
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+			f := &model.File{Path: filepath.Join(dir, "code.cs"), Name: "code.cs"}
+			root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
-	g.Expect(f.IsBinary).To(BeFalse())
-}
+			p := FileLinesProvider{}
+			err := p.Load(root)
+			g.Expect(err).NotTo(HaveOccurred())
 
-func TestFileLinesProviderAllowsUTF16BEWithBOM(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
+			g.Expect(f.IsBinary).To(BeFalse())
 
-	dir := t.TempDir()
-
-	// UTF-16 BE BOM (FE FF) followed by ASCII 'a' in UTF-16 BE (00 61) + newline (00 0A)
-	content := []byte{0xFE, 0xFF, 0x00, 0x61, 0x00, 0x0A, 0x00, 0x62, 0x00, 0x0A}
-	_ = os.WriteFile(filepath.Join(dir, "code.cs"), content, 0o600)
-
-	f := &model.File{Path: filepath.Join(dir, "code.cs"), Name: "code.cs"}
-	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
-
-	p := FileLinesProvider{}
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	g.Expect(f.IsBinary).To(BeFalse())
+			v, ok := f.Quantity(FileLines)
+			g.Expect(ok).To(BeTrue())
+			g.Expect(v).To(Equal(int64(2)))
+		})
+	}
 }
 
 func TestFileLinesProviderHandlesEmptyFile(t *testing.T) {
