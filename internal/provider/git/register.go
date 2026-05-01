@@ -7,4 +7,5 @@ func Register() {
 	provider.Register(&FileAgeProvider{})
 	provider.Register(&FileFreshnessProvider{})
 	provider.Register(&AuthorCountProvider{})
+	provider.Register(&CommitCountProvider{})
 }

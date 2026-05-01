@@ -16,6 +16,7 @@ const (
 	FileAge       metric.Name = "file-age"
 	FileFreshness metric.Name = "file-freshness"
 	AuthorCount   metric.Name = "author-count"
+	CommitCount   metric.Name = "commit-count"
 )
 
 // FileAgeProvider reports time since first commit in days.
@@ -59,7 +60,7 @@ func (p *FileFreshnessProvider) Load(root *model.Directory) error {
 // IsGitMetric reports whether name is a metric that requires a git repository.
 func IsGitMetric(name metric.Name) bool {
 	switch name {
-	case FileAge, FileFreshness, AuthorCount:
+	case FileAge, FileFreshness, AuthorCount, CommitCount:
 		return true
 	default:
 		return false
@@ -83,6 +84,25 @@ func (p *AuthorCountProvider) SetOnFileProcessed(fn func()) { p.onFile = fn }
 
 func (p *AuthorCountProvider) Load(root *model.Directory) error {
 	return loadGitMetric(root, AuthorCount, "author-count", (*repoService).authorCount, p.onFile)
+}
+
+// CommitCountProvider reports the total number of commits that modified each file.
+type CommitCountProvider struct {
+	onFile func()
+}
+
+func (*CommitCountProvider) Name() metric.Name { return CommitCount }
+func (*CommitCountProvider) Kind() metric.Kind { return metric.Quantity }
+func (*CommitCountProvider) Description() string {
+	return "Number of commits that modified the file; frequently changed files score higher."
+}
+func (*CommitCountProvider) Dependencies() []metric.Name         { return nil }
+func (*CommitCountProvider) DefaultPalette() palette.PaletteName { return palette.Temperature }
+
+func (p *CommitCountProvider) SetOnFileProcessed(fn func()) { p.onFile = fn }
+
+func (p *CommitCountProvider) Load(root *model.Directory) error {
+	return loadGitMetric(root, CommitCount, "commit-count", (*repoService).commitCount, p.onFile)
 }
 
 // loadGitMetric is the shared implementation for all git-based metric providers.

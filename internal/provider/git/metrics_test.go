@@ -97,6 +97,7 @@ func TestIsGitMetric(t *testing.T) {
 	g.Expect(IsGitMetric(FileAge)).To(BeTrue())
 	g.Expect(IsGitMetric(FileFreshness)).To(BeTrue())
 	g.Expect(IsGitMetric(AuthorCount)).To(BeTrue())
+	g.Expect(IsGitMetric(CommitCount)).To(BeTrue())
 	g.Expect(IsGitMetric("file-size")).To(BeFalse())
 	g.Expect(IsGitMetric("file-lines")).To(BeFalse())
 	g.Expect(IsGitMetric("unknown-metric")).To(BeFalse())
@@ -540,4 +541,88 @@ func TestFileFreshnessEqualsAgeForSingleCommit(t *testing.T) {
 	g.Expect(freshOk).To(BeTrue())
 	g.Expect(age).To(Equal(freshness),
 		"single-commit file should have identical age and freshness")
+}
+
+func TestCommitCountProviderMetadata(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := &CommitCountProvider{}
+	g.Expect(p.Name()).To(Equal(CommitCount))
+	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+	g.Expect(p.Dependencies()).To(BeNil())
+}
+
+func TestCommitCountProvider(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	// old.go: 1 commit (initial). shared.go: 2 commits (initial + bob's update).
+	root := buildTree(dir, "old.go", "shared.go")
+
+	resetService()
+
+	p := &CommitCountProvider{}
+	g.Expect(p.Name()).To(Equal(CommitCount))
+	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	countOld, ok := root.Files[0].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue(), "commit-count should be set for old.go")
+	g.Expect(countOld).To(Equal(int64(1)), "old.go was committed once")
+
+	countShared, ok := root.Files[1].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue(), "commit-count should be set for shared.go")
+	g.Expect(countShared).To(Equal(int64(2)), "shared.go was committed twice (initial + bob's update)")
+}
+
+// TestCommitCount_MergeCommitDoesNotPollute verifies that a merge commit that
+// doesn't modify a file is not counted as a commit for that file.
+func TestCommitCount_MergeCommitDoesNotPollute(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupMergeRepo(t)
+	// stable.go: initial + update on main = 2 real commits; merge doesn't modify it.
+	// active.go: initial + feature change = 2 real commits; merge doesn't add a new one.
+	root := buildTree(dir, "stable.go", "active.go")
+
+	resetService()
+
+	p := &CommitCountProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	countStable, ok := root.Files[0].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue(), "commit-count should be set for stable.go")
+	g.Expect(countStable).To(Equal(int64(2)),
+		"stable.go: initial commit + update on main; merge should not be counted")
+
+	countActive, ok := root.Files[1].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue(), "commit-count should be set for active.go")
+	g.Expect(countActive).To(Equal(int64(2)),
+		"active.go: initial commit + feature branch change; merge should not be counted")
+}
+
+func TestCommitCountProvider_SubdirectoryScanning(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	subdir := setupSubdirRepo(t)
+	root := buildTree(subdir, "code.go")
+
+	resetService()
+
+	p := &CommitCountProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	count, ok := root.Files[0].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue(), "commit-count metric should be set for file in subdirectory")
+	g.Expect(count).To(Equal(int64(1)), "code.go was committed once")
 }
