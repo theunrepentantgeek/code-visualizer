@@ -264,50 +264,20 @@ func (*SpiralCmd) logRendered(
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
 func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
-	if c.Width != 0 {
-		cfg.Width = &c.Width
-	}
-
-	if c.Height != 0 {
-		cfg.Height = &c.Height
-	}
+	cfg.OverrideWidth(c.Width)
+	cfg.OverrideHeight(c.Height)
 
 	if cfg.Spiral == nil {
 		cfg.Spiral = &config.Spiral{}
 	}
 
-	if c.Resolution != "" {
-		cfg.Spiral.Resolution = &c.Resolution
-	}
-
-	size := string(c.Size)
-	if size != "" {
-		cfg.Spiral.Size = &size
-	}
-
-	if !c.Fill.IsZero() {
-		cfg.Spiral.Fill = &c.Fill
-	}
-
-	if !c.Border.IsZero() {
-		cfg.Spiral.Border = &c.Border
-	}
-
-	if c.Labels != "" {
-		cfg.Spiral.Labels = &c.Labels
-	}
-
-	c.applyLegendOverrides(cfg.Spiral)
-}
-
-func (c *SpiralCmd) applyLegendOverrides(cfg *config.Spiral) {
-	if c.Legend != "" {
-		cfg.Legend = &c.Legend
-	}
-
-	if c.LegendOrientation != "" {
-		cfg.LegendOrientation = &c.LegendOrientation
-	}
+	cfg.Spiral.OverrideResolution(c.Resolution)
+	cfg.Spiral.OverrideSize(string(c.Size))
+	cfg.Spiral.OverrideFill(c.Fill)
+	cfg.Spiral.OverrideBorder(c.Border)
+	cfg.Spiral.OverrideLabels(c.Labels)
+	cfg.Spiral.OverrideLegend(c.Legend)
+	cfg.Spiral.OverrideLegendOrientation(c.LegendOrientation)
 }
 
 //nolint:dupl // mirrors TreemapCmd.validatePaths by design
