@@ -44,6 +44,14 @@ func TestConfig_OverrideHeight_SkipsWhenZero(t *testing.T) {
 	cfg.OverrideHeight(0)
 	g.Expect(*cfg.Height).To(Equal(original))
 }
+func TestConfig_OverrideHeight_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := New()
+	original := *cfg.Height
+	cfg.OverrideHeight(0)
+	g.Expect(*cfg.Height).To(Equal(original))
+}
 
 // Treemap overrides
 
