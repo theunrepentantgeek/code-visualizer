@@ -158,16 +158,14 @@ var foliagePalette = ColourPalette{
 }
 
 // Terrain palette: 8 steps, sea → surf → sand → grass → farm → forest → rocks → snow.
-//
-//nolint:dupl // palette declarations are structurally identical by design
 var terrainPalette = ColourPalette{
 	Name:        Terrain,
-	Description: "Geographic terrain progression (sea → surf → sand → grass → farm → forest → rocks → snow). Evokes elevation or layered depth.",
+	Description: "Geographic terrain progression (sea → snow). Evokes elevation or layered depth.",
 	Ordered:     true,
 	Colours: []color.RGBA{
-		{R: 26, G: 82, B: 118, A: 255},  // sea
-		{R: 93, G: 173, B: 226, A: 255}, // surf
-		{R: 244, G: 208, B: 63, A: 255}, // sand
+		{R: 26, G: 82, B: 118, A: 255},   // sea
+		{R: 93, G: 173, B: 226, A: 255},  // surf
+		{R: 244, G: 208, B: 63, A: 255},  // sand
 		{R: 130, G: 224, B: 170, A: 255}, // grass
 		{R: 82, G: 190, B: 128, A: 255},  // farm
 		{R: 30, G: 132, B: 73, A: 255},   // forest
