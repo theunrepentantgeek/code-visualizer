@@ -740,3 +740,61 @@ The architecture proposal was written before MetricSpec consolidation (#118/#120
 - PR #144 edge case was fixed by Dallas (moved empty-bucket handling before maxSize check).
 - `task ci` not available in environment (task not installed).
 - `go test ./...` passes locally.
+
+---
+
+### Work Allocation Directive — Improved Team Utilization
+
+**Author:** Bevan Arps  
+**Date:** 2026-05-02  
+**Status:** Directive  
+**Context:** Rounds 1-4 showed Dallas handling all implementations while Lambert, Parker, and Bishop were idle.
+
+**Decision:** Route work per `routing.md` specialists, not just Dallas for all implementations.
+
+**Work Distribution:**
+- **Parker:** Refactors and code quality work (technical debt, maintainability)
+- **Lambert:** Spawned alongside implementers to write/verify tests (not as afterthought)
+- **Bishop:** Interface design and architectural/abstraction tasks
+- **Kane:** Command-layer and rendering work (not just documentation)
+- **Dallas:** Core metrics/providers — his specialty
+
+**Rationale:** Efficient use of full team capability; better load balancing; specialized ownership per domain.
+
+**Implementation:** Apply routing.md criteria to all future issue allocations. This directive remains active for all subsequent work cycles.
+
+---
+
+### Per-Metric File Refactor — Issue #134
+
+**Author:** Ripley (Research), Dallas (Implementation)  
+**Date:** 2026-05-02  
+**Status:** Implemented & Approved  
+**PR:** #146
+
+**Summary:** Split git metrics from monolithic files into per-metric structure for improved code navigation and single-responsibility alignment.
+
+**Scope:**
+- 7 metric providers extracted: FileAge, FileFreshness, AuthorCount, CommitCount, TotalLinesAdded, TotalLinesRemoved, CommitDensity
+- metrics.go retains shared infrastructure: constants, IsGitMetric(), loadGitMetric(), loadGitMeasureMetric(), walkGitFiles()
+- churn_metrics.go deleted (all content moved to per-metric files)
+
+**Files Created:**
+```
+file_age.go
+file_freshness.go
+author_count.go
+commit_count.go
+total_lines_added.go
+total_lines_removed.go
+commit_density.go
+```
+
+**Verification:**
+- ✓ All existing tests pass
+- ✓ No logic changes (pure refactor)
+- ✓ Imports clean, no circular dependencies
+- ✓ File naming consistent (snake_case)
+- ✓ CI: All 4 checks passing (test, devcontainer, Analyze, CodeQL)
+
+**Decision:** APPROVED. Merged PR #146 to main. Mechanical refactor with high quality, proper test coverage, no breaking changes.

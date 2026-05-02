@@ -113,3 +113,10 @@
 - **Proposal written to:** `.squad/decisions/inbox/ripley-spiral-architecture.md`
 - **Key files for implementation:** `internal/spiral/` (new package), `internal/config/spiral.go`, `internal/render/spiral.go`, `internal/render/svg_spiral.go`, `cmd/codeviz/spiral_cmd.go`, `cmd/codeviz/render_cmd.go` (add subcommand), `internal/config/config.go` (add Spiral field).
 
+
+### PR #146 Review — Git Metrics Per-File Refactor (2026-05-02) — APPROVED
+
+- **Scope:** Verified the seven git metric providers were moved from metrics.go/churn_metrics.go into per-metric files with identical implementations.
+- **Shared infrastructure:** metrics.go now only holds constants, IsGitMetric, loadGitMetric/loadGitMeasureMetric, walkGitFiles.
+- **Cleanup:** churn_metrics.go removed; register.go unchanged; file naming matches metric snake_case.
+- **Outcome:** Pure refactor with no behavioral changes detected.
