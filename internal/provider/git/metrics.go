@@ -13,10 +13,13 @@ import (
 )
 
 const (
-	FileAge       metric.Name = "file-age"
-	FileFreshness metric.Name = "file-freshness"
-	AuthorCount   metric.Name = "author-count"
-	CommitCount   metric.Name = "commit-count"
+	FileAge           metric.Name = "file-age"
+	FileFreshness     metric.Name = "file-freshness"
+	AuthorCount       metric.Name = "author-count"
+	CommitCount       metric.Name = "commit-count"
+	TotalLinesAdded   metric.Name = "total-lines-added"
+	TotalLinesRemoved metric.Name = "total-lines-removed"
+	CommitDensity     metric.Name = "commit-density"
 )
 
 // FileAgeProvider reports time since first commit in days.
@@ -60,7 +63,8 @@ func (p *FileFreshnessProvider) Load(root *model.Directory) error {
 // IsGitMetric reports whether name is a metric that requires a git repository.
 func IsGitMetric(name metric.Name) bool {
 	switch name {
-	case FileAge, FileFreshness, AuthorCount, CommitCount:
+	case FileAge, FileFreshness, AuthorCount, CommitCount,
+		TotalLinesAdded, TotalLinesRemoved, CommitDensity:
 		return true
 	default:
 		return false
@@ -105,15 +109,57 @@ func (p *CommitCountProvider) Load(root *model.Directory) error {
 	return loadGitMetric(root, CommitCount, "commit-count", (*repoService).commitCount, p.onFile)
 }
 
-// loadGitMetric is the shared implementation for all git-based metric providers.
-// It opens the repo service, walks all files, computes paths relative to the git
-// worktree root (not the scan root), and sets the metric via the supplied fn.
+// loadGitMetric is the shared implementation for all git-based quantity metric providers.
 func loadGitMetric(
 	root *model.Directory,
 	name metric.Name,
 	desc string,
 	fn func(*repoService, string) (int64, error),
 	onFile func(),
+) error {
+	return walkGitFiles(root, desc, onFile, func(s *repoService, f *model.File, relPath string) {
+		val, err := fn(s, relPath)
+		if err != nil {
+			if !errors.Is(err, errUntracked) {
+				slog.Debug("could not get "+desc, "path", relPath, "error", err)
+			}
+
+			return
+		}
+
+		f.SetQuantity(name, val)
+	})
+}
+
+// loadGitMeasureMetric is the shared implementation for git-based measure (float64) providers.
+func loadGitMeasureMetric(
+	root *model.Directory,
+	name metric.Name,
+	desc string,
+	fn func(*repoService, string) (float64, error),
+	onFile func(),
+) error {
+	return walkGitFiles(root, desc, onFile, func(s *repoService, f *model.File, relPath string) {
+		val, err := fn(s, relPath)
+		if err != nil {
+			if !errors.Is(err, errUntracked) {
+				slog.Debug("could not get "+desc, "path", relPath, "error", err)
+			}
+
+			return
+		}
+
+		f.SetMeasure(name, val)
+	})
+}
+
+// walkGitFiles opens the repo service, walks all files, computes paths relative
+// to the git worktree root, and invokes the process callback for each file.
+func walkGitFiles(
+	root *model.Directory,
+	desc string,
+	onFile func(),
+	process func(*repoService, *model.File, string),
 ) error {
 	s, err := getService(root.Path)
 	if err != nil {
@@ -132,16 +178,7 @@ func loadGitMetric(
 			return
 		}
 
-		val, err := fn(s, relPath)
-		if err != nil {
-			if !errors.Is(err, errUntracked) {
-				slog.Debug("could not get "+desc, "path", relPath, "error", err)
-			}
-
-			return
-		}
-
-		f.SetQuantity(name, val)
+		process(s, f, relPath)
 	})
 
 	return nil

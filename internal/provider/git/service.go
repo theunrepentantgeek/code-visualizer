@@ -16,10 +16,12 @@ import (
 
 // commitData holds all per-file commit information collected in a single git log pass.
 type commitData struct {
-	oldest  time.Time
-	newest  time.Time
-	count   int64
-	authors map[string]bool
+	oldest       time.Time
+	newest       time.Time
+	count        int64
+	authors      map[string]bool
+	linesAdded   int64
+	linesRemoved int64
 }
 
 type repoService struct {
@@ -149,6 +151,110 @@ func (s *repoService) commitCount(relPath string) (int64, error) {
 	return data.count, nil
 }
 
+func (s *repoService) totalLinesAdded(relPath string) (int64, error) {
+	data, err := s.getCommitData(relPath)
+	if err != nil {
+		return 0, err
+	}
+
+	if data.count == 0 {
+		return 0, errUntracked
+	}
+
+	return data.linesAdded, nil
+}
+
+func (s *repoService) totalLinesRemoved(relPath string) (int64, error) {
+	data, err := s.getCommitData(relPath)
+	if err != nil {
+		return 0, err
+	}
+
+	if data.count == 0 {
+		return 0, errUntracked
+	}
+
+	return data.linesRemoved, nil
+}
+
+const monthHours = 24 * 30.44
+
+func (s *repoService) commitDensity(relPath string) (float64, error) {
+	data, err := s.getCommitData(relPath)
+	if err != nil {
+		return 0, err
+	}
+
+	if data.count == 0 {
+		return 0, errUntracked
+	}
+
+	fileAgeMonths := time.Since(data.oldest).Hours() / monthHours
+	if fileAgeMonths < 1 {
+		fileAgeMonths = 1
+	}
+
+	return float64(data.count) / fileAgeMonths, nil
+}
+
+// computeFileDiffStats computes the lines added and removed for a file in a
+// non-root commit by diffing against the first parent. Returns (0, 0) for
+// creation commits (file doesn't exist in parent).
+func computeFileDiffStats(c *object.Commit, relPath string) (added, removed int64) {
+	parent, err := c.Parent(0)
+	if err != nil {
+		return 0, 0
+	}
+
+	// Skip creation commits — file doesn't exist in parent.
+	if _, hashErr := blobHash(parent, relPath); hashErr != nil {
+		return 0, 0
+	}
+
+	parentTree, err := parent.Tree()
+	if err != nil {
+		return 0, 0
+	}
+
+	commitTree, err := c.Tree()
+	if err != nil {
+		return 0, 0
+	}
+
+	changes, err := object.DiffTree(parentTree, commitTree)
+	if err != nil {
+		return 0, 0
+	}
+
+	fileChanges := filterChangesForFile(changes, relPath)
+	if len(fileChanges) == 0 {
+		return 0, 0
+	}
+
+	patch, err := fileChanges.Patch()
+	if err != nil {
+		return 0, 0
+	}
+
+	for _, stat := range patch.Stats() {
+		added += int64(stat.Addition)
+		removed += int64(stat.Deletion)
+	}
+
+	return added, removed
+}
+
+// filterChangesForFile returns only the changes that affect the given file.
+func filterChangesForFile(changes object.Changes, relPath string) object.Changes {
+	for _, change := range changes {
+		if changeName(change) == relPath {
+			return object.Changes{change}
+		}
+	}
+
+	return nil
+}
+
 // getCommitData returns cached commit data for the given file path, fetching it
 // from git on first access. Concurrent requests for the same path are coalesced
 // via singleflight so the git log is only read once per file per process run.
@@ -199,24 +305,7 @@ func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
 	}
 
 	err = log.ForEach(func(c *object.Commit) error {
-		// go-git's FileName filter includes merge commits that didn't
-		// actually modify the file. Skip those to avoid polluting
-		// the newest timestamp with unrelated commit dates.
-		if !commitModifiedFile(c, relPath) {
-			return nil
-		}
-
-		when := c.Author.When
-		if data.oldest.IsZero() || when.Before(data.oldest) {
-			data.oldest = when
-		}
-
-		if data.newest.IsZero() || when.After(data.newest) {
-			data.newest = when
-		}
-
-		data.authors[c.Author.Email] = true
-		data.count++
+		processCommitForFile(c, relPath, data)
 
 		return nil
 	})
@@ -225,6 +314,37 @@ func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
 	}
 
 	return data, nil
+}
+
+// processCommitForFile updates commitData for a single commit that may or may
+// not have modified the file. It checks TREESAME filtering, updates timestamps,
+// author set, commit count, and diff stats.
+func processCommitForFile(c *object.Commit, relPath string, data *commitData) {
+	// go-git's FileName filter includes merge commits that didn't
+	// actually modify the file. Skip those to avoid polluting
+	// the newest timestamp with unrelated commit dates.
+	if !commitModifiedFile(c, relPath) {
+		return
+	}
+
+	when := c.Author.When
+	if data.oldest.IsZero() || when.Before(data.oldest) {
+		data.oldest = when
+	}
+
+	if data.newest.IsZero() || when.After(data.newest) {
+		data.newest = when
+	}
+
+	data.authors[c.Author.Email] = true
+	data.count++
+
+	// Accumulate diff stats for non-root commits that modify an existing file.
+	if c.NumParents() > 0 {
+		added, removed := computeFileDiffStats(c, relPath)
+		data.linesAdded += added
+		data.linesRemoved += removed
+	}
 }
 
 // commitModifiedFile returns true if the commit actually changed the file at

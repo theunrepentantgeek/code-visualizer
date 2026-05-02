@@ -8,4 +8,7 @@ func Register() {
 	provider.Register(&FileFreshnessProvider{})
 	provider.Register(&AuthorCountProvider{})
 	provider.Register(&CommitCountProvider{})
+	provider.Register(&TotalLinesAddedProvider{})
+	provider.Register(&TotalLinesRemovedProvider{})
+	provider.Register(&CommitDensityProvider{})
 }
