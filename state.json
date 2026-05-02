@@ -1,92 +1,11 @@
 {
-  "last_run": "2026-05-01T12:44:04Z",
-  "run_id": "25214649892",
-  "comments_made": {
-    "74": "2026-04-20T12:54:26Z",
-    "77": "2026-04-21T07:39:14Z",
-    "105": "2026-04-30T13:11:51Z",
-    "112": "2026-04-27T13:10:33Z",
-    "116": "2026-04-27T13:10:33Z",
-    "128": "2026-04-29T13:13:03Z",
-    "133": "2026-05-01T12:44:04Z"
-  },
-  "prs_created": [
+  "last_run": "2026-05-02T09:12:26Z",
+  "last_run_id": "25248597889",
+  "open_prs": [
     {
-      "branch": "repo-assist/feat-config-override-methods-133",
-      "pr_number": null,
-      "title": "[Repo Assist] feat(config): add OverrideX methods; optimise changedInRootCommit",
-      "status": "open",
-      "type": "feature",
-      "closes": [133]
+      "branch": "repo-assist/eng-upgrade-golangci-lint-20260502",
+      "description": "Upgrade golangci-lint v2.11.4 -> v2.12.0, fix new goconst issues"
     }
   ],
-  "issues_actioned": {
-    "74": "labelled enhancement, commented, PR #75 submitted (merged 2026-04-23)",
-    "77": "labelled enhancement, commented, PR #79 submitted (merged 2026-04-23)",
-    "88": "labelled bug, fixed via PR #95 (merged 2026-04-26)",
-    "89": "labelled bug, fixed via PR #98 by maintainer (merged 2026-04-26)",
-    "90": "labelled bug, fixed via PR #98 by maintainer (merged 2026-04-26)",
-    "91": "labelled bug, fixed via PR #96 (merged 2026-04-26)",
-    "92": "labelled enhancement, fixed via PR #95 (merged 2026-04-26)",
-    "93": "labelled bug, fixed via PR #106 by maintainer (merged 2026-04-26)",
-    "94": "labelled bug, fixed via PR #95 (merged 2026-04-26)",
-    "105": "labelled bug, fixed via PR #135 (merged 2026-05-01)",
-    "112": "closed by maintainer 2026-05-01",
-    "116": "commented with analysis of new linter rules",
-    "124": "closed by maintainer (no longer in open issues)",
-    "126": "feat commit-count metric (merged 2026-04-30)",
-    "128": "labelled enhancement+refactor, commented, fixed via PR #130 (merged 2026-04-30)",
-    "130": "fix metric help text (merged 2026-04-30)",
-    "132": "docs export data flag (merged 2026-04-30)",
-    "133": "labelled enhancement+refactor, commented, PR submitted (open)",
-    "134": "labelled refactor",
-    "136": "labelled enhancement"
-  },
-  "monthly_summary_issue": {
-    "title": "[Repo Assist] Monthly Activity 2026-05",
-    "number": null,
-    "month": "2026-05",
-    "status": "open"
-  },
-  "backlog_cursor": {
-    "issues": 136,
-    "prs": 0
-  },
-  "checked_off_items": [
-    "PR #61: perf(git) cache per-file commit data (merged)",
-    "PR #62: fix(logging) clarify directory scan log fields (merged)",
-    "Issue #58: duplicate of PR #61 (closed)",
-    "PR #73: docs/usage.md (merged by maintainer 2026-04-23)",
-    "PR #75: help commands for #74 (merged by maintainer 2026-04-23)",
-    "PR #79: auto-config for #77 (merged by maintainer 2026-04-23)",
-    "PR #81: chore(deps) x/image v0.39.0 (merged by maintainer 2026-04-21)",
-    "Issue #80: dep update tracking (PR #81 merged, closed)",
-    "PR #87: perf(scan) filter+stat optimizations (merged 2026-04-26)",
-    "PR #95: fix config export + logging (merged 2026-04-26)",
-    "PR #96: fix file-age in days (merged 2026-04-26)",
-    "PR #98: legend fixes (merged by maintainer 2026-04-26)",
-    "PR #106: PNG binary detection (merged by maintainer 2026-04-26)",
-    "PR #115: upgrade golangci-lint v2.11.4 (merged 2026-04-27)",
-    "PR #119: fix file-freshness always zero (merged 2026-04-27)",
-    "PR #120: MetricSpec combine metric+palette (merged 2026-04-27)",
-    "PR #122: fix metric scanning logs (merged 2026-04-27)",
-    "PR #123: improve/filtering (merged 2026-04-27)",
-    "PR #125: refactor CountDirs (merged 2026-04-30)",
-    "PR #126: feat commit-count metric (merged 2026-04-30)",
-    "PR #129: Feature Spiral Visualization (merged 2026-04-30)",
-    "PR #130: fix metric help text (merged 2026-04-30)",
-    "PR #132: docs export data flag (merged 2026-04-30)",
-    "PR #135: fix UTF-16 line count (merged 2026-05-01)",
-    "Issue #112: old fallback issue (closed 2026-05-01)",
-    "Issue #124: old fallback issue (closed 2026-05-01)"
-  ],
-  "recently_merged": [
-    "PR #135: fix UTF-16 line count (merged 2026-05-01)",
-    "PR #130: fix metric help text (merged 2026-04-30)",
-    "PR #132: docs export data flag (merged 2026-04-30)",
-    "PR #126: feat commit-count metric (merged 2026-04-30)",
-    "PR #129: Feature Spiral Visualization (merged 2026-04-30)",
-    "PR #125: refactor CountDirs (merged 2026-04-30)"
-  ],
-  "notes": "New issues from maintainer: #133 (config overrides, PR submitted), #134 (metrics in separate files), #136 (new git metrics). Issue #116 (linter research) still open. April summary closed; May summary created."
+  "notes": "Command-mode run: upgraded golangci-lint to v2.12.0. Fixed: goconst.ignore-tests setting added, extracted file-extension constants in config.go, extracted noFilesAfterFilterMsg constant."
 }
