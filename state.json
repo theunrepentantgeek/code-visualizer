@@ -1,11 +1,16 @@
 {
-  "last_run": "2026-05-02T09:12:26Z",
-  "last_run_id": "25248597889",
+  "last_run": "2026-05-02T12:38:17Z",
+  "last_run_id": "25252051023",
   "open_prs": [
     {
-      "branch": "repo-assist/eng-upgrade-golangci-lint-20260502",
-      "description": "Upgrade golangci-lint v2.11.4 -> v2.12.0, fix new goconst issues"
+      "branch": "repo-assist/eng-upgrade-golangci-lint-20260502-d30dac30aa50b3c6",
+      "pr_number": 147,
+      "description": "Upgrade golangci-lint v2.11.4 -> v2.12.0, fix goconst issues; CI has infrastructure failures (devcontainer checksum)"
+    },
+    {
+      "branch": "repo-assist/improve-spiral-metrics-docs-20260502",
+      "description": "Docs: add spiral section, new git metrics, terrain palette; fix spiral --size enum to remove hardcoded old metric list"
     }
   ],
-  "notes": "Command-mode run: upgraded golangci-lint to v2.12.0. Fixed: goconst.ignore-tests setting added, extracted file-extension constants in config.go, extracted noFilesAfterFilterMsg constant."
+  "notes": "Revive rules unnecessary-if, inefficient-map-lookup, package-naming still need enabling as separate PR (not in #147)."
 }
