@@ -103,9 +103,9 @@ func writeSpiralSVGDiscs(f *os.File, nodes []spiral.SpiralNode) {
 
 		fmt.Fprintf(f,
 			"<circle cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\""+
-				" fill=\"%s\" stroke=\"%s\" stroke-width=\"1\"/>\n",
+				" fill=\"%s\" stroke=\"%s\" stroke-width=\"%.0f\"/>\n",
 			n.X, n.Y, n.DiscRadius,
-			colourToHex(fill), colourToHex(border))
+			colourToHex(fill), colourToHex(border), spiralBorderWidth(n.DiscRadius))
 	}
 }
 
