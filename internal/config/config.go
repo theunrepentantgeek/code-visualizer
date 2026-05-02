@@ -139,6 +139,12 @@ func (c *Config) Save(path string) error {
 	return nil
 }
 
+// OverrideWidth sets Width to v if v is non-zero.
+func (c *Config) OverrideWidth(v int) { overrideInt(&c.Width, v) }
+
+// OverrideHeight sets Height to v if v is non-zero.
+func (c *Config) OverrideHeight(v int) { overrideInt(&c.Height, v) }
+
 // FindAutoConfig looks for a config file alongside the output file.
 // It strips the output file extension, appends "-config", and probes for
 // .yml, .yaml, and .json variants in that order.

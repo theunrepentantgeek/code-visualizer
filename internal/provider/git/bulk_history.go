@@ -86,21 +86,21 @@ func changedFilesInCommit(c *object.Commit, filePaths map[string]bool) []string 
 }
 
 // changedInRootCommit returns tracked files present in the root commit's tree.
+// It iterates only the tracked file set (not all tree files) for efficiency in
+// repos where filePaths is much smaller than the total number of tree files.
 func changedInRootCommit(c *object.Commit, filePaths map[string]bool) []string {
 	tree, err := c.Tree()
 	if err != nil {
 		return nil
 	}
 
-	var changed []string
+	changed := make([]string, 0, len(filePaths))
 
-	_ = tree.Files().ForEach(func(f *object.File) error {
-		if filePaths[f.Name] {
-			changed = append(changed, f.Name)
+	for path := range filePaths {
+		if _, err := tree.File(path); err == nil {
+			changed = append(changed, path)
 		}
-
-		return nil
-	})
+	}
 
 	return changed
 }

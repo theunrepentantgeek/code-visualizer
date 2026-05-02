@@ -387,34 +387,13 @@ func findGitMetric(requested []metric.Name) (metric.Name, bool) {
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
 func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
-	if c.Width != 0 {
-		cfg.Width = &c.Width
-	}
-
-	if c.Height != 0 {
-		cfg.Height = &c.Height
-	}
-
-	size := string(c.Size)
-	if size != "" {
-		cfg.Treemap.Size = &size
-	}
-
-	if !c.Fill.IsZero() {
-		cfg.Treemap.Fill = &c.Fill
-	}
-
-	if !c.Border.IsZero() {
-		cfg.Treemap.Border = &c.Border
-	}
-
-	if c.Legend != "" {
-		cfg.Treemap.Legend = &c.Legend
-	}
-
-	if c.LegendOrientation != "" {
-		cfg.Treemap.LegendOrientation = &c.LegendOrientation
-	}
+	cfg.OverrideWidth(c.Width)
+	cfg.OverrideHeight(c.Height)
+	cfg.Treemap.OverrideSize(string(c.Size))
+	cfg.Treemap.OverrideFill(c.Fill)
+	cfg.Treemap.OverrideBorder(c.Border)
+	cfg.Treemap.OverrideLegend(c.Legend)
+	cfg.Treemap.OverrideLegendOrientation(c.LegendOrientation)
 }
 
 // ptrString safely dereferences a *string, returning "" if nil.

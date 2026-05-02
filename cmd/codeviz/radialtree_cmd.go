@@ -222,46 +222,19 @@ func (c *RadialCmd) applyColoursAndRender(
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
 func (c *RadialCmd) applyOverrides(cfg *config.Config) {
-	if c.Width != 0 {
-		cfg.Width = &c.Width
-	}
-
-	if c.Height != 0 {
-		cfg.Height = &c.Height
-	}
+	cfg.OverrideWidth(c.Width)
+	cfg.OverrideHeight(c.Height)
 
 	if cfg.Radial == nil {
 		cfg.Radial = &config.Radial{}
 	}
 
-	discSize := string(c.DiscSize)
-	if discSize != "" {
-		cfg.Radial.DiscSize = &discSize
-	}
-
-	if !c.Fill.IsZero() {
-		cfg.Radial.Fill = &c.Fill
-	}
-
-	if !c.Border.IsZero() {
-		cfg.Radial.Border = &c.Border
-	}
-
-	if c.Labels != "" {
-		cfg.Radial.Labels = &c.Labels
-	}
-
-	c.applyLegendOverrides(cfg.Radial)
-}
-
-func (c *RadialCmd) applyLegendOverrides(cfg *config.Radial) {
-	if c.Legend != "" {
-		cfg.Legend = &c.Legend
-	}
-
-	if c.LegendOrientation != "" {
-		cfg.LegendOrientation = &c.LegendOrientation
-	}
+	cfg.Radial.OverrideDiscSize(string(c.DiscSize))
+	cfg.Radial.OverrideFill(c.Fill)
+	cfg.Radial.OverrideBorder(c.Border)
+	cfg.Radial.OverrideLabels(c.Labels)
+	cfg.Radial.OverrideLegend(c.Legend)
+	cfg.Radial.OverrideLegendOrientation(c.LegendOrientation)
 }
 
 //nolint:dupl // mirrors TreemapCmd.validatePaths by design

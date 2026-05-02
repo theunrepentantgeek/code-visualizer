@@ -229,46 +229,19 @@ func (c *BubbletreeCmd) applyColoursAndRender(
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
 func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
-	if c.Width != 0 {
-		cfg.Width = &c.Width
-	}
-
-	if c.Height != 0 {
-		cfg.Height = &c.Height
-	}
+	cfg.OverrideWidth(c.Width)
+	cfg.OverrideHeight(c.Height)
 
 	if cfg.Bubbletree == nil {
 		cfg.Bubbletree = &config.Bubbletree{}
 	}
 
-	size := string(c.Size)
-	if size != "" {
-		cfg.Bubbletree.Size = &size
-	}
-
-	if !c.Fill.IsZero() {
-		cfg.Bubbletree.Fill = &c.Fill
-	}
-
-	if !c.Border.IsZero() {
-		cfg.Bubbletree.Border = &c.Border
-	}
-
-	if c.Labels != "" {
-		cfg.Bubbletree.Labels = &c.Labels
-	}
-
-	c.applyLegendOverrides(cfg.Bubbletree)
-}
-
-func (c *BubbletreeCmd) applyLegendOverrides(cfg *config.Bubbletree) {
-	if c.Legend != "" {
-		cfg.Legend = &c.Legend
-	}
-
-	if c.LegendOrientation != "" {
-		cfg.LegendOrientation = &c.LegendOrientation
-	}
+	cfg.Bubbletree.OverrideSize(string(c.Size))
+	cfg.Bubbletree.OverrideFill(c.Fill)
+	cfg.Bubbletree.OverrideBorder(c.Border)
+	cfg.Bubbletree.OverrideLabels(c.Labels)
+	cfg.Bubbletree.OverrideLegend(c.Legend)
+	cfg.Bubbletree.OverrideLegendOrientation(c.LegendOrientation)
 }
 
 //nolint:dupl // mirrors TreemapCmd.validatePaths by design
