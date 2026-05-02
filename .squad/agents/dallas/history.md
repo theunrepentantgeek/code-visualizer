@@ -183,3 +183,21 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Commit-density formula:** `commit_count / max(file_age_months, 1)` — intuitive (commits/month), avoids division-by-zero.
 - **Risk:** Patch computation performance on large histories. Mitigation: caching + opt-in flag (if needed).
 - **Next:** Coordinate with Lambert for Phase 5 test suite.
+
+### Git Metrics File Organization — Issue #134 (2026-05-03)
+
+- **Refactoring complete:** Split git metrics from 2 files into 7 single-provider files + 1 shared infrastructure file.
+- **New files created:**
+  - `file_age.go` — FileAgeProvider (from metrics.go)
+  - `file_freshness.go` — FileFreshnessProvider (from metrics.go)
+  - `author_count.go` — AuthorCountProvider (from metrics.go)
+  - `commit_count.go` — CommitCountProvider (from metrics.go)
+  - `total_lines_added.go` — TotalLinesAddedProvider (from churn_metrics.go)
+  - `total_lines_removed.go` — TotalLinesRemovedProvider (from churn_metrics.go)
+  - `commit_density.go` — CommitDensityProvider (from churn_metrics.go)
+- **metrics.go retained:** All 7 metric name constants, `IsGitMetric()`, `loadGitMetric()`, `loadGitMeasureMetric()`, `walkGitFiles()`.
+- **churn_metrics.go deleted:** All providers moved to individual files.
+- **register.go unchanged:** Still registers all 7 providers.
+- **Verification:** Build passed, all 16 test packages passed (0.744s total).
+- **Pattern:** Each metric provider in its own file improves navigability and reduces file length. The shared helper functions remain accessible to all providers within the git package.
+- **PR:** #146, branch `squad/134-metric-files`.
