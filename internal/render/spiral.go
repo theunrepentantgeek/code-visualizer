@@ -23,6 +23,15 @@ const (
 	spiralTrackMinSteps = 500
 )
 
+// spiralBorderWidth returns the border stroke width for a spiral disc.
+func spiralBorderWidth(discRadius float64) float64 {
+	if discRadius < 8 {
+		return 2.0
+	}
+
+	return 3.0
+}
+
 // spiralTrackSteps returns the number of interpolation steps for the track curve.
 // Uses the greater of 500 and 3× the node count to ensure the track never skips
 // over nodes on tightly-wound spirals.
@@ -172,7 +181,7 @@ func drawSingleSpot(dc *gg.Context, n spiral.SpiralNode) {
 	}
 
 	dc.SetColor(border)
-	dc.SetLineWidth(1.0)
+	dc.SetLineWidth(spiralBorderWidth(n.DiscRadius))
 	dc.DrawCircle(n.X, n.Y, n.DiscRadius)
 	dc.Stroke()
 }

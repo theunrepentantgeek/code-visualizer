@@ -85,6 +85,23 @@ func computeTotalAngle(n, spotsPerLap int) float64 {
 	return float64(n-1) * (2 * math.Pi / float64(spotsPerLap))
 }
 
+// MaxDiscRadius returns the maximum disc radius that avoids overlap for the
+// given layout parameters. Use this to clamp disc sizes in the CLI layer.
+func MaxDiscRadius(
+	bucketCount int,
+	width int,
+	height int,
+	resolution Resolution,
+) float64 {
+	if bucketCount == 0 {
+		return defaultDiscRadius
+	}
+
+	params := computeSpiralParams(bucketCount, width, height, resolution)
+
+	return params.maxDisc
+}
+
 // computeMaxDisc calculates the maximum disc radius that avoids overlap.
 func computeMaxDisc(innerRadius, outerRadius float64, spotsPerLap int, totalAngle float64) float64 {
 	angularStep := 2 * math.Pi / float64(spotsPerLap)

@@ -215,7 +215,8 @@ func (c *SpiralCmd) layoutAndRender(
 	labels := c.resolveLabels(cfg)
 
 	nodes := spiral.Layout(buckets, width, height, resolution, labels)
-	applySpiralDiscSizes(nodes, buckets)
+	maxDisc := spiral.MaxDiscRadius(len(buckets), width, height, resolution)
+	applySpiralDiscSizes(nodes, buckets, maxDisc)
 
 	fillMetric, fillPaletteName := c.applyFill(nodes, buckets, cfg)
 	borderMetric, borderPaletteName := c.applyBorder(nodes, buckets, cfg)
@@ -532,13 +533,13 @@ func assignFilesToBuckets(buckets []spiral.TimeBucket, records []spiral.CommitRe
 	}
 }
 
-// emptyBucketRadius is the small disc radius for time buckets with no activity.
-// These are still drawn to preserve the smooth spiral shape.
-const emptyBucketRadius = 2.0
+// minDiscRadius is the minimum visible disc radius for active time buckets.
+const minDiscRadius = 3.0
 
 // applySpiralDiscSizes sets disc radii on nodes proportional to their size values.
-// Empty buckets (no activity) keep a small fixed radius to maintain spiral continuity.
-func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket) {
+// Empty buckets (no activity) get zero radius so they are not drawn.
+// Active buckets are clamped between minDiscRadius and maxDisc.
+func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket, maxDisc float64) {
 	maxSize := 0.0
 
 	for _, b := range buckets {
@@ -547,18 +548,22 @@ func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket
 		}
 	}
 
-	if maxSize == 0 {
-		return
-	}
-
 	for i := range nodes {
-		if buckets[i].SizeValue == 0 {
-			nodes[i].DiscRadius = emptyBucketRadius
-		} else {
-			ratio := buckets[i].SizeValue / maxSize
-			// sqrt scaling gives area-proportional discs
-			nodes[i].DiscRadius *= math.Sqrt(ratio)
+		if buckets[i].SizeValue == 0 && len(buckets[i].Files) == 0 {
+			nodes[i].DiscRadius = 0
+
+			continue
 		}
+
+		if maxSize == 0 {
+			nodes[i].DiscRadius = minDiscRadius
+
+			continue
+		}
+
+		ratio := buckets[i].SizeValue / maxSize
+		scaled := nodes[i].DiscRadius * math.Sqrt(ratio)
+		nodes[i].DiscRadius = max(minDiscRadius, min(scaled, maxDisc))
 	}
 }
 
