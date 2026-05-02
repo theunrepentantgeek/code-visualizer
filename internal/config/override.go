@@ -21,4 +21,3 @@ func overrideMetricSpec(dst **MetricSpec, v MetricSpec) {
 		*dst = &v
 	}
 }
-

@@ -1,3 +1,4 @@
+//nolint:dupl // Different visualization types will evolve in different ways
 package config
 
 // Radial holds persistent configuration for radial tree visualizations.
