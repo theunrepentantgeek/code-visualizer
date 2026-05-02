@@ -163,3 +163,23 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Spiral SVG renderer:** `internal/render/svg_spiral.go` — SVG `<path>` for guide curve, `<circle>` elements for spots, rotated `<text>` for labels. Reuses `colourToHex()`, `writeSVGTextRotated()` from shared helpers.
 - **Key pattern:** For flat-sequence visualizations, the renderer takes a `[]SpiralNode` slice (not a tree root). No recursive traversal needed — simple range loops over the slice for all three passes.
 - **Label orientation:** Spiral labels use clockwise-from-north angle convention (matching layout). Half-plane check at π (not π/2) because the spiral coordinate system differs from the radial tree's east-based system.
+
+### Terrain Palette — Issue #140 (2026-05-02)
+
+- **Status:** Ready for implementation.
+- **Scope:** Single-file change to `internal/palette/palette.go`. Four additions: constant, `validPalettes` entry, palette struct var, `palettes` map entry.
+- **Colours:** 8-step geographic terrain progression (sea → snow). Ordered palette.
+- **Test:** Add test in `palette_test.go` following existing pattern (length check, ordered flag, first/last colour bounds).
+- **Integration:** Auto-discovery via `Names()` function — no other registration needed.
+- **Effort:** Small (<1 hour).
+
+### New Git Metrics — Issue #136 (2026-05-02)
+
+- **Status:** Ready for implementation (Phase 1 in progress).
+- **Scope:** Three new metrics: `total-lines-added` (Quantity), `total-lines-removed` (Quantity), `commit-density` (Measure/float64).
+- **Key decision:** Extend `commitData` struct in `internal/provider/git/service.go` with `linesAdded`/`linesRemoved` fields, computed during existing `fetchCommitData()` walk. Patch computation is expensive but cached per-file.
+- **Phases:** (1) Extend commitData + patch stats collection (2) Add provider structs (3) Register providers (4) Update IsGitMetric() (5) Tests.
+- **Files:** 4 modifications in `internal/provider/git/` + new tests.
+- **Commit-density formula:** `commit_count / max(file_age_months, 1)` — intuitive (commits/month), avoids division-by-zero.
+- **Risk:** Patch computation performance on large histories. Mitigation: caching + opt-in flag (if needed).
+- **Next:** Coordinate with Lambert for Phase 5 test suite.
