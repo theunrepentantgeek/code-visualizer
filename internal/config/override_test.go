@@ -36,6 +36,15 @@ func TestConfig_OverrideHeight_SetsWhenNonZero(t *testing.T) {
 	g.Expect(*cfg.Height).To(Equal(1440))
 }
 
+func TestConfig_OverrideHeight_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := New()
+	original := *cfg.Height
+	cfg.OverrideHeight(0)
+	g.Expect(*cfg.Height).To(Equal(original))
+}
+
 // Treemap overrides
 
 func TestTreemap_OverrideSize_SetsWhenNonEmpty(t *testing.T) {
@@ -123,6 +132,76 @@ func TestBubbletree_OverrideLabels_SetsWhenNonEmpty(t *testing.T) {
 	b := &Bubbletree{}
 	b.OverrideLabels("folders")
 	g.Expect(*b.Labels).To(Equal("folders"))
+}
+
+func TestBubbletree_OverrideFill_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	b := &Bubbletree{}
+	spec := MetricSpec{Metric: metric.Name("file-lines"), Palette: palette.PaletteName("foliage")}
+	b.OverrideFill(spec)
+	g.Expect(*b.Fill).To(Equal(spec))
+}
+
+func TestBubbletree_OverrideFill_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	b := &Bubbletree{Fill: &existing}
+	b.OverrideFill(MetricSpec{})
+	g.Expect(*b.Fill).To(Equal(existing))
+}
+
+func TestBubbletree_OverrideBorder_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	b := &Bubbletree{}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.PaletteName("fire")}
+	b.OverrideBorder(spec)
+	g.Expect(*b.Border).To(Equal(spec))
+}
+
+func TestBubbletree_OverrideBorder_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	b := &Bubbletree{Border: &existing}
+	b.OverrideBorder(MetricSpec{})
+	g.Expect(*b.Border).To(Equal(existing))
+}
+
+func TestBubbletree_OverrideLegend_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	b := &Bubbletree{}
+	b.OverrideLegend("top-right")
+	g.Expect(*b.Legend).To(Equal("top-right"))
+}
+
+func TestBubbletree_OverrideLegend_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "bottom-left"
+	b := &Bubbletree{Legend: &existing}
+	b.OverrideLegend("")
+	g.Expect(*b.Legend).To(Equal("bottom-left"))
+}
+
+func TestBubbletree_OverrideLegendOrientation_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	b := &Bubbletree{}
+	b.OverrideLegendOrientation("horizontal")
+	g.Expect(*b.LegendOrientation).To(Equal("horizontal"))
+}
+
+func TestBubbletree_OverrideLegendOrientation_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "vertical"
+	b := &Bubbletree{LegendOrientation: &existing}
+	b.OverrideLegendOrientation("")
+	g.Expect(*b.LegendOrientation).To(Equal("vertical"))
 }
 
 // Spiral overrides

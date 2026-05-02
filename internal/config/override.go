@@ -22,8 +22,3 @@ func overrideMetricSpec(dst **MetricSpec, v MetricSpec) {
 	}
 }
 
-// OverrideWidth sets Width to v if v is non-zero.
-func (c *Config) OverrideWidth(v int) { overrideInt(&c.Width, v) }
-
-// OverrideHeight sets Height to v if v is non-zero.
-func (c *Config) OverrideHeight(v int) { overrideInt(&c.Height, v) }

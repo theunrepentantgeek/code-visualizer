@@ -94,7 +94,7 @@ func changedInRootCommit(c *object.Commit, filePaths map[string]bool) []string {
 		return nil
 	}
 
-	var changed []string
+	changed := make([]string, 0, len(filePaths))
 
 	for path := range filePaths {
 		if _, err := tree.File(path); err == nil {
