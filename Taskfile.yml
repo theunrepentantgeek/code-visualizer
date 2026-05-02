@@ -49,6 +49,7 @@ tasks:
       - gofumpt -w .
       - go mod tidy
       - go fix ./...
+      - golangci-lint-custom version
       - golangci-lint-custom run --fix --verbose
 
   ci:
