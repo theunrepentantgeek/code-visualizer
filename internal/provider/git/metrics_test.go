@@ -626,3 +626,212 @@ func TestCommitCountProvider_SubdirectoryScanning(t *testing.T) {
 	g.Expect(ok).To(BeTrue(), "commit-count metric should be set for file in subdirectory")
 	g.Expect(count).To(Equal(int64(1)), "code.go was committed once")
 }
+
+func TestIsGitMetric_NewMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(IsGitMetric(TotalLinesAdded)).To(BeTrue())
+	g.Expect(IsGitMetric(TotalLinesRemoved)).To(BeTrue())
+	g.Expect(IsGitMetric(CommitDensity)).To(BeTrue())
+}
+
+func TestTotalLinesAddedProviderMetadata(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := &TotalLinesAddedProvider{}
+	g.Expect(p.Name()).To(Equal(TotalLinesAdded))
+	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+	g.Expect(p.Dependencies()).To(BeNil())
+}
+
+func TestTotalLinesRemovedProviderMetadata(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := &TotalLinesRemovedProvider{}
+	g.Expect(p.Name()).To(Equal(TotalLinesRemoved))
+	g.Expect(p.Kind()).To(Equal(metric.Quantity))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+	g.Expect(p.Dependencies()).To(BeNil())
+}
+
+func TestCommitDensityProviderMetadata(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := &CommitDensityProvider{}
+	g.Expect(p.Name()).To(Equal(CommitDensity))
+	g.Expect(p.Kind()).To(Equal(metric.Measure))
+	g.Expect(p.Description()).NotTo(BeEmpty())
+	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
+	g.Expect(p.Dependencies()).To(BeNil())
+}
+
+// setupDiffRepo creates a git repo with a file that has measurable additions
+// and removals across multiple commits.
+func setupDiffRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+
+	run := func(args ...string) {
+		t.Helper()
+
+		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
+		cmd.Dir = dir
+
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=Alice",
+			"GIT_AUTHOR_EMAIL=alice@example.com",
+			"GIT_COMMITTER_NAME=Alice",
+			"GIT_COMMITTER_EMAIL=alice@example.com",
+		)
+
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("command %v failed: %s\n%s", args, err, out)
+		}
+	}
+
+	run("git", "init")
+	run("git", "config", "user.name", "Alice")
+	run("git", "config", "user.email", "alice@example.com")
+
+	// Commit 1: create file with 3 lines (creation commit — excluded from stats)
+	_ = os.WriteFile(filepath.Join(dir, "churn.go"),
+		[]byte("line1\nline2\nline3\n"), 0o600)
+
+	run("git", "add", ".")
+	run("git", "commit", "-m", "initial", "--date=2024-01-01T00:00:00+00:00")
+
+	// Commit 2: add 2 lines (total: 5 lines)
+	_ = os.WriteFile(filepath.Join(dir, "churn.go"),
+		[]byte("line1\nline2\nline3\nline4\nline5\n"), 0o600)
+
+	run("git", "add", ".")
+	run("git", "commit", "-m", "add lines", "--date=2024-02-01T00:00:00+00:00")
+
+	// Commit 3: remove 1 line, add 1 line (replace line2 with lineX)
+	_ = os.WriteFile(filepath.Join(dir, "churn.go"),
+		[]byte("line1\nlineX\nline3\nline4\nline5\n"), 0o600)
+
+	run("git", "add", ".")
+	run("git", "commit", "-m", "modify", "--date=2024-03-01T00:00:00+00:00")
+
+	// Also create a stable file with no changes after creation
+	_ = os.WriteFile(filepath.Join(dir, "stable.go"),
+		[]byte("package stable\n"), 0o600)
+
+	run("git", "add", ".")
+	run("git", "commit", "-m", "add stable", "--date=2024-03-15T00:00:00+00:00")
+
+	return dir
+}
+
+func TestTotalLinesAddedProvider(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+	root := buildTree(dir, "churn.go", "stable.go")
+
+	resetService()
+
+	p := &TotalLinesAddedProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// churn.go: commit 2 adds 2 lines, commit 3 adds 1 line = 3 total
+	added, ok := root.Files[0].Quantity(TotalLinesAdded)
+	g.Expect(ok).To(BeTrue(), "total-lines-added should be set for churn.go")
+	g.Expect(added).To(Equal(int64(3)), "churn.go: 2 lines in commit 2 + 1 line in commit 3")
+
+	// stable.go: created in a non-root commit but only has the creation commit
+	// (no subsequent modifications) — should be 0
+	added, ok = root.Files[1].Quantity(TotalLinesAdded)
+	g.Expect(ok).To(BeTrue(), "total-lines-added should be set for stable.go")
+	g.Expect(added).To(Equal(int64(0)), "stable.go has no modifications after creation")
+}
+
+func TestTotalLinesRemovedProvider(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+	root := buildTree(dir, "churn.go", "stable.go")
+
+	resetService()
+
+	p := &TotalLinesRemovedProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// churn.go: commit 3 removes 1 line (line2 → lineX) = 1 total
+	removed, ok := root.Files[0].Quantity(TotalLinesRemoved)
+	g.Expect(ok).To(BeTrue(), "total-lines-removed should be set for churn.go")
+	g.Expect(removed).To(Equal(int64(1)), "churn.go: 1 line removed in commit 3")
+
+	// stable.go: no removals
+	removed, ok = root.Files[1].Quantity(TotalLinesRemoved)
+	g.Expect(ok).To(BeTrue(), "total-lines-removed should be set for stable.go")
+	g.Expect(removed).To(Equal(int64(0)), "stable.go has no modifications")
+}
+
+func TestCommitDensityProvider(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+	root := buildTree(dir, "churn.go")
+
+	resetService()
+
+	p := &CommitDensityProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// churn.go: 3 commits, age > 1 month. Density = 3 / age_months.
+	density, ok := root.Files[0].Measure(CommitDensity)
+	g.Expect(ok).To(BeTrue(), "commit-density should be set for churn.go")
+	g.Expect(density).To(BeNumerically(">", 0), "commit-density should be positive")
+	// With ~18 months of age: 3/18 ≈ 0.17. Allow a wide range for time passing.
+	g.Expect(density).To(BeNumerically("<", 3), "commit-density should be reasonable")
+}
+
+func TestCommitDensityProvider_YoungFile(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t) // new.go was just committed
+	root := buildTree(dir, "new.go")
+
+	resetService()
+
+	p := &CommitDensityProvider{}
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// new.go: 1 commit, age < 1 month → clamped to 1 month. Density = 1/1 = 1.0
+	density, ok := root.Files[0].Measure(CommitDensity)
+	g.Expect(ok).To(BeTrue(), "commit-density should be set for new.go")
+	g.Expect(density).To(BeNumerically("~", 1.0, 0.01),
+		"young file with 1 commit should have density ≈ 1.0")
+}
+
+func TestTotalLinesAdded_NotAGitRepo(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	root := buildTree(dir, "file.go")
+
+	resetService()
+
+	p := &TotalLinesAddedProvider{}
+	err := p.Load(root)
+	g.Expect(err).To(MatchError(ContainSubstring("git")))
+}
