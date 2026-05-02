@@ -703,3 +703,40 @@ The architecture proposal was written before MetricSpec consolidation (#118/#120
 - `cmd/codeviz/spiral_cmd.go` uses `config.MetricSpec` for Fill/Border CLI flags
 - `internal/config/spiral.go` uses `*MetricSpec` for Fill/Border config fields
 - No `FillPalette`/`BorderPalette` separate fields exist on spiral config or CLI
+
+---
+
+### PR #144 & #145 Review Outcomes
+
+**Author:** Ripley  
+**Date:** 2026-05-02  
+**Status:** Decision Made
+
+## PR #144 — Fix Spiral Visualization Bugs (Fixes #139)
+
+**Decision:** Changes requested (unable to submit review via gh; own PRs)
+
+**What looks good**
+- Empty bucket handling and size clamping are aligned with the research direction.
+- Shared `spiralBorderWidth` is used in both PNG and SVG renderers, keeping parity.
+- `MaxDiscRadius` is exposed from layout and used to clamp disc sizes.
+
+**Blocker**
+- `applySpiralDiscSizes` still returns early when `maxSize == 0`, which means empty buckets retain the default disc radius if all size values are zero. This violates the "no commits → no dot" requirement in that edge case (e.g., size metric set to a value that is zero for all files).
+
+**Requested change**
+- Ensure empty buckets get `DiscRadius = 0` even when `maxSize == 0` (e.g., move the empty-bucket handling ahead of the `maxSize == 0` return, and default active buckets to `minDiscRadius` if needed).
+
+## PR #145 — Add New Git Metrics (Fixes #136)
+
+**Decision:** Approved (unable to submit review via gh; own PRs)
+
+**Summary**
+- Requirements are met: new metrics added, `commitData` extended, Patch API used for churn stats, commit-density matches spec, registration and `IsGitMetric` updated.
+- Tests cover metadata, churn calculations, density edge cases, and non-git error handling.
+
+## Notes
+
+- PR #144 edge case was fixed by Dallas (moved empty-bucket handling before maxSize check).
+- `task ci` not available in environment (task not installed).
+- `go test ./...` passes locally.
