@@ -548,29 +548,22 @@ func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket
 		}
 	}
 
-	// Zero out empty buckets first (before maxSize==0 check)
 	for i := range nodes {
 		if buckets[i].SizeValue == 0 && len(buckets[i].Files) == 0 {
 			nodes[i].DiscRadius = 0
-		}
-	}
 
-	if maxSize == 0 {
-		// All remaining active buckets get minDiscRadius
-		for i := range nodes {
-			if nodes[i].DiscRadius != 0 {
-				nodes[i].DiscRadius = minDiscRadius
-			}
+			continue
 		}
-		return
-	}
 
-	for i := range nodes {
-		if nodes[i].DiscRadius != 0 {
-			ratio := buckets[i].SizeValue / maxSize
-			scaled := nodes[i].DiscRadius * math.Sqrt(ratio)
-			nodes[i].DiscRadius = max(minDiscRadius, min(scaled, maxDisc))
+		if maxSize == 0 {
+			nodes[i].DiscRadius = minDiscRadius
+
+			continue
 		}
+
+		ratio := buckets[i].SizeValue / maxSize
+		scaled := nodes[i].DiscRadius * math.Sqrt(ratio)
+		nodes[i].DiscRadius = max(minDiscRadius, min(scaled, maxDisc))
 	}
 }
 
