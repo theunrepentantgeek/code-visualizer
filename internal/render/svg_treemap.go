@@ -72,10 +72,11 @@ func writeSVGDirectoryHeader(f *os.File, rect treemap.TreemapRectangle) {
 	}
 
 	// Border
-	fmt.Fprintf(f, `<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="none" stroke="%s" stroke-width="1"/>
+	fmt.Fprintf(f, `<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="none" stroke="%s" stroke-width="%.1f"/>
 `,
 		rect.X, rect.Y, rect.W, rect.H,
-		colourToHex(structuralBorder))
+		colourToHex(structuralBorder),
+		treemapBorderWidth(rect.W, rect.H, rect.BorderColour))
 }
 
 func writeSVGFileRect(f *os.File, rect treemap.TreemapRectangle) {
@@ -93,10 +94,11 @@ func writeSVGFileRect(f *os.File, rect treemap.TreemapRectangle) {
 		border = *rect.BorderColour
 	}
 
-	fmt.Fprintf(f, `<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="%s" stroke-width="1"/>
+	fmt.Fprintf(f, `<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>
 `,
 		rect.X, rect.Y, rect.W, rect.H,
-		colourToHex(fill), colourToHex(border))
+		colourToHex(fill), colourToHex(border),
+		treemapBorderWidth(rect.W, rect.H, rect.BorderColour))
 
 	// Label
 	if ShouldShowLabel(rect) {
