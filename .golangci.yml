@@ -76,6 +76,8 @@ linters:
   disable:
     - musttag # Extremely slow, at least on CI machines
   settings:
+    goconst:
+      ignore-tests: true
     nestif:
       min-complexity: 10
     gocognit:

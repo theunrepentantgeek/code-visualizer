@@ -417,7 +417,7 @@ func (*SpiralCmd) filterBinaryFiles(cfg *config.Spiral, root *model.Directory) e
 
 	if afterCount == 0 {
 		return &noFilesAfterFilterError{
-			msg: "no files available for visualization after excluding binary files",
+			msg: noFilesAfterFilterMsg,
 		}
 	}
 	// Update root in place — avoid struct copy which would copy the mutex.

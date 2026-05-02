@@ -349,7 +349,7 @@ func (*BubbletreeCmd) filterBinaryFiles(cfg *config.Bubbletree, root *model.Dire
 
 	if afterCount == 0 {
 		return &noFilesAfterFilterError{
-			msg: "no files available for visualization after excluding binary files",
+			msg: noFilesAfterFilterMsg,
 		}
 	}
 	// Update root in place — avoid struct copy which would copy the mutex.

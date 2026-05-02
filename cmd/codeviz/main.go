@@ -180,6 +180,8 @@ type outputPathError struct {
 
 func (e *outputPathError) Error() string { return e.msg }
 
+const noFilesAfterFilterMsg = "no files available for visualization after excluding binary files"
+
 type noFilesAfterFilterError struct {
 	msg string
 }
