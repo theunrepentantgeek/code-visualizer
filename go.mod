@@ -10,7 +10,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/lmittmann/tint v1.1.3
 	github.com/nikolaydubina/treemap v1.2.5
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/gomega v1.40.0
 	github.com/rotisserie/eris v0.5.4
 	github.com/sebdah/goldie/v2 v2.8.0
 	go.yaml.in/yaml/v3 v3.0.4
