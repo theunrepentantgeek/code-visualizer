@@ -51,6 +51,7 @@ func TestPaletteName_IsValid(t *testing.T) {
 	g.Expect(Temperature.IsValid()).To(BeTrue())
 	g.Expect(GoodBad.IsValid()).To(BeTrue())
 	g.Expect(Foliage.IsValid()).To(BeTrue())
+	g.Expect(Terrain.IsValid()).To(BeTrue())
 	g.Expect(PaletteName("invalid").IsValid()).To(BeFalse())
 }
 
@@ -120,11 +121,30 @@ func TestFoliagePalette(t *testing.T) {
 	g.Expect(last.G).To(BeNumerically(">", last.B))
 }
 
+func TestTerrainPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := GetPalette(Terrain)
+	g.Expect(p.Colours).To(HaveLen(8))
+	g.Expect(p.Ordered).To(BeTrue())
+	g.Expect(p.Name).To(Equal(Terrain))
+
+	// First step: sea (blue-dominant)
+	g.Expect(p.Colours[0].B).To(BeNumerically(">", p.Colours[0].R))
+	g.Expect(p.Colours[0].B).To(BeNumerically(">", p.Colours[0].G))
+	// Last step: snow (near white)
+	last := p.Colours[7]
+	g.Expect(last.R).To(BeNumerically(">=", 230))
+	g.Expect(last.G).To(BeNumerically(">=", 230))
+	g.Expect(last.B).To(BeNumerically(">=", 230))
+}
+
 func TestWCAGContrastRatio(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	for _, name := range []PaletteName{Neutral, Temperature, GoodBad, Categorization, Foliage} {
+	for _, name := range []PaletteName{Neutral, Temperature, GoodBad, Categorization, Foliage, Terrain} {
 		p := GetPalette(name)
 		if !p.Ordered {
 			continue // skip unordered palettes for adjacent contrast check
@@ -146,8 +166,8 @@ func TestNames_ReturnsAllPaletteNames(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	names := Names()
-	g.Expect(names).To(HaveLen(5))
-	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage))
+	g.Expect(names).To(HaveLen(6))
+	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage, Terrain))
 }
 
 func TestNames_ReturnsSortedSlice(t *testing.T) {
@@ -167,14 +187,14 @@ func TestInfos_ReturnsAllPalettes(t *testing.T) {
 
 	infos := Infos()
 
-	g.Expect(infos).To(HaveLen(5))
+	g.Expect(infos).To(HaveLen(6))
 
 	names := make([]PaletteName, 0, len(infos))
 	for _, info := range infos {
 		names = append(names, info.Name)
 	}
 
-	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage))
+	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage, Terrain))
 }
 
 func TestInfos_EachEntryHasNonEmptyDescription(t *testing.T) {

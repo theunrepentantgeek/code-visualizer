@@ -139,3 +139,21 @@
 **Expected compile errors:** 4 (layout, provider, result type definitions)
 
 **Next:** Bind Dallas's layout output to CLI result. Provider integration for file → bucket → node → position flow.
+
+
+### Bug #141 — Treemap Borders Too Narrow (2026-05-02)
+
+- **Status:** Research complete, ready for implementation.
+- **Scope:** Render-layer only. Four locations across two files: `internal/render/renderer.go` (drawFileRect, drawDirectoryHeader) and `internal/render/svg_treemap.go` (writeSVGFileRect, writeSVGDirectoryHeader).
+- **Root cause:** Hardcoded `SetLineWidth(1)` and `stroke-width="1"` for all rectangles.
+- **Solution:** Implement `treemapBorderWidth(w, h, hasMetric)` helper. Logic: no-metric→0.5px hairline, small (<20px)→1.0px, large (>100px)→3.0px, else→2.0px. Thresholds are suggestions, tune visually.
+- **No layout changes needed** — purely render-time decision based on existing rectangle geometry.
+- **Implementation note:** Update both PNG and SVG renderers in parallel for parity.
+
+### Bug #139 — Spiral Visualization Issues (2026-05-02)
+
+- **Status:** Research complete. Three sub-issues with distinct root causes.
+- **Sub-issue 1 (Empty dots):** `applySpiralDiscSizes()` sets `emptyBucketRadius=2.0` (cmd/codeviz/spiral_cmd.go:555-556). Fix: Set radius to 0 for empty buckets.
+- **Sub-issue 2 (Disc size constraints):** `computeMaxDisc()` exists (internal/spiral/layout.go:89-106) but not exposed. Fix: Expose maxDisc via API, apply min/max clamping in CLI scaling (cmd/codeviz/spiral_cmd.go).
+- **Sub-issue 3 (Border width):** `drawSingleSpot()` hardcodes 1px (internal/render/spiral.go:175). Fix: Implement `spiralBorderWidth(discRadius)` helper — threshold 8px: return 2.0, else 3.0.
+- **Routing:** Can split across two PRs: PR1 (sub-issues 1&3, render+CLI), PR2 (sub-issue 2, layout API+CLI).

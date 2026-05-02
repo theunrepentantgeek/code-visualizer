@@ -17,6 +17,7 @@ const (
 	GoodBad        PaletteName = "good-bad"
 	Neutral        PaletteName = "neutral"
 	Foliage        PaletteName = "foliage"
+	Terrain        PaletteName = "terrain"
 )
 
 var validPalettes = map[PaletteName]struct{}{
@@ -25,6 +26,7 @@ var validPalettes = map[PaletteName]struct{}{
 	GoodBad:        {},
 	Neutral:        {},
 	Foliage:        {},
+	Terrain:        {},
 }
 
 func (p PaletteName) IsValid() bool {
@@ -65,6 +67,7 @@ var palettes = map[PaletteName]ColourPalette{
 	Temperature:    temperaturePalette,
 	GoodBad:        goodBadPalette,
 	Foliage:        foliagePalette,
+	Terrain:        terrainPalette,
 }
 
 // Categorization palette: 12 visually distinct unordered colours (ColorBrewer Paired).
@@ -151,6 +154,25 @@ var foliagePalette = ColourPalette{
 		{R: 165, G: 200, B: 50, A: 255}, // yellow-green
 		{R: 80, G: 165, B: 40, A: 255},  // medium green
 		{R: 25, G: 120, B: 20, A: 255},  // intense green
+	},
+}
+
+// Terrain palette: 8 steps, sea → surf → sand → grass → farm → forest → rocks → snow.
+//
+//nolint:dupl // palette declarations are structurally identical by design
+var terrainPalette = ColourPalette{
+	Name:        Terrain,
+	Description: "Geographic terrain progression (sea → surf → sand → grass → farm → forest → rocks → snow). Evokes elevation or layered depth.",
+	Ordered:     true,
+	Colours: []color.RGBA{
+		{R: 26, G: 82, B: 118, A: 255},  // sea
+		{R: 93, G: 173, B: 226, A: 255}, // surf
+		{R: 244, G: 208, B: 63, A: 255}, // sand
+		{R: 130, G: 224, B: 170, A: 255}, // grass
+		{R: 82, G: 190, B: 128, A: 255},  // farm
+		{R: 30, G: 132, B: 73, A: 255},   // forest
+		{R: 110, G: 44, B: 0, A: 255},    // rocks
+		{R: 240, G: 243, B: 244, A: 255}, // snow
 	},
 }
 
