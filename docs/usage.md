@@ -6,7 +6,7 @@
 codeviz [global flags] render <subcommand> [flags] <target-path>
 ```
 
-Subcommands: `treemap`, `radial`, `bubbletree`
+Subcommands: `treemap`, `radial`, `bubbletree`, `spiral`
 
 ## Global Flags
 
@@ -36,7 +36,7 @@ codeviz render treemap [flags] <target-path>
 | Flag       | Short | Values                                                                  | Description               |
 | ---------- | ----- | ----------------------------------------------------------------------- | ------------------------- |
 | `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                         | Output image file path    |
-| `--size`   | `-s`  | `file-size`, `file-lines`, `file-age`, `file-freshness`, `author-count` | Metric for rectangle area |
+| `--size`   | `-s`  | see `codeviz help-metrics`                                              | Metric for rectangle area |
 
 ### Optional Flags
 
@@ -65,7 +65,7 @@ codeviz render radial [flags] <target-path>
 | Flag          | Short | Values                                                                  | Description            |
 | ------------- | ----- | ----------------------------------------------------------------------- | ---------------------- |
 | `--output`    | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                         | Output image file path |
-| `--disc-size` | `-d`  | `file-size`, `file-lines`, `file-age`, `file-freshness`, `author-count` | Metric for disc size   |
+| `--disc-size` | `-d`  | see `codeviz help-metrics`                                              | Metric for disc size   |
 
 ### Optional Flags
 
@@ -95,7 +95,7 @@ codeviz render bubbletree [flags] <target-path>
 | Flag       | Short | Values                                                                  | Description            |
 | ---------- | ----- | ----------------------------------------------------------------------- | ---------------------- |
 | `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`                                         | Output image file path |
-| `--size`   | `-s`  | `file-size`, `file-lines`, `file-age`, `file-freshness`, `author-count` | Metric for circle size |
+| `--size`   | `-s`  | see `codeviz help-metrics`                                              | Metric for circle size |
 
 ### Optional Flags
 
@@ -110,24 +110,61 @@ codeviz render bubbletree [flags] <target-path>
 | `--height`         |       | `1080`         | Image height in pixels                                        |
 | `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
+## `render spiral`
+
+Generate a spiral visualization showing git commit history over time.
+Each lap of the spiral represents one time period (day or hour); each file is a disc sized by an optional metric.
+Requires the target directory to be inside a git repository.
+
+### Synopsis
+
+```
+codeviz render spiral [flags] <target-path>
+```
+
+### Required Flags
+
+| Flag       | Short | Values                          | Description            |
+| ---------- | ----- | ------------------------------- | ---------------------- |
+| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path |
+
+### Optional Flags
+
+| Flag                  | Short | Default        | Description                                                   |
+| --------------------- | ----- | -------------- | ------------------------------------------------------------- |
+| `--size`              | `-s`  | none           | Metric for disc size; see `codeviz help-metrics`              |
+| `--fill`              | `-f`  | none           | Metric for fill colour                                        |
+| `--fill-palette`      |       | metric default | Palette for fill colour                                       |
+| `--border`            | `-b`  | none           | Metric for border colour                                      |
+| `--border-palette`    |       | metric default | Palette for border colour                                     |
+| `--resolution`        | `-r`  | `daily`        | Time resolution: `daily` or `hourly`                          |
+| `--labels`            |       | `laps`         | Labels to display: `all`, `laps`, or `none`                   |
+| `--width`             |       | `1920`         | Image width in pixels                                         |
+| `--height`            |       | `1920`         | Image height in pixels                                        |
+| `--filter`            |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
+
 ## Shared Concepts
 
 ### Metric values
 
-| Metric           | Valid for `--size`/`--disc-size` | Valid for `--fill`/`--border` | Description                       |
-| ---------------- | :------------------------------: | :---------------------------: | --------------------------------- |
-| `file-size`      |                ✓                 |               ✓               | File size in bytes                |
-| `file-lines`     |                ✓                 |               ✓               | Number of non-binary lines        |
-| `file-age`       |            ✓ *(git)*             |           ✓ *(git)*           | Time since first commit (days)    |
-| `file-freshness` |            ✓ *(git)*             |           ✓ *(git)*           | Time since last commit (days)     |
-| `author-count`   |            ✓ *(git)*             |           ✓ *(git)*           | Number of distinct commit authors |
-| `file-type`      |                —                 |               ✓               | File extension category           |
+| Metric                 | Valid for `--size`/`--disc-size` | Valid for `--fill`/`--border` | Description                                         |
+| ---------------------- | :------------------------------: | :---------------------------: | --------------------------------------------------- |
+| `file-size`            |                ✓                 |               ✓               | File size in bytes                                  |
+| `file-lines`           |                ✓                 |               ✓               | Number of non-binary lines                          |
+| `file-age`             |            ✓ *(git)*             |           ✓ *(git)*           | Time since first commit (days)                      |
+| `file-freshness`       |            ✓ *(git)*             |           ✓ *(git)*           | Time since last commit (days)                       |
+| `author-count`         |            ✓ *(git)*             |           ✓ *(git)*           | Number of distinct commit authors                   |
+| `commit-count`         |            ✓ *(git)*             |           ✓ *(git)*           | Total number of commits touching the file           |
+| `total-lines-added`    |            ✓ *(git)*             |           ✓ *(git)*           | Accumulated lines added across all commits          |
+| `total-lines-removed`  |            ✓ *(git)*             |           ✓ *(git)*           | Accumulated lines removed across all commits        |
+| `commit-density`       |            ✓ *(git)*             |           ✓ *(git)*           | Commits per month of file lifetime                  |
+| `file-type`            |                —                 |               ✓               | File extension category                             |
 
 Metrics marked *(git)* require the target directory to be inside a git repository.
 
 ### Palette values
 
-`categorization`, `temperature`, `good-bad`, `neutral`, `foliage`
+`categorization`, `temperature`, `good-bad`, `neutral`, `foliage`, `terrain`
 
 See [palettes.md](palettes.md) for detailed descriptions and colour samples.
 

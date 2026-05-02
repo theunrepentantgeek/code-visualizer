@@ -29,7 +29,7 @@ type SpiralCmd struct {
 
 	Resolution string `short:"r" help:"Time resolution (hourly or daily)." enum:",hourly,daily" default:""`
 
-	Size metric.Name `default:"" enum:",file-size,file-lines,file-age,file-freshness,author-count" help:"Numeric metric for disc size." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Size metric.Name `default:"" help:"Metric for disc size; run 'codeviz help-metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
