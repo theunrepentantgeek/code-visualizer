@@ -123,3 +123,23 @@ Use for metrics where higher values represent vitality or activity.
 | 9 | `#A5C832` | 165, 200, 50 | Yellow-green |
 | 10 | `#50A528` | 80, 165, 40 | Medium green |
 | 11 | `#197814` | 25, 120, 20 | Intense green |
+
+## Terrain
+
+**Name:** `terrain` · **Steps:** 8 · **Ordered:** Yes
+
+A geographic terrain progression from deep water through surf, sand, grass, and agricultural land to forest, rocks, and finally snow.
+Evokes elevation or layered depth. Ideal for visualizing spatial or hierarchical data with natural visual associations.
+
+![Terrain palette swatch](palette-terrain.png)
+
+| Step | Hex | RGB | Description |
+|------|-----|-----|-------------|
+| 1 | `#1A5276` | 26, 82, 118 | Sea |
+| 2 | `#5DADE2` | 93, 173, 226 | Surf |
+| 3 | `#F4D03F` | 244, 208, 63 | Sand |
+| 4 | `#82E0AA` | 130, 224, 170 | Grass |
+| 5 | `#52BE80` | 82, 190, 128 | Farm |
+| 6 | `#1E8449` | 30, 132, 73 | Forest |
+| 7 | `#6E2C00` | 110, 44, 0 | Rocks |
+| 8 | `#F0F3F4` | 240, 243, 244 | Snow |
