@@ -81,7 +81,7 @@ func drawDirectoryHeader(dc *gg.Context, rect treemap.TreemapRectangle) {
 
 	// Border around entire directory group
 	dc.SetColor(structuralBorder)
-	dc.SetLineWidth(treemapBorderWidth(rect.W, rect.H, rect.BorderColour != nil))
+	dc.SetLineWidth(treemapBorderWidth(rect.W, rect.H, rect.BorderColour))
 	dc.DrawRectangle(rect.X, rect.Y, rect.W, rect.H)
 	dc.Stroke()
 }
@@ -108,7 +108,7 @@ func drawFileRect(dc *gg.Context, rect treemap.TreemapRectangle) {
 		dc.SetColor(structuralBorder)
 	}
 
-	dc.SetLineWidth(treemapBorderWidth(rect.W, rect.H, rect.BorderColour != nil))
+	dc.SetLineWidth(treemapBorderWidth(rect.W, rect.H, rect.BorderColour))
 	dc.DrawRectangle(rect.X, rect.Y, rect.W, rect.H)
 	dc.Stroke()
 
@@ -122,8 +122,8 @@ func drawFileRect(dc *gg.Context, rect treemap.TreemapRectangle) {
 
 // treemapBorderWidth returns a dynamic border width based on rectangle size
 // and whether a border metric is configured.
-func treemapBorderWidth(w, h float64, hasMetric bool) float64 {
-	if !hasMetric {
+func treemapBorderWidth(w, h float64, borderColour *color.RGBA) float64 {
+	if borderColour == nil {
 		return 0.5
 	}
 

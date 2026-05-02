@@ -76,7 +76,7 @@ func writeSVGDirectoryHeader(f *os.File, rect treemap.TreemapRectangle) {
 `,
 		rect.X, rect.Y, rect.W, rect.H,
 		colourToHex(structuralBorder),
-		treemapBorderWidth(rect.W, rect.H, rect.BorderColour != nil))
+		treemapBorderWidth(rect.W, rect.H, rect.BorderColour))
 }
 
 func writeSVGFileRect(f *os.File, rect treemap.TreemapRectangle) {
@@ -98,7 +98,7 @@ func writeSVGFileRect(f *os.File, rect treemap.TreemapRectangle) {
 `,
 		rect.X, rect.Y, rect.W, rect.H,
 		colourToHex(fill), colourToHex(border),
-		treemapBorderWidth(rect.W, rect.H, rect.BorderColour != nil))
+		treemapBorderWidth(rect.W, rect.H, rect.BorderColour))
 
 	// Label
 	if ShouldShowLabel(rect) {
