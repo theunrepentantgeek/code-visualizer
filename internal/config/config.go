@@ -15,6 +15,12 @@ import (
 	"github.com/bevan/code-visualizer/internal/filter"
 )
 
+const (
+	extYAML = ".yaml"
+	extYML  = ".yml"
+	extJSON = ".json"
+)
+
 // Config is the root configuration struct for the application.
 // It is the single source of truth for all configuration, regardless of
 // whether values came from defaults, a config file, or CLI flags.
@@ -67,11 +73,11 @@ func (c *Config) Load(path string) error {
 	ext := strings.ToLower(filepath.Ext(path))
 
 	switch ext {
-	case ".yaml", ".yml":
+	case extYAML, extYML:
 		if err := yaml.Unmarshal(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
 		}
-	case ".json":
+	case extJSON:
 		if err := json.Unmarshal(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
 		}
@@ -114,12 +120,12 @@ func (c *Config) Save(path string) error {
 	)
 
 	switch ext {
-	case ".yaml", ".yml":
+	case extYAML, extYML:
 		data, err = yaml.Marshal(c)
 		if err != nil {
 			return eris.Wrap(err, "failed to marshal config to YAML")
 		}
-	case ".json":
+	case extJSON:
 		data, err = json.MarshalIndent(c, "", "  ")
 		if err != nil {
 			return eris.Wrap(err, "failed to marshal config to JSON")
@@ -152,7 +158,7 @@ func (c *Config) OverrideHeight(v int) { overrideInt(&c.Height, v) }
 func FindAutoConfig(outputPath string) (string, bool) {
 	base := strings.TrimSuffix(outputPath, filepath.Ext(outputPath))
 
-	for _, ext := range []string{".yml", ".yaml", ".json"} {
+	for _, ext := range []string{extYML, extYAML, extJSON} {
 		candidate := base + "-config" + ext
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate, true
