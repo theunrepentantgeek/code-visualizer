@@ -146,7 +146,7 @@ go-install gofumpt mvdan.cc/gofumpt@latest
 write-verbose "Checking for $TOOL_DEST/golangci-lint"
 if should-install "$TOOL_DEST/golangci-lint"; then
     write-info "Installing golangci-lint"
-    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$TOOL_DEST" v2.12.0 2>&1
+    curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b "$TOOL_DEST" v2.12.1 2>&1
 fi
 
 if should-install "$TOOL_DEST/golangci-lint-custom"; then
