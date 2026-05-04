@@ -1,15 +1,22 @@
 {
-  "last_run": "2026-05-03T12:37:45Z",
-  "last_run_id": "25279334570",
+  "last_run": "2026-05-04T13:14:30Z",
+  "last_run_id": "25321011193",
   "open_prs": [
     {
       "branch": "repo-assist/improve-spiral-render-tests-20260503",
+      "pr_number": 163,
       "description": "test(render): add spiral render smoke tests - PNG/JPG/SVG/empty/unsupported-format tests for RenderSpiral"
     },
     {
       "branch": "repo-assist/improve-spiral-cmd-tests-20260503",
+      "pr_number": 164,
       "description": "test(cmd): add SpiralCmd config and validation tests - 5 tests mirroring treemap test coverage"
+    },
+    {
+      "branch": "repo-assist/improve-git-provider-declarative-20260504",
+      "pr_number": null,
+      "description": "refactor(git): replace 7 boilerplate providers with declarative gitProvider - closes #155"
     }
   ],
-  "notes": "All squad refactoring issues (#152, #154-162) are assigned. Repo Assist should focus on smaller improvements not covered by squad. Next run: check if squad PRs have been created for #152, #154-162."
+  "notes": "Squad PRs #168 (#156) and #169 (#160) now open. Issues #159 and #162 are good candidates for future work. PRs #163 and #164 are not conflicting with main changes."
 }
