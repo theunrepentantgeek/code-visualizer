@@ -63,9 +63,9 @@ func (s *scanCounter) OnDirectoryScanned(path string, fileCount int) {
 	}
 }
 
-// startScanTicker starts a goroutine that logs cumulative scan progress every second.
-// Call the returned stop function when scanning is done.
-func startScanTicker(counter *scanCounter) (stop func()) {
+// startProgressTicker starts a goroutine that calls logFn every second.
+// Call the returned stop function when the operation completes.
+func startProgressTicker(logFn func()) (stop func()) {
 	done := make(chan struct{})
 
 	go func() {
@@ -75,7 +75,7 @@ func startScanTicker(counter *scanCounter) (stop func()) {
 		for {
 			select {
 			case <-ticker.C:
-				slog.Debug("Scanning...", "files", counter.files.Load(), "dirs", counter.dirs.Load())
+				logFn()
 
 			case <-done:
 				return
@@ -84,6 +84,14 @@ func startScanTicker(counter *scanCounter) (stop func()) {
 	}()
 
 	return func() { close(done) }
+}
+
+// startScanTicker starts a goroutine that logs cumulative scan progress every second.
+// Call the returned stop function when scanning is done.
+func startScanTicker(counter *scanCounter) (stop func()) {
+	return startProgressTicker(func() {
+		slog.Debug("Scanning...", "files", counter.files.Load(), "dirs", counter.dirs.Load())
+	})
 }
 
 // metricProgressTracker implements provider.MetricProgress for verbose mode.
@@ -146,24 +154,9 @@ func (t *metricProgressTracker) activeNames() []metric.Name {
 // startMetricTicker starts a goroutine that logs metric calculation progress every second.
 // Call the returned stop function when metric calculation is done.
 func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
-	done := make(chan struct{})
-
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				logMetricProgress(tracker)
-
-			case <-done:
-				return
-			}
-		}
-	}()
-
-	return func() { close(done) }
+	return startProgressTicker(func() {
+		logMetricProgress(tracker)
+	})
 }
 
 func logMetricProgress(tracker *metricProgressTracker) {
@@ -207,23 +200,8 @@ func buildHistoryProgress(flags *Flags) (onCommit func(), stop func()) {
 
 // startHistoryTicker starts a goroutine that logs commit history progress every second.
 func startHistoryTicker(counter *atomic.Int64) (stop func()) {
-	done := make(chan struct{})
-
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				slog.Debug("Loading history...",
-					"commits", counter.Load())
-
-			case <-done:
-				return
-			}
-		}
-	}()
-
-	return func() { close(done) }
+	return startProgressTicker(func() {
+		slog.Debug("Loading history...",
+			"commits", counter.Load())
+	})
 }
