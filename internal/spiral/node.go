@@ -4,18 +4,17 @@ package spiral
 import (
 	"image/color"
 	"time"
+
+	"github.com/bevan/code-visualizer/internal/viz"
 )
 
-// LabelMode controls which node labels are shown in the diagram.
-type LabelMode string
+// LabelMode is an alias for [viz.LabelMode].
+type LabelMode = viz.LabelMode
 
 const (
-	// LabelAll shows labels for all spots on the spiral.
-	LabelAll LabelMode = "all"
-	// LabelLaps shows labels only at lap boundaries (e.g. midnight, week start).
-	LabelLaps LabelMode = "laps"
-	// LabelNone hides all labels.
-	LabelNone LabelMode = "none"
+	LabelAll  = viz.LabelAll
+	LabelLaps = viz.LabelLaps
+	LabelNone = viz.LabelNone
 )
 
 // SpiralNode is a positioned visual element on the rendered spiral timeline.
