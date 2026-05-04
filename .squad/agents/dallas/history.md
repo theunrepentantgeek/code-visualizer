@@ -201,3 +201,12 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Verification:** Build passed, all 16 test packages passed (0.744s total).
 - **Pattern:** Each metric provider in its own file improves navigability and reduces file length. The shared helper functions remain accessible to all providers within the git package.
 - **PR:** #146, branch `squad/134-metric-files`.
+
+## Issue #154 — Extract LabelMode Type (2026-05-04)
+
+- **Status:** ✅ Complete
+- **Work:** Created `internal/viz/label_mode.go` with shared `LabelMode` type
+- **Result:** Layout packages re-export via aliases for backward compatibility
+- **Testing:** All tests pass, zero breaking changes
+- **Committed:** `squad/154-extract-label-mode`
+- **PR:** #167

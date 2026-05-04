@@ -784,3 +784,28 @@ Seven git provider files are structurally identical wrappers differing only in 4
 - #156–#162: Additional refactoring opportunities
 
 All issues include detailed scope, acceptance criteria, and implementation notes.
+
+---
+
+### Distribute Testing Load Across Agents
+
+**Author:** Bevan Arps  
+**Date:** 2026-05-04  
+**Status:** Active
+
+## Summary
+
+User directive: **Don't push all testing work to Lambert.** Distribute test work across agents where appropriate based on their specializations and workload.
+
+## Rationale
+
+- Lambert (Test Specialist) should focus on integration and system tests, not unit tests for every component
+- Each specialist agent should own unit tests for their modules (Dallas for Go features, Bishop for rendering, Kane for CLI)
+- Reduces bottlenecks and improves efficiency by allowing parallel test work
+- Keeps teams focused on their core expertise
+
+## Implications
+
+- Dallas, Bishop, Kane responsible for unit tests in their respective areas
+- Lambert focuses on integration, system, and cross-component scenarios
+- Test distribution is implicit in issue scoping — each issue includes its own test coverage responsibility

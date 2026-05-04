@@ -157,3 +157,12 @@
 - **Sub-issue 2 (Disc size constraints):** `computeMaxDisc()` exists (internal/spiral/layout.go:89-106) but not exposed. Fix: Expose maxDisc via API, apply min/max clamping in CLI scaling (cmd/codeviz/spiral_cmd.go).
 - **Sub-issue 3 (Border width):** `drawSingleSpot()` hardcodes 1px (internal/render/spiral.go:175). Fix: Implement `spiralBorderWidth(discRadius)` helper — threshold 8px: return 2.0, else 3.0.
 - **Routing:** Can split across two PRs: PR1 (sub-issues 1&3, render+CLI), PR2 (sub-issue 2, layout API+CLI).
+
+## Issue #161 — Extract Progress Ticker Pattern (2026-05-04)
+
+- **Status:** ✅ Complete
+- **Work:** Extracted `startProgressTicker(logFn func())` function
+- **Result:** Progress ticker implementation reduced from 41 to 19 lines — cleaner, reusable pattern
+- **Testing:** All tests pass, zero regressions
+- **Committed:** `squad/161-extract-progress-ticker`
+- **PR:** #166

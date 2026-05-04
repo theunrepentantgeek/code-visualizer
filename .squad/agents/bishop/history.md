@@ -81,3 +81,12 @@
 9. #160 (LegendEntry) — moderate, prevents nil bugs
 10. #161 (progress ticker) — small cleanup
 11. #162 (provider ISP) — consider alongside #155
+
+## Issue #157 — Deduplicate Luminance Calculation (2026-05-04)
+
+- **Status:** ✅ Complete
+- **Work:** Deleted 16 lines of duplicated luminance calculation from `render/label.go`
+- **Result:** Unified implementation now delegates to `palette.RelativeLuminance()` — single source of truth
+- **Testing:** All tests pass, zero regressions
+- **Committed:** `squad/157-dedup-luminance`
+- **PR:** #165
