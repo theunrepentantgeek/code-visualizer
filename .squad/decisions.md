@@ -740,3 +740,47 @@ The architecture proposal was written before MetricSpec consolidation (#118/#120
 - PR #144 edge case was fixed by Dallas (moved empty-bucket handling before maxSize check).
 - `task ci` not available in environment (task not installed).
 - `go test ./...` passes locally.
+
+---
+
+### Structural Audit — Codebase Review and Refactoring Strategy
+
+**Author:** Bishop (Artificer)  
+**Date:** 2026-05-03  
+**Status:** Proposed  
+
+## Summary
+
+Completed a full structural audit of `cmd/codeviz/` and all `internal/` packages. Filed 11 issues (#152–#162) covering the most impactful structural improvements needed to reduce duplication and clarify abstractions.
+
+## Structural Health
+
+The codebase is **well-designed at the package level** — boundaries are mostly correct, types are meaningful, and the metric/provider/model/layout/render pipeline makes sense. Issues are almost entirely about **duplication and missing intermediate abstractions**, not fundamental design flaws. This is natural for a codebase that grew from one viz type to four without extracting common patterns.
+
+## Top 3 High-Leverage Refactoring Opportunities
+
+### 1. Extract Shared Command Workflow (Issue #152)
+The four viz commands (treemap, radial, bubbletree, spiral) duplicate ~60% of their code. A shared pipeline/template method would eliminate ~1,500 lines and make new viz types trivial to add. **Single highest-leverage change.**
+
+### 2. Unify Raster/SVG Rendering (Issue #158)
+Each viz type has paired raster + SVG renderers that duplicate traversal and drawing logic. A rendering abstraction (draw-list or backend interface) would halve the render package and prevent duplication from scaling.
+
+### 3. Declarative Git Providers (Issue #155)
+Seven git provider files are structurally identical wrappers differing only in 4 parameters. Replace with table-driven registration to eliminate ~180 lines and make new metrics a one-liner.
+
+## Sequencing Recommendation
+
+- **Quick wins:** Issues #155 (git providers) and #153 (config base) are independent and low-risk
+- **Major refactor:** Issue #152 (command workflow) is largest but most impactful; should be planned carefully
+- **Dependent:** Issue #158 (render unification) best tackled after #152, since command layer cleanup will clarify render API surface
+
+## Issues Filed
+
+#152–#162 (11 total):
+- #152: Extract shared command workflow
+- #153: Config base abstraction
+- #154: Metrics registration
+- #155: Git provider consolidation
+- #156–#162: Additional refactoring opportunities
+
+All issues include detailed scope, acceptance criteria, and implementation notes.
