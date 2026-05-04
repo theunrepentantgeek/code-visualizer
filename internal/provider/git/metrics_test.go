@@ -112,7 +112,7 @@ func TestFileAgeProvider(t *testing.T) {
 
 	resetService()
 
-	p := &FileAgeProvider{}
+	p := newProvider(FileAge)
 	g.Expect(p.Name()).To(Equal(FileAge))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 
@@ -142,7 +142,7 @@ func TestFileFreshnessProvider(t *testing.T) {
 
 	resetService()
 
-	p := &FileFreshnessProvider{}
+	p := newProvider(FileFreshness)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -169,7 +169,7 @@ func TestAuthorCountProvider(t *testing.T) {
 
 	resetService()
 
-	p := &AuthorCountProvider{}
+	p := newProvider(AuthorCount)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -193,7 +193,7 @@ func TestGitProviderNotAGitRepo(t *testing.T) {
 
 	resetService()
 
-	p := &FileAgeProvider{}
+	p := newProvider(FileAge)
 	err := p.Load(root)
 	g.Expect(err).To(MatchError(ContainSubstring("git")))
 }
@@ -210,15 +210,15 @@ func TestCommitDataCacheConsistency(t *testing.T) {
 	resetService()
 
 	// Run all three git metric providers on the same file.
-	fileAgeP := &FileAgeProvider{}
+	fileAgeP := newProvider(FileAge)
 	err := fileAgeP.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	fileFreshnessP := &FileFreshnessProvider{}
+	fileFreshnessP := newProvider(FileFreshness)
 	err = fileFreshnessP.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	authorCountP := &AuthorCountProvider{}
+	authorCountP := newProvider(AuthorCount)
 	err = authorCountP.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -240,7 +240,7 @@ func TestFileAgeProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := &FileAgeProvider{}
+	p := newProvider(FileAge)
 	g.Expect(p.Name()).To(Equal(FileAge))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 	g.Expect(p.Description()).NotTo(BeEmpty())
@@ -252,7 +252,7 @@ func TestFileFreshnessProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := &FileFreshnessProvider{}
+	p := newProvider(FileFreshness)
 	g.Expect(p.Name()).To(Equal(FileFreshness))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 	g.Expect(p.Description()).NotTo(BeEmpty())
@@ -264,7 +264,7 @@ func TestAuthorCountProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := &AuthorCountProvider{}
+	p := newProvider(AuthorCount)
 	g.Expect(p.Name()).To(Equal(AuthorCount))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 	g.Expect(p.Description()).NotTo(BeEmpty())
@@ -323,7 +323,7 @@ func TestFileAgeProvider_SubdirectoryScanning(t *testing.T) {
 
 	resetService()
 
-	p := &FileAgeProvider{}
+	p := newProvider(FileAge)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -341,7 +341,7 @@ func TestFileFreshnessProvider_SubdirectoryScanning(t *testing.T) {
 
 	resetService()
 
-	p := &FileFreshnessProvider{}
+	p := newProvider(FileFreshness)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -359,7 +359,7 @@ func TestAuthorCountProvider_SubdirectoryScanning(t *testing.T) {
 
 	resetService()
 
-	p := &AuthorCountProvider{}
+	p := newProvider(AuthorCount)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -441,7 +441,7 @@ func TestFileFreshness_MergeCommitDoesNotPollute(t *testing.T) {
 
 	resetService()
 
-	p := &FileFreshnessProvider{}
+	p := newProvider(FileFreshness)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -475,7 +475,7 @@ func TestFileAge_MergeCommitDoesNotPollute(t *testing.T) {
 
 	resetService()
 
-	p := &FileAgeProvider{}
+	p := newProvider(FileAge)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -500,7 +500,7 @@ func TestAuthorCount_MergeCommitDoesNotPollute(t *testing.T) {
 
 	resetService()
 
-	p := &AuthorCountProvider{}
+	p := newProvider(AuthorCount)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -528,10 +528,10 @@ func TestFileFreshnessEqualsAgeForSingleCommit(t *testing.T) {
 
 	resetService()
 
-	ageP := &FileAgeProvider{}
+	ageP := newProvider(FileAge)
 	g.Expect(ageP.Load(root)).To(Succeed())
 
-	freshP := &FileFreshnessProvider{}
+	freshP := newProvider(FileFreshness)
 	g.Expect(freshP.Load(root)).To(Succeed())
 
 	age, ageOk := root.Files[0].Quantity(FileAge)
@@ -547,7 +547,7 @@ func TestCommitCountProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := &CommitCountProvider{}
+	p := newProvider(CommitCount)
 	g.Expect(p.Name()).To(Equal(CommitCount))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 	g.Expect(p.Description()).NotTo(BeEmpty())
@@ -565,7 +565,7 @@ func TestCommitCountProvider(t *testing.T) {
 
 	resetService()
 
-	p := &CommitCountProvider{}
+	p := newProvider(CommitCount)
 	g.Expect(p.Name()).To(Equal(CommitCount))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 
@@ -594,7 +594,7 @@ func TestCommitCount_MergeCommitDoesNotPollute(t *testing.T) {
 
 	resetService()
 
-	p := &CommitCountProvider{}
+	p := newProvider(CommitCount)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -618,7 +618,7 @@ func TestCommitCountProvider_SubdirectoryScanning(t *testing.T) {
 
 	resetService()
 
-	p := &CommitCountProvider{}
+	p := newProvider(CommitCount)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -640,7 +640,7 @@ func TestTotalLinesAddedProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := &TotalLinesAddedProvider{}
+	p := newProvider(TotalLinesAdded)
 	g.Expect(p.Name()).To(Equal(TotalLinesAdded))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 	g.Expect(p.Description()).NotTo(BeEmpty())
@@ -652,7 +652,7 @@ func TestTotalLinesRemovedProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := &TotalLinesRemovedProvider{}
+	p := newProvider(TotalLinesRemoved)
 	g.Expect(p.Name()).To(Equal(TotalLinesRemoved))
 	g.Expect(p.Kind()).To(Equal(metric.Quantity))
 	g.Expect(p.Description()).NotTo(BeEmpty())
@@ -664,7 +664,7 @@ func TestCommitDensityProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := &CommitDensityProvider{}
+	p := newProvider(CommitDensity)
 	g.Expect(p.Name()).To(Equal(CommitDensity))
 	g.Expect(p.Kind()).To(Equal(metric.Measure))
 	g.Expect(p.Description()).NotTo(BeEmpty())
@@ -741,7 +741,7 @@ func TestTotalLinesAddedProvider(t *testing.T) {
 
 	resetService()
 
-	p := &TotalLinesAddedProvider{}
+	p := newProvider(TotalLinesAdded)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -766,7 +766,7 @@ func TestTotalLinesRemovedProvider(t *testing.T) {
 
 	resetService()
 
-	p := &TotalLinesRemovedProvider{}
+	p := newProvider(TotalLinesRemoved)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -790,7 +790,7 @@ func TestCommitDensityProvider(t *testing.T) {
 
 	resetService()
 
-	p := &CommitDensityProvider{}
+	p := newProvider(CommitDensity)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -811,7 +811,7 @@ func TestCommitDensityProvider_YoungFile(t *testing.T) {
 
 	resetService()
 
-	p := &CommitDensityProvider{}
+	p := newProvider(CommitDensity)
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -831,7 +831,7 @@ func TestTotalLinesAdded_NotAGitRepo(t *testing.T) {
 
 	resetService()
 
-	p := &TotalLinesAddedProvider{}
+	p := newProvider(TotalLinesAdded)
 	err := p.Load(root)
 	g.Expect(err).To(MatchError(ContainSubstring("git")))
 }
