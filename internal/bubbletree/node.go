@@ -1,17 +1,18 @@
 package bubbletree
 
-import "image/color"
+import (
+	"image/color"
 
-// LabelMode controls which node labels are shown in the diagram.
-type LabelMode string
+	"github.com/bevan/code-visualizer/internal/viz"
+)
+
+// LabelMode is an alias for [viz.LabelMode].
+type LabelMode = viz.LabelMode
 
 const (
-	// LabelAll shows labels for all nodes.
-	LabelAll LabelMode = "all"
-	// LabelFoldersOnly shows labels for directory nodes only.
-	LabelFoldersOnly LabelMode = "folders"
-	// LabelNone hides all labels.
-	LabelNone LabelMode = "none"
+	LabelAll         = viz.LabelAll
+	LabelFoldersOnly = viz.LabelFoldersOnly
+	LabelNone        = viz.LabelNone
 )
 
 // BubbleNode is a positioned visual element in the rendered bubble tree.
