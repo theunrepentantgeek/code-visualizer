@@ -84,10 +84,10 @@ func drawSingleEntry(
 ) float64 {
 	// Title
 	dc.SetRGB(0.15, 0.15, 0.15)
-	dc.DrawString(fmt.Sprintf("%s: %s", entry.Role, entry.MetricName), x, y+titleFontSize)
+	dc.DrawString(fmt.Sprintf("%s: %s", entry.Role(), entry.MetricName()), x, y+titleFontSize)
 	y += titleFontSize + labelGap
 
-	if entry.Kind == metric.Classification {
+	if entry.Kind() == metric.Classification {
 		return drawCategorySwatches(dc, orientation, entry, x, y)
 	}
 
@@ -101,7 +101,7 @@ func drawNumericSwatches(
 	entry LegendEntry,
 	x, y float64,
 ) float64 {
-	if entry.NumBuckets() <= 0 || len(entry.Palette.Colours) == 0 {
+	if entry.NumBuckets() <= 0 || len(entry.Palette().Colours) == 0 {
 		return y
 	}
 
@@ -130,8 +130,8 @@ func drawNumericSwatchesV(
 		dc.Stroke()
 
 		// Breakpoint label at divider between swatches
-		if entry.Buckets != nil && i < len(entry.Buckets.Boundaries) {
-			label := formatBreakpoint(entry.Buckets.Boundaries[i])
+		if entry.Buckets() != nil && i < len(entry.Buckets().Boundaries) {
+			label := formatBreakpoint(entry.Buckets().Boundaries[i])
 
 			dc.SetRGB(0.2, 0.2, 0.2)
 			dc.DrawStringAnchored(
@@ -168,8 +168,8 @@ func drawNumericSwatchesH(
 		dc.Stroke()
 
 		// Breakpoint at divider
-		if entry.Buckets != nil && i < len(entry.Buckets.Boundaries) {
-			label := formatBreakpoint(entry.Buckets.Boundaries[i])
+		if entry.Buckets() != nil && i < len(entry.Buckets().Boundaries) {
+			label := formatBreakpoint(entry.Buckets().Boundaries[i])
 
 			dc.SetRGB(0.2, 0.2, 0.2)
 			dc.DrawStringAnchored(
@@ -193,7 +193,7 @@ func drawCategorySwatches(
 	entry LegendEntry,
 	x, y float64,
 ) float64 {
-	cats := entry.Categories
+	cats := entry.Categories()
 
 	if orientation == LegendOrientationHorizontal {
 		y = drawCategorySwatchesH(dc, cats, x, y)
@@ -287,7 +287,7 @@ func measureLegendV(dc *gg.Context, info *LegendInfo) (width, height float64) {
 			totalH += entryGap
 		}
 
-		tw, _ := dc.MeasureString(fmt.Sprintf("%s: %s", entry.Role, entry.MetricName))
+		tw, _ := dc.MeasureString(fmt.Sprintf("%s: %s", entry.Role(), entry.MetricName()))
 		totalH += titleFontSize + labelGap
 
 		if tw > maxW {
@@ -331,7 +331,7 @@ func measureLegendH(dc *gg.Context, info *LegendInfo) (width, height float64) {
 
 // measureSingleEntryH measures one entry including its title for horizontal layout.
 func measureSingleEntryH(dc *gg.Context, entry LegendEntry) (width, height float64) {
-	tw, _ := dc.MeasureString(fmt.Sprintf("%s: %s", entry.Role, entry.MetricName))
+	tw, _ := dc.MeasureString(fmt.Sprintf("%s: %s", entry.Role(), entry.MetricName()))
 	titleH := titleFontSize + labelGap
 
 	entryW, entryH := measureEntryH(dc, entry)
@@ -344,7 +344,7 @@ func measureSingleEntryH(dc *gg.Context, entry LegendEntry) (width, height float
 
 // measureEntryV measures a single entry in vertical layout.
 func measureEntryV(dc *gg.Context, entry LegendEntry) (width, height float64) {
-	if entry.Kind == metric.Classification {
+	if entry.Kind() == metric.Classification {
 		return measureCategoryV(dc, entry)
 	}
 
@@ -353,7 +353,7 @@ func measureEntryV(dc *gg.Context, entry LegendEntry) (width, height float64) {
 
 // measureEntryH measures a single entry in horizontal layout.
 func measureEntryH(dc *gg.Context, entry LegendEntry) (width, height float64) {
-	if entry.Kind == metric.Classification {
+	if entry.Kind() == metric.Classification {
 		return measureCategoryH(dc, entry)
 	}
 
@@ -365,8 +365,8 @@ func measureNumericV(dc *gg.Context, entry LegendEntry) (width, height float64) 
 	h := float64(entry.NumBuckets()) * swatchSize
 	w := swatchSize
 
-	if entry.Buckets != nil {
-		for _, b := range entry.Buckets.Boundaries {
+	if entry.Buckets() != nil {
+		for _, b := range entry.Buckets().Boundaries {
 			tw, _ := dc.MeasureString(formatBreakpoint(b))
 
 			if bw := swatchSize + labelGap + tw; bw > w {
@@ -388,7 +388,7 @@ func measureNumericH(_ *gg.Context, entry LegendEntry) (width, height float64) {
 
 // measureCategoryV measures category entry in vertical layout.
 func measureCategoryV(dc *gg.Context, entry LegendEntry) (width, height float64) {
-	cats := entry.Categories
+	cats := entry.Categories()
 
 	w := swatchSize
 	h := float64(len(cats)) * (swatchSize + swatchGap)
@@ -406,7 +406,7 @@ func measureCategoryV(dc *gg.Context, entry LegendEntry) (width, height float64)
 
 // measureCategoryH measures category entry in horizontal layout.
 func measureCategoryH(dc *gg.Context, entry LegendEntry) (width, height float64) {
-	cats := entry.Categories
+	cats := entry.Categories()
 
 	w := 0.0
 
@@ -422,11 +422,11 @@ func measureCategoryH(dc *gg.Context, entry LegendEntry) (width, height float64)
 
 // mapBucketColour returns the colour for a given bucket index.
 func mapBucketColour(bucketIdx int, entry LegendEntry) color.RGBA {
-	if len(entry.Palette.Colours) == 0 {
+	if len(entry.Palette().Colours) == 0 {
 		return color.RGBA{R: 128, G: 128, B: 128, A: 255}
 	}
 
-	return palette.MapNumericToColour(bucketIdx, entry.NumBuckets(), entry.Palette)
+	return palette.MapNumericToColour(bucketIdx, entry.NumBuckets(), entry.Palette())
 }
 
 // formatBreakpoint formats a numeric breakpoint for display.

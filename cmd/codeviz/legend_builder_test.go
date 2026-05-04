@@ -77,8 +77,8 @@ func TestBuildLegendInfo_FillOnly_SingleEntry(t *testing.T) {
 		t.Fatal("expected non-nil LegendInfo")
 	} else {
 		g.Expect(info.Entries).To(HaveLen(1))
-		g.Expect(info.Entries[0].Role).To(Equal("Fill"))
-		g.Expect(info.Entries[0].MetricName).To(Equal("file-size"))
+		g.Expect(info.Entries[0].Role()).To(Equal("Fill"))
+		g.Expect(info.Entries[0].MetricName()).To(Equal("file-size"))
 	}
 }
 
@@ -98,9 +98,9 @@ func TestBuildLegendInfo_FillAndBorder_TwoEntries(t *testing.T) {
 		t.Fatal("expected non-nil LegendInfo")
 	} else {
 		g.Expect(info.Entries).To(HaveLen(2))
-		g.Expect(info.Entries[0].Role).To(Equal("Fill"))
-		g.Expect(info.Entries[1].Role).To(Equal("Border"))
-		g.Expect(info.Entries[1].MetricName).To(Equal("file-type"))
+		g.Expect(info.Entries[0].Role()).To(Equal("Fill"))
+		g.Expect(info.Entries[1].Role()).To(Equal("Border"))
+		g.Expect(info.Entries[1].MetricName()).To(Equal("file-type"))
 	}
 }
 
@@ -120,8 +120,8 @@ func TestBuildLegendInfo_DifferentSizeMetric_AddsEntry(t *testing.T) {
 		t.Fatal("expected non-nil LegendInfo")
 	} else {
 		g.Expect(info.Entries).To(HaveLen(2))
-		g.Expect(info.Entries[1].Role).To(Equal("Size"))
-		g.Expect(info.Entries[1].MetricName).To(Equal("file-lines"))
+		g.Expect(info.Entries[1].Role()).To(Equal("Size"))
+		g.Expect(info.Entries[1].MetricName()).To(Equal("file-lines"))
 	}
 }
 
@@ -141,8 +141,8 @@ func TestBuildLegendInfo_SameSizeAsFill_NoSizeEntry(t *testing.T) {
 		t.Fatal("expected non-nil LegendInfo")
 	} else {
 		g.Expect(info.Entries).To(HaveLen(1))
-		g.Expect(info.Entries[0].Role).To(Equal("Fill"))
-		g.Expect(info.Entries[0].MetricName).To(Equal("file-size"))
+		g.Expect(info.Entries[0].Role()).To(Equal("Fill"))
+		g.Expect(info.Entries[0].MetricName()).To(Equal("file-size"))
 	}
 }
 
@@ -162,8 +162,8 @@ func TestBuildLegendInfo_Classification_HasCategories(t *testing.T) {
 		t.Fatal("expected non-nil LegendInfo")
 	} else {
 		g.Expect(info.Entries).To(HaveLen(2))
-		g.Expect(info.Entries[0].Kind).To(Equal(metric.Classification))
-		g.Expect(info.Entries[0].Categories).NotTo(BeEmpty())
+		g.Expect(info.Entries[0].Kind()).To(Equal(metric.Classification))
+		g.Expect(info.Entries[0].Categories()).NotTo(BeEmpty())
 	}
 }
 

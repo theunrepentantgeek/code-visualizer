@@ -114,28 +114,27 @@ func makeSampleLegendInfo(orient LegendOrientation) *LegendInfo {
 		Position:    LegendPositionBottomRight,
 		Orientation: orient,
 		Entries: []LegendEntry{
-			{
-				Role:       "Fill",
-				MetricName: "file-size",
-				Kind:       metric.Quantity,
-				Palette:    pal,
-				Buckets: &metric.BucketBoundaries{
+			NewNumericLegendEntry(
+				"Fill",
+				"file-size",
+				metric.Quantity,
+				&metric.BucketBoundaries{
 					Boundaries: []float64{100, 500, 1000, 5000},
 					Min:        10,
 					Max:        10000,
 					StepCount:  5,
 				},
-			},
-			{
-				Role:       "Border",
-				MetricName: "file-type",
-				Kind:       metric.Classification,
-				Categories: []CategorySwatch{
+				pal,
+			),
+			NewCategoryLegendEntry(
+				"Border",
+				"file-type",
+				[]CategorySwatch{
 					{Label: "go", Colour: color.RGBA{R: 0, G: 173, B: 216, A: 255}},
 					{Label: "rs", Colour: color.RGBA{R: 222, G: 165, B: 132, A: 255}},
 					{Label: "py", Colour: color.RGBA{R: 53, G: 114, B: 165, A: 255}},
 				},
-			},
+			),
 		},
 	}
 }
@@ -230,11 +229,7 @@ func TestDrawLegend_SizeOnlyEntry(t *testing.T) {
 		Position:    LegendPositionTopLeft,
 		Orientation: LegendOrientationVertical,
 		Entries: []LegendEntry{
-			{
-				Role:       "Size",
-				MetricName: "file-lines",
-				Kind:       metric.Quantity,
-			},
+			NewNumericLegendEntry("Size", "file-lines", metric.Quantity, nil, palette.ColourPalette{}),
 		},
 	}
 
