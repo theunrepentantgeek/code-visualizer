@@ -11,7 +11,7 @@ func TestFileSetAndGetQuantity(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	f := &File{Path: "/a.go", Name: "a.go"}
+	f := &File{}
 
 	f.SetQuantity("file-size", 1024)
 
@@ -24,7 +24,7 @@ func TestFileSetAndGetMeasure(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	f := &File{Path: "/a.go", Name: "a.go"}
+	f := &File{}
 
 	f.SetMeasure("complexity", 3.14)
 
@@ -37,7 +37,7 @@ func TestFileSetAndGetClassification(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	f := &File{Path: "/a.go", Name: "a.go"}
+	f := &File{}
 
 	f.SetClassification("file-type", "go")
 
@@ -50,7 +50,7 @@ func TestFileGetUnsetMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	f := &File{Path: "/a.go", Name: "a.go"}
+	f := &File{}
 
 	_, ok := f.Quantity("unset")
 	g.Expect(ok).To(BeFalse())
@@ -66,7 +66,7 @@ func TestFileConcurrentAccess(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	f := &File{Path: "/a.go", Name: "a.go"}
+	f := &File{}
 
 	var wg sync.WaitGroup
 
