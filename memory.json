@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-04T13:14:30Z",
-  "run_id": "25321011193",
+  "last_run": "2026-05-05T12:59:05Z",
+  "run_id": "25377742651",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -8,7 +8,9 @@
     "112": "2026-04-27T13:10:33Z",
     "116": "2026-04-27T13:10:33Z",
     "128": "2026-04-29T13:13:03Z",
-    "133": "2026-05-01T12:44:04Z"
+    "133": "2026-05-01T12:44:04Z",
+    "155": "2026-05-05T12:59:05Z",
+    "159": "2026-05-05T12:59:05Z"
   },
   "prs_created": [
     {
@@ -20,16 +22,8 @@
       "closes": []
     },
     {
-      "branch": "repo-assist/improve-spiral-cmd-tests-20260503",
-      "pr_number": 164,
-      "title": "[Repo Assist] test(cmd): add SpiralCmd config and validation tests",
-      "status": "open",
-      "type": "tests",
-      "closes": []
-    },
-    {
       "branch": "repo-assist/improve-git-provider-declarative-20260504",
-      "pr_number": null,
+      "pr_number": 170,
       "title": "[Repo Assist] refactor(git): replace 7 boilerplate providers with declarative gitProvider",
       "status": "open",
       "type": "refactor",
@@ -57,9 +51,9 @@
     "133": "closed by maintainer 2026-05-02 (PR #137 merged)",
     "134": "closed by maintainer 2026-05-02 (split metrics per-file done by maintainer squad)",
     "136": "closed by maintainer 2026-05-02 (new git metrics added by maintainer squad)",
-    "155": "labelled refactor 2026-05-03 (squad Bishop assigned); fix submitted via PR (branch repo-assist/improve-git-provider-declarative-20260504) 2026-05-04",
-    "159": "labelled refactor 2026-05-03 (squad Bishop assigned)",
-    "162": "labelled enhancement+refactor 2026-05-03 (squad Bishop assigned)"
+    "155": "labelled refactor 2026-05-03; PR #170 submitted 2026-05-04; lint fixed 2026-05-05; commented 2026-05-05",
+    "159": "labelled refactor 2026-05-03; commented with migration plan 2026-05-05",
+    "162": "labelled enhancement+refactor 2026-05-03 (squad assigned)"
   },
   "monthly_summary_issue": {
     "title": "[Repo Assist] Monthly Activity 2026-05",
@@ -107,11 +101,8 @@
     "PR #149: bump codeql-action (merged 2026-05-03)",
     "PR #150: bump gh-aw-actions (merged 2026-05-03)",
     "PR #151: docs spiral/metrics/terrain (merged 2026-05-03)",
-    "Issue #116: research new linters (closed 2026-05-03)"
+    "Issue #116: research new linters (closed 2026-05-03)",
+    "PR #164: test(cmd) SpiralCmd tests (merged or closed - not in open PR list)"
   ],
-  "recently_merged": [
-    "PR #168: Extract MetricBag (squad PR, open 2026-05-04)",
-    "PR #169: Make LegendEntry invalid states unrepresentable (squad PR, open 2026-05-04)"
-  ],
-  "notes": "Squad PRs #168 (closes #156) and #169 (closes #160) now open. Squad working on #152, #158. Repo Assist has 3 open PRs: spiral tests (#163, #164) and git provider refactoring (closes #155). Issues #159 and #162 remain open for future work."
+  "notes": "PR #170 (closes #155) has CI fixes pushed. PR #163 has CI fix pushed. Both await review. Issue #159 now has migration plan comment. Issues #152, #158, #162 have squad assignments. Next run: consider implementing #159 fix (move CommitRecord/LoadCommitHistory to cmd layer) as a new PR."
 }
