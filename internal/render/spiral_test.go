@@ -83,7 +83,7 @@ func TestRenderSpiral_PNG_DecodesAsPNG(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if f != nil {
-		defer f.Close() //nolint:errcheck // test helper
+		defer f.Close()
 
 		_, imgFmt, decErr := image.Decode(f)
 		g.Expect(decErr).NotTo(HaveOccurred())
