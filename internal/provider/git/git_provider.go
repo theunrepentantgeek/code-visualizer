@@ -7,7 +7,6 @@ import (
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
 )
 
 // gitProvider is a data-driven implementation of provider.Interface for all
@@ -113,13 +112,6 @@ func newProvider(name metric.Name) *gitProvider {
 	}
 
 	return nil
-}
-
-// registerAll registers every git metric provider with the global registry.
-func registerAll() {
-	for i := range providerDefs {
-		provider.Register(newProvider(providerDefs[i].name))
-	}
 }
 
 // quantityProcess returns a walkGitFiles callback that computes an int64
