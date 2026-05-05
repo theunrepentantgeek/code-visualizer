@@ -10,7 +10,7 @@ func TestDirectorySetAndGetQuantity(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	d := &Directory{Path: "/src", Name: "src"}
+	d := &Directory{}
 
 	d.SetQuantity("folder-size", 9999)
 
@@ -23,7 +23,7 @@ func TestDirectoryGetUnsetMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	d := &Directory{Path: "/src", Name: "src"}
+	d := &Directory{}
 
 	_, ok := d.Quantity("unset")
 	g.Expect(ok).To(BeFalse())
@@ -33,7 +33,7 @@ func TestDirectorySetAndGetMeasure(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	d := &Directory{Path: "/src", Name: "src"}
+	d := &Directory{}
 
 	d.SetMeasure("complexity", 2.718)
 
@@ -46,7 +46,7 @@ func TestDirectorySetAndGetClassification(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	d := &Directory{Path: "/src", Name: "src"}
+	d := &Directory{}
 
 	d.SetClassification("file-type", "go")
 
@@ -59,7 +59,7 @@ func TestDirectoryGetUnsetMeasureAndClassification(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	d := &Directory{Path: "/src", Name: "src"}
+	d := &Directory{}
 
 	_, ok := d.Measure("unset")
 	g.Expect(ok).To(BeFalse())
