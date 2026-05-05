@@ -377,3 +377,92 @@ func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	err := cmd.validateConfig(cfg.Treemap)
 	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
 }
+
+func TestSpiralCmd_Validate_EmptySize_Passes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &SpiralCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // will be supplied by config file later in Run()
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestSpiralCmd_ConfigSuppliesSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("spiral:\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &SpiralCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "", // not supplied on CLI
+	}
+
+	cmd.applyOverrides(cfg)
+
+	// Config supplies the size — it stays on the config, not the CLI struct.
+	g.Expect(cfg.Spiral).NotTo(BeNil())
+	g.Expect(cfg.Spiral.Size).NotTo(BeNil())
+	g.Expect(*cfg.Spiral.Size).To(Equal("file-size"))
+}
+
+func TestSpiralCmd_CLISizeOverridesConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("spiral:\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &SpiralCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		Size:       "file-lines", // explicit CLI flag
+	}
+
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Spiral).NotTo(BeNil())
+	g.Expect(cfg.Spiral.Size).NotTo(BeNil())
+	g.Expect(*cfg.Spiral.Size).To(Equal("file-lines"))
+}
+
+func TestSpiralCmd_ValidateConfig_InvalidFillMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Spiral.Size = new("file-size")
+	cfg.Spiral.Fill = &config.MetricSpec{Metric: "not-a-real-metric"}
+
+	cmd := &SpiralCmd{}
+	err := cmd.validateConfig(cfg.Spiral)
+	g.Expect(err).To(MatchError(ContainSubstring("invalid fill metric")))
+}
+
+func TestSpiralCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Spiral.Size = new("file-size")
+	cfg.Spiral.Fill = &config.MetricSpec{Metric: "file-lines", Palette: "not-a-real-palette"}
+
+	cmd := &SpiralCmd{}
+	err := cmd.validateConfig(cfg.Spiral)
+	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
+}
