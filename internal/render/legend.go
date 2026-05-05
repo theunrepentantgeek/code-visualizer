@@ -45,26 +45,76 @@ func DefaultOrientation(pos LegendPosition) LegendOrientation {
 }
 
 // LegendEntry describes one metric shown in the legend.
+// Use NewNumericLegendEntry or NewCategoryLegendEntry to construct.
 type LegendEntry struct {
-	Role       string // "Fill", "Border", "Size"
-	MetricName string // e.g., "file-size", "file-type"
-	Kind       metric.Kind
+	role       string // "Fill", "Border", "Size"
+	metricName string // e.g., "file-size", "file-type"
+	kind       metric.Kind
 
 	// For Quantity/Measure metrics:
-	Buckets *metric.BucketBoundaries
-	Palette palette.ColourPalette
+	buckets *metric.BucketBoundaries
+	palette palette.ColourPalette
 
 	// For Classification metrics:
-	Categories []CategorySwatch
+	categories []CategorySwatch
 }
+
+// NewNumericLegendEntry creates a legend entry for a Quantity or Measure metric.
+func NewNumericLegendEntry(
+	role string,
+	metricName string,
+	kind metric.Kind,
+	buckets *metric.BucketBoundaries,
+	pal palette.ColourPalette,
+) LegendEntry {
+	return LegendEntry{
+		role:       role,
+		metricName: metricName,
+		kind:       kind,
+		buckets:    buckets,
+		palette:    pal,
+	}
+}
+
+// NewCategoryLegendEntry creates a legend entry for a Classification metric.
+func NewCategoryLegendEntry(
+	role string,
+	metricName string,
+	categories []CategorySwatch,
+) LegendEntry {
+	return LegendEntry{
+		role:       role,
+		metricName: metricName,
+		kind:       metric.Classification,
+		categories: categories,
+	}
+}
+
+// Role returns the role of this entry (e.g. "Fill", "Border", "Size").
+func (e LegendEntry) Role() string { return e.role }
+
+// MetricName returns the name of the metric (e.g. "file-size").
+func (e LegendEntry) MetricName() string { return e.metricName }
+
+// Kind returns the metric kind for this entry.
+func (e LegendEntry) Kind() metric.Kind { return e.kind }
+
+// Buckets returns the bucket boundaries, or nil for non-numeric entries.
+func (e LegendEntry) Buckets() *metric.BucketBoundaries { return e.buckets }
+
+// Palette returns the colour palette for numeric entries.
+func (e LegendEntry) Palette() palette.ColourPalette { return e.palette }
+
+// Categories returns the category swatches for classification entries.
+func (e LegendEntry) Categories() []CategorySwatch { return e.categories }
 
 // NumBuckets returns the total number of buckets for this entry.
 func (e LegendEntry) NumBuckets() int {
-	if e.Buckets == nil {
+	if e.buckets == nil {
 		return 0
 	}
 
-	return e.Buckets.NumBuckets()
+	return e.buckets.NumBuckets()
 }
 
 // CategorySwatch pairs a category label with its colour.

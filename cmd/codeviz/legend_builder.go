@@ -89,11 +89,9 @@ func collectLegendEntries(
 	}
 
 	if sizeMetric != "" && sizeMetric != fillMetric {
-		entries = append(entries, render.LegendEntry{
-			Role:       "Size",
-			MetricName: string(sizeMetric),
-			Kind:       metric.Quantity,
-		})
+		entries = append(entries, render.NewNumericLegendEntry(
+			"Size", string(sizeMetric), metric.Quantity, nil, palette.ColourPalette{},
+		))
 	}
 
 	return entries
@@ -113,24 +111,24 @@ func buildLegendEntry(
 
 	pal := palette.GetPalette(paletteName)
 
-	entry := render.LegendEntry{
-		Role:       role,
-		MetricName: string(metricName),
-		Kind:       p.Kind(),
-		Palette:    pal,
-	}
-
 	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+		var buckets *metric.BucketBoundaries
+
 		values := collectNumericValues(root, metricName)
 		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(pal.Colours))
-			entry.Buckets = &buckets
+			b := metric.ComputeBuckets(values, len(pal.Colours))
+			buckets = &b
 		}
-	} else {
-		types := collectDistinctTypes(root, metricName)
-		mapper := palette.NewCategoricalMapper(types, pal)
-		entry.Categories = buildCategorySwatches(types, mapper)
+
+		entry := render.NewNumericLegendEntry(role, string(metricName), p.Kind(), buckets, pal)
+
+		return &entry
 	}
+
+	types := collectDistinctTypes(root, metricName)
+	mapper := palette.NewCategoricalMapper(types, pal)
+	cats := buildCategorySwatches(types, mapper)
+	entry := render.NewCategoryLegendEntry(role, string(metricName), cats)
 
 	return &entry
 }

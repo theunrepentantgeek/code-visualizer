@@ -88,7 +88,7 @@ func writeSVGSingleEntry(
 	x, y float64,
 ) float64 {
 	// Title
-	title := html.EscapeString(fmt.Sprintf("%s: %s", entry.Role, entry.MetricName))
+	title := html.EscapeString(fmt.Sprintf("%s: %s", entry.Role(), entry.MetricName()))
 	fmt.Fprintf(f,
 		"<text x=\"%.2f\" y=\"%.2f\""+
 			" font-family=\"sans-serif\" font-size=\"%.1f\""+
@@ -97,7 +97,7 @@ func writeSVGSingleEntry(
 
 	y += titleFontSize + labelGap
 
-	if entry.Kind == metric.Classification {
+	if entry.Kind() == metric.Classification {
 		return writeSVGCategorySwatches(f, dc, orientation, entry, x, y)
 	}
 
@@ -112,7 +112,7 @@ func writeSVGNumericSwatches(
 	entry LegendEntry,
 	x, y float64,
 ) float64 {
-	if entry.NumBuckets() <= 0 || len(entry.Palette.Colours) == 0 {
+	if entry.NumBuckets() <= 0 || len(entry.Palette().Colours) == 0 {
 		return y
 	}
 
@@ -129,8 +129,8 @@ func writeSVGNumericV(f *os.File, entry LegendEntry, x, y float64) float64 {
 		colour := mapBucketColour(i, entry)
 		writeSVGSwatch(f, x, y, colourToHex(colour))
 
-		if entry.Buckets != nil && i < len(entry.Buckets.Boundaries) {
-			label := formatBreakpoint(entry.Buckets.Boundaries[i])
+		if entry.Buckets() != nil && i < len(entry.Buckets().Boundaries) {
+			label := formatBreakpoint(entry.Buckets().Boundaries[i])
 			fmt.Fprintf(f,
 				"<text x=\"%.2f\" y=\"%.2f\""+
 					" font-family=\"sans-serif\" font-size=\"%.1f\""+
@@ -153,8 +153,8 @@ func writeSVGNumericH(f *os.File, entry LegendEntry, x, y float64) float64 {
 		colour := mapBucketColour(i, entry)
 		writeSVGSwatch(f, cx, y, colourToHex(colour))
 
-		if entry.Buckets != nil && i < len(entry.Buckets.Boundaries) {
-			label := formatBreakpoint(entry.Buckets.Boundaries[i])
+		if entry.Buckets() != nil && i < len(entry.Buckets().Boundaries) {
+			label := formatBreakpoint(entry.Buckets().Boundaries[i])
 			fmt.Fprintf(f,
 				"<text x=\"%.2f\" y=\"%.2f\""+
 					" font-family=\"sans-serif\" font-size=\"%.1f\""+
@@ -178,7 +178,7 @@ func writeSVGCategorySwatches(
 	entry LegendEntry,
 	x, y float64,
 ) float64 {
-	cats := entry.Categories
+	cats := entry.Categories()
 
 	if orientation == LegendOrientationHorizontal {
 		y = writeSVGCategoryH(f, dc, cats, x, y)
