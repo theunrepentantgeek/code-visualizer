@@ -13,20 +13,20 @@ import (
 // git-based metric providers. The seven individually identical provider files
 // are replaced by a single table in providerDefs.
 type gitProvider struct {
-	name          metric.Name
-	kind          metric.Kind
-	description   string
+	name           metric.Name
+	kind           metric.Kind
+	description    string
 	defaultPalette palette.PaletteName
-	process       func(*repoService, *model.File, string)
-	onFile        func()
+	process        func(*repoService, *model.File, string)
+	onFile         func()
 }
 
-func (p *gitProvider) Name() metric.Name                  { return p.name }
-func (p *gitProvider) Kind() metric.Kind                  { return p.kind }
-func (p *gitProvider) Description() string                { return p.description }
-func (p *gitProvider) Dependencies() []metric.Name        { return nil }
+func (p *gitProvider) Name() metric.Name                   { return p.name }
+func (p *gitProvider) Kind() metric.Kind                   { return p.kind }
+func (p *gitProvider) Description() string                 { return p.description }
+func (_ *gitProvider) Dependencies() []metric.Name         { return nil }
 func (p *gitProvider) DefaultPalette() palette.PaletteName { return p.defaultPalette }
-func (p *gitProvider) SetOnFileProcessed(fn func())       { p.onFile = fn }
+func (p *gitProvider) SetOnFileProcessed(fn func())        { p.onFile = fn }
 
 func (p *gitProvider) Load(root *model.Directory) error {
 	return walkGitFiles(root, string(p.name), p.onFile, p.process)
@@ -34,84 +34,85 @@ func (p *gitProvider) Load(root *model.Directory) error {
 
 // providerDef holds the static fields for one gitProvider.
 type providerDef struct {
-	name          metric.Name
-	kind          metric.Kind
-	description   string
+	name           metric.Name
+	kind           metric.Kind
+	description    string
 	defaultPalette palette.PaletteName
-	process       func(*repoService, *model.File, string)
+	process        func(*repoService, *model.File, string)
 }
 
 // providerDefs is the authoritative list of all git metric providers.
 // Adding a new git metric requires only a new entry here.
 var providerDefs = []providerDef{
 	{
-		name:          FileAge,
-		kind:          metric.Quantity,
-		description:   "Time since first commit (days); older files score higher.",
+		name:           FileAge,
+		kind:           metric.Quantity,
+		description:    "Time since first commit (days); older files score higher.",
 		defaultPalette: palette.Temperature,
-		process:       quantityProcess(FileAge, (*repoService).fileAge),
+		process:        quantityProcess(FileAge, (*repoService).fileAge),
 	},
 	{
-		name:          FileFreshness,
-		kind:          metric.Quantity,
-		description:   "Time since most recent commit (days); recently changed files score higher.",
+		name:           FileFreshness,
+		kind:           metric.Quantity,
+		description:    "Time since most recent commit (days); recently changed files score higher.",
 		defaultPalette: palette.Temperature,
-		process:       quantityProcess(FileFreshness, (*repoService).fileFreshness),
+		process:        quantityProcess(FileFreshness, (*repoService).fileFreshness),
 	},
 	{
-		name:          AuthorCount,
-		kind:          metric.Quantity,
-		description:   "Number of distinct commit authors; files touched by many people score higher.",
+		name:           AuthorCount,
+		kind:           metric.Quantity,
+		description:    "Number of distinct commit authors; files touched by many people score higher.",
 		defaultPalette: palette.GoodBad,
-		process:       quantityProcess(AuthorCount, (*repoService).authorCount),
+		process:        quantityProcess(AuthorCount, (*repoService).authorCount),
 	},
 	{
-		name:          CommitCount,
-		kind:          metric.Quantity,
-		description:   "Number of commits that modified the file; frequently changed files score higher.",
+		name:           CommitCount,
+		kind:           metric.Quantity,
+		description:    "Number of commits that modified the file; frequently changed files score higher.",
 		defaultPalette: palette.Temperature,
-		process:       quantityProcess(CommitCount, (*repoService).commitCount),
+		process:        quantityProcess(CommitCount, (*repoService).commitCount),
 	},
 	{
-		name:          TotalLinesAdded,
-		kind:          metric.Quantity,
-		description:   "Accumulated lines added over all commits (excluding file creation); high churn files score higher.",
+		name:           TotalLinesAdded,
+		kind:           metric.Quantity,
+		description:    "Lines added over all commits, excluding the initial commit; high-churn files score higher.",
 		defaultPalette: palette.Temperature,
-		process:       quantityProcess(TotalLinesAdded, (*repoService).totalLinesAdded),
+		process:        quantityProcess(TotalLinesAdded, (*repoService).totalLinesAdded),
 	},
 	{
-		name:          TotalLinesRemoved,
-		kind:          metric.Quantity,
-		description:   "Accumulated lines removed over all commits; high churn files score higher.",
+		name:           TotalLinesRemoved,
+		kind:           metric.Quantity,
+		description:    "Accumulated lines removed over all commits; high churn files score higher.",
 		defaultPalette: palette.Temperature,
-		process:       quantityProcess(TotalLinesRemoved, (*repoService).totalLinesRemoved),
+		process:        quantityProcess(TotalLinesRemoved, (*repoService).totalLinesRemoved),
 	},
 	{
-		name:          CommitDensity,
-		kind:          metric.Measure,
-		description:   "Commits per month of file lifetime; frequently changed files score higher.",
+		name:           CommitDensity,
+		kind:           metric.Measure,
+		description:    "Commits per month of file lifetime; frequently changed files score higher.",
 		defaultPalette: palette.Temperature,
-		process:       measureProcess(CommitDensity, (*repoService).commitDensity),
+		process:        measureProcess(CommitDensity, (*repoService).commitDensity),
 	},
 }
 
 // newProvider creates a fresh gitProvider instance for the given metric name.
-// Returns nil if the name is not a recognised git metric.
+// Panics if name is not a recognised git metric (programmer error).
 func newProvider(name metric.Name) *gitProvider {
 	for i := range providerDefs {
 		if providerDefs[i].name == name {
 			d := &providerDefs[i]
+
 			return &gitProvider{
-				name:          d.name,
-				kind:          d.kind,
-				description:   d.description,
+				name:           d.name,
+				kind:           d.kind,
+				description:    d.description,
 				defaultPalette: d.defaultPalette,
-				process:       d.process,
+				process:        d.process,
 			}
 		}
 	}
 
-	return nil
+	panic("newProvider: unknown git metric name: " + string(name))
 }
 
 // quantityProcess returns a walkGitFiles callback that computes an int64
