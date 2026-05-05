@@ -3,7 +3,7 @@ package model
 
 // File represents a single file in the scanned tree.
 type File struct {
-	MetricBag
+	MetricContainer
 	Path      string
 	Name      string
 	Extension string
