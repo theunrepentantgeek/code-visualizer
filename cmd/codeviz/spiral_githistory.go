@@ -1,4 +1,4 @@
-package spiral
+package main
 
 import (
 	"log/slog"
@@ -11,18 +11,18 @@ import (
 	"github.com/bevan/code-visualizer/internal/provider/git"
 )
 
-// CommitRecord represents a single commit touching a file.
-type CommitRecord struct {
+// commitRecord represents a single commit touching a file.
+type commitRecord struct {
 	FilePath  string
 	Timestamp time.Time
 	File      *model.File
 }
 
-// LoadCommitHistory walks the entire commit graph once and returns one
-// CommitRecord per file-commit pair. It uses a bulk tree-diff approach that is
+// loadCommitHistory walks the entire commit graph once and returns one
+// commitRecord per file-commit pair. It uses a bulk tree-diff approach that is
 // dramatically faster than per-file log queries.
 // The optional onCommitProcessed callback is invoked after each commit is examined.
-func LoadCommitHistory(root *model.Directory, onCommitProcessed func()) ([]CommitRecord, error) {
+func loadCommitHistory(root *model.Directory, onCommitProcessed func()) ([]commitRecord, error) {
 	repoRoot, err := git.RepoRootFor(root.Path)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to resolve git root")
@@ -52,7 +52,7 @@ func LoadCommitHistory(root *model.Directory, onCommitProcessed func()) ([]Commi
 	}
 
 	// Convert to records
-	var records []CommitRecord
+	var records []commitRecord
 
 	for path, timestamps := range history {
 		f, ok := filesByPath[path]
@@ -61,7 +61,7 @@ func LoadCommitHistory(root *model.Directory, onCommitProcessed func()) ([]Commi
 		}
 
 		for _, ts := range timestamps {
-			records = append(records, CommitRecord{
+			records = append(records, commitRecord{
 				FilePath:  f.Path,
 				Timestamp: ts,
 				File:      f,

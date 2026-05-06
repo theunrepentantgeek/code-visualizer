@@ -178,7 +178,7 @@ func (c *SpiralCmd) buildTimeBuckets(
 
 	histProg, stopHistTicker := buildHistoryProgress(flags)
 
-	records, err := spiral.LoadCommitHistory(root, histProg)
+	records, err := loadCommitHistory(root, histProg)
 
 	stopHistTicker()
 
@@ -503,7 +503,7 @@ func modeCategory(files []*model.File, m metric.Name) string {
 }
 
 // commitTimeRange returns the earliest and latest timestamps from commit records.
-func commitTimeRange(records []spiral.CommitRecord) (earliest time.Time, latest time.Time) {
+func commitTimeRange(records []commitRecord) (earliest time.Time, latest time.Time) {
 	minT := records[0].Timestamp
 	maxT := records[0].Timestamp
 
@@ -521,7 +521,7 @@ func commitTimeRange(records []spiral.CommitRecord) (earliest time.Time, latest 
 }
 
 // assignFilesToBuckets places each commit record's file into the appropriate time bucket.
-func assignFilesToBuckets(buckets []spiral.TimeBucket, records []spiral.CommitRecord) {
+func assignFilesToBuckets(buckets []spiral.TimeBucket, records []commitRecord) {
 	for _, rec := range records {
 		for i := range buckets {
 			if !rec.Timestamp.Before(buckets[i].Start) && rec.Timestamp.Before(buckets[i].End) {
