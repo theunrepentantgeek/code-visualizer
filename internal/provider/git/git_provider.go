@@ -24,7 +24,7 @@ type gitProvider struct {
 func (p *gitProvider) Name() metric.Name                   { return p.name }
 func (p *gitProvider) Kind() metric.Kind                   { return p.kind }
 func (p *gitProvider) Description() string                 { return p.description }
-func (_ *gitProvider) Dependencies() []metric.Name         { return nil }
+func (*gitProvider) Dependencies() []metric.Name           { return nil }
 func (p *gitProvider) DefaultPalette() palette.PaletteName { return p.defaultPalette }
 func (p *gitProvider) SetOnFileProcessed(fn func())        { p.onFile = fn }
 
@@ -34,60 +34,52 @@ func (p *gitProvider) Load(root *model.Directory) error {
 
 // providerDef holds the static fields for one gitProvider.
 type providerDef struct {
-	name           metric.Name
 	kind           metric.Kind
 	description    string
 	defaultPalette palette.PaletteName
 	process        func(*repoService, *model.File, string)
 }
 
-// providerDefs is the authoritative list of all git metric providers.
+// providerDefs is the authoritative map of all git metric providers.
 // Adding a new git metric requires only a new entry here.
-var providerDefs = []providerDef{
-	{
-		name:           FileAge,
+var providerDefs = map[metric.Name]providerDef{
+	FileAge: {
 		kind:           metric.Quantity,
 		description:    "Time since first commit (days); older files score higher.",
 		defaultPalette: palette.Temperature,
 		process:        quantityProcess(FileAge, (*repoService).fileAge),
 	},
-	{
-		name:           FileFreshness,
+	FileFreshness: {
 		kind:           metric.Quantity,
 		description:    "Time since most recent commit (days); recently changed files score higher.",
 		defaultPalette: palette.Temperature,
 		process:        quantityProcess(FileFreshness, (*repoService).fileFreshness),
 	},
-	{
-		name:           AuthorCount,
+	AuthorCount: {
 		kind:           metric.Quantity,
 		description:    "Number of distinct commit authors; files touched by many people score higher.",
 		defaultPalette: palette.GoodBad,
 		process:        quantityProcess(AuthorCount, (*repoService).authorCount),
 	},
-	{
-		name:           CommitCount,
+	CommitCount: {
 		kind:           metric.Quantity,
 		description:    "Number of commits that modified the file; frequently changed files score higher.",
 		defaultPalette: palette.Temperature,
 		process:        quantityProcess(CommitCount, (*repoService).commitCount),
 	},
-	{
-		name:           TotalLinesAdded,
+	TotalLinesAdded: {
 		kind:           metric.Quantity,
 		description:    "Lines added over all commits, excluding the initial commit; high-churn files score higher.",
 		defaultPalette: palette.Temperature,
 		process:        quantityProcess(TotalLinesAdded, (*repoService).totalLinesAdded),
 	},
-	{
-		name:           TotalLinesRemoved,
+	TotalLinesRemoved: {
 		kind:           metric.Quantity,
 		description:    "Accumulated lines removed over all commits; high churn files score higher.",
 		defaultPalette: palette.Temperature,
 		process:        quantityProcess(TotalLinesRemoved, (*repoService).totalLinesRemoved),
 	},
-	{
-		name:           CommitDensity,
+	CommitDensity: {
 		kind:           metric.Measure,
 		description:    "Commits per month of file lifetime; frequently changed files score higher.",
 		defaultPalette: palette.Temperature,
@@ -98,17 +90,13 @@ var providerDefs = []providerDef{
 // newProvider creates a fresh gitProvider instance for the given metric name.
 // Panics if name is not a recognised git metric (programmer error).
 func newProvider(name metric.Name) *gitProvider {
-	for i := range providerDefs {
-		if providerDefs[i].name == name {
-			d := &providerDefs[i]
-
-			return &gitProvider{
-				name:           d.name,
-				kind:           d.kind,
-				description:    d.description,
-				defaultPalette: d.defaultPalette,
-				process:        d.process,
-			}
+	if def, ok := providerDefs[name]; ok {
+		return &gitProvider{
+			name:           name,
+			kind:           def.kind,
+			description:    def.description,
+			defaultPalette: def.defaultPalette,
+			process:        def.process,
 		}
 	}
 
