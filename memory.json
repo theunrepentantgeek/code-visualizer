@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-05T12:59:05Z",
-  "run_id": "25377742651",
+  "last_run": "2026-05-06T09:08:11Z",
+  "run_id": "25426284926",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -10,24 +10,16 @@
     "128": "2026-04-29T13:13:03Z",
     "133": "2026-05-01T12:44:04Z",
     "155": "2026-05-05T12:59:05Z",
-    "159": "2026-05-05T12:59:05Z"
+    "159": "2026-05-06T09:08:11Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/improve-spiral-render-tests-20260503",
-      "pr_number": 163,
-      "title": "[Repo Assist] test(render): add spiral render smoke tests",
-      "status": "open",
-      "type": "tests",
-      "closes": []
-    },
-    {
-      "branch": "repo-assist/improve-git-provider-declarative-20260504",
-      "pr_number": 170,
-      "title": "[Repo Assist] refactor(git): replace 7 boilerplate providers with declarative gitProvider",
+      "branch": "repo-assist/fix-issue-159-spiral-githistory",
+      "pr_number": null,
+      "title": "[Repo Assist] refactor(spiral): move CommitRecord and LoadCommitHistory to cmd layer",
       "status": "open",
       "type": "refactor",
-      "closes": [155]
+      "closes": [159]
     }
   ],
   "issues_actioned": {
@@ -51,8 +43,8 @@
     "133": "closed by maintainer 2026-05-02 (PR #137 merged)",
     "134": "closed by maintainer 2026-05-02 (split metrics per-file done by maintainer squad)",
     "136": "closed by maintainer 2026-05-02 (new git metrics added by maintainer squad)",
-    "155": "labelled refactor 2026-05-03; PR #170 submitted 2026-05-04; lint fixed 2026-05-05; commented 2026-05-05",
-    "159": "labelled refactor 2026-05-03; commented with migration plan 2026-05-05",
+    "155": "labelled refactor 2026-05-03; PR #170 submitted 2026-05-04; merged 2026-05-06; issue closed",
+    "159": "labelled refactor 2026-05-03; commented with migration plan 2026-05-05; PR created 2026-05-06 (branch repo-assist/fix-issue-159-spiral-githistory)",
     "162": "labelled enhancement+refactor 2026-05-03 (squad assigned)"
   },
   "monthly_summary_issue": {
@@ -102,7 +94,10 @@
     "PR #150: bump gh-aw-actions (merged 2026-05-03)",
     "PR #151: docs spiral/metrics/terrain (merged 2026-05-03)",
     "Issue #116: research new linters (closed 2026-05-03)",
-    "PR #164: test(cmd) SpiralCmd tests (merged or closed - not in open PR list)"
+    "PR #163: test(render) spiral render smoke tests (merged 2026-05-06)",
+    "PR #164: test(cmd) SpiralCmd tests (merged or closed)",
+    "PR #170: refactor(git) declarative gitProvider, closes #155 (merged 2026-05-06)",
+    "Issue #155: replace 7 git provider wrappers (closed completed 2026-05-06)"
   ],
-  "notes": "PR #170 (closes #155) has CI fixes pushed. PR #163 has CI fix pushed. Both await review. Issue #159 now has migration plan comment. Issues #152, #158, #162 have squad assignments. Next run: consider implementing #159 fix (move CommitRecord/LoadCommitHistory to cmd layer) as a new PR."
+  "notes": "PR for issue #159 (spiral githistory refactor) created this run (branch: repo-assist/fix-issue-159-spiral-githistory). PR number unknown until workflow completes. Only open issue now is #162 (provider interface split). Next run: find PR number for #159 fix and verify it passed CI."
 }
