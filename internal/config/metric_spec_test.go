@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -17,7 +16,7 @@ import (
 // TestMain registers filesystem providers so Validate tests can look up known metrics.
 func TestMain(m *testing.M) {
 	filesystem.Register()
-	os.Exit(m.Run())
+	m.Run()
 }
 
 // UnmarshalText tests
