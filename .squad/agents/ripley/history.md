@@ -113,3 +113,29 @@
 - **Proposal written to:** `.squad/decisions/inbox/ripley-spiral-architecture.md`
 - **Key files for implementation:** `internal/spiral/` (new package), `internal/config/spiral.go`, `internal/render/spiral.go`, `internal/render/svg_spiral.go`, `cmd/codeviz/spiral_cmd.go`, `cmd/codeviz/render_cmd.go` (add subcommand), `internal/config/config.go` (add Spiral field).
 
+### Issue #158 — Renderer Unification Architecture (2026-07-20)
+
+- **Task:** Architecture proposal to unify raster/SVG rendering paths across 8 renderer files + 2 legend files.
+- **Approach chosen:** Draw list (Option 2), not Strategy/Visitor. gg.Context is stateful (push/pop/stroke); SVG is declarative. An interface-based Canvas abstraction creates impedance mismatch. Draw list separates prepare (shared) from emit (backend-specific) cleanly.
+- **Key insight:** Codebase already has proto-draw-lists — `collectDiscs`/`collectSVGDiscs` in radial, `collectBubbleDirs`/`collectBubbleFiles` in bubble. Unifying means making these shared, not inventing a new pattern.
+- **Op types (8):** FillCircle, StrokeCircle, FillRect, StrokeRect, DrawLine, DrawText, DrawPath, DrawArcText. Closed set, type-switch in each emitter.
+- **Legend system:** Deepest duplication (12 parallel function pairs, 682 lines). PrepareLegend replaces both legend_png.go and legend_svg.go. Text measurement stays on gg.NewContext(1,1) — already the case for SVG legend.
+- **Ordering vs #152:** Do #158 first. It's a pure internal/render refactor with no cmd-layer changes. #152 (command workflow) benefits from unified render dispatch. Reverse order would require changing both layers.
+- **Migration strategy:** 6 phases (draw list types → treemap → radial → bubble → spiral → legend), each a self-contained PR with golden test verification.
+- **Estimated outcome:** ~600–800 lines eliminated, zero duplicated logic between PNG/SVG paths.
+- **Proposal written to:** `.squad/decisions/inbox/ripley-renderer-unification-design.md`
+
+### Issue #152 — Command Workflow Extraction Architecture (2026-07-20)
+
+- **Task:** Architecture proposal to extract shared orchestration from 4 viz commands (2,576 lines total).
+- **Analysis:** Categorized all duplication into 4 buckets: (1) identical functions (validatePaths, buildFilterRules, filterBinaryFiles, etc.), (2) same-pattern-different-config (mergeConfigAndValidate, applyOverrides, validateConfig, Run body), (3) structurally identical but different node types (colour tree-walks), (4) truly viz-specific (layout, render, spiral time-bucketing).
+- **Key constraint:** Kong struct tags can't be shared via embedding when field names differ (Size vs DiscSize) or defaults differ (Height 1080 vs 1920). CLI structs must stay per-viz.
+- **Proposed approach:** Three new files in cmd/codeviz/ — `workflow.go` (shared functions), `pipeline.go` (RunPipeline orchestration), `colour.go` (ColourDispatch for border/fill resolution). No new packages.
+- **Spiral is the outlier:** Time-series, not tree-based. Shares scan+metrics pipeline but adds its own time-bucketing phase. Pipeline returns after export, spiral adds its own steps.
+- **Colour application stays per-viz:** Treemap/radial use positional tree-walking (identical, can share). Bubble uses path-indexed maps. Spiral uses flat slices. Abstracting all four into one interface is over-engineering.
+- **Estimated savings:** ~700-800 lines (2,576 → ~1,800). Remaining lines are genuinely viz-specific.
+- **Phase ordering:** Phase 1 (workflow.go) → Phase 2 (pipeline.go) → Phase 3 (colour.go). Phase 4 (VizConfig interface) optional.
+- **Relationship to #158:** Renderer unification (#158) should land first — it's a pure internal/render refactor. This proposal (#152) benefits from unified render dispatch.
+- **Lint compliance:** All proposed files respect funlen ≤ 65 and max-public-structs ≤ 5.
+- **Proposal written to:** `.squad/decisions/inbox/ripley-command-workflow-design.md`
+

@@ -10,7 +10,14 @@ import (
 
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 )
+
+// TestMain registers filesystem providers so Validate tests can look up known metrics.
+func TestMain(m *testing.M) {
+	filesystem.Register()
+	m.Run()
+}
 
 // UnmarshalText tests
 
@@ -297,4 +304,99 @@ func TestMetricSpec_YAML_UnmarshalScalar_Fallback(t *testing.T) {
 	g.Expect(yaml.Unmarshal([]byte(`"file-type,categorization"`), &ms)).To(Succeed())
 	g.Expect(ms.Metric).To(Equal(metric.Name("file-type")))
 	g.Expect(ms.Palette).To(Equal(palette.PaletteName("categorization")))
+}
+
+// MarshalText tests
+
+func TestMetricSpec_MarshalText_MetricOnly_ProducesMetricBytes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := MetricSpec{Metric: metric.Name("file-size")}
+	b, err := ms.MarshalText()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(b)).To(Equal("file-size"))
+}
+
+func TestMetricSpec_MarshalText_MetricAndPalette_ProducesFullBytes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := MetricSpec{Metric: metric.Name("file-type"), Palette: palette.PaletteName("categorization")}
+	b, err := ms.MarshalText()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(b)).To(Equal("file-type,categorization"))
+}
+
+func TestMetricSpec_MarshalText_Zero_ProducesEmptyBytes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b, err := MetricSpec{}.MarshalText()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(b).To(BeEmpty())
+}
+
+// Validate tests
+
+func TestMetricSpec_Validate_NilReceiver_ReturnsNil(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var ms *MetricSpec
+	g.Expect(ms.Validate("fill")).To(Succeed())
+}
+
+func TestMetricSpec_Validate_EmptySpec_ReturnsNil(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect((&MetricSpec{}).Validate("fill")).To(Succeed())
+}
+
+func TestMetricSpec_Validate_KnownMetric_ReturnsNil(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := &MetricSpec{Metric: "file-size"}
+	g.Expect(ms.Validate("size")).To(Succeed())
+}
+
+func TestMetricSpec_Validate_UnknownMetric_ReturnsError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := &MetricSpec{Metric: "not-a-real-metric"}
+	err := ms.Validate("fill")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring(`invalid fill metric "not-a-real-metric"`)))
+}
+
+func TestMetricSpec_Validate_KnownMetricAndValidPalette_ReturnsNil(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := &MetricSpec{Metric: "file-lines", Palette: palette.Temperature}
+	g.Expect(ms.Validate("fill")).To(Succeed())
+}
+
+func TestMetricSpec_Validate_InvalidPalette_ReturnsError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := &MetricSpec{Metric: "file-size", Palette: "no-such-palette"}
+	err := ms.Validate("fill")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring(`invalid fill palette "no-such-palette"`)))
+}
+
+func TestMetricSpec_Validate_EmptyMetricWithInvalidPalette_ReturnsError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Palette is checked even when Metric is empty.
+	ms := &MetricSpec{Palette: "bogus"}
+	err := ms.Validate("border")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring(`invalid border palette "bogus"`)))
 }
