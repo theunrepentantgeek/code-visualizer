@@ -65,8 +65,8 @@ func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
 			return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 		}
 
-		if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-			return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
+		if p.Kind != metric.Quantity && p.Kind != metric.Measure {
+			return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind)
 		}
 	}
 
@@ -398,7 +398,7 @@ func (*SpiralCmd) resolveFillPalette(cfg *config.Spiral, fillMetric metric.Name)
 	}
 
 	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
+		return p.DefaultPalette
 	}
 
 	return palette.Neutral
@@ -462,7 +462,7 @@ func aggregateColourMetric(files []*model.File, m metric.Name, numVal *float64, 
 		return
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		*numVal = sumNumericMetric(files, m)
 	} else {
 		*catLabel = modeCategory(files, m)
@@ -586,7 +586,7 @@ func (c *SpiralCmd) applyFill(
 		return fillMetric, fillPaletteName
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		applySpiralNumericFill(nodes, buckets, fillPalette)
 	} else {
 		applySpiralCategoricalFill(nodes, buckets, fillPalette)
@@ -642,7 +642,7 @@ func (*SpiralCmd) applyBorder(
 	borderPaletteName := specPalette(cfg.Border)
 	if borderPaletteName == "" {
 		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
+			borderPaletteName = p.DefaultPalette
 		} else {
 			borderPaletteName = palette.Neutral
 		}
@@ -655,7 +655,7 @@ func (*SpiralCmd) applyBorder(
 		return border, borderPaletteName
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		applySpiralNumericBorder(nodes, buckets, borderPalette)
 	} else {
 		applySpiralCategoricalBorder(nodes, buckets, borderPalette)

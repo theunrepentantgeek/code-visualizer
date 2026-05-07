@@ -61,8 +61,8 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", discSize, formatMetricNames())
 	}
 
-	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", discSize, p.Kind())
+	if p.Kind != metric.Quantity && p.Kind != metric.Measure {
+		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", discSize, p.Kind)
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {
@@ -323,7 +323,7 @@ func (*RadialCmd) resolveFillPalette(cfg *config.Radial, fillMetric metric.Name)
 	}
 
 	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
+		return p.DefaultPalette
 	}
 
 	return palette.Neutral
@@ -374,7 +374,7 @@ func applyRadialFillColoursTop(
 		return
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
@@ -401,7 +401,7 @@ func (*RadialCmd) applyBorderColours(
 	borderPaletteName := specPalette(cfg.Border)
 	if borderPaletteName == "" {
 		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
+			borderPaletteName = p.DefaultPalette
 		} else {
 			borderPaletteName = palette.Neutral
 		}
@@ -414,7 +414,7 @@ func (*RadialCmd) applyBorderColours(
 		return border, borderPaletteName
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		values := collectNumericValues(root, border)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))

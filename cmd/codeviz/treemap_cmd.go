@@ -62,8 +62,8 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}
 
-	if p.Kind() != metric.Quantity {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
+	if p.Kind != metric.Quantity {
+		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind)
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {
@@ -277,7 +277,7 @@ func resolveBorderPaletteName(cfg *config.Treemap) (metric.Name, palette.Palette
 	}
 
 	if p, ok := provider.Get(border); ok {
-		return border, p.DefaultPalette()
+		return border, p.DefaultPalette
 	}
 
 	return border, palette.Neutral
@@ -464,7 +464,7 @@ func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.Nam
 	}
 
 	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
+		return p.DefaultPalette
 	}
 
 	return palette.Neutral
@@ -506,7 +506,7 @@ func applyFillColours(
 		return
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
@@ -533,7 +533,7 @@ func (*TreemapCmd) applyBorderColours(
 	borderPaletteName := specPalette(cfg.Border)
 	if borderPaletteName == "" {
 		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
+			borderPaletteName = p.DefaultPalette
 		} else {
 			borderPaletteName = palette.Neutral
 		}
@@ -546,7 +546,7 @@ func (*TreemapCmd) applyBorderColours(
 		return border, borderPaletteName
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		values := collectNumericValues(root, border)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))

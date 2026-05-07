@@ -111,7 +111,7 @@ func buildLegendEntry(
 
 	pal := palette.GetPalette(paletteName)
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		var buckets *metric.BucketBoundaries
 
 		values := collectNumericValues(root, metricName)
@@ -120,7 +120,7 @@ func buildLegendEntry(
 			buckets = &b
 		}
 
-		entry := render.NewNumericLegendEntry(role, string(metricName), p.Kind(), buckets, pal)
+		entry := render.NewNumericLegendEntry(role, string(metricName), p.Kind, buckets, pal)
 
 		return &entry
 	}
