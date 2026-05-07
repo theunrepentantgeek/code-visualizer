@@ -22,15 +22,15 @@ func (HelpMetricsCmd) Run(_ *Flags) error {
 	hasGit := false
 
 	for _, p := range providers {
-		k := kindLabel(p.Kind())
-		desc := p.Description()
+		k := kindLabel(p.Kind)
+		desc := p.Description
 
-		if git.IsGitMetric(p.Name()) {
+		if git.IsGitMetric(p.Name) {
 			hasGit = true
 			desc += " †"
 		}
 
-		tbl.AddRow(string(p.Name()), k, string(p.DefaultPalette()), desc)
+		tbl.AddRow(string(p.Name), k, string(p.DefaultPalette), desc)
 	}
 
 	content := &strings.Builder{}

@@ -10,37 +10,31 @@ import (
 	"github.com/bevan/code-visualizer/internal/palette"
 )
 
-// stubProvider is a minimal Interface implementation for testing.
-type stubProvider struct {
-	name metric.Name
-	kind metric.Kind
-}
+// stubLoader is a minimal Loader implementation for testing.
+type stubLoader struct{}
 
-func (s *stubProvider) Name() metric.Name                 { return s.name }
-func (s *stubProvider) Kind() metric.Kind                 { return s.kind }
-func (*stubProvider) Description() string                 { return "" }
-func (*stubProvider) Dependencies() []metric.Name         { return nil }
-func (*stubProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
-func (*stubProvider) Load(_ *model.Directory) error       { return nil }
+func (*stubLoader) Load(_ *model.Directory) error { return nil }
+
+func testDesc(name metric.Name, kind metric.Kind) MetricDescriptor {
+	return MetricDescriptor{
+		Name:           name,
+		Kind:           kind,
+		DefaultPalette: palette.Neutral,
+	}
+}
 
 func TestRegisterAndGet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	p := &stubProvider{name: "test-metric", kind: metric.Quantity}
-	reg.register(p)
+	desc := testDesc("test-metric", metric.Quantity)
+	reg.register(desc, &stubLoader{})
 
 	got, ok := reg.get("test-metric")
 	g.Expect(ok).To(BeTrue())
-	g.Expect(got).ToNot(BeNil())
-
-	if got == nil {
-		return
-	}
-
-	g.Expect(got.Name()).To(Equal(metric.Name("test-metric")))
-	g.Expect(got.Kind()).To(Equal(metric.Quantity))
+	g.Expect(got.Name).To(Equal(metric.Name("test-metric")))
+	g.Expect(got.Kind).To(Equal(metric.Quantity))
 }
 
 func TestGetUnregistered(t *testing.T) {
@@ -57,8 +51,8 @@ func TestAllProviders(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	reg.register(&stubProvider{name: "m1", kind: metric.Quantity})
-	reg.register(&stubProvider{name: "m2", kind: metric.Classification})
+	reg.register(testDesc("m1", metric.Quantity), &stubLoader{})
+	reg.register(testDesc("m2", metric.Classification), &stubLoader{})
 
 	all := reg.all()
 	g.Expect(all).To(HaveLen(2))
@@ -69,10 +63,10 @@ func TestRegisterDuplicatePanics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	reg.register(&stubProvider{name: "dup", kind: metric.Quantity})
+	reg.register(testDesc("dup", metric.Quantity), &stubLoader{})
 
 	g.Expect(func() {
-		reg.register(&stubProvider{name: "dup", kind: metric.Quantity})
+		reg.register(testDesc("dup", metric.Quantity), &stubLoader{})
 	}).To(Panic())
 }
 
@@ -81,9 +75,9 @@ func TestNamesSorted(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reg := newRegistry()
-	reg.register(&stubProvider{name: "zebra", kind: metric.Quantity})
-	reg.register(&stubProvider{name: "alpha", kind: metric.Quantity})
-	reg.register(&stubProvider{name: "mid", kind: metric.Quantity})
+	reg.register(testDesc("zebra", metric.Quantity), &stubLoader{})
+	reg.register(testDesc("alpha", metric.Quantity), &stubLoader{})
+	reg.register(testDesc("mid", metric.Quantity), &stubLoader{})
 
 	names := reg.names()
 	g.Expect(names).To(Equal([]metric.Name{"alpha", "mid", "zebra"}))

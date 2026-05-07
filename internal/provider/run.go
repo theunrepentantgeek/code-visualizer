@@ -49,10 +49,10 @@ func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Na
 		g := new(errgroup.Group)
 
 		for _, name := range level {
-			p, _ := reg.get(name)
+			loader, _ := reg.getLoader(name)
 
 			g.Go(func() error {
-				return runProvider(p, root, name, progress)
+				return runProvider(loader, root, name, progress)
 			})
 		}
 
@@ -65,18 +65,18 @@ func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Na
 }
 
 // runProvider executes a single provider, notifying progress before and after.
-func runProvider(p Interface, root *model.Directory, name metric.Name, progress MetricProgress) error {
+func runProvider(loader Loader, root *model.Directory, name metric.Name, progress MetricProgress) error {
 	if progress != nil {
 		progress.OnMetricStarted(name)
 	}
 
-	if reporter, ok := p.(FileProgressReporter); ok && progress != nil {
+	if reporter, ok := loader.(FileProgressReporter); ok && progress != nil {
 		reporter.SetOnFileProcessed(func() {
 			progress.OnFileProcessed(name)
 		})
 	}
 
-	if err := p.Load(root); err != nil {
+	if err := loader.Load(root); err != nil {
 		return eris.Wrapf(err, "provider load failed for metric %q", name)
 	}
 
@@ -107,15 +107,15 @@ func visitDep(reg *registry, name metric.Name, seen map[metric.Name]bool, result
 		return nil
 	}
 
-	p, ok := reg.get(name)
-	if !ok || p == nil {
+	desc, ok := reg.get(name)
+	if !ok {
 		return eris.Errorf("unknown metric %q; available metrics: %s", name, formatNames(reg.names()))
 	}
 
 	seen[name] = true
 	*result = append(*result, name)
 
-	for _, dep := range p.Dependencies() {
+	for _, dep := range desc.Dependencies {
 		if err := visitDep(reg, dep, seen, result); err != nil {
 			return err
 		}
@@ -159,12 +159,12 @@ func addEdges(
 	inDegree map[metric.Name]int,
 	dependents map[metric.Name][]metric.Name,
 ) {
-	p, ok := reg.get(n)
-	if !ok || p == nil {
+	desc, ok := reg.get(n)
+	if !ok {
 		return
 	}
 
-	for _, dep := range p.Dependencies() {
+	for _, dep := range desc.Dependencies {
 		if nameSet[dep] {
 			inDegree[n]++
 			dependents[dep] = append(dependents[dep], n)

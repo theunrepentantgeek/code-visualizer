@@ -1,11 +1,17 @@
 package git
 
-import "github.com/bevan/code-visualizer/internal/provider"
+import (
+	"github.com/bevan/code-visualizer/internal/provider"
+)
 
 // Register adds all git metric providers to the global registry.
 func Register() {
-	for name := range providerDefs {
-		gp := newProvider(name)
-		provider.Register(gp)
+	for name, def := range providerDefs {
+		provider.Register(provider.MetricDescriptor{
+			Name:           name,
+			Kind:           def.kind,
+			Description:    def.description,
+			DefaultPalette: def.defaultPalette,
+		}, newProvider(name))
 	}
 }

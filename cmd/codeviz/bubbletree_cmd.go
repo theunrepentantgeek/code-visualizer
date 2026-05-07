@@ -66,8 +66,8 @@ func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}
 
-	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
+	if p.Kind != metric.Quantity && p.Kind != metric.Measure {
+		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind)
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {
@@ -330,7 +330,7 @@ func (*BubbletreeCmd) resolveFillPalette(cfg *config.Bubbletree, fillMetric metr
 	}
 
 	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
+		return p.DefaultPalette
 	}
 
 	return palette.Neutral
@@ -381,7 +381,7 @@ func applyBubbleFillColoursTop(
 		return
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		values := collectNumericValues(root, fillMetric)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
@@ -408,7 +408,7 @@ func (*BubbletreeCmd) applyBorderColours(
 	borderPaletteName := specPalette(cfg.Border)
 	if borderPaletteName == "" {
 		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
+			borderPaletteName = p.DefaultPalette
 		} else {
 			borderPaletteName = palette.Neutral
 		}
@@ -421,7 +421,7 @@ func (*BubbletreeCmd) applyBorderColours(
 		return border, borderPaletteName
 	}
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if p.Kind == metric.Quantity || p.Kind == metric.Measure {
 		values := collectNumericValues(root, border)
 		if len(values) > 0 {
 			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
