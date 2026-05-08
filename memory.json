@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-06T11:00:00Z",
-  "run_id": "25437814326",
+  "last_run": "2026-05-08T13:01:00Z",
+  "run_id": "25556925131",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -11,23 +11,23 @@
     "133": "2026-05-01T12:44:04Z",
     "155": "2026-05-05T12:59:05Z",
     "159": "2026-05-06T09:08:11Z",
-    "162": "2026-05-06T11:00:00Z"
+    "162": "2026-05-07T13:44:22Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/fix-issue-159-spiral-githistory-f9af2127635b7b80",
-      "pr_number": 171,
-      "title": "[Repo Assist] refactor(spiral): move CommitRecord and LoadCommitHistory to cmd layer",
+      "branch": "repo-assist/refactor-provider-interface-20260507-8cd7ff7099805dcb",
+      "pr_number": 174,
+      "title": "[Repo Assist] refactor(provider): split Interface into MetricDescriptor + Loader",
       "status": "open",
       "type": "refactor",
-      "closes": [159]
+      "closes": [162]
     },
     {
-      "branch": "repo-assist/test-metric-spec-validate-20260506",
+      "branch": "repo-assist/eng-release-build-20260508",
       "pr_number": null,
-      "title": "[Repo Assist] test(config): add MarshalText and Validate tests for MetricSpec",
+      "title": "[Repo Assist] fix(release): add cross-platform build task and fix release workflow",
       "status": "open",
-      "type": "test",
+      "type": "fix",
       "closes": []
     }
   ],
@@ -53,8 +53,8 @@
     "134": "closed by maintainer 2026-05-02 (split metrics per-file done by maintainer squad)",
     "136": "closed by maintainer 2026-05-02 (new git metrics added by maintainer squad)",
     "155": "labelled refactor 2026-05-03; PR #170 submitted 2026-05-04; merged 2026-05-06; issue closed",
-    "159": "labelled refactor 2026-05-03; commented with migration plan 2026-05-05; PR #171 created 2026-05-06 (open, draft)",
-    "162": "labelled enhancement+refactor 2026-05-03 (squad assigned); commented with implementation sketch 2026-05-06"
+    "159": "labelled refactor 2026-05-03; PR #171 created/merged 2026-05-06; issue closed",
+    "162": "labelled enhancement+refactor 2026-05-03; commented with implementation sketch 2026-05-06; PR #174 submitted 2026-05-07 (open)"
   },
   "monthly_summary_issue": {
     "title": "[Repo Assist] Monthly Activity 2026-05",
@@ -106,7 +106,10 @@
     "PR #163: test(render) spiral render smoke tests (merged 2026-05-06)",
     "PR #164: test(cmd) SpiralCmd tests (merged or closed)",
     "PR #170: refactor(git) declarative gitProvider, closes #155 (merged 2026-05-06)",
-    "Issue #155: replace 7 git provider wrappers (closed completed 2026-05-06)"
+    "Issue #155: replace 7 git provider wrappers (closed completed 2026-05-06)",
+    "PR #171: refactor(spiral) move CommitRecord to cmd layer, closes #159 (merged)",
+    "PR #172: test(config) MarshalText+Validate tests (merged)",
+    "Issue #159: spiral git history refactor (closed completed)"
   ],
-  "notes": "PR #171 (issue #159, spiral githistory refactor) confirmed open — draft, no CI yet. New PR created this run: test(config) MarshalText+Validate tests (MetricSpec had 0% coverage in config package tests). Commented on #162 with implementation sketch. Next run: check if PR #171 and new test PR passed CI; check if squad has made progress on #162."
+  "notes": "PR #174 (refactor provider interface, closes #162) is open draft — CI never triggered due to GITHUB_TOKEN limitation on workflow triggers. Verified manually: all 19 tests pass on the branch. New PR created this run: fix(release) add cross-platform build task and fix release workflow — found bug where release.yml uploaded build/* but task build only wrote to bin/. Issue #173 (deps update, protected files) still open — needs maintainer to manually create PR. Next run: check if PRs merged; look for other improvements."
 }
