@@ -1,3 +1,6 @@
+// Package types defines the shared types used by the canvas package
+// and its backend implementations. It exists to break import cycles
+// between the canvas package and backend packages.
 package types
 
 import (

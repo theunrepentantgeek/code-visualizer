@@ -162,7 +162,7 @@ func loadImage(t *testing.T, path string) image.Image {
 		t.Fatal(err)
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	img, _, err := image.Decode(f)
 	if err != nil {

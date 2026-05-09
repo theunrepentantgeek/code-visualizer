@@ -89,6 +89,9 @@ func (r *rasterBackend) DrawText(
 	rotation float64,
 ) {
 	r.dc.SetColor(ink)
+	// fontSize is accepted for interface conformance but requires a loaded
+	// font face to take effect; the default gg font ignores size changes.
+	_ = fontSize
 
 	ax := anchorX(anchor)
 
