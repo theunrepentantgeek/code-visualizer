@@ -1,12 +1,11 @@
 package canvas
 
 import (
-	"github.com/bevan/code-visualizer/internal/canvas/types"
+	"github.com/bevan/code-visualizer/internal/canvas/model"
 )
 
-// Position is re-exported from types for backward compatibility.
-type Position = types.Position
+// Position is re-exported from model for backward compatibility.
+type Position = model.Position
 
-// Size is re-exported from types for backward compatibility.
-type Size = types.Size
-
+// Size is re-exported from model for backward compatibility.
+type Size = model.Size

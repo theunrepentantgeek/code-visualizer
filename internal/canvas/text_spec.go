@@ -1,7 +1,7 @@
 package canvas
 
 import (
-	"github.com/bevan/code-visualizer/internal/canvas/types"
+	"github.com/bevan/code-visualizer/internal/canvas/model"
 )
 
 // LabelStyle controls how labels are rendered on shapes.
@@ -16,16 +16,16 @@ const (
 	LabelRadial
 )
 
-// TextAnchor is re-exported from types for backward compatibility.
-type TextAnchor = types.TextAnchor
+// TextAnchor is re-exported from model for backward compatibility.
+type TextAnchor = model.TextAnchor
 
 const (
 	// AnchorStart aligns text to the left.
-	AnchorStart = types.AnchorStart
+	AnchorStart = model.AnchorStart
 	// AnchorMiddle centers text horizontally.
-	AnchorMiddle = types.AnchorMiddle
+	AnchorMiddle = model.AnchorMiddle
 	// AnchorEnd aligns text to the right.
-	AnchorEnd = types.AnchorEnd
+	AnchorEnd = model.AnchorEnd
 )
 
 // TextSpec defines the visual template for standalone text.
@@ -37,4 +37,3 @@ type TextSpec struct {
 	Anchor   TextAnchor
 	Rotation float64 // radians
 }
-

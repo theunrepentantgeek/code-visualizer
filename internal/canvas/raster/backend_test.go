@@ -11,7 +11,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/canvas/types"
+	"github.com/bevan/code-visualizer/internal/canvas/model"
 )
 
 func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
@@ -23,8 +23,8 @@ func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		types.Position{X: 10, Y: 10},
-		types.Size{Width: 80, Height: 60},
+		model.Position{X: 10, Y: 10},
+		model.Size{Width: 80, Height: 60},
 		red, blk, 2.0,
 	)
 
@@ -46,7 +46,7 @@ func TestRasterBackend_DrawDisc_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawDisc(
-		types.Position{X: 100, Y: 100},
+		model.Position{X: 100, Y: 100},
 		50, blue, blk, 1.0,
 	)
 
@@ -66,9 +66,9 @@ func TestRasterBackend_DrawText_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawText(
-		types.Position{X: 100, Y: 50},
+		model.Position{X: 100, Y: 50},
 		"hello", blk, 14.0,
-		types.AnchorMiddle, 0,
+		model.AnchorMiddle, 0,
 	)
 
 	out := filepath.Join(t.TempDir(), "text.png")
@@ -77,7 +77,10 @@ func TestRasterBackend_DrawText_ProducesValidPNG(t *testing.T) {
 
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(info.Size()).To(BeNumerically(">", 0))
+
+	if info != nil {
+		g.Expect(info.Size()).To(BeNumerically(">", 0))
+	}
 }
 
 func TestRasterBackend_DrawLine_ProducesValidPNG(t *testing.T) {
@@ -88,8 +91,8 @@ func TestRasterBackend_DrawLine_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawLine(
-		types.Position{X: 0, Y: 0},
-		types.Position{X: 200, Y: 200},
+		model.Position{X: 0, Y: 0},
+		model.Position{X: 200, Y: 200},
 		blk, 2.0,
 	)
 
@@ -106,7 +109,7 @@ func TestRasterBackend_DrawPath_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawPath(
-		[]types.Position{
+		[]model.Position{
 			{X: 10, Y: 10},
 			{X: 100, Y: 50},
 			{X: 190, Y: 10},
@@ -131,7 +134,10 @@ func TestRasterBackend_Finish_JPG(t *testing.T) {
 
 	info, err := os.Stat(out)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(info.Size()).To(BeNumerically(">", 0))
+
+	if info != nil {
+		g.Expect(info.Size()).To(BeNumerically(">", 0))
+	}
 }
 
 func TestRasterBackend_Finish_UnsupportedFormat(t *testing.T) {
@@ -143,14 +149,17 @@ func TestRasterBackend_Finish_UnsupportedFormat(t *testing.T) {
 
 	err := b.Finish(out)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+
+	if err != nil {
+		g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+	}
 }
 
 func TestRasterBackend_ImplementsBackendInterface(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	var b types.Backend = New(100, 100)
+	b := New(100, 100)
 	g.Expect(b).NotTo(BeNil())
 }
 

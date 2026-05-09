@@ -52,8 +52,8 @@ func NumericInk(values []float64, pal palette.ColourPalette, opts ...InkOption) 
 		o(&cfg)
 	}
 
-	// TODO: use cfg.strategy to select bucketing algorithm (quantile/linear/logarithmic).
-	// Currently always uses quantile via metric.ComputeBuckets.
+	// Strategy selection (quantile/linear/logarithmic) not yet implemented;
+	// currently always uses quantile via metric.ComputeBuckets.
 	buckets := metric.ComputeBuckets(values, len(pal.Colours))
 
 	return Ink{
@@ -91,6 +91,8 @@ func (ink Ink) Dip(value MetricValue) color.RGBA {
 		c = ink.dipNumeric(value)
 	case inkCategorical:
 		c = ink.catMapper.Map(value.Category)
+	default:
+		c = color.RGBA{A: 255} // fallback to opaque black
 	}
 
 	return applyOpacity(c, ink.opacity)

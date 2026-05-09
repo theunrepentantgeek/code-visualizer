@@ -100,6 +100,8 @@ func (c *Canvas) AddPath(layer Layer, p Path) {
 }
 
 // SetLegend configures the legend for this canvas.
+// Note: legend rendering is not yet implemented; this stores the
+// configuration for use once legend rendering is added.
 func (c *Canvas) SetLegend(config LegendConfig) {
 	c.legend = &config
 }

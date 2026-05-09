@@ -311,7 +311,10 @@ func TestCanvas_Render_PNG(t *testing.T) {
 
 	info, statErr := os.Stat(out)
 	g.Expect(statErr).NotTo(HaveOccurred())
-	g.Expect(info.Size()).To(BeNumerically(">", 0))
+
+	if info != nil {
+		g.Expect(info.Size()).To(BeNumerically(">", 0))
+	}
 }
 
 func TestCanvas_Render_SVG(t *testing.T) {
@@ -365,7 +368,10 @@ func TestCanvas_Render_JPG(t *testing.T) {
 
 	info, statErr := os.Stat(out)
 	g.Expect(statErr).NotTo(HaveOccurred())
-	g.Expect(info.Size()).To(BeNumerically(">", 0))
+
+	if info != nil {
+		g.Expect(info.Size()).To(BeNumerically(">", 0))
+	}
 }
 
 func TestCanvas_Render_UnsupportedFormat(t *testing.T) {
@@ -375,165 +381,171 @@ func TestCanvas_Render_UnsupportedFormat(t *testing.T) {
 	c := NewCanvas(100, 100)
 	err := c.Render("output.bmp")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+
+	if err != nil {
+		g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+	}
 }
 
 func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
-t.Parallel()
-g := NewGomegaWithT(t)
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-c := NewCanvas(800, 600)
+	c := NewCanvas(800, 600)
 
-bgSpec := &RectangleSpec{
-ShapeStyle: ShapeStyle{
-Fill:   FixedInk(white),
-Border: FixedInk(white),
-},
-}
+	bgSpec := &RectangleSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:   FixedInk(white),
+			Border: FixedInk(white),
+		},
+	}
 
-c.AddRectangle(LayerBackground, Rectangle{
-Spec: bgSpec,
-W:    800, H: 600,
-})
+	c.AddRectangle(LayerBackground, Rectangle{
+		Spec: bgSpec,
+		W:    800, H: 600,
+	})
 
-lineSpec := &LineSpec{
-Stroke:      FixedInk(color.RGBA{R: 200, G: 200, B: 200, A: 255}),
-StrokeWidth: 1.0,
-}
+	lineSpec := &LineSpec{
+		Stroke:      FixedInk(color.RGBA{R: 200, G: 200, B: 200, A: 255}),
+		StrokeWidth: 1.0,
+	}
 
-c.AddLine(LayerStructure, Line{
-Spec: lineSpec,
-X1: 0, Y1: 300, X2: 800, Y2: 300,
-})
+	c.AddLine(LayerStructure, Line{
+		Spec: lineSpec,
+		X1:   0, Y1: 300, X2: 800, Y2: 300,
+	})
 
-pal := palette.GetPalette(palette.Temperature)
-fillInk := NumericInk([]float64{10, 20, 30, 40, 50}, pal)
+	pal := palette.GetPalette(palette.Temperature)
+	fillInk := NumericInk([]float64{10, 20, 30, 40, 50}, pal)
 
-rectSpec := &RectangleSpec{
-ShapeStyle: ShapeStyle{
-Fill:        fillInk,
-Border:      FixedInk(black),
-BorderWidth: 1.0,
-},
-}
+	rectSpec := &RectangleSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:        fillInk,
+			Border:      FixedInk(black),
+			BorderWidth: 1.0,
+		},
+	}
 
-c.AddRectangle(LayerContent, Rectangle{
-Spec: rectSpec,
-X: 50, Y: 50, W: 200, H: 150,
-Fill: MeasureValue(10),
-})
+	c.AddRectangle(LayerContent, Rectangle{
+		Spec: rectSpec,
+		X:    50, Y: 50, W: 200, H: 150,
+		Fill: MeasureValue(10),
+	})
 
-c.AddRectangle(LayerContent, Rectangle{
-Spec: rectSpec,
-X: 300, Y: 50, W: 200, H: 150,
-Fill: MeasureValue(50),
-})
+	c.AddRectangle(LayerContent, Rectangle{
+		Spec: rectSpec,
+		X:    300, Y: 50, W: 200, H: 150,
+		Fill: MeasureValue(50),
+	})
 
-discSpec := &DiscSpec{
-ShapeStyle: ShapeStyle{
-Fill:        FixedInk(color.RGBA{R: 100, G: 200, B: 100, A: 255}),
-Border:      FixedInk(black),
-BorderWidth: 1.0,
-},
-}
+	discSpec := &DiscSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:        FixedInk(color.RGBA{R: 100, G: 200, B: 100, A: 255}),
+			Border:      FixedInk(black),
+			BorderWidth: 1.0,
+		},
+	}
 
-c.AddDisc(LayerContent, Disc{
-Spec: discSpec,
-X: 650, Y: 125, Radius: 60,
-})
+	c.AddDisc(LayerContent, Disc{
+		Spec: discSpec,
+		X:    650, Y: 125, Radius: 60,
+	})
 
-textSpec := &TextSpec{
-Ink:      FixedInk(black),
-FontSize: 14,
-Anchor:   AnchorMiddle,
-}
+	textSpec := &TextSpec{
+		Ink:      FixedInk(black),
+		FontSize: 14,
+		Anchor:   AnchorMiddle,
+	}
 
-c.AddText(LayerOverlay, Text{
-Spec:    textSpec,
-X:       400,
-Y:       500,
-Content: "Canvas Integration Test",
-})
+	c.AddText(LayerOverlay, Text{
+		Spec:    textSpec,
+		X:       400,
+		Y:       500,
+		Content: "Canvas Integration Test",
+	})
 
-pathSpec := &LineSpec{
-Stroke:      FixedInk(color.RGBA{R: 255, G: 100, B: 100, A: 255}),
-StrokeWidth: 2.0,
-}
+	pathSpec := &LineSpec{
+		Stroke:      FixedInk(color.RGBA{R: 255, G: 100, B: 100, A: 255}),
+		StrokeWidth: 2.0,
+	}
 
-c.AddPath(LayerStructure, Path{
-Spec: pathSpec,
-Points: []Position{
-{X: 50, Y: 400},
-{X: 200, Y: 350},
-{X: 400, Y: 450},
-{X: 600, Y: 380},
-{X: 750, Y: 420},
-},
-})
+	c.AddPath(LayerStructure, Path{
+		Spec: pathSpec,
+		Points: []Position{
+			{X: 50, Y: 400},
+			{X: 200, Y: 350},
+			{X: 400, Y: 450},
+			{X: 600, Y: 380},
+			{X: 750, Y: 420},
+		},
+	})
 
-out := filepath.Join(t.TempDir(), "integration.png")
-err := c.Render(out)
-g.Expect(err).NotTo(HaveOccurred())
+	out := filepath.Join(t.TempDir(), "integration.png")
+	err := c.Render(out)
+	g.Expect(err).NotTo(HaveOccurred())
 
-info, statErr := os.Stat(out)
-g.Expect(statErr).NotTo(HaveOccurred())
-g.Expect(info.Size()).To(BeNumerically(">", 1000))
+	info, statErr := os.Stat(out)
+	g.Expect(statErr).NotTo(HaveOccurred())
+
+	if info != nil {
+		g.Expect(info.Size()).To(BeNumerically(">", 1000))
+	}
 }
 
 func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
-t.Parallel()
-g := NewGomegaWithT(t)
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-c := NewCanvas(800, 600)
+	c := NewCanvas(800, 600)
 
-bgSpec := &RectangleSpec{
-ShapeStyle: ShapeStyle{
-Fill:   FixedInk(white),
-Border: FixedInk(white),
-},
-}
+	bgSpec := &RectangleSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:   FixedInk(white),
+			Border: FixedInk(white),
+		},
+	}
 
-c.AddRectangle(LayerBackground, Rectangle{
-Spec: bgSpec,
-W:    800, H: 600,
-})
+	c.AddRectangle(LayerBackground, Rectangle{
+		Spec: bgSpec,
+		W:    800, H: 600,
+	})
 
-discSpec := &DiscSpec{
-ShapeStyle: ShapeStyle{
-Fill:        FixedInk(color.RGBA{R: 100, B: 200, A: 255}),
-Border:      FixedInk(black),
-BorderWidth: 2.0,
-},
-}
+	discSpec := &DiscSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:        FixedInk(color.RGBA{R: 100, B: 200, A: 255}),
+			Border:      FixedInk(black),
+			BorderWidth: 2.0,
+		},
+	}
 
-c.AddDisc(LayerContent, Disc{
-Spec: discSpec,
-X: 400, Y: 300, Radius: 100,
-})
+	c.AddDisc(LayerContent, Disc{
+		Spec: discSpec,
+		X:    400, Y: 300, Radius: 100,
+	})
 
-textSpec := &TextSpec{
-Ink:      FixedInk(black),
-FontSize: 16,
-Anchor:   AnchorMiddle,
-}
+	textSpec := &TextSpec{
+		Ink:      FixedInk(black),
+		FontSize: 16,
+		Anchor:   AnchorMiddle,
+	}
 
-c.AddText(LayerOverlay, Text{
-Spec: textSpec,
-X: 400, Y: 300, Content: "SVG Test",
-})
+	c.AddText(LayerOverlay, Text{
+		Spec: textSpec,
+		X:    400, Y: 300, Content: "SVG Test",
+	})
 
-out := filepath.Join(t.TempDir(), "integration.svg")
-err := c.Render(out)
-g.Expect(err).NotTo(HaveOccurred())
+	out := filepath.Join(t.TempDir(), "integration.svg")
+	err := c.Render(out)
+	g.Expect(err).NotTo(HaveOccurred())
 
-data, readErr := os.ReadFile(out)
-g.Expect(readErr).NotTo(HaveOccurred())
+	data, readErr := os.ReadFile(out)
+	g.Expect(readErr).NotTo(HaveOccurred())
 
-content := string(data)
-g.Expect(content).To(ContainSubstring("<svg"))
-g.Expect(content).To(ContainSubstring("<rect"))
-g.Expect(content).To(ContainSubstring("<circle"))
-g.Expect(content).To(ContainSubstring("<text"))
-g.Expect(content).To(ContainSubstring("SVG Test"))
-g.Expect(content).To(ContainSubstring("</svg>"))
+	content := string(data)
+	g.Expect(content).To(ContainSubstring("<svg"))
+	g.Expect(content).To(ContainSubstring("<rect"))
+	g.Expect(content).To(ContainSubstring("<circle"))
+	g.Expect(content).To(ContainSubstring("<text"))
+	g.Expect(content).To(ContainSubstring("SVG Test"))
+	g.Expect(content).To(ContainSubstring("</svg>"))
 }
