@@ -210,3 +210,31 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Testing:** All tests pass, zero breaking changes
 - **Committed:** `squad/154-extract-label-mode`
 - **PR:** #167
+
+### Canvas Design Spec Revision (2026-05-08)
+
+- **Task:** Revised `docs/superpowers/specs/2026-05-08-canvas-design.md` to integrate all review feedback from Bevan, Bishop, and Parker into clean authoritative design text.
+- **Key design decisions integrated:**
+  - `MetricValue` struct unifies numeric/categorical metric data; replaces `FillValue`/`FillCategory`/`BorderValue`/`BorderCategory` field proliferation on shapes.
+  - Single `Dip(MetricValue)` method on Ink replaces dual `Dip(float64)`/`DipCategory(string)` — Ink owns dispatch internally.
+  - Opacity moved from Spec to Ink via `WithOpacity()` InkOption — eliminates ambiguity about where opacity lives.
+  - `ShapeStyle` embedded struct extracts shared fields from `RectangleSpec`/`DiscSpec`.
+  - Canvas constructor simplified to `NewCanvas(width, height int)` — output path moved to `Render(outputPath string)`.
+  - Backends live in subpackages: `internal/canvas/raster/` and `internal/canvas/svg/`. Exported `Backend` interface in parent package.
+  - `Position` and `Size` helper structs reduce backend method parameter counts.
+  - `LegendRole` typed constant replaces plain string. `MetricName` added to `LegendEntry`.
+  - Ink introspection methods (`Boundaries`, `Palette`, `Categories`) enable legend rendering.
+  - `Text` shape and `AddText` method added as first-class shape.
+  - Utility file disposition made explicit: `TextColourFor` → canvas, `FormatFromPath` → canvas, `save*` → raster backend.
+  - Bridge code location documented (per `*_cmd.go`, consolidates if #152 lands).
+  - Mock/stub backend recommended for Stage 1 testing.
+  - Each viz migration is a single atomic PR.
+- **File:** `docs/superpowers/specs/2026-05-08-canvas-design.md`
+
+### Team Orchestration (2026-05-09T02:59:06Z)
+
+- **Cycle completed:** Three-agent Canvas spec review cycle finalized.
+- **Orchestration:** Bishop review → Parker review → Dallas integration → Scribe logging.
+- **Spec finalized:** All 5 key design decisions codified and approved. Ready for implementation kickoff.
+- **Team log:** `.squad/log/2026-05-09T02:59:06Z-canvas-spec-review.md`
+- **Decisions merged:** All inbox items → `decisions.md`. Specifications finalized.

@@ -139,3 +139,13 @@
 - **Lint compliance:** All proposed files respect funlen ≤ 65 and max-public-structs ≤ 5.
 - **Proposal written to:** `.squad/decisions/inbox/ripley-command-workflow-design.md`
 
+### Canvas Stage 1 — Implementation Plan (2026-05-09)
+
+- **Task:** Write comprehensive 20-task implementation plan for `internal/canvas/` package from the finalized design spec.
+- **Spec:** `docs/superpowers/specs/2026-05-08-canvas-design.md` — retained-then-render Canvas with Ink colour resolution, Spec style templates, layered z-ordering, pluggable backends.
+- **Plan structure:** 20 sequential tasks building from foundational types (MetricValue, InkOption, Ink) through geometry and specs, to Canvas core, backends (raster, SVG, mock), and integration tests.
+- **Key design constraints respected:** `max-public-structs ≤ 5` per file (split types across files), `funlen ≤ 65` (small focused functions), `cognitive-complexity ≤ 10`.
+- **Test approach:** Every implementation task writes tests first (red-green), using Gomega assertions, `t.Parallel()`, table-driven patterns. Mock backend enables Canvas unit tests without rendering. Golden-file snapshots for raster/SVG backend tests.
+- **Stage 1 scope:** Dark-shipped package — zero changes to existing code. Full test coverage in isolation.
+- **Plan saved to:** `docs/superpowers/plans/2026-05-09-canvas-stage1.md`
+

@@ -94,3 +94,23 @@ Reviewed PR #39 (issue #38) adding `Scope()` and `Description()` to `provider.In
 - **revive confusing-results:** Named return values on `commitTimeRange` (`earliest`, `latest`).
 
 - **revive unused-receiver:** Renamed `c` to `_` on `applyBorder` method.
+
+### Canvas Abstraction Spec Review (2026-05-08)
+
+- **Spec reviewed:** `docs/superpowers/specs/2026-05-08-canvas-design.md` — Canvas abstraction to replace duplicated per-visualization rendering code.
+- **Duplication quantified:** ~1718 lines in `internal/render/` across 10 files (4 PNG + 4 SVG + helpers + bubble_font), plus ~800+ lines of `applyFillColours`/`applyBorderColours` duplication across 4 `*_cmd.go` files.
+- **Key recommendation:** Use struct parameters for backend interface methods (`drawRectangle(RectDrawCall)` not 8 positional args) to keep the interface extensible without breaking changes.
+- **Key recommendation:** Address Bevan's `MetricValue` type unification before v1, not after — retrofitting it means touching every shape type and call site.
+- **Key recommendation:** Build a mock/stub backend for unit testing Canvas layer ordering without rendering images.
+- **Migration risk:** Each viz migration is an atomic cut (strip colour fields + replace renderer in one PR). Go's type system catches missed references, but the codebase can't be half-migrated.
+- **Arc text:** `drawArcText` is the hardest backend method. Raster needs 210 lines of glyph positioning; SVG uses `<textPath>`. Budget implementation time accordingly.
+- **Subpackages:** Recommended against subpackages for backends — keeps the `backend` interface unexported, reduces import overhead. File-level separation (`raster_backend.go`, `svg_backend.go`) is sufficient.
+- **Assessment:** Design is sound, complexity budget justified, migration path realistic. Ship it.
+
+### Team Orchestration (2026-05-09T02:59:06Z)
+
+- **Cycle completed:** Three-agent Canvas spec review cycle finalized.
+- **Orchestration:** Bishop review → Parker review → Dallas integration → Scribe logging.
+- **Spec finalized:** All 5 key design decisions codified and approved. Ready for implementation kickoff.
+- **Team log:** `.squad/log/2026-05-09T02:59:06Z-canvas-spec-review.md`
+- **Decisions merged:** All inbox items → `decisions.md`. Specifications finalized.
