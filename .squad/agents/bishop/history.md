@@ -90,3 +90,44 @@
 - **Testing:** All tests pass, zero regressions
 - **Committed:** `squad/157-dedup-luminance`
 - **PR:** #165
+
+### Canvas Abstraction Spec Review (2026-05-08)
+
+- **Status:** ✅ Review complete
+- **Spec:** `docs/superpowers/specs/2026-05-08-canvas-design.md`
+- **Scope:** Reviewed abstractions, interfaces, type design, code smells, SOLID compliance
+
+**Key findings (21 inline comments):**
+
+1. **Ink type — best abstraction in the spec.** Correctly encapsulates the metric→color pipeline (Façade pattern). But dual `Dip`/`DipCategory` methods are a type-level smell — endorsed Bevan's `MetricValue` unification.
+2. **RectangleSpec/DiscSpec data clump.** 6 of 7 fields identical — extract shared `ShapeStyle` base via embedding.
+3. **Opacity belongs on Ink, not Spec** — endorsed Bevan's `WithOpacity()` suggestion.
+4. **LegendEntry too thin.** Current legend rendering needs bucket boundaries, palette, and categories. Ink needs query methods or LegendEntry needs richer fields.
+5. **LegendEntry.Role — primitive obsession.** Should be typed constant like existing `LegendPosition`.
+6. **Backend subpackages — endorsed.** `internal/canvas/raster/` and `internal/canvas/svg/` for Ports & Adapters isolation.
+7. **Canvas constructor should defer path/format to Render() time** — enables multi-format output and cleaner testing.
+8. **Missing `AddText` method and `Text` shape** — `TextSpec` defined but no shape or drawing method.
+9. **Backend long parameter lists** — flagged but tolerable for unexported interface with 2 impls.
+10. **`drawArcText` breaks interface uniformity** — pragmatic, keep but document.
+11. **Migration risk: sequence #152 (shared command workflow) before Stage 2** to avoid creating 4 bridge implementations that immediately need refactoring.
+
+**Patterns identified:**
+- Ink = Façade (multi-step pipeline behind single method)
+- Specs = Flyweight (shared style template across many shapes)
+- Canvas Add*/Render = Command pattern (retained then executed)
+- Backend subpackages = Ports & Adapters
+- Layer gaps = Sparse Namespace pattern
+
+**Key file paths for implementation:**
+- Spec: `docs/superpowers/specs/2026-05-08-canvas-design.md`
+- New package: `internal/canvas/` with `raster/` and `svg/` subpackages
+- Replaces: `internal/render/*.go` (8 renderer files) + cmd color application code
+- Keeps: `internal/palette/`, `internal/metric/bucket.go`, layout packages (geometry-only)
+
+### Team Orchestration (2026-05-09T02:59:06Z)
+
+- **Cycle completed:** Three-agent Canvas spec review cycle finalized.
+- **Orchestration:** Bishop review → Parker review → Dallas integration → Scribe logging.
+- **Spec finalized:** All 5 key design decisions codified and approved. Ready for implementation kickoff.
+- **Team log:** `.squad/log/2026-05-09T02:59:06Z-canvas-spec-review.md`
+- **Decisions merged:** All inbox items → `decisions.md`. Specifications finalized.
