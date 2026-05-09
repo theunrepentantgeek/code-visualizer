@@ -3,7 +3,7 @@ package canvas
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // Colours used by introspection tests and internal defaults.

@@ -8,17 +8,17 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/bubbletree"
-	"github.com/bevan/code-visualizer/internal/config"
-	"github.com/bevan/code-visualizer/internal/export"
-	"github.com/bevan/code-visualizer/internal/filter"
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/render"
-	"github.com/bevan/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/export"
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/render"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
 type BubbletreeCmd struct {

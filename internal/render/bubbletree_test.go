@@ -15,7 +15,7 @@ import (
 
 	"github.com/sebdah/goldie/v2"
 
-	"github.com/bevan/code-visualizer/internal/bubbletree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 )
 
 // sampleBubbleTree returns a small deterministic BubbleNode tree for render smoke tests.

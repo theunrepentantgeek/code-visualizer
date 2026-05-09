@@ -8,7 +8,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/spiral"
+	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 )
 
 // renderSpiralSVG generates an SVG file from the spiral layout.

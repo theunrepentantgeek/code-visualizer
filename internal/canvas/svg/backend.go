@@ -13,7 +13,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 type svgBackend struct {

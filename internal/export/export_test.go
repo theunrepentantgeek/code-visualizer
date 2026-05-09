@@ -10,8 +10,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 // Metric name constants used across tests.

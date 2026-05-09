@@ -11,7 +11,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/radialtree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 )
 
 // renderRadialSVG generates an SVG file from the radial tree layout.

@@ -1,6 +1,6 @@
 package filesystem
 
-import "github.com/bevan/code-visualizer/internal/provider"
+import "github.com/theunrepentantgeek/code-visualizer/internal/provider"
 
 // Register adds all filesystem metric providers to the global registry.
 func Register() {

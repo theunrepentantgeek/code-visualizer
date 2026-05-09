@@ -3,11 +3,11 @@ package main
 import (
 	"slices"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/render"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/render"
 )
 
 // resolveLegendOptions resolves the legend position and orientation from config.

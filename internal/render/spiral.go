@@ -7,7 +7,7 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/spiral"
+	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 )
 
 var (

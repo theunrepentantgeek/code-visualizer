@@ -8,7 +8,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
 // renderTreemapSVG generates an SVG file from the treemap layout.

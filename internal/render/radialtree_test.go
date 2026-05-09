@@ -12,9 +12,9 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/radialtree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 )
 
 func TestRenderRadial_FlatDir(t *testing.T) {

@@ -16,11 +16,11 @@ import (
 
 	"github.com/sebdah/goldie/v2"
 
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/scan"
-	"github.com/bevan/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
 func makeFile(name, ext string, size int64) *model.File {

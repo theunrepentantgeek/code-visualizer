@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
 func makeFile(name string, size int64) *model.File {

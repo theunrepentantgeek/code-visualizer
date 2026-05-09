@@ -5,8 +5,8 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas/raster"
-	svgbackend "github.com/bevan/code-visualizer/internal/canvas/svg"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/raster"
+	svgbackend "github.com/theunrepentantgeek/code-visualizer/internal/canvas/svg"
 )
 
 // shapeKind tags the type of shape stored in a layered entry.

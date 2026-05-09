@@ -9,7 +9,7 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
 var (

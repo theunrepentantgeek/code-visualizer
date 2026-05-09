@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 func TestFixedInk_Dip_ReturnsFixedColour(t *testing.T) {

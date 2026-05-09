@@ -3,7 +3,7 @@
 package canvas
 
 import (
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // MetricValue carries the metric data needed to resolve a colour.

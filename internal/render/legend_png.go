@@ -7,8 +7,8 @@ import (
 
 	"github.com/fogleman/gg"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // drawLegend draws the legend overlay on the gg context.

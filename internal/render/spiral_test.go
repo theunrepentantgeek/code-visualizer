@@ -14,7 +14,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/spiral"
+	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 )
 
 // sampleSpiralNodes returns a small deterministic []SpiralNode for render smoke tests.

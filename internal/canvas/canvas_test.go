@@ -8,7 +8,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {

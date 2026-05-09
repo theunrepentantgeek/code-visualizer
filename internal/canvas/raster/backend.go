@@ -13,7 +13,7 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 const jpegQuality = 95

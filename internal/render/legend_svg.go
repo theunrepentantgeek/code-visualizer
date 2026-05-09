@@ -7,7 +7,7 @@ import (
 
 	"github.com/fogleman/gg"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // writeSVGLegend writes the SVG legend elements to the file.

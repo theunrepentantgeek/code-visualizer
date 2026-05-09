@@ -9,7 +9,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/bubbletree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 )
 
 // renderBubbleSVG generates an SVG file from the bubble tree layout.

@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
 // buildScanProgress creates a scan.Progress adapter and (if applicable) starts a

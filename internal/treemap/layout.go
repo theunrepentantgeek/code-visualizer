@@ -5,8 +5,8 @@ package treemap
 import (
 	"github.com/nikolaydubina/treemap/layout"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 const (

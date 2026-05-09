@@ -1,7 +1,7 @@
 package canvas
 
 import (
-	"github.com/bevan/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 // Position is re-exported from model for backward compatibility.
