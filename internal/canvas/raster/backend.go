@@ -29,7 +29,9 @@ func New(width, height int) canvas.Backend {
 	return &rasterBackend{dc: dc}
 }
 
-func (r *rasterBackend) DrawRectangle(pos canvas.Position, size canvas.Size, fill, border color.RGBA, borderWidth float64) {
+func (r *rasterBackend) DrawRectangle(
+	pos canvas.Position, size canvas.Size, fill, border color.RGBA, borderWidth float64,
+) {
 	r.dc.SetColor(fill)
 	r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
 	r.dc.Fill()
