@@ -1,5 +1,9 @@
 package canvas
 
+import (
+	"github.com/bevan/code-visualizer/internal/canvas/types"
+)
+
 // LabelStyle controls how labels are rendered on shapes.
 type LabelStyle int
 
@@ -12,16 +16,16 @@ const (
 	LabelRadial
 )
 
-// TextAnchor controls horizontal text alignment.
-type TextAnchor int
+// TextAnchor is re-exported from types for backward compatibility.
+type TextAnchor = types.TextAnchor
 
 const (
 	// AnchorStart aligns text to the left.
-	AnchorStart TextAnchor = iota
+	AnchorStart = types.AnchorStart
 	// AnchorMiddle centers text horizontally.
-	AnchorMiddle
+	AnchorMiddle = types.AnchorMiddle
 	// AnchorEnd aligns text to the right.
-	AnchorEnd
+	AnchorEnd = types.AnchorEnd
 )
 
 // TextSpec defines the visual template for standalone text.
@@ -33,3 +37,4 @@ type TextSpec struct {
 	Anchor   TextAnchor
 	Rotation float64 // radians
 }
+

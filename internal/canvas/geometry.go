@@ -1,11 +1,12 @@
 package canvas
 
-// Position represents a 2D coordinate.
-type Position struct {
-	X, Y float64
-}
+import (
+	"github.com/bevan/code-visualizer/internal/canvas/types"
+)
 
-// Size represents a width and height.
-type Size struct {
-	Width, Height float64
-}
+// Position is re-exported from types for backward compatibility.
+type Position = types.Position
+
+// Size is re-exported from types for backward compatibility.
+type Size = types.Size
+

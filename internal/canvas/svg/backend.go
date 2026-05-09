@@ -1,4 +1,4 @@
-// Package svg implements the canvas.Backend interface for SVG vector output
+// Package svg implements the types.Backend interface for SVG vector output
 // using direct XML generation.
 package svg
 
@@ -12,7 +12,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/bevan/code-visualizer/internal/canvas/types"
 )
 
 type svgBackend struct {
@@ -22,7 +22,7 @@ type svgBackend struct {
 }
 
 // New creates an SVG backend with the given dimensions.
-func New(width, height int) canvas.Backend {
+func New(width, height int) types.Backend {
 	b := &svgBackend{width: width, height: height}
 	b.writeHeader()
 
@@ -37,7 +37,7 @@ func (s *svgBackend) writeHeader() {
 }
 
 func (s *svgBackend) DrawRectangle(
-	pos canvas.Position, size canvas.Size, fill, border color.RGBA, borderWidth float64,
+	pos types.Position, size types.Size, fill, border color.RGBA, borderWidth float64,
 ) {
 	fmt.Fprintf(&s.buf,
 		`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
@@ -46,7 +46,7 @@ func (s *svgBackend) DrawRectangle(
 	)
 }
 
-func (s *svgBackend) DrawDisc(center canvas.Position, radius float64, fill, border color.RGBA, borderWidth float64) {
+func (s *svgBackend) DrawDisc(center types.Position, radius float64, fill, border color.RGBA, borderWidth float64) {
 	fmt.Fprintf(&s.buf,
 		`<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		center.X, center.Y, radius,
@@ -54,7 +54,7 @@ func (s *svgBackend) DrawDisc(center canvas.Position, radius float64, fill, bord
 	)
 }
 
-func (s *svgBackend) DrawLine(from, to canvas.Position, stroke color.RGBA, strokeWidth float64) {
+func (s *svgBackend) DrawLine(from, to types.Position, stroke color.RGBA, strokeWidth float64) {
 	fmt.Fprintf(&s.buf,
 		`<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		from.X, from.Y, to.X, to.Y,
@@ -62,7 +62,7 @@ func (s *svgBackend) DrawLine(from, to canvas.Position, stroke color.RGBA, strok
 	)
 }
 
-func (s *svgBackend) DrawPath(points []canvas.Position, stroke color.RGBA, strokeWidth float64) {
+func (s *svgBackend) DrawPath(points []types.Position, stroke color.RGBA, strokeWidth float64) {
 	if len(points) < 2 {
 		return
 	}
@@ -79,11 +79,11 @@ func (s *svgBackend) DrawPath(points []canvas.Position, stroke color.RGBA, strok
 }
 
 func (s *svgBackend) DrawText(
-	pos canvas.Position,
+	pos types.Position,
 	text string,
 	ink color.RGBA,
 	fontSize float64,
-	anchor canvas.TextAnchor,
+	anchor types.TextAnchor,
 	rotation float64,
 ) {
 	anchorStr := svgAnchor(anchor)
@@ -111,7 +111,7 @@ func (s *svgBackend) DrawText(
 }
 
 func (s *svgBackend) DrawArcText(
-	center canvas.Position,
+	center types.Position,
 	radius float64,
 	text string,
 	ink color.RGBA,
@@ -168,13 +168,13 @@ func rgbaToCSS(c color.RGBA) string {
 	return fmt.Sprintf("rgba(%d,%d,%d,%.3f)", c.R, c.G, c.B, float64(c.A)/255.0)
 }
 
-func svgAnchor(a canvas.TextAnchor) string {
+func svgAnchor(a types.TextAnchor) string {
 	switch a {
-	case canvas.AnchorStart:
+	case types.AnchorStart:
 		return "start"
-	case canvas.AnchorMiddle:
+	case types.AnchorMiddle:
 		return "middle"
-	case canvas.AnchorEnd:
+	case types.AnchorEnd:
 		return "end"
 	default:
 		return "start"

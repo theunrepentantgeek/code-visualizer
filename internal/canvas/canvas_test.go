@@ -2,6 +2,8 @@ package canvas
 
 import (
 	"image/color"
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -283,4 +285,95 @@ func TestCanvas_Empty_NoErrors(t *testing.T) {
 	err := c.RenderTo(mb)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.calls).To(BeEmpty())
+}
+
+func TestCanvas_Render_PNG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(200, 200)
+	spec := &RectangleSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:   FixedInk(white),
+			Border: FixedInk(black),
+		},
+	}
+
+	c.AddRectangle(LayerBackground, Rectangle{
+		Spec: spec,
+		W:    200,
+		H:    200,
+	})
+
+	out := filepath.Join(t.TempDir(), "output.png")
+	err := c.Render(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	info, statErr := os.Stat(out)
+	g.Expect(statErr).NotTo(HaveOccurred())
+	g.Expect(info.Size()).To(BeNumerically(">", 0))
+}
+
+func TestCanvas_Render_SVG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(200, 200)
+	spec := &RectangleSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:   FixedInk(white),
+			Border: FixedInk(black),
+		},
+	}
+
+	c.AddRectangle(LayerBackground, Rectangle{
+		Spec: spec,
+		W:    200,
+		H:    200,
+	})
+
+	out := filepath.Join(t.TempDir(), "output.svg")
+	err := c.Render(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	data, readErr := os.ReadFile(out)
+	g.Expect(readErr).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(ContainSubstring("<svg"))
+}
+
+func TestCanvas_Render_JPG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(200, 200)
+	spec := &RectangleSpec{
+		ShapeStyle: ShapeStyle{
+			Fill:   FixedInk(white),
+			Border: FixedInk(black),
+		},
+	}
+
+	c.AddRectangle(LayerBackground, Rectangle{
+		Spec: spec,
+		W:    200,
+		H:    200,
+	})
+
+	out := filepath.Join(t.TempDir(), "output.jpg")
+	err := c.Render(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	info, statErr := os.Stat(out)
+	g.Expect(statErr).NotTo(HaveOccurred())
+	g.Expect(info.Size()).To(BeNumerically(">", 0))
+}
+
+func TestCanvas_Render_UnsupportedFormat(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(100, 100)
+	err := c.Render("output.bmp")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("unsupported"))
 }

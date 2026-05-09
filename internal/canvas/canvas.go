@@ -4,6 +4,9 @@ import (
 	"slices"
 
 	"github.com/rotisserie/eris"
+
+	"github.com/bevan/code-visualizer/internal/canvas/raster"
+	svgbackend "github.com/bevan/code-visualizer/internal/canvas/svg"
 )
 
 // shapeKind tags the type of shape stored in a layered entry.
@@ -218,12 +221,12 @@ func (*Canvas) drawPath(b Backend, p *Path) {
 
 // createBackend creates the appropriate backend for the given format.
 // Backend subpackages are imported and instantiated here.
-func (*Canvas) createBackend(format ImageFormat) (Backend, error) {
+func (c *Canvas) createBackend(format ImageFormat) (Backend, error) {
 	switch format {
 	case FormatPNG, FormatJPG:
-		return nil, eris.New("raster backend not yet available")
+		return raster.New(c.width, c.height), nil
 	case FormatSVG:
-		return nil, eris.New("SVG backend not yet available")
+		return svgbackend.New(c.width, c.height), nil
 	default:
 		return nil, eris.Errorf("unsupported format: %d", format)
 	}

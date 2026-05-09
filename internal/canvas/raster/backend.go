@@ -1,4 +1,4 @@
-// Package raster implements the canvas.Backend interface for raster
+// Package raster implements the types.Backend interface for raster
 // output formats (PNG, JPG) using the fogleman/gg graphics library.
 package raster
 
@@ -13,7 +13,7 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/bevan/code-visualizer/internal/canvas/types"
 )
 
 const jpegQuality = 95
@@ -23,14 +23,14 @@ type rasterBackend struct {
 }
 
 // New creates a raster backend with the given dimensions.
-func New(width, height int) canvas.Backend {
+func New(width, height int) types.Backend {
 	dc := gg.NewContext(width, height)
 
 	return &rasterBackend{dc: dc}
 }
 
 func (r *rasterBackend) DrawRectangle(
-	pos canvas.Position, size canvas.Size, fill, border color.RGBA, borderWidth float64,
+	pos types.Position, size types.Size, fill, border color.RGBA, borderWidth float64,
 ) {
 	r.dc.SetColor(fill)
 	r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
@@ -44,7 +44,7 @@ func (r *rasterBackend) DrawRectangle(
 	}
 }
 
-func (r *rasterBackend) DrawDisc(center canvas.Position, radius float64, fill, border color.RGBA, borderWidth float64) {
+func (r *rasterBackend) DrawDisc(center types.Position, radius float64, fill, border color.RGBA, borderWidth float64) {
 	r.dc.SetColor(fill)
 	r.dc.DrawCircle(center.X, center.Y, radius)
 	r.dc.Fill()
@@ -57,14 +57,14 @@ func (r *rasterBackend) DrawDisc(center canvas.Position, radius float64, fill, b
 	}
 }
 
-func (r *rasterBackend) DrawLine(from, to canvas.Position, stroke color.RGBA, strokeWidth float64) {
+func (r *rasterBackend) DrawLine(from, to types.Position, stroke color.RGBA, strokeWidth float64) {
 	r.dc.SetColor(stroke)
 	r.dc.SetLineWidth(strokeWidth)
 	r.dc.DrawLine(from.X, from.Y, to.X, to.Y)
 	r.dc.Stroke()
 }
 
-func (r *rasterBackend) DrawPath(points []canvas.Position, stroke color.RGBA, strokeWidth float64) {
+func (r *rasterBackend) DrawPath(points []types.Position, stroke color.RGBA, strokeWidth float64) {
 	if len(points) < 2 {
 		return
 	}
@@ -81,11 +81,11 @@ func (r *rasterBackend) DrawPath(points []canvas.Position, stroke color.RGBA, st
 }
 
 func (r *rasterBackend) DrawText(
-	pos canvas.Position,
+	pos types.Position,
 	text string,
 	ink color.RGBA,
 	fontSize float64,
-	anchor canvas.TextAnchor,
+	anchor types.TextAnchor,
 	rotation float64,
 ) {
 	r.dc.SetColor(ink)
@@ -104,7 +104,7 @@ func (r *rasterBackend) DrawText(
 }
 
 func (r *rasterBackend) DrawArcText(
-	center canvas.Position,
+	center types.Position,
 	radius float64,
 	text string,
 	ink color.RGBA,
@@ -164,13 +164,13 @@ func (r *rasterBackend) saveJPG(path string) (err error) {
 	return nil
 }
 
-func anchorX(a canvas.TextAnchor) float64 {
+func anchorX(a types.TextAnchor) float64 {
 	switch a {
-	case canvas.AnchorStart:
+	case types.AnchorStart:
 		return 0.0
-	case canvas.AnchorMiddle:
+	case types.AnchorMiddle:
 		return 0.5
-	case canvas.AnchorEnd:
+	case types.AnchorEnd:
 		return 1.0
 	default:
 		return 0.0

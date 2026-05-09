@@ -11,7 +11,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/bevan/code-visualizer/internal/canvas/types"
 )
 
 func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
@@ -23,8 +23,8 @@ func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		canvas.Position{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 60},
+		types.Position{X: 10, Y: 10},
+		types.Size{Width: 80, Height: 60},
 		red, blk, 2.0,
 	)
 
@@ -46,7 +46,7 @@ func TestRasterBackend_DrawDisc_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawDisc(
-		canvas.Position{X: 100, Y: 100},
+		types.Position{X: 100, Y: 100},
 		50, blue, blk, 1.0,
 	)
 
@@ -66,9 +66,9 @@ func TestRasterBackend_DrawText_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawText(
-		canvas.Position{X: 100, Y: 50},
+		types.Position{X: 100, Y: 50},
 		"hello", blk, 14.0,
-		canvas.AnchorMiddle, 0,
+		types.AnchorMiddle, 0,
 	)
 
 	out := filepath.Join(t.TempDir(), "text.png")
@@ -88,8 +88,8 @@ func TestRasterBackend_DrawLine_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawLine(
-		canvas.Position{X: 0, Y: 0},
-		canvas.Position{X: 200, Y: 200},
+		types.Position{X: 0, Y: 0},
+		types.Position{X: 200, Y: 200},
 		blk, 2.0,
 	)
 
@@ -106,7 +106,7 @@ func TestRasterBackend_DrawPath_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawPath(
-		[]canvas.Position{
+		[]types.Position{
 			{X: 10, Y: 10},
 			{X: 100, Y: 50},
 			{X: 190, Y: 10},
@@ -150,7 +150,7 @@ func TestRasterBackend_ImplementsBackendInterface(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	var b canvas.Backend = New(100, 100)
+	var b types.Backend = New(100, 100)
 	g.Expect(b).NotTo(BeNil())
 }
 
