@@ -52,6 +52,8 @@ func NumericInk(values []float64, pal palette.ColourPalette, opts ...InkOption) 
 		o(&cfg)
 	}
 
+	// TODO: use cfg.strategy to select bucketing algorithm (quantile/linear/logarithmic).
+	// Currently always uses quantile via metric.ComputeBuckets.
 	buckets := metric.ComputeBuckets(values, len(pal.Colours))
 
 	return Ink{
