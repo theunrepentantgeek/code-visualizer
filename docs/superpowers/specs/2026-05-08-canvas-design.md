@@ -60,6 +60,8 @@ func NumericInk(values []float64, pal palette.ColourPalette, opts ...InkOption) 
 func CategoricalInk(categories []string, pal palette.ColourPalette) Ink
 ```
 
+BEVAN: I think we need to allow for future evolution by including options for both kinds of Ink.
+
 ### Resolution
 
 ```go
@@ -121,6 +123,8 @@ type RectangleSpec struct {
     LabelInk    Ink
     LabelStyle  LabelStyle
 }
+
+BEVAN: I think Opacity should be part of an ink, configurable with a new InkOption - WithOpacity(). This will eliminate any confusion about what Opacity means on RectangleSpec or DiscSpec.
 
 // DiscSpec defines the visual template for circles/discs.
 type DiscSpec struct {
@@ -238,6 +242,8 @@ type Point struct {
 }
 ```
 
+BEVAN: We are seeing the pair of Value+Category showing up a lot, and it's polluting the object model with the constant replication. I suggest we introduce MetricValue to wrap everything needed - containing (metric.Kind, Value float64, Category string). We may even want to split Measures and Quantities into separate fields (metric.Kind, Measure float64, Quantity int, Category string). We can then simplify Ink by combining the two Dip methods into one - Dip(MetricValue).
+
 ### Drawing Methods
 
 ```go
@@ -307,6 +313,8 @@ The legend is rendered as part of `Render()` on `LayerOverlay`.
 The Canvas uses an internal backend interface.
 Two implementations: raster (PNG/JPG via `fogleman/gg`) and SVG (direct XML).
 The backend is chosen at Canvas creation time from the output path extension.
+
+BEVAN: Should these implementations be segregated into subpackages underneath canvas for isolation?
 
 ```go
 type backend interface {
