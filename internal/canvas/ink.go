@@ -10,7 +10,7 @@ import (
 type inkKind int
 
 const (
-	inkFixed       inkKind = iota
+	inkFixed inkKind = iota
 	inkNumeric
 	inkCategorical
 )

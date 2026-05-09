@@ -25,7 +25,7 @@ func newMockBackend() *mockBackend {
 	return &mockBackend{}
 }
 
-func (m *mockBackend) DrawRectangle(pos Position, size Size, fill, border color.RGBA, borderWidth float64) {
+func (m *mockBackend) DrawRectangle(pos Position, size Size, fill, border color.RGBA, _ float64) {
 	m.calls = append(m.calls, drawCall{
 		method: "DrawRectangle",
 		pos:    pos,
@@ -35,7 +35,7 @@ func (m *mockBackend) DrawRectangle(pos Position, size Size, fill, border color.
 	})
 }
 
-func (m *mockBackend) DrawDisc(center Position, radius float64, fill, border color.RGBA, borderWidth float64) {
+func (m *mockBackend) DrawDisc(center Position, _ float64, fill, border color.RGBA, _ float64) {
 	m.calls = append(m.calls, drawCall{
 		method: "DrawDisc",
 		pos:    center,
@@ -44,20 +44,22 @@ func (m *mockBackend) DrawDisc(center Position, radius float64, fill, border col
 	})
 }
 
-func (m *mockBackend) DrawLine(from, to Position, stroke color.RGBA, strokeWidth float64) {
+func (m *mockBackend) DrawLine(from, _ Position, _ color.RGBA, _ float64) {
 	m.calls = append(m.calls, drawCall{
 		method: "DrawLine",
 		pos:    from,
 	})
 }
 
-func (m *mockBackend) DrawPath(points []Position, stroke color.RGBA, strokeWidth float64) {
+func (m *mockBackend) DrawPath(_ []Position, _ color.RGBA, _ float64) {
 	m.calls = append(m.calls, drawCall{
 		method: "DrawPath",
 	})
 }
 
-func (m *mockBackend) DrawText(pos Position, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64) {
+func (m *mockBackend) DrawText(
+	pos Position, text string, ink color.RGBA, _ float64, _ TextAnchor, _ float64,
+) {
 	m.calls = append(m.calls, drawCall{
 		method: "DrawText",
 		pos:    pos,
@@ -66,7 +68,7 @@ func (m *mockBackend) DrawText(pos Position, text string, ink color.RGBA, fontSi
 	})
 }
 
-func (m *mockBackend) DrawArcText(center Position, radius float64, text string, ink color.RGBA, fontSize float64) {
+func (m *mockBackend) DrawArcText(center Position, _ float64, text string, ink color.RGBA, _ float64) {
 	m.calls = append(m.calls, drawCall{
 		method: "DrawArcText",
 		pos:    center,
