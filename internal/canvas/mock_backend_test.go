@@ -3,7 +3,7 @@ package canvas
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 // drawCall records a single drawing operation dispatched to the mock backend.

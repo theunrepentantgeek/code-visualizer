@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
 func TestLabelFitting_LargeRect(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
 // TestMain registers filesystem providers so Validate tests can look up known metrics.

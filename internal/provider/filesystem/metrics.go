@@ -12,9 +12,9 @@ import (
 	"github.com/rotisserie/eris"
 	"golang.org/x/text/encoding/unicode"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // Metric name constants for filesystem metrics.

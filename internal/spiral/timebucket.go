@@ -3,7 +3,7 @@ package spiral
 import (
 	"time"
 
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 // Resolution controls the time granularity of the spiral.

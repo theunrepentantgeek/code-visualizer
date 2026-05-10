@@ -9,10 +9,10 @@ import (
 
 	"github.com/alecthomas/kong"
 
-	"github.com/bevan/code-visualizer/internal/config"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
 func TestMain(m *testing.M) {

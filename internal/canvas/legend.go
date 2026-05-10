@@ -1,8 +1,8 @@
 package canvas
 
 import (
-	"github.com/bevan/code-visualizer/internal/canvas/legendlayout"
-	"github.com/bevan/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 // LegendPosition specifies where the legend is placed on the canvas.

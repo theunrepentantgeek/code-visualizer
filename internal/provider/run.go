@@ -6,8 +6,8 @@ import (
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 // MetricProgress receives notifications as metrics are calculated.
