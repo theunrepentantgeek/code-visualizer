@@ -1,0 +1,33 @@
+task: [build] go build -o bin/codeviz ./cmd/codeviz
+task: [test] go test ./... -count=1
+# github.com/bevan/code-visualizer/internal/canvas
+internal/canvas/raster/backend.go:16:2: no required module provides package github.com/bevan/code-visualizer/internal/canvas/types; to add it:
+	go get github.com/bevan/code-visualizer/internal/canvas/types
+FAIL	github.com/bevan/code-visualizer/internal/canvas [setup failed]
+# github.com/bevan/code-visualizer/internal/canvas/raster
+internal/canvas/raster/backend.go:16:2: no required module provides package github.com/bevan/code-visualizer/internal/canvas/types; to add it:
+	go get github.com/bevan/code-visualizer/internal/canvas/types
+FAIL	github.com/bevan/code-visualizer/internal/canvas/raster [setup failed]
+ok  	github.com/bevan/code-visualizer/cmd/codeviz	0.033s
+ok  	github.com/bevan/code-visualizer/internal/bubbletree	0.008s
+?   	github.com/bevan/code-visualizer/internal/canvas/model	[no test files]
+ok  	github.com/bevan/code-visualizer/internal/canvas/svg	0.025s
+ok  	github.com/bevan/code-visualizer/internal/config	0.033s
+ok  	github.com/bevan/code-visualizer/internal/export	0.032s
+ok  	github.com/bevan/code-visualizer/internal/filter	0.006s
+ok  	github.com/bevan/code-visualizer/internal/metric	0.006s
+ok  	github.com/bevan/code-visualizer/internal/model	0.006s
+ok  	github.com/bevan/code-visualizer/internal/palette	0.011s
+ok  	github.com/bevan/code-visualizer/internal/provider	0.016s
+ok  	github.com/bevan/code-visualizer/internal/provider/filesystem	0.031s
+ok  	github.com/bevan/code-visualizer/internal/provider/git	0.155s
+ok  	github.com/bevan/code-visualizer/internal/radialtree	0.005s
+ok  	github.com/bevan/code-visualizer/internal/render	0.182s
+ok  	github.com/bevan/code-visualizer/internal/scan	0.009s
+ok  	github.com/bevan/code-visualizer/internal/spiral	0.008s
+ok  	github.com/bevan/code-visualizer/internal/table	0.008s
+ok  	github.com/bevan/code-visualizer/internal/treemap	0.011s
+?   	github.com/bevan/code-visualizer/internal/viz	[no test files]
+?   	github.com/bevan/code-visualizer/tools/swatches	[no test files]
+FAIL
+task: Failed to run task "ci": task: Failed to run task "test": exit status 1
