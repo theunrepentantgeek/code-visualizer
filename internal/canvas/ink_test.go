@@ -52,7 +52,7 @@ func TestNumericInk_Dip_MapsToColour(t *testing.T) {
 
 	values := []float64{10, 20, 30, 40, 50}
 	pal := palette.GetPalette(palette.Neutral)
-	ink := NumericInk(values, pal)
+	ink := NumericInk("test-metric", values, pal)
 
 	lowResult := ink.Dip(MeasureValue(10))
 	highResult := ink.Dip(MeasureValue(50))
@@ -68,7 +68,7 @@ func TestNumericInk_Dip_UsesQuantity(t *testing.T) {
 
 	values := []float64{1, 2, 3, 4, 5}
 	pal := palette.GetPalette(palette.Neutral)
-	ink := NumericInk(values, pal)
+	ink := NumericInk("test-metric", values, pal)
 
 	lowResult := ink.Dip(QuantityValue(1))
 	highResult := ink.Dip(QuantityValue(5))
@@ -82,7 +82,7 @@ func TestCategoricalInk_Dip_MapsCategories(t *testing.T) {
 
 	categories := []string{"go", "rs", "py"}
 	pal := palette.GetPalette(palette.Categorization)
-	ink := CategoricalInk(categories, pal)
+	ink := CategoricalInk("test-metric", categories, pal)
 
 	goCol := ink.Dip(CategoryValue("go"))
 	rsCol := ink.Dip(CategoryValue("rs"))
@@ -102,7 +102,7 @@ func TestCategoricalInk_Dip_UnknownCategory_ReturnsGrey(t *testing.T) {
 
 	categories := []string{"go"}
 	pal := palette.GetPalette(palette.Categorization)
-	ink := CategoricalInk(categories, pal)
+	ink := CategoricalInk("test-metric", categories, pal)
 
 	result := ink.Dip(CategoryValue("unknown"))
 	g.Expect(result).To(Equal(color.RGBA{R: 128, G: 128, B: 128, A: 255}))
@@ -114,7 +114,7 @@ func TestNumericInk_WithOpacity(t *testing.T) {
 
 	values := []float64{10, 50}
 	pal := palette.GetPalette(palette.Neutral)
-	ink := NumericInk(values, pal, WithOpacity(0.18))
+	ink := NumericInk("test-metric", values, pal, WithOpacity(0.18))
 
 	result := ink.Dip(MeasureValue(30))
 	g.Expect(result.A).To(BeNumerically("~", 46, 2))
@@ -125,7 +125,7 @@ func TestNumericInk_EmptyValues_ReturnsMiddleColour(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pal := palette.GetPalette(palette.Neutral)
-	ink := NumericInk(nil, pal)
+	ink := NumericInk("test-metric", nil, pal)
 
 	result := ink.Dip(MeasureValue(42))
 	mid := len(pal.Colours) / 2

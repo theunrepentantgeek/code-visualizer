@@ -307,19 +307,26 @@ func (c *TreemapCmd) renderAndLog(
 
 	rects := treemap.Layout(root, layoutW, layoutH, size)
 
-	applyFillColours(&rects, root, fillMetric, fillPaletteName)
-	c.applyBorderColours(&rects, root, cfg)
-
 	if layoutW < width || layoutH < height {
 		wReduce, hReduce := render.ReserveLegendSpace(legend)
 		dx, dy := legendLayoutOffset(legend, wReduce, hReduce)
 		treemap.OffsetRects(&rects, dx, dy)
 	}
 
+	// Build inks from metric data
+	inks := buildTreemapInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
+
+	// Populate canvas
+	cv := renderTreemapToCanvas(rects, root, width, height, inks)
+
 	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
 
-	if err := render.Render(rects, width, height, c.Output, legend); err != nil {
+	if err := cv.Render(c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
+	}
+
+	if legend != nil && legend.Position != render.LegendPositionNone {
+		slog.Warn("Legend rendering not yet available with Canvas pipeline; legend omitted")
 	}
 
 	slog.Info("Rendered treemap",
@@ -493,74 +500,6 @@ func (*TreemapCmd) filterBinaryFiles(cfg *config.Treemap, root *model.Directory)
 	return nil
 }
 
-func applyFillColours(
-	rects *treemap.TreemapRectangle,
-	root *model.Directory,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) {
-	fillPalette := palette.GetPalette(fillPaletteName)
-
-	p, ok := provider.Get(fillMetric)
-	if !ok {
-		return
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, fillMetric)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			applyNumericFillColours(rects, root, fillMetric, buckets, fillPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, fillMetric)
-		mapper := palette.NewCategoricalMapper(types, fillPalette)
-		applyCategoricalFillColours(rects, root, fillMetric, mapper)
-	}
-}
-
-//nolint:dupl // structurally identical to RadialCmd.applyBorderColours by design
-func (*TreemapCmd) applyBorderColours(
-	rects *treemap.TreemapRectangle,
-	root *model.Directory,
-	cfg *config.Treemap,
-) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	borderPaletteName := specPalette(cfg.Border)
-	if borderPaletteName == "" {
-		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	borderPalette := palette.GetPalette(borderPaletteName)
-
-	p, ok := provider.Get(border)
-	if !ok {
-		return border, borderPaletteName
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, border)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			applyNumericBorderColours(rects, root, border, buckets, borderPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, border)
-		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalBorderColours(rects, root, border, mapper)
-	}
-
-	return border, borderPaletteName
-}
-
 func extractNumeric(f *model.File, m metric.Name) float64 {
 	if v, ok := f.Quantity(m); ok {
 		return float64(v)
@@ -600,102 +539,4 @@ func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	slices.Sort(types)
 
 	return types
-}
-
-func applyNumericFillColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyNumericFillColours(child, node.Dirs[dirIdx], m, buckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			val := extractNumeric(node.Files[fileIdx], m)
-			idx := buckets.BucketIndex(val)
-			child.FillColour = palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-			fileIdx++
-		}
-	}
-}
-
-func applyCategoricalFillColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyCategoricalFillColours(child, node.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			if v, ok := node.Files[fileIdx].Classification(m); ok {
-				child.FillColour = mapper.Map(v)
-			}
-
-			fileIdx++
-		}
-	}
-}
-
-func applyNumericBorderColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyNumericBorderColours(child, node.Dirs[dirIdx], m, buckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			val := extractNumeric(node.Files[fileIdx], m)
-			idx := buckets.BucketIndex(val)
-			col := palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-			child.BorderColour = &col
-			fileIdx++
-		}
-	}
-}
-
-func applyCategoricalBorderColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyCategoricalBorderColours(child, node.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			if v, ok := node.Files[fileIdx].Classification(m); ok {
-				col := mapper.Map(v)
-				child.BorderColour = &col
-			}
-
-			fileIdx++
-		}
-	}
 }
