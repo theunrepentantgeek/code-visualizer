@@ -515,7 +515,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 )
 ```
 
@@ -533,7 +533,7 @@ In `internal/config/config.go`, add the import and field:
 
 Add to imports:
 ```go
-"github.com/bevan/code-visualizer/internal/filter"
+"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 ```
 
 Update the `Config` struct:
@@ -734,7 +734,7 @@ func collectDirNames(dir *model.Directory) []string {
 Add the filter import to the test file:
 
 ```go
-"github.com/bevan/code-visualizer/internal/filter"
+"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
@@ -751,7 +751,7 @@ In `internal/scan/scanner.go`:
 
 Update the import block to add:
 ```go
-"github.com/bevan/code-visualizer/internal/filter"
+"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 ```
 
 Update `Scan()` signature:
@@ -903,7 +903,7 @@ git commit -m "feat(scan): integrate filter rules into directory scanning"
 
 In `cmd/codeviz/treemap_cmd.go`, add the import:
 ```go
-"github.com/bevan/code-visualizer/internal/filter"
+"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 ```
 
 Add the field to `TreemapCmd`:

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // registry holds registered metric providers.

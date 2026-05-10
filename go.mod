@@ -1,4 +1,4 @@
-module github.com/bevan/code-visualizer
+module github.com/theunrepentantgeek/code-visualizer
 
 go 1.26.1
 

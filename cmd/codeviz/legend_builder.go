@@ -3,8 +3,8 @@ package main
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // white colour for FixedInk in size-only entries.

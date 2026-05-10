@@ -3,7 +3,7 @@ package model
 import (
 	"sync"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // MetricContainer is a thread-safe container for named metric values.

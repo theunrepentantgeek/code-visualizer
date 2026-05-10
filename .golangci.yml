@@ -145,7 +145,7 @@ linters:
         type: module
         description: Static analysis tool to detect potential nil panics in Go code.
         settings:
-          include-pkgs: github.com/bevan/code-visualizer, github.com/onsi/gomega
+          include-pkgs: github.com/theunrepentantgeek/code-visualizer, github.com/onsi/gomega
   exclusions:
     generated: lax
     presets:

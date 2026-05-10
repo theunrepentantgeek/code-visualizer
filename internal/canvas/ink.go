@@ -4,10 +4,10 @@ import (
 	"image/color"
 	"slices"
 
-	"github.com/bevan/code-visualizer/internal/canvas/legendlayout"
-	"github.com/bevan/code-visualizer/internal/canvas/model"
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 type inkKind int

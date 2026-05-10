@@ -78,7 +78,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 func TestMeasureValue_SetsMeasureKind(t *testing.T) {
@@ -138,7 +138,7 @@ Create `internal/canvas/metric_value.go`:
 package canvas
 
 import (
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // MetricValue carries the metric data needed to resolve a colour.
@@ -277,8 +277,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 func TestFixedInk_Dip_ReturnsFixedColour(t *testing.T) {
@@ -436,8 +436,8 @@ package canvas
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 type inkKind int
@@ -600,7 +600,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 func TestNumericInk_Boundaries_ReturnsBucketValues(t *testing.T) {
@@ -694,7 +694,7 @@ package canvas
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // Colours used by introspection tests and internal defaults.
@@ -1353,7 +1353,7 @@ package canvas
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // TextColourFor returns black or white text depending on fill luminance.
@@ -1598,7 +1598,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
@@ -2165,7 +2165,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 )
 
 func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
@@ -2354,7 +2354,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 )
 
 func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
@@ -2544,7 +2544,7 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 )
 
 const jpegQuality = 95
@@ -2751,7 +2751,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 )
 
 func TestSVGBackend_DrawRectangle_ProducesValidSVG(t *testing.T) {
@@ -2933,7 +2933,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 )
 
 type svgBackend struct {
@@ -3231,7 +3231,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 ```
 
@@ -3253,8 +3253,8 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/canvas/raster"
-	svgbackend "github.com/bevan/code-visualizer/internal/canvas/svg"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/raster"
+	svgbackend "github.com/theunrepentantgeek/code-visualizer/internal/canvas/svg"
 )
 ```
 

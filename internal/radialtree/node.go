@@ -1,7 +1,7 @@
 package radialtree
 
 import (
-	"github.com/bevan/code-visualizer/internal/viz"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // LabelMode is an alias for [viz.LabelMode].

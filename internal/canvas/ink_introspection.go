@@ -3,8 +3,8 @@ package canvas
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // InkKind identifies the type of ink for introspection.

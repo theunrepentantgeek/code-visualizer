@@ -271,12 +271,12 @@ package main
 import (
 	"image/color"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
 const (
@@ -653,7 +653,7 @@ Keep `collectNumericValues`, `collectDistinctTypes`, `extractNumeric` — they'r
 
 - [ ] **Step 3: Remove unused render import**
 
-Remove `"github.com/bevan/code-visualizer/internal/render"` from the import list **only if** no remaining code in `treemap_cmd.go` references the `render` package. The legend functions (`render.ReserveLegendSpace`, `render.LegendInfo`, `render.LegendPosition*`, etc.) still use it, so the import likely stays.
+Remove `"github.com/theunrepentantgeek/code-visualizer/internal/render"` from the import list **only if** no remaining code in `treemap_cmd.go` references the `render` package. The legend functions (`render.ReserveLegendSpace`, `render.LegendInfo`, `render.LegendPosition*`, etc.) still use it, so the import likely stays.
 
 - [ ] **Step 4: Run build**
 
@@ -802,12 +802,12 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/canvas"
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
 func makeTestFile(name, ext string, size int64) *model.File {

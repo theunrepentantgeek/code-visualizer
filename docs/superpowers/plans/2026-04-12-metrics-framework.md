@@ -210,7 +210,7 @@ package model
 import (
 	"sync"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // File represents a single file in the scanned tree.
@@ -369,7 +369,7 @@ package model
 import (
 	"sync"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // Directory represents a directory in the scanned tree.
@@ -512,9 +512,9 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // stubProvider is a minimal Interface implementation for testing.
@@ -591,9 +591,9 @@ Create `internal/provider/provider.go`:
 package provider
 
 import (
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // Interface is the contract every metric provider implements.
@@ -617,7 +617,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // registry holds registered metric providers.
@@ -724,9 +724,9 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // orderTracker records which providers ran and in what order.
@@ -946,8 +946,8 @@ import (
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 // Run loads the requested metrics (plus transitive dependencies) onto the tree.
@@ -1139,8 +1139,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 func TestFileSizeProvider(t *testing.T) {
@@ -1265,9 +1265,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // Metric name constants for filesystem metrics.
@@ -1357,7 +1357,7 @@ Create `internal/provider/filesystem/register.go`:
 ```go
 package filesystem
 
-import "github.com/bevan/code-visualizer/internal/provider"
+import "github.com/theunrepentantgeek/code-visualizer/internal/provider"
 
 // Register adds all filesystem metric providers to the global registry.
 func Register() {
@@ -1412,8 +1412,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 func setupTestGitRepo(t *testing.T) string {
@@ -1728,9 +1728,9 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 const (
@@ -1856,7 +1856,7 @@ Create `internal/provider/git/register.go`:
 ```go
 package git
 
-import "github.com/bevan/code-visualizer/internal/provider"
+import "github.com/theunrepentantgeek/code-visualizer/internal/provider"
 
 // Register adds all git metric providers to the global registry.
 func Register() {
@@ -1921,8 +1921,8 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
 // Scan recursively scans the directory at path and returns a model.Directory tree.
@@ -2124,8 +2124,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
 func TestScanFlat(t *testing.T) {
@@ -2408,8 +2408,8 @@ package treemap
 import (
 	"github.com/nikolaydubina/treemap/layout"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 const (
@@ -2564,8 +2564,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
 func makeFile(name string, size int) *model.File {
@@ -2713,7 +2713,7 @@ Replace all `scan.DirectoryNode` / `scan.FileNode` references with `model.Direct
 
 The tests that call `treemap.Layout(root, w, h)` must change to `treemap.Layout(root, w, h, filesystem.FileSize)`. The test trees must use `*model.Directory` with `makeFile` helpers. The golden-file palette tests that don't use Layout (they construct TreemapRectangles directly) need no changes.
 
-Update imports to include `"github.com/bevan/code-visualizer/internal/model"` and `"github.com/bevan/code-visualizer/internal/provider/filesystem"`. Remove `"github.com/bevan/code-visualizer/internal/scan"`.
+Update imports to include `"github.com/theunrepentantgeek/code-visualizer/internal/model"` and `"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"`. Remove `"github.com/theunrepentantgeek/code-visualizer/internal/scan"`.
 
 - [ ] **Step 2: Run render tests**
 
@@ -2756,11 +2756,11 @@ Key changes:
 ```go
 import (
 	// ...
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
 func main() {
@@ -2855,7 +2855,7 @@ In `internal/metric/metric.go`:
 - Delete `validMetrics` map
 - Delete `IsValid()`, `IsNumeric()`, `IsGitRequired()` methods
 - Delete `ExtractFileSize()`, `ExtractFileLines()`, `ExtractFileType()` functions
-- Delete the `"github.com/bevan/code-visualizer/internal/scan"` import
+- Delete the `"github.com/theunrepentantgeek/code-visualizer/internal/scan"` import
 - Delete the old metric name constants (FileSize, FileLines, etc.) — they now live in provider packages
 
 - [ ] **Step 2: Clean registry.go**
@@ -2868,7 +2868,7 @@ In `internal/metric/metric.go`:
 In `internal/metric/metric_test.go`:
 - Delete `TestMetricName_IsValid`, `TestMetricName_IsNumeric`, `TestMetricName_IsGitRequired`
 - Delete all `TestExtract*` tests
-- Remove the `"github.com/bevan/code-visualizer/internal/scan"` import
+- Remove the `"github.com/theunrepentantgeek/code-visualizer/internal/scan"` import
 
 In `internal/metric/registry_test.go`:
 - Delete `TestDefaultPaletteFor` and `TestDefaultPaletteFor_InvalidMetric`

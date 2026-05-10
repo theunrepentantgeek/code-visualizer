@@ -7,8 +7,8 @@ import (
 
 	"github.com/fogleman/gg"
 
-	"github.com/bevan/code-visualizer/internal/canvas/legendlayout"
-	"github.com/bevan/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 const orientationHorizontal = "horizontal"
