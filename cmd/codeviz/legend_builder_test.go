@@ -1,14 +1,15 @@
 package main
 
 import (
+	"image/color"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/bevan/code-visualizer/internal/canvas"
 	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/bevan/code-visualizer/internal/palette"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/render"
 )
 
 func TestResolveLegendOptions_EmptyDefaults(t *testing.T) {
@@ -16,8 +17,8 @@ func TestResolveLegendOptions_EmptyDefaults(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, orient := resolveLegendOptions("", "")
-	g.Expect(pos).To(Equal(render.LegendPositionBottomRight))
-	g.Expect(orient).To(Equal(render.LegendOrientationVertical))
+	g.Expect(pos).To(Equal(canvas.LegendPositionBottomRight))
+	g.Expect(orient).To(Equal(canvas.LegendOrientationVertical))
 }
 
 func TestResolveLegendOptions_ExplicitValues(t *testing.T) {
@@ -25,8 +26,8 @@ func TestResolveLegendOptions_ExplicitValues(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, orient := resolveLegendOptions("top-left", "horizontal")
-	g.Expect(pos).To(Equal(render.LegendPositionTopLeft))
-	g.Expect(orient).To(Equal(render.LegendOrientationHorizontal))
+	g.Expect(pos).To(Equal(canvas.LegendPositionTopLeft))
+	g.Expect(orient).To(Equal(canvas.LegendOrientationHorizontal))
 }
 
 func TestResolveLegendOptions_PositionOnly_DerivesOrientation(t *testing.T) {
@@ -34,8 +35,8 @@ func TestResolveLegendOptions_PositionOnly_DerivesOrientation(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, orient := resolveLegendOptions("top-center", "")
-	g.Expect(pos).To(Equal(render.LegendPositionTopCenter))
-	g.Expect(orient).To(Equal(render.LegendOrientationHorizontal))
+	g.Expect(pos).To(Equal(canvas.LegendPositionTopCenter))
+	g.Expect(orient).To(Equal(canvas.LegendOrientationHorizontal))
 }
 
 func TestResolveLegendOptions_None_DisablesLegend(t *testing.T) {
@@ -43,143 +44,137 @@ func TestResolveLegendOptions_None_DisablesLegend(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, _ := resolveLegendOptions("none", "")
-	g.Expect(pos).To(Equal(render.LegendPositionNone))
+	g.Expect(pos).To(Equal(canvas.LegendPositionNone))
 }
 
-func TestBuildLegendInfo_NonePosition_ReturnsNil(t *testing.T) {
+func TestBuildLegendConfig_NonePosition_ReturnsNil(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := buildLegendConfig(
+		canvas.LegendPositionNone, canvas.LegendOrientationVertical,
+		canvas.FixedInk(color.RGBA{A: 255}), "file-size",
+		canvas.FixedInk(color.RGBA{A: 255}), "",
+		"file-lines",
+	)
+
+	g.Expect(cfg).To(BeNil())
+}
+
+func TestBuildLegendConfig_FillOnly_SingleEntry(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := makeLegendTestRoot()
-	info := buildLegendInfo(
-		render.LegendPositionNone, render.LegendOrientationVertical,
-		"file-size", "temperature",
-		"", "",
-		"file-lines", root,
+	pal := palette.GetPalette(palette.Temperature)
+	values := collectNumericValues(root, "file-size")
+	fillInk := canvas.NumericInk("file-size", values, pal)
+
+	cfg := buildLegendConfig(
+		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		fillInk, "file-size",
+		canvas.FixedInk(color.RGBA{A: 255}), "",
+		"file-size",
 	)
 
-	g.Expect(info).To(BeNil())
-}
-
-func TestBuildLegendInfo_FillOnly_SingleEntry(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := makeLegendTestRoot()
-	info := buildLegendInfo(
-		render.LegendPositionBottomRight, render.LegendOrientationVertical,
-		"file-size", "temperature",
-		"", "",
-		"file-size", root,
-	)
-
-	if info == nil {
-		t.Fatal("expected non-nil LegendInfo")
+	if cfg == nil {
+		t.Fatal("expected non-nil LegendConfig")
 	} else {
-		g.Expect(info.Entries).To(HaveLen(1))
-		g.Expect(info.Entries[0].Role()).To(Equal("Fill"))
-		g.Expect(info.Entries[0].MetricName()).To(Equal("file-size"))
+		g.Expect(cfg.Entries).To(HaveLen(1))
+		g.Expect(cfg.Entries[0].Role).To(Equal(canvas.LegendRoleFill))
+		g.Expect(cfg.Entries[0].MetricName).To(Equal("file-size"))
 	}
 }
 
-func TestBuildLegendInfo_FillAndBorder_TwoEntries(t *testing.T) {
+func TestBuildLegendConfig_FillAndBorder_TwoEntries(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := makeLegendTestRoot()
-	info := buildLegendInfo(
-		render.LegendPositionBottomRight, render.LegendOrientationVertical,
-		"file-size", "temperature",
-		"file-type", "categorization",
-		"file-size", root,
+	pal := palette.GetPalette(palette.Temperature)
+	values := collectNumericValues(root, "file-size")
+	fillInk := canvas.NumericInk("file-size", values, pal)
+
+	types := collectDistinctTypes(root, "file-type")
+	catPal := palette.GetPalette(palette.Categorization)
+	borderInk := canvas.CategoricalInk("file-type", types, catPal)
+
+	cfg := buildLegendConfig(
+		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		fillInk, "file-size",
+		borderInk, "file-type",
+		"file-size",
 	)
 
-	if info == nil {
-		t.Fatal("expected non-nil LegendInfo")
+	if cfg == nil {
+		t.Fatal("expected non-nil LegendConfig")
 	} else {
-		g.Expect(info.Entries).To(HaveLen(2))
-		g.Expect(info.Entries[0].Role()).To(Equal("Fill"))
-		g.Expect(info.Entries[1].Role()).To(Equal("Border"))
-		g.Expect(info.Entries[1].MetricName()).To(Equal("file-type"))
+		g.Expect(cfg.Entries).To(HaveLen(2))
+		g.Expect(cfg.Entries[0].Role).To(Equal(canvas.LegendRoleFill))
+		g.Expect(cfg.Entries[1].Role).To(Equal(canvas.LegendRoleBorder))
 	}
 }
 
-func TestBuildLegendInfo_DifferentSizeMetric_AddsEntry(t *testing.T) {
+func TestBuildLegendConfig_DifferentSizeMetric_AddsEntry(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := makeLegendTestRoot()
-	info := buildLegendInfo(
-		render.LegendPositionBottomRight, render.LegendOrientationVertical,
-		"file-size", "temperature",
-		"", "",
-		"file-lines", root,
+	pal := palette.GetPalette(palette.Temperature)
+	values := collectNumericValues(root, "file-size")
+	fillInk := canvas.NumericInk("file-size", values, pal)
+
+	cfg := buildLegendConfig(
+		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		fillInk, "file-size",
+		canvas.FixedInk(color.RGBA{A: 255}), "",
+		"file-lines",
 	)
 
-	if info == nil {
-		t.Fatal("expected non-nil LegendInfo")
+	if cfg == nil {
+		t.Fatal("expected non-nil LegendConfig")
 	} else {
-		g.Expect(info.Entries).To(HaveLen(2))
-		g.Expect(info.Entries[1].Role()).To(Equal("Size"))
-		g.Expect(info.Entries[1].MetricName()).To(Equal("file-lines"))
+		g.Expect(cfg.Entries).To(HaveLen(2))
+		g.Expect(cfg.Entries[1].Role).To(Equal(canvas.LegendRoleSize))
+		g.Expect(cfg.Entries[1].MetricName).To(Equal("file-lines"))
 	}
 }
 
-func TestBuildLegendInfo_SameSizeAsFill_NoSizeEntry(t *testing.T) {
+func TestBuildLegendConfig_SameSizeAsFill_NoSizeEntry(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := makeLegendTestRoot()
-	info := buildLegendInfo(
-		render.LegendPositionBottomRight, render.LegendOrientationVertical,
-		"file-size", "temperature",
-		"", "",
-		"file-size", root,
+	pal := palette.GetPalette(palette.Temperature)
+	values := collectNumericValues(root, "file-size")
+	fillInk := canvas.NumericInk("file-size", values, pal)
+
+	cfg := buildLegendConfig(
+		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		fillInk, "file-size",
+		canvas.FixedInk(color.RGBA{A: 255}), "",
+		"file-size",
 	)
 
-	if info == nil {
-		t.Fatal("expected non-nil LegendInfo")
+	if cfg == nil {
+		t.Fatal("expected non-nil LegendConfig")
 	} else {
-		g.Expect(info.Entries).To(HaveLen(1))
-		g.Expect(info.Entries[0].Role()).To(Equal("Fill"))
-		g.Expect(info.Entries[0].MetricName()).To(Equal("file-size"))
+		g.Expect(cfg.Entries).To(HaveLen(1))
 	}
 }
 
-func TestBuildLegendInfo_Classification_HasCategories(t *testing.T) {
+func TestBuildLegendConfig_NoMetrics_ReturnsNil(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := makeLegendTestRoot()
-	info := buildLegendInfo(
-		render.LegendPositionBottomRight, render.LegendOrientationVertical,
-		"file-type", "categorization",
-		"", "",
-		"file-size", root,
+	cfg := buildLegendConfig(
+		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		canvas.FixedInk(color.RGBA{A: 255}), "",
+		canvas.FixedInk(color.RGBA{A: 255}), "",
+		"",
 	)
 
-	if info == nil {
-		t.Fatal("expected non-nil LegendInfo")
-	} else {
-		g.Expect(info.Entries).To(HaveLen(2))
-		g.Expect(info.Entries[0].Kind()).To(Equal(metric.Classification))
-		g.Expect(info.Entries[0].Categories()).NotTo(BeEmpty())
-	}
-}
-
-func TestBuildLegendInfo_NoMetrics_ReturnsNil(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := makeLegendTestRoot()
-	info := buildLegendInfo(
-		render.LegendPositionBottomRight, render.LegendOrientationVertical,
-		"", "",
-		"", "",
-		"", root,
-	)
-
-	g.Expect(info).To(BeNil())
+	g.Expect(cfg).To(BeNil())
 }
 
 func makeLegendTestRoot() *model.Directory {

@@ -228,13 +228,20 @@ func (c *SpiralCmd) layoutAndRender(
 
 	cv := renderSpiralToCanvas(nodes, buckets, width, height, inks)
 
-	if err := cv.Render(c.Output); err != nil {
-		return eris.Wrap(err, "render failed")
+	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := buildLegendConfig(
+		legendPos, legendOrient,
+		inks.fill, fillMetric,
+		inks.border, borderMetric,
+		metric.Name(ptrString(cfg.Size)),
+	)
+
+	if legendConfig != nil {
+		cv.SetLegend(*legendConfig)
 	}
 
-	legendStr := ptrString(cfg.Legend)
-	if legendStr != "" && legendStr != "none" {
-		slog.Warn("Legend rendering not yet supported in Canvas pipeline; legend will be omitted")
+	if err := cv.Render(c.Output); err != nil {
+		return eris.Wrap(err, "render failed")
 	}
 
 	sizeMetric := metric.Name(ptrString(cfg.Size))
