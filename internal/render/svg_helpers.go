@@ -33,21 +33,3 @@ func writeSVGText(
 func colourToHex(c color.RGBA) string {
 	return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
 }
-
-// writeSVGTextRotated writes a rotated SVG <text> element.
-func writeSVGTextRotated(
-	f *os.File,
-	x, y float64,
-	fill string,
-	anchor string,
-	rotDeg float64,
-	content string,
-) {
-	fmt.Fprintf(f,
-		"<text x=\"%.2f\" y=\"%.2f\" fill=\"%s\" %s"+
-			" text-anchor=\"%s\" dominant-baseline=\"central\""+
-			" transform=\"rotate(%.2f %.2f %.2f)\">%s</text>\n",
-		x, y, fill, svgFontAttrs,
-		anchor,
-		rotDeg, x, y, content)
-}

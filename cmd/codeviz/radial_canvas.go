@@ -202,12 +202,17 @@ func addRadialDiscs(
 
 // addRadialDisc adds a single disc shape to the canvas.
 func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
-	fillMV := radialMetricValue(e.file, e.isDir, inks.fill)
-	borderMV := radialMetricValue(e.file, e.isDir, inks.border)
+	fillMV := radialMetricValue(e.file, inks.fill)
+	borderMV := radialMetricValue(e.file, inks.border)
+
+	fill := inks.fill
+	if e.isDir {
+		fill = canvas.FixedInk(radialDefaultDirFill)
+	}
 
 	discSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        radialFillInk(e.isDir, inks),
+			Fill:        fill,
 			Border:      inks.border,
 			BorderWidth: 1.0,
 		},
@@ -224,20 +229,10 @@ func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
 	})
 }
 
-// radialFillInk returns the fill ink, using the directory default
-// for directory nodes and the metric-driven ink for file nodes.
-func radialFillInk(isDir bool, inks radialInks) canvas.Ink {
-	if isDir {
-		return canvas.FixedInk(radialDefaultDirFill)
-	}
-
-	return inks.fill
-}
-
 // radialMetricValue builds a MetricValue from a file's data for the given ink.
 // For directory nodes (file == nil), returns an empty MetricValue.
-func radialMetricValue(file *model.File, isDir bool, ink canvas.Ink) canvas.MetricValue {
-	if isDir || file == nil {
+func radialMetricValue(file *model.File, ink canvas.Ink) canvas.MetricValue {
+	if file == nil {
 		return canvas.MetricValue{}
 	}
 
@@ -278,8 +273,9 @@ func addRadialRootLabel(
 	labelColour := canvas.TextColourFor(fill)
 
 	labelSpec := &canvas.TextSpec{
-		Ink:    canvas.FixedInk(labelColour),
-		Anchor: canvas.AnchorMiddle,
+		Ink:      canvas.FixedInk(labelColour),
+		Anchor:   canvas.AnchorMiddle,
+		FontSize: 0,
 	}
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
@@ -307,6 +303,7 @@ func addRadialExternalLabel(
 	}
 
 	var anchor canvas.TextAnchor
+
 	var rotation float64
 
 	if angle <= math.Pi/2 || angle > 3*math.Pi/2 {
@@ -321,6 +318,7 @@ func addRadialExternalLabel(
 		Ink:      canvas.FixedInk(radialLabelColour),
 		Anchor:   anchor,
 		Rotation: rotation,
+		FontSize: 0,
 	}
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
