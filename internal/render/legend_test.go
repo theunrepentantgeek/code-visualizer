@@ -11,9 +11,7 @@ import (
 	"github.com/fogleman/gg"
 
 	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
 	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/treemap"
 )
 
 func TestDefaultOrientation_CenterPositions_ReturnsHorizontal(t *testing.T) {
@@ -254,15 +252,12 @@ func drawLegendOnTestCanvas(t *testing.T, info *LegendInfo) string {
 
 	out := filepath.Join(t.TempDir(), "legend.png")
 
-	root := &model.Directory{
-		Name: "root",
-		Files: []*model.File{
-			makeFile("a.go", "go", 100),
-		},
-	}
+	dc := gg.NewContext(800, 600)
+	dc.SetColor(color.White)
+	dc.Clear()
+	drawLegend(dc, info, 800, 600)
 
-	rects := treemap.Layout(root, 800, 600, "file-size")
-	err := Render(rects, 800, 600, out, info)
+	err := saveContextPNG(dc, out)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	return out

@@ -237,7 +237,7 @@ func metricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
 	case canvas.InkNumeric:
 		m := info.MetricName
 		if v, ok := file.Quantity(m); ok {
-			return canvas.MetricValue{Kind: metric.Quantity, Quantity: v}
+			return canvas.MetricValue{Kind: metric.Quantity, Quantity: int(v)}
 		}
 
 		if v, ok := file.Measure(m); ok {
