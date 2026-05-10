@@ -66,6 +66,8 @@ func buildSpiralInks(
 }
 
 // buildBucketInk creates an Ink from time-bucket-aggregated metric values.
+// It takes accessor functions because spiral uses pre-aggregated time-bucket
+// data, unlike treemap's per-file model.
 func buildBucketInk(
 	buckets []spiral.TimeBucket,
 	m metric.Name,
@@ -181,8 +183,8 @@ func addSpiralDiscs(
 			continue
 		}
 
-		fillMV := spiralFillMetricValue(&buckets[i], inks.fill)
-		borderMV := spiralBorderMetricValue(&buckets[i], inks.border)
+		fillMV := spiralMetricValue(buckets[i].FillValue, buckets[i].FillLabel, inks.fill)
+		borderMV := spiralMetricValue(buckets[i].BorderValue, buckets[i].BorderLabel, inks.border)
 
 		discSpec := &canvas.DiscSpec{
 			ShapeStyle: canvas.ShapeStyle{
@@ -253,29 +255,15 @@ func addSpiralLabel(cv *canvas.Canvas, n spiral.SpiralNode) {
 	})
 }
 
-// spiralFillMetricValue builds a fill MetricValue from a time bucket.
-func spiralFillMetricValue(bucket *spiral.TimeBucket, ink canvas.Ink) canvas.MetricValue {
+// spiralMetricValue builds a MetricValue from time-bucket data for the given ink.
+func spiralMetricValue(numericVal float64, categoryVal string, ink canvas.Ink) canvas.MetricValue {
 	info := ink.Info()
 
 	switch info.Kind {
 	case canvas.InkNumeric:
-		return canvas.MeasureValue(bucket.FillValue)
+		return canvas.MeasureValue(numericVal)
 	case canvas.InkCategorical:
-		return canvas.CategoryValue(bucket.FillLabel)
-	default:
-		return canvas.MetricValue{}
-	}
-}
-
-// spiralBorderMetricValue builds a border MetricValue from a time bucket.
-func spiralBorderMetricValue(bucket *spiral.TimeBucket, ink canvas.Ink) canvas.MetricValue {
-	info := ink.Info()
-
-	switch info.Kind {
-	case canvas.InkNumeric:
-		return canvas.MeasureValue(bucket.BorderValue)
-	case canvas.InkCategorical:
-		return canvas.CategoryValue(bucket.BorderLabel)
+		return canvas.CategoryValue(categoryVal)
 	default:
 		return canvas.MetricValue{}
 	}
