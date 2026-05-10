@@ -18,18 +18,20 @@ const (
 	shapeText
 	shapeLine
 	shapePath
+	shapeArcText
 )
 
 // layeredShape holds a shape with its assigned layer and insertion order.
 type layeredShape struct {
-	layer Layer
-	order int
-	kind  shapeKind
-	rect  *Rectangle
-	disc  *Disc
-	text  *Text
-	line  *Line
-	path  *Path
+	layer   Layer
+	order   int
+	kind    shapeKind
+	rect    *Rectangle
+	disc    *Disc
+	text    *Text
+	line    *Line
+	path    *Path
+	arcText *ArcText
 }
 
 // Canvas is a retained-then-render drawing surface.
@@ -99,6 +101,16 @@ func (c *Canvas) AddPath(layer Layer, p Path) {
 	})
 }
 
+// AddArcText records arc text on the given layer.
+func (c *Canvas) AddArcText(layer Layer, a ArcText) {
+	c.shapes = append(c.shapes, layeredShape{
+		layer:   layer,
+		order:   len(c.shapes),
+		kind:    shapeArcText,
+		arcText: &a,
+	})
+}
+
 // SetLegend configures the legend for this canvas.
 // Note: legend rendering is not yet implemented; this stores the
 // configuration for use once legend rendering is added.
@@ -163,6 +175,8 @@ func (c *Canvas) dispatchShape(backend Backend, s layeredShape) {
 		c.drawLine(backend, s.line)
 	case shapePath:
 		c.drawPath(backend, s.path)
+	case shapeArcText:
+		c.drawArcText(backend, s.arcText)
 	default:
 		// No default case needed - shapeKind is exhaustively defined
 	}
@@ -219,6 +233,17 @@ func (*Canvas) drawPath(b Backend, p *Path) {
 	stroke := p.Spec.Stroke.Dip(MetricValue{})
 
 	b.DrawPath(p.Points, stroke, p.Spec.StrokeWidth)
+}
+
+func (*Canvas) drawArcText(b Backend, a *ArcText) {
+	ink := a.Spec.Ink.Dip(MetricValue{})
+	b.DrawArcText(
+		Position{X: a.X, Y: a.Y},
+		a.Radius,
+		a.Text,
+		ink,
+		a.Spec.FontSize,
+	)
 }
 
 // createBackend creates the appropriate backend for the given format.

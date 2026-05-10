@@ -37,3 +37,17 @@ type TextSpec struct {
 	Anchor   TextAnchor
 	Rotation float64 // radians
 }
+
+// ArcTextSpec defines the visual template for text curved along a circle arc.
+type ArcTextSpec struct {
+	Ink      Ink
+	FontSize float64
+}
+
+// ArcText carries position and content for text curved along a circle arc.
+type ArcText struct {
+	Spec   *ArcTextSpec
+	X, Y   float64 // circle centre
+	Radius float64 // circle radius (label is inset from this)
+	Text   string
+}
