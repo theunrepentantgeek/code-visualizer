@@ -146,6 +146,10 @@ func (s *svgBackend) DrawArcText(
 	)
 }
 
+func (s *svgBackend) DrawLegend(_ model.LegendData, _, _ int) { //nolint:revive // stub; legend rendering implemented in a later task
+	// Legend rendering implemented in a later task
+}
+
 func (s *svgBackend) Finish(outputPath string) (err error) {
 	s.buf.WriteString("</svg>\n")
 

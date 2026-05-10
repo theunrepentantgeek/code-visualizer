@@ -140,6 +140,10 @@ func (r *rasterBackend) DrawArcText(
 	}
 }
 
+func (r *rasterBackend) DrawLegend(_ model.LegendData, _, _ int) { //nolint:revive // stub; legend rendering implemented in a later task
+	// Legend rendering implemented in a later task
+}
+
 func (r *rasterBackend) Finish(outputPath string) error {
 	ext := strings.ToLower(filepath.Ext(outputPath))
 
