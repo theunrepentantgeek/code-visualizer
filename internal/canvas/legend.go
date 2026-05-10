@@ -53,7 +53,7 @@ type LegendConfig struct {
 }
 
 // DefaultOrientation returns the default orientation for a given position.
-// Center positions default to horizontal; all others to vertical.
+// Top-center and bottom-center default to horizontal; all others to vertical.
 func DefaultOrientation(pos LegendPosition) LegendOrientation {
 	switch pos {
 	case LegendPositionTopCenter, LegendPositionBottomCenter:
@@ -89,9 +89,14 @@ func (lc *LegendConfig) toLegendData() *model.LegendData {
 		}
 	}
 
+	orient := lc.Orientation
+	if orient == "" {
+		orient = DefaultOrientation(lc.Position)
+	}
+
 	return &model.LegendData{
 		Position:    string(lc.Position),
-		Orientation: string(lc.Orientation),
+		Orientation: string(orient),
 		Entries:     entries,
 	}
 }

@@ -36,8 +36,8 @@ func TestFixedInk_WithOpacity(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-	ink := FixedInk(white, WithOpacity(0.5))
+	base := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	ink := FixedInk(base, WithOpacity(0.5))
 
 	result := ink.Dip(MetricValue{})
 	g.Expect(result.R).To(Equal(uint8(255)))

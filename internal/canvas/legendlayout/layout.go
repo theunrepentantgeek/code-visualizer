@@ -81,11 +81,11 @@ func ReserveSpace(data *model.LegendData) (widthReduction, heightReduction float
 	case "top-center", "bottom-center":
 		return 0, h + 2*m
 	default:
-		if data.Orientation == "vertical" {
-			return w + 2*m, 0
+		if data.Orientation == "horizontal" {
+			return 0, h + 2*m
 		}
 
-		return 0, h + 2*m
+		return w + 2*m, 0
 	}
 }
 
