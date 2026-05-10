@@ -111,9 +111,7 @@ func (c *Canvas) AddArcText(layer Layer, a ArcText) {
 	})
 }
 
-// SetLegend configures the legend for this canvas.
-// Note: legend rendering is not yet implemented; this stores the
-// configuration for use once legend rendering is added.
+// SetLegend configures the legend overlay for this canvas.
 func (c *Canvas) SetLegend(config LegendConfig) {
 	c.legend = &config
 }
@@ -158,6 +156,13 @@ func (c *Canvas) RenderTo(backend Backend) error {
 
 	for _, s := range sorted {
 		c.dispatchShape(backend, s)
+	}
+
+	if c.legend != nil {
+		data := c.legend.toLegendData()
+		if data != nil {
+			backend.DrawLegend(*data, c.width, c.height)
+		}
 	}
 
 	return nil

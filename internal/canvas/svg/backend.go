@@ -146,6 +146,10 @@ func (s *svgBackend) DrawArcText(
 	)
 }
 
+func (s *svgBackend) DrawLegend(data model.LegendData, canvasW, canvasH int) {
+	writeSVGLegend(&s.buf, data, canvasW, canvasH)
+}
+
 func (s *svgBackend) Finish(outputPath string) (err error) {
 	s.buf.WriteString("</svg>\n")
 

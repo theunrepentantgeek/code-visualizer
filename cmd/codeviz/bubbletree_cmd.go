@@ -180,6 +180,18 @@ func (c *BubbletreeCmd) renderAndLog(
 	inks := buildBubbleInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 	cv := renderBubbleToCanvas(&nodes, root, width, height, inks)
 
+	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := buildLegendConfig(
+		legendPos, legendOrient,
+		inks.fill, fillMetric,
+		inks.border, borderMetric,
+		size,
+	)
+
+	if legendConfig != nil {
+		cv.SetLegend(*legendConfig)
+	}
+
 	if err := cv.Render(c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}

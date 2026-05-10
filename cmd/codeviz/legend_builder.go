@@ -1,152 +1,84 @@
 package main
 
 import (
-	"slices"
+	"image/color"
 
+	"github.com/bevan/code-visualizer/internal/canvas"
 	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/render"
 )
+
+// white colour for FixedInk in size-only entries.
+var white = color.RGBA{R: 255, G: 255, B: 255, A: 255} //nolint:gochecknoglobals // shared colour constant
 
 // resolveLegendOptions resolves the legend position and orientation from config.
 // Empty position defaults to "bottom-right"; empty orientation is resolved from position.
-func resolveLegendOptions(posStr, orientStr string) (render.LegendPosition, render.LegendOrientation) {
-	pos := render.LegendPosition(posStr)
+func resolveLegendOptions(posStr, orientStr string) (canvas.LegendPosition, canvas.LegendOrientation) {
+	pos := canvas.LegendPosition(posStr)
 	if pos == "" {
-		pos = render.LegendPositionBottomRight
+		pos = canvas.LegendPositionBottomRight
 	}
 
-	orient := render.LegendOrientation(orientStr)
+	orient := canvas.LegendOrientation(orientStr)
 	if orient == "" {
-		orient = render.DefaultOrientation(pos)
+		orient = canvas.DefaultOrientation(pos)
 	}
 
 	return pos, orient
 }
 
-// buildLegendInfo constructs a LegendInfo from the resolved CLI/config options
-// and the scanned model root. Returns nil if legend is disabled.
-func buildLegendInfo(
-	position render.LegendPosition,
-	orientation render.LegendOrientation,
+// buildLegendConfig constructs a LegendConfig from resolved options and
+// the pre-built Ink objects used for rendering. Returns nil if the legend
+// is disabled (position "none") or no entries are produced.
+func buildLegendConfig(
+	position canvas.LegendPosition,
+	orientation canvas.LegendOrientation,
+	fillInk canvas.Ink,
 	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
+	borderInk canvas.Ink,
 	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
 	sizeMetric metric.Name,
-	root *model.Directory,
-) *render.LegendInfo {
-	if position == render.LegendPositionNone {
+) *canvas.LegendConfig {
+	if position == canvas.LegendPositionNone {
 		return nil
 	}
 
 	if orientation == "" {
-		orientation = render.DefaultOrientation(position)
+		orientation = canvas.DefaultOrientation(position)
 	}
 
-	entries := collectLegendEntries(
-		fillMetric, fillPaletteName,
-		borderMetric, borderPaletteName,
-		sizeMetric, root,
-	)
+	var entries []canvas.LegendEntry
+
+	if fillMetric != "" {
+		entries = append(entries, canvas.LegendEntry{
+			Role:       canvas.LegendRoleFill,
+			MetricName: string(fillMetric),
+			Ink:        fillInk,
+		})
+	}
+
+	if borderMetric != "" {
+		entries = append(entries, canvas.LegendEntry{
+			Role:       canvas.LegendRoleBorder,
+			MetricName: string(borderMetric),
+			Ink:        borderInk,
+		})
+	}
+
+	if sizeMetric != "" && sizeMetric != fillMetric {
+		entries = append(entries, canvas.LegendEntry{
+			Role:       canvas.LegendRoleSize,
+			MetricName: string(sizeMetric),
+			Ink:        canvas.FixedInk(white),
+		})
+	}
 
 	if len(entries) == 0 {
 		return nil
 	}
 
-	return &render.LegendInfo{
+	return &canvas.LegendConfig{
 		Position:    position,
 		Orientation: orientation,
 		Entries:     entries,
 	}
-}
-
-// collectLegendEntries gathers legend entries for fill, border, and size metrics.
-func collectLegendEntries(
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
-	sizeMetric metric.Name,
-	root *model.Directory,
-) []render.LegendEntry {
-	var entries []render.LegendEntry
-
-	if fillMetric != "" {
-		entry := buildLegendEntry("Fill", fillMetric, fillPaletteName, root)
-		if entry != nil {
-			entries = append(entries, *entry)
-		}
-	}
-
-	if borderMetric != "" {
-		entry := buildLegendEntry("Border", borderMetric, borderPaletteName, root)
-		if entry != nil {
-			entries = append(entries, *entry)
-		}
-	}
-
-	if sizeMetric != "" && sizeMetric != fillMetric {
-		entries = append(entries, render.NewNumericLegendEntry(
-			"Size", string(sizeMetric), metric.Quantity, nil, palette.ColourPalette{},
-		))
-	}
-
-	return entries
-}
-
-// buildLegendEntry creates a legend entry for a colour-mapped metric.
-func buildLegendEntry(
-	role string,
-	metricName metric.Name,
-	paletteName palette.PaletteName,
-	root *model.Directory,
-) *render.LegendEntry {
-	p, ok := provider.Get(metricName)
-	if !ok {
-		return nil
-	}
-
-	pal := palette.GetPalette(paletteName)
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		var buckets *metric.BucketBoundaries
-
-		values := collectNumericValues(root, metricName)
-		if len(values) > 0 {
-			b := metric.ComputeBuckets(values, len(pal.Colours))
-			buckets = &b
-		}
-
-		entry := render.NewNumericLegendEntry(role, string(metricName), p.Kind(), buckets, pal)
-
-		return &entry
-	}
-
-	types := collectDistinctTypes(root, metricName)
-	mapper := palette.NewCategoricalMapper(types, pal)
-	cats := buildCategorySwatches(types, mapper)
-	entry := render.NewCategoryLegendEntry(role, string(metricName), cats)
-
-	return &entry
-}
-
-// buildCategorySwatches pairs category labels with their mapped colours.
-func buildCategorySwatches(
-	types []string,
-	mapper *palette.CategoricalMapper,
-) []render.CategorySwatch {
-	slices.Sort(types)
-
-	swatches := make([]render.CategorySwatch, len(types))
-	for i, t := range types {
-		swatches[i] = render.CategorySwatch{
-			Label:  t,
-			Colour: mapper.Map(t),
-		}
-	}
-
-	return swatches
 }

@@ -16,6 +16,7 @@ type Backend interface {
 	DrawPath(points []Position, stroke color.RGBA, strokeWidth float64)
 	DrawText(pos Position, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64)
 	DrawArcText(center Position, radius float64, text string, ink color.RGBA, fontSize float64)
+	DrawLegend(data LegendData, canvasW, canvasH int)
 	Finish(outputPath string) error
 }
 

@@ -519,6 +519,43 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 }
 
+func TestCanvas_SetLegend_DispatchesToBackend(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+
+	pal := palette.GetPalette(palette.Temperature)
+	fillInk := NumericInk("file-size", []float64{10, 50, 100}, pal)
+
+	c.SetLegend(LegendConfig{
+		Position:    LegendPositionBottomRight,
+		Orientation: LegendOrientationVertical,
+		Entries: []LegendEntry{
+			{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk},
+		},
+	})
+
+	mb := newMockBackend()
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(mb.legendData).NotTo(BeNil())
+	g.Expect(mb.legendData.Position).To(Equal("bottom-right"))
+	g.Expect(mb.legendData.Entries).To(HaveLen(1))
+}
+
+func TestCanvas_NoLegend_DoesNotCallDrawLegend(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+	mb := newMockBackend()
+
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(mb.legendData).To(BeNil())
+}
+
 func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
