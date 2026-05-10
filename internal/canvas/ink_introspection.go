@@ -3,8 +3,32 @@ package canvas
 import (
 	"image/color"
 
+	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/palette"
 )
+
+// InkKind identifies the type of ink for introspection.
+type InkKind int
+
+const (
+	InkFixed       InkKind = InkKind(inkFixed)
+	InkNumeric     InkKind = InkKind(inkNumeric)
+	InkCategorical InkKind = InkKind(inkCategorical)
+)
+
+// InkInfo carries introspection data about an Ink.
+type InkInfo struct {
+	Kind       InkKind
+	MetricName metric.Name
+}
+
+// Info returns introspection data about the ink's kind and metric.
+func (ink Ink) Info() InkInfo {
+	return InkInfo{
+		Kind:       InkKind(ink.kind),
+		MetricName: ink.metricName,
+	}
+}
 
 // Colours used by introspection tests and internal defaults.
 var (

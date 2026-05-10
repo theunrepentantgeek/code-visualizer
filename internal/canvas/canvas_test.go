@@ -217,7 +217,7 @@ func TestCanvas_InkResolution_NumericInk(t *testing.T) {
 
 	c := NewCanvas(400, 400)
 	pal := palette.GetPalette(palette.Neutral)
-	ink := NumericInk([]float64{10, 50, 90}, pal)
+	ink := NumericInk("test-metric", []float64{10, 50, 90}, pal)
 
 	spec := &RectangleSpec{
 		ShapeStyle: ShapeStyle{
@@ -416,7 +416,7 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	})
 
 	pal := palette.GetPalette(palette.Temperature)
-	fillInk := NumericInk([]float64{10, 20, 30, 40, 50}, pal)
+	fillInk := NumericInk("test-metric", []float64{10, 20, 30, 40, 50}, pal)
 
 	rectSpec := &RectangleSpec{
 		ShapeStyle: ShapeStyle{

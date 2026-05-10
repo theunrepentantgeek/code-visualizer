@@ -21,6 +21,7 @@ const (
 // Ink is safe to copy; internal state is shared via pointers.
 type Ink struct {
 	kind       inkKind
+	metricName metric.Name
 	color      color.RGBA
 	boundaries *metric.BucketBoundaries
 	catMapper  *palette.CategoricalMapper
@@ -46,7 +47,7 @@ func FixedInk(c color.RGBA, opts ...InkOption) Ink {
 // NumericInk maps numeric metric values to palette colours.
 // Takes the full dataset of values (for bucketing), the palette,
 // and optional configuration options.
-func NumericInk(values []float64, pal palette.ColourPalette, opts ...InkOption) Ink {
+func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, opts ...InkOption) Ink {
 	cfg := defaultInkConfig()
 	for _, o := range opts {
 		o(&cfg)
@@ -58,6 +59,7 @@ func NumericInk(values []float64, pal palette.ColourPalette, opts ...InkOption) 
 
 	return Ink{
 		kind:       inkNumeric,
+		metricName: name,
 		boundaries: &buckets,
 		pal:        pal,
 		opacity:    cfg.opacity,
@@ -65,7 +67,7 @@ func NumericInk(values []float64, pal palette.ColourPalette, opts ...InkOption) 
 }
 
 // CategoricalInk maps string categories to palette colours.
-func CategoricalInk(categories []string, pal palette.ColourPalette, opts ...InkOption) Ink {
+func CategoricalInk(name metric.Name, categories []string, pal palette.ColourPalette, opts ...InkOption) Ink {
 	cfg := defaultInkConfig()
 	for _, o := range opts {
 		o(&cfg)
@@ -73,6 +75,7 @@ func CategoricalInk(categories []string, pal palette.ColourPalette, opts ...InkO
 
 	return Ink{
 		kind:       inkCategorical,
+		metricName: name,
 		catMapper:  palette.NewCategoricalMapper(categories, pal),
 		pal:        pal,
 		categories: categories,
