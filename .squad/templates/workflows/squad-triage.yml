@@ -142,43 +142,76 @@ jobs:
               }
             }
 
-            // If not routed to @copilot, use keyword-based routing
-            if (!assignedMember) {
-              for (const member of members) {
-                const role = member.role.toLowerCase();
-                if ((role.includes('frontend') || role.includes('ui')) &&
-                    (issueText.includes('ui') || issueText.includes('frontend') ||
-                     issueText.includes('css') || issueText.includes('component') ||
-                     issueText.includes('button') || issueText.includes('page') ||
-                     issueText.includes('layout') || issueText.includes('design'))) {
-                  assignedMember = member;
-                  triageReason = 'Issue relates to frontend/UI work';
+            // If not routed to @copilot, use routing.md keyword scoring
+            if (!assignedMember && routingContent) {
+              // Parse "Work Type → Agent" table from routing.md
+              const routingRules = [];
+              const routingLines = routingContent.split('\n');
+              let inRoutingTable = false;
+              let pastSeparator = false;
+
+              for (const rline of routingLines) {
+                if (rline.match(/^#+.*Work Type/i)) {
+                  inRoutingTable = true;
+                  pastSeparator = false;
+                  continue;
+                }
+                if (inRoutingTable && /^#+\s/.test(rline) && !rline.match(/Work Type/i)) {
                   break;
                 }
-                if ((role.includes('backend') || role.includes('api') || role.includes('server')) &&
-                    (issueText.includes('api') || issueText.includes('backend') ||
-                     issueText.includes('database') || issueText.includes('endpoint') ||
-                     issueText.includes('server') || issueText.includes('auth'))) {
-                  assignedMember = member;
-                  triageReason = 'Issue relates to backend/API work';
-                  break;
+                if (inRoutingTable && rline.includes('---')) {
+                  pastSeparator = true;
+                  continue;
                 }
-                if ((role.includes('test') || role.includes('qa') || role.includes('quality')) &&
-                    (issueText.includes('test') || issueText.includes('bug') ||
-                     issueText.includes('fix') || issueText.includes('regression') ||
-                     issueText.includes('coverage'))) {
-                  assignedMember = member;
-                  triageReason = 'Issue relates to testing/quality work';
-                  break;
+                if (inRoutingTable && pastSeparator && rline.startsWith('|')) {
+                  const cells = rline.split('|').map(c => c.trim()).filter(Boolean);
+                  if (cells.length >= 2) {
+                    const keywords = cells[0].toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+                    const memberName = cells[1].trim();
+                    // Skip placeholder/empty rows
+                    if (memberName.startsWith('{') || memberName === '—' || memberName === '-') continue;
+                    const member = members.find(m => m.name.toLowerCase() === memberName.toLowerCase());
+                    if (member) {
+                      routingRules.push({ member, keywords });
+                    }
+                  }
                 }
-                if ((role.includes('devops') || role.includes('infra') || role.includes('ops')) &&
-                    (issueText.includes('deploy') || issueText.includes('ci') ||
-                     issueText.includes('pipeline') || issueText.includes('docker') ||
-                     issueText.includes('infrastructure'))) {
-                  assignedMember = member;
-                  triageReason = 'Issue relates to DevOps/infrastructure work';
-                  break;
+              }
+
+              // Score each member by weighted keyword matches.
+              // Multi-word phrases are more specific and score higher than
+              // single common words like "review" or "tests".
+              // NOTE: Review keyword weights when adding or retiring team
+              // members — the balance depends on relative specificity across
+              // the whole routing table.
+              function keywordWeight(kw) {
+                const words = kw.split(/\s+/).length;
+                return words * words; // 1-word=1, 2-word=4, 3-word=9
+              }
+
+              let bestScore = 0;
+              let bestMember = null;
+              let bestKeywords = [];
+
+              for (const rule of routingRules) {
+                let score = 0;
+                const matched = [];
+                for (const kw of rule.keywords) {
+                  if (issueText.includes(kw)) {
+                    score += keywordWeight(kw);
+                    matched.push(kw);
+                  }
                 }
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestMember = rule.member;
+                  bestKeywords = matched;
+                }
+              }
+
+              if (bestMember) {
+                assignedMember = bestMember;
+                triageReason = `Matched routing keywords: ${bestKeywords.join(', ')}`;
               }
             }
 
