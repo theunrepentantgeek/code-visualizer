@@ -31,10 +31,10 @@ func TestTreemapDynBorderWidth(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(treemapDynBorderWidth(10, 10, false)).To(Equal(0.5))
-	g.Expect(treemapDynBorderWidth(10, 10, true)).To(Equal(1.0))
-	g.Expect(treemapDynBorderWidth(50, 50, true)).To(Equal(2.0))
-	g.Expect(treemapDynBorderWidth(200, 200, true)).To(Equal(3.0))
+	g.Expect(treemapDynBorderWidth(10, 10, canvas.InkFixed)).To(Equal(0.5))
+	g.Expect(treemapDynBorderWidth(10, 10, canvas.InkNumeric)).To(Equal(1.0))
+	g.Expect(treemapDynBorderWidth(50, 50, canvas.InkNumeric)).To(Equal(2.0))
+	g.Expect(treemapDynBorderWidth(200, 200, canvas.InkNumeric)).To(Equal(3.0))
 }
 
 func TestBuildTreemapInks_Numeric(t *testing.T) {

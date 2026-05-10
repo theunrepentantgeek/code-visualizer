@@ -540,4 +540,3 @@ func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 
 	return types
 }
-

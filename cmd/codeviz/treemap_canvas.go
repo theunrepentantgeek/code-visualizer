@@ -117,12 +117,13 @@ func addTreemapRect(
 	node *model.Directory,
 	inks treemapInks,
 ) {
-	if rect.IsDirectory {
-		addDirectoryShapes(cv, rect, inks)
-	} else {
+	if !rect.IsDirectory {
 		addFileRectForFile(cv, rect, nil, inks)
+
 		return
 	}
+
+	addDirectoryShapes(cv, rect)
 
 	fileIdx := 0
 	dirIdx := 0
@@ -142,7 +143,6 @@ func addTreemapRect(
 func addDirectoryShapes(
 	cv *canvas.Canvas,
 	rect treemap.TreemapRectangle,
-	inks treemapInks,
 ) {
 	// Header bar fill
 	headerSpec := &canvas.RectangleSpec{
@@ -178,7 +178,7 @@ func addDirectoryShapes(
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        canvas.FixedInk(color.RGBA{A: 0}),
 			Border:      canvas.FixedInk(treemapStructuralBorder),
-			BorderWidth: treemapDynBorderWidth(rect.W, rect.H, true),
+			BorderWidth: treemapDynBorderWidth(rect.W, rect.H, canvas.InkNumeric),
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
@@ -198,7 +198,7 @@ func addFileRectForFile(
 		return
 	}
 
-	hasBorder := inks.border.Info().Kind != canvas.InkFixed
+	hasBorder := inks.border.Info().Kind
 
 	fillMV := metricValueForFile(file, inks.fill)
 	borderMV := metricValueForFile(file, inks.border)
@@ -249,8 +249,6 @@ func metricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
 	info := ink.Info()
 
 	switch info.Kind {
-	case canvas.InkFixed:
-		return canvas.MetricValue{}
 	case canvas.InkNumeric:
 		m := info.MetricName
 		if v, ok := file.Quantity(m); ok {
@@ -275,9 +273,9 @@ func metricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
 }
 
 // treemapDynBorderWidth returns a dynamic border width based on rectangle
-// size and whether a border metric is configured.
-func treemapDynBorderWidth(w, h float64, hasBorderMetric bool) float64 {
-	if !hasBorderMetric {
+// size and the kind of border ink configured.
+func treemapDynBorderWidth(w, h float64, borderKind canvas.InkKind) float64 {
+	if borderKind == canvas.InkFixed {
 		return 0.5
 	}
 

@@ -25,8 +25,8 @@ func TestRenderRadial_FlatDir(t *testing.T) {
 		Name: "flat",
 		Files: []*model.File{
 			makeFile("small.go", "go", 100),
-			makeFile("medium.go", "go", 500),
-			makeFile("large.go", "go", 2000),
+			makeFile("medium.py", "py", 500),
+			makeFile("large.rs", "rs", 2000),
 		},
 	}
 
