@@ -19,7 +19,6 @@ import (
 	"github.com/bevan/code-visualizer/internal/palette"
 	"github.com/bevan/code-visualizer/internal/provider"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/render"
 	"github.com/bevan/code-visualizer/internal/scan"
 	"github.com/bevan/code-visualizer/internal/spiral"
 )
