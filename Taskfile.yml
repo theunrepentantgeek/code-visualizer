@@ -17,6 +17,11 @@ tasks:
     cmds:
       - go test ./... -count=1
 
+  test:race:
+    desc: Run all tests with the race detector enabled
+    cmds:
+      - go test ./... -count=1 -race
+
   test:cover:
     desc: Run tests with coverage report
     cmds:

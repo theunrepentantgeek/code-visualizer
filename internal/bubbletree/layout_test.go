@@ -547,3 +547,72 @@ func TestLayoutLabelBandReservation(t *testing.T) {
 	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
 	assertLabelBandClear(g, node)
 }
+
+// Tests for solveQuadraticForRadius branches.
+
+func TestSolveQuadraticForRadius_BothRootsValid(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// x^2 - 5x + 6 = 0 → roots 2 and 3; minR=1 so both valid; expect min=2.
+	r, ok := solveQuadraticForRadius(1, -5, 6, 1)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(r).To(BeNumerically("~", 2.0, 1e-9))
+}
+
+func TestSolveQuadraticForRadius_OneRootValid(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// x^2 - 5x + 6 = 0 → roots 2 and 3; minR=2.5 so only root 3 is valid.
+	r, ok := solveQuadraticForRadius(1, -5, 6, 2.5)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(r).To(BeNumerically("~", 3.0, 1e-9))
+}
+
+func TestSolveQuadraticForRadius_NoRootValid(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// x^2 - 5x + 6 = 0 → roots 2 and 3; minR=5 so neither valid.
+	_, ok := solveQuadraticForRadius(1, -5, 6, 5)
+	g.Expect(ok).To(BeFalse())
+}
+
+func TestSolveQuadraticForRadius_LinearCase(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// qa≈0, qb=-2, qc=4 → linear: r = -4/-2 = 2.
+	r, ok := solveQuadraticForRadius(0, -2, 4, 1)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(r).To(BeNumerically("~", 2.0, 1e-9))
+}
+
+func TestSolveQuadraticForRadius_LinearCaseBelowMinR(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// qa≈0, qb=-2, qc=4 → linear: r = 2; minR=5 → no valid root.
+	_, ok := solveQuadraticForRadius(0, -2, 4, 5)
+	g.Expect(ok).To(BeFalse())
+}
+
+func TestSolveQuadraticForRadius_BothZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// qa≈0, qb≈0 → degenerate; no root.
+	_, ok := solveQuadraticForRadius(0, 0, 1, 0)
+	g.Expect(ok).To(BeFalse())
+}
+
+func TestSolveQuadraticForRadius_NegativeDiscriminant(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// x^2 + x + 1 = 0 → disc = 1 - 4 = -3 < 0 (clamped to 0); single repeated root.
+	// (-1 ± 0) / 2 → root = -0.5; minR=0 so root is below minR → false.
+	_, ok := solveQuadraticForRadius(1, 1, 1, 0)
+	g.Expect(ok).To(BeFalse())
+}
