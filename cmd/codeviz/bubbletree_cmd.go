@@ -394,7 +394,6 @@ func applyBubbleFillColoursTop(
 	}
 }
 
-//nolint:dupl // structurally identical to TreemapCmd.applyBorderColours by design
 func (*BubbletreeCmd) applyBorderColours(
 	nodes *bubbletree.BubbleNode,
 	root *model.Directory,
