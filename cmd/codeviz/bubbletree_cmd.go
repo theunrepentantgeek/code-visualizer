@@ -9,6 +9,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/bevan/code-visualizer/internal/bubbletree"
+	"github.com/bevan/code-visualizer/internal/canvas"
 	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/export"
 	"github.com/bevan/code-visualizer/internal/filter"
@@ -17,7 +18,6 @@ import (
 	"github.com/bevan/code-visualizer/internal/palette"
 	"github.com/bevan/code-visualizer/internal/provider"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/render"
 	"github.com/bevan/code-visualizer/internal/scan"
 )
 
@@ -173,11 +173,15 @@ func (c *BubbletreeCmd) renderAndLog(
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
-		cfg, root, width, height, fillMetric, fillPaletteName,
-	)
-	if err != nil {
-		return err
+	borderMetric, borderPaletteName := c.resolveBorderMetricAndPalette(cfg)
+
+	labels := c.resolveLabels(cfg)
+	nodes := bubbletree.Layout(root, width, height, size, labels)
+	inks := buildBubbleInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
+	cv := renderBubbleToCanvas(&nodes, root, width, height, inks)
+
+	if err := cv.Render(c.Output); err != nil {
+		return eris.Wrap(err, "render failed")
 	}
 
 	slog.Info("Rendered bubble tree",
@@ -194,36 +198,6 @@ func (c *BubbletreeCmd) renderAndLog(
 	)
 
 	return nil
-}
-
-// applyColoursAndRender lays out, colours, and renders the bubble tree to disk.
-func (c *BubbletreeCmd) applyColoursAndRender(
-	cfg *config.Bubbletree,
-	root *model.Directory,
-	width, height int,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) (metric.Name, palette.PaletteName, error) {
-	size := metric.Name(ptrString(cfg.Size))
-	labels := c.resolveLabels(cfg)
-	nodes := bubbletree.Layout(root, width, height, size, labels)
-	applyBubbleFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
-	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
-
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	borderName := specMetric(cfg.Border)
-	legend := buildLegendInfo(
-		legendPos, legendOrient, fillMetric, fillPaletteName,
-		borderName, borderPaletteName, size, root,
-	)
-
-	slog.Debug("rendering bubble tree", "width", width, "height", height, "output", c.Output)
-
-	if err := render.RenderBubble(&nodes, width, height, c.Output, legend); err != nil {
-		return "", "", eris.Wrap(err, "render failed")
-	}
-
-	return borderMetric, borderPaletteName, nil
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -246,7 +220,7 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 
 //nolint:dupl // mirrors TreemapCmd.validatePaths by design
 func (c *BubbletreeCmd) validatePaths() error {
-	if _, err := render.FormatFromPath(c.Output); err != nil {
+	if _, err := canvas.FormatFromPath(c.Output); err != nil {
 		return &outputPathError{msg: err.Error()}
 	}
 
@@ -336,6 +310,26 @@ func (*BubbletreeCmd) resolveFillPalette(cfg *config.Bubbletree, fillMetric metr
 	return palette.Neutral
 }
 
+func (*BubbletreeCmd) resolveBorderMetricAndPalette(
+	cfg *config.Bubbletree,
+) (metric.Name, palette.PaletteName) {
+	border := specMetric(cfg.Border)
+	if border == "" {
+		return "", ""
+	}
+
+	borderPaletteName := specPalette(cfg.Border)
+	if borderPaletteName == "" {
+		if p, ok := provider.Get(border); ok {
+			borderPaletteName = p.DefaultPalette()
+		} else {
+			borderPaletteName = palette.Neutral
+		}
+	}
+
+	return border, borderPaletteName
+}
+
 func (*BubbletreeCmd) filterBinaryFiles(cfg *config.Bubbletree, root *model.Directory) error {
 	if metric.Name(ptrString(cfg.Size)) != filesystem.FileLines {
 		return nil
@@ -366,243 +360,4 @@ func (*BubbletreeCmd) resolveLabels(cfg *config.Bubbletree) bubbletree.LabelMode
 	}
 
 	return bubbletree.LabelFoldersOnly
-}
-
-func applyBubbleFillColoursTop(
-	nodes *bubbletree.BubbleNode,
-	root *model.Directory,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) {
-	fillPalette := palette.GetPalette(fillPaletteName)
-
-	p, ok := provider.Get(fillMetric)
-	if !ok {
-		return
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, fillMetric)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			applyBubbleFillColours(nodes, root, fillMetric, buckets, fillPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, fillMetric)
-		mapper := palette.NewCategoricalMapper(types, fillPalette)
-		applyCategoricalBubbleFillColours(nodes, root, fillMetric, mapper)
-	}
-}
-
-func (*BubbletreeCmd) applyBorderColours(
-	nodes *bubbletree.BubbleNode,
-	root *model.Directory,
-	cfg *config.Bubbletree,
-) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	borderPaletteName := specPalette(cfg.Border)
-	if borderPaletteName == "" {
-		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	borderPalette := palette.GetPalette(borderPaletteName)
-
-	p, ok := provider.Get(border)
-	if !ok {
-		return border, borderPaletteName
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, border)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			applyBubbleBorderColours(nodes, root, border, buckets, borderPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, border)
-		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalBubbleBorderColours(nodes, root, border, mapper)
-	}
-
-	return border, borderPaletteName
-}
-
-// indexBubbleNodesByPath recursively walks the BubbleNode tree and indexes
-// all nodes by their Path, separating directories and files.
-func indexBubbleNodesByPath(
-	node *bubbletree.BubbleNode,
-	dirs map[string]*bubbletree.BubbleNode,
-	files map[string]*bubbletree.BubbleNode,
-) {
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory {
-			dirs[child.Path] = child
-			indexBubbleNodesByPath(child, dirs, files)
-		} else {
-			files[child.Path] = child
-		}
-	}
-}
-
-// applyBubbleFillColours assigns fill colours to the BubbleNode tree using
-// path-based lookup, decoupled from Children ordering.
-func applyBubbleFillColours(
-	node *bubbletree.BubbleNode,
-	root *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	dirs := make(map[string]*bubbletree.BubbleNode)
-	files := make(map[string]*bubbletree.BubbleNode)
-	indexBubbleNodesByPath(node, dirs, files)
-
-	applyBubbleFillColoursWalk(root, m, buckets, p, dirs, files)
-}
-
-func applyBubbleFillColoursWalk(
-	dir *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-	dirs map[string]*bubbletree.BubbleNode,
-	files map[string]*bubbletree.BubbleNode,
-) {
-	for _, f := range dir.Files {
-		if bn, ok := files[f.Path]; ok {
-			val := extractNumeric(f, m)
-			idx := buckets.BucketIndex(val)
-			bn.FillColour = palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-		}
-	}
-
-	for _, d := range dir.Dirs {
-		if _, ok := dirs[d.Path]; ok {
-			applyBubbleFillColoursWalk(d, m, buckets, p, dirs, files)
-		}
-	}
-}
-
-// applyCategoricalBubbleFillColours assigns categorical fill colours to the
-// BubbleNode tree using path-based lookup.
-func applyCategoricalBubbleFillColours(
-	node *bubbletree.BubbleNode,
-	root *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	dirs := make(map[string]*bubbletree.BubbleNode)
-	files := make(map[string]*bubbletree.BubbleNode)
-	indexBubbleNodesByPath(node, dirs, files)
-
-	applyCategoricalBubbleFillColoursWalk(root, m, mapper, dirs, files)
-}
-
-func applyCategoricalBubbleFillColoursWalk(
-	dir *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-	dirs map[string]*bubbletree.BubbleNode,
-	files map[string]*bubbletree.BubbleNode,
-) {
-	for _, f := range dir.Files {
-		if bn, ok := files[f.Path]; ok {
-			if v, ok := f.Classification(m); ok {
-				bn.FillColour = mapper.Map(v)
-			}
-		}
-	}
-
-	for _, d := range dir.Dirs {
-		if _, ok := dirs[d.Path]; ok {
-			applyCategoricalBubbleFillColoursWalk(d, m, mapper, dirs, files)
-		}
-	}
-}
-
-// applyBubbleBorderColours assigns border colours to the BubbleNode tree using
-// path-based lookup.
-func applyBubbleBorderColours(
-	node *bubbletree.BubbleNode,
-	root *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	dirs := make(map[string]*bubbletree.BubbleNode)
-	files := make(map[string]*bubbletree.BubbleNode)
-	indexBubbleNodesByPath(node, dirs, files)
-
-	applyBubbleBorderColoursWalk(root, m, buckets, p, dirs, files)
-}
-
-func applyBubbleBorderColoursWalk(
-	dir *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-	dirs map[string]*bubbletree.BubbleNode,
-	files map[string]*bubbletree.BubbleNode,
-) {
-	for _, f := range dir.Files {
-		if bn, ok := files[f.Path]; ok {
-			val := extractNumeric(f, m)
-			idx := buckets.BucketIndex(val)
-			col := palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-			bn.BorderColour = &col
-		}
-	}
-
-	for _, d := range dir.Dirs {
-		if _, ok := dirs[d.Path]; ok {
-			applyBubbleBorderColoursWalk(d, m, buckets, p, dirs, files)
-		}
-	}
-}
-
-// applyCategoricalBubbleBorderColours assigns categorical border colours to the
-// BubbleNode tree using path-based lookup.
-func applyCategoricalBubbleBorderColours(
-	node *bubbletree.BubbleNode,
-	root *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	dirs := make(map[string]*bubbletree.BubbleNode)
-	files := make(map[string]*bubbletree.BubbleNode)
-	indexBubbleNodesByPath(node, dirs, files)
-
-	applyCategoricalBubbleBorderColoursWalk(root, m, mapper, dirs, files)
-}
-
-func applyCategoricalBubbleBorderColoursWalk(
-	dir *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-	dirs map[string]*bubbletree.BubbleNode,
-	files map[string]*bubbletree.BubbleNode,
-) {
-	for _, f := range dir.Files {
-		if bn, ok := files[f.Path]; ok {
-			if v, ok := f.Classification(m); ok {
-				col := mapper.Map(v)
-				bn.BorderColour = &col
-			}
-		}
-	}
-
-	for _, d := range dir.Dirs {
-		if _, ok := dirs[d.Path]; ok {
-			applyCategoricalBubbleBorderColoursWalk(d, m, mapper, dirs, files)
-		}
-	}
 }

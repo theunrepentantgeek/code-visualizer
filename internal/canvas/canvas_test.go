@@ -141,6 +141,33 @@ func TestCanvas_AddPath_DispatchesToBackend(t *testing.T) {
 	g.Expect(mb.calls[0].method).To(Equal("DrawPath"))
 }
 
+func TestAddArcText_DispatchesToBackend(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(400, 400)
+	spec := &ArcTextSpec{
+		Ink:      FixedInk(color.RGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xFF}),
+		FontSize: 14,
+	}
+
+	c.AddArcText(LayerOverlay, ArcText{
+		Spec:   spec,
+		X:      200,
+		Y:      200,
+		Radius: 100,
+		Text:   "hello",
+	})
+
+	mock := newMockBackend()
+	err := c.RenderTo(mock)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(mock.calls).To(HaveLen(1))
+	g.Expect(mock.calls[0].method).To(Equal("DrawArcText"))
+	g.Expect(mock.calls[0].text).To(Equal("hello"))
+	g.Expect(mock.calls[0].pos).To(Equal(Position{X: 200, Y: 200}))
+}
+
 func TestCanvas_LayerOrdering_BackgroundBeforeContent(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
