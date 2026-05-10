@@ -2,7 +2,10 @@ package canvas
 
 import (
 	"image/color"
+	"slices"
 
+	"github.com/bevan/code-visualizer/internal/canvas/legendlayout"
+	"github.com/bevan/code-visualizer/internal/canvas/model"
 	"github.com/bevan/code-visualizer/internal/metric"
 	"github.com/bevan/code-visualizer/internal/palette"
 )
@@ -136,4 +139,76 @@ func clamp01(v float64) float64 {
 	}
 
 	return v
+}
+
+// legendEntryKind returns the LegendEntryKind for this ink.
+func (ink Ink) legendEntryKind() model.LegendEntryKind {
+	if ink.kind == inkCategorical {
+		return model.LegendEntryCategorical
+	}
+
+	return model.LegendEntryNumeric
+}
+
+// legendSwatches extracts resolved swatch data for legend rendering.
+// Returns nil for fixed inks (no meaningful swatch data).
+func (ink Ink) legendSwatches() []model.LegendSwatch {
+	switch ink.kind {
+	case inkNumeric:
+		return ink.numericLegendSwatches()
+	case inkCategorical:
+		return ink.categoricalLegendSwatches()
+	default:
+		return nil
+	}
+}
+
+func (ink Ink) numericLegendSwatches() []model.LegendSwatch {
+	if ink.boundaries == nil {
+		return nil
+	}
+
+	n := ink.boundaries.NumBuckets()
+	if n <= 0 || len(ink.pal.Colours) == 0 {
+		return nil
+	}
+
+	swatches := make([]model.LegendSwatch, n)
+
+	for i := range n {
+		colour := palette.MapNumericToColour(i, n, ink.pal)
+
+		var label string
+		if i < len(ink.boundaries.Boundaries) {
+			label = legendlayout.FormatBreakpoint(ink.boundaries.Boundaries[i])
+		}
+
+		swatches[i] = model.LegendSwatch{
+			Colour: colour,
+			Label:  label,
+		}
+	}
+
+	return swatches
+}
+
+func (ink Ink) categoricalLegendSwatches() []model.LegendSwatch {
+	if ink.catMapper == nil || len(ink.categories) == 0 {
+		return nil
+	}
+
+	sorted := make([]string, len(ink.categories))
+	copy(sorted, ink.categories)
+	slices.Sort(sorted)
+
+	swatches := make([]model.LegendSwatch, len(sorted))
+
+	for i, cat := range sorted {
+		swatches[i] = model.LegendSwatch{
+			Colour: ink.catMapper.Map(cat),
+			Label:  cat,
+		}
+	}
+
+	return swatches
 }
