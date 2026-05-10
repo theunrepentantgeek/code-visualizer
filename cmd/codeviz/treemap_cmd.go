@@ -325,6 +325,10 @@ func (c *TreemapCmd) renderAndLog(
 		return eris.Wrap(err, "render failed")
 	}
 
+	if legend != nil && legend.Position != render.LegendPositionNone {
+		slog.Warn("Legend rendering not yet available with Canvas pipeline; legend omitted")
+	}
+
 	slog.Info("Rendered treemap",
 		"files", files,
 		"directories", dirs,
