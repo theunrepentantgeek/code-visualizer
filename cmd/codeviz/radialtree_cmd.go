@@ -8,6 +8,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/bevan/code-visualizer/internal/canvas"
 	"github.com/bevan/code-visualizer/internal/config"
 	"github.com/bevan/code-visualizer/internal/export"
 	"github.com/bevan/code-visualizer/internal/filter"
@@ -17,7 +18,6 @@ import (
 	"github.com/bevan/code-visualizer/internal/provider"
 	"github.com/bevan/code-visualizer/internal/provider/filesystem"
 	"github.com/bevan/code-visualizer/internal/radialtree"
-	"github.com/bevan/code-visualizer/internal/render"
 	"github.com/bevan/code-visualizer/internal/scan"
 )
 
@@ -164,14 +164,24 @@ func (c *RadialCmd) renderAndLog(
 	fillPaletteName palette.PaletteName,
 ) error {
 	discSize := metric.Name(ptrString(cfg.DiscSize))
+	labels := c.resolveLabels(cfg)
+	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
+
+	borderMetric, borderPaletteName := c.resolveBorderMetricAndPalette(cfg)
+
+	inks := buildRadialInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
-	borderMetric, borderPaletteName, err := c.applyColoursAndRender(
-		cfg, root, canvasSize, fillMetric, fillPaletteName,
-	)
-	if err != nil {
-		return err
+	cv := renderRadialToCanvas(&nodes, root, canvasSize, inks)
+
+	if err := cv.Render(c.Output); err != nil {
+		return eris.Wrap(err, "render failed")
+	}
+
+	legendStr := ptrString(cfg.Legend)
+	if legendStr != "" && legendStr != "none" {
+		slog.Warn("Legend rendering not yet supported in Canvas pipeline; legend will be omitted")
 	}
 
 	slog.Info("Rendered radial tree",
@@ -189,34 +199,22 @@ func (c *RadialCmd) renderAndLog(
 	return nil
 }
 
-// applyColoursAndRender lays out, colours, and renders the radial tree to disk.
-func (c *RadialCmd) applyColoursAndRender(
-	cfg *config.Radial,
-	root *model.Directory,
-	canvasSize int,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) (metric.Name, palette.PaletteName, error) {
-	discSize := metric.Name(ptrString(cfg.DiscSize))
-	labels := c.resolveLabels(cfg)
-	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
-	applyRadialFillColoursTop(&nodes, root, fillMetric, fillPaletteName)
-	borderMetric, borderPaletteName := c.applyBorderColours(&nodes, root, cfg)
-
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	borderName := specMetric(cfg.Border)
-	legend := buildLegendInfo(
-		legendPos, legendOrient, fillMetric, fillPaletteName,
-		borderName, borderPaletteName, discSize, root,
-	)
-
-	slog.Debug("rendering radial", "canvasSize", canvasSize, "output", c.Output)
-
-	if err := render.RenderRadial(&nodes, canvasSize, c.Output, legend); err != nil {
-		return "", "", eris.Wrap(err, "render failed")
+func (*RadialCmd) resolveBorderMetricAndPalette(cfg *config.Radial) (metric.Name, palette.PaletteName) {
+	border := specMetric(cfg.Border)
+	if border == "" {
+		return "", ""
 	}
 
-	return borderMetric, borderPaletteName, nil
+	borderPaletteName := specPalette(cfg.Border)
+	if borderPaletteName == "" {
+		if p, ok := provider.Get(border); ok {
+			borderPaletteName = p.DefaultPalette()
+		} else {
+			borderPaletteName = palette.Neutral
+		}
+	}
+
+	return border, borderPaletteName
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -239,7 +237,7 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 
 //nolint:dupl // mirrors TreemapCmd.validatePaths by design
 func (c *RadialCmd) validatePaths() error {
-	if _, err := render.FormatFromPath(c.Output); err != nil {
+	if _, err := canvas.FormatFromPath(c.Output); err != nil {
 		return &outputPathError{msg: err.Error()}
 	}
 
@@ -359,186 +357,4 @@ func (*RadialCmd) resolveLabels(cfg *config.Radial) radialtree.LabelMode {
 	}
 
 	return radialtree.LabelAll
-}
-
-func applyRadialFillColoursTop(
-	nodes *radialtree.RadialNode,
-	root *model.Directory,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) {
-	fillPalette := palette.GetPalette(fillPaletteName)
-
-	p, ok := provider.Get(fillMetric)
-	if !ok {
-		return
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, fillMetric)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			applyRadialFillColours(nodes, root, fillMetric, buckets, fillPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, fillMetric)
-		mapper := palette.NewCategoricalMapper(types, fillPalette)
-		applyCategoricalRadialFillColours(nodes, root, fillMetric, mapper)
-	}
-}
-
-//nolint:dupl // structurally identical to TreemapCmd.applyBorderColours by design
-func (*RadialCmd) applyBorderColours(
-	nodes *radialtree.RadialNode,
-	root *model.Directory,
-	cfg *config.Radial,
-) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	borderPaletteName := specPalette(cfg.Border)
-	if borderPaletteName == "" {
-		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	borderPalette := palette.GetPalette(borderPaletteName)
-
-	p, ok := provider.Get(border)
-	if !ok {
-		return border, borderPaletteName
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, border)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			applyRadialBorderColours(nodes, root, border, buckets, borderPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, border)
-		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalRadialBorderColours(nodes, root, border, mapper)
-	}
-
-	return border, borderPaletteName
-}
-
-// applyRadialFillColours assigns fill colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyRadialFillColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyRadialFillColours(child, dir.Dirs[dirIdx], m, buckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			val := extractNumeric(dir.Files[fileIdx], m)
-			idx := buckets.BucketIndex(val)
-			child.FillColour = palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-			fileIdx++
-		}
-	}
-}
-
-// applyCategoricalRadialFillColours assigns categorical fill colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyCategoricalRadialFillColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyCategoricalRadialFillColours(child, dir.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			if v, ok := dir.Files[fileIdx].Classification(m); ok {
-				child.FillColour = mapper.Map(v)
-			}
-
-			fileIdx++
-		}
-	}
-}
-
-// applyRadialBorderColours assigns border colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyRadialBorderColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyRadialBorderColours(child, dir.Dirs[dirIdx], m, buckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			val := extractNumeric(dir.Files[fileIdx], m)
-			idx := buckets.BucketIndex(val)
-			col := palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-			child.BorderColour = &col
-			fileIdx++
-		}
-	}
-}
-
-// applyCategoricalRadialBorderColours assigns categorical border colours to the RadialNode tree.
-// INVARIANT: node.Children must be ordered files-first, then subdirectories —
-// matching the order produced by layoutDir. fileIdx and dirIdx rely on this
-// ordering to correctly pair nodes with their model counterparts.
-func applyCategoricalRadialBorderColours(
-	node *radialtree.RadialNode,
-	dir *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			applyCategoricalRadialBorderColours(child, dir.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			if v, ok := dir.Files[fileIdx].Classification(m); ok {
-				col := mapper.Map(v)
-				child.BorderColour = &col
-			}
-
-			fileIdx++
-		}
-	}
 }
