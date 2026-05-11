@@ -51,3 +51,15 @@ type ArcText struct {
 	Radius float64 // circle radius (label is inset from this)
 	Text   string
 }
+
+func (a *ArcText) drawTo(b Backend) {
+	ink := a.Spec.Ink.Dip(MetricValue{})
+
+	b.DrawArcText(
+		Position{X: a.X, Y: a.Y},
+		a.Radius,
+		a.Text,
+		ink,
+		a.Spec.FontSize,
+	)
+}
