@@ -126,7 +126,6 @@ func indexBubbleNodesWalk(
 // bubbleDirEntry holds a directory node for sorted drawing.
 type bubbleDirEntry struct {
 	node *bubbletree.BubbleNode
-	mv   canvas.MetricValue
 }
 
 // addBubbleDirDiscs collects directory nodes from the model tree (via path lookup),
@@ -159,7 +158,6 @@ func addBubbleDirDiscs(
 			X:      e.node.X,
 			Y:      e.node.Y,
 			Radius: e.node.Radius,
-			Border: e.mv,
 		})
 	}
 }
