@@ -9,29 +9,16 @@ import (
 	svgbackend "github.com/theunrepentantgeek/code-visualizer/internal/canvas/svg"
 )
 
-// shapeKind tags the type of shape stored in a layered entry.
-type shapeKind int
-
-const (
-	shapeRectangle shapeKind = iota
-	shapeDisc
-	shapeText
-	shapeLine
-	shapePath
-	shapeArcText
-)
+// drawnShape is implemented by every concrete shape that can be rendered.
+type drawnShape interface {
+	drawTo(backend Backend)
+}
 
 // layeredShape holds a shape with its assigned layer and insertion order.
 type layeredShape struct {
-	layer   Layer
-	order   int
-	kind    shapeKind
-	rect    *Rectangle
-	disc    *Disc
-	text    *Text
-	line    *Line
-	path    *Path
-	arcText *ArcText
+	layer Layer
+	order int
+	shape drawnShape
 }
 
 // Canvas is a retained-then-render drawing surface.
@@ -56,8 +43,7 @@ func (c *Canvas) AddRectangle(layer Layer, r Rectangle) {
 	c.shapes = append(c.shapes, layeredShape{
 		layer: layer,
 		order: len(c.shapes),
-		kind:  shapeRectangle,
-		rect:  &r,
+		shape: &r,
 	})
 }
 
@@ -66,8 +52,7 @@ func (c *Canvas) AddDisc(layer Layer, d Disc) {
 	c.shapes = append(c.shapes, layeredShape{
 		layer: layer,
 		order: len(c.shapes),
-		kind:  shapeDisc,
-		disc:  &d,
+		shape: &d,
 	})
 }
 
@@ -76,8 +61,7 @@ func (c *Canvas) AddText(layer Layer, t Text) {
 	c.shapes = append(c.shapes, layeredShape{
 		layer: layer,
 		order: len(c.shapes),
-		kind:  shapeText,
-		text:  &t,
+		shape: &t,
 	})
 }
 
@@ -86,8 +70,7 @@ func (c *Canvas) AddLine(layer Layer, l Line) {
 	c.shapes = append(c.shapes, layeredShape{
 		layer: layer,
 		order: len(c.shapes),
-		kind:  shapeLine,
-		line:  &l,
+		shape: &l,
 	})
 }
 
@@ -96,18 +79,16 @@ func (c *Canvas) AddPath(layer Layer, p Path) {
 	c.shapes = append(c.shapes, layeredShape{
 		layer: layer,
 		order: len(c.shapes),
-		kind:  shapePath,
-		path:  &p,
+		shape: &p,
 	})
 }
 
 // AddArcText records arc text on the given layer.
 func (c *Canvas) AddArcText(layer Layer, a ArcText) {
 	c.shapes = append(c.shapes, layeredShape{
-		layer:   layer,
-		order:   len(c.shapes),
-		kind:    shapeArcText,
-		arcText: &a,
+		layer: layer,
+		order: len(c.shapes),
+		shape: &a,
 	})
 }
 
@@ -155,7 +136,7 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	})
 
 	for _, s := range sorted {
-		c.dispatchShape(backend, s)
+		s.shape.drawTo(backend)
 	}
 
 	if c.legend != nil {
@@ -166,89 +147,6 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	}
 
 	return nil
-}
-
-func (c *Canvas) dispatchShape(backend Backend, s layeredShape) {
-	switch s.kind {
-	case shapeRectangle:
-		c.drawRectangle(backend, s.rect)
-	case shapeDisc:
-		c.drawDisc(backend, s.disc)
-	case shapeText:
-		c.drawText(backend, s.text)
-	case shapeLine:
-		c.drawLine(backend, s.line)
-	case shapePath:
-		c.drawPath(backend, s.path)
-	case shapeArcText:
-		c.drawArcText(backend, s.arcText)
-	default:
-		// No default case needed - shapeKind is exhaustively defined
-	}
-}
-
-func (*Canvas) drawRectangle(b Backend, r *Rectangle) {
-	fill := r.Spec.Fill.Dip(r.Fill)
-	border := r.Spec.Border.Dip(r.Border)
-
-	b.DrawRectangle(
-		Position{X: r.X, Y: r.Y},
-		Size{Width: r.W, Height: r.H},
-		fill, border,
-		r.Spec.BorderWidth,
-	)
-}
-
-func (*Canvas) drawDisc(b Backend, d *Disc) {
-	fill := d.Spec.Fill.Dip(d.Fill)
-	border := d.Spec.Border.Dip(d.Border)
-
-	b.DrawDisc(
-		Position{X: d.X, Y: d.Y},
-		d.Radius,
-		fill, border,
-		d.Spec.BorderWidth,
-	)
-}
-
-func (*Canvas) drawText(b Backend, t *Text) {
-	ink := t.Spec.Ink.Dip(MetricValue{})
-
-	b.DrawText(
-		Position{X: t.X, Y: t.Y},
-		t.Content, ink,
-		t.Spec.FontSize,
-		t.Spec.Anchor,
-		t.Spec.Rotation,
-	)
-}
-
-func (*Canvas) drawLine(b Backend, l *Line) {
-	stroke := l.Spec.Stroke.Dip(MetricValue{})
-
-	b.DrawLine(
-		Position{X: l.X1, Y: l.Y1},
-		Position{X: l.X2, Y: l.Y2},
-		stroke,
-		l.Spec.StrokeWidth,
-	)
-}
-
-func (*Canvas) drawPath(b Backend, p *Path) {
-	stroke := p.Spec.Stroke.Dip(MetricValue{})
-
-	b.DrawPath(p.Points, stroke, p.Spec.StrokeWidth)
-}
-
-func (*Canvas) drawArcText(b Backend, a *ArcText) {
-	ink := a.Spec.Ink.Dip(MetricValue{})
-	b.DrawArcText(
-		Position{X: a.X, Y: a.Y},
-		a.Radius,
-		a.Text,
-		ink,
-		a.Spec.FontSize,
-	)
 }
 
 // createBackend creates the appropriate backend for the given format.
