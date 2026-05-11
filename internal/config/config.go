@@ -12,7 +12,7 @@ import (
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
 
-	"github.com/bevan/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 )
 
 const (

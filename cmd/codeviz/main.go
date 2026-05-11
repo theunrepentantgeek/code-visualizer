@@ -9,11 +9,11 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/lmittmann/tint"
 
-	"github.com/bevan/code-visualizer/internal/config"
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
 type CLI struct {

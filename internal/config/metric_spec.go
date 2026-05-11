@@ -7,9 +7,9 @@ import (
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
 // MetricSpec combines a metric name and an optional palette name into a single

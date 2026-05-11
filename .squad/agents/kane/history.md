@@ -63,7 +63,7 @@
 - **Added `--export-data` flag** to `CLI` struct and `Flags` struct in `cmd/codeviz/main.go`, following the `--export-config` pattern.
 - **Wired `export.Export()` call** into all three visualization commands (`TreemapCmd`, `RadialCmd`, `BubbletreeCmd`).
 - **Placement:** After `filterBinaryFiles()` and before render/layout, matching the design spec (after metrics computed, before rendering).
-- **Import:** `github.com/bevan/code-visualizer/internal/export` added to all three command files.
+- **Import:** `github.com/theunrepentantgeek/code-visualizer/internal/export` added to all three command files.
 - **Won't compile yet:** Depends on Dallas's `internal/export/` package (parallel work).
 - **Error message:** Uses `"failed to export data"` consistently across all three commands.
 

@@ -10,18 +10,18 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/config"
-	"github.com/bevan/code-visualizer/internal/export"
-	"github.com/bevan/code-visualizer/internal/filter"
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/provider/git"
-	"github.com/bevan/code-visualizer/internal/render"
-	"github.com/bevan/code-visualizer/internal/scan"
-	"github.com/bevan/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/export"
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
 type TreemapCmd struct {
@@ -62,7 +62,7 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}
 
-	if p.Kind() != metric.Quantity {
+	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
 	}
 
@@ -212,8 +212,12 @@ const minReservableSize = 100
 // reserveAndLayout computes the effective layout dimensions after reserving
 // space for the legend. Falls back to full canvas if the remaining area
 // would be too small for a useful treemap.
-func reserveAndLayout(legend *render.LegendInfo, width, height int) (layoutW, layoutH int) {
-	wReduce, hReduce := render.ReserveLegendSpace(legend)
+func reserveAndLayout(legend *canvas.LegendConfig, width, height int) (layoutW, layoutH int) {
+	if legend == nil {
+		return width, height
+	}
+
+	wReduce, hReduce := legend.ReserveSpace()
 
 	w := width - int(wReduce)
 	h := height - int(hReduce)
@@ -227,28 +231,28 @@ func reserveAndLayout(legend *render.LegendInfo, width, height int) (layoutW, la
 
 // legendLayoutOffset returns the (dx, dy) offset to apply to treemap rects
 // when space has been reserved for the legend.
-func legendLayoutOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, dy float64) {
-	if info == nil {
+func legendLayoutOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy float64) {
+	if cfg == nil {
 		return 0, 0
 	}
 
-	switch info.Position {
-	case render.LegendPositionTopCenter:
+	switch cfg.Position {
+	case canvas.LegendPositionTopCenter:
 		return 0, hReduce
-	case render.LegendPositionCenterLeft:
+	case canvas.LegendPositionCenterLeft:
 		return wReduce, 0
 	default:
-		return cornerLegendOffset(info, wReduce, hReduce)
+		return cornerLegendOffset(cfg, wReduce, hReduce)
 	}
 }
 
 // cornerLegendOffset returns the offset for corner legend positions,
 // where orientation determines the carve-out direction.
-func cornerLegendOffset(info *render.LegendInfo, wReduce, hReduce float64) (dx, dy float64) {
-	isTop := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionTopRight
-	isLeft := info.Position == render.LegendPositionTopLeft || info.Position == render.LegendPositionBottomLeft
+func cornerLegendOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy float64) {
+	isTop := cfg.Position == canvas.LegendPositionTopLeft || cfg.Position == canvas.LegendPositionTopRight
+	isLeft := cfg.Position == canvas.LegendPositionTopLeft || cfg.Position == canvas.LegendPositionBottomLeft
 
-	if info.Orientation == render.LegendOrientationVertical {
+	if cfg.Orientation == canvas.LegendOrientationVertical {
 		if isLeft {
 			return wReduce, 0
 		}
@@ -295,30 +299,41 @@ func (c *TreemapCmd) renderAndLog(
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	// Build legend info before layout so we can reserve space for it.
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	// Build inks first — legend uses the same Ink objects
 	borderName, borderPaletteName := resolveBorderPaletteName(cfg)
-	legend := buildLegendInfo(
-		legendPos, legendOrient, fillMetric, fillPaletteName,
-		borderName, borderPaletteName, size, root,
+	inks := buildTreemapInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
+
+	// Build legend config from the Inks
+	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := buildLegendConfig(
+		legendPos, legendOrient,
+		inks.fill, fillMetric,
+		inks.border, borderName,
+		size,
 	)
 
-	layoutW, layoutH := reserveAndLayout(legend, width, height)
+	// Reserve space and layout
+	layoutW, layoutH := reserveAndLayout(legendConfig, width, height)
 
 	rects := treemap.Layout(root, layoutW, layoutH, size)
 
-	applyFillColours(&rects, root, fillMetric, fillPaletteName)
-	c.applyBorderColours(&rects, root, cfg)
-
 	if layoutW < width || layoutH < height {
-		wReduce, hReduce := render.ReserveLegendSpace(legend)
-		dx, dy := legendLayoutOffset(legend, wReduce, hReduce)
-		treemap.OffsetRects(&rects, dx, dy)
+		if legendConfig != nil {
+			wReduce, hReduce := legendConfig.ReserveSpace()
+			dx, dy := legendLayoutOffset(legendConfig, wReduce, hReduce)
+			treemap.OffsetRects(&rects, dx, dy)
+		}
+	}
+
+	cv := renderTreemapToCanvas(rects, root, width, height, inks)
+
+	if legendConfig != nil {
+		cv.SetLegend(*legendConfig)
 	}
 
 	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
 
-	if err := render.Render(rects, width, height, c.Output, legend); err != nil {
+	if err := cv.Render(c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
 
@@ -416,7 +431,7 @@ func ptrInt(p *int, fallback int) int {
 
 //nolint:dupl // mirrors RadialCmd.validatePaths by design
 func (c *TreemapCmd) validatePaths() error {
-	if _, err := render.FormatFromPath(c.Output); err != nil {
+	if _, err := canvas.FormatFromPath(c.Output); err != nil {
 		return &outputPathError{msg: err.Error()}
 	}
 
@@ -493,74 +508,6 @@ func (*TreemapCmd) filterBinaryFiles(cfg *config.Treemap, root *model.Directory)
 	return nil
 }
 
-func applyFillColours(
-	rects *treemap.TreemapRectangle,
-	root *model.Directory,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) {
-	fillPalette := palette.GetPalette(fillPaletteName)
-
-	p, ok := provider.Get(fillMetric)
-	if !ok {
-		return
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, fillMetric)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(fillPalette.Colours))
-			applyNumericFillColours(rects, root, fillMetric, buckets, fillPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, fillMetric)
-		mapper := palette.NewCategoricalMapper(types, fillPalette)
-		applyCategoricalFillColours(rects, root, fillMetric, mapper)
-	}
-}
-
-//nolint:dupl // structurally identical to RadialCmd.applyBorderColours by design
-func (*TreemapCmd) applyBorderColours(
-	rects *treemap.TreemapRectangle,
-	root *model.Directory,
-	cfg *config.Treemap,
-) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	borderPaletteName := specPalette(cfg.Border)
-	if borderPaletteName == "" {
-		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	borderPalette := palette.GetPalette(borderPaletteName)
-
-	p, ok := provider.Get(border)
-	if !ok {
-		return border, borderPaletteName
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, border)
-		if len(values) > 0 {
-			buckets := metric.ComputeBuckets(values, len(borderPalette.Colours))
-			applyNumericBorderColours(rects, root, border, buckets, borderPalette)
-		}
-	} else {
-		types := collectDistinctTypes(root, border)
-		mapper := palette.NewCategoricalMapper(types, borderPalette)
-		applyCategoricalBorderColours(rects, root, border, mapper)
-	}
-
-	return border, borderPaletteName
-}
-
 func extractNumeric(f *model.File, m metric.Name) float64 {
 	if v, ok := f.Quantity(m); ok {
 		return float64(v)
@@ -600,102 +547,4 @@ func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	slices.Sort(types)
 
 	return types
-}
-
-func applyNumericFillColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyNumericFillColours(child, node.Dirs[dirIdx], m, buckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			val := extractNumeric(node.Files[fileIdx], m)
-			idx := buckets.BucketIndex(val)
-			child.FillColour = palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-			fileIdx++
-		}
-	}
-}
-
-func applyCategoricalFillColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyCategoricalFillColours(child, node.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			if v, ok := node.Files[fileIdx].Classification(m); ok {
-				child.FillColour = mapper.Map(v)
-			}
-
-			fileIdx++
-		}
-	}
-}
-
-func applyNumericBorderColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	buckets metric.BucketBoundaries,
-	p palette.ColourPalette,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyNumericBorderColours(child, node.Dirs[dirIdx], m, buckets, p)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			val := extractNumeric(node.Files[fileIdx], m)
-			idx := buckets.BucketIndex(val)
-			col := palette.MapNumericToColour(idx, buckets.NumBuckets(), p)
-			child.BorderColour = &col
-			fileIdx++
-		}
-	}
-}
-
-func applyCategoricalBorderColours(
-	rect *treemap.TreemapRectangle,
-	node *model.Directory,
-	m metric.Name,
-	mapper *palette.CategoricalMapper,
-) {
-	fileIdx := 0
-	dirIdx := 0
-
-	for i := range rect.Children {
-		child := &rect.Children[i]
-		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			applyCategoricalBorderColours(child, node.Dirs[dirIdx], m, mapper)
-			dirIdx++
-		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			if v, ok := node.Files[fileIdx].Classification(m); ok {
-				col := mapper.Map(v)
-				child.BorderColour = &col
-			}
-
-			fileIdx++
-		}
-	}
 }

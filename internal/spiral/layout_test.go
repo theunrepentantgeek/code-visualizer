@@ -31,7 +31,8 @@ func TestLayoutNodeCountMatchesBuckets(t *testing.T) {
 
 	for _, n := range []int{1, 10, 24, 28, 50, 100} {
 		buckets := makeBuckets(n, Hourly)
-		nodes := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+		layout := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+		nodes := layout.Nodes
 		g.Expect(nodes).To(HaveLen(n), "expected %d nodes", n)
 	}
 }
@@ -40,10 +41,12 @@ func TestLayoutZeroBucketsReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	nodes := Layout(nil, 1920, 1920, Hourly, LabelAll)
+	layout := Layout(nil, 1920, 1920, Hourly, LabelAll)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(BeEmpty())
 
-	nodes = Layout([]TimeBucket{}, 1920, 1920, Daily, LabelNone)
+	layout = Layout([]TimeBucket{}, 1920, 1920, Daily, LabelNone)
+	nodes = layout.Nodes
 	g.Expect(nodes).To(BeEmpty())
 }
 
@@ -52,7 +55,8 @@ func TestLayoutSingleBucket(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(1, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(1))
 
 	// Single bucket should be at the centre of the spiral (inner radius, angle 0).
@@ -66,7 +70,8 @@ func TestLayoutRadiusIncreasesMonotonically(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(72, Hourly) // 3 laps
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(72))
 
 	for i := 1; i < len(nodes); i++ {
@@ -82,7 +87,8 @@ func TestLayoutInnerOuterRatio(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(72, Hourly) // 3 full laps
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	innerR := nodes[0].SpiralRadius
 	outerR := nodes[len(nodes)-1].SpiralRadius
@@ -100,7 +106,8 @@ func TestLayoutHourlySpotsPerLap(t *testing.T) {
 	g.Expect(Hourly.SpotsPerLap()).To(Equal(24))
 
 	buckets := makeBuckets(48, Hourly) // 2 full laps
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(48))
 
 	// After 24 spots, the angle should wrap past 2π.
@@ -117,7 +124,8 @@ func TestLayoutDailySpotsPerLap(t *testing.T) {
 	g.Expect(Daily.SpotsPerLap()).To(Equal(28))
 
 	buckets := makeBuckets(56, Daily) // 2 full laps
-	nodes := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(56))
 
 	// After 28 spots, the angle should wrap past 2π.
@@ -132,7 +140,8 @@ func TestLayoutUniformAngularSpacing(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(48, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	expectedStep := 2 * math.Pi / 24.0
 
@@ -150,7 +159,8 @@ func TestLayoutExactlyOneLap(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(24, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(24))
 
 	// Last spot should be just under one full revolution.
@@ -164,7 +174,8 @@ func TestLayoutPartialLastLap(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(30, Hourly) // 1 full lap + 6 extra
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(30))
 
 	// Radius should still increase through the partial lap.
@@ -181,7 +192,8 @@ func TestLayoutClockwiseFromNorth(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(4, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	cx := float64(1920) / 2
 	cy := float64(1920) / 2
@@ -196,7 +208,8 @@ func TestLayoutLabelAll(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(10, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		g.Expect(n.ShowLabel).To(BeTrue(), "node %d should have label visible", i)
@@ -209,7 +222,8 @@ func TestLayoutLabelLaps(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(50, Hourly) // 2+ laps
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelLaps)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelLaps)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		if i%24 == 0 {
@@ -225,7 +239,8 @@ func TestLayoutLabelNone(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(10, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		g.Expect(n.ShowLabel).To(BeFalse(), "node %d should not have label visible", i)
@@ -237,7 +252,8 @@ func TestLayoutPositionsWithinCanvas(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(100, Hourly)
-	nodes := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		g.Expect(n.X).To(BeNumerically(">=", 0), "node %d X should be >= 0", i)
@@ -252,7 +268,8 @@ func TestLayoutTimeFieldsPreserved(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(5, Daily)
-	nodes := Layout(buckets, 1920, 1920, Daily, LabelAll)
+	layout := Layout(buckets, 1920, 1920, Daily, LabelAll)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		g.Expect(n.TimeStart).To(Equal(buckets[i].Start), "node %d TimeStart should match bucket", i)
@@ -265,7 +282,8 @@ func TestLayoutRectangularCanvas(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(48, Hourly)
-	nodes := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(48))
 
 	// Spiral should fit within the smaller dimension.
@@ -282,7 +300,8 @@ func TestLayoutDailyLabelsFormat(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(3, Daily)
-	nodes := Layout(buckets, 1920, 1920, Daily, LabelAll)
+	layout := Layout(buckets, 1920, 1920, Daily, LabelAll)
+	nodes := layout.Nodes
 
 	g.Expect(nodes[0].Label).To(Equal("Jan 1"))
 	g.Expect(nodes[1].Label).To(Equal("Jan 2"))
@@ -294,7 +313,8 @@ func TestLayoutHourlyLabelsFormat(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(3, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	nodes := layout.Nodes
 
 	g.Expect(nodes[0].Label).To(Equal("12am"))
 	g.Expect(nodes[1].Label).To(Equal("1am"))
@@ -308,7 +328,8 @@ func TestLayoutCentreOfSpiral(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(72, Hourly) // 3 laps
-	nodes := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	cx := float64(1920) / 2
 	cy := float64(1080) / 2
@@ -341,11 +362,11 @@ func TestLayoutScalesWithCanvasSize(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(48, Hourly) // 2 laps
-	smallNodes := Layout(buckets, 800, 800, Hourly, LabelNone)
-	largeNodes := Layout(buckets, 1600, 1600, Hourly, LabelNone)
+	smallLayout := Layout(buckets, 800, 800, Hourly, LabelNone)
+	largeLayout := Layout(buckets, 1600, 1600, Hourly, LabelNone)
 
-	smallOuter := smallNodes[len(smallNodes)-1].SpiralRadius
-	largeOuter := largeNodes[len(largeNodes)-1].SpiralRadius
+	smallOuter := smallLayout.Nodes[len(smallLayout.Nodes)-1].SpiralRadius
+	largeOuter := largeLayout.Nodes[len(largeLayout.Nodes)-1].SpiralRadius
 
 	// Larger canvas should produce proportionally larger spiral.
 	// The fixed margin (40px) means the ratio won't be exactly 2.0.
@@ -359,7 +380,8 @@ func TestLayoutDailyUniformAngularSpacing(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(56, Daily) // 2 full laps
-	nodes := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	nodes := layout.Nodes
 
 	expectedStep := 2 * math.Pi / 28.0
 
@@ -377,7 +399,8 @@ func TestLayoutExactlyOneLapDaily(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(28, Daily)
-	nodes := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(28))
 
 	// Last spot should be just under one full revolution.
@@ -391,7 +414,8 @@ func TestLayoutPartialLapDaily(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(7, Daily) // 1/4 of a lap
-	nodes := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Daily, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(7))
 
 	// Angular span should be approximately 7 × 2π/28 = π/2.
@@ -413,7 +437,8 @@ func TestLayoutArchimedeanProperty(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(48, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	// Archimedean spiral: r = a + b*θ.
 	// All nodes should satisfy this equation with the same a and b.
@@ -437,7 +462,8 @@ func TestLayoutManyLaps(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(100, Hourly) // 4+ laps
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(100))
 
 	// Monotonically increasing radius across all spots.
@@ -461,7 +487,8 @@ func TestLayoutManyLapsNoOverlap(t *testing.T) {
 
 	spotsPerLap := 24
 	buckets := makeBuckets(3*spotsPerLap, Hourly) // 3 full laps
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	// For spots at the same angular position on adjacent laps, the radial gap
 	// must be greater than the sum of their disc radii (no overlap).
@@ -484,7 +511,8 @@ func TestLayoutFitsWithinCanvasIncludingDisc(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(100, Hourly)
-	nodes := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1080, Hourly, LabelNone)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		g.Expect(n.X-n.DiscRadius).To(BeNumerically(">=", 0),
@@ -503,7 +531,8 @@ func TestLayoutPartialLapHourly(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(6, Hourly) // 1/4 of a lap
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelNone)
+	nodes := layout.Nodes
 	g.Expect(nodes).To(HaveLen(6))
 
 	// Angular span should be approximately 5 × 2π/24 (last index = 5).
@@ -517,7 +546,8 @@ func TestLayoutLabelLapsDaily(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(60, Daily) // 2+ laps
-	nodes := Layout(buckets, 1920, 1920, Daily, LabelLaps)
+	layout := Layout(buckets, 1920, 1920, Daily, LabelLaps)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		if i%28 == 0 {
@@ -535,10 +565,79 @@ func TestLayoutDiscRadiusPositive(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := makeBuckets(10, Hourly)
-	nodes := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	layout := Layout(buckets, 1920, 1920, Hourly, LabelAll)
+	nodes := layout.Nodes
 
 	for i, n := range nodes {
 		g.Expect(n.DiscRadius).To(BeNumerically(">", 0),
 			"node %d should have positive disc radius", i)
 	}
+}
+
+func TestLayoutSpiralParamsConsistentWithNodes(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		n          int
+		width      int
+		height     int
+		resolution Resolution
+	}{
+		{"hourly square", 48, 1920, 1920, Hourly},
+		{"hourly rectangular", 72, 1920, 1080, Hourly},
+		{"daily square", 56, 1920, 1920, Daily},
+		{"single bucket", 1, 800, 800, Hourly},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			buckets := makeBuckets(tc.n, tc.resolution)
+			layout := Layout(buckets, tc.width, tc.height, tc.resolution, LabelNone)
+
+			g.Expect(layout.Nodes).To(HaveLen(tc.n))
+
+			for i, node := range layout.Nodes {
+				// Verify r = A + B*theta using the exported spiral parameters.
+				expectedR := layout.A + layout.B*node.Angle
+				g.Expect(node.SpiralRadius).To(
+					BeNumerically("~", expectedR, 0.001),
+					"node %d: SpiralRadius should match A + B*theta", i,
+				)
+
+				// Verify X = CX + r*sin(theta) using the exported centre.
+				expectedX := layout.CX + expectedR*math.Sin(node.Angle)
+				g.Expect(node.X).To(
+					BeNumerically("~", expectedX, 0.001),
+					"node %d: X should match CX + r*sin(theta)", i,
+				)
+
+				// Verify Y = CY - r*cos(theta) using the exported centre.
+				expectedY := layout.CY - expectedR*math.Cos(node.Angle)
+				g.Expect(node.Y).To(
+					BeNumerically("~", expectedY, 0.001),
+					"node %d: Y should match CY - r*cos(theta)", i,
+				)
+			}
+
+			// Verify MaxTheta matches the last node's angle.
+			lastNode := layout.Nodes[len(layout.Nodes)-1]
+			g.Expect(layout.MaxTheta).To(
+				BeNumerically("==", lastNode.Angle),
+				"MaxTheta should equal the last node's angle",
+			)
+		})
+	}
+
+	t.Run("zero buckets", func(t *testing.T) {
+		t.Parallel()
+		g := NewGomegaWithT(t)
+
+		emptyLayout := Layout(nil, 1920, 1920, Hourly, LabelNone)
+		g.Expect(emptyLayout.MaxTheta).To(BeNumerically("==", 0),
+			"MaxTheta should be 0 for empty layout")
+	})
 }

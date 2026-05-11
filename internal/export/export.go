@@ -10,8 +10,8 @@ import (
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
 // ExportData represents the complete model tree with all computed metrics,

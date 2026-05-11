@@ -10,17 +10,17 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/bevan/code-visualizer/internal/config"
-	"github.com/bevan/code-visualizer/internal/export"
-	"github.com/bevan/code-visualizer/internal/filter"
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/model"
-	"github.com/bevan/code-visualizer/internal/palette"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/provider/filesystem"
-	"github.com/bevan/code-visualizer/internal/render"
-	"github.com/bevan/code-visualizer/internal/scan"
-	"github.com/bevan/code-visualizer/internal/spiral"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/export"
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 )
 
 type SpiralCmd struct {
@@ -214,26 +214,37 @@ func (c *SpiralCmd) layoutAndRender(
 	resolution := c.resolveResolution(cfg)
 	labels := c.resolveLabels(cfg)
 
-	nodes := spiral.Layout(buckets, width, height, resolution, labels)
+	layout := spiral.Layout(buckets, width, height, resolution, labels)
 	maxDisc := spiral.MaxDiscRadius(len(buckets), width, height, resolution)
-	applySpiralDiscSizes(nodes, buckets, maxDisc)
+	applySpiralDiscSizes(layout.Nodes, buckets, maxDisc)
 
-	fillMetric, fillPaletteName := c.applyFill(nodes, buckets, cfg)
-	borderMetric, borderPaletteName := c.applyBorder(nodes, buckets, cfg)
+	fillMetric := c.resolveFillMetric(cfg)
+	fillPaletteName := c.resolveFillPalette(cfg, fillMetric)
+	borderMetric, borderPaletteName := c.resolveBorderMetricAndPalette(cfg)
 
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	sizeMetric := metric.Name(ptrString(cfg.Size))
-	legend := buildLegendInfo(
-		legendPos, legendOrient, fillMetric, fillPaletteName,
-		borderMetric, borderPaletteName, sizeMetric, root,
-	)
+	inks := buildSpiralInks(buckets, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	if err := render.RenderSpiral(nodes, width, height, c.Output, legend); err != nil {
+	cv := renderSpiralToCanvas(layout, buckets, width, height, inks)
+
+	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := buildLegendConfig(
+		legendPos, legendOrient,
+		inks.fill, fillMetric,
+		inks.border, borderMetric,
+		metric.Name(ptrString(cfg.Size)),
+	)
+
+	if legendConfig != nil {
+		cv.SetLegend(*legendConfig)
+	}
+
+	if err := cv.Render(c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
 
+	sizeMetric := metric.Name(ptrString(cfg.Size))
 	c.logRendered(root, width, height, sizeMetric, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
 	return nil
@@ -283,7 +294,7 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 
 //nolint:dupl // mirrors TreemapCmd.validatePaths by design
 func (c *SpiralCmd) validatePaths() error {
-	if _, err := render.FormatFromPath(c.Output); err != nil {
+	if _, err := canvas.FormatFromPath(c.Output); err != nil {
 		return &outputPathError{msg: err.Error()}
 	}
 
@@ -402,6 +413,26 @@ func (*SpiralCmd) resolveFillPalette(cfg *config.Spiral, fillMetric metric.Name)
 	}
 
 	return palette.Neutral
+}
+
+func (*SpiralCmd) resolveBorderMetricAndPalette(
+	cfg *config.Spiral,
+) (metric.Name, palette.PaletteName) {
+	border := specMetric(cfg.Border)
+	if border == "" {
+		return "", ""
+	}
+
+	borderPaletteName := specPalette(cfg.Border)
+	if borderPaletteName == "" {
+		if p, ok := provider.Get(border); ok {
+			borderPaletteName = p.DefaultPalette()
+		} else {
+			borderPaletteName = palette.Neutral
+		}
+	}
+
+	return border, borderPaletteName
 }
 
 func (*SpiralCmd) filterBinaryFiles(cfg *config.Spiral, root *model.Directory) error {
@@ -565,158 +596,4 @@ func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket
 		scaled := nodes[i].DiscRadius * math.Sqrt(ratio)
 		nodes[i].DiscRadius = max(minDiscRadius, min(scaled, maxDisc))
 	}
-}
-
-// applyFill applies fill colours to spiral nodes based on the configured fill metric.
-func (c *SpiralCmd) applyFill(
-	nodes []spiral.SpiralNode,
-	buckets []spiral.TimeBucket,
-	cfg *config.Spiral,
-) (metric.Name, palette.PaletteName) {
-	fillMetric := c.resolveFillMetric(cfg)
-	if fillMetric == "" {
-		return "", ""
-	}
-
-	fillPaletteName := c.resolveFillPalette(cfg, fillMetric)
-	fillPalette := palette.GetPalette(fillPaletteName)
-
-	p, ok := provider.Get(fillMetric)
-	if !ok {
-		return fillMetric, fillPaletteName
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		applySpiralNumericFill(nodes, buckets, fillPalette)
-	} else {
-		applySpiralCategoricalFill(nodes, buckets, fillPalette)
-	}
-
-	return fillMetric, fillPaletteName
-}
-
-func applySpiralNumericFill(
-	nodes []spiral.SpiralNode,
-	buckets []spiral.TimeBucket,
-	p palette.ColourPalette,
-) {
-	values := make([]float64, len(buckets))
-	for i, b := range buckets {
-		values[i] = b.FillValue
-	}
-
-	bb := metric.ComputeBuckets(values, len(p.Colours))
-
-	for i := range nodes {
-		idx := bb.BucketIndex(values[i])
-		nodes[i].FillColour = palette.MapNumericToColour(idx, bb.NumBuckets(), p)
-	}
-}
-
-func applySpiralCategoricalFill(
-	nodes []spiral.SpiralNode,
-	buckets []spiral.TimeBucket,
-	p palette.ColourPalette,
-) {
-	types := collectBucketCategories(buckets, func(b *spiral.TimeBucket) string { return b.FillLabel })
-	mapper := palette.NewCategoricalMapper(types, p)
-
-	for i := range nodes {
-		if buckets[i].FillLabel != "" {
-			nodes[i].FillColour = mapper.Map(buckets[i].FillLabel)
-		}
-	}
-}
-
-// applyBorder applies border colours to spiral nodes based on the configured border metric.
-func (*SpiralCmd) applyBorder(
-	nodes []spiral.SpiralNode,
-	buckets []spiral.TimeBucket,
-	cfg *config.Spiral,
-) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	borderPaletteName := specPalette(cfg.Border)
-	if borderPaletteName == "" {
-		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	borderPalette := palette.GetPalette(borderPaletteName)
-
-	p, ok := provider.Get(border)
-	if !ok {
-		return border, borderPaletteName
-	}
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		applySpiralNumericBorder(nodes, buckets, borderPalette)
-	} else {
-		applySpiralCategoricalBorder(nodes, buckets, borderPalette)
-	}
-
-	return border, borderPaletteName
-}
-
-func applySpiralNumericBorder(
-	nodes []spiral.SpiralNode,
-	buckets []spiral.TimeBucket,
-	p palette.ColourPalette,
-) {
-	values := make([]float64, len(buckets))
-	for i, b := range buckets {
-		values[i] = b.BorderValue
-	}
-
-	bb := metric.ComputeBuckets(values, len(p.Colours))
-
-	for i := range nodes {
-		idx := bb.BucketIndex(values[i])
-		c := palette.MapNumericToColour(idx, bb.NumBuckets(), p)
-		nodes[i].BorderColour = &c
-	}
-}
-
-func applySpiralCategoricalBorder(
-	nodes []spiral.SpiralNode,
-	buckets []spiral.TimeBucket,
-	p palette.ColourPalette,
-) {
-	types := collectBucketCategories(buckets, func(b *spiral.TimeBucket) string { return b.BorderLabel })
-	mapper := palette.NewCategoricalMapper(types, p)
-
-	for i := range nodes {
-		if buckets[i].BorderLabel != "" {
-			c := mapper.Map(buckets[i].BorderLabel)
-			nodes[i].BorderColour = &c
-		}
-	}
-}
-
-// collectBucketCategories gathers distinct non-empty category labels from time buckets.
-func collectBucketCategories(
-	buckets []spiral.TimeBucket,
-	labelFn func(*spiral.TimeBucket) string,
-) []string {
-	seen := map[string]bool{}
-
-	for i := range buckets {
-		lbl := labelFn(&buckets[i])
-		if lbl != "" {
-			seen[lbl] = true
-		}
-	}
-
-	types := make([]string, 0, len(seen))
-	for t := range seen {
-		types = append(types, t)
-	}
-
-	return types
 }

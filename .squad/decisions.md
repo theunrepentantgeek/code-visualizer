@@ -2,6 +2,53 @@
 
 ## Active Decisions
 
+### Canvas Abstraction — Design Finalized
+
+**Author:** Bevan (originator); Bishop & Parker (review); Dallas (integration)  
+**Date:** 2026-05-08  
+**Status:** Complete  
+**Spec:** `docs/superpowers/specs/2026-05-08-canvas-design.md`  
+
+**Summary:**  
+Three-agent review cycle on Canvas abstraction design spec. Bishop reviewed structural design (21 comments); Parker reviewed maintainability against current codebase (22 comments). Both approved with recommendations. Dallas integrated all feedback and finalized spec.
+
+**Key Decisions Codified:**
+
+1. **MetricValue type** — Unifies numeric/categorical metric data into single struct. Shapes carry `Fill MetricValue` and `Border MetricValue`; Ink has `Dip(MetricValue)` method. Resolves type-level dispatch smell and prevents data clump on shape types.
+
+2. **Opacity on Ink** — Moved from Spec-level `Opacity` field to `WithOpacity()` InkOption. Resolved at `Dip()` time (alpha channel). Backend methods receive pre-resolved RGBA.
+
+3. **ShapeStyle embedding** — Common fields extracted into embedded `ShapeStyle` struct, used by `RectangleSpec` and `DiscSpec`. Prevents parallel-type maintenance burden.
+
+4. **Backend subpackages** — Confirmed isolation via `internal/canvas/raster/` and `internal/canvas/svg/`. Exported `Backend` interface in parent `canvas` package. Ports & Adapters pattern with compiler-enforced isolation.
+
+5. **Canvas constructor** — `NewCanvas(width, height int)`. Output path deferred to `Render(outputPath string) error`. Enables multi-format output from single Canvas, cleaner testing.
+
+6. **Position/Size helpers** — Dedicated structs to reduce backend method parameter counts and prevent coordinate swap errors.
+
+7. **Migration strategy** — Each viz migration is single atomic PR. Colour field stripping + render replacement must be in same change to maintain compilability.
+
+**Implementation Recommendations (Parker):**
+- Use struct parameters for backend interface methods (e.g., `RectDrawCall`) instead of 8+ positional args
+- Build mock/stub backend from start for unit testing Canvas layer logic
+- Keep backends in-package with file-level separation (`raster_backend.go`, `svg_backend.go`); maintain unexported `backend` interface
+- Implement MetricValue in v1 to avoid post-release retrofit migration
+
+**Flagged Implementation Items (Bishop):**
+- Add `AddText` method + `Text` shape struct (accidental omission)
+- Type `LegendEntry.Role` as `LegendRole` constant (primitive obsession)
+- Expose Ink query methods for legend rendering: `Boundaries()`, `Palette()`, `Categories()`
+- Document Ink copy semantics ("safe to copy; internal state is shared")
+- Consider sequencing Issue #152 before Canvas Stage 2 migration
+
+**Complexity Justification:**  
+Design eliminates ~2500 lines of duplication across `internal/render/` (~1718 lines) and `cmd/codeviz/` (~800 lines colour application logic).
+
+**Status:**  
+✓ Final design document ready for implementation kickoff.
+
+---
+
 ### Spiral Visualization — Architecture Proposal
 
 **Author:** Ripley  

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bevan/code-visualizer/internal/metric"
-	"github.com/bevan/code-visualizer/internal/provider"
-	"github.com/bevan/code-visualizer/internal/provider/git"
-	"github.com/bevan/code-visualizer/internal/table"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/table"
 )
 
 // HelpMetricsCmd prints a table of all registered metrics.
