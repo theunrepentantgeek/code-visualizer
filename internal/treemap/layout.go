@@ -85,13 +85,18 @@ func collectChildren(dir *model.Directory, sizeMetric metric.Name) []child {
 	return children
 }
 
+// fileSize returns the size-metric value for f as a float64.
+// Quantity is checked first, then Measure. Returns 0 if absent.
 func fileSize(f *model.File, sizeMetric metric.Name) float64 {
-	v, ok := f.Quantity(sizeMetric)
-	if !ok {
-		return 0
+	if v, ok := f.Quantity(sizeMetric); ok {
+		return float64(v)
 	}
 
-	return float64(v)
+	if v, ok := f.Measure(sizeMetric); ok {
+		return v
+	}
+
+	return 0
 }
 
 func contentArea(box layout.Box) layout.Box {
