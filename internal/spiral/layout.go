@@ -13,6 +13,16 @@ const (
 	innerRadiusFraction = 1.0 / 3.0
 )
 
+// SpiralLayout holds the positioned nodes and the Archimedean spiral parameters
+// used to generate them. Exposing these parameters lets callers draw the guide
+// track without re-deriving the geometry from node positions.
+type SpiralLayout struct {
+	Nodes    []SpiralNode
+	CX, CY   float64 // canvas centre
+	A, B     float64 // Archimedean parameters: r = A + B*theta
+	MaxTheta float64 // angle of the last node
+}
+
 // Layout positions time buckets along an Archimedean spiral.
 //
 // The spiral is clockwise from 12-o'clock (north), starting at the centre and
@@ -25,9 +35,9 @@ func Layout(
 	height int,
 	resolution Resolution,
 	labels LabelMode,
-) []SpiralNode {
+) SpiralLayout {
 	if len(buckets) == 0 {
-		return []SpiralNode{}
+		return SpiralLayout{}
 	}
 
 	nodes := make([]SpiralNode, len(buckets))
@@ -37,7 +47,19 @@ func Layout(
 		nodes[i] = positionNode(i, b, params, resolution, labels)
 	}
 
-	return nodes
+	var maxTheta float64
+	if len(nodes) > 0 {
+		maxTheta = nodes[len(nodes)-1].Angle
+	}
+
+	return SpiralLayout{
+		Nodes:    nodes,
+		CX:       params.centreX,
+		CY:       params.centreY,
+		A:        params.a,
+		B:        params.b,
+		MaxTheta: maxTheta,
+	}
 }
 
 // spiralParams holds precomputed constants for the Archimedean spiral.
