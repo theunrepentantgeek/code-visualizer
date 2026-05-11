@@ -1,14 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 
 	"github.com/rotisserie/eris"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
@@ -16,7 +12,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
@@ -96,7 +91,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	cfg := flags.Config.Radial
 	discSize := metric.Name(ptrString(cfg.DiscSize))
 
-	if err := c.validatePaths(); err != nil {
+	if err := validatePaths(c.TargetPath, c.Output); err != nil {
 		return err
 	}
 
@@ -107,9 +102,9 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	}
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := c.resolveFillPalette(cfg, fillMetric)
+	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
 
-	filterRules := c.buildFilterRules(flags.Config)
+	filterRules := buildFilterRules(flags.Config, c.Filter)
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
@@ -125,7 +120,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	requested := collectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
 
-	if err := c.checkGitRequirement(requested); err != nil {
+	if err := checkGitRequirement(c.TargetPath, requested); err != nil {
 		return err
 	}
 
@@ -141,7 +136,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	stopMetricTicker()
 
-	if err := c.filterBinaryFiles(cfg, root); err != nil {
+	if err := filterBinaryFiles(ptrString(cfg.DiscSize), root); err != nil {
 		return err
 	}
 
@@ -167,7 +162,7 @@ func (c *RadialCmd) renderAndLog(
 	labels := c.resolveLabels(cfg)
 	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
 
-	borderMetric, borderPaletteName := c.resolveBorderMetricAndPalette(cfg)
+	borderMetric, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
 
 	inks := buildRadialInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
@@ -206,24 +201,6 @@ func (c *RadialCmd) renderAndLog(
 	return nil
 }
 
-func (*RadialCmd) resolveBorderMetricAndPalette(cfg *config.Radial) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	borderPaletteName := specPalette(cfg.Border)
-	if borderPaletteName == "" {
-		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	return border, borderPaletteName
-}
-
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
 func (c *RadialCmd) applyOverrides(cfg *config.Config) {
@@ -242,119 +219,12 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideLegendOrientation(c.LegendOrientation)
 }
 
-//nolint:dupl // mirrors TreemapCmd.validatePaths by design
-func (c *RadialCmd) validatePaths() error {
-	if _, err := canvas.FormatFromPath(c.Output); err != nil {
-		return &outputPathError{msg: err.Error()}
-	}
-
-	info, err := os.Stat(c.TargetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return &targetPathError{msg: "target path does not exist: " + c.TargetPath}
-		}
-
-		return &targetPathError{msg: fmt.Sprintf("cannot access target path: %s", err)}
-	}
-
-	if !info.IsDir() {
-		return &targetPathError{msg: "target path is not a directory: " + c.TargetPath}
-	}
-
-	outDir := filepath.Dir(c.Output)
-	if outDir == "." {
-		return nil
-	}
-
-	info, err = os.Stat(outDir)
-	if err != nil {
-		return &outputPathError{msg: "output directory does not exist: " + outDir}
-	}
-
-	if !info.IsDir() {
-		return &outputPathError{msg: "output parent is not a directory: " + outDir}
-	}
-
-	return nil
-}
-
-func (c *RadialCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
-	rules := make([]filter.Rule, 0, len(cfg.FileFilter)+len(c.Filter))
-	rules = append(rules, cfg.FileFilter...)
-
-	for _, f := range c.Filter {
-		// Already validated in Validate()
-		rule, _ := filter.ParseFilterFlag(f)
-		rules = append(rules, rule)
-	}
-
-	return rules
-}
-
-func (c *RadialCmd) checkGitRequirement(requested []metric.Name) error {
-	name, needsGit := findGitMetric(requested)
-	if !needsGit {
-		return nil
-	}
-
-	absPath, err := filepath.Abs(c.TargetPath)
-	if err != nil {
-		return eris.Wrap(err, "failed to resolve absolute path")
-	}
-
-	isGit, err := scan.IsGitRepo(absPath)
-	if err != nil {
-		return eris.Wrap(err, "git check failed")
-	}
-
-	if !isGit {
-		return &gitRequiredError{metric: name, target: c.TargetPath}
-	}
-
-	return nil
-}
-
 func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
 	if fill := specMetric(cfg.Fill); fill != "" {
 		return fill
 	}
 
 	return metric.Name(ptrString(cfg.DiscSize))
-}
-
-func (*RadialCmd) resolveFillPalette(cfg *config.Radial, fillMetric metric.Name) palette.PaletteName {
-	if fp := specPalette(cfg.Fill); fp != "" {
-		return fp
-	}
-
-	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
-	}
-
-	return palette.Neutral
-}
-
-func (*RadialCmd) filterBinaryFiles(cfg *config.Radial, root *model.Directory) error {
-	if metric.Name(ptrString(cfg.DiscSize)) != filesystem.FileLines {
-		return nil
-	}
-
-	beforeCount, _ := countAll(root)
-	filtered := scan.FilterBinaryFiles(root)
-	afterCount, _ := countAll(filtered)
-	excluded := beforeCount - afterCount
-	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
-
-	if afterCount == 0 {
-		return &noFilesAfterFilterError{
-			msg: noFilesAfterFilterMsg,
-		}
-	}
-	// Update root in place — avoid struct copy which would copy the mutex.
-	root.Files = filtered.Files
-	root.Dirs = filtered.Dirs
-
-	return nil
 }
 
 // resolveLabels converts the string labels flag to a radialtree.LabelMode.

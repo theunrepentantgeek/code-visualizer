@@ -1,16 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"math"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/rotisserie/eris"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
@@ -18,7 +14,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 )
@@ -100,7 +95,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 
 	cfg := flags.Config.Spiral
 
-	if err := c.validatePaths(); err != nil {
+	if err := validatePaths(c.TargetPath, c.Output); err != nil {
 		return err
 	}
 
@@ -126,7 +121,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 }
 
 func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*model.Directory, error) {
-	filterRules := c.buildFilterRules(flags.Config)
+	filterRules := buildFilterRules(flags.Config, c.Filter)
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
@@ -154,7 +149,7 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 
 	stopMetricTicker()
 
-	if err := c.filterBinaryFiles(cfg, root); err != nil {
+	if err := filterBinaryFiles(ptrString(cfg.Size), root); err != nil {
 		return nil, err
 	}
 
@@ -170,7 +165,7 @@ func (c *SpiralCmd) buildTimeBuckets(
 	root *model.Directory,
 	cfg *config.Spiral,
 ) ([]spiral.TimeBucket, error) {
-	if err := c.checkGitRepo(); err != nil {
+	if err := checkGitRepo(c.TargetPath); err != nil {
 		return nil, err
 	}
 
@@ -219,8 +214,8 @@ func (c *SpiralCmd) layoutAndRender(
 	applySpiralDiscSizes(layout.Nodes, buckets, maxDisc)
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := c.resolveFillPalette(cfg, fillMetric)
-	borderMetric, borderPaletteName := c.resolveBorderMetricAndPalette(cfg)
+	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
+	borderMetric, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
 
 	inks := buildSpiralInks(buckets, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
@@ -292,75 +287,6 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.Spiral.OverrideLegendOrientation(c.LegendOrientation)
 }
 
-//nolint:dupl // mirrors TreemapCmd.validatePaths by design
-func (c *SpiralCmd) validatePaths() error {
-	if _, err := canvas.FormatFromPath(c.Output); err != nil {
-		return &outputPathError{msg: err.Error()}
-	}
-
-	info, err := os.Stat(c.TargetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return &targetPathError{msg: "target path does not exist: " + c.TargetPath}
-		}
-
-		return &targetPathError{msg: fmt.Sprintf("cannot access target path: %s", err)}
-	}
-
-	if !info.IsDir() {
-		return &targetPathError{msg: "target path is not a directory: " + c.TargetPath}
-	}
-
-	outDir := filepath.Dir(c.Output)
-	if outDir == "." {
-		return nil
-	}
-
-	info, err = os.Stat(outDir)
-	if err != nil {
-		return &outputPathError{msg: "output directory does not exist: " + outDir}
-	}
-
-	if !info.IsDir() {
-		return &outputPathError{msg: "output parent is not a directory: " + outDir}
-	}
-
-	return nil
-}
-
-func (c *SpiralCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
-	rules := make([]filter.Rule, 0, len(cfg.FileFilter)+len(c.Filter))
-	rules = append(rules, cfg.FileFilter...)
-
-	for _, f := range c.Filter {
-		// Already validated in Validate()
-		rule, _ := filter.ParseFilterFlag(f)
-		rules = append(rules, rule)
-	}
-
-	return rules
-}
-
-// checkGitRepo verifies the target path is inside a git repository.
-// Spiral always requires git for commit history.
-func (c *SpiralCmd) checkGitRepo() error {
-	absPath, err := filepath.Abs(c.TargetPath)
-	if err != nil {
-		return eris.Wrap(err, "failed to resolve absolute path")
-	}
-
-	isGit, err := scan.IsGitRepo(absPath)
-	if err != nil {
-		return eris.Wrap(err, "git check failed")
-	}
-
-	if !isGit {
-		return &gitRequiredError{metric: "spiral", target: c.TargetPath}
-	}
-
-	return nil
-}
-
 // collectSpiralMetrics gathers all metrics requested by the spiral configuration.
 // Unlike other commands, size is optional — when omitted, disc size defaults to commit count.
 func (*SpiralCmd) collectSpiralMetrics(cfg *config.Spiral) []metric.Name {
@@ -401,61 +327,6 @@ func (*SpiralCmd) resolveLabels(cfg *config.Spiral) spiral.LabelMode {
 
 func (*SpiralCmd) resolveFillMetric(cfg *config.Spiral) metric.Name {
 	return specMetric(cfg.Fill)
-}
-
-func (*SpiralCmd) resolveFillPalette(cfg *config.Spiral, fillMetric metric.Name) palette.PaletteName {
-	if fp := specPalette(cfg.Fill); fp != "" {
-		return fp
-	}
-
-	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
-	}
-
-	return palette.Neutral
-}
-
-func (*SpiralCmd) resolveBorderMetricAndPalette(
-	cfg *config.Spiral,
-) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	borderPaletteName := specPalette(cfg.Border)
-	if borderPaletteName == "" {
-		if p, ok := provider.Get(border); ok {
-			borderPaletteName = p.DefaultPalette()
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	return border, borderPaletteName
-}
-
-func (*SpiralCmd) filterBinaryFiles(cfg *config.Spiral, root *model.Directory) error {
-	if metric.Name(ptrString(cfg.Size)) != filesystem.FileLines {
-		return nil
-	}
-
-	beforeCount, _ := countAll(root)
-	filtered := scan.FilterBinaryFiles(root)
-	afterCount, _ := countAll(filtered)
-	excluded := beforeCount - afterCount
-	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
-
-	if afterCount == 0 {
-		return &noFilesAfterFilterError{
-			msg: noFilesAfterFilterMsg,
-		}
-	}
-	// Update root in place — avoid struct copy which would copy the mutex.
-	root.Files = filtered.Files
-	root.Dirs = filtered.Dirs
-
-	return nil
 }
 
 // aggregateBucketMetrics fills in the aggregated metric values for each time bucket.
