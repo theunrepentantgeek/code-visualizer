@@ -214,9 +214,9 @@ func (c *SpiralCmd) layoutAndRender(
 	resolution := c.resolveResolution(cfg)
 	labels := c.resolveLabels(cfg)
 
-	nodes := spiral.Layout(buckets, width, height, resolution, labels)
+	layout := spiral.Layout(buckets, width, height, resolution, labels)
 	maxDisc := spiral.MaxDiscRadius(len(buckets), width, height, resolution)
-	applySpiralDiscSizes(nodes, buckets, maxDisc)
+	applySpiralDiscSizes(layout.Nodes, buckets, maxDisc)
 
 	fillMetric := c.resolveFillMetric(cfg)
 	fillPaletteName := c.resolveFillPalette(cfg, fillMetric)
@@ -226,7 +226,7 @@ func (c *SpiralCmd) layoutAndRender(
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	cv := renderSpiralToCanvas(nodes, buckets, width, height, inks)
+	cv := renderSpiralToCanvas(layout, buckets, width, height, inks)
 
 	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
 	legendConfig := buildLegendConfig(

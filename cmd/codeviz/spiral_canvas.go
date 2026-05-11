@@ -107,9 +107,9 @@ func buildBucketInk(
 	return canvas.CategoricalInk(m, categories, pal)
 }
 
-// renderSpiralToCanvas builds a Canvas from spiral nodes and time buckets.
+// renderSpiralToCanvas builds a Canvas from a spiral layout and time buckets.
 func renderSpiralToCanvas(
-	nodes []spiral.SpiralNode,
+	layout spiral.SpiralLayout,
 	buckets []spiral.TimeBucket,
 	width, height int,
 	inks spiralInks,
@@ -117,9 +117,9 @@ func renderSpiralToCanvas(
 	cv := canvas.NewCanvas(width, height)
 
 	addSpiralBackground(cv, width, height)
-	addSpiralTrack(cv, nodes, width, height)
-	addSpiralDiscs(cv, nodes, buckets, inks)
-	addSpiralLabels(cv, nodes)
+	addSpiralTrack(cv, layout)
+	addSpiralDiscs(cv, layout.Nodes, buckets, inks)
+	addSpiralLabels(cv, layout.Nodes)
 
 	return cv
 }
@@ -141,22 +141,21 @@ func addSpiralBackground(cv *canvas.Canvas, width, height int) {
 }
 
 // addSpiralTrack adds the faint guide curve as a Path on the Structure layer.
-func addSpiralTrack(cv *canvas.Canvas, nodes []spiral.SpiralNode, width, height int) {
-	if len(nodes) < 2 {
+func addSpiralTrack(cv *canvas.Canvas, layout spiral.SpiralLayout) {
+	if len(layout.Nodes) < 2 {
 		return
 	}
 
-	params := inferSpiralTrackParams(nodes, width, height)
-	steps := spiralTrackSteps(len(nodes))
+	steps := spiralTrackSteps(len(layout.Nodes))
 	points := make([]canvas.Position, steps)
 
 	for i := range steps {
 		t := float64(i) / float64(steps-1)
-		theta := t * params.maxTheta
-		r := params.a + params.b*theta
+		theta := t * layout.MaxTheta
+		r := layout.A + layout.B*theta
 		points[i] = canvas.Position{
-			X: params.cx + r*math.Sin(theta),
-			Y: params.cy - r*math.Cos(theta),
+			X: layout.CX + r*math.Sin(theta),
+			Y: layout.CY - r*math.Cos(theta),
 		}
 	}
 
@@ -286,36 +285,4 @@ func spiralTrackSteps(nodeCount int) int {
 	}
 
 	return steps
-}
-
-// spiralTrackParams holds spiral geometry for drawing the guide track.
-type spiralTrackParams struct {
-	cx, cy   float64
-	a, b     float64
-	maxTheta float64
-}
-
-// inferSpiralTrackParams reconstructs Archimedean spiral parameters from nodes.
-func inferSpiralTrackParams(
-	nodes []spiral.SpiralNode,
-	width, height int,
-) spiralTrackParams {
-	cx := float64(width) / 2
-	cy := float64(height) / 2
-
-	first := nodes[0]
-	last := nodes[len(nodes)-1]
-
-	var b float64
-	if last.Angle > 0 {
-		b = (last.SpiralRadius - first.SpiralRadius) / last.Angle
-	}
-
-	return spiralTrackParams{
-		cx:       cx,
-		cy:       cy,
-		a:        first.SpiralRadius,
-		b:        b,
-		maxTheta: last.Angle,
-	}
 }

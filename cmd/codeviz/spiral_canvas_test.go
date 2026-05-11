@@ -113,9 +113,9 @@ func TestRenderSpiralToCanvas_PNG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	nodes := spiral.Layout(buckets, 800, 600, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 800, 600, spiral.Hourly, spiral.LabelNone)
 	inks := buildSpiralInks(buckets, "", "", "", "")
-	cv := renderSpiralToCanvas(nodes, buckets, 800, 600, inks)
+	cv := renderSpiralToCanvas(layout, buckets, 800, 600, inks)
 
 	out := filepath.Join(t.TempDir(), "spiral.png")
 	err := cv.Render(out)
@@ -136,9 +136,9 @@ func TestRenderSpiralToCanvas_SVG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	nodes := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
 	inks := buildSpiralInks(buckets, "", "", "", "")
-	cv := renderSpiralToCanvas(nodes, buckets, 400, 300, inks)
+	cv := renderSpiralToCanvas(layout, buckets, 400, 300, inks)
 
 	out := filepath.Join(t.TempDir(), "spiral.svg")
 	err := cv.Render(out)
@@ -172,9 +172,9 @@ func TestRenderSpiralToCanvas_JPG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	nodes := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
 	inks := buildSpiralInks(buckets, "", "", "", "")
-	cv := renderSpiralToCanvas(nodes, buckets, 400, 300, inks)
+	cv := renderSpiralToCanvas(layout, buckets, 400, 300, inks)
 
 	out := filepath.Join(t.TempDir(), "spiral.jpg")
 	err := cv.Render(out)
