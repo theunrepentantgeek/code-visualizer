@@ -132,7 +132,7 @@ func collectRadialDiscs(
 	dir *model.Directory,
 	cx, cy float64,
 ) []radialDiscEntry {
-	var entries []radialDiscEntry
+	entries := make([]radialDiscEntry, 0)
 
 	if node.DiscRadius > 0 {
 		entries = append(entries, radialDiscEntry{
@@ -168,7 +168,7 @@ func collectRadialDiscsLeaf(
 	cx, cy float64,
 ) []radialDiscEntry {
 	if node.DiscRadius <= 0 {
-		return nil
+		return make([]radialDiscEntry, 0)
 	}
 
 	return []radialDiscEntry{{
