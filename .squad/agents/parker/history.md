@@ -114,3 +114,11 @@ Reviewed PR #39 (issue #38) adding `Scope()` and `Description()` to `provider.In
 - **Spec finalized:** All 5 key design decisions codified and approved. Ready for implementation kickoff.
 - **Team log:** `.squad/log/2026-05-09T02:59:06Z-canvas-spec-review.md`
 - **Decisions merged:** All inbox items → `decisions.md`. Specifications finalized.
+
+### SVG FontSize: 0 fix (PR #210, issue #190)
+
+- **Root cause:** All `TextSpec` instances across all four visualization types set `FontSize: 0`. The SVG backend wrote this verbatim as `font-size="0.0"` — zero-height text that browsers don't render. The raster `DrawText` ignores fontSize entirely (`_ = fontSize`), so PNG was unaffected.
+- **Secondary bug:** Raster `DrawArcText` uses fontSize for arc math (`totalAngle = len(text) * fontSize * 0.6 / arcRadius`). With fontSize=0, totalAngle=0, collapsing all characters to the same point. Not previously reported because the built-in gg font still draws *something*, but positioning was wrong.
+- **Fix:** Added `defaultFontSize = 12.0` constant in both `internal/canvas/svg/backend.go` and `internal/canvas/raster/backend.go`. Both `DrawText` (SVG only) and `DrawArcText` (both backends) now substitute the default when `fontSize <= 0`.
+- **Convention documented:** Added `model.DefaultFontSize` (= 0) in `internal/canvas/model/backend.go` so callers can write `FontSize: model.DefaultFontSize` instead of a bare `0`, making the "use default" intent explicit.
+- **Callers unchanged:** The `*_canvas.go` files still pass `FontSize: 0` — the backends now honour the convention rather than requiring callers to pick a size.

@@ -238,3 +238,10 @@ This is an accumulation of foundational learnings and architecture decisions fro
 - **Spec finalized:** All 5 key design decisions codified and approved. Ready for implementation kickoff.
 - **Team log:** `.squad/log/2026-05-09T02:59:06Z-canvas-spec-review.md`
 - **Decisions merged:** All inbox items → `decisions.md`. Specifications finalized.
+
+### Spiral layout struct — Issue #204 (2026-05-09)
+
+- **Change:** `spiral.Layout()` now returns `SpiralLayout` struct instead of `[]SpiralNode`. The struct bundles nodes with Archimedean spiral parameters (CX, CY, A, B, MaxTheta) so callers don't need to re-derive them.
+- **Deleted:** `inferSpiralTrackParams` and `spiralTrackParams` in `cmd/codeviz/spiral_canvas.go` — the bridge no longer reconstructs spiral geometry from node positions.
+- **Key files:** `internal/spiral/layout.go` (struct + return type), `cmd/codeviz/spiral_canvas.go` (track drawing uses layout params directly), `cmd/codeviz/spiral_cmd.go` (caller updated).
+- **PR:** #213, branch `squad/204-spiral-track-params`.

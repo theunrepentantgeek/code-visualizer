@@ -149,3 +149,14 @@
 - **Stage 1 scope:** Dark-shipped package — zero changes to existing code. Full test coverage in isolation.
 - **Plan saved to:** `docs/superpowers/plans/2026-05-09-canvas-stage1.md`
 
+### Issue #196 — Directory Border Metric Color Fix (2026-07-21)
+
+- **Task:** Fix directory nodes always rendering with wrong border metric color in bubbletree and radial.
+- **Root cause:** Directory entries had no file to resolve metric values from, so `MetricValue{}` was passed to metric-based border inks, producing the minimum-value color instead of the default border color.
+- **Fix pattern:** Use `canvas.FixedInk(defaultBorder)` for directory border ink, matching the existing pattern for directory fill ink. Both visualizations already had default border color constants.
+- **Bubble (`bubble_canvas.go`):** Replaced `inks.border` with `canvas.FixedInk(bubbleDefaultBorder)` in `dirSpec`. Removed unused `inks` parameter from `addBubbleDirDiscs`.
+- **Radial (`radial_canvas.go`):** Added `border` variable alongside `fill`, overridden to `canvas.FixedInk(radialDefaultBorder)` when `e.isDir`. Used `border` in `discSpec` instead of `inks.border`.
+- **Key files:** `cmd/codeviz/bubble_canvas.go`, `cmd/codeviz/radial_canvas.go`.
+- **Lint fixes:** Removed unused parameter (`revive`), added blank line before `if` block (`wsl_v5`).
+- **Result:** PR #211 opened. All tests pass, zero lint issues.
+
