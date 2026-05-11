@@ -12,11 +12,13 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
 func TestMain(m *testing.M) {
 	filesystem.Register()
+	git.Register()
 	m.Run()
 }
 
@@ -376,6 +378,18 @@ func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	cmd := &TreemapCmd{}
 	err := cmd.validateConfig(cfg.Treemap)
 	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
+}
+
+func TestTreemapCmd_ValidateConfig_MeasureMetricAccepted(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Treemap.Size = new("commit-density")
+
+	cmd := &TreemapCmd{}
+	err := cmd.validateConfig(cfg.Treemap)
+	g.Expect(err).NotTo(HaveOccurred())
 }
 
 func TestSpiralCmd_Validate_EmptySize_Passes(t *testing.T) {

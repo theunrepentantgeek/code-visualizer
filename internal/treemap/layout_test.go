@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
@@ -181,4 +182,43 @@ func TestOffsetRects_ZeroOffset_NoChange(t *testing.T) {
 	OffsetRects(&rect, 0, 0)
 	g.Expect(rect.X).To(Equal(10.0))
 	g.Expect(rect.Y).To(Equal(20.0))
+}
+
+const testMeasureMetric metric.Name = "test-measure"
+
+func makeMeasureFile(name string, value float64) *model.File {
+	f := &model.File{Name: name}
+	f.SetMeasure(testMeasureMetric, value)
+
+	return f
+}
+
+func TestLayoutProportionalAreas_MeasureMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Files: []*model.File{
+			makeMeasureFile("high.go", 9.0),
+			makeMeasureFile("low.go", 1.0),
+		},
+	}
+
+	rects := Layout(root, 1000, 1000, testMeasureMetric)
+
+	var highRect, lowRect TreemapRectangle
+
+	for _, c := range rects.Children {
+		switch c.Label {
+		case "high.go":
+			highRect = c
+		case "low.go":
+			lowRect = c
+		default:
+		}
+	}
+
+	ratio := (highRect.W * highRect.H) / (lowRect.W * lowRect.H)
+	g.Expect(ratio).To(BeNumerically("~", 9.0, 2.0))
 }
