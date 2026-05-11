@@ -573,3 +573,71 @@ func TestLayoutDiscRadiusPositive(t *testing.T) {
 			"node %d should have positive disc radius", i)
 	}
 }
+
+func TestLayoutSpiralParamsConsistentWithNodes(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		n          int
+		width      int
+		height     int
+		resolution Resolution
+	}{
+		{"hourly square", 48, 1920, 1920, Hourly},
+		{"hourly rectangular", 72, 1920, 1080, Hourly},
+		{"daily square", 56, 1920, 1920, Daily},
+		{"single bucket", 1, 800, 800, Hourly},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			buckets := makeBuckets(tc.n, tc.resolution)
+			layout := Layout(buckets, tc.width, tc.height, tc.resolution, LabelNone)
+
+			g.Expect(layout.Nodes).To(HaveLen(tc.n))
+
+			for i, node := range layout.Nodes {
+				// Verify r = A + B*theta using the exported spiral parameters.
+				expectedR := layout.A + layout.B*node.Angle
+				g.Expect(node.SpiralRadius).To(
+					BeNumerically("~", expectedR, 0.001),
+					"node %d: SpiralRadius should match A + B*theta", i,
+				)
+
+				// Verify X = CX + r*sin(theta) using the exported centre.
+				expectedX := layout.CX + expectedR*math.Sin(node.Angle)
+				g.Expect(node.X).To(
+					BeNumerically("~", expectedX, 0.001),
+					"node %d: X should match CX + r*sin(theta)", i,
+				)
+
+				// Verify Y = CY - r*cos(theta) using the exported centre.
+				expectedY := layout.CY - expectedR*math.Cos(node.Angle)
+				g.Expect(node.Y).To(
+					BeNumerically("~", expectedY, 0.001),
+					"node %d: Y should match CY - r*cos(theta)", i,
+				)
+			}
+
+			// Verify MaxTheta matches the last node's angle.
+			lastNode := layout.Nodes[len(layout.Nodes)-1]
+			g.Expect(layout.MaxTheta).To(
+				BeNumerically("==", lastNode.Angle),
+				"MaxTheta should equal the last node's angle",
+			)
+		})
+	}
+
+	t.Run("zero buckets", func(t *testing.T) {
+		t.Parallel()
+		g := NewGomegaWithT(t)
+
+		emptyLayout := Layout(nil, 1920, 1920, Hourly, LabelNone)
+		g.Expect(emptyLayout.MaxTheta).To(BeNumerically("==", 0),
+			"MaxTheta should be 0 for empty layout")
+	})
+}
