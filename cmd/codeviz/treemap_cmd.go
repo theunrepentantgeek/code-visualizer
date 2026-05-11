@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -18,8 +15,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -134,7 +129,7 @@ func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Treemap)
 }
 
-//nolint:dupl // parallel Run methods on different config types share the same workflow
+//nolint:dupl // Run methods share workflow structure across visualization commands
 func (c *TreemapCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -143,7 +138,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	cfg := flags.Config.Treemap
 	size := metric.Name(ptrString(cfg.Size))
 
-	if err := c.validatePaths(); err != nil {
+	if err := validatePaths(c.TargetPath, c.Output); err != nil {
 		return err
 	}
 
@@ -154,9 +149,9 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := c.resolveFillPalette(cfg, fillMetric)
+	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
 
-	filterRules := c.buildFilterRules(flags.Config)
+	filterRules := buildFilterRules(flags.Config, c.Filter)
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
@@ -174,7 +169,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
 	// Check git requirement before running providers
-	if err := c.checkGitRequirement(requested); err != nil {
+	if err := checkGitRequirement(c.TargetPath, requested); err != nil {
 		return err
 	}
 
@@ -190,7 +185,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	stopMetricTicker()
 
-	if err := c.filterBinaryFiles(cfg, root); err != nil {
+	if err := filterBinaryFiles(ptrString(cfg.Size), root); err != nil {
 		return err
 	}
 
@@ -267,26 +262,6 @@ func cornerLegendOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx,
 	return 0, 0
 }
 
-// resolveBorderPaletteName determines the effective border metric name and
-// palette, using provider defaults when no explicit palette is configured.
-// Shared by legend building and colour application to ensure consistency.
-func resolveBorderPaletteName(cfg *config.Treemap) (metric.Name, palette.PaletteName) {
-	border := specMetric(cfg.Border)
-	if border == "" {
-		return "", ""
-	}
-
-	if bp := specPalette(cfg.Border); bp != "" {
-		return border, bp
-	}
-
-	if p, ok := provider.Get(border); ok {
-		return border, p.DefaultPalette()
-	}
-
-	return border, palette.Neutral
-}
-
 func (c *TreemapCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Treemap,
@@ -300,7 +275,7 @@ func (c *TreemapCmd) renderAndLog(
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
 	// Build inks first — legend uses the same Ink objects
-	borderName, borderPaletteName := resolveBorderPaletteName(cfg)
+	borderName, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
 	inks := buildTreemapInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
 
 	// Build legend config from the Inks
@@ -353,52 +328,6 @@ func (c *TreemapCmd) renderAndLog(
 	return nil
 }
 
-func (c *TreemapCmd) buildFilterRules(cfg *config.Config) []filter.Rule {
-	rules := make([]filter.Rule, 0, len(cfg.FileFilter)+len(c.Filter))
-	rules = append(rules, cfg.FileFilter...)
-
-	for _, f := range c.Filter {
-		// Already validated in Validate()
-		rule, _ := filter.ParseFilterFlag(f)
-		rules = append(rules, rule)
-	}
-
-	return rules
-}
-
-func (c *TreemapCmd) checkGitRequirement(requested []metric.Name) error {
-	name, needsGit := findGitMetric(requested)
-	if !needsGit {
-		return nil
-	}
-
-	absPath, err := filepath.Abs(c.TargetPath)
-	if err != nil {
-		return eris.Wrap(err, "failed to resolve absolute path")
-	}
-
-	isGit, err := scan.IsGitRepo(absPath)
-	if err != nil {
-		return eris.Wrap(err, "git check failed")
-	}
-
-	if !isGit {
-		return &gitRequiredError{metric: name, target: c.TargetPath}
-	}
-
-	return nil
-}
-
-func findGitMetric(requested []metric.Name) (metric.Name, bool) {
-	for _, name := range requested {
-		if git.IsGitMetric(name) {
-			return name, true
-		}
-	}
-
-	return "", false
-}
-
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
 // Zero-valued CLI fields are transparent — the config value passes through unchanged.
 func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
@@ -429,83 +358,12 @@ func ptrInt(p *int, fallback int) int {
 	return *p
 }
 
-//nolint:dupl // mirrors RadialCmd.validatePaths by design
-func (c *TreemapCmd) validatePaths() error {
-	if _, err := canvas.FormatFromPath(c.Output); err != nil {
-		return &outputPathError{msg: err.Error()}
-	}
-
-	info, err := os.Stat(c.TargetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return &targetPathError{msg: "target path does not exist: " + c.TargetPath}
-		}
-
-		return &targetPathError{msg: fmt.Sprintf("cannot access target path: %s", err)}
-	}
-
-	if !info.IsDir() {
-		return &targetPathError{msg: "target path is not a directory: " + c.TargetPath}
-	}
-
-	outDir := filepath.Dir(c.Output)
-	if outDir == "." {
-		return nil
-	}
-
-	info, err = os.Stat(outDir)
-	if err != nil {
-		return &outputPathError{msg: "output directory does not exist: " + outDir}
-	}
-
-	if !info.IsDir() {
-		return &outputPathError{msg: "output parent is not a directory: " + outDir}
-	}
-
-	return nil
-}
-
 func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
 	if fill := specMetric(cfg.Fill); fill != "" {
 		return fill
 	}
 
 	return metric.Name(ptrString(cfg.Size))
-}
-
-func (*TreemapCmd) resolveFillPalette(cfg *config.Treemap, fillMetric metric.Name) palette.PaletteName {
-	if fp := specPalette(cfg.Fill); fp != "" {
-		return fp
-	}
-
-	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
-	}
-
-	return palette.Neutral
-}
-
-func (*TreemapCmd) filterBinaryFiles(cfg *config.Treemap, root *model.Directory) error {
-	if metric.Name(ptrString(cfg.Size)) != filesystem.FileLines {
-		return nil
-	}
-
-	beforeCount, _ := countAll(root)
-	filtered := scan.FilterBinaryFiles(root)
-	afterCount, _ := countAll(filtered)
-	excluded := beforeCount - afterCount
-	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
-
-	if afterCount == 0 {
-		return &noFilesAfterFilterError{
-			msg: noFilesAfterFilterMsg,
-		}
-	}
-	// Update root in place — avoid struct copy which would copy the mutex.
-	root.Files = filtered.Files
-	root.Dirs = filtered.Dirs
-
-	return nil
 }
 
 func extractNumeric(f *model.File, m metric.Name) float64 {
