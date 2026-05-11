@@ -856,3 +856,130 @@ User directive: **Don't push all testing work to Lambert.** Distribute test work
 - Dallas, Bishop, Kane responsible for unit tests in their respective areas
 - Lambert focuses on integration, system, and cross-component scenarios
 - Test distribution is implicit in issue scoping — each issue includes its own test coverage responsibility
+
+---
+
+### Replace layeredShape Tagged Union with drawnShape Interface
+
+**Author:** Bishop (Artificer)  
+**Date:** 2026-05-11  
+**Status:** Implemented (PR #212)  
+**Issue:** #193
+
+## Context
+
+`layeredShape` in `internal/canvas/canvas.go` used a C-style discriminated union: a `shapeKind` iota tag with six nullable pointer fields. Adding a shape required updating the enum, struct, switch, and draw method — four coordinated changes with no compiler enforcement.
+
+## Decision
+
+Replace the tagged union with a Go interface:
+
+```go
+type drawnShape interface {
+    drawTo(backend Backend)
+}
+
+type layeredShape struct {
+    layer Layer
+    order int
+    shape drawnShape
+}
+```
+
+Each shape type (`Rectangle`, `Disc`, `Text`, `Line`, `Path`, `ArcText`) implements `drawTo`. The `dispatchShape` switch, `shapeKind` type, and its constants are deleted.
+
+## Rationale
+
+- **Compiler-enforced exhaustiveness:** Adding a new shape means implementing `drawnShape`; no switch case can be missed.
+- **Cohesion:** Drawing logic lives on the data it operates on, not on a coordinator. The old `Canvas.draw*` methods had unused `*Canvas` receivers — they were already stateless.
+- **Simplicity:** Net -37 lines. Six pointer fields → one interface field.
+- **Open/Closed Principle:** New shapes extend without modifying existing code.
+
+## Impact
+
+- Canvas `Add*` methods and `RenderTo` are simplified.
+- No test changes required — all 22 test suites pass unchanged.
+- Future shape types (if any) are safe by construction.
+
+---
+
+### Canvas Spiral Migration - Structural Patterns
+
+**Author:** Bishop  
+**Date:** 2026-05-11  
+**Status:** Observation (no blocking decision needed)
+
+## Context
+
+During review of the spiral Canvas migration (Tasks 1–4), observed two bridge patterns emerging:
+
+1. **buildMetricInk** (treemap) - Walks tree structure, pulls metrics from model.File objects
+2. **buildBucketInk** (spiral) - Iterates flat list, pulls pre-aggregated values from TimeBucket via accessor functions
+
+## Pattern Analysis
+
+**buildMetricInk signature:**
+```go
+func buildMetricInk(
+    root *model.Directory,
+    m metric.Name,
+    palName palette.PaletteName,
+    fallback color.RGBA,
+) canvas.Ink
+```
+
+**buildBucketInk signature:**
+```go
+func buildBucketInk(
+    buckets []spiral.TimeBucket,
+    m metric.Name,
+    palName palette.PaletteName,
+    numericFn func(*spiral.TimeBucket) float64,
+    categoryFn func(*spiral.TimeBucket) string,
+    fallback color.RGBA,
+) canvas.Ink
+```
+
+## Structural Implication
+
+These are **not duplicates** - they reflect fundamental data-source differences:
+- Treemap: hierarchical file tree with per-file metrics
+- Spiral: flat time-series with pre-aggregated bucket values
+
+Radial tree and bubble tree visualizations will follow the treemap pattern (tree + File metrics).
+
+## Recommendation
+
+**Do not extract shared abstraction yet.** Wait until radial/bubble migrations complete. If all four viz types use variants of buildMetricInk, then extract to shared `cmd/codeviz/ink_builder.go` or promote to `internal/canvas/ink_builder.go`.
+
+Current state (2 patterns for 2 viz types) is acceptable and reflects legitimate structural differences.
+
+## Action
+
+None required. This is documentation for future refactoring consideration.
+
+---
+
+### Two-Reviewer Gate on Implementation Work
+
+**Author:** Bevan Arps (user directive via Copilot)  
+**Date:** 2026-05-10  
+**Status:** Active
+
+## Directive
+
+All implementation work must be reviewed by both Parker (Staff Developer) and Bishop (Artificer) going forward.
+
+## Scope
+
+- Current spiral migration (all remaining tasks)
+- All future implementation work
+
+## Rationale
+
+The team has been light on code reviews. Two-reviewer gate ensures quality and distributed ownership of changes.
+
+## Implementation
+
+- Each PR requires approvals from both Parker and Bishop before merge
+- Reviewers should use their respective expertise: Parker for maintainability and Go practices, Bishop for design and architecture patterns

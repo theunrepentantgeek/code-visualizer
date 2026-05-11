@@ -131,3 +131,27 @@
 - **Spec finalized:** All 5 key design decisions codified and approved. Ready for implementation kickoff.
 - **Team log:** `.squad/log/2026-05-09T02:59:06Z-canvas-spec-review.md`
 - **Decisions merged:** All inbox items → `decisions.md`. Specifications finalized.
+
+### Issue #193 — Replace layeredShape Tagged Union with Go Interface (2026-07-16)
+
+- **Status:** ✅ Complete
+- **PR:** #212
+- **Branch:** `squad/193-layered-shape-interface`
+
+**What changed:**
+- Deleted `shapeKind` type (iota enum) and its 6 constants from `canvas.go`
+- Replaced 6-pointer tagged union in `layeredShape` with single `shape drawnShape` interface field
+- Defined `drawnShape` interface: `drawTo(backend Backend)`
+- Added `drawTo` method to each concrete shape type: `Rectangle`, `Disc`, `Text`, `Line`, `Path` (in `shape.go`), `ArcText` (in `text_spec.go`)
+- Deleted `dispatchShape` switch and 6 `Canvas.draw*` helper methods
+- Simplified all 6 `Add*` methods on Canvas — no more `kind` field or named pointer fields
+- Net result: -37 lines (81 added, 118 deleted across 3 files)
+
+**Key files:**
+- `internal/canvas/canvas.go` — `drawnShape` interface, simplified `layeredShape`, cleaned `Add*` methods, removed dispatch
+- `internal/canvas/shape.go` — `drawTo` on Rectangle, Disc, Text, Line, Path
+- `internal/canvas/text_spec.go` — `drawTo` on ArcText
+
+**Pattern observed:**
+- The old `Canvas.draw*` methods had unused `*Canvas` receivers — pure functions masquerading as methods. Moving them to shape types was zero-friction because they were already stateless. This is the classic signal that logic belongs on the data it operates on, not on the coordinator that holds it.
+- Adding a new shape is now safe by construction: implement `drawnShape`, and the compiler ensures it works end-to-end. No enum, no switch, no nullable pointer field to maintain.

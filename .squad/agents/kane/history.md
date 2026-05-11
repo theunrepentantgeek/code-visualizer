@@ -166,3 +166,13 @@
 - **Testing:** All tests pass, zero regressions
 - **Committed:** `squad/161-extract-progress-ticker`
 - **PR:** #166
+
+### Issue #205 — Treemap Size Metric Accept Measure (2026-07-15)
+
+- **Status:** ✅ Complete
+- **Problem:** `TreemapCmd.validateConfig` only accepted `metric.Quantity` for size, rejecting `Measure` metrics like `commit-density`. The layout function `fileSize` in `internal/treemap/layout.go` only called `f.Quantity()`.
+- **Fix:** Two surgical changes:
+  1. `internal/treemap/layout.go:fileSize` — now tries `Quantity` first, then falls back to `Measure` (matching `bubbletree/layout.go:fileMetricValue` and `radialtree/layout.go:fileMetricValue`).
+  2. `cmd/codeviz/treemap_cmd.go:validateConfig` — validation now accepts `metric.Quantity || metric.Measure` (matching bubbletree and radial).
+- **Pattern:** All three viz commands (treemap, bubbletree, radial) now consistently accept both Quantity and Measure for size metrics.
+- **PR:** #209
