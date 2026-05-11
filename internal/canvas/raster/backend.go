@@ -18,6 +18,10 @@ import (
 
 const jpegQuality = 95
 
+// defaultFontSize is the font size used when callers pass fontSize <= 0,
+// indicating "use the backend's default".
+const defaultFontSize = 12.0
+
 type rasterBackend struct {
 	dc *gg.Context
 }
@@ -115,6 +119,10 @@ func (r *rasterBackend) DrawArcText(
 ) {
 	if text == "" || radius <= 0 {
 		return
+	}
+
+	if fontSize <= 0 {
+		fontSize = defaultFontSize
 	}
 
 	r.dc.SetColor(ink)
