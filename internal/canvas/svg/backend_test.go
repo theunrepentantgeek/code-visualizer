@@ -143,6 +143,74 @@ func TestSVGBackend_DrawArcText_ProducesValidSVG(t *testing.T) {
 	g.Expect(content).To(ContainSubstring("<textPath"))
 }
 
+func TestSVGBackend_DrawText_FontSizeZero_UsesDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(200, 100)
+	blk := color.RGBA{A: 255}
+
+	b.DrawText(
+		model.Position{X: 100, Y: 50},
+		"hello", blk, 0,
+		model.AnchorMiddle, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "text-zero.svg")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	content := readFile(t, out)
+	g.Expect(content).To(ContainSubstring("<text"))
+	g.Expect(content).NotTo(ContainSubstring(`font-size="0`))
+	g.Expect(content).To(ContainSubstring(`font-size="12.0"`))
+}
+
+func TestSVGBackend_DrawText_FontSizeNegative_UsesDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(200, 100)
+	blk := color.RGBA{A: 255}
+
+	b.DrawText(
+		model.Position{X: 100, Y: 50},
+		"hello", blk, -5.0,
+		model.AnchorMiddle, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "text-neg.svg")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	content := readFile(t, out)
+	g.Expect(content).NotTo(ContainSubstring(`font-size="0`))
+	g.Expect(content).NotTo(ContainSubstring(`font-size="-`))
+	g.Expect(content).To(ContainSubstring(`font-size="12.0"`))
+}
+
+func TestSVGBackend_DrawArcText_FontSizeZero_UsesDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(400, 400)
+	blk := color.RGBA{A: 255}
+
+	b.DrawArcText(
+		model.Position{X: 200, Y: 200},
+		100, "hello", blk, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "arctext-zero.svg")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	content := readFile(t, out)
+	g.Expect(content).To(ContainSubstring("<textPath"))
+	g.Expect(content).NotTo(ContainSubstring(`font-size="0`))
+	g.Expect(content).To(ContainSubstring(`font-size="12.0"`))
+}
+
 func TestSVGBackend_ImplementsBackendInterface(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
