@@ -5,9 +5,6 @@ type ShapeStyle struct {
 	Fill        Ink
 	Border      Ink
 	BorderWidth float64
-	ShowLabel   bool
-	LabelInk    Ink
-	LabelStyle  LabelStyle
 }
 
 // RectangleSpec defines the visual template for rectangles.

@@ -6,7 +6,6 @@ type Rectangle struct {
 	X, Y, W, H float64
 	Fill       MetricValue
 	Border     MetricValue
-	Label      string
 }
 
 func (r *Rectangle) drawTo(b Backend) {
@@ -29,7 +28,6 @@ type Disc struct {
 	Angle  float64 // angular position; used for radial/external label orientation
 	Fill   MetricValue
 	Border MetricValue
-	Label  string
 }
 
 func (d *Disc) drawTo(b Backend) {

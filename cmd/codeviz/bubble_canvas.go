@@ -46,7 +46,6 @@ func buildBubbleInks(
 	borderPaletteName palette.PaletteName,
 ) bubbleInks {
 	inks := bubbleInks{
-		fill:   canvas.FixedInk(bubbleDefaultFileFill),
 		border: canvas.FixedInk(bubbleDefaultBorder),
 	}
 

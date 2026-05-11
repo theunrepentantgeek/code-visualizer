@@ -56,8 +56,6 @@ func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, o
 		o(&cfg)
 	}
 
-	// Strategy selection (quantile/linear/logarithmic) not yet implemented;
-	// currently always uses quantile via metric.ComputeBuckets.
 	buckets := metric.ComputeBuckets(values, len(pal.Colours))
 
 	return Ink{

@@ -4,18 +4,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
-// LabelStyle controls how labels are rendered on shapes.
-type LabelStyle int
-
-const (
-	// LabelCentered places text centered inside the shape.
-	LabelCentered LabelStyle = iota
-	// LabelArc curves text along a circle boundary (used by bubble tree directories).
-	LabelArc
-	// LabelRadial places text outside the shape, rotated outward (used by radial/spiral).
-	LabelRadial
-)
-
 // TextAnchor is re-exported from model for backward compatibility.
 type TextAnchor = model.TextAnchor
 
