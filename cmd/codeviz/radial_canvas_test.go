@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/xml"
 	"image"
 	_ "image/png"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -236,25 +238,26 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 
 	g.Expect(len(entries)).To(BeNumerically(">=", 2))
 
-	// Verify we can sort largest-first (mirrors addRadialDiscs behaviour)
-	for i := 1; i < len(entries); i++ {
-		prev := entries[i-1]
-		curr := entries[i]
+	// Sort largest-first, mirroring addRadialDiscs production code
+	slices.SortFunc(entries, func(a, b radialDiscEntry) int {
+		return cmp.Compare(b.node.DiscRadius, a.node.DiscRadius)
+	})
 
-		if prev.node.DiscRadius == curr.node.DiscRadius {
-			continue
-		}
-		// At least one pair should have different radii
-		// confirming the metric drives disc sizing
+	// Verify entries are sorted largest-first by disc radius
+	for i := range len(entries) - 1 {
+		g.Expect(entries[i].node.DiscRadius).To(
+			BeNumerically(">=", entries[i+1].node.DiscRadius),
+			"entries should be sorted largest disc first",
+		)
 	}
 
-	// Find the entry with the largest disc radius
-	var maxRadius float64
+	// Verify at least two distinct radii exist, proving the metric drives sizing
+	radii := make(map[float64]struct{}, len(entries))
 	for _, e := range entries {
-		if e.node.DiscRadius > maxRadius {
-			maxRadius = e.node.DiscRadius
-		}
+		radii[e.node.DiscRadius] = struct{}{}
 	}
 
-	g.Expect(maxRadius).To(BeNumerically(">", 0))
+	g.Expect(len(radii)).To(BeNumerically(">=", 2),
+		"expected at least 2 distinct disc radii to confirm metric drives sizing",
+	)
 }
