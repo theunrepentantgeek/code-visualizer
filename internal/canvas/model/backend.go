@@ -41,3 +41,7 @@ const (
 	// AnchorEnd aligns text to the right.
 	AnchorEnd
 )
+
+// DefaultFontSize signals that the backend should use its built-in default
+// font size. Callers can set FontSize to this value instead of a bare 0.
+const DefaultFontSize float64 = 0

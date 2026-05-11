@@ -163,6 +163,117 @@ func TestRasterBackend_ImplementsBackendInterface(t *testing.T) {
 	g.Expect(b).NotTo(BeNil())
 }
 
+func TestRasterBackend_DrawArcText_ProducesValidPNG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(400, 400)
+	blk := color.RGBA{A: 255}
+
+	b.DrawArcText(
+		model.Position{X: 200, Y: 200},
+		100, "hello", blk, 14.0,
+	)
+
+	out := filepath.Join(t.TempDir(), "arctext.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	img := loadImage(t, out)
+	g.Expect(img.Bounds().Dx()).To(Equal(400))
+}
+
+func TestRasterBackend_DrawArcText_FontSizeZero_ProducesValidPNG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(400, 400)
+	blk := color.RGBA{A: 255}
+
+	b.DrawArcText(
+		model.Position{X: 200, Y: 200},
+		100, "hello", blk, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "arctext-zero.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	img := loadImage(t, out)
+	g.Expect(img.Bounds().Dx()).To(Equal(400))
+}
+
+func TestRasterBackend_DrawText_FontSizeZero_ProducesValidPNG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(200, 100)
+	blk := color.RGBA{A: 255}
+
+	b.DrawText(
+		model.Position{X: 100, Y: 50},
+		"hello", blk, 0,
+		model.AnchorMiddle, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "text-zero.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	info, err := os.Stat(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if info != nil {
+		g.Expect(info.Size()).To(BeNumerically(">", 0))
+	}
+}
+
+func TestRasterBackend_DrawText_RespectsCustomFontSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Render the same text at two different font sizes and verify both produce
+	// valid output with different pixel content (larger font = more ink).
+	small := New(200, 100)
+	blk := color.RGBA{A: 255}
+
+	small.DrawText(
+		model.Position{X: 100, Y: 50},
+		"Hello", blk, 10.0,
+		model.AnchorMiddle, 0,
+	)
+
+	outSmall := filepath.Join(t.TempDir(), "text-small.png")
+	err := small.Finish(outSmall)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	large := New(200, 100)
+
+	large.DrawText(
+		model.Position{X: 100, Y: 50},
+		"Hello", blk, 28.0,
+		model.AnchorMiddle, 0,
+	)
+
+	outLarge := filepath.Join(t.TempDir(), "text-large.png")
+	err = large.Finish(outLarge)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	infoSmall, err := os.Stat(outSmall)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	infoLarge, err := os.Stat(outLarge)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// Larger text produces a different (usually larger) PNG due to more ink.
+	g.Expect(infoSmall).NotTo(BeNil())
+	g.Expect(infoLarge).NotTo(BeNil())
+
+	if infoSmall != nil && infoLarge != nil {
+		g.Expect(infoSmall.Size()).NotTo(Equal(infoLarge.Size()))
+	}
+}
+
 func loadImage(t *testing.T, path string) image.Image {
 	t.Helper()
 

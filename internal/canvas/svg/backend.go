@@ -16,6 +16,10 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
+// defaultFontSize is the font size used when callers pass fontSize <= 0,
+// indicating "use the backend's default".
+const defaultFontSize = 12.0
+
 type svgBackend struct {
 	width  int
 	height int
@@ -89,6 +93,10 @@ func (s *svgBackend) DrawText(
 	anchor model.TextAnchor,
 	rotation float64,
 ) {
+	if fontSize <= 0 {
+		fontSize = defaultFontSize
+	}
+
 	anchorStr := svgAnchor(anchor)
 	escaped := html.EscapeString(text)
 
@@ -122,6 +130,10 @@ func (s *svgBackend) DrawArcText(
 ) {
 	if text == "" || radius <= 0 {
 		return
+	}
+
+	if fontSize <= 0 {
+		fontSize = defaultFontSize
 	}
 
 	arcR := radius - 14.0
