@@ -71,7 +71,7 @@ func renderBubbleToCanvas(
 	addBubbleBackground(cv, width, height)
 
 	dirs, files := indexBubbleNodes(nodes)
-	addBubbleDirDiscs(cv, dirs, root, inks)
+	addBubbleDirDiscs(cv, dirs, root)
 	addBubbleFileDiscs(cv, files, root, inks)
 	addBubbleLabels(cv, *nodes)
 
@@ -126,7 +126,6 @@ func indexBubbleNodesWalk(
 // bubbleDirEntry holds a directory node for sorted drawing.
 type bubbleDirEntry struct {
 	node *bubbletree.BubbleNode
-	mv   canvas.MetricValue
 }
 
 // addBubbleDirDiscs collects directory nodes from the model tree (via path lookup),
@@ -135,7 +134,6 @@ func addBubbleDirDiscs(
 	cv *canvas.Canvas,
 	dirIndex map[string]*bubbletree.BubbleNode,
 	root *model.Directory,
-	inks bubbleInks,
 ) {
 	entries := collectBubbleDirEntries(dirIndex, root)
 
@@ -144,11 +142,12 @@ func addBubbleDirDiscs(
 	})
 
 	dirFill := canvas.FixedInk(bubbleDefaultDirFill, canvas.WithOpacity(bubbleDirOpacity))
+	dirBorder := canvas.FixedInk(bubbleDefaultBorder)
 
 	dirSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        dirFill,
-			Border:      inks.border,
+			Border:      dirBorder,
 			BorderWidth: bubbleBorderWidth,
 		},
 	}
@@ -159,7 +158,6 @@ func addBubbleDirDiscs(
 			X:      e.node.X,
 			Y:      e.node.Y,
 			Radius: e.node.Radius,
-			Border: e.mv,
 		})
 	}
 }

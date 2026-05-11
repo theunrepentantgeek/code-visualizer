@@ -206,14 +206,17 @@ func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
 	borderMV := radialMetricValue(e.file, inks.border)
 
 	fill := inks.fill
+	border := inks.border
+
 	if e.isDir {
 		fill = canvas.FixedInk(radialDefaultDirFill)
+		border = canvas.FixedInk(radialDefaultBorder)
 	}
 
 	discSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        fill,
-			Border:      inks.border,
+			Border:      border,
 			BorderWidth: 1.0,
 		},
 	}

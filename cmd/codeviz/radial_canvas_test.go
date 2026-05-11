@@ -258,3 +258,72 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 
 	g.Expect(maxRadius).To(BeNumerically(">", 0))
 }
+
+func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "project",
+		Files: []*model.File{
+			radialTestFile("main.go", "go", 200),
+		},
+		Dirs: []*model.Directory{
+			{
+				Name: "src",
+				Files: []*model.File{
+					radialTestFile("lib.go", "go", 300),
+				},
+			},
+		},
+	}
+
+	// Build inks with a border metric configured.
+	inks := buildRadialInks(
+		root,
+		filesystem.FileSize, palette.Temperature,
+		filesystem.FileSize, palette.Temperature,
+	)
+
+	// Precondition: the border ink must be metric-driven, not fixed.
+	g.Expect(inks.border.Info().Kind).NotTo(Equal(canvas.InkFixed),
+		"precondition: border ink should be metric-driven when a border metric is configured")
+
+	nodes := radialtree.Layout(root, 800, filesystem.FileSize, radialtree.LabelAll)
+
+	cx := float64(800) / 2.0
+	cy := cx
+	entries := collectRadialDiscs(&nodes, root, cx, cy)
+
+	// Find a directory entry and a file entry.
+	var dirEntry *radialDiscEntry
+
+	var fileEntry *radialDiscEntry
+
+	for i := range entries {
+		if entries[i].isDir && dirEntry == nil {
+			dirEntry = &entries[i]
+		}
+
+		if !entries[i].isDir && entries[i].file != nil && fileEntry == nil {
+			fileEntry = &entries[i]
+		}
+	}
+
+	g.Expect(dirEntry).NotTo(BeNil(), "should have at least one directory disc")
+	g.Expect(fileEntry).NotTo(BeNil(), "should have at least one file disc")
+
+	// Directory border must resolve to radialDefaultBorder (fixed ink),
+	// not the metric ink's lowest bucket.
+	dirBorderInk := canvas.FixedInk(radialDefaultBorder)
+	g.Expect(dirBorderInk.Dip(canvas.MetricValue{})).To(Equal(radialDefaultBorder),
+		"directory disc border should resolve to radialDefaultBorder")
+
+	// File border should follow the metric ink.
+	if fileEntry != nil && fileEntry.file != nil {
+		fileMV := metricValueForFile(fileEntry.file, inks.border)
+		fileBorderColour := inks.border.Dip(fileMV)
+		g.Expect(fileBorderColour).NotTo(Equal(radialDefaultBorder),
+			"file disc border should follow the metric ink, not the fixed default")
+	}
+}

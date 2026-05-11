@@ -220,3 +220,35 @@ func TestRenderBubbleToCanvas_SVG(t *testing.T) {
 
 	g.Expect(rootElement).To(Equal("svg"))
 }
+
+func TestRenderBubbleToCanvas_DirBorderUsesFixedInk(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := bubbleTestRoot()
+
+	// Build inks with a border metric — files should get metric-driven
+	// borders, but directories must always get bubbleDefaultBorder.
+	inks := buildBubbleInks(
+		root,
+		filesystem.FileSize, palette.Temperature,
+		filesystem.FileSize, palette.Temperature,
+	)
+
+	// The metric-based border ink should NOT be fixed.
+	g.Expect(inks.border.Info().Kind).NotTo(Equal(canvas.InkFixed),
+		"precondition: border ink should be metric-driven when a border metric is configured")
+
+	// Directory border uses fixed ink, so Dip always returns bubbleDefaultBorder
+	// regardless of MetricValue.
+	dirBorder := canvas.FixedInk(bubbleDefaultBorder)
+	g.Expect(dirBorder.Dip(canvas.MetricValue{})).To(Equal(bubbleDefaultBorder),
+		"directory disc border should resolve to bubbleDefaultBorder")
+
+	// File border uses the metric ink, which should differ from the fixed default.
+	file := root.Files[0]
+	fileMV := metricValueForFile(file, inks.border)
+	fileBorderColour := inks.border.Dip(fileMV)
+	g.Expect(fileBorderColour).NotTo(Equal(bubbleDefaultBorder),
+		"file disc border should follow the metric ink, not the fixed default")
+}
