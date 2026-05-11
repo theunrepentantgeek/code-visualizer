@@ -7,7 +7,6 @@ type TreemapRectangle struct {
 	W           float64
 	H           float64
 	Label       string
-	ShowLabel   bool
 	IsDirectory bool
 	Children    []TreemapRectangle
 }

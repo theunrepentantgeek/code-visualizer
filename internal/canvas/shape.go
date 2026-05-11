@@ -6,7 +6,6 @@ type Rectangle struct {
 	X, Y, W, H float64
 	Fill       MetricValue
 	Border     MetricValue
-	Label      string
 }
 
 // Disc carries geometry and metric values for circular shapes.
@@ -17,7 +16,6 @@ type Disc struct {
 	Angle  float64 // angular position; used for radial/external label orientation
 	Fill   MetricValue
 	Border MetricValue
-	Label  string
 }
 
 // Text carries position and content for standalone text.

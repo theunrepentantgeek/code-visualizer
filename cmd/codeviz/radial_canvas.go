@@ -44,7 +44,6 @@ func buildRadialInks(
 	borderPaletteName palette.PaletteName,
 ) radialInks {
 	inks := radialInks{
-		fill:   canvas.FixedInk(radialDefaultFileFill),
 		border: canvas.FixedInk(radialDefaultBorder),
 	}
 

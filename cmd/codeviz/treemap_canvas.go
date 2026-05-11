@@ -40,7 +40,6 @@ func buildTreemapInks(
 	borderPaletteName palette.PaletteName,
 ) treemapInks {
 	inks := treemapInks{
-		fill:   canvas.FixedInk(treemapDefaultFill),
 		border: canvas.FixedInk(treemapStructuralBorder),
 	}
 
@@ -219,7 +218,6 @@ func addFileRectForFile(
 		H:      rect.H,
 		Fill:   fillMV,
 		Border: borderMV,
-		Label:  rect.Label,
 	})
 
 	if rect.Label != "" && rect.W >= 40 && rect.H >= 16 {
