@@ -175,10 +175,6 @@ func (r *rasterBackend) DrawArcText(
 	}
 }
 
-func (r *rasterBackend) DrawLegend(data model.LegendData, canvasW, canvasH int) {
-	drawLegend(r.dc, data, canvasW, canvasH)
-}
-
 func (r *rasterBackend) Finish(outputPath string) error {
 	ext := strings.ToLower(filepath.Ext(outputPath))
 
