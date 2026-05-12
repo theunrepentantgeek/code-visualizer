@@ -7,7 +7,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
@@ -25,12 +24,6 @@ var (
 	treemapWhiteText        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
-// treemapInks holds the Ink instances for a treemap render pass.
-type treemapInks struct {
-	fill   canvas.Ink
-	border canvas.Ink
-}
-
 // buildTreemapInks creates fill and border inks from metric configuration.
 func buildTreemapInks(
 	root *model.Directory,
@@ -38,8 +31,8 @@ func buildTreemapInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) treemapInks {
-	inks := treemapInks{
+) vizInks {
+	inks := vizInks{
 		border: canvas.FixedInk(treemapStructuralBorder),
 	}
 
@@ -51,42 +44,13 @@ func buildTreemapInks(
 	return inks
 }
 
-// buildMetricInk creates an Ink for a given metric, using the appropriate
-// constructor based on the metric kind (numeric vs categorical).
-func buildMetricInk(
-	root *model.Directory,
-	m metric.Name,
-	palName palette.PaletteName,
-	fallback color.RGBA,
-) canvas.Ink {
-	p, ok := provider.Get(m)
-	if !ok {
-		return canvas.FixedInk(fallback)
-	}
-
-	pal := palette.GetPalette(palName)
-
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
-		values := collectNumericValues(root, m)
-		if len(values) == 0 {
-			return canvas.FixedInk(fallback)
-		}
-
-		return canvas.NumericInk(m, values, pal)
-	}
-
-	types := collectDistinctTypes(root, m)
-
-	return canvas.CategoricalInk(m, types, pal)
-}
-
 // renderTreemapToCanvas walks the layout tree and model tree in parallel,
 // adding shapes to the canvas. Returns the populated canvas.
 func renderTreemapToCanvas(
 	rects treemap.TreemapRectangle,
 	root *model.Directory,
 	width, height int,
-	inks treemapInks,
+	inks vizInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -114,7 +78,7 @@ func addTreemapRect(
 	cv *canvas.Canvas,
 	rect treemap.TreemapRectangle,
 	node *model.Directory,
-	inks treemapInks,
+	inks vizInks,
 ) {
 	if !rect.IsDirectory {
 		addFileRectForFile(cv, rect, nil, inks)
@@ -191,7 +155,7 @@ func addFileRectForFile(
 	cv *canvas.Canvas,
 	rect treemap.TreemapRectangle,
 	file *model.File,
-	inks treemapInks,
+	inks vizInks,
 ) {
 	if rect.W <= 0 || rect.H <= 0 {
 		return
@@ -235,38 +199,6 @@ func addFileRectForFile(
 			Y:       rect.Y + rect.H/2,
 			Content: rect.Label,
 		})
-	}
-}
-
-// metricValueForFile builds a MetricValue from a file's data for the given ink.
-func metricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
-	if file == nil {
-		return canvas.MetricValue{}
-	}
-
-	info := ink.Info()
-
-	switch info.Kind {
-	case canvas.InkNumeric:
-		m := info.MetricName
-		if v, ok := file.Quantity(m); ok {
-			return canvas.MetricValue{Kind: metric.Quantity, Quantity: int(v)}
-		}
-
-		if v, ok := file.Measure(m); ok {
-			return canvas.MetricValue{Kind: metric.Measure, Measure: v}
-		}
-
-		return canvas.MetricValue{}
-	case canvas.InkCategorical:
-		m := info.MetricName
-		if v, ok := file.Classification(m); ok {
-			return canvas.MetricValue{Kind: metric.Classification, Category: v}
-		}
-
-		return canvas.MetricValue{}
-	default:
-		return canvas.MetricValue{}
 	}
 }
 
