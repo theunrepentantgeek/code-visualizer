@@ -69,7 +69,7 @@ func DefaultOrientation(pos LegendPosition) LegendOrientation {
 func (lc *LegendConfig) ReserveSpace() (widthReduction, heightReduction float64) {
 	data := lc.toLegendData()
 
-	return legendlayout.ReserveSpace(data)
+	return legendlayout.ReserveSpace(data, legendlayout.NewBasicMeasurer())
 }
 
 // toLegendData converts the canvas-facing LegendConfig to the backend-facing

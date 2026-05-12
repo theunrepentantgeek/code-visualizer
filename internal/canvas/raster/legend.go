@@ -15,7 +15,7 @@ func drawLegend(dc *gg.Context, data model.LegendData, canvasW, canvasH int) {
 		return
 	}
 
-	w, h := legendlayout.MeasureLegend(&data)
+	w, h := legendlayout.MeasureLegend(&data, legendlayout.NewBasicMeasurer())
 	ox, oy := legendlayout.LegendOrigin(data.Position, float64(canvasW), float64(canvasH), w, h)
 
 	drawLegendBackground(dc, ox, oy, w, h)

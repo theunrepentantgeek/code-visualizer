@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"html"
 
-	"github.com/fogleman/gg"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
@@ -20,7 +18,7 @@ func writeSVGLegend(buf *bytes.Buffer, data model.LegendData, canvasW, canvasH i
 		return
 	}
 
-	w, h := legendlayout.MeasureLegend(&data)
+	w, h := legendlayout.MeasureLegend(&data, legendlayout.NewBasicMeasurer())
 	ox, oy := legendlayout.LegendOrigin(data.Position, float64(canvasW), float64(canvasH), w, h)
 
 	fmt.Fprintf(buf, "<g transform=\"translate(%.2f,%.2f)\">\n", ox, oy)
@@ -60,7 +58,7 @@ func writeSVGLegendEntries(buf *bytes.Buffer, data *model.LegendData) {
 
 // writeSVGLegendEntriesH renders entries side-by-side for horizontal layout.
 func writeSVGLegendEntriesH(buf *bytes.Buffer, data *model.LegendData) {
-	dc := gg.NewContext(1, 1)
+	measurer := legendlayout.NewBasicMeasurer()
 	cx := model.LegendPadding
 
 	for i, entry := range data.Entries {
@@ -68,20 +66,20 @@ func writeSVGLegendEntriesH(buf *bytes.Buffer, data *model.LegendData) {
 			cx += model.EntryGap
 		}
 
-		ew := measureSingleEntryHWidth(dc, entry)
+		ew := measureSingleEntryHWidth(measurer, entry)
 		writeSVGSingleEntry(buf, data.Orientation, entry, cx, model.LegendPadding)
 		cx += ew
 	}
 }
 
 // measureSingleEntryHWidth measures just the width of a horizontal entry.
-func measureSingleEntryHWidth(dc *gg.Context, entry model.LegendEntryData) float64 {
-	tw, _ := dc.MeasureString(entry.Title)
+func measureSingleEntryHWidth(measurer legendlayout.StringMeasurer, entry model.LegendEntryData) float64 {
+	tw, _ := measurer.MeasureString(entry.Title)
 
 	var entryW float64
 
 	if entry.Kind == model.LegendEntryCategorical {
-		entryW = measureCatHWidth(dc, entry)
+		entryW = measureCatHWidth(measurer, entry)
 	} else {
 		entryW = float64(len(entry.Swatches)) * model.SwatchSize
 	}
@@ -90,11 +88,11 @@ func measureSingleEntryHWidth(dc *gg.Context, entry model.LegendEntryData) float
 }
 
 // measureCatHWidth measures the width of horizontal category swatches.
-func measureCatHWidth(dc *gg.Context, entry model.LegendEntryData) float64 {
+func measureCatHWidth(measurer legendlayout.StringMeasurer, entry model.LegendEntryData) float64 {
 	w := 0.0
 
 	for _, sw := range entry.Swatches {
-		tw, _ := dc.MeasureString(sw.Label)
+		tw, _ := measurer.MeasureString(sw.Label)
 		w += max(model.SwatchSize, tw) + model.SwatchGap + model.LabelGap
 	}
 
@@ -219,7 +217,7 @@ func writeSVGCategoryV(buf *bytes.Buffer, entry model.LegendEntryData, x, y floa
 
 // writeSVGCategoryH writes horizontally arranged category swatches.
 func writeSVGCategoryH(buf *bytes.Buffer, entry model.LegendEntryData, x, y float64) float64 {
-	dc := gg.NewContext(1, 1)
+	measurer := legendlayout.NewBasicMeasurer()
 	cx := x
 
 	for _, sw := range entry.Swatches {
@@ -233,7 +231,7 @@ func writeSVGCategoryH(buf *bytes.Buffer, entry model.LegendEntryData, x, y floa
 			cx+model.SwatchSize/2, y+model.SwatchSize+model.LegendLineHeight,
 			model.LegendFontSize, html.EscapeString(sw.Label))
 
-		tw, _ := dc.MeasureString(sw.Label)
+		tw, _ := measurer.MeasureString(sw.Label)
 		cx += max(model.SwatchSize, tw) + model.SwatchGap + model.LabelGap
 	}
 

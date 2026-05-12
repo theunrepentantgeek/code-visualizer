@@ -73,7 +73,7 @@ func TestMeasureLegend_EmptyEntries_ReturnsZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := &model.LegendData{Orientation: "vertical"}
-	w, h := MeasureLegend(data)
+	w, h := MeasureLegend(data, NewBasicMeasurer())
 	g.Expect(w).To(BeZero())
 	g.Expect(h).To(BeZero())
 }
@@ -82,7 +82,7 @@ func TestMeasureLegend_Nil_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	w, h := MeasureLegend(nil)
+	w, h := MeasureLegend(nil, NewBasicMeasurer())
 	g.Expect(w).To(BeZero())
 	g.Expect(h).To(BeZero())
 }
@@ -92,7 +92,7 @@ func TestMeasureLegend_Vertical_NonZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := makeSampleLegendData("vertical")
-	w, h := MeasureLegend(data)
+	w, h := MeasureLegend(data, NewBasicMeasurer())
 	g.Expect(w).To(BeNumerically(">", 0))
 	g.Expect(h).To(BeNumerically(">", 0))
 }
@@ -101,10 +101,11 @@ func TestMeasureLegend_Horizontal_WiderThanVertical(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
+	m := NewBasicMeasurer()
 	dataH := makeSampleLegendData("horizontal")
 	dataV := makeSampleLegendData("vertical")
-	wH, _ := MeasureLegend(dataH)
-	wV, _ := MeasureLegend(dataV)
+	wH, _ := MeasureLegend(dataH, m)
+	wV, _ := MeasureLegend(dataV, m)
 	g.Expect(wH).To(BeNumerically(">", wV),
 		"horizontal legend should be wider than vertical")
 }
@@ -113,10 +114,11 @@ func TestMeasureLegend_Horizontal_ShorterThanVertical(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
+	m := NewBasicMeasurer()
 	dataH := makeSampleLegendData("horizontal")
 	dataV := makeSampleLegendData("vertical")
-	_, hH := MeasureLegend(dataH)
-	_, hV := MeasureLegend(dataV)
+	_, hH := MeasureLegend(dataH, m)
+	_, hV := MeasureLegend(dataV, m)
 	g.Expect(hH).To(BeNumerically("<", hV),
 		"horizontal legend should be shorter than vertical")
 }
@@ -125,7 +127,7 @@ func TestReserveSpace_NilData_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	wReduce, hReduce := ReserveSpace(nil)
+	wReduce, hReduce := ReserveSpace(nil, NewBasicMeasurer())
 	g.Expect(wReduce).To(BeZero())
 	g.Expect(hReduce).To(BeZero())
 }
@@ -135,7 +137,7 @@ func TestReserveSpace_NonePosition_ReturnsZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := &model.LegendData{Position: "none"}
-	wReduce, hReduce := ReserveSpace(data)
+	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
 	g.Expect(wReduce).To(BeZero())
 	g.Expect(hReduce).To(BeZero())
 }
@@ -146,7 +148,7 @@ func TestReserveSpace_CenterRight_ReducesWidth(t *testing.T) {
 
 	data := makeSampleLegendData("vertical")
 	data.Position = "center-right"
-	wReduce, hReduce := ReserveSpace(data)
+	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
 	g.Expect(wReduce).To(BeNumerically(">", 0))
 	g.Expect(hReduce).To(BeZero())
 }
@@ -157,7 +159,7 @@ func TestReserveSpace_BottomCenter_ReducesHeight(t *testing.T) {
 
 	data := makeSampleLegendData("vertical")
 	data.Position = "bottom-center"
-	wReduce, hReduce := ReserveSpace(data)
+	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
 	g.Expect(wReduce).To(BeZero())
 	g.Expect(hReduce).To(BeNumerically(">", 0))
 }
@@ -168,7 +170,7 @@ func TestReserveSpace_CornerVertical_ReducesWidth(t *testing.T) {
 
 	data := makeSampleLegendData("vertical")
 	data.Position = "bottom-right"
-	wReduce, hReduce := ReserveSpace(data)
+	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
 	g.Expect(wReduce).To(BeNumerically(">", 0))
 	g.Expect(hReduce).To(BeZero())
 }
@@ -179,7 +181,7 @@ func TestReserveSpace_CornerHorizontal_ReducesHeight(t *testing.T) {
 
 	data := makeSampleLegendData("horizontal")
 	data.Position = "bottom-right"
-	wReduce, hReduce := ReserveSpace(data)
+	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
 	g.Expect(wReduce).To(BeZero())
 	g.Expect(hReduce).To(BeNumerically(">", 0))
 }
