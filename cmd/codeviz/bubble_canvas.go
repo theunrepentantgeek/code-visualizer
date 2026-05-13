@@ -38,8 +38,8 @@ func buildBubbleInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) vizInks {
-	inks := vizInks{
+) shapeInks {
+	inks := shapeInks{
 		border: canvas.FixedInk(bubbleDefaultBorder),
 	}
 
@@ -57,7 +57,7 @@ func renderBubbleToCanvas(
 	nodes *bubbletree.BubbleNode,
 	root *model.Directory,
 	width, height int,
-	inks vizInks,
+	inks shapeInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -179,7 +179,7 @@ func addBubbleFileDiscs(
 	cv *canvas.Canvas,
 	fileIndex map[string]*bubbletree.BubbleNode,
 	root *model.Directory,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	addBubbleFileDiscsWalk(cv, fileIndex, root, inks)
 }
@@ -188,7 +188,7 @@ func addBubbleFileDiscsWalk(
 	cv *canvas.Canvas,
 	fileIndex map[string]*bubbletree.BubbleNode,
 	dir *model.Directory,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	fileSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{

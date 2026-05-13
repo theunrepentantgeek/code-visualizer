@@ -31,8 +31,8 @@ func buildTreemapInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) vizInks {
-	inks := vizInks{
+) shapeInks {
+	inks := shapeInks{
 		border: canvas.FixedInk(treemapStructuralBorder),
 	}
 
@@ -50,7 +50,7 @@ func renderTreemapToCanvas(
 	rects treemap.TreemapRectangle,
 	root *model.Directory,
 	width, height int,
-	inks vizInks,
+	inks shapeInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -78,7 +78,7 @@ func addTreemapRect(
 	cv *canvas.Canvas,
 	rect treemap.TreemapRectangle,
 	node *model.Directory,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	if !rect.IsDirectory {
 		addFileRectForFile(cv, rect, nil, inks)
@@ -155,7 +155,7 @@ func addFileRectForFile(
 	cv *canvas.Canvas,
 	rect treemap.TreemapRectangle,
 	file *model.File,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	if rect.W <= 0 || rect.H <= 0 {
 		return

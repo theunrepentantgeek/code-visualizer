@@ -32,8 +32,8 @@ func buildSpiralInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) vizInks {
-	inks := vizInks{
+) shapeInks {
+	inks := shapeInks{
 		fill:   canvas.FixedInk(spiralDefaultFill),
 		border: canvas.FixedInk(spiralDefaultBorder),
 	}
@@ -106,7 +106,7 @@ func renderSpiralToCanvas(
 	layout spiral.SpiralLayout,
 	buckets []spiral.TimeBucket,
 	width, height int,
-	inks vizInks,
+	inks shapeInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -169,7 +169,7 @@ func addSpiralDiscs(
 	cv *canvas.Canvas,
 	nodes []spiral.SpiralNode,
 	buckets []spiral.TimeBucket,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	for i, n := range nodes {
 		if n.DiscRadius <= 0 {

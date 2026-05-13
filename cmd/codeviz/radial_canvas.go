@@ -36,8 +36,8 @@ func buildRadialInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) vizInks {
-	inks := vizInks{
+) shapeInks {
+	inks := shapeInks{
 		border: canvas.FixedInk(radialDefaultBorder),
 	}
 
@@ -55,7 +55,7 @@ func renderRadialToCanvas(
 	nodes *radialtree.RadialNode,
 	root *model.Directory,
 	canvasSize int,
-	inks vizInks,
+	inks shapeInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(canvasSize, canvasSize)
 
@@ -180,7 +180,7 @@ func addRadialDiscs(
 	nodes *radialtree.RadialNode,
 	root *model.Directory,
 	cx, cy float64,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	entries := collectRadialDiscs(nodes, root, cx, cy)
 
@@ -194,7 +194,7 @@ func addRadialDiscs(
 }
 
 // addRadialDisc adds a single disc shape to the canvas.
-func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks vizInks) {
+func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks shapeInks) {
 	fillMV := metricValueForFile(e.file, inks.fill)
 	borderMV := metricValueForFile(e.file, inks.border)
 
@@ -230,7 +230,7 @@ func addRadialLabels(
 	cv *canvas.Canvas,
 	node radialtree.RadialNode,
 	cx, cy float64,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	if node.ShowLabel && node.Label != "" {
 		dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
@@ -253,7 +253,7 @@ func addRadialRootLabel(
 	cv *canvas.Canvas,
 	node radialtree.RadialNode,
 	cx, cy float64,
-	inks vizInks,
+	inks shapeInks,
 ) {
 	fill := radialEffectiveFill(node, inks)
 	labelColour := canvas.TextColourFor(fill)
@@ -317,7 +317,7 @@ func addRadialExternalLabel(
 
 // radialEffectiveFill returns the fill colour for a node, resolving defaults.
 // Used for computing label contrast colour on the root node.
-func radialEffectiveFill(node radialtree.RadialNode, inks vizInks) color.RGBA {
+func radialEffectiveFill(node radialtree.RadialNode, inks shapeInks) color.RGBA {
 	if node.IsDirectory {
 		return radialDefaultDirFill
 	}
