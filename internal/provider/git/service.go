@@ -30,6 +30,7 @@ type repoService struct {
 	commitGroup singleflight.Group
 	commitMu    sync.RWMutex
 	commitCache map[string]*commitData
+	bulkGroup   singleflight.Group
 }
 
 // RepoRoot returns the absolute path to the git worktree root.
@@ -429,6 +430,100 @@ func (s *repoService) fetchCommitTimestamps(relPath string) ([]time.Time, error)
 	}
 
 	return timestamps, nil
+}
+
+// bulkPrewarm pre-populates the commit cache for all provided file paths by
+// walking the commit history once. This is dramatically faster than the default
+// per-file path when many files share the same repository — e.g. 193 files
+// require ~193 s with per-file git log; bulkPrewarm does it in one pass.
+//
+// If any paths are already cached, they are skipped. The function is safe for
+// concurrent use; concurrent calls are coalesced via a singleflight group.
+func (s *repoService) bulkPrewarm(paths map[string]bool) error {
+	s.commitMu.RLock()
+	missing := make(map[string]bool, len(paths))
+	for p := range paths {
+		if _, ok := s.commitCache[p]; !ok {
+			missing[p] = true
+		}
+	}
+	s.commitMu.RUnlock()
+
+	if len(missing) == 0 {
+		return nil
+	}
+
+	_, err, _ := s.bulkGroup.Do("prewarm", func() (any, error) {
+		return nil, s.doBulkPrewarm(missing)
+	})
+
+	return err //nolint:wrapcheck // error already wrapped inside doBulkPrewarm
+}
+
+// doBulkPrewarm performs the actual bulk commit-cache population.
+// It walks the entire commit history once, using tree diffs to determine
+// which tracked files were modified in each commit.
+func (s *repoService) doBulkPrewarm(paths map[string]bool) error {
+	// Initialise empty commitData for all tracked paths so that untracked files
+	// get a count=0 entry in the cache (avoids re-fetching them individually).
+	cache := make(map[string]*commitData, len(paths))
+	for p := range paths {
+		cache[p] = &commitData{authors: make(map[string]bool)}
+	}
+
+	head, err := s.repo.Head()
+	if err != nil {
+		return eris.Wrap(err, "bulk prewarm: failed to get HEAD")
+	}
+
+	iter, err := s.repo.Log(&gogit.LogOptions{From: head.Hash()})
+	if err != nil {
+		return eris.Wrap(err, "bulk prewarm: failed to start git log")
+	}
+	defer iter.Close()
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		changed := changedFilesInCommit(c, paths)
+
+		for _, relPath := range changed {
+			data := cache[relPath]
+			when := c.Author.When
+
+			if data.oldest.IsZero() || when.Before(data.oldest) {
+				data.oldest = when
+			}
+
+			if data.newest.IsZero() || when.After(data.newest) {
+				data.newest = when
+			}
+
+			data.authors[c.Author.Email] = true
+			data.count++
+
+			if c.NumParents() > 0 {
+				added, removed := computeFileDiffStats(c, relPath)
+				data.linesAdded += added
+				data.linesRemoved += removed
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return eris.Wrap(err, "bulk prewarm: failed to iterate commits")
+	}
+
+	// Atomically store results — only for paths not already in the cache
+	// (a concurrent per-file fetch may have populated some entries first).
+	s.commitMu.Lock()
+	for p, data := range cache {
+		if _, ok := s.commitCache[p]; !ok {
+			s.commitCache[p] = data
+		}
+	}
+	s.commitMu.Unlock()
+
+	return nil
 }
 
 // blobHash returns the blob hash of the file at relPath within the commit's tree.
