@@ -519,7 +519,7 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 }
 
-func TestCanvas_SetLegend_DispatchesToBackend(t *testing.T) {
+func TestCanvas_SetLegend_DecomposesToPrimitives(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -539,12 +539,26 @@ func TestCanvas_SetLegend_DispatchesToBackend(t *testing.T) {
 	mb := newMockBackend()
 	err := c.RenderTo(mb)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(mb.legendData).NotTo(BeNil())
-	g.Expect(mb.legendData.Position).To(Equal("bottom-right"))
-	g.Expect(mb.legendData.Entries).To(HaveLen(1))
+
+	// Legend decomposes into: 1 background rect + swatch rects + title text + label texts.
+	g.Expect(mb.calls).NotTo(BeEmpty())
+
+	// First call is the background rectangle.
+	g.Expect(mb.calls[0].method).To(Equal("DrawRectangle"))
+
+	// Should contain at least one text call for the title.
+	hasTitle := false
+
+	for _, call := range mb.calls {
+		if call.method == "DrawText" && call.text == "Fill: file-size" {
+			hasTitle = true
+		}
+	}
+
+	g.Expect(hasTitle).To(BeTrue(), "expected title text 'Fill: file-size'")
 }
 
-func TestCanvas_NoLegend_DoesNotCallDrawLegend(t *testing.T) {
+func TestCanvas_NoLegend_NoPrimitives(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -553,7 +567,7 @@ func TestCanvas_NoLegend_DoesNotCallDrawLegend(t *testing.T) {
 
 	err := c.RenderTo(mb)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(mb.legendData).To(BeNil())
+	g.Expect(mb.calls).To(BeEmpty())
 }
 
 func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {

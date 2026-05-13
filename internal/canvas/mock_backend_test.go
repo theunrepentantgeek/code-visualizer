@@ -2,8 +2,6 @@ package canvas
 
 import (
 	"image/color"
-
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 // drawCall records a single drawing operation dispatched to the mock backend.
@@ -19,7 +17,6 @@ type drawCall struct {
 // mockBackend records all drawing calls for test assertions.
 type mockBackend struct {
 	calls      []drawCall
-	legendData *model.LegendData
 	finishPath string
 	finishErr  error
 }
@@ -78,10 +75,6 @@ func (m *mockBackend) DrawArcText(center Position, _ float64, text string, ink c
 		text:   text,
 		fill:   ink,
 	})
-}
-
-func (m *mockBackend) DrawLegend(data model.LegendData, _, _ int) {
-	m.legendData = &data
 }
 
 func (m *mockBackend) Finish(outputPath string) error {

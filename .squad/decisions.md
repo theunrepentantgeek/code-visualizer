@@ -2,6 +2,22 @@
 
 ## Active Decisions
 
+### PR Review Comments — Circle-Back Protocol
+
+**Author:** Bevan (user directive via Copilot)  
+**Date:** 2026-05-11  
+**Status:** Active
+
+## Directive
+
+When updating an existing PR to address review comments, always circle back after pushing changes and reply to each comment detailing what was done.
+
+## Rationale
+
+User request — captured for team memory to ensure reviewers receive timely feedback on how their comments were addressed.
+
+---
+
 ### Canvas Abstraction — Design Finalized
 
 **Author:** Bevan (originator); Bishop & Parker (review); Dallas (integration)  
