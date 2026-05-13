@@ -25,6 +25,10 @@
 
 <!-- Append learnings below -->
 
+### PR Review Etiquette (Team Directive, 2026-05-13)
+
+- **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
+
 ### PR #39 Review (2026-04-15)
 
 **Reviewed:** Provider interface extension with `Scope()` and `Description()`, plus 9 new folder metrics.
@@ -155,3 +159,15 @@
 **Pattern observed:**
 - The old `Canvas.draw*` methods had unused `*Canvas` receivers — pure functions masquerading as methods. Moving them to shape types was zero-friction because they were already stateless. This is the classic signal that logic belongs on the data it operates on, not on the coordinator that holds it.
 - Adding a new shape is now safe by construction: implement `drawnShape`, and the compiler ensures it works end-to-end. No enum, no switch, no nullable pointer field to maintain.
+
+### PR #222 Review Fixup — Rename vizInks → shapeInks (2026-07-22)
+
+- **Status:** ✅ Complete
+- **PR:** #222
+- **Branch:** `squad/199-legendlayout-remove-gg`
+
+**What changed:**
+- Renamed struct `vizInks` → `shapeInks` per Bevan's review feedback
+- Renamed file `cmd/codeviz/viz_inks.go` → `cmd/codeviz/shape_inks.go` to match the type name
+- Updated all 24 references across 5 files: `shape_inks.go`, `treemap_canvas.go`, `radial_canvas.go`, `bubble_canvas.go`, `spiral_canvas.go`
+- CI clean: build, all tests, lint (76 linters, 0 issues)

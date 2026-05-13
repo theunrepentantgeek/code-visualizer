@@ -27,12 +27,6 @@ const (
 	radialLabelGap  = 4.0
 )
 
-// radialInks holds the Ink instances for a radial tree render pass.
-type radialInks struct {
-	fill   canvas.Ink
-	border canvas.Ink
-}
-
 // buildRadialInks creates fill and border inks from metric configuration.
 // Uses the same buildMetricInk helper as the treemap bridge since both
 // visualizations derive colours from the model.Directory tree.
@@ -42,8 +36,8 @@ func buildRadialInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) radialInks {
-	inks := radialInks{
+) shapeInks {
+	inks := shapeInks{
 		border: canvas.FixedInk(radialDefaultBorder),
 	}
 
@@ -61,7 +55,7 @@ func renderRadialToCanvas(
 	nodes *radialtree.RadialNode,
 	root *model.Directory,
 	canvasSize int,
-	inks radialInks,
+	inks shapeInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(canvasSize, canvasSize)
 
@@ -186,7 +180,7 @@ func addRadialDiscs(
 	nodes *radialtree.RadialNode,
 	root *model.Directory,
 	cx, cy float64,
-	inks radialInks,
+	inks shapeInks,
 ) {
 	entries := collectRadialDiscs(nodes, root, cx, cy)
 
@@ -200,9 +194,9 @@ func addRadialDiscs(
 }
 
 // addRadialDisc adds a single disc shape to the canvas.
-func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
-	fillMV := radialMetricValue(e.file, inks.fill)
-	borderMV := radialMetricValue(e.file, inks.border)
+func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks shapeInks) {
+	fillMV := metricValueForFile(e.file, inks.fill)
+	borderMV := metricValueForFile(e.file, inks.border)
 
 	fill := inks.fill
 	border := inks.border
@@ -231,22 +225,12 @@ func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
 	})
 }
 
-// radialMetricValue builds a MetricValue from a file's data for the given ink.
-// For directory nodes (file == nil), returns an empty MetricValue.
-func radialMetricValue(file *model.File, ink canvas.Ink) canvas.MetricValue {
-	if file == nil {
-		return canvas.MetricValue{}
-	}
-
-	return metricValueForFile(file, ink)
-}
-
 // addRadialLabels recursively adds text labels for nodes with ShowLabel set.
 func addRadialLabels(
 	cv *canvas.Canvas,
 	node radialtree.RadialNode,
 	cx, cy float64,
-	inks radialInks,
+	inks shapeInks,
 ) {
 	if node.ShowLabel && node.Label != "" {
 		dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
@@ -269,7 +253,7 @@ func addRadialRootLabel(
 	cv *canvas.Canvas,
 	node radialtree.RadialNode,
 	cx, cy float64,
-	inks radialInks,
+	inks shapeInks,
 ) {
 	fill := radialEffectiveFill(node, inks)
 	labelColour := canvas.TextColourFor(fill)
@@ -333,7 +317,7 @@ func addRadialExternalLabel(
 
 // radialEffectiveFill returns the fill colour for a node, resolving defaults.
 // Used for computing label contrast colour on the root node.
-func radialEffectiveFill(node radialtree.RadialNode, inks radialInks) color.RGBA {
+func radialEffectiveFill(node radialtree.RadialNode, inks shapeInks) color.RGBA {
 	if node.IsDirectory {
 		return radialDefaultDirFill
 	}

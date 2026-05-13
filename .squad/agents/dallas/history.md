@@ -36,6 +36,10 @@ This is an accumulation of foundational learnings and architecture decisions fro
 
 <!-- Append learnings below -->
 
+### PR Review Etiquette (Team Directive, 2026-05-13)
+
+- **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
+
 ### Metric scanning logs — Issue #121 (2026-04-28)
 
 - **Progress architecture:** `cmd/codeviz/progress.go` contains all verbose/debug progress tracking. Two phases: filesystem scan (`scanCounter` + `startScanTicker`) and metric calculation (`metricProgressTracker` + `startMetricTicker`). Both use 1-second ticker goroutines with channel-based stop.

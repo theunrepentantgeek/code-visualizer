@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fogleman/gg"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
@@ -22,18 +20,16 @@ func FormatBreakpoint(v float64) string {
 
 // MeasureLegend computes the total width and height of the legend box
 // including padding. Returns (0, 0) if data is nil or has no entries.
-func MeasureLegend(data *model.LegendData) (width, height float64) {
+func MeasureLegend(data *model.LegendData, measurer StringMeasurer) (width, height float64) {
 	if data == nil || len(data.Entries) == 0 {
 		return 0, 0
 	}
 
-	dc := gg.NewContext(1, 1)
-
 	if data.Orientation == "horizontal" {
-		return measureLegendH(dc, data)
+		return measureLegendH(measurer, data)
 	}
 
-	return measureLegendV(dc, data)
+	return measureLegendV(measurer, data)
 }
 
 // LegendOrigin computes the top-left (x, y) for the legend box.
@@ -67,12 +63,12 @@ func LegendOrigin(
 // ReserveSpace computes the width and height reductions needed to reserve
 // space for the legend. Returns zeros if data is nil, position is "none",
 // or there are no entries.
-func ReserveSpace(data *model.LegendData) (widthReduction, heightReduction float64) {
+func ReserveSpace(data *model.LegendData, measurer StringMeasurer) (widthReduction, heightReduction float64) {
 	if data == nil || data.Position == "none" || len(data.Entries) == 0 {
 		return 0, 0
 	}
 
-	w, h := MeasureLegend(data)
+	w, h := MeasureLegend(data, measurer)
 	m := model.LegendMargin
 
 	switch data.Position {
@@ -89,7 +85,7 @@ func ReserveSpace(data *model.LegendData) (widthReduction, heightReduction float
 	}
 }
 
-func measureLegendV(dc *gg.Context, data *model.LegendData) (width, height float64) {
+func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, height float64) {
 	var totalH float64
 
 	maxW := 0.0
@@ -99,14 +95,14 @@ func measureLegendV(dc *gg.Context, data *model.LegendData) (width, height float
 			totalH += model.EntryGap
 		}
 
-		tw, _ := dc.MeasureString(entry.Title)
+		tw, _ := measurer.MeasureString(entry.Title)
 		totalH += model.TitleFontSize + model.LabelGap
 
 		if tw > maxW {
 			maxW = tw
 		}
 
-		entryW, entryH := measureEntryV(dc, entry)
+		entryW, entryH := measureEntryV(measurer, entry)
 		totalH += entryH
 
 		if entryW > maxW {
@@ -117,7 +113,7 @@ func measureLegendV(dc *gg.Context, data *model.LegendData) (width, height float
 	return maxW + 2*model.LegendPadding, totalH + 2*model.LegendPadding
 }
 
-func measureLegendH(dc *gg.Context, data *model.LegendData) (width, height float64) {
+func measureLegendH(measurer StringMeasurer, data *model.LegendData) (width, height float64) {
 	var totalW float64
 
 	maxH := 0.0
@@ -127,7 +123,7 @@ func measureLegendH(dc *gg.Context, data *model.LegendData) (width, height float
 			totalW += model.EntryGap
 		}
 
-		entryW, entryH := measureSingleEntryH(dc, entry)
+		entryW, entryH := measureSingleEntryH(measurer, entry)
 		totalW += entryW
 
 		if entryH > maxH {
@@ -138,11 +134,11 @@ func measureLegendH(dc *gg.Context, data *model.LegendData) (width, height float
 	return totalW + 2*model.LegendPadding, maxH + 2*model.LegendPadding
 }
 
-func measureSingleEntryH(dc *gg.Context, entry model.LegendEntryData) (width, height float64) {
-	tw, _ := dc.MeasureString(entry.Title)
+func measureSingleEntryH(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
+	tw, _ := measurer.MeasureString(entry.Title)
 	titleH := model.TitleFontSize + model.LabelGap
 
-	entryW, entryH := measureEntryH(dc, entry)
+	entryW, entryH := measureEntryH(measurer, entry)
 
 	w := max(tw, entryW)
 	h := titleH + entryH
@@ -150,30 +146,30 @@ func measureSingleEntryH(dc *gg.Context, entry model.LegendEntryData) (width, he
 	return w, h
 }
 
-func measureEntryV(dc *gg.Context, entry model.LegendEntryData) (width, height float64) {
+func measureEntryV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	if entry.Kind == model.LegendEntryCategorical {
-		return measureCategoryV(dc, entry)
+		return measureCategoryV(measurer, entry)
 	}
 
-	return measureNumericV(dc, entry)
+	return measureNumericV(measurer, entry)
 }
 
-func measureEntryH(dc *gg.Context, entry model.LegendEntryData) (width, height float64) {
+func measureEntryH(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	if entry.Kind == model.LegendEntryCategorical {
-		return measureCategoryH(dc, entry)
+		return measureCategoryH(measurer, entry)
 	}
 
 	return measureNumericH(entry)
 }
 
-func measureNumericV(dc *gg.Context, entry model.LegendEntryData) (width, height float64) {
+func measureNumericV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
 	h := float64(n) * model.SwatchSize
 	w := model.SwatchSize
 
 	for _, sw := range entry.Swatches {
 		if sw.Label != "" {
-			tw, _ := dc.MeasureString(sw.Label)
+			tw, _ := measurer.MeasureString(sw.Label)
 
 			if bw := model.SwatchSize + model.LabelGap + tw; bw > w {
 				w = bw
@@ -192,14 +188,14 @@ func measureNumericH(entry model.LegendEntryData) (width, height float64) {
 	return w, h
 }
 
-func measureCategoryV(dc *gg.Context, entry model.LegendEntryData) (width, height float64) {
+func measureCategoryV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
 
 	w := model.SwatchSize
 	h := float64(n) * (model.SwatchSize + model.SwatchGap)
 
 	for _, sw := range entry.Swatches {
-		tw, _ := dc.MeasureString(sw.Label)
+		tw, _ := measurer.MeasureString(sw.Label)
 
 		if cw := model.SwatchSize + model.LabelGap + tw; cw > w {
 			w = cw
@@ -209,11 +205,11 @@ func measureCategoryV(dc *gg.Context, entry model.LegendEntryData) (width, heigh
 	return w, h
 }
 
-func measureCategoryH(dc *gg.Context, entry model.LegendEntryData) (width, height float64) {
+func measureCategoryH(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	w := 0.0
 
 	for _, sw := range entry.Swatches {
-		tw, _ := dc.MeasureString(sw.Label)
+		tw, _ := measurer.MeasureString(sw.Label)
 		w += max(model.SwatchSize, tw) + model.SwatchGap + model.LabelGap
 	}
 
@@ -226,8 +222,8 @@ func measureCategoryH(dc *gg.Context, entry model.LegendEntryData) (width, heigh
 // horizontal layout mode. Used by the Canvas layer to position entries
 // when decomposing the legend into primitives.
 func MeasureEntryHWidth(entry model.LegendEntryData) float64 {
-	dc := gg.NewContext(1, 1)
-	w, _ := measureSingleEntryH(dc, entry)
+	measurer := NewBasicMeasurer()
+	w, _ := measureSingleEntryH(measurer, entry)
 
 	return w
 }
@@ -235,8 +231,8 @@ func MeasureEntryHWidth(entry model.LegendEntryData) float64 {
 // MeasureCatSwatchColumnWidth returns the width of a single categorical
 // swatch column (swatch plus label gap) for horizontal layout.
 func MeasureCatSwatchColumnWidth(label string) float64 {
-	dc := gg.NewContext(1, 1)
-	tw, _ := dc.MeasureString(label)
+	measurer := NewBasicMeasurer()
+	tw, _ := measurer.MeasureString(label)
 
 	return max(model.SwatchSize, tw) + model.SwatchGap + model.LabelGap
 }

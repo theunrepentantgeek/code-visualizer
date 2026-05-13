@@ -39,7 +39,7 @@ func (c *Canvas) decomposeLegend() []layeredShape {
 		return nil
 	}
 
-	w, h := legendlayout.MeasureLegend(data)
+	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
 	ox, oy := legendlayout.LegendOrigin(
 		data.Position, float64(c.width), float64(c.height), w, h,
 	)

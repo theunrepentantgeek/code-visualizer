@@ -2,7 +2,6 @@ package main
 
 import (
 	"log/slog"
-	"slices"
 	"strings"
 
 	"github.com/rotisserie/eris"
@@ -364,45 +363,4 @@ func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
 	}
 
 	return metric.Name(ptrString(cfg.Size))
-}
-
-func extractNumeric(f *model.File, m metric.Name) float64 {
-	if v, ok := f.Quantity(m); ok {
-		return float64(v)
-	}
-
-	if v, ok := f.Measure(m); ok {
-		return v
-	}
-
-	return 0
-}
-
-func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
-	var values []float64
-
-	model.WalkFiles(root, func(f *model.File) {
-		values = append(values, extractNumeric(f, m))
-	})
-
-	return values
-}
-
-func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
-	seen := map[string]bool{}
-
-	model.WalkFiles(root, func(f *model.File) {
-		if v, ok := f.Classification(m); ok {
-			seen[v] = true
-		}
-	})
-
-	types := make([]string, 0, len(seen))
-	for t := range seen {
-		types = append(types, t)
-	}
-
-	slices.Sort(types)
-
-	return types
 }

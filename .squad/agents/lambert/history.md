@@ -10,6 +10,10 @@
 
 <!-- Append learnings below -->
 
+### PR Review Etiquette (Team Directive, 2026-05-13)
+
+- **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
+
 ### MetricSpec type — Issue #118 (2026-04-27)
 
 - **Kane's new type:** `config.MetricSpec` bundles metric name + palette into single string (format: "metric,palette" or just "metric"). Implemented with `TextUnmarshaler` for Kong CLI and custom YAML/JSON marshaling.
@@ -220,3 +224,17 @@ Added gap tests to both `internal/spiral/layout_test.go` and `internal/spiral/ti
 - Render smoke tests and config/CLI tests are deferred — no `RenderSpiral` implementation yet (`cmd/codeviz/spiral_cmd.go:217` references `render.RenderSpiral` which doesn't exist)
 
 **Total spiral test count:** 34 tests (18 Dallas + 13 Lambert layout + 10 Lambert timebucket - 7 Dallas timebucket overlap = 34 total across both files)
+
+### 2026-07-21 — issue #201 vacuous sort assertion fix
+
+Fixed `TestCollectRadialDiscs_SortOrder` in `cmd/codeviz/radial_canvas_test.go`. The original test had a loop that only `continue`d on equal radii and fell through doing nothing on different radii — the test passed unconditionally.
+
+**Fix:**
+- Added `slices.SortFunc` call mirroring the production `addRadialDiscs` code (sort largest-first by `DiscRadius`)
+- Replaced vacuous loop with adjacent-pair `>=` assertion on disc radius
+- Added distinct-radii assertion: `len(radii) >= 2` to prove the metric drives sizing
+- Removed the weak `maxRadius > 0` check (subsumed by new assertions)
+
+**Key learning:** `collectRadialDiscs` does NOT sort — the sort happens in `addRadialDiscs`. Test must replicate the sort step before asserting order.
+
+**PR:** #216
