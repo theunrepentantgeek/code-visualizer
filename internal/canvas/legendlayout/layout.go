@@ -222,8 +222,8 @@ func measureCategoryH(measurer StringMeasurer, entry model.LegendEntryData) (wid
 // horizontal layout mode. Used by the Canvas layer to position entries
 // when decomposing the legend into primitives.
 func MeasureEntryHWidth(entry model.LegendEntryData) float64 {
-	dc := gg.NewContext(1, 1)
-	w, _ := measureSingleEntryH(dc, entry)
+	measurer := NewBasicMeasurer()
+	w, _ := measureSingleEntryH(measurer, entry)
 
 	return w
 }
@@ -231,8 +231,8 @@ func MeasureEntryHWidth(entry model.LegendEntryData) float64 {
 // MeasureCatSwatchColumnWidth returns the width of a single categorical
 // swatch column (swatch plus label gap) for horizontal layout.
 func MeasureCatSwatchColumnWidth(label string) float64 {
-	dc := gg.NewContext(1, 1)
-	tw, _ := dc.MeasureString(label)
+	measurer := NewBasicMeasurer()
+	tw, _ := measurer.MeasureString(label)
 
 	return max(model.SwatchSize, tw) + model.SwatchGap + model.LabelGap
 }
