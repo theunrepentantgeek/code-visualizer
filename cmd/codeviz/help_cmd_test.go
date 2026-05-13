@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/bevan/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 func TestKindLabel_Quantity(t *testing.T) {
