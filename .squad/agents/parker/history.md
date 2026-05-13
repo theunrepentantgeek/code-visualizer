@@ -24,6 +24,10 @@
 
 <!-- Append learnings below -->
 
+### PR Review Etiquette (Team Directive, 2026-05-13)
+
+- **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
+
 ### RenderRadialPNG (2026-04-15)
 
 - **Signature:** `func RenderRadialPNG(root radialtree.RadialNode, canvasSize int, outputPath string) error`  

@@ -10,6 +10,10 @@
 
 <!-- Append learnings below -->
 
+### PR Review Etiquette (Team Directive, 2026-05-13)
+
+- **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
+
 ### RadialCmd structure and flags
 
 - `RadialCmd` mirrors `TreemapCmd` but uses `DiscSize metric.Name` (short flag `-d`) instead of `Size` for the sizing metric.

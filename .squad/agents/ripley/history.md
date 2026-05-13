@@ -10,6 +10,10 @@
 
 <!-- Append learnings below -->
 
+### PR Review Etiquette (Team Directive, 2026-05-13)
+
+- **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
+
 ### PR #45 Review — Image Format Support (2026-04-18) — COMPLETED
 
 - **Review comments addressed:** 6 issues across 6 files — all confirmed by repo owner.
@@ -159,4 +163,22 @@
 - **Key files:** `cmd/codeviz/bubble_canvas.go`, `cmd/codeviz/radial_canvas.go`.
 - **Lint fixes:** Removed unused parameter (`revive`), added blank line before `if` block (`wsl_v5`).
 - **Result:** PR #211 opened. All tests pass, zero lint issues.
+
+### Issue #191 — Delete Zombie internal/render Package (2026-05-11)
+
+- **Task:** Remove dead `internal/render/` package — orphaned after Canvas refactoring moved functionality to `internal/canvas/`.
+- **Verification:** Confirmed zero Go imports of `internal/render` outside the package itself (grep across all `.go` files).
+- **Deleted:** 5 source files (`renderer.go`, `format.go`, `label.go`, `format_test.go`, `label_test.go`) + 6 golden-file PNGs in `testdata/`. Total: 219 lines removed.
+- **Dead code details:** `format.go` duplicated `canvas.ImageFormat`/`canvas.FormatFromPath`. `label.go` duplicated `canvas.TextColourFor` and had unused `ShouldShowLabel`. `renderer.go` was just a package comment.
+- **Build/test/lint:** All clean. No breakage. Pre-existing lint issues in other packages unrelated.
+- **Result:** PR #215 opened on branch `squad/191-delete-render-pkg`. Pure deletion, no behaviour change.
+
+### Issue #195 — Remove Dead Canvas API Fields and Stubs (2026-05-11)
+
+- **Task:** Remove dead exported fields, types, and initialisation code from `internal/canvas/` and related packages.
+- **Removed 7 items:** (1) ShapeStyle.ShowLabel/.LabelInk/.LabelStyle fields, (2) LabelStyle type and 3 constants, (3) MappingStrategy type + Linear/Logarithmic constants + WithMapping() option, (4) Rectangle.Label and Disc.Label fields, (5) dead fill init in 3 buildInks functions, (6) TreemapRectangle.ShowLabel, (7) bubbleDirEntry.mv field.
+- **Verification approach:** grep-verified each item has no callers outside its own definition (or tests for that dead code). MappingStrategy.strategy field was stored but never read — ink.go always uses quantile via metric.ComputeBuckets. Rectangle.Label/Disc.Label were set but never read by canvas backends. TreemapRectangle.ShowLabel was never assigned. bubbleDirEntry.mv was never populated despite being used as Border value.
+- **PR #211 check (item 7):** PR #211 removed the `inks` parameter from `addBubbleDirDiscs` but did NOT remove the `mv` field from `bubbleDirEntry`. Confirmed the field is still dead and removed it.
+- **Files changed:** 9 files, net -49 lines. All 22 test packages pass. Build clean.
+- **Result:** PR #217 opened on branch `squad/195-remove-dead-canvas-api`.
 

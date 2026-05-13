@@ -983,3 +983,24 @@ The team has been light on code reviews. Two-reviewer gate ensures quality and d
 
 - Each PR requires approvals from both Parker and Bishop before merge
 - Reviewers should use their respective expertise: Parker for maintainability and Go practices, Bishop for design and architecture patterns
+
+---
+
+### PR Review Reply Etiquette — Team Directive
+
+**Author:** Bevan Arps  
+**Date:** 2026-05-13  
+**Status:** Active  
+
+## Directive
+
+After addressing a PR review comment, agents MUST reply to the comment indicating what was done. Don't leave reviewers hanging.
+
+## Scope
+
+- All PRs going forward
+- All team members (Dallas, Kane, Bishop, Parker, Ripley, Lambert)
+
+## Rationale
+
+User request — captured for team memory. Closing the feedback loop keeps communication clear and reviewers informed of resolution status.
