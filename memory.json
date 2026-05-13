@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-10T12:44:25Z",
-  "run_id": "25629027580",
+  "last_run": "2026-05-13T10:25:06Z",
+  "run_id": "25793174679",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -10,7 +10,12 @@
     "155": "2026-05-05T12:59:05Z",
     "159": "2026-05-06T09:08:11Z",
     "162": "2026-05-07T13:44:22Z",
-    "176": "2026-05-09T12:43:55Z"
+    "176": "2026-05-09T12:43:55Z",
+    "226": "2026-05-13T10:25:06Z",
+    "227": "2026-05-13T10:25:06Z",
+    "228": "2026-05-13T10:25:06Z",
+    "230": "2026-05-13T10:25:06Z",
+    "231": "2026-05-13T10:25:06Z"
   },
   "prs_created": [
     {
@@ -21,16 +26,11 @@
       "closes": [162]
     },
     {
-      "pr_number": 175,
-      "title": "[Repo Assist] fix(release): add cross-platform build task",
-      "status": "open (protected issue, run 25556925131)"
-    },
-    {
-      "branch": "repo-assist/test-improvements-20260510",
+      "branch": "repo-assist/fix-png-transparency-230-231-20260513",
       "pr_number": null,
-      "title": "[Repo Assist] test: expand coverage for bubbletree, radialtree, viz, and help cmd",
-      "status": "open (created run 25629027580; check next run for PR number)",
-      "closes": []
+      "title": "[Repo Assist] fix(canvas): correct semi-transparent PNG rendering and bubbletree label position",
+      "status": "open (created run 25793174679; check next run for PR number)",
+      "closes": [228, 230, 231]
     }
   ],
   "issues_actioned": {
@@ -43,7 +43,14 @@
     "162": "PR #174 open draft; commented 2026-05-07",
     "173": "deps protected-files issue, needs maintainer to create PR",
     "175": "release fix protected-files issue, needs maintainer to create PR",
-    "176": "bug: wrong namespace; labelled, commented with fix (patch in run 25601410549)"
+    "176": "closed (namespace fix applied by maintainer)",
+    "207": "test-improvements merged (was created run 25629027580)",
+    "225": "labelled enhancement 2026-05-13",
+    "226": "commented 2026-05-13: table word-wrap approach",
+    "227": "commented 2026-05-13: bulk-history regression analysis",
+    "228": "commented 2026-05-13: premultiplied-alpha root cause, PR submitted",
+    "230": "commented 2026-05-13: wrong arc path, PR submitted",
+    "231": "commented 2026-05-13: premultiplied-alpha root cause, PR submitted"
   },
   "monthly_summary_issue": {
     "number": 138,
@@ -51,9 +58,9 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 176,
+    "issues": 231,
     "prs": 0
   },
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172 all merged. Issues #58,80,112,116,124,133,134,136,155,159 all closed.",
-  "notes": "PR test-improvements-20260510 created this run; check PR number next run. Issue #176 (incorrect namespace go.mod): fix patch in run 25601410549, go.mod protected, maintainer must apply. Dependabot PRs #178, #179 remain open (touch protected files); only 2 remain (not 5 as previously noted). PR #174 open draft. Issues #173, #175 need maintainer action."
+  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207 all merged. Issues #58,80,112,116,124,133,134,136,155,159,176 all closed.",
+  "notes": "New PR fix-png-transparency-230-231 created this run; check PR number next run. Issue #229 (boundary allocation wasting palette entry) and #227 (slow file-freshness) still need investigation. PR #174 open draft. Issues #173, #175 need maintainer action. Dependabot PRs #178, #179 can now be bundled (namespace fix #176 was merged)."
 }
