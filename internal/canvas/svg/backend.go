@@ -143,12 +143,16 @@ func (s *svgBackend) DrawArcText(
 
 	pathID := fmt.Sprintf("arc-%d", s.buf.Len())
 
+	// A half-circle arc from the left side to the right side, sweeping
+	// clockwise (sweep-flag=1), passes through the top of the circle.
+	// With startOffset="50%" and text-anchor="middle", the text is
+	// centred at the top.
 	fmt.Fprintf(&s.buf,
-		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 1,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
+		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 0,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
 		pathID,
-		center.X, center.Y-arcR,
+		center.X-arcR, center.Y,
 		arcR, arcR,
-		center.X-0.01, center.Y-arcR,
+		center.X+arcR, center.Y,
 	)
 
 	fmt.Fprintf(&s.buf,

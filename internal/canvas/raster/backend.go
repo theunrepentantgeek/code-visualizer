@@ -60,12 +60,12 @@ func New(width, height int) model.Backend {
 func (r *rasterBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border color.RGBA, borderWidth float64,
 ) {
-	r.dc.SetColor(fill)
+	r.dc.SetColor(nrgba(fill))
 	r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
 	r.dc.Fill()
 
 	if borderWidth > 0 {
-		r.dc.SetColor(border)
+		r.dc.SetColor(nrgba(border))
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
 		r.dc.Stroke()
@@ -73,12 +73,12 @@ func (r *rasterBackend) DrawRectangle(
 }
 
 func (r *rasterBackend) DrawDisc(center model.Position, radius float64, fill, border color.RGBA, borderWidth float64) {
-	r.dc.SetColor(fill)
+	r.dc.SetColor(nrgba(fill))
 	r.dc.DrawCircle(center.X, center.Y, radius)
 	r.dc.Fill()
 
 	if borderWidth > 0 {
-		r.dc.SetColor(border)
+		r.dc.SetColor(nrgba(border))
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawCircle(center.X, center.Y, radius)
 		r.dc.Stroke()
@@ -86,7 +86,7 @@ func (r *rasterBackend) DrawDisc(center model.Position, radius float64, fill, bo
 }
 
 func (r *rasterBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
-	r.dc.SetColor(stroke)
+	r.dc.SetColor(nrgba(stroke))
 	r.dc.SetLineWidth(strokeWidth)
 	r.dc.DrawLine(from.X, from.Y, to.X, to.Y)
 	r.dc.Stroke()
@@ -97,7 +97,7 @@ func (r *rasterBackend) DrawPath(points []model.Position, stroke color.RGBA, str
 		return
 	}
 
-	r.dc.SetColor(stroke)
+	r.dc.SetColor(nrgba(stroke))
 	r.dc.SetLineWidth(strokeWidth)
 	r.dc.MoveTo(points[0].X, points[0].Y)
 
@@ -121,7 +121,7 @@ func (r *rasterBackend) DrawText(
 	}
 
 	r.dc.SetFontFace(fontFaceForSize(fontSize))
-	r.dc.SetColor(ink)
+	r.dc.SetColor(nrgba(ink))
 
 	ax := anchorX(anchor)
 
@@ -152,7 +152,7 @@ func (r *rasterBackend) DrawArcText(
 	}
 
 	r.dc.SetFontFace(fontFaceForSize(fontSize))
-	r.dc.SetColor(ink)
+	r.dc.SetColor(nrgba(ink))
 
 	arcRadius := radius - 14.0
 	if arcRadius <= 0 {
@@ -216,4 +216,14 @@ func anchorX(a model.TextAnchor) float64 {
 	default:
 		return 0.0
 	}
+}
+
+// nrgba converts a color.RGBA value — stored as non-premultiplied throughout
+// this project — to color.NRGBA so that gg's raster painter receives correctly
+// premultiplied values when it calls RGBA() internally.
+// Without this conversion, semi-transparent colours produce incorrect results
+// because color.RGBA.RGBA() treats R,G,B as already premultiplied, but in this
+// codebase they are the actual (non-premultiplied) channel values.
+func nrgba(c color.RGBA) color.NRGBA {
+	return color.NRGBA{R: c.R, G: c.G, B: c.B, A: c.A}
 }
