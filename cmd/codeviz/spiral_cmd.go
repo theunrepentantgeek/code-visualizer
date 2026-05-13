@@ -2,7 +2,9 @@ package main
 
 import (
 	"log/slog"
+	"maps"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/rotisserie/eris"
@@ -394,10 +396,10 @@ func modeCategory(files []*model.File, m metric.Name) string {
 	best := ""
 	bestCount := 0
 
-	for cat, count := range counts {
-		if count > bestCount {
+	for _, cat := range slices.Sorted(maps.Keys(counts)) {
+		if counts[cat] > bestCount {
 			best = cat
-			bestCount = count
+			bestCount = counts[cat]
 		}
 	}
 
