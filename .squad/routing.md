@@ -57,10 +57,10 @@ When triaging, the Lead should ask:
 
 | Work Type | Primary | Secondary |
 |-----------|---------|----------|
-| Architecture, decisions, review | Ripley | — |
-| Core logic, metrics, providers | Dallas | — |
-| Commands, config, integration | Kane | — |
-| Tests, golden files, edge cases | Lambert | — |
-| Technical debt, code quality, maintainability, refactoring | Parker | — |
-| Abstractions, interfaces, types, code smells, design patterns, API design | Bishop | — |
+| Architecture, decisions, architectural | Ripley | — |
+| Core logic, metric, metrics, provider, providers | Dallas | — |
+| Command, commands, config, configuration, integration, CLI, flag, flags | Kane | — |
+| Test, tests, testing, golden file, golden files, edge case, edge cases | Lambert | — |
+| Technical debt, code quality, maintainability, refactor, refactoring, duplication | Parker | — |
+| Abstraction, abstractions, interface, interfaces, type, types, code smell, code smells, design pattern, design patterns, API design | Bishop | — |
 
