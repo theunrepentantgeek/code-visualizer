@@ -331,3 +331,32 @@ func TestComputeLeafCountWithFiles(t *testing.T) {
 	}
 	g.Expect(computeLeafCount(dir)).To(Equal(2))
 }
+
+func TestClamp_BelowLo(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(clamp(-5.0, 0.0, 10.0)).To(BeNumerically("==", 0.0))
+}
+
+func TestClamp_AboveHi(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(clamp(15.0, 0.0, 10.0)).To(BeNumerically("==", 10.0))
+}
+
+func TestClamp_InRange(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(clamp(5.0, 0.0, 10.0)).To(BeNumerically("==", 5.0))
+}
+
+func TestClamp_AtBoundaries(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(clamp(0.0, 0.0, 10.0)).To(BeNumerically("==", 0.0))
+	g.Expect(clamp(10.0, 0.0, 10.0)).To(BeNumerically("==", 10.0))
+}
