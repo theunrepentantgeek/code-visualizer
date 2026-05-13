@@ -81,8 +81,24 @@ func TestComputeBuckets_DeduplicationAfterRounding(t *testing.T) {
 	}
 }
 
-func TestBucketIndex(t *testing.T) {
+func TestComputeBuckets_NonNegativeMinimumMapsToFirstBucket(t *testing.T) {
 	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Simulate file-size metric: many files with size 0, a few with larger sizes.
+	// The first quantile boundary may land on 0, which would make bucket 0 permanently
+	// empty and waste a palette entry. After the fix, boundaries must be > minVal.
+	values := []float64{0, 0, 0, 0, 0, 100, 200, 300, 400}
+	b := ComputeBuckets(values, 5)
+
+	for _, boundary := range b.Boundaries {
+		g.Expect(boundary).To(BeNumerically(">", b.Min), "boundary must be strictly greater than minVal")
+	}
+
+	g.Expect(b.BucketIndex(0)).To(Equal(0), "files at minimum value must map to bucket 0")
+}
+
+func TestBucketIndex(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	b := BucketBoundaries{
