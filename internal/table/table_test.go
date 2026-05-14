@@ -163,3 +163,90 @@ func TestWriteTo_PipeDelimited(t *testing.T) {
 		g.Expect(line).To(HaveSuffix("|"))
 	}
 }
+
+func TestSetMaxWidth_NoWrapNeeded(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	tbl := New("Name", "Description")
+	tbl.AddRow("foo", "short text")
+	tbl.SetMaxWidth(200)
+
+	var buf strings.Builder
+	tbl.WriteTo(&buf)
+
+	// Content fits; no wrapping should occur — all lines have the same length.
+	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
+	g.Expect(lines).To(HaveLen(3))
+	g.Expect(len(lines[0])).To(Equal(len(lines[2])))
+}
+
+func TestSetMaxWidth_WrapsLastColumn(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	tbl := New("Name", "Description")
+	// Long description that would exceed a narrow max width.
+	tbl.AddRow("foo", "this is a very long description that should be wrapped to fit the console width")
+	tbl.SetMaxWidth(40)
+
+	var buf strings.Builder
+	tbl.WriteTo(&buf)
+
+	// The output must contain the full text across multiple lines.
+	output := buf.String()
+	g.Expect(output).To(ContainSubstring("this is a very long"))
+	g.Expect(output).To(ContainSubstring("width"))
+
+	// All lines must fit within the max width.
+	for line := range strings.SplitSeq(strings.TrimRight(output, "\n"), "\n") {
+		g.Expect(len(line)).To(BeNumerically("<=", 40), "line too long: %q", line)
+	}
+}
+
+func TestSetMaxWidth_AllLinesStartAndEndWithPipe(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	tbl := New("Col", "Description")
+	tbl.AddRow("x", "word one two three four five six seven eight nine ten")
+	tbl.SetMaxWidth(35)
+
+	var buf strings.Builder
+	tbl.WriteTo(&buf)
+
+	for line := range strings.SplitSeq(strings.TrimRight(buf.String(), "\n"), "\n") {
+		g.Expect(line).To(HavePrefix("|"))
+		g.Expect(line).To(HaveSuffix("|"))
+	}
+}
+
+func TestWordWrap_ShortText(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	result := wordWrap("hello", 20)
+
+	g.Expect(result).To(Equal([]string{"hello"}))
+}
+
+func TestWordWrap_LongText(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	result := wordWrap("one two three four five", 12)
+
+	g.Expect(result).To(HaveLen(3))
+	g.Expect(result[0]).To(Equal("one two"))
+	g.Expect(result[1]).To(Equal("three four"))
+	g.Expect(result[2]).To(Equal("five"))
+}
+
+func TestWordWrap_EmptyString(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	result := wordWrap("", 20)
+
+	g.Expect(result).To(Equal([]string{""}))
+}
