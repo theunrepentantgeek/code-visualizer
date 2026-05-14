@@ -78,8 +78,32 @@ func Register(p Interface) { globalRegistry.register(p) }
 // Get retrieves a provider by name from the global registry.
 func Get(name metric.Name) (Interface, bool) { return globalRegistry.get(name) }
 
+// GetDescriptor retrieves only the metadata for a provider by name.
+// Use this instead of Get() when you only need provider metadata.
+func GetDescriptor(name metric.Name) (MetricDescriptor, bool) {
+	p, ok := globalRegistry.get(name)
+	if !ok {
+		return MetricDescriptor{}, false
+	}
+
+	return Descriptor(p), true
+}
+
 // All returns all registered providers.
 func All() []Interface { return globalRegistry.all() }
+
+// AllDescriptors returns metadata for all registered providers.
+// Use this instead of All() when you only need provider metadata.
+func AllDescriptors() []MetricDescriptor {
+	providers := globalRegistry.all()
+
+	descriptors := make([]MetricDescriptor, len(providers))
+	for i, p := range providers {
+		descriptors[i] = Descriptor(p)
+	}
+
+	return descriptors
+}
 
 // Names returns the sorted names of all registered providers.
 func Names() []metric.Name { return globalRegistry.names() }

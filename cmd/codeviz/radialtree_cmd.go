@@ -51,13 +51,13 @@ func (c *RadialCmd) Validate() error {
 func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 	discSize := ptrString(cfg.DiscSize)
 
-	p, ok := provider.Get(metric.Name(discSize))
+	d, ok := provider.GetDescriptor(metric.Name(discSize))
 	if !ok {
 		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", discSize, formatMetricNames())
 	}
 
-	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", discSize, p.Kind())
+	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
+		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", discSize, d.Kind)
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {

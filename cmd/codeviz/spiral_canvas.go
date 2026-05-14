@@ -70,14 +70,14 @@ func buildBucketInk(
 	categoryFn func(*spiral.TimeBucket) string,
 	fallback color.RGBA,
 ) canvas.Ink {
-	p, ok := provider.Get(m)
+	d, ok := provider.GetDescriptor(m)
 	if !ok {
 		return canvas.FixedInk(fallback)
 	}
 
 	pal := palette.GetPalette(palName)
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
 		values := make([]float64, len(buckets))
 		for i := range buckets {
 			values[i] = numericFn(&buckets[i])
