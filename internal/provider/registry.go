@@ -52,7 +52,8 @@ func (r *registry) all() []Interface {
 		result,
 		func(left Interface, right Interface) int {
 			return cmp.Compare(left.Name(), right.Name())
-		})
+		},
+	)
 
 	return result
 }

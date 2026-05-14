@@ -311,9 +311,9 @@ func TestRasterBackend_DrawDisc_SemiTransparentOverWhite_ProducesCorrectBlend(t 
 
 	// Read the pixel at the centre of the disc.
 	r, gg2, bv, _ := img.At(50, 50).RGBA()
-	rB := uint8(r >> 8)
-	gB := uint8(gg2 >> 8)
-	bB := uint8(bv >> 8)
+	rB := uint8(r >> 8)   //nolint:gosec // truncating to 8 bits is intentional here
+	gB := uint8(gg2 >> 8) //nolint:gosec // truncating to 8 bits is intentional here
+	bB := uint8(bv >> 8)  //nolint:gosec // truncating to 8 bits is intentional here
 
 	// The pixel should have a blue tint (B > R, B > G), not pure white or black.
 	g.Expect(bB).To(BeNumerically(">", rB), "blue channel should dominate over red")

@@ -257,7 +257,8 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 		radii[e.node.DiscRadius] = struct{}{}
 	}
 
-	g.Expect(len(radii)).To(BeNumerically(">=", 2),
+	g.Expect(len(radii)).To(
+		BeNumerically(">=", 2),
 		"expected at least 2 distinct disc radii to confirm metric drives sizing",
 	)
 }

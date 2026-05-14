@@ -225,5 +225,5 @@ func anchorX(a model.TextAnchor) float64 {
 // because color.RGBA.RGBA() treats R,G,B as already premultiplied, but in this
 // codebase they are the actual (non-premultiplied) channel values.
 func nrgba(c color.RGBA) color.NRGBA {
-	return color.NRGBA{R: c.R, G: c.G, B: c.B, A: c.A}
+	return color.NRGBA(c)
 }

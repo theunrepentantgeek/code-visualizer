@@ -311,7 +311,8 @@ func (c *TreemapCmd) renderAndLog(
 		return eris.Wrap(err, "render failed")
 	}
 
-	slog.Info("Rendered treemap",
+	slog.Info(
+		"Rendered treemap",
 		"files", files,
 		"directories", dirs,
 		"output", c.Output,

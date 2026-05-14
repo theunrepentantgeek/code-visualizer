@@ -257,7 +257,8 @@ func (*SpiralCmd) logRendered(
 ) {
 	files, dirs := countAll(root)
 
-	slog.Info("Rendered spiral",
+	slog.Info(
+		"Rendered spiral",
 		"files", files,
 		"directories", dirs,
 		"width", width,

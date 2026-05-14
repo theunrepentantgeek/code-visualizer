@@ -43,7 +43,8 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 	for _, tc := range cases {
 		cli := CLI{}
 
-		parser, err := kong.New(&cli,
+		parser, err := kong.New(
+			&cli,
 			kong.Name("codeviz"),
 			kong.Exit(func(int) {}),
 		)
