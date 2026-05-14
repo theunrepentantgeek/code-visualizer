@@ -99,6 +99,7 @@ func TestComputeBuckets_NonNegativeMinimumMapsToFirstBucket(t *testing.T) {
 }
 
 func TestBucketIndex(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	b := BucketBoundaries{

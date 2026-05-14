@@ -39,10 +39,7 @@ func ComputeBuckets(values []float64, steps int) BucketBoundaries {
 	raw := make([]float64, 0, steps-1)
 	for i := 1; i < steps; i++ {
 		idx := i * len(sorted) / steps
-		if idx >= len(sorted) {
-			idx = len(sorted) - 1
-		}
-
+		idx = min(idx, len(sorted)-1) // ensure idx is within bounds
 		raw = append(raw, roundToSigFigs(sorted[idx], 2))
 	}
 
@@ -50,15 +47,9 @@ func ComputeBuckets(values []float64, steps int) BucketBoundaries {
 	// A boundary at minVal would cause the minimum value to map to bucket 1
 	// (since value < boundary is false when value == boundary), leaving
 	// bucket 0 permanently empty and wasting that palette entry.
-	boundaries := make([]float64, 0, len(raw))
-	for i, b := range raw {
-		if i > 0 && b == raw[i-1] {
-			continue // deduplicate
-		}
-
-		if b > minVal {
-			boundaries = append(boundaries, b)
-		}
+	boundaries := slices.Compact(raw)
+	if len(boundaries) == 0 || boundaries[0] <= minVal {
+		boundaries = boundaries[1:]
 	}
 
 	return BucketBoundaries{
