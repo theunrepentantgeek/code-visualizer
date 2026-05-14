@@ -211,6 +211,35 @@ func TestSVGBackend_DrawArcText_FontSizeZero_UsesDefault(t *testing.T) {
 	g.Expect(content).To(ContainSubstring(`font-size="12.0"`))
 }
 
+func TestSVGBackend_DrawArcText_PathGoesOverTop(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(400, 400)
+	blk := color.RGBA{A: 255}
+
+	// Circle centred at (200, 200) with radius 100.
+	// The arc path should start at the left side (100, 200) and end at the
+	// right side (300, 200) so that the 50% midpoint is at the top (200, 100),
+	// placing the text label at the top of the circle.
+	b.DrawArcText(
+		model.Position{X: 200, Y: 200},
+		100, "hello", blk, 14.0,
+	)
+
+	out := filepath.Join(t.TempDir(), "arctext-top.svg")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	content := readFile(t, out)
+	// Arc starts at left: M <center.X - arcR>, <center.Y> — arcR = 100-14 = 86
+	g.Expect(content).To(ContainSubstring("M114.00,200.00"))
+	// Arc ends at right: ... <center.X + arcR>, <center.Y>
+	g.Expect(content).To(ContainSubstring("286.00,200.00"))
+	// sweep-flag=1 (clockwise, through the top), large-arc-flag=0 (half-circle)
+	g.Expect(content).To(ContainSubstring("0 0,1"))
+}
+
 func TestSVGBackend_ImplementsBackendInterface(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

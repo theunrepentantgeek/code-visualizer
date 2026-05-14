@@ -274,6 +274,55 @@ func TestRasterBackend_DrawText_RespectsCustomFontSize(t *testing.T) {
 	}
 }
 
+func TestRasterBackend_DrawDisc_SemiTransparentOverWhite_ProducesCorrectBlend(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Reproduce issue #228/#231: semi-transparent colours must be treated as
+	// non-premultiplied when passed to gg, otherwise the gg raster painter
+	// receives invalid premultiplied values and compositing produces wrong results.
+	//
+	// This test draws a white background and then a semi-transparent blue disc
+	// centred at (50,50). The pixel at the centre should be a light blue tint,
+	// NOT white (which would indicate the transparency was silently discarded)
+	// and NOT black (which would indicate incorrect premultiplied-alpha math).
+	b := New(100, 100)
+
+	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	// Semi-transparent blue, stored as non-premultiplied in color.RGBA.
+	semiBlue := color.RGBA{R: 0, G: 0, B: 255, A: 64}
+
+	b.DrawRectangle(
+		model.Position{X: 0, Y: 0},
+		model.Size{Width: 100, Height: 100},
+		white, white, 0,
+	)
+
+	b.DrawDisc(
+		model.Position{X: 50, Y: 50},
+		40, semiBlue, semiBlue, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "semi-transparent.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	img := loadImage(t, out)
+
+	// Read the pixel at the centre of the disc.
+	r, gg2, bv, _ := img.At(50, 50).RGBA()
+	rB := uint8(r >> 8)   //nolint:gosec // truncating to 8 bits is intentional here
+	gB := uint8(gg2 >> 8) //nolint:gosec // truncating to 8 bits is intentional here
+	bB := uint8(bv >> 8)  //nolint:gosec // truncating to 8 bits is intentional here
+
+	// The pixel should have a blue tint (B > R, B > G), not pure white or black.
+	g.Expect(bB).To(BeNumerically(">", rB), "blue channel should dominate over red")
+	g.Expect(bB).To(BeNumerically(">", gB), "blue channel should dominate over green")
+	// The background is white, so R and G should still be quite high
+	// (a 25%-opacity blue disc over white gives R=G≈191, B=255).
+	g.Expect(rB).To(BeNumerically(">", 150), "red should be high (near-white background)")
+}
+
 func loadImage(t *testing.T, path string) image.Image {
 	t.Helper()
 
