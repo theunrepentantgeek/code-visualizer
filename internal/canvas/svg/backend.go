@@ -157,7 +157,7 @@ func (s *svgBackend) DrawArcText(
 	fmt.Fprintf(
 
 		&s.buf,
-		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 1,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
+		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 0,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
 		pathID,
 		center.X-arcR, center.Y,
 		arcR, arcR,
