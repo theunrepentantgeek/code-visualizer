@@ -14,16 +14,6 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// commitData holds all per-file commit information collected in a single git log pass.
-type commitData struct {
-	oldest       time.Time
-	newest       time.Time
-	count        int64
-	authors      map[string]bool
-	linesAdded   int64
-	linesRemoved int64
-}
-
 type repoService struct {
 	repo        *gogit.Repository
 	rootPath    string // git worktree root (absolute path)
@@ -441,12 +431,14 @@ func (s *repoService) fetchCommitTimestamps(relPath string) ([]time.Time, error)
 // concurrent use; concurrent calls are coalesced via a singleflight group.
 func (s *repoService) bulkPrewarm(paths map[string]bool) error {
 	s.commitMu.RLock()
+
 	missing := make(map[string]bool, len(paths))
 	for p := range paths {
 		if _, ok := s.commitCache[p]; !ok {
 			missing[p] = true
 		}
 	}
+
 	s.commitMu.RUnlock()
 
 	if len(missing) == 0 {
@@ -482,33 +474,7 @@ func (s *repoService) doBulkPrewarm(paths map[string]bool) error {
 	}
 	defer iter.Close()
 
-	err = iter.ForEach(func(c *object.Commit) error {
-		changed := changedFilesInCommit(c, paths)
-
-		for _, relPath := range changed {
-			data := cache[relPath]
-			when := c.Author.When
-
-			if data.oldest.IsZero() || when.Before(data.oldest) {
-				data.oldest = when
-			}
-
-			if data.newest.IsZero() || when.After(data.newest) {
-				data.newest = when
-			}
-
-			data.authors[c.Author.Email] = true
-			data.count++
-
-			if c.NumParents() > 0 {
-				added, removed := computeFileDiffStats(c, relPath)
-				data.linesAdded += added
-				data.linesRemoved += removed
-			}
-		}
-
-		return nil
-	})
+	err = iter.ForEach(s.prewarmCommit(cache, paths))
 	if err != nil {
 		return eris.Wrap(err, "bulk prewarm: failed to iterate commits")
 	}
@@ -524,6 +490,22 @@ func (s *repoService) doBulkPrewarm(paths map[string]bool) error {
 	s.commitMu.Unlock()
 
 	return nil
+}
+
+func (*repoService) prewarmCommit(
+	cache map[string]*commitData,
+	paths map[string]bool,
+) func(c *object.Commit) error {
+	return func(c *object.Commit) error {
+		changed := changedFilesInCommit(c, paths)
+
+		for _, relPath := range changed {
+			data := cache[relPath]
+			data.updateFrom(c, relPath)
+		}
+
+		return nil
+	}
 }
 
 // blobHash returns the blob hash of the file at relPath within the commit's tree.

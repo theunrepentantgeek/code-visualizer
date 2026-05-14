@@ -59,7 +59,8 @@ func (s *scanCounter) OnDirectoryScanned(path string, fileCount int) {
 			"path", path,
 			"newfiles", fileCount,
 			"totalfiles", s.files.Load(),
-			"totaldirs", s.dirs.Load())
+			"totaldirs", s.dirs.Load(),
+		)
 	}
 }
 
