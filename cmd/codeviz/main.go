@@ -86,7 +86,8 @@ func main() {
 
 	cli := CLI{}
 
-	parser, err := kong.New(&cli,
+	parser, err := kong.New(
+		&cli,
 		kong.Name("codeviz"),
 		kong.Description("Generate visualizations of file trees."),
 	)

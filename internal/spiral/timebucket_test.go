@@ -170,7 +170,8 @@ func TestBuildTimeBucketsHalfOpenIntervals(t *testing.T) {
 
 	// Exact boundary: 2:00:00 should be the Start of bucket 2, not End of bucket 1.
 	g.Expect(buckets[2].Start).To(Equal(
-		time.Date(2026, 1, 1, 2, 0, 0, 0, time.UTC)),
+		time.Date(2026, 1, 1, 2, 0, 0, 0, time.UTC),
+	),
 		"bucket 2 should start at exactly 2:00")
 }
 

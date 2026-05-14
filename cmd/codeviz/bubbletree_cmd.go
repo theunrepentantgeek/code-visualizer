@@ -191,7 +191,8 @@ func (c *BubbletreeCmd) renderAndLog(
 		return eris.Wrap(err, "render failed")
 	}
 
-	slog.Info("Rendered bubble tree",
+	slog.Info(
+		"Rendered bubble tree",
 		"files", files,
 		"directories", dirs,
 		"output", c.Output,

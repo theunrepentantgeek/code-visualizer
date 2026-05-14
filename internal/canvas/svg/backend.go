@@ -35,7 +35,8 @@ func New(width, height int) model.Backend {
 }
 
 func (s *svgBackend) writeHeader() {
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d">`+"\n",
 		s.width, s.height,
 	)
@@ -44,7 +45,8 @@ func (s *svgBackend) writeHeader() {
 func (s *svgBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border color.RGBA, borderWidth float64,
 ) {
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		pos.X, pos.Y, size.Width, size.Height,
 		rgbaToCSS(fill), rgbaToCSS(border), borderWidth,
@@ -52,7 +54,8 @@ func (s *svgBackend) DrawRectangle(
 }
 
 func (s *svgBackend) DrawDisc(center model.Position, radius float64, fill, border color.RGBA, borderWidth float64) {
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		center.X, center.Y, radius,
 		rgbaToCSS(fill), rgbaToCSS(border), borderWidth,
@@ -60,7 +63,8 @@ func (s *svgBackend) DrawDisc(center model.Position, radius float64, fill, borde
 }
 
 func (s *svgBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		from.X, from.Y, to.X, to.Y,
 		rgbaToCSS(stroke), strokeWidth,
@@ -79,7 +83,8 @@ func (s *svgBackend) DrawPath(points []model.Position, stroke color.RGBA, stroke
 		fmt.Fprintf(&b, " L %.1f %.1f", p.X, p.Y)
 	}
 
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<path d="%s" fill="none" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		b.String(), rgbaToCSS(stroke), strokeWidth,
 	)
@@ -103,7 +108,8 @@ func (s *svgBackend) DrawText(
 	if rotation != 0 {
 		deg := rotation * 180.0 / math.Pi
 
-		fmt.Fprintf(&s.buf,
+		fmt.Fprintf(
+			&s.buf,
 			`<text x="%.2f" y="%.2f" fill="%s" font-size="%.1f" font-family="sans-serif" `+
 				`text-anchor="%s" dominant-baseline="central" `+
 				`transform="rotate(%.2f %.2f %.2f)">%s</text>`+"\n",
@@ -114,7 +120,8 @@ func (s *svgBackend) DrawText(
 		return
 	}
 
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<text x="%.2f" y="%.2f" fill="%s" font-size="%.1f" font-family="sans-serif" `+
 			`text-anchor="%s" dominant-baseline="central">%s</text>`+"\n",
 		pos.X, pos.Y, rgbaToCSS(ink), fontSize, anchorStr, escaped,
@@ -143,7 +150,8 @@ func (s *svgBackend) DrawArcText(
 
 	pathID := fmt.Sprintf("arc-%d", s.buf.Len())
 
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 1,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
 		pathID,
 		center.X, center.Y-arcR,
@@ -151,7 +159,8 @@ func (s *svgBackend) DrawArcText(
 		center.X-0.01, center.Y-arcR,
 	)
 
-	fmt.Fprintf(&s.buf,
+	fmt.Fprintf(
+		&s.buf,
 		`<text fill="%s" font-size="%.1f" font-family="sans-serif">`+
 			`<textPath href="#%s" startOffset="50%%" text-anchor="middle">%s</textPath></text>`+"\n",
 		rgbaToCSS(ink), fontSize, pathID, html.EscapeString(text),

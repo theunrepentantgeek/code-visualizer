@@ -186,7 +186,8 @@ func (c *RadialCmd) renderAndLog(
 		return eris.Wrap(err, "render failed")
 	}
 
-	slog.Info("Rendered radial tree",
+	slog.Info(
+		"Rendered radial tree",
 		"files", files,
 		"directories", dirs,
 		"output", c.Output,
