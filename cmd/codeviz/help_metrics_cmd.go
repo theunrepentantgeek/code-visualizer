@@ -15,22 +15,22 @@ type HelpMetricsCmd struct{}
 
 //nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpMetricsCmd) Run(_ *Flags) error {
-	providers := provider.All()
+	descriptors := provider.AllDescriptors()
 
 	tbl := table.New("Metric", "Kind", "Default Palette", "Description")
 
 	hasGit := false
 
-	for _, p := range providers {
-		k := kindLabel(p.Kind())
-		desc := p.Description()
+	for _, d := range descriptors {
+		k := kindLabel(d.Kind)
+		desc := d.Description
 
-		if git.IsGitMetric(p.Name()) {
+		if git.IsGitMetric(d.Name) {
 			hasGit = true
 			desc += " †"
 		}
 
-		tbl.AddRow(string(p.Name()), k, string(p.DefaultPalette()), desc)
+		tbl.AddRow(string(d.Name), k, string(d.DefaultPalette), desc)
 	}
 
 	content := &strings.Builder{}

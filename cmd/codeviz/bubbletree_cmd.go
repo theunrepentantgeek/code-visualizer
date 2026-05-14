@@ -56,13 +56,13 @@ func (c *BubbletreeCmd) Validate() error {
 func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {
 	size := ptrString(cfg.Size)
 
-	p, ok := provider.Get(metric.Name(size))
+	d, ok := provider.GetDescriptor(metric.Name(size))
 	if !ok {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}
 
-	if p.Kind() != metric.Quantity && p.Kind() != metric.Measure {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, p.Kind())
+	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
+		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, d.Kind)
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {

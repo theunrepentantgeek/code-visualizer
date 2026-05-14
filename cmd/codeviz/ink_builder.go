@@ -19,14 +19,14 @@ func buildMetricInk(
 	palName palette.PaletteName,
 	fallback color.RGBA,
 ) canvas.Ink {
-	p, ok := provider.Get(m)
+	d, ok := provider.GetDescriptor(m)
 	if !ok {
 		return canvas.FixedInk(fallback)
 	}
 
 	pal := palette.GetPalette(palName)
 
-	if p.Kind() == metric.Quantity || p.Kind() == metric.Measure {
+	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
 		values := collectNumericValues(root, m)
 		if len(values) == 0 {
 			return canvas.FixedInk(fallback)

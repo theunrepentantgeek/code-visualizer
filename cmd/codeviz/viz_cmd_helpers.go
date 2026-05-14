@@ -150,8 +150,8 @@ func resolveFillPalette(fill *config.MetricSpec, fillMetric metric.Name) palette
 		return fp
 	}
 
-	if p, ok := provider.Get(fillMetric); ok {
-		return p.DefaultPalette()
+	if d, ok := provider.GetDescriptor(fillMetric); ok {
+		return d.DefaultPalette
 	}
 
 	return palette.Neutral
@@ -169,8 +169,8 @@ func resolveBorderMetricAndPalette(
 
 	borderPaletteName := specPalette(border)
 	if borderPaletteName == "" {
-		if p, ok := provider.Get(borderMetric); ok {
-			borderPaletteName = p.DefaultPalette()
+		if d, ok := provider.GetDescriptor(borderMetric); ok {
+			borderPaletteName = d.DefaultPalette
 		} else {
 			borderPaletteName = palette.Neutral
 		}
