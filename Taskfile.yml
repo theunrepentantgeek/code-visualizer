@@ -78,3 +78,15 @@ tasks:
       - "cp -r {{joinPath .ROOT_DIR \"..\" \"superpowers\" \"skills\"}} .agents/"
       - "cp -r {{joinPath .ROOT_DIR \"..\" \"superpowers\" \"agents\" \"*\"}}
         .agents/"
+
+  samples:
+    deps:
+    - build
+    cmds:
+    - for:
+        matrix: 
+          IMAGE_TYPE: [png, svg]
+          VIZ_TYPE: [treemap, bubbletree, radial, spiral]
+      cmd: "{{.CODEVIZ}} render {{.ITEM.VIZ_TYPE}} . --config samples/codeviz-{{.ITEM.VIZ_TYPE}}.yml --output samples/codeviz-{{.VIZ_TYPE}}.{{.ITEM.IMAGE_TYPE}}"
+    vars:
+      CODEVIZ: "{{joinPath .ROOT_DIR \"bin\" \"codeviz\"}}"

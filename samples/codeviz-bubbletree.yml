@@ -1,0 +1,20 @@
+width: 1920
+height: 1080
+treemap: {}
+radial:
+    labels: all
+bubbletree:
+    size: file-lines
+    fill:
+        metric: file-type
+        palette: categorization
+    border:
+        metric: file-freshness
+        palette: good-bad
+    labels: folders
+spiral:
+    resolution: daily
+    labels: laps
+fileFilter:
+    - pattern: .*
+      mode: exclude
