@@ -155,8 +155,9 @@ func (s *svgBackend) DrawArcText(
 	// With startOffset="50%" and text-anchor="middle", the text is
 	// centred at the top.
 	fmt.Fprintf(
+
 		&s.buf,
-		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 0,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
+		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 1,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
 		pathID,
 		center.X-arcR, center.Y,
 		arcR, arcR,

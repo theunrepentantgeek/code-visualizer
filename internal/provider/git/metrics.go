@@ -33,6 +33,8 @@ func IsGitMetric(name metric.Name) bool {
 
 // walkGitFiles opens the repo service, walks all files, computes paths relative
 // to the git worktree root, and invokes the process callback for each file.
+// It bulk-prewarms the commit cache before iterating so that all getCommitData
+// calls hit the cache rather than issuing individual git-log queries per file.
 func walkGitFiles(
 	root *model.Directory,
 	desc string,
@@ -42,6 +44,15 @@ func walkGitFiles(
 	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrapf(err, "%s requires a git repository", desc)
+	}
+
+	// Build the set of relative paths for all tracked files and prewarm the
+	// commit cache in a single git log pass.
+	pathSet := buildRelPathSet(s, root)
+	if prewarmErr := s.bulkPrewarm(pathSet); prewarmErr != nil {
+		// Prewarm failure is non-fatal: per-file fallback still works.
+		slog.Warn("git bulk prewarm failed, falling back to per-file lookups",
+			"metric", desc, "error", prewarmErr)
 	}
 
 	model.WalkFiles(root, func(f *model.File) {
@@ -60,4 +71,19 @@ func walkGitFiles(
 	})
 
 	return nil
+}
+
+// buildRelPathSet returns the set of relative paths (relative to the git
+// worktree root) for all files under root.
+func buildRelPathSet(s *repoService, root *model.Directory) map[string]bool {
+	paths := make(map[string]bool)
+
+	model.WalkFiles(root, func(f *model.File) {
+		relPath, err := filepath.Rel(s.RepoRoot(), f.Path)
+		if err == nil {
+			paths[relPath] = true
+		}
+	})
+
+	return paths
 }
