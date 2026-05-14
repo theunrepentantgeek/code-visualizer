@@ -15,7 +15,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
@@ -117,10 +116,11 @@ func findGitMetric(requested []metric.Name) (metric.Name, bool) {
 	return "", false
 }
 
-// filterBinaryFiles removes binary files from the tree when the size metric
-// is file-lines.
-func filterBinaryFiles(sizeMetric string, root *model.Directory) error {
-	if metric.Name(sizeMetric) != filesystem.FileLines {
+// filterBinaryFiles removes binary files from the tree unless includeBinary is true.
+// Binary files are excluded by default because this is a code visualization tool;
+// use --include-binary-files to include them.
+func filterBinaryFiles(includeBinary bool, root *model.Directory) error {
+	if includeBinary {
 		return nil
 	}
 

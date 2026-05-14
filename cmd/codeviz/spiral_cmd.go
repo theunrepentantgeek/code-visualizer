@@ -39,7 +39,8 @@ type SpiralCmd struct {
 	Width  int `default:"1920" help:"Canvas width in pixels."`
 	Height int `default:"1920" help:"Canvas height in pixels."`
 
-	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
+	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
+	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""`
 }
 
 func (c *SpiralCmd) Validate() error {
@@ -151,7 +152,7 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 
 	stopMetricTicker()
 
-	if err := filterBinaryFiles(ptrString(cfg.Size), root); err != nil {
+	if err := filterBinaryFiles(c.IncludeBinaryFiles, root); err != nil {
 		return nil, err
 	}
 

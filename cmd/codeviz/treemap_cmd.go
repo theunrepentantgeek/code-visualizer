@@ -33,7 +33,8 @@ type TreemapCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
-	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
+	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
+	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""`
 }
 
 func (c *TreemapCmd) Validate() error {
@@ -184,7 +185,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	stopMetricTicker()
 
-	if err := filterBinaryFiles(ptrString(cfg.Size), root); err != nil {
+	if err := filterBinaryFiles(c.IncludeBinaryFiles, root); err != nil {
 		return err
 	}
 
