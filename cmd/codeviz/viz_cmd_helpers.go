@@ -119,11 +119,7 @@ func findGitMetric(requested []metric.Name) (metric.Name, bool) {
 // filterBinaryFiles removes binary files from the tree unless includeBinary is true.
 // Binary files are excluded by default because this is a code visualization tool;
 // use --include-binary-files to include them.
-func filterBinaryFiles(includeBinary bool, root *model.Directory) error {
-	if includeBinary {
-		return nil
-	}
-
+func filterBinaryFiles(root *model.Directory) error {
 	beforeCount, _ := countAll(root)
 	filtered := scan.FilterBinaryFiles(root)
 	afterCount, _ := countAll(filtered)

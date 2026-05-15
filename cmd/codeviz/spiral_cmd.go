@@ -152,8 +152,10 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 
 	stopMetricTicker()
 
-	if err := filterBinaryFiles(c.IncludeBinaryFiles, root); err != nil {
-		return nil, err
+	if !c.IncludeBinaryFiles {
+		if err := filterBinaryFiles(root); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := export.Export(root, requested, flags.ExportData); err != nil {
