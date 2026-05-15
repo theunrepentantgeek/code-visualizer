@@ -6,27 +6,29 @@ import (
 )
 
 // LegendPosition specifies where the legend is placed on the canvas.
-type LegendPosition string
+// Aliased from model so both the canvas package and backends share one type.
+type LegendPosition = model.LegendPosition
 
 const (
-	LegendPositionNone         LegendPosition = "none"
-	LegendPositionTopLeft      LegendPosition = "top-left"
-	LegendPositionTopCenter    LegendPosition = "top-center"
-	LegendPositionTopRight     LegendPosition = "top-right"
-	LegendPositionCenterRight  LegendPosition = "center-right"
-	LegendPositionBottomRight  LegendPosition = "bottom-right"
-	LegendPositionBottomCenter LegendPosition = "bottom-center"
-	LegendPositionBottomLeft   LegendPosition = "bottom-left"
-	LegendPositionCenterLeft   LegendPosition = "center-left"
+	LegendPositionNone         = model.LegendPositionNone
+	LegendPositionTopLeft      = model.LegendPositionTopLeft
+	LegendPositionTopCenter    = model.LegendPositionTopCenter
+	LegendPositionTopRight     = model.LegendPositionTopRight
+	LegendPositionCenterRight  = model.LegendPositionCenterRight
+	LegendPositionBottomRight  = model.LegendPositionBottomRight
+	LegendPositionBottomCenter = model.LegendPositionBottomCenter
+	LegendPositionBottomLeft   = model.LegendPositionBottomLeft
+	LegendPositionCenterLeft   = model.LegendPositionCenterLeft
 )
 
 // LegendOrientation controls whether swatches are stacked vertically
 // or laid out horizontally.
-type LegendOrientation string
+// Aliased from model so both the canvas package and backends share one type.
+type LegendOrientation = model.LegendOrientation
 
 const (
-	LegendOrientationVertical   LegendOrientation = "vertical"
-	LegendOrientationHorizontal LegendOrientation = "horizontal"
+	LegendOrientationVertical   = model.LegendOrientationVertical
+	LegendOrientationHorizontal = model.LegendOrientationHorizontal
 )
 
 // LegendRole identifies what visual property a legend entry describes.
@@ -95,8 +97,8 @@ func (lc *LegendConfig) toLegendData() *model.LegendData {
 	}
 
 	return &model.LegendData{
-		Position:    string(lc.Position),
-		Orientation: string(orient),
+		Position:    lc.Position,
+		Orientation: orient,
 		Entries:     entries,
 	}
 }

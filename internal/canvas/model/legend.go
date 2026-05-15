@@ -15,12 +15,34 @@ const (
 	LegendEntryCategorical
 )
 
+// LegendPosition specifies where the legend is placed on the canvas.
+type LegendPosition string
+
+const (
+	LegendPositionNone         LegendPosition = "none"
+	LegendPositionTopLeft      LegendPosition = "top-left"
+	LegendPositionTopCenter    LegendPosition = "top-center"
+	LegendPositionTopRight     LegendPosition = "top-right"
+	LegendPositionCenterRight  LegendPosition = "center-right"
+	LegendPositionBottomRight  LegendPosition = "bottom-right"
+	LegendPositionBottomCenter LegendPosition = "bottom-center"
+	LegendPositionBottomLeft   LegendPosition = "bottom-left"
+	LegendPositionCenterLeft   LegendPosition = "center-left"
+)
+
+// LegendOrientation controls whether swatches are stacked vertically
+// or laid out horizontally.
+type LegendOrientation string
+
+const (
+	LegendOrientationVertical   LegendOrientation = "vertical"
+	LegendOrientationHorizontal LegendOrientation = "horizontal"
+)
+
 // LegendData holds fully resolved rendering data for a legend overlay.
-// Position and Orientation use the same string values as canvas.LegendPosition
-// and canvas.LegendOrientation (e.g., "bottom-right", "vertical").
 type LegendData struct {
-	Position    string
-	Orientation string
+	Position    LegendPosition
+	Orientation LegendOrientation
 	Entries     []LegendEntryData
 }
 

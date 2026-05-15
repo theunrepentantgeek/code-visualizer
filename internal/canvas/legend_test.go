@@ -70,8 +70,8 @@ func TestToLegendData_NumericEntry_ProducesSwatches(t *testing.T) {
 		return // unreachable; satisfies nilaway
 	}
 
-	g.Expect(data.Position).To(Equal("bottom-right"))
-	g.Expect(data.Orientation).To(Equal("vertical"))
+	g.Expect(data.Position).To(Equal(LegendPositionBottomRight))
+	g.Expect(data.Orientation).To(Equal(LegendOrientationVertical))
 	g.Expect(data.Entries).To(HaveLen(1))
 	g.Expect(data.Entries[0].Title).To(Equal("Fill: file-size"))
 	g.Expect(data.Entries[0].Kind).To(Equal(model.LegendEntryNumeric))
