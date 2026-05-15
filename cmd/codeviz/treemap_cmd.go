@@ -33,7 +33,8 @@ type TreemapCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
-	Filter []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
+	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
+	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 }
 
 func (c *TreemapCmd) Validate() error {
@@ -128,7 +129,7 @@ func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Treemap)
 }
 
-//nolint:dupl // Run methods share workflow structure across visualization commands
+//nolint:dupl,revive,cyclop,funlen // Run methods share workflow structure across visualization commands
 func (c *TreemapCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -184,8 +185,10 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	stopMetricTicker()
 
-	if err := filterBinaryFiles(ptrString(cfg.Size), root); err != nil {
-		return err
+	if !c.IncludeBinaryFiles {
+		if err := filterBinaryFiles(root); err != nil {
+			return err
+		}
 	}
 
 	if err := export.Export(root, requested, flags.ExportData); err != nil {
