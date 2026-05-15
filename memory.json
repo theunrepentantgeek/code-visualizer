@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-13T19:25:06Z",
-  "run_id": "25821157242",
+  "last_run": "2026-05-15T09:46:09Z",
+  "run_id": "25911283912",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -11,6 +11,8 @@
     "159": "2026-05-06T09:08:11Z",
     "162": "2026-05-07T13:44:22Z",
     "176": "2026-05-09T12:43:55Z",
+    "194": "2026-05-15T09:46:09Z",
+    "225": "2026-05-15T09:46:09Z",
     "226": "2026-05-13T10:25:06Z",
     "227": "2026-05-13T10:25:06Z",
     "228": "2026-05-13T10:25:06Z",
@@ -27,25 +29,18 @@
       "closes": [162]
     },
     {
-      "branch": "repo-assist/fix-png-transparency-230-231-20260513",
-      "pr_number": 233,
-      "title": "[repo-assist] fix(canvas): correct semi-transparent PNG rendering and bubbletree label position",
-      "status": "open",
-      "closes": [228, 230, 231]
+      "branch": "repo-assist/improve-legend-type-safety-198",
+      "pr_number": null,
+      "title": "[repo-assist] refactor(canvas): move LegendPosition/Orientation typed constants to model",
+      "status": "open (created run 25911283912; check next run for PR number)",
+      "closes": [198]
     },
     {
-      "branch": "repo-assist/fix-palette-boundary-229-20260513",
+      "branch": "repo-assist/eng-deps-2026-05-15",
       "pr_number": null,
-      "title": "[repo-assist] fix(metric): filter palette boundaries at or below minVal",
-      "status": "open (created run 25821157242; check next run for PR number)",
-      "closes": [229]
-    },
-    {
-      "branch": "repo-assist/perf-git-bulk-prewarm-227-20260513",
-      "pr_number": null,
-      "title": "[repo-assist] perf(git): bulk-prewarm commit cache to fix slow file-freshness metric",
-      "status": "open (created run 25821157242; check next run for PR number)",
-      "closes": [227]
+      "title": "[repo-assist] chore(deps): update security-sensitive indirect dependencies",
+      "status": "open (created run 25911283912; check next run for PR number)",
+      "closes": []
     }
   ],
   "issues_actioned": {
@@ -56,17 +51,18 @@
     "155": "refactor done via PR #170 (merged 2026-05-06, issue closed)",
     "159": "refactor done via PR #171 (merged 2026-05-06, issue closed)",
     "162": "PR #174 open draft; commented 2026-05-07",
-    "173": "deps protected-files issue, needs maintainer to create PR",
-    "175": "release fix protected-files issue, needs maintainer to create PR",
+    "173": "closed",
+    "175": "closed",
     "176": "closed (namespace fix applied by maintainer)",
-    "207": "test-improvements merged (was created run 25629027580)",
-    "225": "labelled enhancement 2026-05-13",
-    "226": "commented 2026-05-13: table word-wrap approach",
-    "227": "perf fix PR submitted run 25821157242 (bulk prewarm); commented 2026-05-13",
-    "228": "fix PR #233 submitted 2026-05-13",
-    "229": "boundary fix PR submitted run 25821157242; commented 2026-05-13",
-    "230": "fix PR #233 submitted 2026-05-13",
-    "231": "fix PR #233 submitted 2026-05-13"
+    "194": "commented 2026-05-15: vizCmd pipeline implementation approach",
+    "198": "type safety fix PR submitted run 25911283912",
+    "225": "commented 2026-05-15: gradient fills implementation sketch",
+    "226": "commented 2026-05-13: table word-wrap approach (merged as #239)",
+    "227": "perf fix PR #235 (merged)",
+    "228": "fix PR #233 (merged)",
+    "229": "boundary fix PR #234 (merged)",
+    "230": "fix PR #233 (merged)",
+    "231": "fix PR #233 (merged)"
   },
   "monthly_summary_issue": {
     "number": 138,
@@ -77,6 +73,6 @@
     "issues": 231,
     "prs": 0
   },
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207 all merged. Issues #58,80,112,116,124,133,134,136,155,159,173,176 all closed.",
-  "notes": "Two new PRs created this run (check PR numbers next run): fix-palette-boundary-229 and perf-git-bulk-prewarm-227. PR #174 open draft. Issue #175 needs maintainer action. PR #233 open (PNG transparency)."
+  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed.",
+  "notes": "Two new PRs created this run (check PR numbers next run): improve-legend-type-safety-198 and eng-deps-2026-05-15. PR #174 open draft. PR #242 is a maintainer PR."
 }
