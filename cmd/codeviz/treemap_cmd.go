@@ -34,7 +34,7 @@ type TreemapCmd struct {
 	Height int `default:"1080" help:"Image height in pixels."`
 
 	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
-	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""`
+	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 }
 
 func (c *TreemapCmd) Validate() error {
