@@ -33,8 +33,8 @@ type RadialCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1920" help:"Image height in pixels."`
 
-	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."` //nolint:revive // kong struct tags require long lines
-	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""`
+	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`                            //nolint:revive // kong struct tags require long lines
+	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive // kong struct tags require long lines
 }
 
 func (c *RadialCmd) Validate() error {
@@ -84,6 +84,7 @@ func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Radial)
 }
 
+//nolint:revive,cyclop,funlen // Run methods share workflow structure across visualization commands
 func (c *RadialCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
