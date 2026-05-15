@@ -76,7 +76,7 @@ func (t *ConsoleTable) effectiveWidths() []int {
 	// Shrink the last column to make the table fit.
 	lastIdx := len(widths) - 1
 	overhead := fixedWidth - widths[lastIdx] - 3 // width without last column content
-	available := t.maxWidth - overhead - 3        // available chars for last column content
+	available := t.maxWidth - overhead - 3       // available chars for last column content
 
 	const minLastCol = 10
 	if available < minLastCol {
@@ -139,7 +139,10 @@ func (t *ConsoleTable) renderRow(row []string, widths []int, buffer *strings.Bui
 }
 
 // renderRowDivider writes a dividing line into the buffer.
-func (t *ConsoleTable) renderRowDivider(widths []int, buffer *strings.Builder) {
+func (*ConsoleTable) renderRowDivider(
+	widths []int,
+	buffer *strings.Builder,
+) {
 	buffer.WriteString("|")
 
 	for _, w := range widths {
@@ -161,12 +164,14 @@ func wordWrap(text string, maxWidth int) []string {
 	}
 
 	var lines []string
+
 	words := strings.Fields(text)
 	current := ""
 
 	for _, word := range words {
 		if current == "" {
 			current = word
+
 			continue
 		}
 
