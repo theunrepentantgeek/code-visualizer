@@ -172,8 +172,8 @@ func (c *SpiralCmd) buildTimeBuckets(
 	root *model.Directory,
 	cfg *config.Spiral,
 ) ([]spiral.TimeBucket, error) {
-	if err := checkGitRepo(c.TargetPath); err != nil {
-		return nil, err
+	if err := stages.CheckGitRepoHelper(c.TargetPath); err != nil {
+		return nil, eris.Wrap(err, "git requirement check failed")
 	}
 
 	slog.Info("Loading commit history")

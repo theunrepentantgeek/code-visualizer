@@ -124,8 +124,8 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	requested := collectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
 
-	if err := checkGitRequirement(c.TargetPath, requested); err != nil {
-		return err
+	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
+		return eris.Wrap(err, "git requirement check failed")
 	}
 
 	slog.Info("Calculating metrics")

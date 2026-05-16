@@ -170,8 +170,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
 	// Check git requirement before running providers
-	if err := checkGitRequirement(c.TargetPath, requested); err != nil {
-		return err
+	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
+		return eris.Wrap(err, "git requirement check failed")
 	}
 
 	slog.Info("Calculating metrics")
