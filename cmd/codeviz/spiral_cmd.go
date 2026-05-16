@@ -126,7 +126,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 }
 
 func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*model.Directory, error) {
-	filterRules := buildFilterRules(flags.Config, c.Filter)
+	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 

@@ -113,7 +113,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	fillMetric := c.resolveFillMetric(cfg)
 	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
 
-	filterRules := buildFilterRules(flags.Config, c.Filter)
+	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 

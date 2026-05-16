@@ -7,7 +7,6 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -16,20 +15,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
-
-// buildFilterRules merges config-file filter rules with CLI --filter flags.
-func buildFilterRules(cfg *config.Config, cliFilters []string) []filter.Rule {
-	rules := make([]filter.Rule, 0, len(cfg.FileFilter)+len(cliFilters))
-	rules = append(rules, cfg.FileFilter...)
-
-	for _, f := range cliFilters {
-		// Already validated in Validate()
-		rule, _ := filter.ParseFilterFlag(f)
-		rules = append(rules, rule)
-	}
-
-	return rules
-}
 
 // checkGitRequirement verifies a git repository exists when any requested
 // metric needs git.
