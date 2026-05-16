@@ -15,6 +15,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
@@ -138,8 +139,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	cfg := flags.Config.Treemap
 	size := metric.Name(ptrString(cfg.Size))
 
-	if err := validatePaths(c.TargetPath, c.Output); err != nil {
-		return err
+	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
+		return eris.Wrap(err, "path validation failed")
 	}
 
 	if flags.ExportConfig != "" {

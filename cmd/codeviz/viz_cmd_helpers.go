@@ -1,14 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"github.com/rotisserie/eris"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -19,42 +16,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
-
-// validatePaths validates the target directory and output file paths.
-func validatePaths(targetPath, output string) error {
-	if _, err := canvas.FormatFromPath(output); err != nil {
-		return &stages.OutputPathError{Msg: err.Error()}
-	}
-
-	info, err := os.Stat(targetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return &stages.TargetPathError{Msg: "target path does not exist: " + targetPath}
-		}
-
-		return &stages.TargetPathError{Msg: fmt.Sprintf("cannot access target path: %s", err)}
-	}
-
-	if !info.IsDir() {
-		return &stages.TargetPathError{Msg: "target path is not a directory: " + targetPath}
-	}
-
-	outDir := filepath.Dir(output)
-	if outDir == "." {
-		return nil
-	}
-
-	info, err = os.Stat(outDir)
-	if err != nil {
-		return &stages.OutputPathError{Msg: "output directory does not exist: " + outDir}
-	}
-
-	if !info.IsDir() {
-		return &stages.OutputPathError{Msg: "output parent is not a directory: " + outDir}
-	}
-
-	return nil
-}
 
 // buildFilterRules merges config-file filter rules with CLI --filter flags.
 func buildFilterRules(cfg *config.Config, cliFilters []string) []filter.Rule {

@@ -15,6 +15,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type RadialCmd struct {
@@ -94,8 +95,8 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	cfg := flags.Config.Radial
 	discSize := metric.Name(ptrString(cfg.DiscSize))
 
-	if err := validatePaths(c.TargetPath, c.Output); err != nil {
-		return err
+	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
+		return eris.Wrap(err, "path validation failed")
 	}
 
 	if flags.ExportConfig != "" {
