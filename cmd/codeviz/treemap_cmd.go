@@ -84,40 +84,6 @@ func formatMetricNames() string {
 	return strings.Join(strs, ", ")
 }
 
-func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) []metric.Name {
-	seen := map[metric.Name]bool{size: true}
-	names := []metric.Name{size}
-
-	for _, spec := range []*config.MetricSpec{fill, border} {
-		if spec != nil && spec.Metric != "" {
-			if !seen[spec.Metric] {
-				seen[spec.Metric] = true
-				names = append(names, spec.Metric)
-			}
-		}
-	}
-
-	return names
-}
-
-// specMetric returns the metric name from a *MetricSpec, or "" if nil.
-func specMetric(s *config.MetricSpec) metric.Name {
-	if s == nil {
-		return ""
-	}
-
-	return s.Metric
-}
-
-// specPalette returns the palette name from a *MetricSpec, or "" if nil.
-func specPalette(s *config.MetricSpec) palette.PaletteName {
-	if s == nil {
-		return ""
-	}
-
-	return s.Palette
-}
-
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
 // and validates the effective configuration. Called at the start of Run().
 func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
@@ -150,7 +116,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
+	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
 
 	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
 
@@ -167,7 +133,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	// Collect all requested metrics and run providers
-	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
+	requested := stages.CollectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
 	// Check git requirement before running providers
 	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
@@ -215,7 +181,7 @@ func (c *TreemapCmd) renderAndLog(
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
 	// Build inks first — legend uses the same Ink objects
-	borderName, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
+	borderName, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
 	inks := buildTreemapInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
 
 	// Build legend config from the Inks
@@ -300,7 +266,7 @@ func ptrInt(p *int, fallback int) int {
 }
 
 func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
-	if fill := specMetric(cfg.Fill); fill != "" {
+	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
 		return fill
 	}
 

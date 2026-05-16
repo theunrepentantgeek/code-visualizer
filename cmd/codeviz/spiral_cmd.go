@@ -221,8 +221,8 @@ func (c *SpiralCmd) layoutAndRender(
 	applySpiralDiscSizes(layout.Nodes, buckets, maxDisc)
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
-	borderMetric, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
+	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
+	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
 
 	inks := buildSpiralInks(buckets, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
@@ -300,7 +300,7 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 func (*SpiralCmd) collectSpiralMetrics(cfg *config.Spiral) []metric.Name {
 	size := metric.Name(ptrString(cfg.Size))
 	if size != "" {
-		return collectRequestedMetrics(size, cfg.Fill, cfg.Border)
+		return stages.CollectRequestedMetrics(size, cfg.Fill, cfg.Border)
 	}
 
 	seen := map[metric.Name]bool{}
@@ -334,14 +334,14 @@ func (*SpiralCmd) resolveLabels(cfg *config.Spiral) spiral.LabelMode {
 }
 
 func (*SpiralCmd) resolveFillMetric(cfg *config.Spiral) metric.Name {
-	return specMetric(cfg.Fill)
+	return stages.SpecMetric(cfg.Fill)
 }
 
 // aggregateBucketMetrics fills in the aggregated metric values for each time bucket.
 func (c *SpiralCmd) aggregateBucketMetrics(buckets []spiral.TimeBucket, cfg *config.Spiral) {
 	sizeMetric := metric.Name(ptrString(cfg.Size))
-	fillMetric := specMetric(cfg.Fill)
-	borderMetric := specMetric(cfg.Border)
+	fillMetric := stages.SpecMetric(cfg.Fill)
+	borderMetric := stages.SpecMetric(cfg.Border)
 
 	for i := range buckets {
 		c.aggregateBucket(&buckets[i], sizeMetric, fillMetric, borderMetric)

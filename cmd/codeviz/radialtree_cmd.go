@@ -106,7 +106,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	}
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
+	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
 
 	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
 
@@ -122,7 +122,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
+	requested := stages.CollectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
 
 	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
 		return eris.Wrap(err, "git requirement check failed")
@@ -168,7 +168,7 @@ func (c *RadialCmd) renderAndLog(
 	labels := c.resolveLabels(cfg)
 	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
 
-	borderMetric, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
+	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
 
 	inks := buildRadialInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
@@ -227,7 +227,7 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 }
 
 func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
-	if fill := specMetric(cfg.Fill); fill != "" {
+	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
 		return fill
 	}
 

@@ -111,7 +111,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	}
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
+	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
 
 	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
 
@@ -127,7 +127,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(size, cfg.Fill, cfg.Border)
+	requested := stages.CollectRequestedMetrics(size, cfg.Fill, cfg.Border)
 
 	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
 		return eris.Wrap(err, "git requirement check failed")
@@ -173,7 +173,7 @@ func (c *BubbletreeCmd) renderAndLog(
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	borderMetric, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
+	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
 
 	labels := c.resolveLabels(cfg)
 	nodes := bubbletree.Layout(root, width, height, size, labels)
@@ -232,7 +232,7 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 }
 
 func (*BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
-	if fill := specMetric(cfg.Fill); fill != "" {
+	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
 		return fill
 	}
 
