@@ -59,13 +59,13 @@ shape around it before any visualization can be decomposed into stages.
 
 Five packages participate, organized by responsibility:
 
-| Package | Responsibility |
-| --- | --- |
-| `internal/pipeline` | Domain-agnostic `Stage[S]` and `Run`. No knowledge of visualizations, metrics, or config. |
-| `internal/stages` | `CommonState`, `VizState` interface, and shared lifecycle stages used by every visualization. Owns shared helpers (path validation, filter rules, git check, palette resolution, progress wiring). |
-| `internal/legend` | Legend construction, layout-space reservation, and offset math. Reusable across all visualizations. |
-| `internal/treemap` (extended) | Treemap-specific state type and viz stages (resolve metrics, build inks, build legend, layout, render, log result). Existing layout code unchanged. |
-| `cmd/codeviz` | Orchestration only: Kong command structs, config merging, pipeline composition. |
+| Package                       | Responsibility                                                                                                                                                                                     |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `internal/pipeline`           | Domain-agnostic `Stage[S]` and `Run`. No knowledge of visualizations, metrics, or config.                                                                                                          |
+| `internal/stages`             | `CommonState`, `VizState` interface, and shared lifecycle stages used by every visualization. Owns shared helpers (path validation, filter rules, git check, palette resolution, progress wiring). |
+| `internal/legend`             | Legend construction, layout-space reservation, and offset math. Reusable across all visualizations.                                                                                                |
+| `internal/treemap` (extended) | Treemap-specific state type and viz stages (resolve metrics, build inks, build legend, layout, render, log result). Existing layout code unchanged.                                                |
+| `cmd/codeviz`                 | Orchestration only: Kong command structs, config merging, pipeline composition.                                                                                                                    |
 
 The other viz packages (`internal/bubbletree`, `internal/radialtree`,
 `internal/spiral`) are not touched in this spec.
@@ -159,18 +159,18 @@ the `Common()` method set.
 
 Shared stages provided by the package:
 
-| Stage | Purpose |
-| --- | --- |
-| `ValidatePaths[S VizState]` | Stat target and output paths; check output format. |
-| `ExportConfig[S VizState]` | Save merged config when `--export-config` is set. |
-| `BuildFilterRules[S VizState]` | Merge `RootConfig.FileFilter` with CLI `--filter` flags. |
-| `ScanFilesystem[S VizState]` | Walk the target directory and populate `Root`. Includes scan progress wiring. |
+| Stage                             | Purpose                                                                            |
+| --------------------------------- | ---------------------------------------------------------------------------------- |
+| `ValidatePaths[S VizState]`       | Stat target and output paths; check output format.                                 |
+| `ExportConfig[S VizState]`        | Save merged config when `--export-config` is set.                                  |
+| `BuildFilterRules[S VizState]`    | Merge `RootConfig.FileFilter` with CLI `--filter` flags.                           |
+| `ScanFilesystem[S VizState]`      | Walk the target directory and populate `Root`. Includes scan progress wiring.      |
 | `CheckGitRequirement[S VizState]` | Verify the target is inside a git repository when any `Requested` metric needs it. |
-| `RunProviders[S VizState]` | Run metric providers against `Root`. Includes metric progress wiring. |
-| `FilterBinaryFiles[S VizState]` | Remove binary files unless the viz state's `IncludeBinaryFiles` flag is set. |
-| `ExportData[S VizState]` | Save raw data when `--export-data` is set. |
-| `ResolveDimensions[S VizState]` | Resolve effective width and height from config plus defaults. |
-| `WriteCanvas[S VizState]` | Render `Canvas` to `Output`. |
+| `RunProviders[S VizState]`        | Run metric providers against `Root`. Includes metric progress wiring.              |
+| `FilterBinaryFiles[S VizState]`   | Remove binary files unless the viz state's `IncludeBinaryFiles` flag is set.       |
+| `ExportData[S VizState]`          | Save raw data when `--export-data` is set.                                         |
+| `ResolveDimensions[S VizState]`   | Resolve effective width and height from config plus defaults.                      |
+| `WriteCanvas[S VizState]`         | Render `Canvas` to `Output`.                                                       |
 
 Each shared stage emits the same `slog` lines as today, in the same places.
 No log-level or message changes.
@@ -256,14 +256,14 @@ func (s *State) Common() *stages.CommonState { return &s.CommonState }
 
 Viz-specific stages (all `pipeline.Stage[State]`):
 
-| Stage | Responsibility |
-| --- | --- |
+| Stage            | Responsibility                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
 | `ResolveMetrics` | Computes `Size`, `FillMetric`, `FillPalette`, `BorderMetric`, `BorderPalette`; fills `Common().Requested`. |
-| `BuildInks` | Calls the existing `buildTreemapInks` (moved into the package). |
-| `BuildLegend` | Calls `legend.Build` to populate `LegendConfig`. |
-| `Layout` | Reserves space via `legend.ReserveAndLayout`, runs `treemap.Layout`, applies any offset, stores `Rects`. |
-| `Render` | Calls existing `renderTreemapToCanvas`, assigns to `Common().Canvas`, attaches legend. |
-| `LogResult` | Emits the viz-specific final `slog.Info` line. |
+| `BuildInks`      | Calls the existing `buildTreemapInks` (moved into the package).                                            |
+| `BuildLegend`    | Calls `legend.Build` to populate `LegendConfig`.                                                           |
+| `Layout`         | Reserves space via `legend.ReserveAndLayout`, runs `treemap.Layout`, applies any offset, stores `Rects`.   |
+| `Render`         | Calls existing `renderTreemapToCanvas`, assigns to `Common().Canvas`, attaches legend.                     |
+| `LogResult`      | Emits the viz-specific final `slog.Info` line.                                                             |
 
 `WriteCanvas` (shared) performs the actual `cv.Render(Output)` call.
 

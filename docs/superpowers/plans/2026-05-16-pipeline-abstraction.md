@@ -14,33 +14,33 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `internal/pipeline/pipeline.go` | `Stage[S any] = func(S) error` + `Run[S any]`. Domain-agnostic. |
-| `internal/pipeline/pipeline_test.go` | Tests for the seven documented semantics. |
-| `internal/legend/legend.go` | `Build`, `ResolveOptions`. Constructs `canvas.LegendConfig` from inks + metric names. |
-| `internal/legend/reserve.go` | `ReserveAndLayout`, `LayoutOffset`, `cornerLegendOffset`, `MinReservableSize`. |
-| `internal/legend/*_test.go` | Tests ported from `cmd/codeviz/legend_builder_test.go`. |
-| `internal/stages/common.go` | `CommonState` struct, `VizState` interface. |
-| `internal/stages/errors.go` | Sentinel error types (`gitRequiredError`, `targetPathError`, `outputPathError`, `noFilesAfterFilterError`) and their constructors / matchers. |
-| `internal/stages/paths.go` | `ValidatePathsHelper` (the pure func) and `ValidatePaths[S]` (the stage). |
-| `internal/stages/filter.go` | `BuildFilterRulesHelper`, `BuildFilterRules[S]` stage. |
-| `internal/stages/git.go` | `CheckGitRepoHelper`, `CheckGitRequirement[S]` stage. |
-| `internal/stages/scan.go` | `ScanFilesystem[S]` stage + progress helpers (`buildScanProgress` and friends moved from `cmd/codeviz/progress.go`). |
-| `internal/stages/metrics.go` | `RunProviders[S]` stage + `metricProgressTracker` (moved from progress.go) + `resolveFillPalette`, `resolveBorderMetricAndPalette`, `specMetric`, `specPalette`, `collectRequestedMetrics`. |
-| `internal/stages/binary.go` | `FilterBinaryFiles[S]` stage + `filterBinaryFilesHelper`, `countAll`. |
-| `internal/stages/export.go` | `ExportConfig[S]`, `ExportData[S]` stages. |
-| `internal/stages/dimensions.go` | `ResolveDimensions[S]` stage + `ptrInt`. |
-| `internal/stages/canvas.go` | `WriteCanvas[S]` stage. |
-| `internal/stages/*_test.go` | Per-stage tests using a tiny fake `VizState`. |
-| `internal/treemap/state.go` | `State` struct, `Common()` method. |
-| `internal/treemap/stages.go` | `ResolveMetrics`, `BuildInksStage`, `BuildLegendStage`, `LayoutStage`, `RenderStage`, `LogResult` stages. |
-| `internal/treemap/inks.go` | `BuildInks` + `Inks` type, **moved** from `cmd/codeviz/treemap_canvas.go`. |
-| `internal/treemap/render.go` | `RenderToCanvas`, moved from `cmd/codeviz/treemap_canvas.go`. |
-| `cmd/codeviz/treemap_cmd.go` | Kong struct, config merging, `Run()` pipeline composition. Helpers gone. |
-| `cmd/codeviz/main.go` | `classifyError` updated to use sentinels from `internal/stages`. |
-| `cmd/codeviz/viz_cmd_helpers.go` | Shrinks. Only retains helpers the not-yet-refactored bubbletree/radialtree/spiral commands still need (most are now re-exports from `internal/stages` via thin forwarders). |
-| `cmd/codeviz/progress.go` | Most contents moved to `internal/stages/scan.go` and `internal/stages/metrics.go`. `buildHistoryProgress` stays here (spiral-only, not refactored in this plan). |
+| Path                                 | Responsibility                                                                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `internal/pipeline/pipeline.go`      | `Stage[S any] = func(S) error` + `Run[S any]`. Domain-agnostic.                                                                                                                             |
+| `internal/pipeline/pipeline_test.go` | Tests for the seven documented semantics.                                                                                                                                                   |
+| `internal/legend/legend.go`          | `Build`, `ResolveOptions`. Constructs `canvas.LegendConfig` from inks + metric names.                                                                                                       |
+| `internal/legend/reserve.go`         | `ReserveAndLayout`, `LayoutOffset`, `cornerLegendOffset`, `MinReservableSize`.                                                                                                              |
+| `internal/legend/*_test.go`          | Tests ported from `cmd/codeviz/legend_builder_test.go`.                                                                                                                                     |
+| `internal/stages/common.go`          | `CommonState` struct, `VizState` interface.                                                                                                                                                 |
+| `internal/stages/errors.go`          | Sentinel error types (`gitRequiredError`, `targetPathError`, `outputPathError`, `noFilesAfterFilterError`) and their constructors / matchers.                                               |
+| `internal/stages/paths.go`           | `ValidatePathsHelper` (the pure func) and `ValidatePaths[S]` (the stage).                                                                                                                   |
+| `internal/stages/filter.go`          | `BuildFilterRulesHelper`, `BuildFilterRules[S]` stage.                                                                                                                                      |
+| `internal/stages/git.go`             | `CheckGitRepoHelper`, `CheckGitRequirement[S]` stage.                                                                                                                                       |
+| `internal/stages/scan.go`            | `ScanFilesystem[S]` stage + progress helpers (`buildScanProgress` and friends moved from `cmd/codeviz/progress.go`).                                                                        |
+| `internal/stages/metrics.go`         | `RunProviders[S]` stage + `metricProgressTracker` (moved from progress.go) + `resolveFillPalette`, `resolveBorderMetricAndPalette`, `specMetric`, `specPalette`, `collectRequestedMetrics`. |
+| `internal/stages/binary.go`          | `FilterBinaryFiles[S]` stage + `filterBinaryFilesHelper`, `countAll`.                                                                                                                       |
+| `internal/stages/export.go`          | `ExportConfig[S]`, `ExportData[S]` stages.                                                                                                                                                  |
+| `internal/stages/dimensions.go`      | `ResolveDimensions[S]` stage + `ptrInt`.                                                                                                                                                    |
+| `internal/stages/canvas.go`          | `WriteCanvas[S]` stage.                                                                                                                                                                     |
+| `internal/stages/*_test.go`          | Per-stage tests using a tiny fake `VizState`.                                                                                                                                               |
+| `internal/treemap/state.go`          | `State` struct, `Common()` method.                                                                                                                                                          |
+| `internal/treemap/stages.go`         | `ResolveMetrics`, `BuildInksStage`, `BuildLegendStage`, `LayoutStage`, `RenderStage`, `LogResult` stages.                                                                                   |
+| `internal/treemap/inks.go`           | `BuildInks` + `Inks` type, **moved** from `cmd/codeviz/treemap_canvas.go`.                                                                                                                  |
+| `internal/treemap/render.go`         | `RenderToCanvas`, moved from `cmd/codeviz/treemap_canvas.go`.                                                                                                                               |
+| `cmd/codeviz/treemap_cmd.go`         | Kong struct, config merging, `Run()` pipeline composition. Helpers gone.                                                                                                                    |
+| `cmd/codeviz/main.go`                | `classifyError` updated to use sentinels from `internal/stages`.                                                                                                                            |
+| `cmd/codeviz/viz_cmd_helpers.go`     | Shrinks. Only retains helpers the not-yet-refactored bubbletree/radialtree/spiral commands still need (most are now re-exports from `internal/stages` via thin forwarders).                 |
+| `cmd/codeviz/progress.go`            | Most contents moved to `internal/stages/scan.go` and `internal/stages/metrics.go`. `buildHistoryProgress` stays here (spiral-only, not refactored in this plan).                            |
 
 ---
 

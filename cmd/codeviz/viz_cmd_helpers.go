@@ -17,25 +17,26 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 // validatePaths validates the target directory and output file paths.
 func validatePaths(targetPath, output string) error {
 	if _, err := canvas.FormatFromPath(output); err != nil {
-		return &outputPathError{msg: err.Error()}
+		return &stages.OutputPathError{Msg: err.Error()}
 	}
 
 	info, err := os.Stat(targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &targetPathError{msg: "target path does not exist: " + targetPath}
+			return &stages.TargetPathError{Msg: "target path does not exist: " + targetPath}
 		}
 
-		return &targetPathError{msg: fmt.Sprintf("cannot access target path: %s", err)}
+		return &stages.TargetPathError{Msg: fmt.Sprintf("cannot access target path: %s", err)}
 	}
 
 	if !info.IsDir() {
-		return &targetPathError{msg: "target path is not a directory: " + targetPath}
+		return &stages.TargetPathError{Msg: "target path is not a directory: " + targetPath}
 	}
 
 	outDir := filepath.Dir(output)
@@ -45,11 +46,11 @@ func validatePaths(targetPath, output string) error {
 
 	info, err = os.Stat(outDir)
 	if err != nil {
-		return &outputPathError{msg: "output directory does not exist: " + outDir}
+		return &stages.OutputPathError{Msg: "output directory does not exist: " + outDir}
 	}
 
 	if !info.IsDir() {
-		return &outputPathError{msg: "output parent is not a directory: " + outDir}
+		return &stages.OutputPathError{Msg: "output parent is not a directory: " + outDir}
 	}
 
 	return nil
@@ -98,7 +99,7 @@ func verifyGitRepo(targetPath string, metricLabel metric.Name) error {
 	}
 
 	if !isGit {
-		return &gitRequiredError{metric: metricLabel, target: targetPath}
+		return &stages.GitRequiredError{Metric: metricLabel, Target: targetPath}
 	}
 
 	return nil
@@ -127,8 +128,8 @@ func filterBinaryFiles(root *model.Directory) error {
 	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
 
 	if afterCount == 0 {
-		return &noFilesAfterFilterError{
-			msg: noFilesAfterFilterMsg,
+		return &stages.NoFilesAfterFilterError{
+			Msg: stages.NoFilesAfterFilterMsg,
 		}
 	}
 

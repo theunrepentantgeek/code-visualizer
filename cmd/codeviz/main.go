@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -10,10 +9,10 @@ import (
 	"github.com/lmittmann/tint"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type CLI struct {
@@ -140,10 +139,10 @@ func main() {
 
 func classifyError(err error) int {
 	var (
-		gitErr     *gitRequiredError
-		targetErr  *targetPathError
-		outputErr  *outputPathError
-		noFilesErr *noFilesAfterFilterError
+		gitErr     *stages.GitRequiredError
+		targetErr  *stages.TargetPathError
+		outputErr  *stages.OutputPathError
+		noFilesErr *stages.NoFilesAfterFilterError
 	)
 
 	switch {
@@ -159,32 +158,3 @@ func classifyError(err error) int {
 		return 5
 	}
 }
-
-type gitRequiredError struct {
-	metric metric.Name
-	target string
-}
-
-func (e *gitRequiredError) Error() string {
-	return fmt.Sprintf("metric %q requires a git repository, but %q is not a git repository", e.metric, e.target)
-}
-
-type targetPathError struct {
-	msg string
-}
-
-func (e *targetPathError) Error() string { return e.msg }
-
-type outputPathError struct {
-	msg string
-}
-
-func (e *outputPathError) Error() string { return e.msg }
-
-const noFilesAfterFilterMsg = "no files available for visualization after excluding binary files"
-
-type noFilesAfterFilterError struct {
-	msg string
-}
-
-func (e *noFilesAfterFilterError) Error() string { return e.msg }
