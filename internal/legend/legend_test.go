@@ -210,6 +210,7 @@ func extractNumeric(f *model.File, m metric.Name) float64 {
 	return 0
 }
 
+//nolint:unparam // m kept for symmetry with collectDistinctTypes
 func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
 	var values []float64
 

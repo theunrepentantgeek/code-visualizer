@@ -6,10 +6,10 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -201,69 +201,6 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
 }
 
-// minReservableSize is the smallest treemap dimension (px) that still
-// produces a usable visualization. If reserving legend space would shrink
-// either dimension below this, we fall back to overlay behavior.
-const minReservableSize = 100
-
-// reserveAndLayout computes the effective layout dimensions after reserving
-// space for the legend. Falls back to full canvas if the remaining area
-// would be too small for a useful treemap.
-func reserveAndLayout(legend *canvas.LegendConfig, width, height int) (layoutW, layoutH int) {
-	if legend == nil {
-		return width, height
-	}
-
-	wReduce, hReduce := legend.ReserveSpace()
-
-	w := width - int(wReduce)
-	h := height - int(hReduce)
-
-	if w < minReservableSize || h < minReservableSize {
-		return width, height
-	}
-
-	return w, h
-}
-
-// legendLayoutOffset returns the (dx, dy) offset to apply to treemap rects
-// when space has been reserved for the legend.
-func legendLayoutOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy float64) {
-	if cfg == nil {
-		return 0, 0
-	}
-
-	switch cfg.Position {
-	case canvas.LegendPositionTopCenter:
-		return 0, hReduce
-	case canvas.LegendPositionCenterLeft:
-		return wReduce, 0
-	default:
-		return cornerLegendOffset(cfg, wReduce, hReduce)
-	}
-}
-
-// cornerLegendOffset returns the offset for corner legend positions,
-// where orientation determines the carve-out direction.
-func cornerLegendOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy float64) {
-	isTop := cfg.Position == canvas.LegendPositionTopLeft || cfg.Position == canvas.LegendPositionTopRight
-	isLeft := cfg.Position == canvas.LegendPositionTopLeft || cfg.Position == canvas.LegendPositionBottomLeft
-
-	if cfg.Orientation == canvas.LegendOrientationVertical {
-		if isLeft {
-			return wReduce, 0
-		}
-
-		return 0, 0
-	}
-
-	if isTop {
-		return 0, hReduce
-	}
-
-	return 0, 0
-}
-
 func (c *TreemapCmd) renderAndLog(
 	root *model.Directory,
 	cfg *config.Treemap,
@@ -281,8 +218,8 @@ func (c *TreemapCmd) renderAndLog(
 	inks := buildTreemapInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
 
 	// Build legend config from the Inks
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := buildLegendConfig(
+	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := legend.Build(
 		legendPos, legendOrient,
 		inks.fill, fillMetric,
 		inks.border, borderName,
@@ -290,14 +227,14 @@ func (c *TreemapCmd) renderAndLog(
 	)
 
 	// Reserve space and layout
-	layoutW, layoutH := reserveAndLayout(legendConfig, width, height)
+	layoutW, layoutH := legend.ReserveAndLayout(legendConfig, width, height)
 
 	rects := treemap.Layout(root, layoutW, layoutH, size)
 
 	if layoutW < width || layoutH < height {
 		if legendConfig != nil {
 			wReduce, hReduce := legendConfig.ReserveSpace()
-			dx, dy := legendLayoutOffset(legendConfig, wReduce, hReduce)
+			dx, dy := legend.LayoutOffset(legendConfig, wReduce, hReduce)
 			treemap.OffsetRects(&rects, dx, dy)
 		}
 	}

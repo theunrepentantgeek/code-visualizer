@@ -12,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -228,8 +229,8 @@ func (c *SpiralCmd) layoutAndRender(
 
 	cv := renderSpiralToCanvas(layout, buckets, width, height, inks)
 
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := buildLegendConfig(
+	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := legend.Build(
 		legendPos, legendOrient,
 		inks.fill, fillMetric,
 		inks.border, borderMetric,
