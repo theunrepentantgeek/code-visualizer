@@ -141,8 +141,8 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	stopMetricTicker()
 
 	if !c.IncludeBinaryFiles {
-		if err := filterBinaryFiles(root); err != nil {
-			return err
+		if err := stages.FilterBinaryFilesHelper(root); err != nil {
+			return eris.Wrap(err, "binary file filter failed")
 		}
 	}
 
@@ -150,7 +150,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "failed to export data")
 	}
 
-	files, dirs := countAll(root)
+	files, dirs := stages.CountAll(root)
 
 	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
 

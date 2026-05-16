@@ -187,8 +187,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	stopMetricTicker()
 
 	if !c.IncludeBinaryFiles {
-		if err := filterBinaryFiles(root); err != nil {
-			return err
+		if err := stages.FilterBinaryFilesHelper(root); err != nil {
+			return eris.Wrap(err, "binary file filter failed")
 		}
 	}
 
@@ -210,7 +210,7 @@ func (c *TreemapCmd) renderAndLog(
 	fillPaletteName palette.PaletteName,
 ) error {
 	size := metric.Name(ptrString(cfg.Size))
-	files, dirs := countAll(root)
+	files, dirs := stages.CountAll(root)
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 

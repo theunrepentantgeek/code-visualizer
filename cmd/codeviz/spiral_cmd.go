@@ -155,8 +155,8 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 	stopMetricTicker()
 
 	if !c.IncludeBinaryFiles {
-		if err := filterBinaryFiles(root); err != nil {
-			return nil, err
+		if err := stages.FilterBinaryFilesHelper(root); err != nil {
+			return nil, eris.Wrap(err, "binary file filter failed")
 		}
 	}
 
@@ -260,7 +260,7 @@ func (*SpiralCmd) logRendered(
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
 ) {
-	files, dirs := countAll(root)
+	files, dirs := stages.CountAll(root)
 
 	slog.Info(
 		"Rendered spiral",

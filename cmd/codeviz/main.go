@@ -9,7 +9,6 @@ import (
 	"github.com/lmittmann/tint"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -62,18 +61,6 @@ func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter
 		NoColor: noColor,
 	})
 	slog.SetDefault(slog.New(handler))
-}
-
-func countAll(node *model.Directory) (files int, dirs int) {
-	files = len(node.Files)
-	for _, d := range node.Dirs {
-		dirs++
-		f, d2 := countAll(d)
-		files += f
-		dirs += d2
-	}
-
-	return files, dirs
 }
 
 func main() {
