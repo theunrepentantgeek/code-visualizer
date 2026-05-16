@@ -45,6 +45,18 @@ func (f *Flags) HasExplicitConfig() bool {
 	return f.configPath != ""
 }
 
+// toStagesFlags converts the cmd-local Flags struct into the stages-package form.
+func toStagesFlags(f *Flags) *stages.Flags {
+	return &stages.Flags{
+		Quiet:        f.Quiet,
+		Verbose:      f.Verbose,
+		Debug:        f.Debug,
+		ExportConfig: f.ExportConfig,
+		ExportData:   f.ExportData,
+		Config:       f.Config,
+	}
+}
+
 func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
 	level := slog.LevelInfo
 

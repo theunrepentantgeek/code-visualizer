@@ -130,7 +130,7 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	scanProg, stopScanTicker := buildScanProgress(flags)
+	scanProg, stopScanTicker := stages.BuildScanProgress(toStagesFlags(flags))
 
 	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
 
@@ -144,7 +144,7 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := buildMetricProgress(flags, model.CountFiles(root))
+	metricProg, stopMetricTicker := stages.BuildMetricProgress(toStagesFlags(flags), model.CountFiles(root))
 
 	if err := provider.Run(root, requested, metricProg); err != nil {
 		stopMetricTicker()
