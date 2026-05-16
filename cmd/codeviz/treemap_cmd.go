@@ -1,20 +1,15 @@
 package main
 
 import (
-	"log/slog"
 	"strings"
 
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
-	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -96,143 +91,43 @@ func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Treemap)
 }
 
-//nolint:dupl,revive,cyclop,funlen // Run methods share workflow structure across visualization commands
 func (c *TreemapCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
 	}
 
-	cfg := flags.Config.Treemap
-	size := metric.Name(ptrString(cfg.Size))
-
-	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
-		return eris.Wrap(err, "path validation failed")
+	state := &treemap.State{
+		CommonState: stages.CommonState{
+			TargetPath: c.TargetPath,
+			Output:     c.Output,
+			Flags:      toStagesFlags(flags),
+			RootConfig: flags.Config,
+			CLIFilters: c.Filter,
+		},
+		Config:             flags.Config.Treemap,
+		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
 
-	if flags.ExportConfig != "" {
-		if err := flags.Config.Save(flags.ExportConfig); err != nil {
-			return eris.Wrap(err, "failed to save config")
-		}
-	}
-
-	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
-
-	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
-
-	slog.Info("Scanning filesystem", "path", c.TargetPath)
-
-	scanProg, stopScanTicker := stages.BuildScanProgress(toStagesFlags(flags))
-
-	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
-
-	stopScanTicker()
-
-	if err != nil {
-		return eris.Wrap(err, "scan failed")
-	}
-
-	// Collect all requested metrics and run providers
-	requested := stages.CollectRequestedMetrics(size, cfg.Fill, cfg.Border)
-
-	// Check git requirement before running providers
-	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
-		return eris.Wrap(err, "git requirement check failed")
-	}
-
-	slog.Info("Calculating metrics")
-
-	metricProg, stopMetricTicker := stages.BuildMetricProgress(toStagesFlags(flags), model.CountFiles(root))
-
-	if err := provider.Run(root, requested, metricProg); err != nil {
-		stopMetricTicker()
-
-		return eris.Wrap(err, "failed to load metrics")
-	}
-
-	stopMetricTicker()
-
-	if !c.IncludeBinaryFiles {
-		if err := stages.FilterBinaryFilesHelper(root); err != nil {
-			return eris.Wrap(err, "binary file filter failed")
-		}
-	}
-
-	if err := export.Export(root, requested, flags.ExportData); err != nil {
-		return eris.Wrap(err, "failed to export data")
-	}
-
-	width := ptrInt(flags.Config.Width, 1920)
-	height := ptrInt(flags.Config.Height, 1080)
-
-	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
-}
-
-func (c *TreemapCmd) renderAndLog(
-	root *model.Directory,
-	cfg *config.Treemap,
-	width, height int,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) error {
-	size := metric.Name(ptrString(cfg.Size))
-	files, dirs := stages.CountAll(root)
-
-	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
-
-	// Build inks first — legend uses the same Ink objects
-	borderName, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
-	inks := treemap.BuildInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
-
-	// Build legend config from the Inks
-	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := legend.Build(
-		legendPos, legendOrient,
-		inks.Fill, fillMetric,
-		inks.Border, borderName,
-		size,
+	_, err := pipeline.Run(state,
+		stages.ValidatePaths[*treemap.State],
+		stages.ExportConfig[*treemap.State],
+		stages.BuildFilterRules[*treemap.State],
+		treemap.ResolveMetrics,
+		stages.ScanFilesystem[*treemap.State],
+		stages.CheckGitRequirement[*treemap.State],
+		stages.RunProviders[*treemap.State],
+		stages.FilterBinaryFiles[*treemap.State],
+		stages.ExportData[*treemap.State],
+		stages.ResolveDimensions[*treemap.State],
+		treemap.BuildInksStage,
+		treemap.BuildLegendStage,
+		treemap.LayoutStage,
+		treemap.RenderStage,
+		stages.WriteCanvas[*treemap.State],
+		treemap.LogResult,
 	)
 
-	// Reserve space and layout
-	layoutW, layoutH := legend.ReserveAndLayout(legendConfig, width, height)
-
-	rects := treemap.Layout(root, layoutW, layoutH, size)
-
-	if layoutW < width || layoutH < height {
-		if legendConfig != nil {
-			wReduce, hReduce := legendConfig.ReserveSpace()
-			dx, dy := legend.LayoutOffset(legendConfig, wReduce, hReduce)
-			treemap.OffsetRects(&rects, dx, dy)
-		}
-	}
-
-	cv := treemap.RenderToCanvas(rects, root, width, height, inks)
-
-	if legendConfig != nil {
-		cv.SetLegend(*legendConfig)
-	}
-
-	slog.Debug("rendering", "width", width, "height", height, "output", c.Output)
-
-	if err := cv.Render(c.Output); err != nil {
-		return eris.Wrap(err, "render failed")
-	}
-
-	slog.Info(
-		"Rendered treemap",
-		"files", files,
-		"directories", dirs,
-		"output", c.Output,
-		"width", width,
-		"height", height,
-		"size_metric", string(size),
-		"fill_metric", string(fillMetric),
-		"fill_palette", string(fillPaletteName),
-		"border_metric", string(borderName),
-		"border_palette", string(borderPaletteName),
-	)
-
-	return nil
+	return eris.Wrap(err, "treemap pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -263,12 +158,4 @@ func ptrInt(p *int, fallback int) int {
 	}
 
 	return *p
-}
-
-func (*TreemapCmd) resolveFillMetric(cfg *config.Treemap) metric.Name {
-	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
-		return fill
-	}
-
-	return metric.Name(ptrString(cfg.Size))
 }

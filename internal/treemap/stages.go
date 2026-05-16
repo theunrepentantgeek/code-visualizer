@@ -1,0 +1,131 @@
+package treemap
+
+import (
+	"log/slog"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+)
+
+// ResolveMetrics resolves size, fill, and border metrics + palettes and
+// fills Common().Requested.
+func ResolveMetrics(s *State) error {
+	cfg := s.Config
+
+	s.Size = metric.Name(stages.PtrString(cfg.Size))
+	s.FillMetric = resolveFillMetric(cfg)
+	s.FillPalette = stages.ResolveFillPalette(cfg.Fill, s.FillMetric)
+	s.BorderMetric, s.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+
+	s.Common().Requested = stages.CollectRequestedMetrics(s.Size, cfg.Fill, cfg.Border)
+
+	return nil
+}
+
+func resolveFillMetric(cfg *config.Treemap) metric.Name {
+	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
+		return fill
+	}
+
+	return metric.Name(stages.PtrString(cfg.Size))
+}
+
+// BuildInksStage builds the treemap inks. Also emits the "Rendering image"
+// log line preserved from the legacy renderAndLog helper.
+func BuildInksStage(s *State) error {
+	c := s.Common()
+
+	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
+
+	s.Inks = BuildInks(c.Root, s.FillMetric, s.FillPalette, s.BorderMetric, s.BorderPalette)
+
+	return nil
+}
+
+// BuildLegendStage builds the legend config from inks.
+func BuildLegendStage(s *State) error {
+	pos, orient := legend.ResolveOptions(
+		stages.PtrString(s.Config.Legend),
+		stages.PtrString(s.Config.LegendOrientation),
+	)
+	s.LegendConfig = legend.Build(
+		pos, orient,
+		s.Inks.Fill, s.FillMetric,
+		s.Inks.Border, s.BorderMetric,
+		s.Size,
+	)
+
+	return nil
+}
+
+// LayoutStage reserves legend space, lays out rectangles, and applies the
+// resulting offset.
+func LayoutStage(s *State) error {
+	c := s.Common()
+	layoutW, layoutH := legend.ReserveAndLayout(s.LegendConfig, c.Width, c.Height)
+
+	rect := Layout(c.Root, layoutW, layoutH, s.Size)
+
+	if layoutW < c.Width || layoutH < c.Height {
+		if s.LegendConfig != nil {
+			wReduce, hReduce := s.LegendConfig.ReserveSpace()
+			dx, dy := legend.LayoutOffset(s.LegendConfig, wReduce, hReduce)
+			OffsetRects(&rect, dx, dy)
+		}
+	}
+
+	s.Root = rect
+
+	return nil
+}
+
+// RenderStage renders the treemap to a canvas and attaches the legend.
+func RenderStage(s *State) error {
+	c := s.Common()
+
+	cv := RenderToCanvas(s.Root, c.Root, c.Width, c.Height, s.Inks)
+	if s.LegendConfig != nil {
+		cv.SetLegend(*s.LegendConfig)
+	}
+
+	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
+
+	c.Canvas = cv
+
+	return nil
+}
+
+// LogResult logs the final summary.
+func LogResult(s *State) error {
+	c := s.Common()
+	files, dirs := stages.CountAll(c.Root)
+
+	slog.Info(
+		"Rendered treemap",
+		"files", files,
+		"directories", dirs,
+		"output", c.Output,
+		"width", c.Width,
+		"height", c.Height,
+		"size_metric", string(s.Size),
+		"fill_metric", string(s.FillMetric),
+		"fill_palette", string(s.FillPalette),
+		"border_metric", string(s.BorderMetric),
+		"border_palette", string(s.BorderPalette),
+	)
+
+	return nil
+}
+
+// Compile-time checks.
+var (
+	_ pipeline.Stage[*State] = ResolveMetrics
+	_ pipeline.Stage[*State] = BuildInksStage
+	_ pipeline.Stage[*State] = BuildLegendStage
+	_ pipeline.Stage[*State] = LayoutStage
+	_ pipeline.Stage[*State] = RenderStage
+	_ pipeline.Stage[*State] = LogResult
+)
