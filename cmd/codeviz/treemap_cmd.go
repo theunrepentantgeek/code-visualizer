@@ -182,14 +182,14 @@ func (c *TreemapCmd) renderAndLog(
 
 	// Build inks first — legend uses the same Ink objects
 	borderName, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
-	inks := buildTreemapInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
+	inks := treemap.BuildInks(root, fillMetric, fillPaletteName, borderName, borderPaletteName)
 
 	// Build legend config from the Inks
 	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
 	legendConfig := legend.Build(
 		legendPos, legendOrient,
-		inks.fill, fillMetric,
-		inks.border, borderName,
+		inks.Fill, fillMetric,
+		inks.Border, borderName,
 		size,
 	)
 
@@ -206,7 +206,7 @@ func (c *TreemapCmd) renderAndLog(
 		}
 	}
 
-	cv := renderTreemapToCanvas(rects, root, width, height, inks)
+	cv := treemap.RenderToCanvas(rects, root, width, height, inks)
 
 	if legendConfig != nil {
 		cv.SetLegend(*legendConfig)
