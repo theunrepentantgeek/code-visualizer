@@ -6,6 +6,15 @@
 - **Role:** CLI Dev
 - **Joined:** 2026-04-14T09:49:33.772Z
 
+## Team Updates
+
+### Radial Pipeline Migration Complete (2026-05-17)
+
+- **Ripley completed migration** of radial visualization to 18-stage pipeline architecture (PRs #247-#249 reference).
+- All four visualizations (treemap, bubbletree, spiral, radial) now use unified pipeline.
+- Radial's CLI command (RadialCmd) now orchestrates 18-stage pipeline.Run() call instead of inline Run() logic.
+- Pipeline pattern is now standard; future viz CLI commands should follow this architecture.
+
 ## Learnings
 
 <!-- Append learnings below -->

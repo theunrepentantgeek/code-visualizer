@@ -182,3 +182,16 @@
 - **Files changed:** 9 files, net -49 lines. All 22 test packages pass. Build clean.
 - **Result:** PR #217 opened on branch `squad/195-remove-dead-canvas-api`.
 
+### Radial Pipeline Migration (2026-07-21)
+
+- **Task:** Migrate radial visualization from inline command code to pipeline architecture.
+- **Pattern:** Follows exact same structure as treemap (PR #247) and bubbletree (PR #248). State embeds `stages.CommonState`, viz-specific stages handle metrics/inks/layout/render, shared stages handle scan/providers/export/dimensions/canvas-write.
+- **Key difference from treemap/bubbletree:** Radial uses a square canvas (`CanvasSize = min(Width, Height)`), requiring a `ResolveCanvasSize` stage after `ResolveDimensions`. Uses `DiscSize` instead of `Size`.
+- **Files created:** `internal/radialtree/state.go`, `stages.go`, `inks.go`, `render.go`, `inks_test.go`, `render_test.go`, `render_internal_test.go`.
+- **Files deleted:** `cmd/codeviz/radial_canvas.go`, `cmd/codeviz/radial_canvas_test.go`.
+- **Files modified:** `cmd/codeviz/radialtree_cmd.go` (Run rewritten as 18-stage pipeline), `cmd/codeviz/treemap_cmd.go` (removed dead `ptrInt`).
+- **Test issue resolved:** Internal test file must NOT call `filesystem.Register()` via `init()` when external test file has `TestMain` that already calls it — causes double-registration panic.
+- **Lint fix:** Removed unused `ptrInt` from `treemap_cmd.go` (dead after all viz commands migrated to pipeline).
+- **Pipeline stage count:** 18 stages (vs 16 for treemap/bubbletree due to extra `ResolveCanvasSize` stage).
+- **CI status:** Build, 24 test packages, and lint all green.
+

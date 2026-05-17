@@ -65,6 +65,39 @@ Design eliminates ~2500 lines of duplication across `internal/render/` (~1718 li
 
 ---
 
+### Radial Pipeline Migration — Completed
+
+**Author:** Ripley  
+**Date:** 2026-05-17  
+**Status:** Implemented  
+**PRs:** #247, #248, #249 (reference)
+
+**Summary:**  
+Radial visualization migrated from legacy inline Run() method to 18-stage pipeline architecture, following pattern established by treemap, bubbletree, and spiral migrations (PRs #247-#249).
+
+**Key Decisions:**
+
+1. **Pipeline Composition** — Run() reduced from ~100 lines to 18-stage `pipeline.Run()` call in `cmd/codeviz/radial_cmd.go`. Mirrors architecture of treemap, bubbletree, and spiral.
+
+2. **Rendering Migration** — All rendering code moved from `cmd/codeviz/radial_canvas.go` to `internal/radialtree/render.go` with two exported entry points: `RenderToCanvas(ctx, nodes, width, height, canvasSize, legend)` and `BuildInks(nodes, legend)`.
+
+3. **Canvas Size Resolution** — Special `ResolveCanvasSize` stage added before rendering (radial-specific: `min(Width, Height)` to enforce square canvas). Not needed by treemap/bubbletree/spiral.
+
+4. **Dead Code Cleanup** — `ptrInt` helper function in `treemap_cmd.go` removed (last caller was radial `Run()` method; no longer used after pipeline migration).
+
+**Impact:**  
+- All four visualizations (treemap, bubbletree, spiral, radial) now use unified pipeline architecture
+- `cmd/codeviz/` package contains only CLI struct definitions, validation, config merging, and pipeline orchestration
+- No visualization-specific rendering logic in `cmd/codeviz/`
+- Enables future architectural improvements to pipeline shared by all viz types
+
+**Verification:**  
+✓ Build succeeds  
+✓ All tests pass (24 packages)  
+✓ Lint passes  
+
+---
+
 ### Spiral Visualization — Architecture Proposal
 
 **Author:** Ripley  
@@ -259,47 +292,6 @@ This keeps text upright on both canvas halves.
 - `internal/render/radialtree_test.go` (4 smoke tests, new)
 
 ---
-
-### Kong struct fields use pointers; defaults in config.New()
-
-**Author:** Dallas  
-**Date:** 2026-04-15  
-**Status:** Implemented
-
-**Context:** PR review identified that `Labels string \`default:"all"\`` in `RadialCmd` caused Kong to always write `"all"` into `c.Labels`, silently ignoring user-configured defaults.
-
-**Decision:** All Kong CLI struct fields that mirror a `config.*` pointer field must use pointer-compatible semantics:
-- Remove `default:` tags from Kong string fields with corresponding `*string` in config
-- Add `""` as first value in `enum:` so Kong accepts unset/empty state
-- Handle defaults in `config.New()` only — single authoritative source
-
-**Consequence:** `config.New()` sets `Radial.Labels = "all"`. CLI `--labels` only overrides on explicit user flag. `resolveLabels` simplified to single code path.
-
-**Pattern:** Apply to any future CLI flags mapping to config pointer fields.
-
----
-
-### Render + Layout Fixes — Code Quality
-
-**Author:** Parker  
-**Date:** 2026-04-15  
-**Status:** Implemented  
-**Files:** `internal/render/radialtree.go`, `internal/radialtree/layout.go`
-
-**RenderRadialPNG signature:** Takes `*radialtree.RadialNode` pointer (Dallas updates call site; Lambert uses `&node` in tests).
-
-**External label colour:** All non-root labels use fixed dark constant `#222222` (canvas background is white; disc-fill-based colour always wrong).
-
-**Disc z-order:** Collect-sort-draw in `drawDiscs` (no recursion) guarantees smaller nodes render on top regardless of traversal order.
-
-**Stroke batching:** One `dc.Stroke()` per node level (after all child edges) reduces GPU/CPU round-trips.
-
-**Crowding prevention:** 
-- Ring spacing floor: minimum ≥ `n * (2*minFileDisc + 4)` pixels
-- Disc shrink: `adjustedDiscFactor()` reduces max when `n > π/maxDiscFactor`
-- `dirDiscFactor` halved (`0.12 → 0.06`) for proportionate directory dots
-
-**Docs:** `layout.go` computeLeafCount doc fixed (returns 0; callers guard).
 
 ---
 

@@ -32,6 +32,15 @@ This is an accumulation of foundational learnings and architecture decisions fro
 
 - **Index-based tree correlation bug (2026-04-20):** When two independent trees (BubbleNode + model.Directory) are sorted/reordered differently, index-based pairing fails. Use direct references (paths, pointers) instead. This applies whenever one tree is reordered for optimization (e.g., packing density) but must stay synchronized with colour mapping from another tree.
 
+## Team Updates
+
+### Radial Pipeline Migration Complete (2026-05-17)
+
+- **Ripley completed migration** of radial visualization to 18-stage pipeline architecture (PRs #247-#249 reference).
+- All four visualizations (treemap, bubbletree, spiral, radial) now use unified pipeline.
+- Rendering code moved to `internal/radialtree/render.go` with `RenderToCanvas` and `BuildInks` entry points.
+- Pipeline pattern now standard for all viz types; future viz features should use this architecture.
+
 ## Learnings
 
 <!-- Append learnings below -->
