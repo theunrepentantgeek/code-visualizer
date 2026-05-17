@@ -25,6 +25,12 @@ const (
 	spiralTrackMinSteps = 500
 )
 
+// spiralInks holds the Ink instances for a spiral render pass.
+type spiralInks struct {
+	fill   canvas.Ink
+	border canvas.Ink
+}
+
 // buildSpiralInks creates fill and border inks from aggregated time-bucket data.
 func buildSpiralInks(
 	buckets []spiral.TimeBucket,
@@ -32,8 +38,8 @@ func buildSpiralInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) shapeInks {
-	inks := shapeInks{
+) spiralInks {
+	inks := spiralInks{
 		fill:   canvas.FixedInk(spiralDefaultFill),
 		border: canvas.FixedInk(spiralDefaultBorder),
 	}
@@ -106,7 +112,7 @@ func renderSpiralToCanvas(
 	layout spiral.SpiralLayout,
 	buckets []spiral.TimeBucket,
 	width, height int,
-	inks shapeInks,
+	inks spiralInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -169,7 +175,7 @@ func addSpiralDiscs(
 	cv *canvas.Canvas,
 	nodes []spiral.SpiralNode,
 	buckets []spiral.TimeBucket,
-	inks shapeInks,
+	inks spiralInks,
 ) {
 	for i, n := range nodes {
 		if n.DiscRadius <= 0 {

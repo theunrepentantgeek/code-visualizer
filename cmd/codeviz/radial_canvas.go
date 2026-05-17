@@ -28,6 +28,12 @@ const (
 	radialLabelGap  = 4.0
 )
 
+// radialInks holds the Ink instances for a radial render pass.
+type radialInks struct {
+	fill   canvas.Ink
+	border canvas.Ink
+}
+
 // buildRadialInks creates fill and border inks from metric configuration.
 // Uses the same buildMetricInk helper as the treemap bridge since both
 // visualizations derive colours from the model.Directory tree.
@@ -37,8 +43,8 @@ func buildRadialInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) shapeInks {
-	inks := shapeInks{
+) radialInks {
+	inks := radialInks{
 		border: canvas.FixedInk(radialDefaultBorder),
 	}
 
@@ -56,7 +62,7 @@ func renderRadialToCanvas(
 	nodes *radialtree.RadialNode,
 	root *model.Directory,
 	canvasSize int,
-	inks shapeInks,
+	inks radialInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(canvasSize, canvasSize)
 
@@ -181,7 +187,7 @@ func addRadialDiscs(
 	nodes *radialtree.RadialNode,
 	root *model.Directory,
 	cx, cy float64,
-	inks shapeInks,
+	inks radialInks,
 ) {
 	entries := collectRadialDiscs(nodes, root, cx, cy)
 
@@ -195,7 +201,7 @@ func addRadialDiscs(
 }
 
 // addRadialDisc adds a single disc shape to the canvas.
-func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks shapeInks) {
+func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
 	fillMV := pkginks.MetricValueForFile(e.file, inks.fill)
 	borderMV := pkginks.MetricValueForFile(e.file, inks.border)
 
@@ -231,7 +237,7 @@ func addRadialLabels(
 	cv *canvas.Canvas,
 	node radialtree.RadialNode,
 	cx, cy float64,
-	inks shapeInks,
+	inks radialInks,
 ) {
 	if node.ShowLabel && node.Label != "" {
 		dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
@@ -254,7 +260,7 @@ func addRadialRootLabel(
 	cv *canvas.Canvas,
 	node radialtree.RadialNode,
 	cx, cy float64,
-	inks shapeInks,
+	inks radialInks,
 ) {
 	fill := radialEffectiveFill(node, inks)
 	labelColour := canvas.TextColourFor(fill)
@@ -318,7 +324,7 @@ func addRadialExternalLabel(
 
 // radialEffectiveFill returns the fill colour for a node, resolving defaults.
 // Used for computing label contrast colour on the root node.
-func radialEffectiveFill(node radialtree.RadialNode, inks shapeInks) color.RGBA {
+func radialEffectiveFill(node radialtree.RadialNode, inks radialInks) color.RGBA {
 	if node.IsDirectory {
 		return radialDefaultDirFill
 	}

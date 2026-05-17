@@ -32,6 +32,12 @@ const (
 	bubbleMaxArcFraction  = math.Pi / 2.0
 )
 
+// bubbleInks holds the Ink instances for a bubble render pass.
+type bubbleInks struct {
+	fill   canvas.Ink
+	border canvas.Ink
+}
+
 // buildBubbleInks creates fill and border inks from metric configuration.
 func buildBubbleInks(
 	root *model.Directory,
@@ -39,8 +45,8 @@ func buildBubbleInks(
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
-) shapeInks {
-	inks := shapeInks{
+) bubbleInks {
+	inks := bubbleInks{
 		border: canvas.FixedInk(bubbleDefaultBorder),
 	}
 
@@ -58,7 +64,7 @@ func renderBubbleToCanvas(
 	nodes *bubbletree.BubbleNode,
 	root *model.Directory,
 	width, height int,
-	inks shapeInks,
+	inks bubbleInks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -180,7 +186,7 @@ func addBubbleFileDiscs(
 	cv *canvas.Canvas,
 	fileIndex map[string]*bubbletree.BubbleNode,
 	root *model.Directory,
-	inks shapeInks,
+	inks bubbleInks,
 ) {
 	addBubbleFileDiscsWalk(cv, fileIndex, root, inks)
 }
@@ -189,7 +195,7 @@ func addBubbleFileDiscsWalk(
 	cv *canvas.Canvas,
 	fileIndex map[string]*bubbletree.BubbleNode,
 	dir *model.Directory,
-	inks shapeInks,
+	inks bubbleInks,
 ) {
 	fileSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
