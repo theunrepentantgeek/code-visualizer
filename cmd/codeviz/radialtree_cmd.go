@@ -1,20 +1,15 @@
+//nolint:dupl // Coincidental similarity with bubbletree
 package main
 
 import (
-	"log/slog"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
-	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
-	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -86,126 +81,44 @@ func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Radial)
 }
 
-//nolint:revive,cyclop,funlen // Run methods share workflow structure across visualization commands
 func (c *RadialCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
 	}
 
-	cfg := flags.Config.Radial
-	discSize := metric.Name(ptrString(cfg.DiscSize))
-
-	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
-		return eris.Wrap(err, "path validation failed")
+	state := &radialtree.State{
+		CommonState: stages.CommonState{
+			TargetPath: c.TargetPath,
+			Output:     c.Output,
+			Flags:      toStagesFlags(flags),
+			RootConfig: flags.Config,
+			CLIFilters: c.Filter,
+		},
+		Config:             flags.Config.Radial,
+		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
 
-	if flags.ExportConfig != "" {
-		if err := flags.Config.Save(flags.ExportConfig); err != nil {
-			return eris.Wrap(err, "failed to save config")
-		}
-	}
-
-	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
-
-	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
-
-	slog.Info("Scanning filesystem", "path", c.TargetPath)
-
-	scanProg, stopScanTicker := stages.BuildScanProgress(toStagesFlags(flags))
-
-	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
-
-	stopScanTicker()
-
-	if err != nil {
-		return eris.Wrap(err, "scan failed")
-	}
-
-	requested := stages.CollectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
-
-	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
-		return eris.Wrap(err, "git requirement check failed")
-	}
-
-	slog.Info("Calculating metrics")
-
-	metricProg, stopMetricTicker := stages.BuildMetricProgress(toStagesFlags(flags), model.CountFiles(root))
-
-	if err := provider.Run(root, requested, metricProg); err != nil {
-		stopMetricTicker()
-
-		return eris.Wrap(err, "failed to load metrics")
-	}
-
-	stopMetricTicker()
-
-	if !c.IncludeBinaryFiles {
-		if err := stages.FilterBinaryFilesHelper(root); err != nil {
-			return eris.Wrap(err, "binary file filter failed")
-		}
-	}
-
-	if err := export.Export(root, requested, flags.ExportData); err != nil {
-		return eris.Wrap(err, "failed to export data")
-	}
-
-	files, dirs := stages.CountAll(root)
-
-	canvasSize := min(ptrInt(flags.Config.Width), ptrInt(flags.Config.Height))
-
-	return c.renderAndLog(root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
-}
-
-func (c *RadialCmd) renderAndLog(
-	root *model.Directory,
-	cfg *config.Radial,
-	files, dirs, canvasSize int,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) error {
-	discSize := metric.Name(ptrString(cfg.DiscSize))
-	labels := c.resolveLabels(cfg)
-	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
-
-	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
-
-	inks := buildRadialInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
-
-	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
-
-	cv := renderRadialToCanvas(&nodes, root, canvasSize, inks)
-
-	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := legend.Build(
-		legendPos, legendOrient,
-		inks.fill, fillMetric,
-		inks.border, borderMetric,
-		metric.Name(ptrString(cfg.DiscSize)),
+	_, err := pipeline.Run[*radialtree.State](
+		state,
+		stages.ValidatePaths,
+		stages.ExportConfig,
+		stages.BuildFilterRules,
+		radialtree.ResolveMetrics,
+		stages.ScanFilesystem,
+		stages.CheckGitRequirement,
+		stages.RunProviders,
+		stages.FilterBinaryFiles,
+		stages.ExportData,
+		stages.ResolveDimensions,
+		radialtree.BuildInksStage,
+		radialtree.BuildLegendStage,
+		radialtree.LayoutStage,
+		radialtree.RenderStage,
+		stages.WriteCanvas,
+		radialtree.LogResult,
 	)
 
-	if legendConfig != nil {
-		cv.SetLegend(*legendConfig)
-	}
-
-	if err := cv.Render(c.Output); err != nil {
-		return eris.Wrap(err, "render failed")
-	}
-
-	slog.Info(
-		"Rendered radial tree",
-		"files", files,
-		"directories", dirs,
-		"output", c.Output,
-		"canvas_size", canvasSize,
-		"disc_metric", string(discSize),
-		"fill_metric", string(fillMetric),
-		"fill_palette", string(fillPaletteName),
-		"border_metric", string(borderMetric),
-		"border_palette", string(borderPaletteName),
-	)
-
-	return nil
+	return eris.Wrap(err, "radialtree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -224,21 +137,4 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideLabels(c.Labels)
 	cfg.Radial.OverrideLegend(c.Legend)
 	cfg.Radial.OverrideLegendOrientation(c.LegendOrientation)
-}
-
-func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
-	if fill := cfg.Fill.MetricName(); fill != "" {
-		return fill
-	}
-
-	return metric.Name(ptrString(cfg.DiscSize))
-}
-
-// resolveLabels converts the string labels flag to a radialtree.LabelMode.
-func (*RadialCmd) resolveLabels(cfg *config.Radial) radialtree.LabelMode {
-	if lbl := ptrString(cfg.Labels); lbl != "" {
-		return radialtree.LabelMode(lbl)
-	}
-
-	return radialtree.LabelAll
 }
