@@ -27,6 +27,26 @@ func (m MetricSpec) IsZero() bool {
 	return m.Metric == ""
 }
 
+// MetricName returns the metric name, or "" if the receiver is nil or empty.
+// Safe to call on a nil *MetricSpec.
+func (m *MetricSpec) MetricName() metric.Name {
+	if m == nil {
+		return ""
+	}
+
+	return m.Metric
+}
+
+// PaletteName returns the palette name, or "" if the receiver is nil or empty.
+// Safe to call on a nil *MetricSpec.
+func (m *MetricSpec) PaletteName() palette.PaletteName {
+	if m == nil {
+		return ""
+	}
+
+	return m.Palette
+}
+
 // String returns the canonical text form: "metric,palette" or just "metric".
 func (m MetricSpec) String() string {
 	if m.Palette != "" {

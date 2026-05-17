@@ -12,12 +12,14 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type SpiralCmd struct {
@@ -98,8 +100,8 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 
 	cfg := flags.Config.Spiral
 
-	if err := validatePaths(c.TargetPath, c.Output); err != nil {
-		return err
+	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
+		return eris.Wrap(err, "path validation failed")
 	}
 
 	if flags.ExportConfig != "" {
@@ -124,11 +126,11 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 }
 
 func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*model.Directory, error) {
-	filterRules := buildFilterRules(flags.Config, c.Filter)
+	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	scanProg, stopScanTicker := buildScanProgress(flags)
+	scanProg, stopScanTicker := stages.BuildScanProgress(toStagesFlags(flags))
 
 	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
 
@@ -142,7 +144,7 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := buildMetricProgress(flags, model.CountFiles(root))
+	metricProg, stopMetricTicker := stages.BuildMetricProgress(toStagesFlags(flags), model.CountFiles(root))
 
 	if err := provider.Run(root, requested, metricProg); err != nil {
 		stopMetricTicker()
@@ -153,8 +155,8 @@ func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*mode
 	stopMetricTicker()
 
 	if !c.IncludeBinaryFiles {
-		if err := filterBinaryFiles(root); err != nil {
-			return nil, err
+		if err := stages.FilterBinaryFilesHelper(root); err != nil {
+			return nil, eris.Wrap(err, "binary file filter failed")
 		}
 	}
 
@@ -170,8 +172,8 @@ func (c *SpiralCmd) buildTimeBuckets(
 	root *model.Directory,
 	cfg *config.Spiral,
 ) ([]spiral.TimeBucket, error) {
-	if err := checkGitRepo(c.TargetPath); err != nil {
-		return nil, err
+	if err := stages.CheckGitRepoHelper(c.TargetPath); err != nil {
+		return nil, eris.Wrap(err, "git requirement check failed")
 	}
 
 	slog.Info("Loading commit history")
@@ -219,8 +221,8 @@ func (c *SpiralCmd) layoutAndRender(
 	applySpiralDiscSizes(layout.Nodes, buckets, maxDisc)
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
-	borderMetric, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
+	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
+	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
 
 	inks := buildSpiralInks(buckets, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
@@ -228,8 +230,8 @@ func (c *SpiralCmd) layoutAndRender(
 
 	cv := renderSpiralToCanvas(layout, buckets, width, height, inks)
 
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := buildLegendConfig(
+	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := legend.Build(
 		legendPos, legendOrient,
 		inks.fill, fillMetric,
 		inks.border, borderMetric,
@@ -258,7 +260,7 @@ func (*SpiralCmd) logRendered(
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
 ) {
-	files, dirs := countAll(root)
+	files, dirs := stages.CountAll(root)
 
 	slog.Info(
 		"Rendered spiral",
@@ -298,7 +300,7 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 func (*SpiralCmd) collectSpiralMetrics(cfg *config.Spiral) []metric.Name {
 	size := metric.Name(ptrString(cfg.Size))
 	if size != "" {
-		return collectRequestedMetrics(size, cfg.Fill, cfg.Border)
+		return stages.CollectRequestedMetrics(size, cfg.Fill, cfg.Border)
 	}
 
 	seen := map[metric.Name]bool{}
@@ -332,14 +334,14 @@ func (*SpiralCmd) resolveLabels(cfg *config.Spiral) spiral.LabelMode {
 }
 
 func (*SpiralCmd) resolveFillMetric(cfg *config.Spiral) metric.Name {
-	return specMetric(cfg.Fill)
+	return cfg.Fill.MetricName()
 }
 
 // aggregateBucketMetrics fills in the aggregated metric values for each time bucket.
 func (c *SpiralCmd) aggregateBucketMetrics(buckets []spiral.TimeBucket, cfg *config.Spiral) {
 	sizeMetric := metric.Name(ptrString(cfg.Size))
-	fillMetric := specMetric(cfg.Fill)
-	borderMetric := specMetric(cfg.Border)
+	fillMetric := cfg.Fill.MetricName()
+	borderMetric := cfg.Border.MetricName()
 
 	for i := range buckets {
 		c.aggregateBucket(&buckets[i], sizeMetric, fillMetric, borderMetric)

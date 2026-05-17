@@ -1,12 +1,15 @@
-package main
+package legend_test
 
 import (
 	"image/color"
+	"slices"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -16,7 +19,7 @@ func TestResolveLegendOptions_EmptyDefaults(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	pos, orient := resolveLegendOptions("", "")
+	pos, orient := legend.ResolveOptions("", "")
 	g.Expect(pos).To(Equal(canvas.LegendPositionBottomRight))
 	g.Expect(orient).To(Equal(canvas.LegendOrientationVertical))
 }
@@ -25,7 +28,7 @@ func TestResolveLegendOptions_ExplicitValues(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	pos, orient := resolveLegendOptions("top-left", "horizontal")
+	pos, orient := legend.ResolveOptions("top-left", "horizontal")
 	g.Expect(pos).To(Equal(canvas.LegendPositionTopLeft))
 	g.Expect(orient).To(Equal(canvas.LegendOrientationHorizontal))
 }
@@ -34,7 +37,7 @@ func TestResolveLegendOptions_PositionOnly_DerivesOrientation(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	pos, orient := resolveLegendOptions("top-center", "")
+	pos, orient := legend.ResolveOptions("top-center", "")
 	g.Expect(pos).To(Equal(canvas.LegendPositionTopCenter))
 	g.Expect(orient).To(Equal(canvas.LegendOrientationHorizontal))
 }
@@ -43,7 +46,7 @@ func TestResolveLegendOptions_None_DisablesLegend(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	pos, _ := resolveLegendOptions("none", "")
+	pos, _ := legend.ResolveOptions("none", "")
 	g.Expect(pos).To(Equal(canvas.LegendPositionNone))
 }
 
@@ -51,7 +54,7 @@ func TestBuildLegendConfig_NonePosition_ReturnsNil(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := buildLegendConfig(
+	cfg := legend.Build(
 		canvas.LegendPositionNone, canvas.LegendOrientationVertical,
 		canvas.FixedInk(color.RGBA{A: 255}), "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
@@ -70,7 +73,7 @@ func TestBuildLegendConfig_FillOnly_SingleEntry(t *testing.T) {
 	values := collectNumericValues(root, "file-size")
 	fillInk := canvas.NumericInk("file-size", values, pal)
 
-	cfg := buildLegendConfig(
+	cfg := legend.Build(
 		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
 		fillInk, "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
@@ -99,7 +102,7 @@ func TestBuildLegendConfig_FillAndBorder_TwoEntries(t *testing.T) {
 	catPal := palette.GetPalette(palette.Categorization)
 	borderInk := canvas.CategoricalInk("file-type", types, catPal)
 
-	cfg := buildLegendConfig(
+	cfg := legend.Build(
 		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
 		fillInk, "file-size",
 		borderInk, "file-type",
@@ -124,7 +127,7 @@ func TestBuildLegendConfig_DifferentSizeMetric_AddsEntry(t *testing.T) {
 	values := collectNumericValues(root, "file-size")
 	fillInk := canvas.NumericInk("file-size", values, pal)
 
-	cfg := buildLegendConfig(
+	cfg := legend.Build(
 		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
 		fillInk, "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
@@ -149,7 +152,7 @@ func TestBuildLegendConfig_SameSizeAsFill_NoSizeEntry(t *testing.T) {
 	values := collectNumericValues(root, "file-size")
 	fillInk := canvas.NumericInk("file-size", values, pal)
 
-	cfg := buildLegendConfig(
+	cfg := legend.Build(
 		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
 		fillInk, "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
@@ -167,7 +170,7 @@ func TestBuildLegendConfig_NoMetrics_ReturnsNil(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := buildLegendConfig(
+	cfg := legend.Build(
 		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
 		canvas.FixedInk(color.RGBA{A: 255}), "",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
@@ -197,4 +200,42 @@ func makeLegendTestRoot() *model.Directory {
 		Name:  "root",
 		Files: []*model.File{f1, f2, f3},
 	}
+}
+
+func extractNumeric(f *model.File, m metric.Name) float64 {
+	if v, ok := f.Measure(m); ok {
+		return v
+	}
+
+	return 0
+}
+
+//nolint:unparam // m kept for symmetry with collectDistinctTypes
+func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
+	var values []float64
+
+	model.WalkFiles(root, func(f *model.File) {
+		values = append(values, extractNumeric(f, m))
+	})
+
+	return values
+}
+
+func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
+	seen := map[string]bool{}
+
+	model.WalkFiles(root, func(f *model.File) {
+		if v, ok := f.Classification(m); ok {
+			seen[v] = true
+		}
+	})
+
+	types := make([]string, 0, len(seen))
+	for t := range seen {
+		types = append(types, t)
+	}
+
+	slices.Sort(types)
+
+	return types
 }

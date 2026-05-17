@@ -14,6 +14,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func TestMain(m *testing.M) {
@@ -66,7 +67,7 @@ func TestClassifyNoFilesAfterFilterError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	err := &noFilesAfterFilterError{msg: "no files available for visualization after excluding binary files"}
+	err := &stages.NoFilesAfterFilterError{Msg: "no files available for visualization after excluding binary files"}
 	code := classifyError(err)
 	g.Expect(code).To(Equal(6))
 }
@@ -75,10 +76,10 @@ func TestClassifyErrorPreservesExistingCodes(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(classifyError(&targetPathError{msg: "bad path"})).To(Equal(2))
-	g.Expect(classifyError(&gitRequiredError{})).To(Equal(3))
-	g.Expect(classifyError(&outputPathError{msg: "bad output"})).To(Equal(4))
-	g.Expect(classifyError(&noFilesAfterFilterError{msg: "no files"})).To(Equal(6))
+	g.Expect(classifyError(&stages.TargetPathError{Msg: "bad path"})).To(Equal(2))
+	g.Expect(classifyError(&stages.GitRequiredError{})).To(Equal(3))
+	g.Expect(classifyError(&stages.OutputPathError{Msg: "bad output"})).To(Equal(4))
+	g.Expect(classifyError(&stages.NoFilesAfterFilterError{Msg: "no files"})).To(Equal(6))
 }
 
 func TestFilterNotCalledForFileSizeMetric(t *testing.T) {

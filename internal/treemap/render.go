@@ -1,64 +1,27 @@
-package main
+package treemap
 
 import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
-const (
-	treemapHeaderHeight = treemap.HeaderHeight
-	treemapMinBorderDim = 20.0
-	treemapMidBorderDim = 100.0
-)
-
-var (
-	treemapStructuralBorder = color.RGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xFF}
-	treemapHeaderFill       = color.RGBA{R: 0x44, G: 0x44, B: 0x44, A: 0xFF}
-	treemapDefaultFill      = color.RGBA{R: 0xCC, G: 0xCC, B: 0xCC, A: 0xFF}
-	treemapBgColour         = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
-	treemapWhiteText        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
-)
-
-// buildTreemapInks creates fill and border inks from metric configuration.
-func buildTreemapInks(
-	root *model.Directory,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
-) shapeInks {
-	inks := shapeInks{
-		border: canvas.FixedInk(treemapStructuralBorder),
-	}
-
-	inks.fill = buildMetricInk(root, fillMetric, fillPaletteName, treemapDefaultFill)
-	if borderMetric != "" {
-		inks.border = buildMetricInk(root, borderMetric, borderPaletteName, treemapStructuralBorder)
-	}
-
-	return inks
-}
-
-// renderTreemapToCanvas walks the layout tree and model tree in parallel,
+// RenderToCanvas walks the layout tree and model tree in parallel,
 // adding shapes to the canvas. Returns the populated canvas.
-func renderTreemapToCanvas(
-	rects treemap.TreemapRectangle,
+func RenderToCanvas(
+	rects TreemapRectangle,
 	root *model.Directory,
 	width, height int,
-	inks shapeInks,
+	inks Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
 	// Background
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(treemapBgColour),
-			Border:      canvas.FixedInk(treemapBgColour),
+			Fill:        canvas.FixedInk(bgColour),
+			Border:      canvas.FixedInk(bgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -68,17 +31,17 @@ func renderTreemapToCanvas(
 		W: float64(width), H: float64(height),
 	})
 
-	addTreemapRect(cv, rects, root, inks)
+	addRect(cv, rects, root, inks)
 
 	return cv
 }
 
-// addTreemapRect recursively adds shapes for a single treemap node.
-func addTreemapRect(
+// addRect recursively adds shapes for a single treemap node.
+func addRect(
 	cv *canvas.Canvas,
-	rect treemap.TreemapRectangle,
+	rect TreemapRectangle,
 	node *model.Directory,
-	inks shapeInks,
+	inks Inks,
 ) {
 	if !rect.IsDirectory {
 		addFileRectForFile(cv, rect, nil, inks)
@@ -94,7 +57,7 @@ func addTreemapRect(
 	for i := range rect.Children {
 		child := rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			addTreemapRect(cv, child, node.Dirs[dirIdx], inks)
+			addRect(cv, child, node.Dirs[dirIdx], inks)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			addFileRectForFile(cv, child, node.Files[fileIdx], inks)
@@ -105,33 +68,33 @@ func addTreemapRect(
 
 func addDirectoryShapes(
 	cv *canvas.Canvas,
-	rect treemap.TreemapRectangle,
+	rect TreemapRectangle,
 ) {
 	// Header bar fill
 	headerSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(treemapHeaderFill),
-			Border:      canvas.FixedInk(treemapHeaderFill),
+			Fill:        canvas.FixedInk(headerFill),
+			Border:      canvas.FixedInk(headerFill),
 			BorderWidth: 0,
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
 		Spec: headerSpec,
 		X:    rect.X, Y: rect.Y,
-		W: rect.W, H: treemapHeaderHeight,
+		W: rect.W, H: headerHeight,
 	})
 
 	// Header label
 	if rect.Label != "" {
 		labelSpec := &canvas.TextSpec{
-			Ink:      canvas.FixedInk(treemapWhiteText),
+			Ink:      canvas.FixedInk(whiteText),
 			FontSize: 0,
 			Anchor:   canvas.AnchorStart,
 		}
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    labelSpec,
 			X:       rect.X + 4,
-			Y:       rect.Y + treemapHeaderHeight/2,
+			Y:       rect.Y + headerHeight/2,
 			Content: rect.Label,
 		})
 	}
@@ -140,8 +103,8 @@ func addDirectoryShapes(
 	borderSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        canvas.FixedInk(color.RGBA{A: 0}),
-			Border:      canvas.FixedInk(treemapStructuralBorder),
-			BorderWidth: treemapDynBorderWidth(rect.W, rect.H, canvas.InkNumeric),
+			Border:      canvas.FixedInk(structuralBorder),
+			BorderWidth: DynBorderWidth(rect.W, rect.H, canvas.InkNumeric),
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
@@ -153,24 +116,24 @@ func addDirectoryShapes(
 
 func addFileRectForFile(
 	cv *canvas.Canvas,
-	rect treemap.TreemapRectangle,
+	rect TreemapRectangle,
 	file *model.File,
-	inks shapeInks,
+	inks Inks,
 ) {
 	if rect.W <= 0 || rect.H <= 0 {
 		return
 	}
 
-	hasBorder := inks.border.Info().Kind
+	hasBorder := inks.Border.Info().Kind
 
-	fillMV := metricValueForFile(file, inks.fill)
-	borderMV := metricValueForFile(file, inks.border)
+	fillMV := metricValueForFile(file, inks.Fill)
+	borderMV := metricValueForFile(file, inks.Border)
 
 	spec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.fill,
-			Border:      inks.border,
-			BorderWidth: treemapDynBorderWidth(rect.W, rect.H, hasBorder),
+			Fill:        inks.Fill,
+			Border:      inks.Border,
+			BorderWidth: DynBorderWidth(rect.W, rect.H, hasBorder),
 		},
 	}
 
@@ -185,7 +148,7 @@ func addFileRectForFile(
 	})
 
 	if rect.Label != "" && rect.W >= 40 && rect.H >= 16 {
-		fillColour := inks.fill.Dip(fillMV)
+		fillColour := inks.Fill.Dip(fillMV)
 		labelColour := canvas.TextColourFor(fillColour)
 
 		labelSpec := &canvas.TextSpec{
@@ -202,9 +165,9 @@ func addFileRectForFile(
 	}
 }
 
-// treemapDynBorderWidth returns a dynamic border width based on rectangle
+// DynBorderWidth returns a dynamic border width based on rectangle
 // size and the kind of border ink configured.
-func treemapDynBorderWidth(w, h float64, borderKind canvas.InkKind) float64 {
+func DynBorderWidth(w, h float64, borderKind canvas.InkKind) float64 {
 	if borderKind == canvas.InkFixed {
 		return 0.5
 	}
@@ -212,9 +175,9 @@ func treemapDynBorderWidth(w, h float64, borderKind canvas.InkKind) float64 {
 	minDim := min(w, h)
 
 	switch {
-	case minDim < treemapMinBorderDim:
+	case minDim < minBorderDim:
 		return 1.0
-	case minDim >= treemapMidBorderDim:
+	case minDim >= midBorderDim:
 		return 3.0
 	default:
 		return 2.0

@@ -8,12 +8,14 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type RadialCmd struct {
@@ -93,8 +95,8 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	cfg := flags.Config.Radial
 	discSize := metric.Name(ptrString(cfg.DiscSize))
 
-	if err := validatePaths(c.TargetPath, c.Output); err != nil {
-		return err
+	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
+		return eris.Wrap(err, "path validation failed")
 	}
 
 	if flags.ExportConfig != "" {
@@ -104,13 +106,13 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	}
 
 	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := resolveFillPalette(cfg.Fill, fillMetric)
+	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
 
-	filterRules := buildFilterRules(flags.Config, c.Filter)
+	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
 
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
-	scanProg, stopScanTicker := buildScanProgress(flags)
+	scanProg, stopScanTicker := stages.BuildScanProgress(toStagesFlags(flags))
 
 	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
 
@@ -120,15 +122,15 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "scan failed")
 	}
 
-	requested := collectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
+	requested := stages.CollectRequestedMetrics(discSize, cfg.Fill, cfg.Border)
 
-	if err := checkGitRequirement(c.TargetPath, requested); err != nil {
-		return err
+	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
+		return eris.Wrap(err, "git requirement check failed")
 	}
 
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := buildMetricProgress(flags, model.CountFiles(root))
+	metricProg, stopMetricTicker := stages.BuildMetricProgress(toStagesFlags(flags), model.CountFiles(root))
 
 	if err := provider.Run(root, requested, metricProg); err != nil {
 		stopMetricTicker()
@@ -139,8 +141,8 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	stopMetricTicker()
 
 	if !c.IncludeBinaryFiles {
-		if err := filterBinaryFiles(root); err != nil {
-			return err
+		if err := stages.FilterBinaryFilesHelper(root); err != nil {
+			return eris.Wrap(err, "binary file filter failed")
 		}
 	}
 
@@ -148,7 +150,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "failed to export data")
 	}
 
-	files, dirs := countAll(root)
+	files, dirs := stages.CountAll(root)
 
 	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
 
@@ -166,7 +168,7 @@ func (c *RadialCmd) renderAndLog(
 	labels := c.resolveLabels(cfg)
 	nodes := radialtree.Layout(root, canvasSize, discSize, labels)
 
-	borderMetric, borderPaletteName := resolveBorderMetricAndPalette(cfg.Border)
+	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
 
 	inks := buildRadialInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
@@ -174,8 +176,8 @@ func (c *RadialCmd) renderAndLog(
 
 	cv := renderRadialToCanvas(&nodes, root, canvasSize, inks)
 
-	legendPos, legendOrient := resolveLegendOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := buildLegendConfig(
+	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
+	legendConfig := legend.Build(
 		legendPos, legendOrient,
 		inks.fill, fillMetric,
 		inks.border, borderMetric,
@@ -225,7 +227,7 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 }
 
 func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
-	if fill := specMetric(cfg.Fill); fill != "" {
+	if fill := cfg.Fill.MetricName(); fill != "" {
 		return fill
 	}
 

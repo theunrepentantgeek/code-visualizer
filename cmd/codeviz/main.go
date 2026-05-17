@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -10,10 +9,9 @@ import (
 	"github.com/lmittmann/tint"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type CLI struct {
@@ -47,6 +45,18 @@ func (f *Flags) HasExplicitConfig() bool {
 	return f.configPath != ""
 }
 
+// toStagesFlags converts the cmd-local Flags struct into the stages-package form.
+func toStagesFlags(f *Flags) *stages.Flags {
+	return &stages.Flags{
+		Quiet:        f.Quiet,
+		Verbose:      f.Verbose,
+		Debug:        f.Debug,
+		ExportConfig: f.ExportConfig,
+		ExportData:   f.ExportData,
+		Config:       f.Config,
+	}
+}
+
 func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
 	level := slog.LevelInfo
 
@@ -63,18 +73,6 @@ func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter
 		NoColor: noColor,
 	})
 	slog.SetDefault(slog.New(handler))
-}
-
-func countAll(node *model.Directory) (files int, dirs int) {
-	files = len(node.Files)
-	for _, d := range node.Dirs {
-		dirs++
-		f, d2 := countAll(d)
-		files += f
-		dirs += d2
-	}
-
-	return files, dirs
 }
 
 func main() {
@@ -140,10 +138,10 @@ func main() {
 
 func classifyError(err error) int {
 	var (
-		gitErr     *gitRequiredError
-		targetErr  *targetPathError
-		outputErr  *outputPathError
-		noFilesErr *noFilesAfterFilterError
+		gitErr     *stages.GitRequiredError
+		targetErr  *stages.TargetPathError
+		outputErr  *stages.OutputPathError
+		noFilesErr *stages.NoFilesAfterFilterError
 	)
 
 	switch {
@@ -159,32 +157,3 @@ func classifyError(err error) int {
 		return 5
 	}
 }
-
-type gitRequiredError struct {
-	metric metric.Name
-	target string
-}
-
-func (e *gitRequiredError) Error() string {
-	return fmt.Sprintf("metric %q requires a git repository, but %q is not a git repository", e.metric, e.target)
-}
-
-type targetPathError struct {
-	msg string
-}
-
-func (e *targetPathError) Error() string { return e.msg }
-
-type outputPathError struct {
-	msg string
-}
-
-func (e *outputPathError) Error() string { return e.msg }
-
-const noFilesAfterFilterMsg = "no files available for visualization after excluding binary files"
-
-type noFilesAfterFilterError struct {
-	msg string
-}
-
-func (e *noFilesAfterFilterError) Error() string { return e.msg }
