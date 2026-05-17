@@ -1,4 +1,4 @@
-package main
+package radialtree
 
 import (
 	"cmp"
@@ -8,19 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
-)
-
-var (
-	radialDefaultFileFill = color.RGBA{R: 0xCC, G: 0xCC, B: 0xCC, A: 0xFF}
-	radialDefaultDirFill  = color.RGBA{R: 0x44, G: 0x44, B: 0x44, A: 0xFF}
-	radialDefaultBorder   = color.RGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xFF}
-	radialEdgeColour      = color.RGBA{R: 0x99, G: 0x99, B: 0x99, A: 0xFF}
-	radialLabelColour     = color.RGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xFF}
-	radialBgColour        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
 const (
@@ -28,41 +16,13 @@ const (
 	radialLabelGap  = 4.0
 )
 
-// radialInks holds the Ink instances for a radial render pass.
-type radialInks struct {
-	fill   canvas.Ink
-	border canvas.Ink
-}
-
-// buildRadialInks creates fill and border inks from metric configuration.
-// Uses the same buildMetricInk helper as the treemap bridge since both
-// visualizations derive colours from the model.Directory tree.
-func buildRadialInks(
-	root *model.Directory,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
-) radialInks {
-	inks := radialInks{
-		border: canvas.FixedInk(radialDefaultBorder),
-	}
-
-	inks.fill = pkginks.BuildMetricInk(root, fillMetric, fillPaletteName, radialDefaultFileFill)
-	if borderMetric != "" {
-		inks.border = pkginks.BuildMetricInk(root, borderMetric, borderPaletteName, radialDefaultBorder)
-	}
-
-	return inks
-}
-
-// renderRadialToCanvas walks the layout and model trees, adding shapes
+// RenderToCanvas walks the layout and model trees, adding shapes
 // to the canvas. Returns the populated canvas.
-func renderRadialToCanvas(
-	nodes *radialtree.RadialNode,
+func RenderToCanvas(
+	nodes *RadialNode,
 	root *model.Directory,
 	canvasSize int,
-	inks radialInks,
+	inks Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(canvasSize, canvasSize)
 
@@ -94,7 +54,7 @@ func addRadialBackground(cv *canvas.Canvas, canvasSize int) {
 }
 
 // addRadialEdges recursively adds edge lines from each node to its children.
-func addRadialEdges(cv *canvas.Canvas, node radialtree.RadialNode, cx, cy float64) {
+func addRadialEdges(cv *canvas.Canvas, node RadialNode, cx, cy float64) {
 	px := cx + node.X
 	py := cy + node.Y
 
@@ -119,7 +79,7 @@ func addRadialEdges(cv *canvas.Canvas, node radialtree.RadialNode, cx, cy float6
 
 // radialDiscEntry holds a node and its screen position for deferred drawing.
 type radialDiscEntry struct {
-	node   radialtree.RadialNode
+	node   RadialNode
 	file   *model.File
 	sx, sy float64
 	isDir  bool
@@ -129,7 +89,7 @@ type radialDiscEntry struct {
 // along with their corresponding model.File (nil for directories).
 // INVARIANT: node.Children are ordered files-first, then subdirectories.
 func collectRadialDiscs(
-	node *radialtree.RadialNode,
+	node *RadialNode,
 	dir *model.Directory,
 	cx, cy float64,
 ) []radialDiscEntry {
@@ -164,7 +124,7 @@ func collectRadialDiscs(
 
 // collectRadialDiscsLeaf collects a single file node (leaf).
 func collectRadialDiscsLeaf(
-	node *radialtree.RadialNode,
+	node *RadialNode,
 	file *model.File,
 	cx, cy float64,
 ) []radialDiscEntry {
@@ -184,10 +144,10 @@ func collectRadialDiscsLeaf(
 // nodes are never obscured, then adds them to the canvas.
 func addRadialDiscs(
 	cv *canvas.Canvas,
-	nodes *radialtree.RadialNode,
+	nodes *RadialNode,
 	root *model.Directory,
 	cx, cy float64,
-	inks radialInks,
+	inks Inks,
 ) {
 	entries := collectRadialDiscs(nodes, root, cx, cy)
 
@@ -201,12 +161,12 @@ func addRadialDiscs(
 }
 
 // addRadialDisc adds a single disc shape to the canvas.
-func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
-	fillMV := pkginks.MetricValueForFile(e.file, inks.fill)
-	borderMV := pkginks.MetricValueForFile(e.file, inks.border)
+func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks Inks) {
+	fillMV := pkginks.MetricValueForFile(e.file, inks.Fill)
+	borderMV := pkginks.MetricValueForFile(e.file, inks.Border)
 
-	fill := inks.fill
-	border := inks.border
+	fill := inks.Fill
+	border := inks.Border
 
 	if e.isDir {
 		fill = canvas.FixedInk(radialDefaultDirFill)
@@ -235,9 +195,9 @@ func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks radialInks) {
 // addRadialLabels recursively adds text labels for nodes with ShowLabel set.
 func addRadialLabels(
 	cv *canvas.Canvas,
-	node radialtree.RadialNode,
+	node RadialNode,
 	cx, cy float64,
-	inks radialInks,
+	inks Inks,
 ) {
 	if node.ShowLabel && node.Label != "" {
 		dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
@@ -258,9 +218,9 @@ func addRadialLabels(
 // contrasting text colour based on the effective fill.
 func addRadialRootLabel(
 	cv *canvas.Canvas,
-	node radialtree.RadialNode,
+	node RadialNode,
 	cx, cy float64,
-	inks radialInks,
+	inks Inks,
 ) {
 	fill := radialEffectiveFill(node, inks)
 	labelColour := canvas.TextColourFor(fill)
@@ -282,7 +242,7 @@ func addRadialRootLabel(
 // addRadialExternalLabel adds a radially-oriented label outside the disc.
 func addRadialExternalLabel(
 	cv *canvas.Canvas,
-	node radialtree.RadialNode,
+	node RadialNode,
 	cx, cy float64,
 ) {
 	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
@@ -324,10 +284,10 @@ func addRadialExternalLabel(
 
 // radialEffectiveFill returns the fill colour for a node, resolving defaults.
 // Used for computing label contrast colour on the root node.
-func radialEffectiveFill(node radialtree.RadialNode, inks radialInks) color.RGBA {
+func radialEffectiveFill(node RadialNode, inks Inks) color.RGBA {
 	if node.IsDirectory {
 		return radialDefaultDirFill
 	}
 
-	return inks.fill.Dip(canvas.MetricValue{})
+	return inks.Fill.Dip(canvas.MetricValue{})
 }

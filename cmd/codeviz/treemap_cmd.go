@@ -151,12 +151,3 @@ func ptrString(p *string) string {
 
 	return *p
 }
-
-// ptrInt safely dereferences a *int, returning a default 1920 if nil.
-func ptrInt(p *int) int {
-	if p == nil {
-		return 1920
-	}
-
-	return *p
-}
