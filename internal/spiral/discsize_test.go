@@ -19,9 +19,11 @@ func makeFiles(n int) []*model.File {
 }
 
 func TestApplyDiscSizes_LargestBucketGetsMaxDisc(t *testing.T) {
+	t.Parallel()
 	g := NewWithT(t)
 
 	buckets := makeBuckets(5, Daily)
+
 	nodes := make([]SpiralNode, 5)
 	for i := range nodes {
 		nodes[i].DiscRadius = defaultDiscRadius
@@ -54,9 +56,11 @@ func TestApplyDiscSizes_LargestBucketGetsMaxDisc(t *testing.T) {
 }
 
 func TestApplyDiscSizes_AllZeroSizeValues_GetsMinRadius(t *testing.T) {
+	t.Parallel()
 	g := NewWithT(t)
 
 	buckets := makeBuckets(3, Daily)
+
 	nodes := make([]SpiralNode, 3)
 	for i := range nodes {
 		nodes[i].DiscRadius = defaultDiscRadius
@@ -72,9 +76,11 @@ func TestApplyDiscSizes_AllZeroSizeValues_GetsMinRadius(t *testing.T) {
 }
 
 func TestApplyDiscSizes_SmallerBucketIsSmallerThanLarger(t *testing.T) {
+	t.Parallel()
 	g := NewWithT(t)
 
 	buckets := makeBuckets(2, Daily)
+
 	nodes := make([]SpiralNode, 2)
 	for i := range nodes {
 		nodes[i].DiscRadius = defaultDiscRadius
