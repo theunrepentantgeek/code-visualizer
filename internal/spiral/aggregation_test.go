@@ -86,9 +86,9 @@ func TestAggregateBucketMetrics_CommitCountSize(t *testing.T) {
 	f := &model.File{Name: "active.go"}
 
 	buckets := []TimeBucket{
-		{Files: []*model.File{f, f, f}},  // 3 commit events
-		{Files: []*model.File{f}},         // 1 commit event
-		{Files: []*model.File{}},          // empty bucket
+		{Files: []*model.File{f, f, f}}, // 3 commit events
+		{Files: []*model.File{f}},       // 1 commit event
+		{Files: []*model.File{}},        // empty bucket
 	}
 
 	AggregateBucketMetrics(buckets, commitCountMetric, "", "")
