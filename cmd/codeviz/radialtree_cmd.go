@@ -1,3 +1,4 @@
+//nolint:dupl // Coincidental similarity with bubbletree
 package main
 
 import (

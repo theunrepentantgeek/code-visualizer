@@ -1,3 +1,4 @@
+//nolint:dupl // Coincidental similarity with treemap
 package main
 
 import (
