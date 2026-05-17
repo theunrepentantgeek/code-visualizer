@@ -189,33 +189,6 @@ func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
-func TestCollectDistinctTypes_ReturnsSortedTypes(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	// Arrange - files with different file types added in non-alphabetical order
-	fZ := &model.File{Path: "/p/z.go", Name: "z.go"}
-	fZ.SetClassification(filesystem.FileType, "go")
-
-	fA := &model.File{Path: "/p/a.md", Name: "a.md"}
-	fA.SetClassification(filesystem.FileType, "md")
-
-	fM := &model.File{Path: "/p/m.txt", Name: "m.txt"}
-	fM.SetClassification(filesystem.FileType, "txt")
-
-	root := &model.Directory{
-		Path:  "/p",
-		Name:  "p",
-		Files: []*model.File{fZ, fA, fM},
-	}
-
-	// Act
-	types := collectDistinctTypes(root, filesystem.FileType)
-
-	// Assert
-	g.Expect(types).To(Equal([]string{"go", "md", "txt"}))
-}
-
 // Issue #99 — config-supplied parameters bypass early validation.
 // After the fix, Validate() no longer checks size/disc-size metrics;
 // that validation moves to validateConfig() which validates the merged

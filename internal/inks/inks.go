@@ -1,4 +1,6 @@
-package main
+// Package inks provides shared Ink construction helpers used by every
+// visualization that derives colours from per-file model data.
+package inks
 
 import (
 	"image/color"
@@ -11,9 +13,10 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
-// buildMetricInk creates an Ink for a given metric, using the appropriate
-// constructor based on the metric kind (numeric vs categorical).
-func buildMetricInk(
+// BuildMetricInk creates an Ink for a given metric, using the appropriate
+// constructor based on the metric kind (numeric vs categorical). Returns a
+// fixed-colour ink when the metric is unknown or when no values are present.
+func BuildMetricInk(
 	root *model.Directory,
 	m metric.Name,
 	palName palette.PaletteName,
@@ -27,7 +30,7 @@ func buildMetricInk(
 	pal := palette.GetPalette(palName)
 
 	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
-		values := collectNumericValues(root, m)
+		values := CollectNumericValues(root, m)
 		if len(values) == 0 {
 			return canvas.FixedInk(fallback)
 		}
@@ -35,13 +38,15 @@ func buildMetricInk(
 		return canvas.NumericInk(m, values, pal)
 	}
 
-	types := collectDistinctTypes(root, m)
+	types := CollectDistinctTypes(root, m)
 
 	return canvas.CategoricalInk(m, types, pal)
 }
 
-// metricValueForFile builds a MetricValue from a file's data for the given ink.
-func metricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
+// MetricValueForFile builds a MetricValue from a file's data for the given
+// ink. Returns the zero MetricValue when file is nil, when the ink is fixed,
+// or when the file has no value for the ink's metric.
+func MetricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
 	if file == nil {
 		return canvas.MetricValue{}
 	}
@@ -72,19 +77,9 @@ func metricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
 	}
 }
 
-func extractNumeric(f *model.File, m metric.Name) float64 {
-	if v, ok := f.Quantity(m); ok {
-		return float64(v)
-	}
-
-	if v, ok := f.Measure(m); ok {
-		return v
-	}
-
-	return 0
-}
-
-func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
+// CollectNumericValues walks the directory tree and returns every file's
+// numeric value for metric m (quantity preferred, then measure).
+func CollectNumericValues(root *model.Directory, m metric.Name) []float64 {
 	var values []float64
 
 	model.WalkFiles(root, func(f *model.File) {
@@ -94,7 +89,9 @@ func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
 	return values
 }
 
-func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
+// CollectDistinctTypes returns the sorted distinct classification values
+// observed for metric m across all files under root.
+func CollectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	seen := map[string]bool{}
 
 	model.WalkFiles(root, func(f *model.File) {
@@ -111,4 +108,16 @@ func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	slices.Sort(types)
 
 	return types
+}
+
+func extractNumeric(f *model.File, m metric.Name) float64 {
+	if v, ok := f.Quantity(m); ok {
+		return float64(v)
+	}
+
+	if v, ok := f.Measure(m); ok {
+		return v
+	}
+
+	return 0
 }

@@ -1,20 +1,14 @@
 package main
 
 import (
-	"log/slog"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
-	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -91,126 +85,44 @@ func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Bubbletree)
 }
 
-//nolint:revive,cyclop,funlen // Run methods share workflow structure across visualization commands
 func (c *BubbletreeCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
 	}
 
-	cfg := flags.Config.Bubbletree
-	size := metric.Name(ptrString(cfg.Size))
-
-	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
-		return eris.Wrap(err, "path validation failed")
+	state := &bubbletree.State{
+		CommonState: stages.CommonState{
+			TargetPath: c.TargetPath,
+			Output:     c.Output,
+			Flags:      toStagesFlags(flags),
+			RootConfig: flags.Config,
+			CLIFilters: c.Filter,
+		},
+		Config:             flags.Config.Bubbletree,
+		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
 
-	if flags.ExportConfig != "" {
-		if err := flags.Config.Save(flags.ExportConfig); err != nil {
-			return eris.Wrap(err, "failed to save config")
-		}
-	}
-
-	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
-
-	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
-
-	slog.Info("Scanning filesystem", "path", c.TargetPath)
-
-	scanProg, stopScanTicker := stages.BuildScanProgress(toStagesFlags(flags))
-
-	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
-
-	stopScanTicker()
-
-	if err != nil {
-		return eris.Wrap(err, "scan failed")
-	}
-
-	requested := stages.CollectRequestedMetrics(size, cfg.Fill, cfg.Border)
-
-	if err := stages.CheckGitRequirementHelper(c.TargetPath, requested); err != nil {
-		return eris.Wrap(err, "git requirement check failed")
-	}
-
-	slog.Info("Calculating metrics")
-
-	metricProg, stopMetricTicker := stages.BuildMetricProgress(toStagesFlags(flags), model.CountFiles(root))
-
-	if err := provider.Run(root, requested, metricProg); err != nil {
-		stopMetricTicker()
-
-		return eris.Wrap(err, "failed to load metrics")
-	}
-
-	stopMetricTicker()
-
-	if !c.IncludeBinaryFiles {
-		if err := stages.FilterBinaryFilesHelper(root); err != nil {
-			return eris.Wrap(err, "binary file filter failed")
-		}
-	}
-
-	if err := export.Export(root, requested, flags.ExportData); err != nil {
-		return eris.Wrap(err, "failed to export data")
-	}
-
-	width := ptrInt(flags.Config.Width, 1920)
-	height := ptrInt(flags.Config.Height, 1080)
-
-	return c.renderAndLog(root, cfg, width, height, fillMetric, fillPaletteName)
-}
-
-func (c *BubbletreeCmd) renderAndLog(
-	root *model.Directory,
-	cfg *config.Bubbletree,
-	width, height int,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-) error {
-	size := metric.Name(ptrString(cfg.Size))
-	files, dirs := stages.CountAll(root)
-
-	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
-
-	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
-
-	labels := c.resolveLabels(cfg)
-	nodes := bubbletree.Layout(root, width, height, size, labels)
-	inks := buildBubbleInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
-	cv := renderBubbleToCanvas(&nodes, root, width, height, inks)
-
-	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := legend.Build(
-		legendPos, legendOrient,
-		inks.fill, fillMetric,
-		inks.border, borderMetric,
-		size,
+	_, err := pipeline.Run[*bubbletree.State](
+		state,
+		stages.ValidatePaths,
+		stages.ExportConfig,
+		stages.BuildFilterRules,
+		bubbletree.ResolveMetrics,
+		stages.ScanFilesystem,
+		stages.CheckGitRequirement,
+		stages.RunProviders,
+		stages.FilterBinaryFiles,
+		stages.ExportData,
+		stages.ResolveDimensions,
+		bubbletree.BuildInksStage,
+		bubbletree.BuildLegendStage,
+		bubbletree.LayoutStage,
+		bubbletree.RenderStage,
+		stages.WriteCanvas,
+		bubbletree.LogResult,
 	)
 
-	if legendConfig != nil {
-		cv.SetLegend(*legendConfig)
-	}
-
-	if err := cv.Render(c.Output); err != nil {
-		return eris.Wrap(err, "render failed")
-	}
-
-	slog.Info(
-		"Rendered bubble tree",
-		"files", files,
-		"directories", dirs,
-		"output", c.Output,
-		"width", width,
-		"height", height,
-		"size_metric", string(size),
-		"fill_metric", string(fillMetric),
-		"fill_palette", string(fillPaletteName),
-		"border_metric", string(borderMetric),
-		"border_palette", string(borderPaletteName),
-	)
-
-	return nil
+	return eris.Wrap(err, "bubbletree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -229,21 +141,4 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 	cfg.Bubbletree.OverrideLabels(c.Labels)
 	cfg.Bubbletree.OverrideLegend(c.Legend)
 	cfg.Bubbletree.OverrideLegendOrientation(c.LegendOrientation)
-}
-
-func (*BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
-	if fill := cfg.Fill.MetricName(); fill != "" {
-		return fill
-	}
-
-	return metric.Name(ptrString(cfg.Size))
-}
-
-// resolveLabels converts the string labels flag to a bubbletree.LabelMode.
-func (*BubbletreeCmd) resolveLabels(cfg *config.Bubbletree) bubbletree.LabelMode {
-	if lbl := ptrString(cfg.Labels); lbl != "" {
-		return bubbletree.LabelMode(lbl)
-	}
-
-	return bubbletree.LabelFoldersOnly
 }

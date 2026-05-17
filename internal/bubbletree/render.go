@@ -1,25 +1,14 @@
-package main
+package bubbletree
 
 import (
 	"cmp"
-	"image/color"
 	"math"
 	"slices"
 	"unicode/utf8"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-)
-
-var (
-	bubbleDefaultFileFill = color.RGBA{R: 0xCC, G: 0xCC, B: 0xCC, A: 0xFF}
-	bubbleDefaultDirFill  = color.RGBA{R: 0x66, G: 0x99, B: 0xCC, A: 0xFF}
-	bubbleDefaultBorder   = color.RGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xFF}
-	bubbleLabelColour     = color.RGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xFF}
-	bubbleBgColour        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
 const (
@@ -31,33 +20,13 @@ const (
 	bubbleMaxArcFraction  = math.Pi / 2.0
 )
 
-// buildBubbleInks creates fill and border inks from metric configuration.
-func buildBubbleInks(
-	root *model.Directory,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
-) shapeInks {
-	inks := shapeInks{
-		border: canvas.FixedInk(bubbleDefaultBorder),
-	}
-
-	inks.fill = buildMetricInk(root, fillMetric, fillPaletteName, bubbleDefaultFileFill)
-	if borderMetric != "" {
-		inks.border = buildMetricInk(root, borderMetric, borderPaletteName, bubbleDefaultBorder)
-	}
-
-	return inks
-}
-
-// renderBubbleToCanvas walks the BubbleNode tree and model tree using
+// RenderToCanvas walks the BubbleNode tree and model tree using
 // path-based lookup, adding shapes to the canvas.
-func renderBubbleToCanvas(
-	nodes *bubbletree.BubbleNode,
+func RenderToCanvas(
+	nodes *BubbleNode,
 	root *model.Directory,
 	width, height int,
-	inks shapeInks,
+	inks Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -90,10 +59,10 @@ func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 // indexBubbleNodes recursively indexes all BubbleNodes by their Path,
 // separating directories and files. Returns two maps.
 func indexBubbleNodes(
-	node *bubbletree.BubbleNode,
-) (dirs map[string]*bubbletree.BubbleNode, files map[string]*bubbletree.BubbleNode) {
-	dirs = make(map[string]*bubbletree.BubbleNode)
-	files = make(map[string]*bubbletree.BubbleNode)
+	node *BubbleNode,
+) (dirs map[string]*BubbleNode, files map[string]*BubbleNode) {
+	dirs = make(map[string]*BubbleNode)
+	files = make(map[string]*BubbleNode)
 
 	indexBubbleNodesWalk(node, dirs, files)
 
@@ -101,9 +70,9 @@ func indexBubbleNodes(
 }
 
 func indexBubbleNodesWalk(
-	node *bubbletree.BubbleNode,
-	dirs map[string]*bubbletree.BubbleNode,
-	files map[string]*bubbletree.BubbleNode,
+	node *BubbleNode,
+	dirs map[string]*BubbleNode,
+	files map[string]*BubbleNode,
 ) {
 	for i := range node.Children {
 		child := &node.Children[i]
@@ -118,14 +87,14 @@ func indexBubbleNodesWalk(
 
 // bubbleDirEntry holds a directory node for sorted drawing.
 type bubbleDirEntry struct {
-	node *bubbletree.BubbleNode
+	node *BubbleNode
 }
 
 // addBubbleDirDiscs collects directory nodes from the model tree (via path lookup),
 // sorts them largest-first, and adds semi-transparent discs to the canvas.
 func addBubbleDirDiscs(
 	cv *canvas.Canvas,
-	dirIndex map[string]*bubbletree.BubbleNode,
+	dirIndex map[string]*BubbleNode,
 	root *model.Directory,
 ) {
 	entries := collectBubbleDirEntries(dirIndex, root)
@@ -158,7 +127,7 @@ func addBubbleDirDiscs(
 // collectBubbleDirEntries recursively walks model.Directory to find
 // all directories that have a corresponding BubbleNode.
 func collectBubbleDirEntries(
-	dirIndex map[string]*bubbletree.BubbleNode,
+	dirIndex map[string]*BubbleNode,
 	dir *model.Directory,
 ) []bubbleDirEntry {
 	var entries []bubbleDirEntry
@@ -177,23 +146,23 @@ func collectBubbleDirEntries(
 // and adds file discs to the canvas.
 func addBubbleFileDiscs(
 	cv *canvas.Canvas,
-	fileIndex map[string]*bubbletree.BubbleNode,
+	fileIndex map[string]*BubbleNode,
 	root *model.Directory,
-	inks shapeInks,
+	inks Inks,
 ) {
 	addBubbleFileDiscsWalk(cv, fileIndex, root, inks)
 }
 
 func addBubbleFileDiscsWalk(
 	cv *canvas.Canvas,
-	fileIndex map[string]*bubbletree.BubbleNode,
+	fileIndex map[string]*BubbleNode,
 	dir *model.Directory,
-	inks shapeInks,
+	inks Inks,
 ) {
 	fileSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.fill,
-			Border:      inks.border,
+			Fill:        inks.Fill,
+			Border:      inks.Border,
 			BorderWidth: bubbleBorderWidth,
 		},
 	}
@@ -204,8 +173,8 @@ func addBubbleFileDiscsWalk(
 			continue
 		}
 
-		fillMV := metricValueForFile(f, inks.fill)
-		borderMV := metricValueForFile(f, inks.border)
+		fillMV := pkginks.MetricValueForFile(f, inks.Fill)
+		borderMV := pkginks.MetricValueForFile(f, inks.Border)
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   fileSpec,
@@ -224,7 +193,7 @@ func addBubbleFileDiscsWalk(
 
 // addBubbleLabels recursively adds labels for all nodes with ShowLabel set.
 // Directory labels use arc text; file labels use centred text.
-func addBubbleLabels(cv *canvas.Canvas, node bubbletree.BubbleNode) {
+func addBubbleLabels(cv *canvas.Canvas, node BubbleNode) {
 	if node.ShowLabel && node.Label != "" {
 		if node.IsDirectory {
 			addBubbleDirLabel(cv, node)
@@ -239,7 +208,7 @@ func addBubbleLabels(cv *canvas.Canvas, node bubbletree.BubbleNode) {
 }
 
 // addBubbleDirLabel adds an arc text label curved along the top of a directory circle.
-func addBubbleDirLabel(cv *canvas.Canvas, node bubbletree.BubbleNode) {
+func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode) {
 	fontSize := bubbleArcFontSize(node.Label, node.Radius)
 	if fontSize == 0 {
 		return
@@ -260,7 +229,7 @@ func addBubbleDirLabel(cv *canvas.Canvas, node bubbletree.BubbleNode) {
 }
 
 // addBubbleFileLabel adds a centred text label on a file circle.
-func addBubbleFileLabel(cv *canvas.Canvas, node bubbletree.BubbleNode) {
+func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode) {
 	labelSpec := &canvas.TextSpec{
 		Ink:      canvas.FixedInk(bubbleLabelColour),
 		FontSize: 0,

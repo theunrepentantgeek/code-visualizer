@@ -211,8 +211,8 @@ func (c *SpiralCmd) layoutAndRender(
 	root *model.Directory,
 	buckets []spiral.TimeBucket,
 ) error {
-	width := ptrInt(flags.Config.Width, 1920)
-	height := ptrInt(flags.Config.Height, 1920)
+	width := ptrInt(flags.Config.Width)
+	height := ptrInt(flags.Config.Height)
 	resolution := c.resolveResolution(cfg)
 	labels := c.resolveLabels(cfg)
 
@@ -383,7 +383,15 @@ func sumNumericMetric(files []*model.File, m metric.Name) float64 {
 	var total float64
 
 	for _, f := range files {
-		total += extractNumeric(f, m)
+		if v, ok := f.Quantity(m); ok {
+			total += float64(v)
+
+			continue
+		}
+
+		if v, ok := f.Measure(m); ok {
+			total += v
+		}
 	}
 
 	return total

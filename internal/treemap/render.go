@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -126,8 +127,8 @@ func addFileRectForFile(
 
 	hasBorder := inks.Border.Info().Kind
 
-	fillMV := metricValueForFile(file, inks.Fill)
-	borderMV := metricValueForFile(file, inks.Border)
+	fillMV := pkginks.MetricValueForFile(file, inks.Fill)
+	borderMV := pkginks.MetricValueForFile(file, inks.Border)
 
 	spec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
