@@ -152,7 +152,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	files, dirs := stages.CountAll(root)
 
-	canvasSize := min(ptrInt(flags.Config.Width, 1920), ptrInt(flags.Config.Height, 1920))
+	canvasSize := min(ptrInt(flags.Config.Width), ptrInt(flags.Config.Height))
 
 	return c.renderAndLog(root, cfg, files, dirs, canvasSize, fillMetric, fillPaletteName)
 }

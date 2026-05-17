@@ -211,8 +211,8 @@ func (c *SpiralCmd) layoutAndRender(
 	root *model.Directory,
 	buckets []spiral.TimeBucket,
 ) error {
-	width := ptrInt(flags.Config.Width, 1920)
-	height := ptrInt(flags.Config.Height, 1920)
+	width := ptrInt(flags.Config.Width)
+	height := ptrInt(flags.Config.Height)
 	resolution := c.resolveResolution(cfg)
 	labels := c.resolveLabels(cfg)
 
