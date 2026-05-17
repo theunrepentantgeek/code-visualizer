@@ -224,17 +224,17 @@ func (c *SpiralCmd) layoutAndRender(
 	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
 	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
 
-	inks := buildSpiralInks(buckets, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
+	inks := spiral.BuildInks(buckets, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
 
 	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
 
-	cv := renderSpiralToCanvas(layout, buckets, width, height, inks)
+	cv := spiral.RenderToCanvas(layout, buckets, width, height, inks)
 
 	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
 	legendConfig := legend.Build(
 		legendPos, legendOrient,
-		inks.fill, fillMetric,
-		inks.border, borderMetric,
+		inks.Fill, fillMetric,
+		inks.Border, borderMetric,
 		metric.Name(ptrString(cfg.Size)),
 	)
 
