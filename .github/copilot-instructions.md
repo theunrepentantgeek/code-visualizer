@@ -45,4 +45,26 @@ Go 1.26+: Follow standard conventions, gofumpt formatting, eris error wrapping
 
 
 <!-- MANUAL ADDITIONS START -->
+
+## Agent Workflow Rules
+
+### Running `task lint` / `task ci`
+
+`task lint` runs golangci-lint with `--verbose` on purpose: when issues appear, the surrounding INFO lines are needed to diagnose linter config, exclusion rules, and analyzer stages. Do **not** strip `--verbose`.
+
+Because that verbose output is high-volume and low-value when lint passes, **always run `task lint` and `task ci` via an `Explore` (or equivalent) subagent**, asking it to return only:
+
+- exit status,
+- the count and identity of failing linters / failing tests,
+- the offending file:line and message for each issue,
+- a one-line note if no issues.
+
+Reserve direct `run_in_terminal` invocations of `task lint` / `task ci` for the rare case you need the full transcript.
+
+### Continuous execution
+
+- Never end a turn with only a status / recap message. End a turn only when (a) user input is required, (b) a blocker exists that you cannot resolve, or (c) every todo is completed.
+- After a commit, the next action is the next tool call (next task, `task ci`, `git push`, etc.) — not prose.
+- Prefer direct edits over subagents for sub-file-sized changes; dispatch subagents for parallelizable work, broad searches, or noisy commands (see above).
+
 <!-- MANUAL ADDITIONS END -->
