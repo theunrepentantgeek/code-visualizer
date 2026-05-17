@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -325,7 +326,7 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 
 	// File border should follow the metric ink.
 	if fileEntry != nil && fileEntry.file != nil {
-		fileMV := metricValueForFile(fileEntry.file, inks.border)
+		fileMV := pkginks.MetricValueForFile(fileEntry.file, inks.border)
 		fileBorderColour := inks.border.Dip(fileMV)
 		g.Expect(fileBorderColour).NotTo(Equal(radialDefaultBorder),
 			"file disc border should follow the metric ink, not the fixed default")

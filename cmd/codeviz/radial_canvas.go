@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -41,9 +42,9 @@ func buildRadialInks(
 		border: canvas.FixedInk(radialDefaultBorder),
 	}
 
-	inks.fill = buildMetricInk(root, fillMetric, fillPaletteName, radialDefaultFileFill)
+	inks.fill = pkginks.BuildMetricInk(root, fillMetric, fillPaletteName, radialDefaultFileFill)
 	if borderMetric != "" {
-		inks.border = buildMetricInk(root, borderMetric, borderPaletteName, radialDefaultBorder)
+		inks.border = pkginks.BuildMetricInk(root, borderMetric, borderPaletteName, radialDefaultBorder)
 	}
 
 	return inks
@@ -195,8 +196,8 @@ func addRadialDiscs(
 
 // addRadialDisc adds a single disc shape to the canvas.
 func addRadialDisc(cv *canvas.Canvas, e radialDiscEntry, inks shapeInks) {
-	fillMV := metricValueForFile(e.file, inks.fill)
-	borderMV := metricValueForFile(e.file, inks.border)
+	fillMV := pkginks.MetricValueForFile(e.file, inks.fill)
+	borderMV := pkginks.MetricValueForFile(e.file, inks.border)
 
 	fill := inks.fill
 	border := inks.border

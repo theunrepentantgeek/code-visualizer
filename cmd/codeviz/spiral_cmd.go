@@ -383,7 +383,15 @@ func sumNumericMetric(files []*model.File, m metric.Name) float64 {
 	var total float64
 
 	for _, f := range files {
-		total += extractNumeric(f, m)
+		if v, ok := f.Quantity(m); ok {
+			total += float64(v)
+
+			continue
+		}
+
+		if v, ok := f.Measure(m); ok {
+			total += v
+		}
 	}
 
 	return total

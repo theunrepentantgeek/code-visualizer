@@ -9,6 +9,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -43,9 +44,9 @@ func buildBubbleInks(
 		border: canvas.FixedInk(bubbleDefaultBorder),
 	}
 
-	inks.fill = buildMetricInk(root, fillMetric, fillPaletteName, bubbleDefaultFileFill)
+	inks.fill = pkginks.BuildMetricInk(root, fillMetric, fillPaletteName, bubbleDefaultFileFill)
 	if borderMetric != "" {
-		inks.border = buildMetricInk(root, borderMetric, borderPaletteName, bubbleDefaultBorder)
+		inks.border = pkginks.BuildMetricInk(root, borderMetric, borderPaletteName, bubbleDefaultBorder)
 	}
 
 	return inks
@@ -204,8 +205,8 @@ func addBubbleFileDiscsWalk(
 			continue
 		}
 
-		fillMV := metricValueForFile(f, inks.fill)
-		borderMV := metricValueForFile(f, inks.border)
+		fillMV := pkginks.MetricValueForFile(f, inks.fill)
+		borderMV := pkginks.MetricValueForFile(f, inks.border)
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   fileSpec,
