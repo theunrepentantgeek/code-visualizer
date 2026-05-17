@@ -31,7 +31,7 @@ func ApplyDiscSizes(nodes []SpiralNode, buckets []TimeBucket, maxDisc float64) {
 		}
 
 		ratio := buckets[i].SizeValue / maxSize
-		scaled := nodes[i].DiscRadius * math.Sqrt(ratio)
-		nodes[i].DiscRadius = max(minDiscRadius, min(scaled, maxDisc))
+		scaled := maxDisc * math.Sqrt(ratio)
+		nodes[i].DiscRadius = max(minDiscRadius, scaled)
 	}
 }
