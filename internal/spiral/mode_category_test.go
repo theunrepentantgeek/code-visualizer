@@ -1,4 +1,4 @@
-package main
+package spiral
 
 import (
 	"testing"

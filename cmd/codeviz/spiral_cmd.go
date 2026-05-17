@@ -1,23 +1,13 @@
 package main
 
 import (
-	"log/slog"
-	"maps"
-	"math"
-	"slices"
-	"time"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/export"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
-	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -98,182 +88,44 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	cfg := flags.Config.Spiral
-
-	if err := stages.ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
-		return eris.Wrap(err, "path validation failed")
+	state := &spiral.State{
+		CommonState: stages.CommonState{
+			TargetPath: c.TargetPath,
+			Output:     c.Output,
+			Flags:      toStagesFlags(flags),
+			RootConfig: flags.Config,
+			CLIFilters: c.Filter,
+		},
+		Config:             flags.Config.Spiral,
+		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
 
-	if flags.ExportConfig != "" {
-		if err := flags.Config.Save(flags.ExportConfig); err != nil {
-			return eris.Wrap(err, "failed to save config")
-		}
-	}
-
-	root, err := c.scanAndRunProviders(flags, cfg)
-	if err != nil {
-		return err
-	}
-
-	buckets, err := c.buildTimeBuckets(flags, root, cfg)
-	if err != nil {
-		return err
-	}
-
-	c.aggregateBucketMetrics(buckets, cfg)
-
-	return c.layoutAndRender(flags, cfg, root, buckets)
-}
-
-func (c *SpiralCmd) scanAndRunProviders(flags *Flags, cfg *config.Spiral) (*model.Directory, error) {
-	filterRules := stages.BuildFilterRulesHelper(flags.Config, c.Filter)
-
-	slog.Info("Scanning filesystem", "path", c.TargetPath)
-
-	scanProg, stopScanTicker := stages.BuildScanProgress(toStagesFlags(flags))
-
-	root, err := scan.Scan(c.TargetPath, filterRules, scanProg)
-
-	stopScanTicker()
-
-	if err != nil {
-		return nil, eris.Wrap(err, "scan failed")
-	}
-
-	requested := c.collectSpiralMetrics(cfg)
-
-	slog.Info("Calculating metrics")
-
-	metricProg, stopMetricTicker := stages.BuildMetricProgress(toStagesFlags(flags), model.CountFiles(root))
-
-	if err := provider.Run(root, requested, metricProg); err != nil {
-		stopMetricTicker()
-
-		return nil, eris.Wrap(err, "failed to load metrics")
-	}
-
-	stopMetricTicker()
-
-	if !c.IncludeBinaryFiles {
-		if err := stages.FilterBinaryFilesHelper(root); err != nil {
-			return nil, eris.Wrap(err, "binary file filter failed")
-		}
-	}
-
-	if err := export.Export(root, requested, flags.ExportData); err != nil {
-		return nil, eris.Wrap(err, "failed to export data")
-	}
-
-	return root, nil
-}
-
-func (c *SpiralCmd) buildTimeBuckets(
-	flags *Flags,
-	root *model.Directory,
-	cfg *config.Spiral,
-) ([]spiral.TimeBucket, error) {
-	if err := stages.CheckGitRepoHelper(c.TargetPath); err != nil {
-		return nil, eris.Wrap(err, "git requirement check failed")
-	}
-
-	slog.Info("Loading commit history")
-
-	histProg, stopHistTicker := buildHistoryProgress(flags)
-
-	records, err := loadCommitHistory(root, histProg)
-
-	stopHistTicker()
-
-	if err != nil {
-		return nil, eris.Wrap(err, "failed to load commit history")
-	}
-
-	if len(records) == 0 {
-		return nil, eris.New("no commit history found; spiral requires git commits")
-	}
-
-	startTime, endTime := commitTimeRange(records)
-	resolution := c.resolveResolution(cfg)
-
-	buckets := spiral.BuildTimeBuckets(resolution, startTime, endTime)
-	if len(buckets) == 0 {
-		return nil, eris.New("no time buckets created from commit time range")
-	}
-
-	assignFilesToBuckets(buckets, records)
-
-	return buckets, nil
-}
-
-func (c *SpiralCmd) layoutAndRender(
-	flags *Flags,
-	cfg *config.Spiral,
-	root *model.Directory,
-	buckets []spiral.TimeBucket,
-) error {
-	width := ptrInt(flags.Config.Width)
-	height := ptrInt(flags.Config.Height)
-	resolution := c.resolveResolution(cfg)
-	labels := c.resolveLabels(cfg)
-
-	layout := spiral.Layout(buckets, width, height, resolution, labels)
-	maxDisc := spiral.MaxDiscRadius(len(buckets), width, height, resolution)
-	applySpiralDiscSizes(layout.Nodes, buckets, maxDisc)
-
-	fillMetric := c.resolveFillMetric(cfg)
-	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
-	borderMetric, borderPaletteName := stages.ResolveBorderMetricAndPalette(cfg.Border)
-
-	inks := buildSpiralInks(buckets, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
-
-	slog.Info("Rendering image", "output", c.Output, "width", width, "height", height)
-
-	cv := renderSpiralToCanvas(layout, buckets, width, height, inks)
-
-	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
-	legendConfig := legend.Build(
-		legendPos, legendOrient,
-		inks.fill, fillMetric,
-		inks.border, borderMetric,
-		metric.Name(ptrString(cfg.Size)),
+	_, err := pipeline.Run[*spiral.State](
+		state,
+		stages.ValidatePaths,
+		stages.ExportConfig,
+		stages.BuildFilterRules,
+		spiral.ResolveMetrics,
+		stages.ScanFilesystem,
+		stages.CheckGitRequirement,
+		stages.RunProviders,
+		stages.FilterBinaryFiles,
+		stages.ExportData,
+		stages.LoadGitHistory,
+		stages.GroupGitHistoryByFile,
+		stages.ExtractFileHistory,
+		stages.ResolveDimensions,
+		spiral.BuildTimeBucketsStage,
+		spiral.AggregateBucketMetricsStage,
+		spiral.BuildInksStage,
+		spiral.BuildLegendStage,
+		spiral.LayoutStage,
+		spiral.RenderStage,
+		stages.WriteCanvas,
+		spiral.LogResult,
 	)
 
-	if legendConfig != nil {
-		cv.SetLegend(*legendConfig)
-	}
-
-	if err := cv.Render(c.Output); err != nil {
-		return eris.Wrap(err, "render failed")
-	}
-
-	sizeMetric := metric.Name(ptrString(cfg.Size))
-	c.logRendered(root, width, height, sizeMetric, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
-
-	return nil
-}
-
-func (*SpiralCmd) logRendered(
-	root *model.Directory,
-	width, height int,
-	sizeMetric, fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
-) {
-	files, dirs := stages.CountAll(root)
-
-	slog.Info(
-		"Rendered spiral",
-		"files", files,
-		"directories", dirs,
-		"width", width,
-		"height", height,
-		"size_metric", string(sizeMetric),
-		"fill_metric", string(fillMetric),
-		"fill_palette", string(fillPaletteName),
-		"border_metric", string(borderMetric),
-		"border_palette", string(borderPaletteName),
-	)
+	return eris.Wrap(err, "spiral pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
@@ -293,194 +145,4 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.Spiral.OverrideLabels(c.Labels)
 	cfg.Spiral.OverrideLegend(c.Legend)
 	cfg.Spiral.OverrideLegendOrientation(c.LegendOrientation)
-}
-
-// collectSpiralMetrics gathers all metrics requested by the spiral configuration.
-// Unlike other commands, size is optional — when omitted, disc size defaults to commit count.
-func (*SpiralCmd) collectSpiralMetrics(cfg *config.Spiral) []metric.Name {
-	size := metric.Name(ptrString(cfg.Size))
-	if size != "" {
-		return stages.CollectRequestedMetrics(size, cfg.Fill, cfg.Border)
-	}
-
-	seen := map[metric.Name]bool{}
-
-	var names []metric.Name
-
-	for _, spec := range []*config.MetricSpec{cfg.Fill, cfg.Border} {
-		if spec != nil && spec.Metric != "" && !seen[spec.Metric] {
-			seen[spec.Metric] = true
-			names = append(names, spec.Metric)
-		}
-	}
-
-	return names
-}
-
-func (*SpiralCmd) resolveResolution(cfg *config.Spiral) spiral.Resolution {
-	if r := ptrString(cfg.Resolution); r == "hourly" {
-		return spiral.Hourly
-	}
-
-	return spiral.Daily
-}
-
-func (*SpiralCmd) resolveLabels(cfg *config.Spiral) spiral.LabelMode {
-	if lbl := ptrString(cfg.Labels); lbl != "" {
-		return spiral.LabelMode(lbl)
-	}
-
-	return spiral.LabelLaps
-}
-
-func (*SpiralCmd) resolveFillMetric(cfg *config.Spiral) metric.Name {
-	return cfg.Fill.MetricName()
-}
-
-// aggregateBucketMetrics fills in the aggregated metric values for each time bucket.
-func (c *SpiralCmd) aggregateBucketMetrics(buckets []spiral.TimeBucket, cfg *config.Spiral) {
-	sizeMetric := metric.Name(ptrString(cfg.Size))
-	fillMetric := cfg.Fill.MetricName()
-	borderMetric := cfg.Border.MetricName()
-
-	for i := range buckets {
-		c.aggregateBucket(&buckets[i], sizeMetric, fillMetric, borderMetric)
-	}
-}
-
-func (*SpiralCmd) aggregateBucket(
-	b *spiral.TimeBucket,
-	sizeMetric, fillMetric, borderMetric metric.Name,
-) {
-	if sizeMetric != "" {
-		b.SizeValue = sumNumericMetric(b.Files, sizeMetric)
-	} else {
-		b.SizeValue = float64(len(b.Files))
-	}
-
-	aggregateColourMetric(b.Files, fillMetric, &b.FillValue, &b.FillLabel)
-	aggregateColourMetric(b.Files, borderMetric, &b.BorderValue, &b.BorderLabel)
-}
-
-func aggregateColourMetric(files []*model.File, m metric.Name, numVal *float64, catLabel *string) {
-	if m == "" {
-		return
-	}
-
-	d, ok := provider.GetDescriptor(m)
-	if !ok {
-		return
-	}
-
-	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
-		*numVal = sumNumericMetric(files, m)
-	} else {
-		*catLabel = modeCategory(files, m)
-	}
-}
-
-func sumNumericMetric(files []*model.File, m metric.Name) float64 {
-	var total float64
-
-	for _, f := range files {
-		if v, ok := f.Quantity(m); ok {
-			total += float64(v)
-
-			continue
-		}
-
-		if v, ok := f.Measure(m); ok {
-			total += v
-		}
-	}
-
-	return total
-}
-
-// modeCategory returns the most frequent classification value among the given files.
-func modeCategory(files []*model.File, m metric.Name) string {
-	counts := map[string]int{}
-
-	for _, f := range files {
-		if cat, ok := f.Classification(m); ok {
-			counts[cat]++
-		}
-	}
-
-	best := ""
-	bestCount := 0
-
-	for _, cat := range slices.Sorted(maps.Keys(counts)) {
-		if counts[cat] > bestCount {
-			best = cat
-			bestCount = counts[cat]
-		}
-	}
-
-	return best
-}
-
-// commitTimeRange returns the earliest and latest timestamps from commit records.
-func commitTimeRange(records []commitRecord) (earliest time.Time, latest time.Time) {
-	minT := records[0].Timestamp
-	maxT := records[0].Timestamp
-
-	for _, r := range records[1:] {
-		if r.Timestamp.Before(minT) {
-			minT = r.Timestamp
-		}
-
-		if r.Timestamp.After(maxT) {
-			maxT = r.Timestamp
-		}
-	}
-
-	return minT, maxT
-}
-
-// assignFilesToBuckets places each commit record's file into the appropriate time bucket.
-func assignFilesToBuckets(buckets []spiral.TimeBucket, records []commitRecord) {
-	for _, rec := range records {
-		for i := range buckets {
-			if !rec.Timestamp.Before(buckets[i].Start) && rec.Timestamp.Before(buckets[i].End) {
-				buckets[i].Files = append(buckets[i].Files, rec.File)
-
-				break
-			}
-		}
-	}
-}
-
-// minDiscRadius is the minimum visible disc radius for active time buckets.
-const minDiscRadius = 3.0
-
-// applySpiralDiscSizes sets disc radii on nodes proportional to their size values.
-// Empty buckets (no activity) get zero radius so they are not drawn.
-// Active buckets are clamped between minDiscRadius and maxDisc.
-func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket, maxDisc float64) {
-	maxSize := 0.0
-
-	for _, b := range buckets {
-		if b.SizeValue > maxSize {
-			maxSize = b.SizeValue
-		}
-	}
-
-	for i := range nodes {
-		if buckets[i].SizeValue == 0 && len(buckets[i].Files) == 0 {
-			nodes[i].DiscRadius = 0
-
-			continue
-		}
-
-		if maxSize == 0 {
-			nodes[i].DiscRadius = minDiscRadius
-
-			continue
-		}
-
-		ratio := buckets[i].SizeValue / maxSize
-		scaled := nodes[i].DiscRadius * math.Sqrt(ratio)
-		nodes[i].DiscRadius = max(minDiscRadius, min(scaled, maxDisc))
-	}
 }

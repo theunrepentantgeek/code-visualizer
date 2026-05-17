@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
 // Flags is the cross-cutting flag bundle passed to every viz command's Run.
@@ -41,6 +42,13 @@ type CommonState struct {
 	Width       int              // ResolveDimensions
 	Height      int              // ResolveDimensions
 	Canvas      *canvas.Canvas   // viz-specific Render
+
+	// Git history (populated by LoadGitHistory / GroupGitHistoryByFile / ExtractFileHistory).
+	// GitHistory is written once and not mutated afterward; consumers may hold
+	// *Commit references for the lifetime of CommonState.
+	GitHistory    []git.Commit
+	FileHistory   map[*model.File][]CommitRef
+	FileTimeRange map[*model.File]TimeRange
 }
 
 // VizState is satisfied by any state type that embeds CommonState and
