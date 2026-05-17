@@ -227,7 +227,7 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 }
 
 func (*RadialCmd) resolveFillMetric(cfg *config.Radial) metric.Name {
-	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
+	if fill := cfg.Fill.MetricName(); fill != "" {
 		return fill
 	}
 

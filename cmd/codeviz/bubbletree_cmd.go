@@ -232,7 +232,7 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 }
 
 func (*BubbletreeCmd) resolveFillMetric(cfg *config.Bubbletree) metric.Name {
-	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
+	if fill := cfg.Fill.MetricName(); fill != "" {
 		return fill
 	}
 

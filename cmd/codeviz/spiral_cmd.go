@@ -334,14 +334,14 @@ func (*SpiralCmd) resolveLabels(cfg *config.Spiral) spiral.LabelMode {
 }
 
 func (*SpiralCmd) resolveFillMetric(cfg *config.Spiral) metric.Name {
-	return stages.SpecMetric(cfg.Fill)
+	return cfg.Fill.MetricName()
 }
 
 // aggregateBucketMetrics fills in the aggregated metric values for each time bucket.
 func (c *SpiralCmd) aggregateBucketMetrics(buckets []spiral.TimeBucket, cfg *config.Spiral) {
 	sizeMetric := metric.Name(ptrString(cfg.Size))
-	fillMetric := stages.SpecMetric(cfg.Fill)
-	borderMetric := stages.SpecMetric(cfg.Border)
+	fillMetric := cfg.Fill.MetricName()
+	borderMetric := cfg.Border.MetricName()
 
 	for i := range buckets {
 		c.aggregateBucket(&buckets[i], sizeMetric, fillMetric, borderMetric)

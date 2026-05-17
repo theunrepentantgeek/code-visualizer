@@ -26,7 +26,7 @@ func ResolveMetrics(s *State) error {
 }
 
 func resolveFillMetric(cfg *config.Treemap) metric.Name {
-	if fill := stages.SpecMetric(cfg.Fill); fill != "" {
+	if fill := cfg.Fill.MetricName(); fill != "" {
 		return fill
 	}
 
