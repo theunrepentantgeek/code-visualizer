@@ -66,8 +66,10 @@ their existing open-coded `Run()` methods — only their imports change.
   `cmd/codeviz/bubble_canvas.go`, and `cmd/codeviz/bubble_canvas_test.go`
   no longer exist.
 - `internal/inks` package exists and is consumed by `internal/treemap`,
-  `internal/bubbletree`, `cmd/codeviz/radial_canvas.go`, and
-  `cmd/codeviz/spiral_canvas.go`.
+  `internal/bubbletree`, and `cmd/codeviz/radial_canvas.go`.
+  `cmd/codeviz/spiral_canvas.go` does not call the shared ink helpers
+  today (it uses its own `buildBucketInk` / `spiralMetricValue`); it
+  only loses its dependency on the deleted `shape_inks.go` struct.
 - `internal/bubbletree/render_test.go` provides end-to-end render coverage
   matching the depth of `internal/treemap/render_test.go`.
 
@@ -164,13 +166,13 @@ func (s *State) IncludeBinary() bool         { return s.IncludeBinaryFiles }
 
 Viz-specific stages (all `pipeline.Stage[*State]`):
 
-| Stage              | Responsibility                                                                                                                                                                |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ResolveMetrics`   | Sets `Size`, `FillMetric`, `FillPalette`, `BorderMetric`, `BorderPalette`, `Labels`; populates `Common().Requested` via `stages.CollectRequestedMetrics`.                     |
-| `BuildInksStage`   | Emits the `slog.Info("Rendering image", "output", …, "width", …, "height", …)` line; calls `BuildInks(Common().Root, …)`; stores result in `s.Inks`.                          |
-| `BuildLegendStage` | Calls `legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))` then `legend.Build(...)` with `s.Inks.Fill / FillMetric / Inks.Border / BorderMetric / Size`; stores in `s.LegendConfig`. |
-| `LayoutStage`      | Runs `bubbletree.Layout(Common().Root, Common().Width, Common().Height, s.Size, s.Labels)` and stores into `s.Nodes`. No legend reservation, no offset.                       |
-| `RenderStage`      | Calls `RenderToCanvas(&s.Nodes, Common().Root, Common().Width, Common().Height, s.Inks)`. If `s.LegendConfig != nil`, calls `cv.SetLegend(*s.LegendConfig)`. Assigns to `Common().Canvas`. |
+| Stage              | Responsibility                                                                                                                                                                                                                            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ResolveMetrics`   | Sets `Size`, `FillMetric`, `FillPalette`, `BorderMetric`, `BorderPalette`, `Labels`; populates `Common().Requested` via `stages.CollectRequestedMetrics`.                                                                                 |
+| `BuildInksStage`   | Emits the `slog.Info("Rendering image", "output", …, "width", …, "height", …)` line; calls `BuildInks(Common().Root, …)`; stores result in `s.Inks`.                                                                                      |
+| `BuildLegendStage` | Calls `legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))` then `legend.Build(...)` with `s.Inks.Fill / FillMetric / Inks.Border / BorderMetric / Size`; stores in `s.LegendConfig`.                          |
+| `LayoutStage`      | Runs `bubbletree.Layout(Common().Root, Common().Width, Common().Height, s.Size, s.Labels)` and stores into `s.Nodes`. No legend reservation, no offset.                                                                                   |
+| `RenderStage`      | Calls `RenderToCanvas(&s.Nodes, Common().Root, Common().Width, Common().Height, s.Inks)`. If `s.LegendConfig != nil`, calls `cv.SetLegend(*s.LegendConfig)`. Assigns to `Common().Canvas`.                                                |
 | `LogResult`        | Emits the final `slog.Info("Rendered bubble tree", …)` line with the same keys and values as today: `files`, `directories`, `output`, `width`, `height`, `size_metric`, `fill_metric`, `fill_palette`, `border_metric`, `border_palette`. |
 
 `Inks`:
@@ -284,8 +286,11 @@ in shape; `spiral_canvas.go` gets `spiralInks` if it uses one. Mechanical
 change in both files.
 
 **`ink_builder.go`** — deleted. All four helpers now live in
-`internal/inks`. `radial_canvas.go` and `spiral_canvas.go` import the
-new package and call `inks.BuildMetricInk` / `inks.MetricValueForFile`.
+`internal/inks`. `radial_canvas.go` imports the new package and calls
+`inks.BuildMetricInk` / `inks.MetricValueForFile` at its existing call
+sites. `spiral_canvas.go` is not touched by this change beyond the
+`shape_inks` rename, since it uses its own `buildBucketInk` /
+`spiralMetricValue` helpers.
 
 ## Testing strategy
 
@@ -337,8 +342,10 @@ Each step keeps `task ci` green and can be committed independently.
    - Move the four helpers verbatim, export them, and export their
      supporting types if any.
    - Update `internal/treemap/inks.go` to delegate.
-   - Update `cmd/codeviz/bubble_canvas.go`, `radial_canvas.go`, and any
-     spiral call sites to import `internal/inks`.
+   - Update `cmd/codeviz/bubble_canvas.go` and `radial_canvas.go` to
+     import `internal/inks` at their `buildMetricInk` and
+     `metricValueForFile` call sites. `spiral_canvas.go` does not use
+     these helpers, so no import change there.
    - Move `TestCollectDistinctTypes_*` to the new package; add the new
      table tests.
    - Delete `cmd/codeviz/ink_builder.go`.
