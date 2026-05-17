@@ -2,10 +2,6 @@ package main
 
 import (
 	"log/slog"
-	"maps"
-	"math"
-	"slices"
-	"time"
 
 	"github.com/rotisserie/eris"
 
@@ -120,7 +116,10 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	c.aggregateBucketMetrics(buckets, cfg)
+	sizeMetric := metric.Name(ptrString(cfg.Size))
+	fillMetric := cfg.Fill.MetricName()
+	borderMetric := cfg.Border.MetricName()
+	spiral.AggregateBucketMetrics(buckets, sizeMetric, fillMetric, borderMetric)
 
 	return c.layoutAndRender(flags, cfg, root, buckets)
 }
@@ -192,7 +191,17 @@ func (c *SpiralCmd) buildTimeBuckets(
 		return nil, eris.New("no commit history found; spiral requires git commits")
 	}
 
-	startTime, endTime := commitTimeRange(records)
+	startTime, endTime := records[0].Timestamp, records[0].Timestamp
+	for _, r := range records[1:] {
+		if r.Timestamp.Before(startTime) {
+			startTime = r.Timestamp
+		}
+
+		if r.Timestamp.After(endTime) {
+			endTime = r.Timestamp
+		}
+	}
+
 	resolution := c.resolveResolution(cfg)
 
 	buckets := spiral.BuildTimeBuckets(resolution, startTime, endTime)
@@ -200,7 +209,12 @@ func (c *SpiralCmd) buildTimeBuckets(
 		return nil, eris.New("no time buckets created from commit time range")
 	}
 
-	assignFilesToBuckets(buckets, records)
+	fileHistory := make(map[*model.File][]stages.CommitRef, len(records))
+	for _, rec := range records {
+		fileHistory[rec.File] = append(fileHistory[rec.File], stages.CommitRef{When: rec.Timestamp})
+	}
+
+	spiral.AssignFilesToBuckets(buckets, fileHistory)
 
 	return buckets, nil
 }
@@ -218,7 +232,7 @@ func (c *SpiralCmd) layoutAndRender(
 
 	layout := spiral.Layout(buckets, width, height, resolution, labels)
 	maxDisc := spiral.MaxDiscRadius(len(buckets), width, height, resolution)
-	applySpiralDiscSizes(layout.Nodes, buckets, maxDisc)
+	spiral.ApplyDiscSizes(layout.Nodes, buckets, maxDisc)
 
 	fillMetric := c.resolveFillMetric(cfg)
 	fillPaletteName := stages.ResolveFillPalette(cfg.Fill, fillMetric)
@@ -335,152 +349,4 @@ func (*SpiralCmd) resolveLabels(cfg *config.Spiral) spiral.LabelMode {
 
 func (*SpiralCmd) resolveFillMetric(cfg *config.Spiral) metric.Name {
 	return cfg.Fill.MetricName()
-}
-
-// aggregateBucketMetrics fills in the aggregated metric values for each time bucket.
-func (c *SpiralCmd) aggregateBucketMetrics(buckets []spiral.TimeBucket, cfg *config.Spiral) {
-	sizeMetric := metric.Name(ptrString(cfg.Size))
-	fillMetric := cfg.Fill.MetricName()
-	borderMetric := cfg.Border.MetricName()
-
-	for i := range buckets {
-		c.aggregateBucket(&buckets[i], sizeMetric, fillMetric, borderMetric)
-	}
-}
-
-func (*SpiralCmd) aggregateBucket(
-	b *spiral.TimeBucket,
-	sizeMetric, fillMetric, borderMetric metric.Name,
-) {
-	if sizeMetric != "" {
-		b.SizeValue = sumNumericMetric(b.Files, sizeMetric)
-	} else {
-		b.SizeValue = float64(len(b.Files))
-	}
-
-	aggregateColourMetric(b.Files, fillMetric, &b.FillValue, &b.FillLabel)
-	aggregateColourMetric(b.Files, borderMetric, &b.BorderValue, &b.BorderLabel)
-}
-
-func aggregateColourMetric(files []*model.File, m metric.Name, numVal *float64, catLabel *string) {
-	if m == "" {
-		return
-	}
-
-	d, ok := provider.GetDescriptor(m)
-	if !ok {
-		return
-	}
-
-	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
-		*numVal = sumNumericMetric(files, m)
-	} else {
-		*catLabel = modeCategory(files, m)
-	}
-}
-
-func sumNumericMetric(files []*model.File, m metric.Name) float64 {
-	var total float64
-
-	for _, f := range files {
-		if v, ok := f.Quantity(m); ok {
-			total += float64(v)
-
-			continue
-		}
-
-		if v, ok := f.Measure(m); ok {
-			total += v
-		}
-	}
-
-	return total
-}
-
-// modeCategory returns the most frequent classification value among the given files.
-func modeCategory(files []*model.File, m metric.Name) string {
-	counts := map[string]int{}
-
-	for _, f := range files {
-		if cat, ok := f.Classification(m); ok {
-			counts[cat]++
-		}
-	}
-
-	best := ""
-	bestCount := 0
-
-	for _, cat := range slices.Sorted(maps.Keys(counts)) {
-		if counts[cat] > bestCount {
-			best = cat
-			bestCount = counts[cat]
-		}
-	}
-
-	return best
-}
-
-// commitTimeRange returns the earliest and latest timestamps from commit records.
-func commitTimeRange(records []commitRecord) (earliest time.Time, latest time.Time) {
-	minT := records[0].Timestamp
-	maxT := records[0].Timestamp
-
-	for _, r := range records[1:] {
-		if r.Timestamp.Before(minT) {
-			minT = r.Timestamp
-		}
-
-		if r.Timestamp.After(maxT) {
-			maxT = r.Timestamp
-		}
-	}
-
-	return minT, maxT
-}
-
-// assignFilesToBuckets places each commit record's file into the appropriate time bucket.
-func assignFilesToBuckets(buckets []spiral.TimeBucket, records []commitRecord) {
-	for _, rec := range records {
-		for i := range buckets {
-			if !rec.Timestamp.Before(buckets[i].Start) && rec.Timestamp.Before(buckets[i].End) {
-				buckets[i].Files = append(buckets[i].Files, rec.File)
-
-				break
-			}
-		}
-	}
-}
-
-// minDiscRadius is the minimum visible disc radius for active time buckets.
-const minDiscRadius = 3.0
-
-// applySpiralDiscSizes sets disc radii on nodes proportional to their size values.
-// Empty buckets (no activity) get zero radius so they are not drawn.
-// Active buckets are clamped between minDiscRadius and maxDisc.
-func applySpiralDiscSizes(nodes []spiral.SpiralNode, buckets []spiral.TimeBucket, maxDisc float64) {
-	maxSize := 0.0
-
-	for _, b := range buckets {
-		if b.SizeValue > maxSize {
-			maxSize = b.SizeValue
-		}
-	}
-
-	for i := range nodes {
-		if buckets[i].SizeValue == 0 && len(buckets[i].Files) == 0 {
-			nodes[i].DiscRadius = 0
-
-			continue
-		}
-
-		if maxSize == 0 {
-			nodes[i].DiscRadius = minDiscRadius
-
-			continue
-		}
-
-		ratio := buckets[i].SizeValue / maxSize
-		scaled := nodes[i].DiscRadius * math.Sqrt(ratio)
-		nodes[i].DiscRadius = max(minDiscRadius, min(scaled, maxDisc))
-	}
 }
