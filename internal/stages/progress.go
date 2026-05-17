@@ -184,3 +184,23 @@ func removeMetric(names []metric.Name, target metric.Name) []metric.Name {
 
 	return names
 }
+
+// BuildHistoryProgress creates a per-commit callback and (if applicable) starts a
+// ticker goroutine that logs commit history loading progress every second.
+// The caller must invoke the returned stop function when loading completes.
+func BuildHistoryProgress(flags *Flags) (onCommit func(), stop func()) {
+	if !flags.Verbose && !flags.Debug {
+		return nil, func() {}
+	}
+
+	counter := &atomic.Int64{}
+	stop = startHistoryTicker(counter)
+
+	return func() { counter.Add(1) }, stop
+}
+
+func startHistoryTicker(counter *atomic.Int64) (stop func()) {
+	return startProgressTicker(func() {
+		slog.Debug("Loading history...", "commits", counter.Load())
+	})
+}

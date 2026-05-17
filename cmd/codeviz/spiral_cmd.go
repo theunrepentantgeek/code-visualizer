@@ -178,7 +178,7 @@ func (c *SpiralCmd) buildTimeBuckets(
 
 	slog.Info("Loading commit history")
 
-	histProg, stopHistTicker := buildHistoryProgress(flags)
+	histProg, stopHistTicker := stages.BuildHistoryProgress(toStagesFlags(flags))
 
 	records, err := loadCommitHistory(root, histProg)
 
