@@ -177,14 +177,14 @@ func (c *BubbletreeCmd) renderAndLog(
 
 	labels := c.resolveLabels(cfg)
 	nodes := bubbletree.Layout(root, width, height, size, labels)
-	inks := buildBubbleInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
-	cv := renderBubbleToCanvas(&nodes, root, width, height, inks)
+	inks := bubbletree.BuildInks(root, fillMetric, fillPaletteName, borderMetric, borderPaletteName)
+	cv := bubbletree.RenderToCanvas(&nodes, root, width, height, inks)
 
 	legendPos, legendOrient := legend.ResolveOptions(ptrString(cfg.Legend), ptrString(cfg.LegendOrientation))
 	legendConfig := legend.Build(
 		legendPos, legendOrient,
-		inks.fill, fillMetric,
-		inks.border, borderMetric,
+		inks.Fill, fillMetric,
+		inks.Border, borderMetric,
 		size,
 	)
 
