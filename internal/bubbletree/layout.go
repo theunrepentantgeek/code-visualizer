@@ -27,21 +27,7 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, la
 	}
 
 	node := layoutDir(root, sizeMetric, labels)
-
-	// Scale based on content radius (the tight enclosure of children) rather
-	// than the padded root radius. The root circle is never rendered, so its
-	// outer padding (parentPadding + LabelReservation) would otherwise reduce
-	// the scale factor and produce unnecessary whitespace.
-	contentR := node.Radius - parentPadding
-	if node.ShowLabel {
-		contentR -= LabelReservation
-	}
-
-	if contentR <= 0 {
-		contentR = node.Radius
-	}
-
-	scaleToFit(&node, float64(width), float64(height), contentR)
+	scaleToFit(&node, float64(width), float64(height))
 
 	return node
 }
@@ -561,25 +547,73 @@ func enclosingThreeFallback(a, b, c enclosure) enclosure {
 // Top-down coordinate assignment — scales local layout to pixel canvas
 // ---------------------------------------------------------------------------
 
+const canvasMarginFraction = 0.02 // 2% margin on each side
+
 // scaleToFit assigns absolute pixel coordinates to the entire tree,
-// scaling so that contentRadius fits within width × height, then centring the root.
-// contentRadius is the actual content radius (excluding the outer padding of the
-// root node, which is never rendered).
-func scaleToFit(node *BubbleNode, width, height, contentRadius float64) {
-	if contentRadius <= 0 {
+// scaling and translating so the tight bounding rectangle of the children
+// fills the canvas (minus a small margin). Using a rectangle rather than the
+// root bounding circle removes the large whitespace corners that a circle
+// fit would leave on a non-square canvas.
+func scaleToFit(node *BubbleNode, width, height float64) {
+	if node.Radius <= 0 || len(node.Children) == 0 {
 		node.X = width / 2
 		node.Y = height / 2
 
 		return
 	}
 
-	scale := math.Min(width, height) / (2 * contentRadius)
+	minX, minY, maxX, maxY := childrenBounds(node)
 
-	node.X = width / 2
-	node.Y = height / 2
+	boxW := maxX - minX
+	boxH := maxY - minY
+
+	if boxW <= 0 || boxH <= 0 {
+		node.X = width / 2
+		node.Y = height / 2
+		node.Radius *= math.Min(width, height) / (2 * node.Radius)
+
+		return
+	}
+
+	usable := 1 - 2*canvasMarginFraction
+	scale := math.Min(width*usable/boxW, height*usable/boxH)
+
+	// Place the root node so that the bounding box centre maps to the canvas centre.
+	boxCx := (minX + maxX) / 2
+	boxCy := (minY + maxY) / 2
+
+	node.X = width/2 - boxCx*scale
+	node.Y = height/2 - boxCy*scale
 	node.Radius *= scale
 
 	applyScale(node, scale)
+}
+
+// childrenBounds returns the tight axis-aligned bounding box of all direct
+// children of node in node's local coordinate frame.
+func childrenBounds(node *BubbleNode) (minX, minY, maxX, maxY float64) {
+	minX, minY = math.MaxFloat64, math.MaxFloat64
+	maxX, maxY = -math.MaxFloat64, -math.MaxFloat64
+
+	for _, c := range node.Children {
+		if c.X-c.Radius < minX {
+			minX = c.X - c.Radius
+		}
+
+		if c.Y-c.Radius < minY {
+			minY = c.Y - c.Radius
+		}
+
+		if c.X+c.Radius > maxX {
+			maxX = c.X + c.Radius
+		}
+
+		if c.Y+c.Radius > maxY {
+			maxY = c.Y + c.Radius
+		}
+	}
+
+	return
 }
 
 // applyScale recursively converts children from local to absolute coordinates.
