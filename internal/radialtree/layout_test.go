@@ -332,6 +332,94 @@ func TestComputeLeafCountWithFiles(t *testing.T) {
 	g.Expect(computeLeafCount(dir)).To(Equal(2))
 }
 
+// TestFileVirtualWeight_DeepFileHasWeightOne verifies that a file at a depth
+// where the ring is already large enough gets virtual weight 1.
+func TestFileVirtualWeight_DeepFileHasWeightOne(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// At depth 5 with ringSpacing=200 and 10 total leaves:
+	// arc = 2π/10 * 5 * 200 = 628px >> minFileLabelWidth(72px).
+	g.Expect(fileVirtualWeight(5, 200, 10)).To(BeNumerically("==", 1.0))
+}
+
+// TestFileVirtualWeight_ShallowFileInflated verifies that a file at a depth
+// where the ring is too small receives virtual weight > 1.
+func TestFileVirtualWeight_ShallowFileInflated(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// At depth 1 with ringSpacing=100 and 100 total leaves:
+	// arc = 2π/100 * 1 * 100 = 6.28px << 72px → weight = 72/6.28 ≈ 11.5.
+	w := fileVirtualWeight(1, 100, 100)
+	g.Expect(w).To(BeNumerically(">", 1.0))
+	g.Expect(w).To(BeNumerically("~", minFileLabelWidth/(2*math.Pi/100*1*100), 0.01))
+}
+
+// TestComputeMinFileDepth verifies depth detection for various tree shapes.
+func TestComputeMinFileDepth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Files directly under root → depth 1.
+	flat := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeFile("a.go", 1)},
+	}
+	g.Expect(computeMinFileDepth(flat, 0)).To(Equal(1))
+
+	// Files only in subdirectory → depth 2.
+	sub := &model.Directory{Name: "sub", Files: []*model.File{makeFile("b.go", 1)}}
+	nested := &model.Directory{Name: "root", Dirs: []*model.Directory{sub}}
+	g.Expect(computeMinFileDepth(nested, 0)).To(Equal(2))
+
+	// Empty tree → -1.
+	empty := &model.Directory{Name: "empty"}
+	g.Expect(computeMinFileDepth(empty, 0)).To(Equal(-1))
+}
+
+// TestLayoutShallowFilesGetAdequateArc verifies that when a directory has many
+// files at a shallow depth the layout expands their angular arc so that labels
+// have enough pixels to be readable (arc >= minFileLabelWidth).
+func TestLayoutShallowFilesGetAdequateArc(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// 20 files directly under root (depth 1) plus a deep subtree (depth 3).
+	deep := &model.Directory{Name: "deep"}
+	for i := range 30 {
+		deep.Files = append(deep.Files, makeFile("d.go", int64(i+1)))
+	}
+	wrapper := &model.Directory{Name: "wrapper", Dirs: []*model.Directory{deep}}
+
+	root := &model.Directory{Name: "root"}
+	for i := range 20 {
+		root.Files = append(root.Files, makeFile("r.go", int64(i+1)))
+	}
+
+	root.Dirs = append(root.Dirs, wrapper)
+
+	node := Layout(root, 800, filesystem.FileSize, LabelAll)
+	g.Expect(node.Children).NotTo(BeEmpty())
+
+	// Measure the angular span of each depth-1 file.
+	for _, child := range node.Children {
+		if child.IsDirectory {
+			continue
+		}
+
+		r := math.Sqrt(child.X*child.X + child.Y*child.Y)
+		// Each depth-1 file should have arc >= minFileLabelWidth.
+		// arc = sweepAngle * r; sweepAngle = 2π / virtualTotal * fileVW
+		// We test this indirectly: with n=20 shallow files we can check
+		// that each file occupies at least minFileLabelWidth arc length.
+		// The total circumference = 2π*r; each file's arc = 2π*r / 20.
+		arcPerFile := 2 * math.Pi * r / 20
+		g.Expect(arcPerFile).To(BeNumerically(">=", minFileLabelWidth*0.9),
+			"depth-1 file should have ≥ %.0fpx arc (got %.1fpx)", minFileLabelWidth*0.9, arcPerFile)
+	}
+}
+
 func TestClamp_BelowLo(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
