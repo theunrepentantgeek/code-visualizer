@@ -20,8 +20,9 @@ var (
 
 // Inks holds the fill and border Ink instances for a bubble render pass.
 type Inks struct {
-	Fill   canvas.Ink
-	Border canvas.Ink
+	Fill             canvas.Ink
+	Border           canvas.Ink
+	HasBorderMetric  bool // true when the border ink encodes a metric (use thicker stroke)
 }
 
 // BuildInks creates fill and border inks from metric configuration.
@@ -40,6 +41,7 @@ func BuildInks(
 	inks.Fill = pkginks.BuildMetricInk(root, fillMetric, fillPaletteName, bubbleDefaultFileFill)
 	if borderMetric != "" {
 		inks.Border = pkginks.BuildMetricInk(root, borderMetric, borderPaletteName, bubbleDefaultBorder)
+		inks.HasBorderMetric = true
 	}
 
 	return inks
