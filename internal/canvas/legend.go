@@ -6,27 +6,30 @@ import (
 )
 
 // LegendPosition specifies where the legend is placed on the canvas.
-type LegendPosition string
+// It is a type alias for model.LegendPosition so that backends and the canvas
+// layer can share the same typed constants without an import cycle.
+type LegendPosition = model.LegendPosition
 
 const (
-	LegendPositionNone         LegendPosition = "none"
-	LegendPositionTopLeft      LegendPosition = "top-left"
-	LegendPositionTopCenter    LegendPosition = "top-center"
-	LegendPositionTopRight     LegendPosition = "top-right"
-	LegendPositionCenterRight  LegendPosition = "center-right"
-	LegendPositionBottomRight  LegendPosition = "bottom-right"
-	LegendPositionBottomCenter LegendPosition = "bottom-center"
-	LegendPositionBottomLeft   LegendPosition = "bottom-left"
-	LegendPositionCenterLeft   LegendPosition = "center-left"
+	LegendPositionNone         LegendPosition = model.LegendPositionNone
+	LegendPositionTopLeft      LegendPosition = model.LegendPositionTopLeft
+	LegendPositionTopCenter    LegendPosition = model.LegendPositionTopCenter
+	LegendPositionTopRight     LegendPosition = model.LegendPositionTopRight
+	LegendPositionCenterRight  LegendPosition = model.LegendPositionCenterRight
+	LegendPositionBottomRight  LegendPosition = model.LegendPositionBottomRight
+	LegendPositionBottomCenter LegendPosition = model.LegendPositionBottomCenter
+	LegendPositionBottomLeft   LegendPosition = model.LegendPositionBottomLeft
+	LegendPositionCenterLeft   LegendPosition = model.LegendPositionCenterLeft
 )
 
 // LegendOrientation controls whether swatches are stacked vertically
 // or laid out horizontally.
-type LegendOrientation string
+// It is a type alias for model.LegendOrientation.
+type LegendOrientation = model.LegendOrientation
 
 const (
-	LegendOrientationVertical   LegendOrientation = "vertical"
-	LegendOrientationHorizontal LegendOrientation = "horizontal"
+	LegendOrientationVertical   LegendOrientation = model.LegendOrientationVertical
+	LegendOrientationHorizontal LegendOrientation = model.LegendOrientationHorizontal
 )
 
 // LegendRole identifies what visual property a legend entry describes.
@@ -95,8 +98,8 @@ func (lc *LegendConfig) toLegendData() *model.LegendData {
 	}
 
 	return &model.LegendData{
-		Position:    string(lc.Position),
-		Orientation: string(orient),
+		Position:    lc.Position,
+		Orientation: orient,
 		Entries:     entries,
 	}
 }
