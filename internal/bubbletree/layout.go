@@ -118,6 +118,13 @@ func fileMetricValue(f *model.File, m metric.Name) float64 {
 
 type point struct{ x, y float64 }
 
+type bounds struct {
+	minX float64
+	minY float64
+	maxX float64
+	maxY float64
+}
+
 type frontNode struct {
 	idx        int
 	prev, next *frontNode
@@ -357,27 +364,25 @@ func computeEnclosing(nodes []BubbleNode) enclosure {
 		circles[i] = enclosure{n.X, n.Y, n.Radius}
 	}
 
-	return welzl(circles, nil, len(circles))
+	return welzl(circles, [3]enclosure{}, 0, len(circles))
 }
 
-func welzl(pts []enclosure, boundary []enclosure, n int) enclosure {
-	if n == 0 || len(boundary) == 3 {
-		return trivialEnclosing(boundary)
+func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure {
+	if n == 0 || boundaryLen == 3 {
+		return trivialEnclosing(boundary[:boundaryLen])
 	}
 
 	p := pts[n-1]
-	d := welzl(pts, boundary, n-1)
+	d := welzl(pts, boundary, boundaryLen, n-1)
 
 	if encloses(d, p) {
 		return d
 	}
 
 	// p must lie on the boundary — recurse with it added.
-	newBoundary := make([]enclosure, len(boundary)+1)
-	copy(newBoundary, boundary)
-	newBoundary[len(boundary)] = p
+	boundary[boundaryLen] = p
 
-	return welzl(pts, newBoundary, n-1)
+	return welzl(pts, boundary, boundaryLen+1, n-1)
 }
 
 // encloses reports whether outer fully contains inner (circle-in-circle test).
@@ -549,23 +554,77 @@ func enclosingThreeFallback(a, b, c enclosure) enclosure {
 // Top-down coordinate assignment — scales local layout to pixel canvas
 // ---------------------------------------------------------------------------
 
+const canvasMarginFraction = 0.02 // 2% margin on each side
+
 // scaleToFit assigns absolute pixel coordinates to the entire tree,
-// scaling and translating so the root circle fits within width × height.
+// scaling and translating so the tight bounding rectangle of the children
+// fills the canvas (minus a small margin). Using a rectangle rather than the
+// root bounding circle removes the large whitespace corners that a circle
+// fit would leave on a non-square canvas.
 func scaleToFit(node *BubbleNode, width, height float64) {
-	if node.Radius <= 0 {
+	if node.Radius <= 0 || len(node.Children) == 0 {
 		node.X = width / 2
 		node.Y = height / 2
 
 		return
 	}
 
-	scale := math.Min(width, height) / (2 * node.Radius)
+	box := childrenBounds(node)
 
-	node.X = width / 2
-	node.Y = height / 2
+	boxW := box.maxX - box.minX
+	boxH := box.maxY - box.minY
+
+	if boxW <= 0 || boxH <= 0 {
+		node.X = width / 2
+		node.Y = height / 2
+		node.Radius *= math.Min(width, height) / (2 * node.Radius)
+
+		return
+	}
+
+	usable := 1 - 2*canvasMarginFraction
+	scale := math.Min(width*usable/boxW, height*usable/boxH)
+
+	// Place the root node so that the bounding box centre maps to the canvas centre.
+	boxCx := (box.minX + box.maxX) / 2
+	boxCy := (box.minY + box.maxY) / 2
+
+	node.X = width/2 - boxCx*scale
+	node.Y = height/2 - boxCy*scale
 	node.Radius *= scale
 
 	applyScale(node, scale)
+}
+
+// childrenBounds returns the tight axis-aligned bounding box of all direct
+// children of node in node's local coordinate frame.
+func childrenBounds(node *BubbleNode) bounds {
+	box := bounds{
+		minX: math.MaxFloat64,
+		minY: math.MaxFloat64,
+		maxX: -math.MaxFloat64,
+		maxY: -math.MaxFloat64,
+	}
+
+	for _, c := range node.Children {
+		if c.X-c.Radius < box.minX {
+			box.minX = c.X - c.Radius
+		}
+
+		if c.Y-c.Radius < box.minY {
+			box.minY = c.Y - c.Radius
+		}
+
+		if c.X+c.Radius > box.maxX {
+			box.maxX = c.X + c.Radius
+		}
+
+		if c.Y+c.Radius > box.maxY {
+			box.maxY = c.Y + c.Radius
+		}
+	}
+
+	return box
 }
 
 // applyScale recursively converts children from local to absolute coordinates.
