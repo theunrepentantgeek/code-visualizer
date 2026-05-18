@@ -331,3 +331,38 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 			"file disc border should follow the metric ink, not the fixed default")
 	}
 }
+
+// TestAddExternalLabel_SweepAngleSuppression verifies that labels are suppressed
+// when the angular sector is too narrow to fit the label text without overlapping.
+func TestAddExternalLabel_SweepAngleSuppression(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := canvas.NewCanvas(400, 400)
+
+	// Node with a wide sweep — label should be rendered.
+	wide := RadialNode{
+		X:          200,
+		Y:          0,
+		DiscRadius: 5,
+		Angle:      0,
+		SweepAngle: 1.0, // generous arc
+		Label:      "hi",
+	}
+
+	rendered := addExternalLabel(cv, wide, 200, 200)
+	g.Expect(rendered).To(BeTrue(), "wide-sweep node should render its label")
+
+	// Node with a tiny sweep and a long name — label should be suppressed.
+	narrow := RadialNode{
+		X:          200,
+		Y:          0,
+		DiscRadius: 5,
+		Angle:      0,
+		SweepAngle: 0.005, // tiny arc, about 1° — far too small for any text
+		Label:      "very_long_label_that_cannot_fit",
+	}
+
+	rendered = addExternalLabel(cv, narrow, 200, 200)
+	g.Expect(rendered).To(BeFalse(), "narrow-sweep node with long label should be suppressed")
+}

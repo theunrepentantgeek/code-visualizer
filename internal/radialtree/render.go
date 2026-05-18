@@ -12,8 +12,11 @@ import (
 )
 
 const (
-	edgeWidth = 0.5
-	labelGap  = 4.0
+	edgeWidth        = 0.5
+	labelGap         = 4.0
+	labelFontSize    = 12.0  // default font size for external labels
+	labelCharWidth   = 0.6   // approximate width-to-height ratio for label characters
+	minLabelArcRatio = 0.85  // arc must be at least this fraction of label width to render
 )
 
 // RenderToCanvas walks the layout and model trees, adding shapes to the canvas.
@@ -240,13 +243,24 @@ func addRootLabel(
 }
 
 // addExternalLabel adds a radially-oriented label outside the disc.
+// Returns false if the label was suppressed due to insufficient arc space.
 func addExternalLabel(
 	cv *canvas.Canvas,
 	node RadialNode,
 	cx, cy float64,
-) {
+) bool {
 	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
 	labelRadius := dist + node.DiscRadius + labelGap
+
+	// Suppress the label if the available arc is narrower than the estimated text width.
+	if node.SweepAngle > 0 {
+		arcLength := node.SweepAngle * labelRadius
+		estimatedTextWidth := float64(len([]rune(node.Label))) * labelFontSize * labelCharWidth
+		if arcLength < estimatedTextWidth*minLabelArcRatio {
+			return false
+		}
+	}
+
 	lx := cx + labelRadius*math.Cos(node.Angle)
 	ly := cy + labelRadius*math.Sin(node.Angle)
 
@@ -280,6 +294,8 @@ func addExternalLabel(
 		Y:       ly,
 		Content: node.Label,
 	})
+
+	return true
 }
 
 // effectiveFill returns the fill colour for a node, resolving defaults.

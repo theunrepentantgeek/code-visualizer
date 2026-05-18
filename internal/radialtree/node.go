@@ -19,6 +19,7 @@ type RadialNode struct {
 	X, Y        float64 // pixel position relative to canvas centre
 	DiscRadius  float64 // radius of the node disc in pixels
 	Angle       float64 // angle in radians (0 = right/east, π/2 = down, in screen coordinates)
+	SweepAngle  float64 // angular sector width allocated to this node (radians)
 	Label       string  // display name
 	ShowLabel   bool    // whether to render the label for this node
 	IsDirectory bool    // true for directory nodes, false for file nodes
