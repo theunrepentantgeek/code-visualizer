@@ -70,8 +70,8 @@ func TestToLegendData_NumericEntry_ProducesSwatches(t *testing.T) {
 		return // unreachable; satisfies nilaway
 	}
 
-	g.Expect(data.Position).To(Equal("bottom-right"))
-	g.Expect(data.Orientation).To(Equal("vertical"))
+	g.Expect(data.Position).To(Equal(model.LegendPositionBottomRight))
+	g.Expect(data.Orientation).To(Equal(model.LegendOrientationVertical))
 	g.Expect(data.Entries).To(HaveLen(1))
 	g.Expect(data.Entries[0].Title).To(Equal("Fill: file-size"))
 	g.Expect(data.Entries[0].Kind).To(Equal(model.LegendEntryNumeric))
@@ -126,6 +126,63 @@ func TestToLegendData_FixedInkEntry_EmptySwatches(t *testing.T) {
 	g.Expect(data.Entries[0].Kind).To(Equal(model.LegendEntryNumeric))
 	g.Expect(data.Entries[0].Swatches).To(BeNil())
 }
+
+func TestToLegendData_RoundTrip_PositionConstants(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	pal := palette.GetPalette(palette.Temperature)
+	fillInk := NumericInk("file-size", []float64{10, 100}, pal)
+
+	positions := []LegendPosition{
+		LegendPositionTopLeft, LegendPositionTopCenter, LegendPositionTopRight,
+		LegendPositionCenterRight, LegendPositionBottomRight, LegendPositionBottomCenter,
+		LegendPositionBottomLeft, LegendPositionCenterLeft,
+	}
+
+	for _, pos := range positions {
+		lc := &LegendConfig{
+			Position: pos,
+			Entries:  []LegendEntry{{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk}},
+		}
+		data := lc.toLegendData()
+		g.Expect(data).NotTo(BeNil(), "position %q produced nil data", pos)
+
+		if data != nil {
+			g.Expect(data.Position).To(Equal(model.LegendPosition(pos)),
+				"position %q did not round-trip", pos)
+		}
+	}
+}
+
+func TestToLegendData_RoundTrip_OrientationConstants(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	pal := palette.GetPalette(palette.Temperature)
+	fillInk := NumericInk("file-size", []float64{10, 100}, pal)
+
+	orientations := []LegendOrientation{
+		LegendOrientationVertical,
+		LegendOrientationHorizontal,
+	}
+
+	for _, orient := range orientations {
+		lc := &LegendConfig{
+			Position:    LegendPositionBottomRight,
+			Orientation: orient,
+			Entries:     []LegendEntry{{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk}},
+		}
+		data := lc.toLegendData()
+		g.Expect(data).NotTo(BeNil(), "orientation %q produced nil data", orient)
+
+		if data != nil {
+			g.Expect(data.Orientation).To(Equal(model.LegendOrientation(orient)),
+				"orientation %q did not round-trip", orient)
+		}
+	}
+}
+
 
 func TestReserveSpace_NonePosition_ReturnsZero(t *testing.T) {
 	t.Parallel()
