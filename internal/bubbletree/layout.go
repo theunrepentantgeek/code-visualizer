@@ -118,6 +118,13 @@ func fileMetricValue(f *model.File, m metric.Name) float64 {
 
 type point struct{ x, y float64 }
 
+type bounds struct {
+	minX float64
+	minY float64
+	maxX float64
+	maxY float64
+}
+
 type frontNode struct {
 	idx        int
 	prev, next *frontNode
@@ -562,10 +569,10 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 		return
 	}
 
-	minX, minY, maxX, maxY := childrenBounds(node)
+	box := childrenBounds(node)
 
-	boxW := maxX - minX
-	boxH := maxY - minY
+	boxW := box.maxX - box.minX
+	boxH := box.maxY - box.minY
 
 	if boxW <= 0 || boxH <= 0 {
 		node.X = width / 2
@@ -579,8 +586,8 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	scale := math.Min(width*usable/boxW, height*usable/boxH)
 
 	// Place the root node so that the bounding box centre maps to the canvas centre.
-	boxCx := (minX + maxX) / 2
-	boxCy := (minY + maxY) / 2
+	boxCx := (box.minX + box.maxX) / 2
+	boxCy := (box.minY + box.maxY) / 2
 
 	node.X = width/2 - boxCx*scale
 	node.Y = height/2 - boxCy*scale
@@ -591,29 +598,33 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 
 // childrenBounds returns the tight axis-aligned bounding box of all direct
 // children of node in node's local coordinate frame.
-func childrenBounds(node *BubbleNode) (minX, minY, maxX, maxY float64) {
-	minX, minY = math.MaxFloat64, math.MaxFloat64
-	maxX, maxY = -math.MaxFloat64, -math.MaxFloat64
+func childrenBounds(node *BubbleNode) bounds {
+	box := bounds{
+		minX: math.MaxFloat64,
+		minY: math.MaxFloat64,
+		maxX: -math.MaxFloat64,
+		maxY: -math.MaxFloat64,
+	}
 
 	for _, c := range node.Children {
-		if c.X-c.Radius < minX {
-			minX = c.X - c.Radius
+		if c.X-c.Radius < box.minX {
+			box.minX = c.X - c.Radius
 		}
 
-		if c.Y-c.Radius < minY {
-			minY = c.Y - c.Radius
+		if c.Y-c.Radius < box.minY {
+			box.minY = c.Y - c.Radius
 		}
 
-		if c.X+c.Radius > maxX {
-			maxX = c.X + c.Radius
+		if c.X+c.Radius > box.maxX {
+			box.maxX = c.X + c.Radius
 		}
 
-		if c.Y+c.Radius > maxY {
-			maxY = c.Y + c.Radius
+		if c.Y+c.Radius > box.maxY {
+			box.maxY = c.Y + c.Radius
 		}
 	}
 
-	return
+	return box
 }
 
 // applyScale recursively converts children from local to absolute coordinates.
