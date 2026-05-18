@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-17T10:57:00Z",
-  "run_id": "25988817087",
+  "last_run": "2026-05-18T08:48:38Z",
+  "run_id": "26023079985",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -20,22 +20,16 @@
     "230": "2026-05-13T10:25:06Z",
     "231": "2026-05-13T10:25:06Z",
     "253": "2026-05-17T10:15:00Z",
-    "254": "2026-05-17T10:57:00Z"
+    "254": "2026-05-17T10:57:00Z",
+    "261": "2026-05-18T08:48:38Z"
   },
   "prs_created": [
     {
-      "branch": "repo-assist/fix-issue-253-legend-commit-count-9d64e55a00f847c6",
-      "pr_number": 254,
-      "title": "[repo-assist] fix(spiral): use commit-event count for commit-count metric per bucket + fix disc sizing",
-      "status": "open",
-      "closes": [253]
-    },
-    {
-      "branch": "repo-assist/improve-legend-type-safety-198",
-      "pr_number": 243,
-      "title": "[repo-assist] refactor(canvas): move LegendPosition/Orientation typed constants to model",
-      "status": "open",
-      "closes": [198]
+      "branch": "repo-assist/fix-issue-261-center-label-color",
+      "pr_number": null,
+      "title": "[repo-assist] fix(radialtree): use dark labelColour for centre label in SVG",
+      "status": "open (created run 26023079985; check next run for PR number)",
+      "closes": [261]
     }
   ],
   "issues_actioned": {
@@ -50,10 +44,11 @@
     "175": "closed",
     "176": "closed (namespace fix applied by maintainer)",
     "194": "commented 2026-05-15: vizCmd pipeline implementation approach",
-    "198": "type safety fix PR #243 open",
+    "198": "type safety fix PR #243 merged 2026-05-18",
     "225": "commented 2026-05-15: gradient fills implementation sketch",
-    "253": "bug fixed via PR #254 (two bugs: aggregation + disc sizing)",
-    "254": "commented with disc sizing fix explanation 2026-05-17"
+    "253": "bug fixed via PR #254 (merged 2026-05-18)",
+    "255-263": "labelled 2026-05-18 (enhancement/bug)",
+    "261": "bug fix PR submitted run 26023079985 (white centre label in SVG)"
   },
   "monthly_summary_issue": {
     "number": 252,
@@ -61,9 +56,9 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 253,
+    "issues": 263,
     "prs": 0
   },
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed.",
-  "notes": "PR #254 updated with disc sizing fix (second bug in spiral). PR #243 open. PR #174 (provider refactor) status unknown - check next run."
+  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed.",
+  "notes": "PR #261 fix created this run (centre label colour). #243 and #254 merged by maintainer. Many new issues 255-263 filed by maintainer on 2026-05-17/18; all labelled. Issues to investigate next: #255 (bubbletree too small - enhancement), #257 (treemap labels - large feature), #262 (overlapping radial labels - bug)."
 }
