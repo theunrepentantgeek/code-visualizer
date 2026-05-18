@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-18T10:09:35Z",
-  "run_id": "26026971132",
+  "last_run": "2026-05-18T10:58:06Z",
+  "run_id": "26029215219",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -44,7 +44,7 @@
       "branch": "repo-assist/fix-issue-255-bubbletree-scale-30c889644ca4629f",
       "pr_number": 265,
       "title": "[repo-assist] fix(bubbletree): scale content to canvas without outer-padding waste",
-      "status": "open",
+      "status": "open - owner requested different approach (bounding rect not circle); separate run handling",
       "closes": [255]
     },
     {
@@ -83,12 +83,11 @@
       "closes": []
     },
     {
-      "branch": "repo-assist/refactor-legend-typed-constants-198",
+      "branch": "repo-assist/eng-add-fmt-check-to-ci-20260518",
       "pr_number": null,
-      "title": "[repo-assist] refactor(canvas): move LegendPosition/LegendOrientation types to model package",
-      "status": "queued (created run 26026971132; check next run for PR number)",
-      "closes": [198],
-      "note": "Previous attempt PR #243 was closed by maintainer (stale vs pipeline refactoring). This is a clean re-attempt on post-refactor codebase."
+      "title": "[repo-assist] chore(ci): add fmt:check to task ci",
+      "status": "queued (created run 26029215219; check next run for PR number)",
+      "closes": []
     }
   ],
   "issues_actioned": {
@@ -105,7 +104,7 @@
     "194": "commented 2026-05-15: vizCmd pipeline implementation approach",
     "225": "commented 2026-05-15: gradient fills implementation sketch",
     "253": "bug fixed via PR #254 (merged 2026-05-18)",
-    "255": "bubbletree scale fix PR #265 submitted",
+    "255": "bubbletree scale fix PR #265 submitted; owner says wrong approach - use bounding rect; separate run handling",
     "256": "bubble label move implementation approach commented 2026-05-18",
     "257": "treemap labels implementation notes commented 2026-05-18",
     "258": "bubbletree border width fix PR #266 submitted",
@@ -114,7 +113,7 @@
     "261": "bug fix PR #264 submitted (white centre label in SVG)",
     "262": "label suppression fix PR #269 submitted; commented with PR link",
     "263": "pincushion treemap implementation approach commented 2026-05-18",
-    "198": "refactor PR submitted run 26026971132 (branch repo-assist/refactor-legend-typed-constants-198); prev PR #243 closed by maintainer as stale"
+    "198": "issue closed by owner: 'not needed because of other refactoring'; PR #271 closed"
   },
   "monthly_summary_issue": {
     "number": 252,
@@ -125,6 +124,6 @@
     "issues": 263,
     "prs": 0
   },
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed.",
-  "notes": "Open PRs: #264 (centre label #261), #265 (bubbletree scale #255), #266 (border width #258), #267 (legend outline swatches #259), #268 (radial label alignment #260), #269 (overlapping labels #262), #270 (treemap BuildInks tests), plus queued refactor-legend-typed-constants-198 PR (#198). Next: issues #256 (move bubble labels), #257 (treemap labels), #263 (pincushion treemap) — larger features. Issue #225 (gradient fills) also actionable. NOTE: maintainer closed PR #243 as 'no longer useful' during refactoring sprint — monitor if new PR #198 gets same response."
+  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254,271 merged/closed. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198 closed.",
+  "notes": "Open PRs: #264 (centre label #261), #265 (bubbletree scale #255 - owner wants bounding-rect approach; other run handling), #266 (border width #258), #267 (legend outline swatches #259), #268 (radial label alignment #260), #269 (overlapping labels #262), #270 (treemap BuildInks tests), plus queued eng-add-fmt-check-to-ci-20260518. Issues #256 (move bubble labels), #257 (treemap labels), #263 (pincushion treemap) — larger features. Issue #225 (gradient fills) also actionable. Issue #198 closed by owner as 'not needed because of other refactoring'."
 }
