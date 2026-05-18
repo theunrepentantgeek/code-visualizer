@@ -252,8 +252,10 @@ func addExternalLabel(
 	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
 	labelRadius := dist + node.DiscRadius + labelGap
 
-	// Suppress the label if the available arc is narrower than the estimated text width.
-	if node.SweepAngle > 0 {
+	// Suppress file labels (not directory labels) when the arc is narrower than the
+	// estimated text width. Directory labels are always rendered as they serve as
+	// structural anchors; file labels in dense rings are suppressed to avoid clutter.
+	if !node.IsDirectory && node.SweepAngle > 0 {
 		arcLength := node.SweepAngle * labelRadius
 		estimatedTextWidth := float64(len([]rune(node.Label))) * labelFontSize * labelCharWidth
 		if arcLength < estimatedTextWidth*minLabelArcRatio {

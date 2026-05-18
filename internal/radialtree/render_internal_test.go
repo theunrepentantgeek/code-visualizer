@@ -332,37 +332,53 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 	}
 }
 
-// TestAddExternalLabel_SweepAngleSuppression verifies that labels are suppressed
-// when the angular sector is too narrow to fit the label text without overlapping.
+// TestAddExternalLabel_SweepAngleSuppression verifies that file labels are suppressed
+// when the angular sector is too narrow, but directory labels are never suppressed.
 func TestAddExternalLabel_SweepAngleSuppression(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	cv := canvas.NewCanvas(400, 400)
 
-	// Node with a wide sweep — label should be rendered.
+	// File node with a wide sweep — label should be rendered.
 	wide := RadialNode{
-		X:          200,
-		Y:          0,
-		DiscRadius: 5,
-		Angle:      0,
-		SweepAngle: 1.0, // generous arc
-		Label:      "hi",
+		X:           200,
+		Y:           0,
+		DiscRadius:  5,
+		Angle:       0,
+		SweepAngle:  1.0, // generous arc
+		Label:       "hi",
+		IsDirectory: false,
 	}
 
 	rendered := addExternalLabel(cv, wide, 200, 200)
-	g.Expect(rendered).To(BeTrue(), "wide-sweep node should render its label")
+	g.Expect(rendered).To(BeTrue(), "wide-sweep file node should render its label")
 
-	// Node with a tiny sweep and a long name — label should be suppressed.
+	// File node with a tiny sweep and a long name — label should be suppressed.
 	narrow := RadialNode{
-		X:          200,
-		Y:          0,
-		DiscRadius: 5,
-		Angle:      0,
-		SweepAngle: 0.005, // tiny arc, about 1° — far too small for any text
-		Label:      "very_long_label_that_cannot_fit",
+		X:           200,
+		Y:           0,
+		DiscRadius:  5,
+		Angle:       0,
+		SweepAngle:  0.005, // tiny arc, about 1° — far too small for any text
+		Label:       "very_long_label_that_cannot_fit",
+		IsDirectory: false,
 	}
 
 	rendered = addExternalLabel(cv, narrow, 200, 200)
-	g.Expect(rendered).To(BeFalse(), "narrow-sweep node with long label should be suppressed")
+	g.Expect(rendered).To(BeFalse(), "narrow-sweep file node with long label should be suppressed")
+
+	// Directory node with a tiny sweep — label should still be rendered regardless.
+	narrowDir := RadialNode{
+		X:           200,
+		Y:           0,
+		DiscRadius:  5,
+		Angle:       0,
+		SweepAngle:  0.005, // tiny arc — same as narrow file above
+		Label:       "very_long_directory_name_that_cannot_fit",
+		IsDirectory: true,
+	}
+
+	rendered = addExternalLabel(cv, narrowDir, 200, 200)
+	g.Expect(rendered).To(BeTrue(), "narrow-sweep directory node should always render its label")
 }
