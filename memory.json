@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-18T11:07:21Z",
-  "run_id": "26029618576",
+  "last_run": "2026-05-18T11:04:06Z",
+  "run_id": "26029471596",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -30,66 +30,19 @@
     "261": "2026-05-18T08:48:38Z",
     "262": "2026-05-18T09:46:24Z",
     "263": "2026-05-18T09:46:24Z",
-    "198": "2026-05-18T10:09:35Z",
-    "267": "2026-05-18T11:07:21Z"
+    "198": "2026-05-18T10:09:35Z"
   },
   "prs_created": [
-    {
-      "branch": "repo-assist/fix-issue-261-center-label-color-ed769a2f5365cab7",
-      "pr_number": 264,
-      "title": "[repo-assist] fix(radialtree): use dark labelColour for centre label in SVG",
-      "status": "open",
-      "closes": [261]
-    },
-    {
-      "branch": "repo-assist/fix-issue-255-bubbletree-scale-30c889644ca4629f",
-      "pr_number": 265,
-      "title": "[repo-assist] fix(bubbletree): scale content to canvas without outer-padding waste",
-      "status": "open - owner requested different approach (bounding rect not circle); separate run handling",
-      "closes": [255]
-    },
-    {
-      "branch": "repo-assist/fix-issue-258-bubbletree-border-width-24867c99ec7d67c7",
-      "pr_number": 266,
-      "title": "[repo-assist] fix(bubbletree): use thicker border stroke when border metric is active",
-      "status": "open",
-      "closes": [258]
-    },
-    {
-      "branch": "repo-assist/improve-legend-border-swatches-259-5a8e6ee973594831",
-      "pr_number": 267,
-      "title": "[repo-assist] feat(legend): render border-metric swatches as outlines",
-      "status": "open - updated with border width doubled and step spacing fix per owner feedback",
-      "closes": [259]
-    },
-    {
-      "branch": "repo-assist/fix-issue-260-radial-label-alignment-841802a2ccd8dfa3",
-      "pr_number": 268,
-      "title": "[repo-assist] fix(radialtree): consistent label orientation for files within a parent directory",
-      "status": "open",
-      "closes": [260]
-    },
-    {
-      "branch": "repo-assist/fix-issue-262-radial-label-suppression-b2498d3b500190ab",
-      "pr_number": 269,
-      "title": "[repo-assist] fix(radialtree): suppress overlapping labels when arc is too narrow",
-      "status": "open",
-      "closes": [262]
-    },
-    {
-      "branch": "repo-assist/test-treemap-inks-20260518-3e8200ece0acd4de",
-      "pr_number": 270,
-      "title": "[repo-assist] test(treemap): add BuildInks tests covering all ink configurations",
-      "status": "open",
-      "closes": []
-    },
-    {
-      "branch": "repo-assist/eng-add-fmt-check-to-ci-20260518",
-      "pr_number": 272,
-      "title": "[repo-assist] chore(ci): add fmt:check to task ci",
-      "status": "open",
-      "closes": []
-    }
+    {"branch": "repo-assist/fix-issue-261-center-label-color-ed769a2f5365cab7", "pr_number": 264, "title": "[repo-assist] fix(radialtree): use dark labelColour for centre label in SVG", "status": "open", "closes": [261]},
+    {"branch": "repo-assist/fix-issue-255-bubbletree-scale-30c889644ca4629f", "pr_number": 265, "title": "[repo-assist] fix(bubbletree): scale content to canvas without outer-padding waste", "status": "open", "closes": [255]},
+    {"branch": "repo-assist/fix-issue-258-bubbletree-border-width-24867c99ec7d67c7", "pr_number": 266, "title": "[repo-assist] fix(bubbletree): use thicker border stroke when border metric is active", "status": "open", "closes": [258]},
+    {"branch": "repo-assist/improve-legend-border-swatches-259-5a8e6ee973594831", "pr_number": 267, "title": "[repo-assist] feat(legend): render border-metric swatches as outlines", "status": "open", "closes": [259]},
+    {"branch": "repo-assist/fix-issue-260-radial-label-alignment-841802a2ccd8dfa3", "pr_number": 268, "title": "[repo-assist] fix(radialtree): consistent label orientation for files within a parent directory", "status": "open", "closes": [260]},
+    {"branch": "repo-assist/fix-issue-262-radial-label-suppression-b2498d3b500190ab", "pr_number": 269, "title": "[repo-assist] fix(radialtree): suppress overlapping labels when arc is too narrow", "status": "open", "closes": [262]},
+    {"branch": "repo-assist/test-treemap-inks-20260518-3e8200ece0acd4de", "pr_number": 270, "title": "[repo-assist] test(treemap): add BuildInks tests covering all ink configurations", "status": "open", "closes": []},
+    {"branch": "repo-assist/eng-add-fmt-check-to-ci-20260518-283c49605798a068", "pr_number": 272, "title": "[repo-assist] chore(ci): add fmt:check to task ci", "status": "open", "closes": []},
+    {"branch": "repo-assist/refactor-legend-typed-constants-198", "pr_number": null, "title": "[repo-assist] refactor(canvas): move LegendPosition/LegendOrientation types to model package", "status": "pending (created run 26029471596)", "closes": [198]},
+    {"branch": "repo-assist/test-stages-helpers-20260518", "pr_number": null, "title": "[repo-assist] test(stages): add tests for PtrInt/PtrString and stages metrics helpers", "status": "pending (created run 26029471596)", "closes": []}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -105,16 +58,16 @@
     "194": "commented 2026-05-15: vizCmd pipeline implementation approach",
     "225": "commented 2026-05-15: gradient fills implementation sketch",
     "253": "bug fixed via PR #254 (merged 2026-05-18)",
-    "255": "bubbletree scale fix PR #265 submitted; owner says wrong approach - use bounding rect; separate run handling",
+    "255": "bubbletree scale fix PR #265 submitted",
     "256": "bubble label move implementation approach commented 2026-05-18",
     "257": "treemap labels implementation notes commented 2026-05-18",
     "258": "bubbletree border width fix PR #266 submitted",
-    "259": "legend border outline swatch PR #267 submitted; updated 2026-05-18 per owner feedback (double border width, fix step spacing)",
+    "259": "legend border outline swatch PR #267 submitted",
     "260": "radial label alignment fix PR #268 submitted",
     "261": "bug fix PR #264 submitted (white centre label in SVG)",
     "262": "label suppression fix PR #269 submitted; commented with PR link",
     "263": "pincushion treemap implementation approach commented 2026-05-18",
-    "198": "issue closed by owner: 'not needed because of other refactoring'; PR #271 closed"
+    "198": "refactor PR submitted run 26029471596 (branch repo-assist/refactor-legend-typed-constants-198)"
   },
   "monthly_summary_issue": {
     "number": 252,
@@ -122,9 +75,9 @@
     "status": "open"
   },
   "backlog_cursor": {
-    "issues": 267,
+    "issues": 263,
     "prs": 0
   },
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254,271 merged/closed. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198 closed.",
-  "notes": "Open PRs: #264 (centre label #261), #265 (bubbletree scale #255 - owner wants bounding-rect approach; other run handling), #266 (border width #258), #267 (legend outline swatches #259 - updated per owner: double width + step fix), #268 (radial label alignment #260), #269 (overlapping labels #262), #270 (treemap BuildInks tests), #272 (fmt:check in CI). Issues #256 (move bubble labels), #257 (treemap labels), #263 (pincushion treemap) — larger features. Issue #225 (gradient fills) also actionable. Issue #255 — owner requested different fix approach (bounding rectangle, not circle)."
+  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed.",
+  "notes": "Open PRs: #264,#265,#266,#267,#268,#269,#270,#272 plus 2 pending (refactor-legend-typed-constants-198, test-stages-helpers-20260518). Next: issues #256 (move bubble labels), #257 (treemap labels), #263 (pincushion treemap) — larger features. Issue #225 (gradient fills) also actionable."
 }
