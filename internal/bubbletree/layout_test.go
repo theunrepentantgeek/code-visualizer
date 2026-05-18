@@ -330,11 +330,50 @@ func TestLayoutFitsWithinCanvas(t *testing.T) {
 
 	node := Layout(root, width, height, filesystem.FileSize, LabelAll)
 
-	// The root circle's bounding box must fit within the canvas.
-	g.Expect(node.X - node.Radius).To(BeNumerically(">=", -1.0))
-	g.Expect(node.Y - node.Radius).To(BeNumerically(">=", -1.0))
-	g.Expect(node.X + node.Radius).To(BeNumerically("<=", float64(width)+1.0))
-	g.Expect(node.Y + node.Radius).To(BeNumerically("<=", float64(height)+1.0))
+	// The root circle itself is never rendered; its padded radius may exceed
+	// the canvas. What must fit is the content — all descendant circles.
+	minX, maxX, minY, maxY := contentBoundsForTest(node)
+	g.Expect(minX).To(BeNumerically(">=", -1.0))
+	g.Expect(minY).To(BeNumerically(">=", -1.0))
+	g.Expect(maxX).To(BeNumerically("<=", float64(width)+1.0))
+	g.Expect(maxY).To(BeNumerically("<=", float64(height)+1.0))
+}
+
+// contentBoundsForTest returns the axis-aligned bounding box of all descendant
+// nodes (not the root itself, which is never drawn).
+func contentBoundsForTest(root BubbleNode) (minX, maxX, minY, maxY float64) {
+	minX = math.MaxFloat64
+	maxX = -math.MaxFloat64
+	minY = math.MaxFloat64
+	maxY = -math.MaxFloat64
+
+	for _, child := range root.Children {
+		addBoundsForTest(child, &minX, &maxX, &minY, &maxY)
+	}
+
+	return
+}
+
+func addBoundsForTest(node BubbleNode, minX, maxX, minY, maxY *float64) {
+	if l := node.X - node.Radius; l < *minX {
+		*minX = l
+	}
+
+	if r := node.X + node.Radius; r > *maxX {
+		*maxX = r
+	}
+
+	if t := node.Y - node.Radius; t < *minY {
+		*minY = t
+	}
+
+	if b := node.Y + node.Radius; b > *maxY {
+		*maxY = b
+	}
+
+	for _, child := range node.Children {
+		addBoundsForTest(child, minX, maxX, minY, maxY)
+	}
 }
 
 func TestLayoutRootLabel(t *testing.T) {

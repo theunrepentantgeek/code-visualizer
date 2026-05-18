@@ -27,7 +27,21 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, la
 	}
 
 	node := layoutDir(root, sizeMetric, labels)
-	scaleToFit(&node, float64(width), float64(height))
+
+	// Scale based on content radius (the tight enclosure of children) rather
+	// than the padded root radius. The root circle is never rendered, so its
+	// outer padding (parentPadding + LabelReservation) would otherwise reduce
+	// the scale factor and produce unnecessary whitespace.
+	contentR := node.Radius - parentPadding
+	if node.ShowLabel {
+		contentR -= LabelReservation
+	}
+
+	if contentR <= 0 {
+		contentR = node.Radius
+	}
+
+	scaleToFit(&node, float64(width), float64(height), contentR)
 
 	return node
 }
@@ -357,27 +371,25 @@ func computeEnclosing(nodes []BubbleNode) enclosure {
 		circles[i] = enclosure{n.X, n.Y, n.Radius}
 	}
 
-	return welzl(circles, nil, len(circles))
+	return welzl(circles, [3]enclosure{}, 0, len(circles))
 }
 
-func welzl(pts []enclosure, boundary []enclosure, n int) enclosure {
-	if n == 0 || len(boundary) == 3 {
-		return trivialEnclosing(boundary)
+func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure {
+	if n == 0 || boundaryLen == 3 {
+		return trivialEnclosing(boundary[:boundaryLen])
 	}
 
 	p := pts[n-1]
-	d := welzl(pts, boundary, n-1)
+	d := welzl(pts, boundary, boundaryLen, n-1)
 
 	if encloses(d, p) {
 		return d
 	}
 
 	// p must lie on the boundary — recurse with it added.
-	newBoundary := make([]enclosure, len(boundary)+1)
-	copy(newBoundary, boundary)
-	newBoundary[len(boundary)] = p
+	boundary[boundaryLen] = p
 
-	return welzl(pts, newBoundary, n-1)
+	return welzl(pts, boundary, boundaryLen+1, n-1)
 }
 
 // encloses reports whether outer fully contains inner (circle-in-circle test).
@@ -550,16 +562,18 @@ func enclosingThreeFallback(a, b, c enclosure) enclosure {
 // ---------------------------------------------------------------------------
 
 // scaleToFit assigns absolute pixel coordinates to the entire tree,
-// scaling and translating so the root circle fits within width × height.
-func scaleToFit(node *BubbleNode, width, height float64) {
-	if node.Radius <= 0 {
+// scaling so that contentRadius fits within width × height, then centring the root.
+// contentRadius is the actual content radius (excluding the outer padding of the
+// root node, which is never rendered).
+func scaleToFit(node *BubbleNode, width, height, contentRadius float64) {
+	if contentRadius <= 0 {
 		node.X = width / 2
 		node.Y = height / 2
 
 		return
 	}
 
-	scale := math.Min(width, height) / (2 * node.Radius)
+	scale := math.Min(width, height) / (2 * contentRadius)
 
 	node.X = width / 2
 	node.Y = height / 2
