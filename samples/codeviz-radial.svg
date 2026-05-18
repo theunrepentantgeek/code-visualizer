@@ -493,7 +493,7 @@
 <circle cx="385.28" cy="977.88" r="3.00" fill="rgb(255,127,0)" stroke="rgb(0,68,27)" stroke-width="1.0"/>
 <circle cx="385.00" cy="960.00" r="3.00" fill="rgb(255,127,0)" stroke="rgb(0,68,27)" stroke-width="1.0"/>
 <circle cx="270.33" cy="938.54" r="3.00" fill="rgb(255,127,0)" stroke="rgb(0,68,27)" stroke-width="1.0"/>
-<text x="960.00" y="960.00" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">code-visualizer</text>
+<text x="960.00" y="960.00" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">code-visualizer</text>
 <text x="961.92" y="836.80" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central" transform="rotate(-89.11 961.92 836.80)">DEVELOPMENT.md</text>
 <text x="965.72" y="837.55" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central" transform="rotate(-87.33 965.72 837.55)">Taskfile.yml</text>
 <text x="969.49" y="838.17" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central" transform="rotate(-85.54 969.49 838.17)">ci-output.txt</text>
