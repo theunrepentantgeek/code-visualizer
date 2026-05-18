@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-18T09:08:44Z",
-  "run_id": "26024040560",
+  "last_run": "2026-05-18T09:32:17Z",
+  "run_id": "26025162458",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -22,6 +22,9 @@
     "253": "2026-05-17T10:15:00Z",
     "254": "2026-05-17T10:57:00Z",
     "255": "2026-05-18T09:08:44Z",
+    "258": "2026-05-18T09:32:17Z",
+    "259": "2026-05-18T09:32:17Z",
+    "260": "2026-05-18T09:32:17Z",
     "261": "2026-05-18T08:48:38Z",
     "262": "2026-05-18T09:08:44Z"
   },
@@ -34,11 +37,32 @@
       "closes": [261]
     },
     {
-      "branch": "repo-assist/fix-issue-255-bubbletree-scale",
-      "pr_number": null,
+      "branch": "repo-assist/fix-issue-255-bubbletree-scale-30c889644ca4629f",
+      "pr_number": 265,
       "title": "[repo-assist] fix(bubbletree): scale content to canvas without outer-padding waste",
-      "status": "open (created run 26024040560; check next run for PR number)",
+      "status": "open",
       "closes": [255]
+    },
+    {
+      "branch": "repo-assist/fix-issue-258-bubbletree-border-width",
+      "pr_number": null,
+      "title": "[repo-assist] fix(bubbletree): use thicker border stroke when border metric is active",
+      "status": "open (created run 26025162458; check next run for PR number)",
+      "closes": [258]
+    },
+    {
+      "branch": "repo-assist/improve-legend-border-swatches-259",
+      "pr_number": null,
+      "title": "[repo-assist] feat(legend): render border-metric swatches as outlines",
+      "status": "open (created run 26025162458; check next run for PR number)",
+      "closes": [259]
+    },
+    {
+      "branch": "repo-assist/fix-issue-260-radial-label-alignment",
+      "pr_number": null,
+      "title": "[repo-assist] fix(radialtree): consistent label orientation for files within a parent directory",
+      "status": "open (created run 26025162458; check next run for PR number)",
+      "closes": [260]
     }
   ],
   "issues_actioned": {
@@ -57,8 +81,11 @@
     "225": "commented 2026-05-15: gradient fills implementation sketch",
     "253": "bug fixed via PR #254 (merged 2026-05-18)",
     "255-263": "labelled 2026-05-18 (enhancement/bug)",
-    "255": "bubbletree scale fix PR submitted run 26024040560",
-    "261": "bug fix PR #264 submitted run 26023079985 (white centre label in SVG)",
+    "255": "bubbletree scale fix PR #265 submitted",
+    "258": "bubbletree border width fix PR submitted run 26025162458",
+    "259": "legend border outline swatch PR submitted run 26025162458",
+    "260": "radial label alignment fix PR submitted run 26025162458",
+    "261": "bug fix PR #264 submitted (white centre label in SVG)",
     "262": "investigation comment posted 2026-05-18 (overlapping radial labels - 3 approaches)"
   },
   "monthly_summary_issue": {
@@ -71,5 +98,5 @@
     "prs": 0
   },
   "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed.",
-  "notes": "PR #264 open (centre label colour fix for #261). PR for #255 (bubbletree scale) submitted this run. Issues to investigate next: #256 (move bubble labels), #257 (treemap labels - large feature), #258 (bubbletree borders thicker), #260 (radial label alignment). Issue #262 investigated (overlapping radial labels) - label suppression fix approach 1 is actionable."
+  "notes": "PRs open: #264 (centre label colour fix #261), #265 (bubbletree scale #255), #266? (border width #258), #267? (legend outline swatches #259), #268? (radial label alignment #260). Next: issue #262 (overlapping radial labels) - label suppression fix approach 1 actionable. Issues #256 (move bubble labels), #257 (treemap labels), #263 (pincushion treemap) for future runs."
 }
