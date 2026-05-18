@@ -199,18 +199,51 @@ func addLabels(
 	cx, cy float64,
 	inks Inks,
 ) {
+	// The root sits at dist==0 and has no meaningful angle; pass NaN so its
+	// direct file children each use their own angle for orientation.
+	addLabelsInner(cv, node, cx, cy, inks, math.NaN())
+}
+
+// addLabelsInner recurses the node tree, rendering labels.
+// parentDirAngle is the angle of the nearest ancestor directory node in
+// radians, or math.NaN() when there is no such ancestor (e.g. for the root
+// node itself and its direct children). File labels inherit the parent
+// directory angle so that all files within a given directory use a consistent
+// left/right orientation even when they straddle the 12 o'clock or 6 o'clock
+// meridian.
+func addLabelsInner(
+	cv *canvas.Canvas,
+	node RadialNode,
+	cx, cy float64,
+	inks Inks,
+	parentDirAngle float64,
+) {
 	if node.ShowLabel && node.Label != "" {
 		dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
 
 		if dist == 0 {
 			addRootLabel(cv, node, cx, cy, inks)
 		} else {
-			addExternalLabel(cv, node, cx, cy)
+			orientAngle := node.Angle
+			if !node.IsDirectory && !math.IsNaN(parentDirAngle) {
+				orientAngle = parentDirAngle
+			}
+
+			addExternalLabel(cv, node, cx, cy, orientAngle)
 		}
 	}
 
+	// Pass this node's angle to its children only when it is a non-root
+	// directory. Root's children use their own angles (parentDirAngle==NaN).
+	childParentAngle := math.NaN()
+
+	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
+	if node.IsDirectory && dist > 0 {
+		childParentAngle = node.Angle
+	}
+
 	for _, child := range node.Children {
-		addLabels(cv, child, cx, cy, inks)
+		addLabelsInner(cv, child, cx, cy, inks, childParentAngle)
 	}
 }
 
@@ -240,17 +273,22 @@ func addRootLabel(
 }
 
 // addExternalLabel adds a radially-oriented label outside the disc.
+// orientAngle controls the left/right side determination (anchor and rotation);
+// the label is still positioned at node.Angle from the canvas centre.
+// Pass node.Angle for the default per-node behaviour, or a parent directory's
+// angle to keep all sibling file labels on the same side.
 func addExternalLabel(
 	cv *canvas.Canvas,
 	node RadialNode,
 	cx, cy float64,
+	orientAngle float64,
 ) {
 	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
 	labelRadius := dist + node.DiscRadius + labelGap
 	lx := cx + labelRadius*math.Cos(node.Angle)
 	ly := cy + labelRadius*math.Sin(node.Angle)
 
-	angle := math.Mod(node.Angle, 2*math.Pi)
+	angle := math.Mod(orientAngle, 2*math.Pi)
 	if angle < 0 {
 		angle += 2 * math.Pi
 	}
