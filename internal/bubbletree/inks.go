@@ -20,9 +20,9 @@ var (
 
 // Inks holds the fill and border Ink instances for a bubble render pass.
 type Inks struct {
-	Fill             canvas.Ink
-	Border           canvas.Ink
-	HasBorderMetric  bool // true when the border ink encodes a metric (use thicker stroke)
+	Fill            canvas.Ink
+	Border          canvas.Ink
+	HasBorderMetric bool // true when the border ink encodes a metric (use thicker stroke)
 }
 
 // BuildInks creates fill and border inks from metric configuration.
