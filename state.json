@@ -1,75 +1,27 @@
 {
-  "last_run": "2026-05-17T10:15:03Z",
-  "run_id": "25988009809",
+  "last_run": "2026-05-18T10:00:00Z",
+  "run_id": "26026444157",
+  "monthly_activity_issue": 252,
   "comments_made": {
-    "74": "2026-04-20T12:54:26Z",
-    "77": "2026-04-21T07:39:14Z",
-    "105": "2026-04-30T13:11:51Z",
-    "128": "2026-04-29T13:13:03Z",
-    "133": "2026-05-01T12:44:04Z",
-    "155": "2026-05-05T12:59:05Z",
-    "159": "2026-05-06T09:08:11Z",
-    "162": "2026-05-07T13:44:22Z",
-    "176": "2026-05-09T12:43:55Z",
-    "194": "2026-05-15T10:13:48Z",
-    "225": "2026-05-15T10:13:48Z",
-    "253": "2026-05-17T10:15:03Z"
+    "194": "2026-05-15",
+    "198": "2026-05-18",
+    "225": "2026-05-15",
+    "253": "2026-05-17",
+    "255": "2026-05-18",
+    "256": "2026-05-18",
+    "257": "2026-05-18",
+    "261": "2026-05-18",
+    "262": "2026-05-18",
+    "263": "2026-05-18"
   },
-  "prs_created": [
-    {
-      "branch": "repo-assist/improve-legend-type-safety-198-3f639a48502a6780",
-      "pr_number": 243,
-      "title": "[repo-assist] refactor(canvas): move LegendPosition/Orientation typed constants to model",
-      "status": "open",
-      "closes": [198]
-    },
-    {
-      "branch": "repo-assist/feat-radialtree-pipeline-194",
-      "pr_number": null,
-      "title": "[repo-assist] refactor(radialtree): migrate Run to pipeline composition",
-      "status": "open (created run 25986901089; check next run for PR number)",
-      "closes": [194]
-    },
-    {
-      "branch": "repo-assist/eng-deps-2026-05-17",
-      "pr_number": null,
-      "title": "[repo-assist] chore(deps): update golang.org/x indirect dependencies",
-      "status": "open (created run 25986901089; check next run for PR number)",
-      "closes": []
-    },
-    {
-      "branch": "repo-assist/fix-issue-253-legend-commit-count",
-      "pr_number": null,
-      "title": "[repo-assist] fix(spiral): use commit-event count for commit-count metric per bucket",
-      "status": "open (created run 25988009809; check next run for PR number)",
-      "closes": [253]
-    }
-  ],
-  "issues_actioned": {
-    "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
-    "105": "bug fixed via PR #135 (merged 2026-05-01)",
-    "126": "feat commit-count metric (merged 2026-04-30)",
-    "128": "fixed via PR #130 (merged 2026-04-30)",
-    "155": "refactor done via PR #170 (merged 2026-05-06, issue closed)",
-    "159": "refactor done via PR #171 (merged 2026-05-06, issue closed)",
-    "162": "PR #174 open draft; commented 2026-05-07",
-    "173": "closed",
-    "175": "closed",
-    "176": "closed (namespace fix applied by maintainer)",
-    "194": "radialtree pipeline PR submitted run 25986901089; maintainer already did treemap/bubbletree/spiral",
-    "198": "type safety PR #243 open",
-    "225": "commented 2026-05-15: gradient fills implementation sketch",
-    "253": "bug: legend scale wrong; fix PR submitted run 25988009809"
+  "prs_created": {
+    "264": {"branch": "fix-issue-261-center-label-color", "closes": [261]},
+    "265": {"branch": "fix-issue-255-bubbletree-scale", "closes": [255]},
+    "266": {"branch": "fix-issue-258-bubbletree-border-width", "closes": [258]},
+    "267": {"branch": "improve-legend-border-swatches-259", "closes": [259]},
+    "268": {"branch": "fix-issue-260-radial-label-alignment", "closes": [260]},
+    "269": {"branch": "fix-issue-262-radial-label-suppression", "closes": [262]},
+    "test-treemap-inks": {"branch": "test-treemap-inks-20260518", "closes": []}
   },
-  "monthly_summary_issue": {
-    "number": 252,
-    "month": "2026-05",
-    "status": "open"
-  },
-  "backlog_cursor": {
-    "issues": 253,
-    "prs": 0
-  },
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed. Monthly summary #138 closed by maintainer.",
-  "notes": "Fix PR for #253 created this run. PR #243 (legend type safety, closes #198) still open. Radialtree pipeline PR (closes #194) and eng-deps PR (run 25986901089) need PR numbers checked next run."
+  "notes": "All open issues labelled. Issues with repo-assist comments: 194,198,225,253,255,256,257,261,262,263. Open issues needing attention: 251 (dep update PR blocked). CI gap noted: task ci does not include fmt:check."
 }
