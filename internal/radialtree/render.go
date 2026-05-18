@@ -279,5 +279,3 @@ func addExternalLabel(
 		Content: node.Label,
 	})
 }
-
-
