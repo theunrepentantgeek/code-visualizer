@@ -29,6 +29,7 @@ type LegendEntryData struct {
 	Title    string // e.g., "Fill: file-size"
 	Kind     LegendEntryKind
 	Swatches []LegendSwatch
+	IsBorder bool // true when swatches represent border colours (render as outlines)
 }
 
 // LegendSwatch pairs a colour with an optional label.

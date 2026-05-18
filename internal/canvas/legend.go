@@ -86,6 +86,7 @@ func (lc *LegendConfig) toLegendData() *model.LegendData {
 			Title:    string(e.Role) + ": " + e.MetricName,
 			Kind:     e.Ink.legendEntryKind(),
 			Swatches: e.Ink.legendSwatches(),
+			IsBorder: e.Role == LegendRoleBorder,
 		}
 	}
 
