@@ -67,6 +67,7 @@ tasks:
   ci:
     desc: Build, test, and lint
     cmds:
+      - task: fmt:check
       - task: mod:check
       - task: build
       - task: test
