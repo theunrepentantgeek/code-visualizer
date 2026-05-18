@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-18T11:08:28Z",
-  "run_id": "26029674126",
+  "last_run": "2026-05-18T11:11:25Z",
+  "run_id": "26029810905",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -21,55 +21,32 @@
     "231": "2026-05-13T10:25:06Z",
     "253": "2026-05-17T10:15:00Z",
     "254": "2026-05-17T10:57:00Z",
-    "255": "2026-05-18T11:08:34Z",
+    "255": "2026-05-18T11:00:28Z",
     "256": "2026-05-18T09:46:24Z",
     "257": "2026-05-18T09:46:24Z",
     "258": "2026-05-18T09:32:17Z",
     "259": "2026-05-18T09:32:17Z",
     "260": "2026-05-18T09:32:17Z",
     "261": "2026-05-18T08:48:38Z",
-    "262": "2026-05-18T09:46:24Z",
+    "262": "2026-05-18T11:11:25Z",
     "263": "2026-05-18T09:46:24Z",
     "198": "2026-05-18T10:09:35Z"
   },
   "prs_created": [
-    {"branch": "repo-assist/fix-issue-261-center-label-color-ed769a2f5365cab7", "pr_number": 264, "title": "[repo-assist] fix(radialtree): use dark labelColour for centre label in SVG", "status": "open - gci lint fixed this run", "closes": [261]},
-    {"branch": "repo-assist/fix-issue-255-bubbletree-scale-30c889644ca4629f", "pr_number": 265, "title": "[repo-assist] fix(bubbletree): scale content to canvas using bounding rectangle", "status": "open - AABB approach applied prev run", "closes": [255]},
+    {"branch": "repo-assist/fix-issue-261-center-label-color-ed769a2f5365cab7", "pr_number": 264, "title": "[repo-assist] fix(radialtree): use dark labelColour for centre label in SVG", "status": "open", "closes": [261]},
+    {"branch": "repo-assist/fix-issue-255-bubbletree-scale-30c889644ca4629f", "pr_number": 265, "title": "[repo-assist] fix(bubbletree): scale content to fill canvas using bounding rectangle", "status": "open", "closes": [255]},
     {"branch": "repo-assist/fix-issue-258-bubbletree-border-width-24867c99ec7d67c7", "pr_number": 266, "title": "[repo-assist] fix(bubbletree): use thicker border stroke when border metric is active", "status": "open", "closes": [258]},
     {"branch": "repo-assist/improve-legend-border-swatches-259-5a8e6ee973594831", "pr_number": 267, "title": "[repo-assist] feat(legend): render border-metric swatches as outlines", "status": "open", "closes": [259]},
     {"branch": "repo-assist/fix-issue-260-radial-label-alignment-841802a2ccd8dfa3", "pr_number": 268, "title": "[repo-assist] fix(radialtree): consistent label orientation for files within a parent directory", "status": "open", "closes": [260]},
-    {"branch": "repo-assist/fix-issue-262-radial-label-suppression-b2498d3b500190ab", "pr_number": 269, "title": "[repo-assist] fix(radialtree): suppress overlapping labels when arc is too narrow", "status": "open", "closes": [262]},
+    {"branch": "repo-assist/fix-issue-262-radial-label-suppression-b2498d3b500190ab", "pr_number": 269, "title": "[repo-assist] fix(radialtree): suppress overlapping labels when arc is too narrow", "status": "open", "closes": [262], "note": "Updated: only suppress file labels, not directory labels"},
     {"branch": "repo-assist/test-treemap-inks-20260518-3e8200ece0acd4de", "pr_number": 270, "title": "[repo-assist] test(treemap): add BuildInks tests covering all ink configurations", "status": "open", "closes": []},
-    {"branch": "repo-assist/eng-add-fmt-check-to-ci-20260518-283c49605798a068", "pr_number": 272, "title": "[repo-assist] chore(ci): add fmt:check to task ci", "status": "open", "closes": []},
-    {"branch": "repo-assist/test-radialtree-stages-20260518", "pr_number": 273, "title": "[repo-assist] test(radialtree): add stages_test.go covering ResolveMetrics and State", "status": "open", "closes": []}
+    {"branch": "repo-assist/chore-ci-fmt-check", "pr_number": 272, "title": "[repo-assist] chore(ci): add fmt:check to task ci", "status": "open", "closes": []}
   ],
   "issues_actioned": {
-    "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
-    "105": "bug fixed via PR #135 (merged 2026-05-01)",
-    "126": "feat commit-count metric (merged 2026-04-30)",
-    "128": "fixed via PR #130 (merged 2026-04-30)",
-    "155": "refactor done via PR #170 (merged 2026-05-06, issue closed)",
-    "159": "refactor done via PR #171 (merged 2026-05-06, issue closed)",
-    "162": "PR #174 open draft; commented 2026-05-07",
-    "173": "closed",
-    "175": "closed",
-    "176": "closed (namespace fix applied by maintainer)",
-    "194": "commented 2026-05-15: vizCmd pipeline implementation approach",
-    "225": "commented 2026-05-15: gradient fills implementation sketch",
-    "253": "bug fixed via PR #254 (merged 2026-05-18)",
-    "255": "bubbletree scale fix PR #265 updated with AABB approach (previous run); owner confirmed direction",
-    "256": "bubble label move implementation approach commented 2026-05-18",
-    "257": "treemap labels implementation notes commented 2026-05-18",
-    "258": "bubbletree border width fix PR #266 submitted",
-    "259": "legend border outline swatch PR #267 submitted",
-    "260": "radial label alignment fix PR #268 submitted",
-    "261": "bug fix PR #264 submitted (white centre label in SVG)",
-    "262": "label suppression fix PR #269 submitted",
-    "263": "pincushion treemap implementation approach commented 2026-05-18",
-    "198": "issue closed by owner: 'not needed because of other refactoring'; PR #271 closed"
+    "262": "PR #269 updated: only suppress file labels not directory labels (2026-05-18)"
   },
   "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
   "backlog_cursor": {"issues": 263, "prs": 0},
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254,271 merged/closed. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198 closed.",
-  "notes": "Open PRs: #264 (centre label #261 - gci fixed), #265 (bubbletree AABB scale #255), #266 (border width #258), #267 (legend outline swatches #259), #268 (radial label alignment #260), #269 (overlapping labels #262), #270 (treemap BuildInks tests), #272 (fmt:check in ci), #273 (radialtree stages tests). Issues #256, #257, #263 larger features. Issue #225 gradient fills. Task 3 substituted this run: all open bugs have PRs."
+  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254 merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176 closed.",
+  "notes": "Open PRs: #264 (#261), #265 (#255), #266 (#258), #267 (#259), #268 (#260), #269 (#262 - updated fix), #270 (treemap tests), #272 (ci fmt). Issues #256,#257,#263 larger features. Issue #225 gradient fills."
 }
