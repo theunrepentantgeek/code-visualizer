@@ -32,6 +32,7 @@ tasks:
     desc: Run golangci-lint
     cmds:
       - golangci-lint-custom version
+      - golangci-lint-custom cache clean
       - golangci-lint-custom run --verbose
 
   fmt:
@@ -43,6 +44,12 @@ tasks:
     desc: Check formatting without modifying files
     cmds:
       - test -z "$(gofumpt -l .)"
+
+  mod:check:
+    desc: Check that go.mod and go.sum are tidy (no untracked changes)
+    cmds:
+      - go mod tidy
+      - git diff --exit-code go.mod go.sum
 
   clean:
     desc: Remove build artifacts
@@ -61,6 +68,8 @@ tasks:
   ci:
     desc: Build, test, and lint
     cmds:
+      - task: fmt:check
+      - task: mod:check
       - task: build
       - task: test
       - task: lint
