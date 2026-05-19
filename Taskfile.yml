@@ -44,6 +44,12 @@ tasks:
     cmds:
       - test -z "$(gofumpt -l .)"
 
+  mod:check:
+    desc: Check that go.mod and go.sum are tidy (no untracked changes)
+    cmds:
+      - go mod tidy
+      - git diff --exit-code go.mod go.sum
+
   clean:
     desc: Remove build artifacts
     cmds:
@@ -61,6 +67,7 @@ tasks:
   ci:
     desc: Build, test, and lint
     cmds:
+      - task: mod:check
       - task: build
       - task: test
       - task: lint
