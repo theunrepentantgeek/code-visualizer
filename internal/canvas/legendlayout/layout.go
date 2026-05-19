@@ -164,7 +164,13 @@ func measureEntryH(measurer StringMeasurer, entry model.LegendEntryData) (width,
 
 func measureNumericV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
-	h := float64(n) * model.SwatchSize
+
+	step := model.SwatchSize
+	if entry.IsBorder {
+		step += model.BorderSwatchOutlineWidth
+	}
+
+	h := float64(n) * step
 	w := model.SwatchSize
 
 	for _, sw := range entry.Swatches {
@@ -182,7 +188,13 @@ func measureNumericV(measurer StringMeasurer, entry model.LegendEntryData) (widt
 
 func measureNumericH(entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
-	w := float64(n) * model.SwatchSize
+
+	step := model.SwatchSize
+	if entry.IsBorder {
+		step += model.BorderSwatchOutlineWidth
+	}
+
+	w := float64(n) * step
 	h := model.SwatchSize + model.LegendLineHeight + model.LabelGap
 
 	return w, h
@@ -191,8 +203,13 @@ func measureNumericH(entry model.LegendEntryData) (width, height float64) {
 func measureCategoryV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
 
+	gap := model.SwatchGap
+	if entry.IsBorder {
+		gap = model.BorderSwatchOutlineWidth
+	}
+
 	w := model.SwatchSize
-	h := float64(n) * (model.SwatchSize + model.SwatchGap)
+	h := float64(n) * (model.SwatchSize + gap)
 
 	for _, sw := range entry.Swatches {
 		tw, _ := measurer.MeasureString(sw.Label)

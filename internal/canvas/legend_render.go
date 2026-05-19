@@ -127,8 +127,19 @@ func (lb *legendBuilder) addNumericSwatches(
 func (lb *legendBuilder) addNumericSwatchesV(
 	entry model.LegendEntryData, x, y float64,
 ) float64 {
+	step := model.SwatchSize
+	if entry.IsBorder {
+		// add gap equal to outline width so adjacent swatch borders are drawn
+		// side-by-side rather than overlapping
+		step += model.BorderSwatchOutlineWidth
+	}
+
 	for _, sw := range entry.Swatches {
-		lb.addSwatch(x, y, sw.Colour)
+		if entry.IsBorder {
+			lb.addOutlineSwatch(x, y, sw.Colour)
+		} else {
+			lb.addSwatch(x, y, sw.Colour)
+		}
 
 		if sw.Label != "" {
 			lb.addTextShape(
@@ -137,7 +148,7 @@ func (lb *legendBuilder) addNumericSwatchesV(
 			)
 		}
 
-		y += model.SwatchSize
+		y += step
 	}
 
 	return y
@@ -148,8 +159,17 @@ func (lb *legendBuilder) addNumericSwatchesH(
 ) float64 {
 	cx := x
 
+	step := model.SwatchSize
+	if entry.IsBorder {
+		step += model.BorderSwatchOutlineWidth
+	}
+
 	for _, sw := range entry.Swatches {
-		lb.addSwatch(cx, y, sw.Colour)
+		if entry.IsBorder {
+			lb.addOutlineSwatch(cx, y, sw.Colour)
+		} else {
+			lb.addSwatch(cx, y, sw.Colour)
+		}
 
 		if sw.Label != "" {
 			lb.addTextShape(
@@ -158,7 +178,7 @@ func (lb *legendBuilder) addNumericSwatchesH(
 			)
 		}
 
-		cx += model.SwatchSize
+		cx += step
 	}
 
 	return y + model.SwatchSize + model.LegendLineHeight + model.LabelGap
@@ -177,14 +197,24 @@ func (lb *legendBuilder) addCategorySwatches(
 func (lb *legendBuilder) addCategorySwatchesV(
 	entry model.LegendEntryData, x, y float64,
 ) float64 {
+	gap := model.SwatchGap
+	if entry.IsBorder {
+		gap = model.BorderSwatchOutlineWidth
+	}
+
 	for _, sw := range entry.Swatches {
-		lb.addSwatch(x, y, sw.Colour)
+		if entry.IsBorder {
+			lb.addOutlineSwatch(x, y, sw.Colour)
+		} else {
+			lb.addSwatch(x, y, sw.Colour)
+		}
+
 		lb.addTextShape(
 			x+model.SwatchSize+model.LabelGap, y+model.SwatchSize/2,
 			sw.Label, lb.labelInk, model.LegendFontSize, AnchorStart,
 		)
 
-		y += model.SwatchSize + model.SwatchGap
+		y += model.SwatchSize + gap
 	}
 
 	return y
@@ -196,7 +226,12 @@ func (lb *legendBuilder) addCategorySwatchesH(
 	cx := x
 
 	for _, sw := range entry.Swatches {
-		lb.addSwatch(cx, y, sw.Colour)
+		if entry.IsBorder {
+			lb.addOutlineSwatch(cx, y, sw.Colour)
+		} else {
+			lb.addSwatch(cx, y, sw.Colour)
+		}
+
 		lb.addTextShape(
 			cx+model.SwatchSize/2, y+model.SwatchSize+model.LegendLineHeight,
 			sw.Label, lb.labelInk, model.LegendFontSize, AnchorMiddle,
@@ -210,6 +245,13 @@ func (lb *legendBuilder) addCategorySwatchesH(
 
 func (lb *legendBuilder) addSwatch(x, y float64, fill color.RGBA) {
 	lb.addRect(x, y, model.SwatchSize, model.SwatchSize, fill, lb.swBorder, 0.5)
+}
+
+// addOutlineSwatch renders a swatch as a coloured outline with a white interior,
+// to represent a border metric rather than a fill metric.
+func (lb *legendBuilder) addOutlineSwatch(x, y float64, borderColour color.RGBA) {
+	transparent := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	lb.addRect(x, y, model.SwatchSize, model.SwatchSize, transparent, borderColour, model.BorderSwatchOutlineWidth)
 }
 
 func (lb *legendBuilder) addRect(

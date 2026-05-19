@@ -29,6 +29,7 @@ type LegendEntryData struct {
 	Title    string // e.g., "Fill: file-size"
 	Kind     LegendEntryKind
 	Swatches []LegendSwatch
+	IsBorder bool // true when swatches represent border colours (render as outlines)
 }
 
 // LegendSwatch pairs a colour with an optional label.
@@ -42,13 +43,14 @@ type LegendSwatch struct {
 
 // Legend rendering constants — shared by all backends.
 const (
-	LegendPadding    = 12.0
-	LegendMargin     = 16.0
-	SwatchSize       = 28.0
-	SwatchGap        = 4.0
-	LabelGap         = 6.0
-	EntryGap         = 14.0
-	LegendFontSize   = 12.0
-	TitleFontSize    = 13.0
-	LegendLineHeight = 16.0
+	LegendPadding            = 12.0
+	LegendMargin             = 16.0
+	SwatchSize               = 28.0
+	SwatchGap                = 4.0
+	LabelGap                 = 6.0
+	EntryGap                 = 14.0
+	LegendFontSize           = 12.0
+	TitleFontSize            = 13.0
+	LegendLineHeight         = 16.0
+	BorderSwatchOutlineWidth = 6.0 // stroke width for border-metric outline swatches
 )
