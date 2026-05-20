@@ -5,33 +5,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
-// LegendPosition specifies where the legend is placed on the canvas.
-// It is a type alias for model.LegendPosition so that backends and the canvas
-// layer can share the same typed constants without an import cycle.
-type LegendPosition = model.LegendPosition
-
-const (
-	LegendPositionNone         LegendPosition = model.LegendPositionNone
-	LegendPositionTopLeft      LegendPosition = model.LegendPositionTopLeft
-	LegendPositionTopCenter    LegendPosition = model.LegendPositionTopCenter
-	LegendPositionTopRight     LegendPosition = model.LegendPositionTopRight
-	LegendPositionCenterRight  LegendPosition = model.LegendPositionCenterRight
-	LegendPositionBottomRight  LegendPosition = model.LegendPositionBottomRight
-	LegendPositionBottomCenter LegendPosition = model.LegendPositionBottomCenter
-	LegendPositionBottomLeft   LegendPosition = model.LegendPositionBottomLeft
-	LegendPositionCenterLeft   LegendPosition = model.LegendPositionCenterLeft
-)
-
-// LegendOrientation controls whether swatches are stacked vertically
-// or laid out horizontally.
-// It is a type alias for model.LegendOrientation.
-type LegendOrientation = model.LegendOrientation
-
-const (
-	LegendOrientationVertical   LegendOrientation = model.LegendOrientationVertical
-	LegendOrientationHorizontal LegendOrientation = model.LegendOrientationHorizontal
-)
-
 // LegendRole identifies what visual property a legend entry describes.
 type LegendRole string
 
@@ -50,19 +23,19 @@ type LegendEntry struct {
 
 // LegendConfig holds everything needed to render a legend.
 type LegendConfig struct {
-	Position    LegendPosition
-	Orientation LegendOrientation
+	Position    model.LegendPosition
+	Orientation model.LegendOrientation
 	Entries     []LegendEntry
 }
 
 // DefaultOrientation returns the default orientation for a given position.
 // Top-center and bottom-center default to horizontal; all others to vertical.
-func DefaultOrientation(pos LegendPosition) LegendOrientation {
+func DefaultOrientation(pos model.LegendPosition) model.LegendOrientation {
 	switch pos {
-	case LegendPositionTopCenter, LegendPositionBottomCenter:
-		return LegendOrientationHorizontal
+	case model.LegendPositionTopCenter, model.LegendPositionBottomCenter:
+		return model.LegendOrientationHorizontal
 	default:
-		return LegendOrientationVertical
+		return model.LegendOrientationVertical
 	}
 }
 
@@ -78,7 +51,7 @@ func (lc *LegendConfig) ReserveSpace() (widthReduction, heightReduction float64)
 // toLegendData converts the canvas-facing LegendConfig to the backend-facing
 // LegendData. Returns nil if the legend is disabled or has no entries.
 func (lc *LegendConfig) toLegendData() *model.LegendData {
-	if lc == nil || lc.Position == LegendPositionNone || len(lc.Entries) == 0 {
+	if lc == nil || lc.Position == model.LegendPositionNone || len(lc.Entries) == 0 {
 		return nil
 	}
 

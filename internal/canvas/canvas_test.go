@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -529,8 +530,8 @@ func TestCanvas_SetLegend_DecomposesToPrimitives(t *testing.T) {
 	fillInk := NumericInk("file-size", []float64{10, 50, 100}, pal)
 
 	c.SetLegend(LegendConfig{
-		Position:    LegendPositionBottomRight,
-		Orientation: LegendOrientationVertical,
+		Position:    model.LegendPositionBottomRight,
+		Orientation: model.LegendOrientationVertical,
 		Entries: []LegendEntry{
 			{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk},
 		},
