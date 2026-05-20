@@ -2,7 +2,6 @@ package radialtree
 
 import (
 	"cmp"
-	"image/color"
 	"math"
 	"slices"
 
@@ -271,19 +270,18 @@ func nodeDistance(node RadialNode) float64 {
 	return math.Sqrt(node.X*node.X + node.Y*node.Y)
 }
 
-// addRootLabel adds a centred label on the root disc, using a contrasting
-// text colour based on the effective fill.
+// addRootLabel adds a centred label on the root disc.
+// The label uses the same dark labelColour as external labels because the
+// root disc is often very small; most of the text sits on the white
+// background where white text would be invisible.
 func addRootLabel(
 	cv *canvas.Canvas,
 	node RadialNode,
 	cx, cy float64,
-	inks Inks,
+	_ Inks,
 ) {
-	fill := effectiveFill(node, inks)
-	labelTextColour := canvas.TextColourFor(fill)
-
 	labelSpec := &canvas.TextSpec{
-		Ink:      canvas.FixedInk(labelTextColour),
+		Ink:      canvas.FixedInk(labelColour),
 		Anchor:   canvas.AnchorMiddle,
 		FontSize: 0,
 	}
@@ -342,14 +340,4 @@ func addExternalLabel(
 		Y:       ly,
 		Content: node.Label,
 	})
-}
-
-// effectiveFill returns the fill colour for a node, resolving defaults.
-// Used for computing label contrast colour on the root node.
-func effectiveFill(node RadialNode, inks Inks) color.RGBA {
-	if node.IsDirectory {
-		return defaultDirFill
-	}
-
-	return inks.Fill.Dip(canvas.MetricValue{})
 }
