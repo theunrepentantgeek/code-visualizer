@@ -7,6 +7,7 @@ import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
@@ -16,13 +17,13 @@ var white = color.RGBA{R: 255, G: 255, B: 255, A: 255} //nolint:gochecknoglobals
 // ResolveOptions resolves legend position and orientation from raw strings.
 // Empty position defaults to "bottom-right"; empty orientation is derived
 // from the resolved position.
-func ResolveOptions(posStr, orientStr string) (canvas.LegendPosition, canvas.LegendOrientation) {
-	pos := canvas.LegendPosition(posStr)
+func ResolveOptions(posStr, orientStr string) (model.LegendPosition, model.LegendOrientation) {
+	pos := model.LegendPosition(posStr)
 	if pos == "" {
-		pos = canvas.LegendPositionBottomRight
+		pos = model.LegendPositionBottomRight
 	}
 
-	orient := canvas.LegendOrientation(orientStr)
+	orient := model.LegendOrientation(orientStr)
 	if orient == "" {
 		orient = canvas.DefaultOrientation(pos)
 	}
@@ -34,15 +35,15 @@ func ResolveOptions(posStr, orientStr string) (canvas.LegendPosition, canvas.Leg
 // Ink objects used for rendering. Returns nil if the legend is disabled
 // ("none") or no entries would be produced.
 func Build(
-	position canvas.LegendPosition,
-	orientation canvas.LegendOrientation,
+	position model.LegendPosition,
+	orientation model.LegendOrientation,
 	fillInk canvas.Ink,
 	fillMetric metric.Name,
 	borderInk canvas.Ink,
 	borderMetric metric.Name,
 	sizeMetric metric.Name,
 ) *canvas.LegendConfig {
-	if position == canvas.LegendPositionNone {
+	if position == model.LegendPositionNone {
 		return nil
 	}
 

@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	model0 "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -20,8 +21,8 @@ func TestResolveLegendOptions_EmptyDefaults(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, orient := legend.ResolveOptions("", "")
-	g.Expect(pos).To(Equal(canvas.LegendPositionBottomRight))
-	g.Expect(orient).To(Equal(canvas.LegendOrientationVertical))
+	g.Expect(pos).To(Equal(model0.LegendPositionBottomRight))
+	g.Expect(orient).To(Equal(model0.LegendOrientationVertical))
 }
 
 func TestResolveLegendOptions_ExplicitValues(t *testing.T) {
@@ -29,8 +30,8 @@ func TestResolveLegendOptions_ExplicitValues(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, orient := legend.ResolveOptions("top-left", "horizontal")
-	g.Expect(pos).To(Equal(canvas.LegendPositionTopLeft))
-	g.Expect(orient).To(Equal(canvas.LegendOrientationHorizontal))
+	g.Expect(pos).To(Equal(model0.LegendPositionTopLeft))
+	g.Expect(orient).To(Equal(model0.LegendOrientationHorizontal))
 }
 
 func TestResolveLegendOptions_PositionOnly_DerivesOrientation(t *testing.T) {
@@ -38,8 +39,8 @@ func TestResolveLegendOptions_PositionOnly_DerivesOrientation(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, orient := legend.ResolveOptions("top-center", "")
-	g.Expect(pos).To(Equal(canvas.LegendPositionTopCenter))
-	g.Expect(orient).To(Equal(canvas.LegendOrientationHorizontal))
+	g.Expect(pos).To(Equal(model0.LegendPositionTopCenter))
+	g.Expect(orient).To(Equal(model0.LegendOrientationHorizontal))
 }
 
 func TestResolveLegendOptions_None_DisablesLegend(t *testing.T) {
@@ -47,7 +48,7 @@ func TestResolveLegendOptions_None_DisablesLegend(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pos, _ := legend.ResolveOptions("none", "")
-	g.Expect(pos).To(Equal(canvas.LegendPositionNone))
+	g.Expect(pos).To(Equal(model0.LegendPositionNone))
 }
 
 func TestBuildLegendConfig_NonePosition_ReturnsNil(t *testing.T) {
@@ -55,7 +56,7 @@ func TestBuildLegendConfig_NonePosition_ReturnsNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cfg := legend.Build(
-		canvas.LegendPositionNone, canvas.LegendOrientationVertical,
+		model0.LegendPositionNone, model0.LegendOrientationVertical,
 		canvas.FixedInk(color.RGBA{A: 255}), "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
 		"file-lines",
@@ -74,7 +75,7 @@ func TestBuildLegendConfig_FillOnly_SingleEntry(t *testing.T) {
 	fillInk := canvas.NumericInk("file-size", values, pal)
 
 	cfg := legend.Build(
-		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		fillInk, "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
 		"file-size",
@@ -103,7 +104,7 @@ func TestBuildLegendConfig_FillAndBorder_TwoEntries(t *testing.T) {
 	borderInk := canvas.CategoricalInk("file-type", types, catPal)
 
 	cfg := legend.Build(
-		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		fillInk, "file-size",
 		borderInk, "file-type",
 		"file-size",
@@ -128,7 +129,7 @@ func TestBuildLegendConfig_DifferentSizeMetric_AddsEntry(t *testing.T) {
 	fillInk := canvas.NumericInk("file-size", values, pal)
 
 	cfg := legend.Build(
-		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		fillInk, "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
 		"file-lines",
@@ -153,7 +154,7 @@ func TestBuildLegendConfig_SameSizeAsFill_NoSizeEntry(t *testing.T) {
 	fillInk := canvas.NumericInk("file-size", values, pal)
 
 	cfg := legend.Build(
-		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		fillInk, "file-size",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
 		"file-size",
@@ -171,7 +172,7 @@ func TestBuildLegendConfig_NoMetrics_ReturnsNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cfg := legend.Build(
-		canvas.LegendPositionBottomRight, canvas.LegendOrientationVertical,
+		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		canvas.FixedInk(color.RGBA{A: 255}), "",
 		canvas.FixedInk(color.RGBA{A: 255}), "",
 		"",
