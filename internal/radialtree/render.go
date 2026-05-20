@@ -218,33 +218,57 @@ func addLabelsInner(
 	inks Inks,
 	parentDirAngle float64,
 ) {
-	if node.ShowLabel && node.Label != "" {
-		dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
+	renderNodeLabel(cv, node, cx, cy, inks, parentDirAngle)
 
-		if dist == 0 {
-			addRootLabel(cv, node, cx, cy, inks)
-		} else {
-			orientAngle := node.Angle
-			if !node.IsDirectory && !math.IsNaN(parentDirAngle) {
-				orientAngle = parentDirAngle
-			}
-
-			addExternalLabel(cv, node, cx, cy, orientAngle)
-		}
-	}
-
-	// Pass this node's angle to its children only when it is a non-root
-	// directory. Root's children use their own angles (parentDirAngle==NaN).
-	childParentAngle := math.NaN()
-
-	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
-	if node.IsDirectory && dist > 0 {
-		childParentAngle = node.Angle
-	}
-
+	childParentAngle := childParentAngleFor(node)
 	for _, child := range node.Children {
 		addLabelsInner(cv, child, cx, cy, inks, childParentAngle)
 	}
+}
+
+// renderNodeLabel renders the label for a single node, if it has one.
+func renderNodeLabel(
+	cv *canvas.Canvas,
+	node RadialNode,
+	cx, cy float64,
+	inks Inks,
+	parentDirAngle float64,
+) {
+	if !node.ShowLabel || node.Label == "" {
+		return
+	}
+
+	if nodeDistance(node) == 0 {
+		addRootLabel(cv, node, cx, cy, inks)
+	} else {
+		addExternalLabel(cv, node, cx, cy, labelOrientAngle(node, parentDirAngle))
+	}
+}
+
+// labelOrientAngle returns the angle to use for orienting a non-root node's
+// label. File nodes inherit their parent directory's angle when available so
+// sibling files share a consistent left/right orientation.
+func labelOrientAngle(node RadialNode, parentDirAngle float64) float64 {
+	if !node.IsDirectory && !math.IsNaN(parentDirAngle) {
+		return parentDirAngle
+	}
+
+	return node.Angle
+}
+
+// childParentAngleFor returns the parentDirAngle to pass to a node's children.
+// Only non-root directories propagate their angle; root and file nodes pass NaN.
+func childParentAngleFor(node RadialNode) float64 {
+	if node.IsDirectory && nodeDistance(node) > 0 {
+		return node.Angle
+	}
+
+	return math.NaN()
+}
+
+// nodeDistance returns the node's distance from the canvas centre.
+func nodeDistance(node RadialNode) float64 {
+	return math.Sqrt(node.X*node.X + node.Y*node.Y)
 }
 
 // addRootLabel adds a centred label on the root disc, using a contrasting
