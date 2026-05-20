@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	bubbleDirOpacity      = float64(0x30) / 255.0
-	bubbleBorderWidth     = 0.5
-	bubbleArcLabelInset   = 14.0
-	bubbleMinArcFontSize  = 7.0
-	bubbleDefaultFontSize = 14.0
-	bubbleMaxArcFraction  = math.Pi / 2.0
+	bubbleDirOpacity        = float64(0x30) / 255.0
+	bubbleBorderWidth       = 0.5
+	bubbleMetricBorderWidth = 2.0
+	bubbleArcLabelInset     = 14.0
+	bubbleMinArcFontSize    = 7.0
+	bubbleDefaultFontSize   = 14.0
+	bubbleMaxArcFraction    = math.Pi / 2.0
 )
 
 // RenderToCanvas walks the BubbleNode tree and model tree using
@@ -159,11 +160,16 @@ func addBubbleFileDiscsWalk(
 	dir *model.Directory,
 	inks Inks,
 ) {
+	borderWidth := bubbleBorderWidth
+	if inks.HasBorderMetric {
+		borderWidth = bubbleMetricBorderWidth
+	}
+
 	fileSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        inks.Fill,
 			Border:      inks.Border,
-			BorderWidth: bubbleBorderWidth,
+			BorderWidth: borderWidth,
 		},
 	}
 
