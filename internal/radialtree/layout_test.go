@@ -378,12 +378,14 @@ func TestComputeMinFileDepth(t *testing.T) {
 	g.Expect(computeMinFileDepth(empty, 0)).To(Equal(-1))
 }
 
-// TestLayoutShallowFilesGetAdequateArc verifies that when a directory has many
-// files at a shallow depth the layout expands their angular arc so that labels
-// have enough pixels to be readable (arc >= minFileLabelWidth).
-func TestLayoutShallowFilesGetAdequateArc(t *testing.T) {
+// TestLayoutNodesStayWithinCanvas verifies that all nodes are placed within the
+// canvas bounds regardless of tree shape or depth.
+func TestLayoutNodesStayWithinCanvas(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+
+	const canvasSize = 800
+	const halfCanvas = float64(canvasSize) / 2.0
 
 	// 20 files directly under root (depth 1) plus a deep subtree (depth 3).
 	deep := &model.Directory{Name: "deep"}
@@ -399,25 +401,21 @@ func TestLayoutShallowFilesGetAdequateArc(t *testing.T) {
 
 	root.Dirs = append(root.Dirs, wrapper)
 
-	node := Layout(root, 800, filesystem.FileSize, LabelAll)
+	node := Layout(root, canvasSize, filesystem.FileSize, LabelAll)
 	g.Expect(node.Children).NotTo(BeEmpty())
 
-	// Measure the angular span of each depth-1 file.
-	for _, child := range node.Children {
-		if child.IsDirectory {
-			continue
+	// Every node must lie within the canvas (allowing for disc radius + margin).
+	var checkNodes func(n RadialNode)
+	checkNodes = func(n RadialNode) {
+		r := math.Sqrt(n.X*n.X + n.Y*n.Y)
+		g.Expect(r+n.DiscRadius).To(BeNumerically("<=", halfCanvas),
+			"node %q at radius %.1f + disc %.1f exceeds canvas half-width %.0f",
+			n.Label, r, n.DiscRadius, halfCanvas)
+		for _, child := range n.Children {
+			checkNodes(child)
 		}
-
-		r := math.Sqrt(child.X*child.X + child.Y*child.Y)
-		// Each depth-1 file should have arc >= minFileLabelWidth.
-		// arc = sweepAngle * r; sweepAngle = 2π / virtualTotal * fileVW
-		// We test this indirectly: with n=20 shallow files we can check
-		// that each file occupies at least minFileLabelWidth arc length.
-		// The total circumference = 2π*r; each file's arc = 2π*r / 20.
-		arcPerFile := 2 * math.Pi * r / 20
-		g.Expect(arcPerFile).To(BeNumerically(">=", minFileLabelWidth*0.9),
-			"depth-1 file should have ≥ %.0fpx arc (got %.1fpx)", minFileLabelWidth*0.9, arcPerFile)
 	}
+	checkNodes(node)
 }
 
 func TestClamp_BelowLo(t *testing.T) {

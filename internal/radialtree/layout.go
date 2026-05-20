@@ -47,30 +47,6 @@ func Layout(root *model.Directory, canvasSize int, discMetric metric.Name, label
 
 	totalLeaves := computeLeafCount(root)
 
-	// Stage 1 + 2: make room for file labels by expanding arc allocation and
-	// increasing ring spacing when needed.
-	//
-	// Stage 1 (arc expansion): files at shallower depths receive a higher
-	// virtual weight so they are allocated a proportionally larger angular arc.
-	// Deep directories — whose files already have large arcs at large radii —
-	// give up some angular arc to benefit shallow directories.
-	//
-	// Stage 2 (ring-spacing scale): after arc expansion, the shallowest files
-	// get arc ≈ minFileLabelWidth * totalLeaves / virtualTotal pixels.  If that
-	// is less than minFileLabelWidth, scale ringSpacing up by the ratio
-	// virtualTotal/totalLeaves — effectively pushing all discs outward until
-	// labels fit.  The scale is ≤ the pure Stage-2 factor (no virtual weights)
-	// because Stage 1 has already reduced the required increase.
-	if totalLeaves > 0 && labels == LabelAll {
-		minDepth := computeMinFileDepth(root, 0)
-		if minDepth > 0 {
-			virtualTotal := computeVirtualLeafCount(root, 0, ringSpacing, float64(totalLeaves))
-			neededRS := ringSpacing * virtualTotal / float64(totalLeaves)
-			if neededRS > ringSpacing {
-				ringSpacing = neededRS
-			}
-		}
-	}
 
 	effectiveMaxDiscFactor := adjustedDiscFactor(n1, ringSpacing, maxDiscFactor)
 	dp := buildDiscParams(root, discMetric, minFileDisc, ringSpacing*effectiveMaxDiscFactor)
