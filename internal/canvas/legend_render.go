@@ -165,10 +165,11 @@ func (lb *legendBuilder) addNumericSwatchesH(
 	}
 
 	for _, sw := range entry.Swatches {
+		x := cx
 		if entry.IsBorder {
-			lb.addOutlineSwatch(cx, y, sw.Colour)
+			lb.addOutlineSwatch(x, y, sw.Colour)
 		} else {
-			lb.addSwatch(cx, y, sw.Colour)
+			lb.addSwatch(x, y, sw.Colour)
 		}
 
 		if sw.Label != "" {
@@ -226,10 +227,11 @@ func (lb *legendBuilder) addCategorySwatchesH(
 	cx := x
 
 	for _, sw := range entry.Swatches {
+		x := cx
 		if entry.IsBorder {
-			lb.addOutlineSwatch(cx, y, sw.Colour)
+			lb.addOutlineSwatch(x, y, sw.Colour)
 		} else {
-			lb.addSwatch(cx, y, sw.Colour)
+			lb.addSwatch(x, y, sw.Colour)
 		}
 
 		lb.addTextShape(
