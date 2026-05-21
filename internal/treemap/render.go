@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -27,9 +28,12 @@ func RenderToCanvas(
 		},
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		X:    0, Y: 0,
-		W: float64(width), H: float64(height),
+		Spec:  bgSpec,
+		X:     0,
+		Y:     0,
+		W:     float64(width),
+		H:     float64(height),
+		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
 	addRect(cv, rects, root, inks)
@@ -80,9 +84,12 @@ func addDirectoryShapes(
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec: headerSpec,
-		X:    rect.X, Y: rect.Y,
-		W: rect.W, H: headerHeight,
+		Spec:  headerSpec,
+		X:     rect.X,
+		Y:     rect.Y,
+		W:     rect.W,
+		H:     headerHeight,
+		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
 	// Header label
@@ -109,9 +116,12 @@ func addDirectoryShapes(
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec: borderSpec,
-		X:    rect.X, Y: rect.Y,
-		W: rect.W, H: rect.H,
+		Spec:  borderSpec,
+		X:     rect.X,
+		Y:     rect.Y,
+		W:     rect.W,
+		H:     rect.H,
+		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -146,6 +156,7 @@ func addFileRectForFile(
 		H:      rect.H,
 		Fill:   fillMV,
 		Border: borderMV,
+		Focus:  canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
 	if rect.Label != "" && rect.W >= 40 && rect.H >= 16 {

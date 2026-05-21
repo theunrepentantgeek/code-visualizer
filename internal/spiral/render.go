@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 var (
@@ -47,8 +48,10 @@ func addBackground(cv *canvas.Canvas, width, height int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		W:    float64(width), H: float64(height),
+		Spec:  bgSpec,
+		W:     float64(width),
+		H:     float64(height),
+		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 }
 

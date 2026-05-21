@@ -8,10 +8,11 @@ type Rectangle struct {
 	X, Y, W, H float64
 	Fill       MetricValue
 	Border     MetricValue
+	Focus      model.Point
 }
 
 func (r *Rectangle) drawTo(b Backend) {
-	fill := model.SolidFill{Color: r.Spec.Fill.Dip(r.Fill)}
+	fill := r.Spec.Fill.Fill(r.Fill, r.Focus)
 	border := model.SolidFill{Color: r.Spec.Border.Dip(r.Border)}
 
 	b.DrawRectangle(
