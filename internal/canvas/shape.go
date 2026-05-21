@@ -1,5 +1,7 @@
 package canvas
 
+import "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+
 // Rectangle carries geometry and metric values for rectangular shapes.
 type Rectangle struct {
 	Spec       *RectangleSpec
@@ -9,8 +11,8 @@ type Rectangle struct {
 }
 
 func (r *Rectangle) drawTo(b Backend) {
-	fill := r.Spec.Fill.Dip(r.Fill)
-	border := r.Spec.Border.Dip(r.Border)
+	fill := model.SolidFill{Color: r.Spec.Fill.Dip(r.Fill)}
+	border := model.SolidFill{Color: r.Spec.Border.Dip(r.Border)}
 
 	b.DrawRectangle(
 		Position{X: r.X, Y: r.Y},
@@ -31,8 +33,8 @@ type Disc struct {
 }
 
 func (d *Disc) drawTo(b Backend) {
-	fill := d.Spec.Fill.Dip(d.Fill)
-	border := d.Spec.Border.Dip(d.Border)
+	fill := model.SolidFill{Color: d.Spec.Fill.Dip(d.Fill)}
+	border := model.SolidFill{Color: d.Spec.Border.Dip(d.Border)}
 
 	b.DrawDisc(
 		Position{X: d.X, Y: d.Y},
