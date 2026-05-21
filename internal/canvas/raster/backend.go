@@ -60,10 +60,18 @@ func New(width, height int) model.Backend {
 func (r *rasterBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
-	fillColour := solidColor(fill)
-	r.dc.SetColor(nrgba(fillColour))
-	r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
-	r.dc.Fill()
+	switch f := fill.(type) {
+	case model.SolidFill:
+		r.dc.SetColor(nrgba(f.Color))
+		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
+		r.dc.Fill()
+	case model.RadialGradientFill:
+		r.drawRadialGradientRect(pos, size, f)
+	default:
+		r.dc.SetColor(nrgba(color.RGBA{A: 255}))
+		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
+		r.dc.Fill()
+	}
 
 	if borderWidth > 0 {
 		borderColour := solidColor(border)
@@ -71,6 +79,59 @@ func (r *rasterBackend) DrawRectangle(
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
 		r.dc.Stroke()
+	}
+}
+
+func (r *rasterBackend) drawRadialGradientRect(
+	pos model.Position, size model.Size, grad model.RadialGradientFill,
+) {
+	fx := pos.X + grad.Focus.X*size.Width
+	fy := pos.Y + grad.Focus.Y*size.Height
+	maxDist := maxCornerDist(fx, fy, pos.X, pos.Y, size.Width, size.Height)
+
+	steps := max(int(min(max(size.Width, size.Height)/4, 30)), 4)
+
+	for i := range steps {
+		t := float64(steps-1-i) / float64(steps-1)
+		inset := maxDist * t
+		x := max(pos.X, fx-inset)
+		y := max(pos.Y, fy-inset)
+		x2 := min(pos.X+size.Width, fx+inset)
+		y2 := min(pos.Y+size.Height, fy+inset)
+
+		if x2 <= x || y2 <= y {
+			continue
+		}
+
+		r.dc.SetColor(nrgba(lerpColour(grad.Center, grad.Edge, t)))
+		r.dc.DrawRectangle(x, y, x2-x, y2-y)
+		r.dc.Fill()
+	}
+}
+
+func maxCornerDist(fx, fy, rx, ry, w, h float64) float64 {
+	corners := [4][2]float64{{rx, ry}, {rx + w, ry}, {rx, ry + h}, {rx + w, ry + h}}
+	maxDist := 0.0
+
+	for _, corner := range corners {
+		dx := corner[0] - fx
+		dy := corner[1] - fy
+		dist := math.Sqrt(dx*dx + dy*dy)
+
+		if dist > maxDist {
+			maxDist = dist
+		}
+	}
+
+	return maxDist
+}
+
+func lerpColour(a, b color.RGBA, t float64) color.RGBA {
+	return color.RGBA{
+		R: uint8(float64(a.R) + (float64(b.R)-float64(a.R))*t),
+		G: uint8(float64(a.G) + (float64(b.G)-float64(a.G))*t),
+		B: uint8(float64(a.B) + (float64(b.B)-float64(a.B))*t),
+		A: uint8(float64(a.A) + (float64(b.A)-float64(a.A))*t),
 	}
 }
 
