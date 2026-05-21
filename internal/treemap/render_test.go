@@ -92,7 +92,7 @@ func TestRenderTreemapToCanvas_PNG(t *testing.T) {
 
 	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
 	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := treemap.RenderToCanvas(rects, root, 800, 600, inks)
+	cv := treemap.RenderToCanvas(rects, root, 800, 600, inks, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.png")
 	err := cv.Render(out)
@@ -122,7 +122,7 @@ func TestRenderTreemapToCanvas_SVG(t *testing.T) {
 
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
 	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks)
+	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.svg")
 	err := cv.Render(out)
@@ -164,7 +164,7 @@ func TestRenderTreemapToCanvas_JPG(t *testing.T) {
 
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
 	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks)
+	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.jpg")
 	err := cv.Render(out)

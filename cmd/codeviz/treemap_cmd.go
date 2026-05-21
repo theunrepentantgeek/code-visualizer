@@ -31,6 +31,7 @@ type TreemapCmd struct {
 
 	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
 	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	Flat               bool     `help:"Disable pincushion shading (flat solid fills)." default:"false"`
 }
 
 func (c *TreemapCmd) Validate() error {
@@ -106,6 +107,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		},
 		Config:             flags.Config.Treemap,
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
+		Flat:               c.Flat,
 	}
 
 	_, err := pipeline.Run[*treemap.State](
