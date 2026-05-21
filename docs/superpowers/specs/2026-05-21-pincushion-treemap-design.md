@@ -66,8 +66,7 @@ type SolidFill struct {
 type RadialGradientFill struct {
     Center color.RGBA   // brightest colour (at focus point)
     Edge   color.RGBA   // darkened colour (at rect edges)
-    FocusX float64      // focus X as fraction of rect width
-    FocusY float64      // focus Y as fraction of rect height
+    Focus  Point        // gradient centre as fraction of rect (may exceed [0,1])
 }
 
 type Point struct {
@@ -130,8 +129,7 @@ func (g *RadialGradientInk) Fill(value MetricValue, focus model.Point) model.Fil
     return model.RadialGradientFill{
         Center: base,
         Edge:   edge,
-        FocusX: focus.X,
-        FocusY: focus.Y,
+        Focus:  focus,
     }
 }
 
