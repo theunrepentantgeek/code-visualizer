@@ -35,7 +35,7 @@ func newLegendBuilder(baseOrder int) *legendBuilder {
 // Canvas shape pipeline.
 func (c *Canvas) decomposeLegend() []layeredShape {
 	data := c.legend.toLegendData()
-	if data == nil || data.Position == "none" || len(data.Entries) == 0 {
+	if data == nil || data.Position == model.LegendPositionNone || len(data.Entries) == 0 {
 		return nil
 	}
 
@@ -50,7 +50,7 @@ func (c *Canvas) decomposeLegend() []layeredShape {
 	px := ox + model.LegendPadding
 	py := oy + model.LegendPadding
 
-	if data.Orientation == string(LegendOrientationHorizontal) {
+	if data.Orientation == model.LegendOrientationHorizontal {
 		lb.addEntriesH(data, px, py)
 	} else {
 		lb.addEntriesV(data, px, py)
@@ -94,7 +94,7 @@ func (lb *legendBuilder) addEntriesH(
 }
 
 func (lb *legendBuilder) addEntry(
-	orientation string, entry model.LegendEntryData, x, y float64,
+	orientation model.LegendOrientation, entry model.LegendEntryData, x, y float64,
 ) float64 {
 	lb.addTextShape(
 		x, y+model.TitleFontSize,
@@ -111,13 +111,13 @@ func (lb *legendBuilder) addEntry(
 }
 
 func (lb *legendBuilder) addNumericSwatches(
-	orientation string, entry model.LegendEntryData, x, y float64,
+	orientation model.LegendOrientation, entry model.LegendEntryData, x, y float64,
 ) float64 {
 	if len(entry.Swatches) == 0 {
 		return y
 	}
 
-	if orientation == string(LegendOrientationHorizontal) {
+	if orientation == model.LegendOrientationHorizontal {
 		return lb.addNumericSwatchesH(entry, x, y)
 	}
 
@@ -176,9 +176,9 @@ func (lb *legendBuilder) addNumericSwatchesH(
 }
 
 func (lb *legendBuilder) addCategorySwatches(
-	orientation string, entry model.LegendEntryData, x, y float64,
+	orientation model.LegendOrientation, entry model.LegendEntryData, x, y float64,
 ) float64 {
-	if orientation == string(LegendOrientationHorizontal) {
+	if orientation == model.LegendOrientationHorizontal {
 		return lb.addCategorySwatchesH(entry, x, y)
 	}
 

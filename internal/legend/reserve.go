@@ -1,6 +1,9 @@
 package legend
 
-import "github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+)
 
 // MinReservableSize is the smallest canvas dimension (px) that still
 // produces a usable visualization. If reserving legend space would shrink
@@ -36,9 +39,9 @@ func LayoutOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy fl
 	}
 
 	switch cfg.Position {
-	case canvas.LegendPositionTopCenter:
+	case model.LegendPositionTopCenter:
 		return 0, hReduce
-	case canvas.LegendPositionCenterLeft:
+	case model.LegendPositionCenterLeft:
 		return wReduce, 0
 	default:
 		return cornerOffset(cfg, wReduce, hReduce)
@@ -46,10 +49,10 @@ func LayoutOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy fl
 }
 
 func cornerOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy float64) {
-	isTop := cfg.Position == canvas.LegendPositionTopLeft || cfg.Position == canvas.LegendPositionTopRight
-	isLeft := cfg.Position == canvas.LegendPositionTopLeft || cfg.Position == canvas.LegendPositionBottomLeft
+	isTop := cfg.Position == model.LegendPositionTopLeft || cfg.Position == model.LegendPositionTopRight
+	isLeft := cfg.Position == model.LegendPositionTopLeft || cfg.Position == model.LegendPositionBottomLeft
 
-	if cfg.Orientation == canvas.LegendOrientationVertical {
+	if cfg.Orientation == model.LegendOrientationVertical {
 		if isLeft {
 			return wReduce, 0
 		}

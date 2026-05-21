@@ -25,7 +25,7 @@ func MeasureLegend(data *model.LegendData, measurer StringMeasurer) (width, heig
 		return 0, 0
 	}
 
-	if data.Orientation == "horizontal" {
+	if data.Orientation == model.LegendOrientationHorizontal {
 		return measureLegendH(measurer, data)
 	}
 
@@ -34,26 +34,26 @@ func MeasureLegend(data *model.LegendData, measurer StringMeasurer) (width, heig
 
 // LegendOrigin computes the top-left (x, y) for the legend box.
 func LegendOrigin(
-	position string,
+	position model.LegendPosition,
 	canvasW, canvasH float64,
 	legendW, legendH float64,
 ) (ox, oy float64) {
 	m := model.LegendMargin
 
 	switch position {
-	case "top-left":
+	case model.LegendPositionTopLeft:
 		return m, m
-	case "top-center":
+	case model.LegendPositionTopCenter:
 		return (canvasW - legendW) / 2, m
-	case "top-right":
+	case model.LegendPositionTopRight:
 		return canvasW - legendW - m, m
-	case "center-right":
+	case model.LegendPositionCenterRight:
 		return canvasW - legendW - m, (canvasH - legendH) / 2
-	case "bottom-right":
+	case model.LegendPositionBottomRight:
 		return canvasW - legendW - m, canvasH - legendH - m
-	case "bottom-center":
+	case model.LegendPositionBottomCenter:
 		return (canvasW - legendW) / 2, canvasH - legendH - m
-	case "center-left":
+	case model.LegendPositionCenterLeft:
 		return m, (canvasH - legendH) / 2
 	default:
 		return m, canvasH - legendH - m
@@ -64,7 +64,7 @@ func LegendOrigin(
 // space for the legend. Returns zeros if data is nil, position is "none",
 // or there are no entries.
 func ReserveSpace(data *model.LegendData, measurer StringMeasurer) (widthReduction, heightReduction float64) {
-	if data == nil || data.Position == "none" || len(data.Entries) == 0 {
+	if data == nil || data.Position == model.LegendPositionNone || len(data.Entries) == 0 {
 		return 0, 0
 	}
 
@@ -72,12 +72,12 @@ func ReserveSpace(data *model.LegendData, measurer StringMeasurer) (widthReducti
 	m := model.LegendMargin
 
 	switch data.Position {
-	case "center-left", "center-right":
+	case model.LegendPositionCenterLeft, model.LegendPositionCenterRight:
 		return w + 2*m, 0
-	case "top-center", "bottom-center":
+	case model.LegendPositionTopCenter, model.LegendPositionBottomCenter:
 		return 0, h + 2*m
 	default:
-		if data.Orientation == "horizontal" {
+		if data.Orientation == model.LegendOrientationHorizontal {
 			return 0, h + 2*m
 		}
 
