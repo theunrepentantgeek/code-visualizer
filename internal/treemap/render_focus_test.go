@@ -75,6 +75,7 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
 	var gradientCalls []rectangleCall
+
 	for _, call := range backend.rectangles {
 		if _, ok := call.fill.(canvasmodel.RadialGradientFill); ok {
 			gradientCalls = append(gradientCalls, call)
@@ -83,8 +84,15 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 
 	g.Expect(gradientCalls).To(HaveLen(2))
 
-	first := gradientCalls[0].fill.(canvasmodel.RadialGradientFill)
-	second := gradientCalls[1].fill.(canvasmodel.RadialGradientFill)
+	if len(gradientCalls) < 2 {
+		return // unreachable; satisfies nilaway
+	}
+
+	first, ok := gradientCalls[0].fill.(canvasmodel.RadialGradientFill)
+	g.Expect(ok).To(BeTrue())
+
+	second, ok := gradientCalls[1].fill.(canvasmodel.RadialGradientFill)
+	g.Expect(ok).To(BeTrue())
 
 	g.Expect(first.Focus.X).To(BeNumerically("~", 0.875, 1e-9))
 	g.Expect(first.Focus.Y).To(BeNumerically("~", 0.40625, 1e-9))
