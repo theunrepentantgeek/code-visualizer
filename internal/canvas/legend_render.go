@@ -135,7 +135,11 @@ func (lb *legendBuilder) addNumericSwatchesV(
 	}
 
 	for _, sw := range entry.Swatches {
-		lb.addSwatchShape(x, y, sw.Colour, entry.IsBorder)
+		if entry.IsBorder {
+			lb.addOutlineSwatch(x, y, sw.Colour)
+		} else {
+			lb.addSwatch(x, y, sw.Colour)
+		}
 
 		if sw.Label != "" {
 			lb.addTextShape(
@@ -154,13 +158,19 @@ func (lb *legendBuilder) addNumericSwatchesH(
 	entry model.LegendEntryData, x, y float64,
 ) float64 {
 	cx := x
+
 	step := model.SwatchSize
 	if entry.IsBorder {
 		step += model.BorderSwatchOutlineWidth
 	}
 
 	for _, sw := range entry.Swatches {
-		lb.addSwatchShape(cx, y, sw.Colour, entry.IsBorder)
+		x := cx
+		if entry.IsBorder {
+			lb.addOutlineSwatch(x, y, sw.Colour)
+		} else {
+			lb.addSwatch(x, y, sw.Colour)
+		}
 
 		if sw.Label != "" {
 			lb.addTextShape(
@@ -194,7 +204,12 @@ func (lb *legendBuilder) addCategorySwatchesV(
 	}
 
 	for _, sw := range entry.Swatches {
-		lb.addSwatchShape(x, y, sw.Colour, entry.IsBorder)
+		if entry.IsBorder {
+			lb.addOutlineSwatch(x, y, sw.Colour)
+		} else {
+			lb.addSwatch(x, y, sw.Colour)
+		}
+
 		lb.addTextShape(
 			x+model.SwatchSize+model.LabelGap, y+model.SwatchSize/2,
 			sw.Label, lb.labelInk, model.LegendFontSize, AnchorStart,
@@ -212,7 +227,13 @@ func (lb *legendBuilder) addCategorySwatchesH(
 	cx := x
 
 	for _, sw := range entry.Swatches {
-		lb.addSwatchShape(cx, y, sw.Colour, entry.IsBorder)
+		x := cx
+		if entry.IsBorder {
+			lb.addOutlineSwatch(x, y, sw.Colour)
+		} else {
+			lb.addSwatch(x, y, sw.Colour)
+		}
+
 		lb.addTextShape(
 			cx+model.SwatchSize/2, y+model.SwatchSize+model.LegendLineHeight,
 			sw.Label, lb.labelInk, model.LegendFontSize, AnchorMiddle,
@@ -222,14 +243,6 @@ func (lb *legendBuilder) addCategorySwatchesH(
 	}
 
 	return y + model.SwatchSize + model.LegendLineHeight + model.LabelGap
-}
-
-func (lb *legendBuilder) addSwatchShape(x, y float64, colour color.RGBA, isBorder bool) {
-	if isBorder {
-		lb.addOutlineSwatch(x, y, colour)
-	} else {
-		lb.addSwatch(x, y, colour)
-	}
 }
 
 func (lb *legendBuilder) addSwatch(x, y float64, fill color.RGBA) {

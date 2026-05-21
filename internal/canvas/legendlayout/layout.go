@@ -164,6 +164,7 @@ func measureEntryH(measurer StringMeasurer, entry model.LegendEntryData) (width,
 
 func measureNumericV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
+
 	step := model.SwatchSize
 	if entry.IsBorder {
 		step += model.BorderSwatchOutlineWidth
@@ -187,6 +188,7 @@ func measureNumericV(measurer StringMeasurer, entry model.LegendEntryData) (widt
 
 func measureNumericH(entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
+
 	step := model.SwatchSize
 	if entry.IsBorder {
 		step += model.BorderSwatchOutlineWidth
