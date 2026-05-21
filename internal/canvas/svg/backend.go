@@ -24,6 +24,7 @@ type svgBackend struct {
 	width  int
 	height int
 	buf    bytes.Buffer
+	gradID int
 }
 
 // New creates an SVG backend with the given dimensions.
@@ -45,15 +46,41 @@ func (s *svgBackend) writeHeader() {
 func (s *svgBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
-	fillColour := solidColor(fill)
+	fillAttr := rgbaToCSS(solidColor(fill))
+
+	switch f := fill.(type) {
+	case model.RadialGradientFill:
+		fillAttr = fmt.Sprintf("url(#%s)", s.emitRadialGradient(f))
+	default:
+	}
+
 	borderColour := solidColor(border)
 
 	fmt.Fprintf(
 		&s.buf,
 		`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		pos.X, pos.Y, size.Width, size.Height,
-		rgbaToCSS(fillColour), rgbaToCSS(borderColour), borderWidth,
+		fillAttr, rgbaToCSS(borderColour), borderWidth,
 	)
+}
+
+func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
+	s.gradID++
+	id := fmt.Sprintf("rg%d", s.gradID)
+
+	// A 70% radius reaches the rectangle edges while avoiding corner emphasis.
+	fmt.Fprintf(
+		&s.buf,
+		`<defs><radialGradient id="%s" cx="50%%" cy="50%%" r="70%%" fx="%.1f%%" fy="%.1f%%">`+
+			`<stop offset="0%%" stop-color="%s"/>`+
+			`<stop offset="100%%" stop-color="%s"/>`+
+			`</radialGradient></defs>`+"\n",
+		id,
+		grad.Focus.X*100, grad.Focus.Y*100,
+		rgbaToCSS(grad.Center), rgbaToCSS(grad.Edge),
+	)
+
+	return id
 }
 
 func (s *svgBackend) DrawDisc(
