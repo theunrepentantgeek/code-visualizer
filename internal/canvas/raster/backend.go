@@ -3,6 +3,7 @@
 package raster
 
 import (
+	"image"
 	"image/color"
 	"image/jpeg"
 	"math"
@@ -89,23 +90,41 @@ func (r *rasterBackend) drawRadialGradientRect(
 	fy := pos.Y + grad.Focus.Y*size.Height
 	maxDist := maxCornerDist(fx, fy, pos.X, pos.Y, size.Width, size.Height)
 
-	steps := max(int(min(max(size.Width, size.Height)/4, 30)), 4)
-
-	for i := range steps {
-		t := float64(steps-1-i) / float64(steps-1)
-		inset := maxDist * t
-		x := max(pos.X, fx-inset)
-		y := max(pos.Y, fy-inset)
-		x2 := min(pos.X+size.Width, fx+inset)
-		y2 := min(pos.Y+size.Height, fy+inset)
-
-		if x2 <= x || y2 <= y {
-			continue
-		}
-
-		r.dc.SetColor(nrgba(lerpColour(grad.Center, grad.Edge, t)))
-		r.dc.DrawRectangle(x, y, x2-x, y2-y)
+	if maxDist == 0 {
+		r.dc.SetColor(nrgba(grad.Center))
+		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
 		r.dc.Fill()
+
+		return
+	}
+
+	// Render gradient pixel-by-pixel to avoid gg's broken Push/Clip/Pop.
+	img, ok := r.dc.Image().(*image.RGBA)
+	if !ok {
+		return
+	}
+
+	x0 := int(pos.X)
+	y0 := int(pos.Y)
+	x1 := int(pos.X + size.Width)
+	y1 := int(pos.Y + size.Height)
+	bounds := img.Bounds()
+	x0 = max(x0, bounds.Min.X)
+	y0 = max(y0, bounds.Min.Y)
+	x1 = min(x1, bounds.Max.X)
+	y1 = min(y1, bounds.Max.Y)
+
+	invMax := 1.0 / maxDist
+
+	for py := y0; py < y1; py++ {
+		dy := float64(py) + 0.5 - fy
+
+		for px := x0; px < x1; px++ {
+			dx := float64(px) + 0.5 - fx
+			dist := math.Sqrt(dx*dx + dy*dy)
+			t := min(dist*invMax, 1.0)
+			img.SetRGBA(px, py, lerpColour(grad.Center, grad.Edge, t))
+		}
 	}
 }
 
