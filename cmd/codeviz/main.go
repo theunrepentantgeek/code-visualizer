@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/golang"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -78,6 +79,7 @@ func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter
 func main() {
 	filesystem.Register()
 	git.Register()
+	golang.Register()
 
 	// Install tint early so bootstrap errors are formatted consistently.
 	setupLogger(false, false, false)
