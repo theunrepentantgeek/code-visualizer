@@ -23,7 +23,7 @@ type InkInfo struct {
 }
 
 // Info returns introspection data about the ink's kind and metric.
-func (ink Ink) Info() InkInfo {
+func (ink *baseInk) Info() InkInfo {
 	return InkInfo{
 		Kind:       InkKind(ink.kind),
 		MetricName: ink.metricName,
@@ -38,7 +38,7 @@ var (
 
 // Boundaries returns the bucket boundary values for numeric inks.
 // Returns nil for fixed or categorical inks.
-func (ink Ink) Boundaries() []float64 {
+func (ink *baseInk) Boundaries() []float64 {
 	if ink.kind != inkNumeric || ink.boundaries == nil {
 		return nil
 	}
@@ -48,7 +48,7 @@ func (ink Ink) Boundaries() []float64 {
 
 // Palette returns the colour palette used by this ink.
 // Returns an empty palette for fixed inks.
-func (ink Ink) Palette() palette.ColourPalette {
+func (ink *baseInk) Palette() palette.ColourPalette {
 	if ink.kind == inkFixed {
 		return palette.ColourPalette{}
 	}
@@ -58,7 +58,7 @@ func (ink Ink) Palette() palette.ColourPalette {
 
 // Categories returns the category labels for categorical inks.
 // Returns nil for fixed or numeric inks.
-func (ink Ink) Categories() []string {
+func (ink *baseInk) Categories() []string {
 	if ink.kind != inkCategorical {
 		return nil
 	}

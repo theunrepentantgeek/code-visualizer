@@ -4,7 +4,9 @@ import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -15,6 +17,7 @@ func RenderToCanvas(
 	root *model.Directory,
 	width, height int,
 	inks Inks,
+	sizeMetric metric.Name,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -27,12 +30,15 @@ func RenderToCanvas(
 		},
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		X:    0, Y: 0,
-		W: float64(width), H: float64(height),
+		Spec:  bgSpec,
+		X:     0,
+		Y:     0,
+		W:     float64(width),
+		H:     float64(height),
+		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
-	addRect(cv, rects, root, inks)
+	addRect(cv, rects, root, inks, sizeMetric)
 
 	return cv
 }
@@ -43,25 +49,28 @@ func addRect(
 	rect TreemapRectangle,
 	node *model.Directory,
 	inks Inks,
+	sizeMetric metric.Name,
 ) {
 	if !rect.IsDirectory {
-		addFileRectForFile(cv, rect, nil, inks)
+		addFileRectForFile(cv, rect, nil, inks, rect, 0)
 
 		return
 	}
 
 	addDirectoryShapes(cv, rect)
 
+	dirTotal := directoryTotalWeight(node, sizeMetric)
 	fileIdx := 0
 	dirIdx := 0
 
 	for i := range rect.Children {
 		child := rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			addRect(cv, child, node.Dirs[dirIdx], inks)
+			addRect(cv, child, node.Dirs[dirIdx], inks, sizeMetric)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
-			addFileRectForFile(cv, child, node.Files[fileIdx], inks)
+			fileWeight := fileMetricWeight(node.Files[fileIdx], sizeMetric)
+			addFileRectForFile(cv, child, node.Files[fileIdx], inks, rect, fileWeight/dirTotal)
 			fileIdx++
 		}
 	}
@@ -80,9 +89,12 @@ func addDirectoryShapes(
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec: headerSpec,
-		X:    rect.X, Y: rect.Y,
-		W: rect.W, H: headerHeight,
+		Spec:  headerSpec,
+		X:     rect.X,
+		Y:     rect.Y,
+		W:     rect.W,
+		H:     headerHeight,
+		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
 	// Header label
@@ -109,9 +121,12 @@ func addDirectoryShapes(
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec: borderSpec,
-		X:    rect.X, Y: rect.Y,
-		W: rect.W, H: rect.H,
+		Spec:  borderSpec,
+		X:     rect.X,
+		Y:     rect.Y,
+		W:     rect.W,
+		H:     rect.H,
+		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -120,13 +135,15 @@ func addFileRectForFile(
 	rect TreemapRectangle,
 	file *model.File,
 	inks Inks,
+	parentDir TreemapRectangle,
+	weightFraction float64,
 ) {
 	if rect.W <= 0 || rect.H <= 0 {
 		return
 	}
 
+	focus := computeFocus(rect, parentDir, weightFraction)
 	hasBorder := inks.Border.Info().Kind
-
 	fillMV := pkginks.MetricValueForFile(file, inks.Fill)
 	borderMV := pkginks.MetricValueForFile(file, inks.Border)
 
@@ -146,6 +163,7 @@ func addFileRectForFile(
 		H:      rect.H,
 		Fill:   fillMV,
 		Border: borderMV,
+		Focus:  focus,
 	})
 
 	if rect.Label != "" && rect.W >= 40 && rect.H >= 16 {
@@ -164,6 +182,53 @@ func addFileRectForFile(
 			Content: rect.Label,
 		})
 	}
+}
+
+func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) canvasmodel.Point {
+	if fileRect.W <= 0 || fileRect.H <= 0 {
+		return canvasmodel.Point{X: 0.5, Y: 0.5}
+	}
+
+	fileCX := fileRect.X + fileRect.W/2
+	fileCY := fileRect.Y + fileRect.H/2
+	dirCX := dirRect.X + dirRect.W/2
+	dirCY := dirRect.Y + dirRect.H/2
+	focusX := fileCX + (dirCX-fileCX)*weightFraction
+	focusY := fileCY + (dirCY-fileCY)*weightFraction
+
+	return canvasmodel.Point{
+		X: (focusX - fileRect.X) / fileRect.W,
+		Y: (focusY - fileRect.Y) / fileRect.H,
+	}
+}
+
+func directoryTotalWeight(dir *model.Directory, sizeMetric metric.Name) float64 {
+	total := 0.0
+	for _, f := range dir.Files {
+		total += fileMetricWeight(f, sizeMetric)
+	}
+
+	if total <= 0 {
+		total = float64(len(dir.Files))
+	}
+
+	return total
+}
+
+func fileMetricWeight(file *model.File, sizeMetric metric.Name) float64 {
+	if file == nil || sizeMetric == "" {
+		return 1.0
+	}
+
+	if v, ok := file.Quantity(sizeMetric); ok {
+		return float64(v)
+	}
+
+	if v, ok := file.Measure(sizeMetric); ok {
+		return v
+	}
+
+	return 1.0
 }
 
 // DynBorderWidth returns a dynamic border width based on rectangle

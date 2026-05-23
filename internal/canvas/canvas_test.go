@@ -12,23 +12,65 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
+type fillAwareInk struct {
+	fill     model.Fill
+	gotValue MetricValue
+	gotFocus model.Point
+}
+
+func (*fillAwareInk) Dip(MetricValue) color.RGBA {
+	return color.RGBA{R: 255, A: 255}
+}
+
+func (ink *fillAwareInk) Fill(value MetricValue, focus model.Point) model.Fill {
+	ink.gotValue = value
+	ink.gotFocus = focus
+
+	return ink.fill
+}
+
+func (*fillAwareInk) Info() InkInfo {
+	return InkInfo{Kind: InkFixed}
+}
+
+func (*fillAwareInk) legendEntryKind() model.LegendEntryKind {
+	return model.LegendEntryNumeric
+}
+
+func (*fillAwareInk) legendSwatches() []model.LegendSwatch {
+	return nil
+}
+
 func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	c := NewCanvas(800, 600)
-	red := color.RGBA{R: 255, A: 255}
+	focus := model.Point{X: 0.2, Y: 0.8}
+	fillValue := MeasureValue(0.75)
+	gradient := model.RadialGradientFill{
+		Center: color.RGBA{R: 255, A: 255},
+		Edge:   color.RGBA{B: 255, A: 255},
+		Focus:  focus,
+	}
+	fillInk := &fillAwareInk{fill: gradient}
 	spec := &RectangleSpec{
 		ShapeStyle: ShapeStyle{
-			Fill:        FixedInk(red),
+			Fill:        fillInk,
 			Border:      FixedInk(black),
 			BorderWidth: 2.0,
 		},
 	}
 
 	c.AddRectangle(LayerContent, Rectangle{
-		Spec: spec,
-		X:    10, Y: 20, W: 100, H: 50,
+		Spec:   spec,
+		X:      10,
+		Y:      20,
+		W:      100,
+		H:      50,
+		Fill:   fillValue,
+		Focus:  focus,
+		Border: MeasureValue(1.0),
 	})
 
 	mb := newMockBackend()
@@ -36,7 +78,9 @@ func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.calls).To(HaveLen(1))
 	g.Expect(mb.calls[0].method).To(Equal("DrawRectangle"))
-	g.Expect(mb.calls[0].fill).To(Equal(red))
+	g.Expect(mb.calls[0].rawFill).To(Equal(model.Fill(gradient)))
+	g.Expect(fillInk.gotValue).To(Equal(fillValue))
+	g.Expect(fillInk.gotFocus).To(Equal(focus))
 }
 
 func TestCanvas_AddDisc_DispatchesToBackend(t *testing.T) {

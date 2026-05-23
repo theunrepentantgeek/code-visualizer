@@ -270,7 +270,7 @@ func (lb *legendBuilder) addRect(
 	lb.shapes = append(lb.shapes, layeredShape{
 		layer: LayerOverlay,
 		order: lb.order,
-		shape: &Rectangle{Spec: spec, X: x, Y: y, W: w, H: h},
+		shape: &Rectangle{Spec: spec, X: x, Y: y, W: w, H: h, Focus: model.Point{X: 0.5, Y: 0.5}},
 	})
 
 	lb.order++

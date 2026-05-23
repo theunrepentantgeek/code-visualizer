@@ -18,11 +18,16 @@ const (
 	inkCategorical
 )
 
-// Ink resolves metric values to colours.
-// Fixed inks ignore the metric value; metric inks resolve via palette + mapping strategy.
-//
-// Ink is safe to copy; internal state is shared via pointers.
-type Ink struct {
+// Ink resolves metric values to colours and fill specifications.
+type Ink interface {
+	Dip(value MetricValue) color.RGBA
+	Fill(value MetricValue, focus model.Point) model.Fill
+	Info() InkInfo
+	legendEntryKind() model.LegendEntryKind
+	legendSwatches() []model.LegendSwatch
+}
+
+type baseInk struct {
 	kind       inkKind
 	metricName metric.Name
 	color      color.RGBA
@@ -40,7 +45,7 @@ func FixedInk(c color.RGBA, opts ...InkOption) Ink {
 		o(&cfg)
 	}
 
-	return Ink{
+	return &baseInk{
 		kind:    inkFixed,
 		color:   c,
 		opacity: cfg.opacity,
@@ -58,7 +63,7 @@ func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, o
 
 	buckets := metric.ComputeBuckets(values, len(pal.Colours))
 
-	return Ink{
+	return &baseInk{
 		kind:       inkNumeric,
 		metricName: name,
 		boundaries: &buckets,
@@ -74,7 +79,7 @@ func CategoricalInk(name metric.Name, categories []string, pal palette.ColourPal
 		o(&cfg)
 	}
 
-	return Ink{
+	return &baseInk{
 		kind:       inkCategorical,
 		metricName: name,
 		catMapper:  palette.NewCategoricalMapper(categories, pal),
@@ -85,7 +90,7 @@ func CategoricalInk(name metric.Name, categories []string, pal palette.ColourPal
 }
 
 // Dip resolves a MetricValue to an RGBA colour.
-func (ink Ink) Dip(value MetricValue) color.RGBA {
+func (ink *baseInk) Dip(value MetricValue) color.RGBA {
 	var c color.RGBA
 
 	switch ink.kind {
@@ -102,7 +107,11 @@ func (ink Ink) Dip(value MetricValue) color.RGBA {
 	return applyOpacity(c, ink.opacity)
 }
 
-func (ink Ink) dipNumeric(value MetricValue) color.RGBA {
+func (ink *baseInk) Fill(value MetricValue, _ model.Point) model.Fill {
+	return model.SolidFill{Color: ink.Dip(value)}
+}
+
+func (ink *baseInk) dipNumeric(value MetricValue) color.RGBA {
 	var numericVal float64
 
 	switch value.Kind {
@@ -140,7 +149,7 @@ func clamp01(v float64) float64 {
 }
 
 // legendEntryKind returns the LegendEntryKind for this ink.
-func (ink Ink) legendEntryKind() model.LegendEntryKind {
+func (ink *baseInk) legendEntryKind() model.LegendEntryKind {
 	if ink.kind == inkCategorical {
 		return model.LegendEntryCategorical
 	}
@@ -150,7 +159,7 @@ func (ink Ink) legendEntryKind() model.LegendEntryKind {
 
 // legendSwatches extracts resolved swatch data for legend rendering.
 // Returns nil for fixed inks (no meaningful swatch data).
-func (ink Ink) legendSwatches() []model.LegendSwatch {
+func (ink *baseInk) legendSwatches() []model.LegendSwatch {
 	switch ink.kind {
 	case inkNumeric:
 		return ink.numericLegendSwatches()
@@ -161,7 +170,7 @@ func (ink Ink) legendSwatches() []model.LegendSwatch {
 	}
 }
 
-func (ink Ink) numericLegendSwatches() []model.LegendSwatch {
+func (ink *baseInk) numericLegendSwatches() []model.LegendSwatch {
 	if ink.boundaries == nil {
 		return nil
 	}
@@ -190,7 +199,7 @@ func (ink Ink) numericLegendSwatches() []model.LegendSwatch {
 	return swatches
 }
 
-func (ink Ink) categoricalLegendSwatches() []model.LegendSwatch {
+func (ink *baseInk) categoricalLegendSwatches() []model.LegendSwatch {
 	if ink.catMapper == nil || len(ink.categories) == 0 {
 		return nil
 	}

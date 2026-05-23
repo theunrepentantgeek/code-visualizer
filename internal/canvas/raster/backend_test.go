@@ -25,7 +25,7 @@ func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
 	b.DrawRectangle(
 		model.Position{X: 10, Y: 10},
 		model.Size{Width: 80, Height: 60},
-		red, blk, 2.0,
+		model.SolidFill{Color: red}, model.SolidFill{Color: blk}, 2.0,
 	)
 
 	out := filepath.Join(t.TempDir(), "rect.png")
@@ -47,7 +47,7 @@ func TestRasterBackend_DrawDisc_ProducesValidPNG(t *testing.T) {
 
 	b.DrawDisc(
 		model.Position{X: 100, Y: 100},
-		50, blue, blk, 1.0,
+		50, model.SolidFill{Color: blue}, model.SolidFill{Color: blk}, 1.0,
 	)
 
 	out := filepath.Join(t.TempDir(), "disc.png")
@@ -295,12 +295,12 @@ func TestRasterBackend_DrawDisc_SemiTransparentOverWhite_ProducesCorrectBlend(t 
 	b.DrawRectangle(
 		model.Position{X: 0, Y: 0},
 		model.Size{Width: 100, Height: 100},
-		white, white, 0,
+		model.SolidFill{Color: white}, model.SolidFill{Color: white}, 0,
 	)
 
 	b.DrawDisc(
 		model.Position{X: 50, Y: 50},
-		40, semiBlue, semiBlue, 0,
+		40, model.SolidFill{Color: semiBlue}, model.SolidFill{Color: semiBlue}, 0,
 	)
 
 	out := filepath.Join(t.TempDir(), "semi-transparent.png")

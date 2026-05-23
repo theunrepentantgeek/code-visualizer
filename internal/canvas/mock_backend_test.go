@@ -2,16 +2,20 @@ package canvas
 
 import (
 	"image/color"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
 // drawCall records a single drawing operation dispatched to the mock backend.
 type drawCall struct {
-	method string
-	pos    Position
-	size   Size
-	fill   color.RGBA
-	border color.RGBA
-	text   string
+	method    string
+	pos       Position
+	size      Size
+	fill      color.RGBA
+	border    color.RGBA
+	rawFill   model.Fill
+	rawBorder model.Fill
+	text      string
 }
 
 // mockBackend records all drawing calls for test assertions.
@@ -25,22 +29,26 @@ func newMockBackend() *mockBackend {
 	return &mockBackend{}
 }
 
-func (m *mockBackend) DrawRectangle(pos Position, size Size, fill, border color.RGBA, _ float64) {
+func (m *mockBackend) DrawRectangle(pos Position, size Size, fill, border model.Fill, _ float64) {
 	m.calls = append(m.calls, drawCall{
-		method: "DrawRectangle",
-		pos:    pos,
-		size:   size,
-		fill:   fill,
-		border: border,
+		method:    "DrawRectangle",
+		pos:       pos,
+		size:      size,
+		fill:      solidColorTest(fill),
+		border:    solidColorTest(border),
+		rawFill:   fill,
+		rawBorder: border,
 	})
 }
 
-func (m *mockBackend) DrawDisc(center Position, _ float64, fill, border color.RGBA, _ float64) {
+func (m *mockBackend) DrawDisc(center Position, _ float64, fill, border model.Fill, _ float64) {
 	m.calls = append(m.calls, drawCall{
-		method: "DrawDisc",
-		pos:    center,
-		fill:   fill,
-		border: border,
+		method:    "DrawDisc",
+		pos:       center,
+		fill:      solidColorTest(fill),
+		border:    solidColorTest(border),
+		rawFill:   fill,
+		rawBorder: border,
 	})
 }
 
@@ -81,4 +89,15 @@ func (m *mockBackend) Finish(outputPath string) error {
 	m.finishPath = outputPath
 
 	return m.finishErr
+}
+
+func solidColorTest(f model.Fill) color.RGBA {
+	switch v := f.(type) {
+	case model.SolidFill:
+		return v.Color
+	case model.RadialGradientFill:
+		return v.Center
+	default:
+		return color.RGBA{A: 255}
+	}
 }

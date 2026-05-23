@@ -3,6 +3,7 @@
 package raster
 
 import (
+	"image"
 	"image/color"
 	"image/jpeg"
 	"math"
@@ -58,30 +59,127 @@ func New(width, height int) model.Backend {
 }
 
 func (r *rasterBackend) DrawRectangle(
-	pos model.Position, size model.Size, fill, border color.RGBA, borderWidth float64,
+	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
-	r.dc.SetColor(nrgba(fill))
-	r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
-	r.dc.Fill()
+	switch f := fill.(type) {
+	case model.SolidFill:
+		r.dc.SetColor(nrgba(f.Color))
+		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
+		r.dc.Fill()
+	case model.RadialGradientFill:
+		r.drawRadialGradientRect(pos, size, f)
+	default:
+		r.dc.SetColor(nrgba(color.RGBA{A: 255}))
+		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
+		r.dc.Fill()
+	}
 
 	if borderWidth > 0 {
-		r.dc.SetColor(nrgba(border))
+		borderColour := solidColor(border)
+		r.dc.SetColor(nrgba(borderColour))
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
 		r.dc.Stroke()
 	}
 }
 
-func (r *rasterBackend) DrawDisc(center model.Position, radius float64, fill, border color.RGBA, borderWidth float64) {
-	r.dc.SetColor(nrgba(fill))
+func (r *rasterBackend) drawRadialGradientRect(
+	pos model.Position, size model.Size, grad model.RadialGradientFill,
+) {
+	fx := pos.X + grad.Focus.X*size.Width
+	fy := pos.Y + grad.Focus.Y*size.Height
+	maxDist := maxCornerDist(fx, fy, pos.X, pos.Y, size.Width, size.Height)
+
+	if maxDist == 0 {
+		r.dc.SetColor(nrgba(grad.Center))
+		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
+		r.dc.Fill()
+
+		return
+	}
+
+	// Render gradient pixel-by-pixel to avoid gg's broken Push/Clip/Pop.
+	img, ok := r.dc.Image().(*image.RGBA)
+	if !ok {
+		return
+	}
+
+	x0 := int(pos.X)
+	y0 := int(pos.Y)
+	x1 := int(pos.X + size.Width)
+	y1 := int(pos.Y + size.Height)
+	bounds := img.Bounds()
+	x0 = max(x0, bounds.Min.X)
+	y0 = max(y0, bounds.Min.Y)
+	x1 = min(x1, bounds.Max.X)
+	y1 = min(y1, bounds.Max.Y)
+
+	invMax := 1.0 / maxDist
+
+	for py := y0; py < y1; py++ {
+		dy := float64(py) + 0.5 - fy
+
+		for px := x0; px < x1; px++ {
+			dx := float64(px) + 0.5 - fx
+			dist := math.Sqrt(dx*dx + dy*dy)
+			t := min(dist*invMax, 1.0)
+			img.SetRGBA(px, py, lerpColour(grad.Center, grad.Edge, t))
+		}
+	}
+}
+
+func maxCornerDist(fx, fy, rx, ry, w, h float64) float64 {
+	corners := [4][2]float64{{rx, ry}, {rx + w, ry}, {rx, ry + h}, {rx + w, ry + h}}
+	maxDist := 0.0
+
+	for _, corner := range corners {
+		dx := corner[0] - fx
+		dy := corner[1] - fy
+		dist := math.Sqrt(dx*dx + dy*dy)
+
+		if dist > maxDist {
+			maxDist = dist
+		}
+	}
+
+	return maxDist
+}
+
+func lerpColour(a, b color.RGBA, t float64) color.RGBA {
+	return color.RGBA{
+		R: uint8(float64(a.R) + (float64(b.R)-float64(a.R))*t),
+		G: uint8(float64(a.G) + (float64(b.G)-float64(a.G))*t),
+		B: uint8(float64(a.B) + (float64(b.B)-float64(a.B))*t),
+		A: uint8(float64(a.A) + (float64(b.A)-float64(a.A))*t),
+	}
+}
+
+func (r *rasterBackend) DrawDisc(
+	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
+) {
+	fillColour := solidColor(fill)
+	r.dc.SetColor(nrgba(fillColour))
 	r.dc.DrawCircle(center.X, center.Y, radius)
 	r.dc.Fill()
 
 	if borderWidth > 0 {
-		r.dc.SetColor(nrgba(border))
+		borderColour := solidColor(border)
+		r.dc.SetColor(nrgba(borderColour))
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawCircle(center.X, center.Y, radius)
 		r.dc.Stroke()
+	}
+}
+
+// solidColor extracts the colour from a Fill, falling back to opaque black.
+func solidColor(f model.Fill) color.RGBA {
+	switch v := f.(type) {
+	case model.SolidFill:
+		return v.Color
+	case model.RadialGradientFill:
+		return v.Center
+	default:
+		return color.RGBA{A: 255}
 	}
 }
 

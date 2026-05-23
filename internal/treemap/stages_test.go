@@ -5,8 +5,12 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -64,4 +68,38 @@ func TestState_IncludeBinary(t *testing.T) {
 	g.Expect(off.IncludeBinary()).To(BeFalse())
 
 	var _ stages.BinaryFilterToggler = on
+}
+
+func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name        string
+		flat        bool
+		wantWrapped bool
+	}{
+		{name: "gradient", flat: false, wantWrapped: true},
+		{name: "flat", flat: true, wantWrapped: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			root := &model.Directory{
+				Name:  "root",
+				Files: []*model.File{makeTestFile("a.go", "go", 100)},
+			}
+			s := &treemap.State{
+				CommonState: stages.CommonState{Root: root, Output: "out.png", Width: 100, Height: 100},
+				FillMetric:  filesystem.FileSize,
+				FillPalette: palette.Temperature,
+				Flat:        tc.flat,
+			}
+
+			g.Expect(treemap.BuildInksStage(s)).To(Succeed())
+
+			_, isWrapped := s.Inks.Fill.(*canvas.RadialGradientInk)
+			g.Expect(isWrapped).To(Equal(tc.wantWrapped))
+		})
+	}
 }

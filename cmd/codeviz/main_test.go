@@ -63,6 +63,23 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 	}
 }
 
+func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{"render", "treemap", ".", "-o", "out.png", "-s", "file-size", "--flat"})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.Render.Treemap.Flat).To(BeTrue())
+}
+
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

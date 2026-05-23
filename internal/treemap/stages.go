@@ -3,6 +3,7 @@ package treemap
 import (
 	"log/slog"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -41,6 +42,9 @@ func BuildInksStage(s *State) error {
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
 	s.Inks = BuildInks(c.Root, s.FillMetric, s.FillPalette, s.BorderMetric, s.BorderPalette)
+	if !s.Flat {
+		s.Inks.Fill = canvas.NewRadialGradientInk(s.Inks.Fill)
+	}
 
 	return nil
 }
@@ -86,7 +90,7 @@ func LayoutStage(s *State) error {
 func RenderStage(s *State) error {
 	c := s.Common()
 
-	cv := RenderToCanvas(s.Root, c.Root, c.Width, c.Height, s.Inks)
+	cv := RenderToCanvas(s.Root, c.Root, c.Width, c.Height, s.Inks, s.Size)
 	if s.LegendConfig != nil {
 		cv.SetLegend(*s.LegendConfig)
 	}
