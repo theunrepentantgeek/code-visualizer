@@ -123,7 +123,7 @@ func addBubbleDirDiscs(
 			Spec:   dirSpec,
 			X:      e.node.X,
 			Y:      e.node.Y,
-			Radius: e.node.Radius,
+			Radius: bubbleDirDiscRadius(*e.node),
 		})
 	}
 }
@@ -216,9 +216,25 @@ func addBubbleLabels(cv *canvas.Canvas, node BubbleNode) {
 	}
 }
 
-// addBubbleDirLabel adds an arc text label curved along the top of a directory circle.
+func bubbleDirDiscRadius(node BubbleNode) float64 {
+	if node.IsDirectory && node.ShowLabel {
+		return max(0.0, node.Radius-LabelReservation)
+	}
+
+	return node.Radius
+}
+
+func bubbleDirLabelRadiusHint(node BubbleNode) float64 {
+	return bubbleDirDiscRadius(node) + LabelReservation/2 + bubbleArcLabelInset
+}
+
+func bubbleDirLabelRadius(node BubbleNode, fontSize float64) float64 {
+	return bubbleDirDiscRadius(node) + fontSize/2 + bubbleArcLabelInset
+}
+
+// addBubbleDirLabel adds an arc text label curved just above the top of a directory circle.
 func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode) {
-	fontSize := bubbleArcFontSize(node.Label, node.Radius)
+	fontSize := bubbleArcFontSize(node.Label, bubbleDirLabelRadiusHint(node))
 	if fontSize == 0 {
 		return
 	}
@@ -232,7 +248,7 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode) {
 		Spec:   arcSpec,
 		X:      node.X,
 		Y:      node.Y,
-		Radius: node.Radius,
+		Radius: bubbleDirLabelRadius(node, fontSize),
 		Text:   node.Label,
 	})
 }
@@ -254,8 +270,9 @@ func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode) {
 }
 
 // bubbleArcFontSize computes the font size for a label to fit within
-// bubbleMaxArcFraction of the circle arc. Returns 0 if the label cannot fit
-// at the minimum readable font size.
+// bubbleMaxArcFraction of the target arc. The radius includes the canvas
+// backend's fixed arc inset. Returns 0 if the label cannot fit at the
+// minimum readable font size.
 func bubbleArcFontSize(label string, radius float64) float64 {
 	charCount := float64(utf8.RuneCountInString(label))
 	if charCount == 0 {

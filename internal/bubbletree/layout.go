@@ -14,8 +14,8 @@ import (
 const (
 	minFileRadius    = 2.0  // minimum circle radius for any file node
 	siblingPadding   = 3.0  // gap between sibling circles at the same level
-	parentPadding    = 6.0  // inset from parent circle edge (space for labels)
-	LabelReservation = 14.0 // extra radius for directories that show a label
+	parentPadding    = 6.0  // inset from parent circle edge
+	LabelReservation = 14.0 // occupied radius reserved above labelled directory bubbles
 )
 
 // Layout builds a bubble tree from root, positioning circles to fit within

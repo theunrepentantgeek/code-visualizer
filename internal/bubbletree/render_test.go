@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"image"
+	"image/color"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
@@ -13,22 +14,78 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
+type capturedDisc struct {
+	radius float64
+}
+
+type capturedArcText struct {
+	text   string
+	radius float64
+}
+
+type captureBackend struct {
+	discs    []capturedDisc
+	arcTexts []capturedArcText
+}
+
+func (*captureBackend) DrawRectangle(canvas.Position, canvas.Size, canvasmodel.Fill, canvasmodel.Fill, float64) {
+}
+
+func (c *captureBackend) DrawDisc(
+	_ canvas.Position,
+	radius float64,
+	_ canvasmodel.Fill,
+	_ canvasmodel.Fill,
+	_ float64,
+) {
+	c.discs = append(c.discs, capturedDisc{radius: radius})
+}
+
+func (*captureBackend) DrawLine(canvas.Position, canvas.Position, color.RGBA, float64) {}
+
+func (*captureBackend) DrawPath([]canvas.Position, color.RGBA, float64) {}
+
+func (*captureBackend) DrawText(canvas.Position, string, color.RGBA, float64, canvas.TextAnchor, float64) {
+}
+
+func (c *captureBackend) DrawArcText(
+	_ canvas.Position,
+	radius float64,
+	text string,
+	_ color.RGBA,
+	_ float64,
+) {
+	c.arcTexts = append(c.arcTexts, capturedArcText{text: text, radius: radius})
+}
+
+func (*captureBackend) Finish(string) error { return nil }
+
 func testRoot() *model.Directory {
+	mainFile := makeFile("main.go", "go", 100)
+	mainFile.Path = "root/main.go"
+
+	styleFile := makeFile("style.css", "css", 50)
+	styleFile.Path = "root/style.css"
+
+	libFile := makeFile("lib.go", "go", 200)
+	libFile.Path = "root/pkg/lib.go"
+
 	return &model.Directory{
-		Path: "root",
-		Files: []*model.File{
-			makeFile("main.go", "go", 100),
-			makeFile("style.css", "css", 50),
-		},
+		Name:  "root",
+		Path:  "root",
+		Files: []*model.File{mainFile, styleFile},
 		Dirs: []*model.Directory{
 			{
+				Name:  "pkg",
 				Path:  "root/pkg",
-				Files: []*model.File{makeFile("lib.go", "go", 200)},
+				Files: []*model.File{libFile},
 			},
 		},
 	}
@@ -198,4 +255,56 @@ func TestRenderBubbleToCanvas_CategoricalFill(t *testing.T) {
 	_, format, err := image.DecodeConfig(f)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(format).To(Equal("png"))
+}
+
+func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := testRoot()
+	nodes := bubbletree.Layout(root, 1000, 800, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
+
+	backend := &captureBackend{}
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	g.Expect(nodes.Children).To(HaveLen(3))
+
+	var pkgNode *bubbletree.BubbleNode
+	for i := range nodes.Children {
+		if nodes.Children[i].IsDirectory {
+			pkgNode = &nodes.Children[i]
+			break
+		}
+	}
+
+	g.Expect(pkgNode).NotTo(BeNil())
+	if pkgNode == nil {
+		return
+	}
+
+	maxDiscRadius := 0.0
+	for _, disc := range backend.discs {
+		if disc.radius > maxDiscRadius {
+			maxDiscRadius = disc.radius
+		}
+	}
+
+	g.Expect(maxDiscRadius).To(BeNumerically("~", pkgNode.Radius-bubbletree.LabelReservation, 0.001))
+
+	var pkgLabelRadius float64
+	for _, arcText := range backend.arcTexts {
+		if arcText.text == "pkg" {
+			pkgLabelRadius = arcText.radius
+			break
+		}
+	}
+
+	g.Expect(pkgLabelRadius).To(BeNumerically(">", maxDiscRadius),
+		"directory label should sit above the bubble edge, not on top of it",
+	)
+	g.Expect(pkgLabelRadius).To(BeNumerically(">", pkgNode.Radius),
+		"rendered arc should use the reserved label band outside the bubble",
+	)
 }
