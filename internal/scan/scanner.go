@@ -197,10 +197,16 @@ func processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, ent
 		fileType = "no-extension"
 	}
 
+	binary, err := IsBinaryFile(entryPath)
+	if err != nil {
+		slog.Warn("binary probe failed, assuming text", "path", entryPath, "error", err)
+	}
+
 	f := &model.File{
 		Path:      entryPath,
 		Name:      entry.Name(),
 		Extension: ext,
+		IsBinary:  binary,
 	}
 
 	f.SetQuantity(filesystem.FileSize, info.Size())
