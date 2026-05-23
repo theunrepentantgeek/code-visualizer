@@ -182,3 +182,14 @@
 - **Files changed:** 9 files, net -49 lines. All 22 test packages pass. Build clean.
 - **Result:** PR #217 opened on branch `squad/195-remove-dead-canvas-api`.
 
+
+### GitHub Issue #289 — Additional Go Metrics Analysis (2026-01-06)
+
+- **Task:** Suggest additional Go-specific source code metrics beyond issue #289's base proposal (type/function/method/constant/variable counts).
+- **Existing metrics:** filesystem: `file-size`, `file-lines`, `file-type`; git: `file-age`, `file-freshness`, `author-count`, `commit-count`, `total-lines-added`, `total-lines-removed`, `commit-density`.
+- **Metric system:** Provider interface with Name/Kind/Description/Dependencies/DefaultPalette. Kinds: Quantity (int), Measure (float64), Classification (string).
+- **Key insight:** Go complexity stems from coupling (imports), concurrency (goroutines), error handling, and structural patterns (interfaces/structs). Metrics should highlight maintenance burden and architectural boundaries.
+- **High-priority suggestions:** `interface-count`, `struct-count` (complete type taxonomy), `import-count` (coupling), `cyclomatic-complexity` (maintenance burden), `test-coverage-indicator` (gap identification).
+- **Go-specific idioms:** `goroutine-spawn-count`, `error-return-count`, `defer-count`, `dot-import-count`, `init-function-count`.
+- **Feasibility:** Most metrics are straightforward AST/DST node counts. `github.com/dave/dst` preserves comments, enabling `comment-ratio`. Reference resolution (for cohesion) is v2 scope.
+- **Visualization fit:** All suggested metrics are file-level aggregates suitable for treemap/radial rendering to highlight hotspots.
