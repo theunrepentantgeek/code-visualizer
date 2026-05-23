@@ -10,7 +10,7 @@ import (
 // Base complexity is 1, plus 1 for each decision point:
 // if, for, range, case (non-default), &&, ||.
 //
-//nolint:revive,cyclop // type switch over AST nodes is inherently branchy
+//nolint:cyclop,revive // type switch over AST nodes is inherently branchy
 func cyclomaticComplexity(body *dst.BlockStmt) int64 {
 	if body == nil {
 		return 1

@@ -13,46 +13,39 @@ import (
 func TestComputeCommentRatio(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name string
+	tests := map[string]struct {
 		src  string
 		want float64
 	}{
-		{
-			name: "no comments",
+		"no comments": {
 			src:  "package p\n\nfunc f() {}\n",
 			want: 0.0,
 		},
-		{
-			name: "all comments",
+		"all comments": {
 			src:  "package p\n// comment only\n// another comment\n",
 			want: 2.0,
 		},
-		{
-			name: "mixed code and comments",
+		"mixed code and comments": {
 			src: `package p
 // a comment
 func f() {}
 `,
 			want: 0.5,
 		},
-		{
-			name: "inline comment counts both",
+		"inline comment counts both": {
 			src: `package p
 func f() {} // inline
 `,
 			want: 0.5,
 		},
-		{
-			name: "block comment",
+		"block comment": {
 			src: `package p
 /* block comment */
 func f() {}
 `,
 			want: 0.5,
 		},
-		{
-			name: "multi-line block comment",
+		"multi-line block comment": {
 			src: `package p
 /*
 multi-line
@@ -62,8 +55,7 @@ func f() {}
 `,
 			want: 2.0,
 		},
-		{
-			name: "blank lines ignored",
+		"blank lines ignored": {
 			src: `package p
 
 // comment
@@ -73,8 +65,7 @@ func f() {}
 `,
 			want: 0.5,
 		},
-		{
-			name: "code only",
+		"code only": {
 			src: `package p
 
 func f() {}
@@ -84,8 +75,8 @@ func g() {}
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 

@@ -126,45 +126,39 @@ Default palette: `palette.Neutral`.
 
 ### `fileStats` Struct
 
-Holds all values extracted from a single `dst.Parse()` call. Each field is individually declared per project convention:
+Holds all values extracted from a single `dst.Parse()` call. Uses `visibilityCount` for declaration groups and `aggregate` for per-function metrics:
 
 ```go
+// visibilityCount groups total/public/private counts for a declaration kind.
+type visibilityCount struct {
+    total   int64
+    public  int64
+    private int64
+}
+
+// aggregate groups sum/max/mean for a per-function metric.
+type aggregate struct {
+    sum  int64
+    max  int64
+    mean float64
+}
+
 type fileStats struct {
-    types             int64
-    publicTypes       int64
-    privateTypes      int64
-    interfaces        int64
-    publicInterfaces  int64
-    privateInterfaces int64
-    structs           int64
-    publicStructs     int64
-    privateStructs    int64
-    functions         int64
-    publicFunctions   int64
-    privateFunctions  int64
-    methods           int64
-    publicMethods     int64
-    privateMethods    int64
-    constants         int64
-    publicConstants   int64
-    privateConstants  int64
-    variables         int64
-    publicVariables   int64
-    privateVariables  int64
-    imports           int64
-    stdlibImports     int64
-    externalImports   int64
-    internalImports   int64
-    cyclomaticSum     int64
-    cyclomaticMax     int64
-    cyclomaticMean    float64
-    funcLengthSum     int64
-    funcLengthMax     int64
-    funcLengthMean    float64
-    commentRatio      float64
-    declarations      int64
-    publicDeclarations  int64
-    privateDeclarations int64
+    types        visibilityCount
+    interfaces   visibilityCount
+    structs      visibilityCount
+    functions    visibilityCount
+    methods      visibilityCount
+    constants    visibilityCount
+    variables    visibilityCount
+    declarations visibilityCount
+    imports         int64
+    stdlibImports   int64
+    externalImports int64
+    internalImports int64
+    cyclomatic   aggregate
+    funcLength   aggregate
+    commentRatio float64
 }
 ```
 
@@ -176,7 +170,7 @@ type fileStats struct {
    - `*dst.GenDecl` with `token.CONST`: count constants per `ValueSpec`
    - `*dst.GenDecl` with `token.VAR`: count variables per `ValueSpec`
    - `*dst.FuncDecl`: if `Recv != nil` → method, else → function
-3. Public/private: `unicode.IsUpper(rune(name[0]))`
+3. Public/private: `token.IsExported(name)`
 4. Aggregate declarations: sum of types + functions + methods + constants + variables (with public/private variants)
 
 ### Cyclomatic Complexity
@@ -231,7 +225,7 @@ type statsCache struct {
 - Keyed by absolute file path
 - Uses `singleflight.Group` to deduplicate concurrent parses of the same file
 - First provider to access a file triggers the parse; subsequent providers read cached results
-- Cache is package-level, reset between `Load()` invocations if the root changes
+- Cache is package-level, shared across all provider `Load()` calls within a single CLI invocation
 
 ### Module Cache
 
@@ -253,16 +247,16 @@ type moduleCache struct {
 ```go
 func walkGoFiles(
     root *model.Directory,
-    desc string,
+    name metric.Name,
     onFile func(),
-    process func(*fileStats, *model.File),
-) error
+    extract goExtractor,
+)
 ```
 
 1. Walk all files via `model.WalkFiles`
-2. Filter to `.go` extension (skip binary files)
+2. Filter to `.go` extension (skip non-Go files)
 3. Get or compute `fileStats` from cache (via singleflight)
-4. Call `process(stats, file)` to set the specific metric
+4. Call `extract(name, stats, file)` to set the specific metric
 5. Call `onFile()` for progress reporting
 
 ## Test Files

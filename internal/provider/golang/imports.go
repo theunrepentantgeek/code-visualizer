@@ -22,7 +22,7 @@ func classifyImports(dstFile *dst.File, modulePath string, stats *fileStats) {
 		switch {
 		case isStdlib(path):
 			stats.stdlibImports++
-		case modulePath != "" && strings.HasPrefix(path, modulePath):
+		case modulePath != "" && isInternalImport(path, modulePath):
 			stats.internalImports++
 		default:
 			stats.externalImports++
@@ -36,6 +36,12 @@ func isStdlib(importPath string) bool {
 	firstElem, _, _ := strings.Cut(importPath, "/")
 
 	return !strings.Contains(firstElem, ".")
+}
+
+// isInternalImport reports whether importPath belongs to the given module.
+// It requires either an exact match or a path boundary (modulePath + "/").
+func isInternalImport(importPath string, modulePath string) bool {
+	return importPath == modulePath || strings.HasPrefix(importPath, modulePath+"/")
 }
 
 // moduleCache caches go.mod module path lookups per directory.
@@ -127,8 +133,18 @@ func readModulePath(goModPath string) string {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "module ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "module"))
+			mod := strings.TrimSpace(strings.TrimPrefix(line, "module"))
+			// Strip trailing inline comments
+			if idx := strings.Index(mod, "//"); idx >= 0 {
+				mod = strings.TrimSpace(mod[:idx])
+			}
+
+			return mod
 		}
+	}
+
+	if scanner.Err() != nil {
+		return ""
 	}
 
 	return ""

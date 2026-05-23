@@ -19,7 +19,10 @@ func computeCommentRatio(
 	commentOnlySet := buildCommentOnlyLineSet(src, comments, fset)
 	srcLines := bytes.Split(src, []byte("\n"))
 
-	var codeCount, commentCount int64
+	var (
+		codeCount    int64
+		commentCount int64
+	)
 
 	for i, line := range srcLines {
 		lineNum := i + 1

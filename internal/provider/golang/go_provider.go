@@ -64,26 +64,36 @@ func newProvider(name metric.Name) *goProvider {
 }
 
 // statsCache caches parsed fileStats per file path.
+// Stores both successful results and analysis errors to avoid re-parsing bad files.
 type statsCache struct {
 	mu    sync.Mutex
 	group singleflight.Group
 	stats map[string]*fileStats
+	errs  map[string]error
 }
 
 var globalCache = &statsCache{
 	stats: make(map[string]*fileStats),
+	errs:  make(map[string]error),
 }
 
 var globalModuleCache = newModuleCache()
 
 // getOrAnalyze returns the cached fileStats for path, parsing if necessary.
 // Concurrent requests for the same path are deduplicated via singleflight.
+// Both successful results and errors are cached to avoid repeated work.
 func getOrAnalyze(path string) (*fileStats, error) {
 	globalCache.mu.Lock()
 	if s, ok := globalCache.stats[path]; ok {
 		globalCache.mu.Unlock()
 
 		return s, nil
+	}
+
+	if err, ok := globalCache.errs[path]; ok {
+		globalCache.mu.Unlock()
+
+		return nil, err
 	}
 	globalCache.mu.Unlock()
 
@@ -93,6 +103,10 @@ func getOrAnalyze(path string) (*fileStats, error) {
 
 		s, err := analyzeFile(path, modulePath)
 		if err != nil {
+			globalCache.mu.Lock()
+			globalCache.errs[path] = err
+			globalCache.mu.Unlock()
+
 			return nil, err
 		}
 
@@ -160,6 +174,7 @@ func measureField(fn func(*fileStats) float64) goExtractor {
 func ResetCacheForTesting() {
 	globalCache = &statsCache{
 		stats: make(map[string]*fileStats),
+		errs:  make(map[string]error),
 	}
 	globalModuleCache = newModuleCache()
 }

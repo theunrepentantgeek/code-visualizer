@@ -11,8 +11,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
+//nolint:paralleltest // deliberately sequential: ResetCacheForTesting mutates package globals
 func TestGoProviderIntegration(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()
@@ -67,8 +67,8 @@ func helper() {}
 	g.Expect(ok).To(BeFalse())
 }
 
+//nolint:paralleltest // deliberately sequential: ResetCacheForTesting mutates package globals
 func TestGoProviderCacheConsistency(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()

@@ -10,42 +10,36 @@ import (
 	"github.com/rotisserie/eris"
 )
 
+// visibilityCount groups total/public/private counts for a declaration kind.
+type visibilityCount struct {
+	total   int64
+	public  int64
+	private int64
+}
+
+// aggregate groups sum/max/mean for a per-function metric.
+type aggregate struct {
+	sum  int64
+	max  int64
+	mean float64
+}
+
 type fileStats struct {
-	types               int64
-	publicTypes         int64
-	privateTypes        int64
-	interfaces          int64
-	publicInterfaces    int64
-	privateInterfaces   int64
-	structs             int64
-	publicStructs       int64
-	privateStructs      int64
-	functions           int64
-	publicFunctions     int64
-	privateFunctions    int64
-	methods             int64
-	publicMethods       int64
-	privateMethods      int64
-	constants           int64
-	publicConstants     int64
-	privateConstants    int64
-	variables           int64
-	publicVariables     int64
-	privateVariables    int64
-	imports             int64
-	stdlibImports       int64
-	externalImports     int64
-	internalImports     int64
-	declarations        int64
-	publicDeclarations  int64
-	privateDeclarations int64
-	cyclomaticSum       int64
-	cyclomaticMax       int64
-	cyclomaticMean      float64
-	funcLengthSum       int64
-	funcLengthMax       int64
-	funcLengthMean      float64
-	commentRatio        float64
+	types           visibilityCount
+	interfaces      visibilityCount
+	structs         visibilityCount
+	functions       visibilityCount
+	methods         visibilityCount
+	constants       visibilityCount
+	variables       visibilityCount
+	declarations    visibilityCount
+	imports         int64
+	stdlibImports   int64
+	externalImports int64
+	internalImports int64
+	cyclomatic      aggregate
+	funcLength      aggregate
+	commentRatio    float64
 }
 
 //nolint:nilaway,nolintlint // caller guarantees non-nil after successful parse
@@ -76,30 +70,13 @@ func countGenDecl(d *dst.GenDecl, stats *fileStats) {
 }
 
 func countTypeSpec(s *dst.TypeSpec, stats *fileStats) {
-	pub := isPublic(s.Name.Name)
-
-	stats.types++
-	if pub {
-		stats.publicTypes++
-	} else {
-		stats.privateTypes++
-	}
+	stats.types.add(s.Name.Name)
 
 	switch s.Type.(type) {
 	case *dst.InterfaceType:
-		stats.interfaces++
-		if pub {
-			stats.publicInterfaces++
-		} else {
-			stats.privateInterfaces++
-		}
+		stats.interfaces.add(s.Name.Name)
 	case *dst.StructType:
-		stats.structs++
-		if pub {
-			stats.publicStructs++
-		} else {
-			stats.privateStructs++
-		}
+		stats.structs.add(s.Name.Name)
 	default:
 		// other type forms (maps, slices, funcs, etc.) are counted as plain types only
 	}
@@ -107,23 +84,11 @@ func countTypeSpec(s *dst.TypeSpec, stats *fileStats) {
 
 func countValueSpec(s *dst.ValueSpec, tok token.Token, stats *fileStats) {
 	for _, name := range s.Names {
-		pub := isPublic(name.Name)
-
 		switch tok {
 		case token.CONST:
-			stats.constants++
-			if pub {
-				stats.publicConstants++
-			} else {
-				stats.privateConstants++
-			}
+			stats.constants.add(name.Name)
 		case token.VAR:
-			stats.variables++
-			if pub {
-				stats.publicVariables++
-			} else {
-				stats.privateVariables++
-			}
+			stats.variables.add(name.Name)
 		default:
 			// only CONST and VAR value specs contribute to counts
 		}
@@ -131,31 +96,30 @@ func countValueSpec(s *dst.ValueSpec, tok token.Token, stats *fileStats) {
 }
 
 func countFuncDecl(d *dst.FuncDecl, stats *fileStats) {
-	pub := isPublic(d.Name.Name)
-
 	if d.Recv != nil && len(d.Recv.List) > 0 {
-		stats.methods++
-		if pub {
-			stats.publicMethods++
-		} else {
-			stats.privateMethods++
-		}
+		stats.methods.add(d.Name.Name)
 	} else {
-		stats.functions++
-		if pub {
-			stats.publicFunctions++
-		} else {
-			stats.privateFunctions++
-		}
+		stats.functions.add(d.Name.Name)
 	}
 }
 
 func (s *fileStats) computeAggregates() {
-	s.declarations = s.types + s.functions + s.methods + s.constants + s.variables
-	s.publicDeclarations = s.publicTypes + s.publicFunctions + s.publicMethods +
-		s.publicConstants + s.publicVariables
-	s.privateDeclarations = s.privateTypes + s.privateFunctions + s.privateMethods +
-		s.privateConstants + s.privateVariables
+	s.declarations.total = s.types.total + s.functions.total + s.methods.total +
+		s.constants.total + s.variables.total
+	s.declarations.public = s.types.public + s.functions.public + s.methods.public +
+		s.constants.public + s.variables.public
+	s.declarations.private = s.types.private + s.functions.private + s.methods.private +
+		s.constants.private + s.variables.private
+}
+
+func (vc *visibilityCount) add(name string) {
+	vc.total++
+
+	if token.IsExported(name) {
+		vc.public++
+	} else {
+		vc.private++
+	}
 }
 
 func isPublic(name string) bool {
@@ -223,22 +187,22 @@ func computeFunctionMetrics(
 		}
 	}
 
-	aggregateInt64s(complexities, &stats.cyclomaticSum, &stats.cyclomaticMax, &stats.cyclomaticMean)
-	aggregateInt64s(lengths, &stats.funcLengthSum, &stats.funcLengthMax, &stats.funcLengthMean)
+	computeAggregate(complexities, &stats.cyclomatic)
+	computeAggregate(lengths, &stats.funcLength)
 }
 
-func aggregateInt64s(values []int64, sum *int64, maxVal *int64, mean *float64) {
+func computeAggregate(values []int64, agg *aggregate) {
 	if len(values) == 0 {
 		return
 	}
 
 	for _, v := range values {
-		*sum += v
+		agg.sum += v
 
-		if v > *maxVal {
-			*maxVal = v
+		if v > agg.max {
+			agg.max = v
 		}
 	}
 
-	*mean = float64(*sum) / float64(len(values))
+	agg.mean = float64(agg.sum) / float64(len(values))
 }

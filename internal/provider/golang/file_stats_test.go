@@ -44,27 +44,27 @@ var (
 	stats := &fileStats{}
 	countDeclarations(dstFile, stats)
 
-	g.Expect(stats.types).To(Equal(int64(2)))
-	g.Expect(stats.publicTypes).To(Equal(int64(1)))
-	g.Expect(stats.privateTypes).To(Equal(int64(1)))
-	g.Expect(stats.structs).To(Equal(int64(1)))
-	g.Expect(stats.publicStructs).To(Equal(int64(1)))
-	g.Expect(stats.privateStructs).To(Equal(int64(0)))
-	g.Expect(stats.interfaces).To(Equal(int64(1)))
-	g.Expect(stats.publicInterfaces).To(Equal(int64(0)))
-	g.Expect(stats.privateInterfaces).To(Equal(int64(1)))
-	g.Expect(stats.functions).To(Equal(int64(2)))
-	g.Expect(stats.publicFunctions).To(Equal(int64(1)))
-	g.Expect(stats.privateFunctions).To(Equal(int64(1)))
-	g.Expect(stats.methods).To(Equal(int64(2)))
-	g.Expect(stats.publicMethods).To(Equal(int64(1)))
-	g.Expect(stats.privateMethods).To(Equal(int64(1)))
-	g.Expect(stats.constants).To(Equal(int64(2)))
-	g.Expect(stats.publicConstants).To(Equal(int64(1)))
-	g.Expect(stats.privateConstants).To(Equal(int64(1)))
-	g.Expect(stats.variables).To(Equal(int64(2)))
-	g.Expect(stats.publicVariables).To(Equal(int64(1)))
-	g.Expect(stats.privateVariables).To(Equal(int64(1)))
+	g.Expect(stats.types.total).To(Equal(int64(2)))
+	g.Expect(stats.types.public).To(Equal(int64(1)))
+	g.Expect(stats.types.private).To(Equal(int64(1)))
+	g.Expect(stats.structs.total).To(Equal(int64(1)))
+	g.Expect(stats.structs.public).To(Equal(int64(1)))
+	g.Expect(stats.structs.private).To(Equal(int64(0)))
+	g.Expect(stats.interfaces.total).To(Equal(int64(1)))
+	g.Expect(stats.interfaces.public).To(Equal(int64(0)))
+	g.Expect(stats.interfaces.private).To(Equal(int64(1)))
+	g.Expect(stats.functions.total).To(Equal(int64(2)))
+	g.Expect(stats.functions.public).To(Equal(int64(1)))
+	g.Expect(stats.functions.private).To(Equal(int64(1)))
+	g.Expect(stats.methods.total).To(Equal(int64(2)))
+	g.Expect(stats.methods.public).To(Equal(int64(1)))
+	g.Expect(stats.methods.private).To(Equal(int64(1)))
+	g.Expect(stats.constants.total).To(Equal(int64(2)))
+	g.Expect(stats.constants.public).To(Equal(int64(1)))
+	g.Expect(stats.constants.private).To(Equal(int64(1)))
+	g.Expect(stats.variables.total).To(Equal(int64(2)))
+	g.Expect(stats.variables.public).To(Equal(int64(1)))
+	g.Expect(stats.variables.private).To(Equal(int64(1)))
 }
 
 func TestCountDeclarationsMultipleNames(t *testing.T) {
@@ -84,12 +84,12 @@ const A, b = 1, 2
 	stats := &fileStats{}
 	countDeclarations(dstFile, stats)
 
-	g.Expect(stats.variables).To(Equal(int64(3)))
-	g.Expect(stats.publicVariables).To(Equal(int64(2)))
-	g.Expect(stats.privateVariables).To(Equal(int64(1)))
-	g.Expect(stats.constants).To(Equal(int64(2)))
-	g.Expect(stats.publicConstants).To(Equal(int64(1)))
-	g.Expect(stats.privateConstants).To(Equal(int64(1)))
+	g.Expect(stats.variables.total).To(Equal(int64(3)))
+	g.Expect(stats.variables.public).To(Equal(int64(2)))
+	g.Expect(stats.variables.private).To(Equal(int64(1)))
+	g.Expect(stats.constants.total).To(Equal(int64(2)))
+	g.Expect(stats.constants.public).To(Equal(int64(1)))
+	g.Expect(stats.constants.private).To(Equal(int64(1)))
 }
 
 func TestComputeAggregates(t *testing.T) {
@@ -97,28 +97,18 @@ func TestComputeAggregates(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	stats := &fileStats{
-		types:            2,
-		publicTypes:      1,
-		privateTypes:     1,
-		functions:        3,
-		publicFunctions:  2,
-		privateFunctions: 1,
-		methods:          1,
-		publicMethods:    1,
-		privateMethods:   0,
-		constants:        4,
-		publicConstants:  2,
-		privateConstants: 2,
-		variables:        2,
-		publicVariables:  1,
-		privateVariables: 1,
+		types:     visibilityCount{total: 2, public: 1, private: 1},
+		functions: visibilityCount{total: 3, public: 2, private: 1},
+		methods:   visibilityCount{total: 1, public: 1, private: 0},
+		constants: visibilityCount{total: 4, public: 2, private: 2},
+		variables: visibilityCount{total: 2, public: 1, private: 1},
 	}
 
 	stats.computeAggregates()
 
-	g.Expect(stats.declarations).To(Equal(int64(12)))
-	g.Expect(stats.publicDeclarations).To(Equal(int64(7)))
-	g.Expect(stats.privateDeclarations).To(Equal(int64(5)))
+	g.Expect(stats.declarations.total).To(Equal(int64(12)))
+	g.Expect(stats.declarations.public).To(Equal(int64(7)))
+	g.Expect(stats.declarations.private).To(Equal(int64(5)))
 }
 
 func TestIsPublic(t *testing.T) {
@@ -185,18 +175,18 @@ var unexportedVar int
 	}
 
 	// Types
-	g.Expect(stats.types).To(Equal(int64(2)))
-	g.Expect(stats.publicTypes).To(Equal(int64(1)))
-	g.Expect(stats.interfaces).To(Equal(int64(1)))
-	g.Expect(stats.structs).To(Equal(int64(1)))
+	g.Expect(stats.types.total).To(Equal(int64(2)))
+	g.Expect(stats.types.public).To(Equal(int64(1)))
+	g.Expect(stats.interfaces.total).To(Equal(int64(1)))
+	g.Expect(stats.structs.total).To(Equal(int64(1)))
 
 	// Functions and methods
-	g.Expect(stats.functions).To(Equal(int64(1)))
-	g.Expect(stats.methods).To(Equal(int64(1)))
+	g.Expect(stats.functions.total).To(Equal(int64(1)))
+	g.Expect(stats.methods.total).To(Equal(int64(1)))
 
 	// Constants and variables
-	g.Expect(stats.constants).To(Equal(int64(1)))
-	g.Expect(stats.variables).To(Equal(int64(1)))
+	g.Expect(stats.constants.total).To(Equal(int64(1)))
+	g.Expect(stats.variables.total).To(Equal(int64(1)))
 
 	// Imports
 	g.Expect(stats.imports).To(Equal(int64(3)))
@@ -205,23 +195,23 @@ var unexportedVar int
 	g.Expect(stats.internalImports).To(Equal(int64(1)))
 
 	// Cyclomatic: Greet()=1, Public()=3 (if + for)
-	g.Expect(stats.cyclomaticSum).To(Equal(int64(4)))
-	g.Expect(stats.cyclomaticMax).To(Equal(int64(3)))
-	g.Expect(stats.cyclomaticMean).To(BeNumerically("~", 2.0, 0.01))
+	g.Expect(stats.cyclomatic.sum).To(Equal(int64(4)))
+	g.Expect(stats.cyclomatic.max).To(Equal(int64(3)))
+	g.Expect(stats.cyclomatic.mean).To(BeNumerically("~", 2.0, 0.01))
 
 	// Function length > 0
-	g.Expect(stats.funcLengthSum).To(BeNumerically(">", 0))
-	g.Expect(stats.funcLengthMax).To(BeNumerically(">", 0))
-	g.Expect(stats.funcLengthMean).To(BeNumerically(">", 0))
+	g.Expect(stats.funcLength.sum).To(BeNumerically(">", 0))
+	g.Expect(stats.funcLength.max).To(BeNumerically(">", 0))
+	g.Expect(stats.funcLength.mean).To(BeNumerically(">", 0))
 
 	// Comment ratio: 1 comment line / several code lines
 	g.Expect(stats.commentRatio).To(BeNumerically(">", 0))
 	g.Expect(stats.commentRatio).To(BeNumerically("<", 1.0))
 
 	// Aggregates
-	g.Expect(stats.declarations).To(Equal(int64(6)))
-	g.Expect(stats.publicDeclarations).To(Equal(int64(4)))
-	g.Expect(stats.privateDeclarations).To(Equal(int64(2)))
+	g.Expect(stats.declarations.total).To(Equal(int64(6)))
+	g.Expect(stats.declarations.public).To(Equal(int64(4)))
+	g.Expect(stats.declarations.private).To(Equal(int64(2)))
 }
 
 func TestAnalyzeFileNotGo(t *testing.T) {
