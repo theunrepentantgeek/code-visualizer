@@ -38,6 +38,10 @@ on:
 
 if: needs.pre_activation.outputs.check_result == 'success'
 
+engine:
+  id: copilot
+  model: claude-sonnet-4.5
+
 timeout-minutes: 60
 
 permissions: read-all
