@@ -48,6 +48,7 @@ type fileStats struct {
 	commentRatio        float64
 }
 
+//nolint:nilaway,nolintlint // caller guarantees non-nil after successful parse
 func countDeclarations(dstFile *dst.File, stats *fileStats) {
 	for _, decl := range dstFile.Decls {
 		switch d := decl.(type) {
@@ -55,6 +56,8 @@ func countDeclarations(dstFile *dst.File, stats *fileStats) {
 			countGenDecl(d, stats)
 		case *dst.FuncDecl:
 			countFuncDecl(d, stats)
+		default:
+			// ignore unknown declaration types
 		}
 	}
 }
@@ -66,6 +69,8 @@ func countGenDecl(d *dst.GenDecl, stats *fileStats) {
 			countTypeSpec(s, stats)
 		case *dst.ValueSpec:
 			countValueSpec(s, d.Tok, stats)
+		default:
+			// ignore import specs and other spec types
 		}
 	}
 }
@@ -95,6 +100,8 @@ func countTypeSpec(s *dst.TypeSpec, stats *fileStats) {
 		} else {
 			stats.privateStructs++
 		}
+	default:
+		// other type forms (maps, slices, funcs, etc.) are counted as plain types only
 	}
 }
 
@@ -117,6 +124,8 @@ func countValueSpec(s *dst.ValueSpec, tok token.Token, stats *fileStats) {
 			} else {
 				stats.privateVariables++
 			}
+		default:
+			// only CONST and VAR value specs contribute to counts
 		}
 	}
 }
@@ -193,8 +202,8 @@ func computeFunctionMetrics(
 	fset *token.FileSet,
 	stats *fileStats,
 ) {
-	var complexities []int64
-	var lengths []int64
+	complexities := make([]int64, 0, len(dstFile.Decls))
+	lengths := make([]int64, 0, len(dstFile.Decls))
 
 	for _, decl := range dstFile.Decls {
 		funcDecl, ok := decl.(*dst.FuncDecl)
@@ -218,15 +227,16 @@ func computeFunctionMetrics(
 	aggregateInt64s(lengths, &stats.funcLengthSum, &stats.funcLengthMax, &stats.funcLengthMean)
 }
 
-func aggregateInt64s(values []int64, sum *int64, max *int64, mean *float64) {
+func aggregateInt64s(values []int64, sum *int64, maxVal *int64, mean *float64) {
 	if len(values) == 0 {
 		return
 	}
 
 	for _, v := range values {
 		*sum += v
-		if v > *max {
-			*max = v
+
+		if v > *maxVal {
+			*maxVal = v
 		}
 	}
 

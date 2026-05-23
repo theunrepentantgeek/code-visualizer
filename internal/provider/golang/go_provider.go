@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/rotisserie/eris"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -101,12 +102,16 @@ func getOrAnalyze(path string) (*fileStats, error) {
 
 		return s, nil
 	})
-
 	if err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "analyzing Go file")
 	}
 
-	return result.(*fileStats), nil
+	stats, ok := result.(*fileStats)
+	if !ok {
+		return nil, eris.New("unexpected type from singleflight result")
+	}
+
+	return stats, nil
 }
 
 // walkGoFiles walks all .go files under root and calls the extract function

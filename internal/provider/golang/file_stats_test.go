@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dave/dst/decorator"
 	. "github.com/onsi/gomega"
+
+	"github.com/dave/dst/decorator"
 )
 
 func TestCountDeclarations(t *testing.T) {
@@ -178,6 +179,10 @@ var unexportedVar int
 
 	stats, err := analyzeFile(goFile, "github.com/test/example")
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stats == nil {
+		t.Fatal("analyzeFile returned nil stats without error")
+	}
 
 	// Types
 	g.Expect(stats.types).To(Equal(int64(2)))

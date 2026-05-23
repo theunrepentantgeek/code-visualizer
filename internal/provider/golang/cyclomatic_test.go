@@ -4,9 +4,10 @@ import (
 	"go/token"
 	"testing"
 
+	. "github.com/onsi/gomega"
+
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
-	. "github.com/onsi/gomega"
 )
 
 func TestCyclomaticComplexity(t *testing.T) {
@@ -102,12 +103,15 @@ func f() {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			var funcDecl *dst.FuncDecl
+
 			for _, decl := range dstFile.Decls {
 				if fd, ok := decl.(*dst.FuncDecl); ok {
 					funcDecl = fd
+
 					break
 				}
 			}
+
 			g.Expect(funcDecl).NotTo(BeNil(), "no func decl found in source")
 
 			g.Expect(cyclomaticComplexity(funcDecl.Body)).To(Equal(tt.want))

@@ -5,8 +5,9 @@ import (
 	"go/token"
 	"testing"
 
-	"github.com/dave/dst/decorator"
 	. "github.com/onsi/gomega"
+
+	"github.com/dave/dst/decorator"
 )
 
 func TestComputeCommentRatio(t *testing.T) {
@@ -93,7 +94,8 @@ func g() {}
 			dstFile, err := dec.Parse(tt.src)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			astFile := dec.Ast.Nodes[dstFile].(*ast.File)
+			astFile, ok := dec.Ast.Nodes[dstFile].(*ast.File)
+			g.Expect(ok).To(BeTrue(), "decorator node map should contain *ast.File")
 
 			ratio := computeCommentRatio([]byte(tt.src), astFile.Comments, fset)
 			g.Expect(ratio).To(BeNumerically("~", tt.want, 0.01))

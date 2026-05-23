@@ -17,11 +17,9 @@ func computeCommentRatio(
 ) float64 {
 	commentLineSet := buildCommentLineSet(comments, fset)
 	commentOnlySet := buildCommentOnlyLineSet(src, comments, fset)
-
 	srcLines := bytes.Split(src, []byte("\n"))
 
-	var codeCount int64
-	var commentCount int64
+	var codeCount, commentCount int64
 
 	for i, line := range srcLines {
 		lineNum := i + 1
@@ -76,37 +74,53 @@ func buildCommentOnlyLineSet(
 
 	for _, cg := range comments {
 		for _, c := range cg.List {
-			startPos := fset.Position(c.Pos())
-			endPos := fset.Position(c.End())
-
-			// Interior lines of multi-line block comments are always comment-only.
-			for line := startPos.Line + 1; line < endPos.Line; line++ {
-				set[line] = true
-			}
-
-			// Check the start line: comment-only if trimmed line starts at comment.
-			if startPos.Line <= len(srcLines) {
-				line := srcLines[startPos.Line-1]
-				trimmed := bytes.TrimSpace(line)
-
-				if bytes.HasPrefix(trimmed, []byte("//")) || bytes.HasPrefix(trimmed, []byte("/*")) {
-					set[startPos.Line] = true
-				}
-			}
-
-			// End line of multi-line block: comment-only if no code follows "*/".
-			if endPos.Line != startPos.Line && endPos.Line <= len(srcLines) {
-				line := srcLines[endPos.Line-1]
-
-				if idx := bytes.Index(line, []byte("*/")); idx >= 0 {
-					after := bytes.TrimSpace(line[idx+2:])
-					if len(after) == 0 {
-						set[endPos.Line] = true
-					}
-				}
-			}
+			markCommentOnlyLines(c, srcLines, fset, set)
 		}
 	}
 
 	return set
+}
+
+func markCommentOnlyLines(
+	c *ast.Comment,
+	srcLines [][]byte,
+	fset *token.FileSet,
+	set map[int]bool,
+) {
+	startPos := fset.Position(c.Pos())
+	endPos := fset.Position(c.End())
+
+	// Interior lines of multi-line block comments are always comment-only.
+	for line := startPos.Line + 1; line < endPos.Line; line++ {
+		set[line] = true
+	}
+
+	markStartLine(startPos, srcLines, set)
+	markEndLine(startPos, endPos, srcLines, set)
+}
+
+func markStartLine(startPos token.Position, srcLines [][]byte, set map[int]bool) {
+	if startPos.Line > len(srcLines) {
+		return
+	}
+
+	line := srcLines[startPos.Line-1]
+	trimmed := bytes.TrimSpace(line)
+
+	if bytes.HasPrefix(trimmed, []byte("//")) || bytes.HasPrefix(trimmed, []byte("/*")) {
+		set[startPos.Line] = true
+	}
+}
+
+func markEndLine(startPos, endPos token.Position, srcLines [][]byte, set map[int]bool) {
+	if endPos.Line == startPos.Line || endPos.Line > len(srcLines) {
+		return
+	}
+
+	line := srcLines[endPos.Line-1]
+
+	_, after, found := bytes.Cut(line, []byte("*/"))
+	if found && len(bytes.TrimSpace(after)) == 0 {
+		set[endPos.Line] = true
+	}
 }

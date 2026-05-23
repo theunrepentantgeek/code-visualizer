@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dave/dst/decorator"
 	. "github.com/onsi/gomega"
+
+	"github.com/dave/dst/decorator"
 )
 
 func TestClassifyImports(t *testing.T) {

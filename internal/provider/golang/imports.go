@@ -12,6 +12,8 @@ import (
 
 // classifyImports categorizes each import in dstFile as stdlib, internal, or
 // external, and populates the corresponding stats fields.
+//
+//nolint:nilaway,nolintlint // caller guarantees non-nil after successful parse
 func classifyImports(dstFile *dst.File, modulePath string, stats *fileStats) {
 	for _, imp := range dstFile.Imports {
 		path := strings.Trim(imp.Path.Value, `"`)
@@ -31,10 +33,7 @@ func classifyImports(dstFile *dst.File, modulePath string, stats *fileStats) {
 // isStdlib reports whether importPath is a Go standard library package.
 // Stdlib packages have no dot in the first path element.
 func isStdlib(importPath string) bool {
-	firstElem := importPath
-	if i := strings.IndexByte(importPath, '/'); i >= 0 {
-		firstElem = importPath[:i]
-	}
+	firstElem, _, _ := strings.Cut(importPath, "/")
 
 	return !strings.Contains(firstElem, ".")
 }
@@ -55,29 +54,33 @@ func newModuleCache() *moduleCache {
 // path. Returns "" if no go.mod is found. Results are cached per directory.
 func (mc *moduleCache) findModulePath(dir string) string {
 	mc.mu.RLock()
+
 	if path, ok := mc.modules[dir]; ok {
 		mc.mu.RUnlock()
+
 		return path
 	}
+
 	mc.mu.RUnlock()
 
-	result := mc.scanForModulePath(dir)
-
-	return result
+	return mc.scanForModulePath(dir)
 }
 
 func (mc *moduleCache) scanForModulePath(startDir string) string {
 	var visited []string
 
 	dir := startDir
+
 	for {
 		mc.mu.RLock()
+
 		if path, ok := mc.modules[dir]; ok {
 			mc.mu.RUnlock()
 			mc.cacheAll(visited, path)
 
 			return path
 		}
+
 		mc.mu.RUnlock()
 
 		visited = append(visited, dir)

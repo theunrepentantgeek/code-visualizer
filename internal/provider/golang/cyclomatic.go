@@ -9,6 +9,8 @@ import (
 // cyclomaticComplexity computes cyclomatic complexity for a single function body.
 // Base complexity is 1, plus 1 for each decision point:
 // if, for, range, case (non-default), &&, ||.
+//
+//nolint:revive,cyclop // type switch over AST nodes is inherently branchy
 func cyclomaticComplexity(body *dst.BlockStmt) int64 {
 	if body == nil {
 		return 1
@@ -36,6 +38,8 @@ func cyclomaticComplexity(body *dst.BlockStmt) int64 {
 			if node.Op == token.LAND || node.Op == token.LOR {
 				complexity++
 			}
+		default:
+			// no complexity contribution from other node types
 		}
 
 		return true
