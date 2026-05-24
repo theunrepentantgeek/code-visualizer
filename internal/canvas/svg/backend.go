@@ -189,7 +189,7 @@ func (s *svgBackend) DrawArcText(
 		fontSize = defaultFontSize
 	}
 
-	arcR := radius - 14.0
+	arcR := radius - model.ArcTextInset
 	if arcR <= 0 {
 		return
 	}
@@ -212,7 +212,7 @@ func (s *svgBackend) DrawArcText(
 
 	fmt.Fprintf(
 		&s.buf,
-		`<text fill="%s" font-size="%.1f" font-family="sans-serif">`+
+		`<text fill="%s" font-size="%.1f" font-family="sans-serif" dominant-baseline="middle">`+
 			`<textPath href="#%s" startOffset="50%%" text-anchor="middle">%s</textPath></text>`+"\n",
 		rgbaToCSS(ink), fontSize, pathID, html.EscapeString(text),
 	)

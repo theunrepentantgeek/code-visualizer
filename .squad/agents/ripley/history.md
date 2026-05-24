@@ -10,6 +10,12 @@
 
 <!-- Append learnings below -->
 
+### Issue #256 — Move Bubble Labels (2026-05-24)
+
+- **Occupied vs visible radius:** `internal/bubbletree/layout.go` keeps `BubbleNode.Radius` as the occupied area for layout/fit, while `internal/bubbletree/render.go` derives a smaller visible directory disc radius so labels can live above the bubble without being overdrawn.
+- **Root fit rule:** outside bubble labels require `scaleToFit()` to use `occupiedBounds()` and to scale empty labelled roots even when they have no children; otherwise the root label can clip off-canvas.
+- **Shared geometry contract:** `internal/canvas/model/backend.go` now owns `ArcTextInset`, which both raster/SVG backends and bubbletree rendering use to keep reserved label space aligned with actual arc text placement.
+- **Key verification files:** `internal/bubbletree/layout_test.go`, `internal/bubbletree/render_test.go`, and `internal/canvas/svg/backend_test.go` now cover child labels, empty labelled directories, root label fit, raster reserved-band rendering, and SVG glyph centering.
 ### Issue #284 — Radial Group Gaps (2026-05-23)
 
 - **Layout pattern:** `internal/radialtree/layout.go` is the sole source of angular placement; rendering in `internal/radialtree/render.go` just consumes node angles/positions, so visual spacing changes belong in layout, not rendering.

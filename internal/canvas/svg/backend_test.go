@@ -240,6 +240,26 @@ func TestSVGBackend_DrawArcText_PathGoesOverTop(t *testing.T) {
 	g.Expect(content).To(ContainSubstring("0 0,1"))
 }
 
+func TestSVGBackend_DrawArcText_CentersGlyphsOnPath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(400, 400)
+	blk := color.RGBA{A: 255}
+
+	b.DrawArcText(
+		model.Position{X: 200, Y: 200},
+		100, "hello", blk, 14.0,
+	)
+
+	out := filepath.Join(t.TempDir(), "arctext-centered.svg")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	content := readFile(t, out)
+	g.Expect(content).To(ContainSubstring(`dominant-baseline="middle"`))
+}
+
 func TestSVGBackend_ImplementsBackendInterface(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

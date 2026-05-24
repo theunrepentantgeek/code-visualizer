@@ -140,7 +140,8 @@ go-install() {
 }
 
 # Stricter GO formatting
-go-install gofumpt mvdan.cc/gofumpt@latest
+# Pinned to keep local and devcontainer formatting deterministic.
+go-install gofumpt mvdan.cc/gofumpt@v0.10.0
 
 # Install golangci-lint
 write-verbose "Checking for $TOOL_DEST/golangci-lint"

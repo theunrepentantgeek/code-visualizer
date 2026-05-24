@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	minFileRadius    = 2.0  // minimum circle radius for any file node
-	siblingPadding   = 3.0  // gap between sibling circles at the same level
-	parentPadding    = 6.0  // inset from parent circle edge (space for labels)
-	LabelReservation = 14.0 // extra radius for directories that show a label
+	minFileRadius    = 2.0                   // minimum circle radius for any file node
+	siblingPadding   = 3.0                   // gap between sibling circles at the same level
+	parentPadding    = 6.0                   // inset from parent circle edge
+	LabelReservation = bubbleDefaultFontSize // occupied radius reserved above labelled directory bubbles
 )
 
 // Layout builds a bubble tree from root, positioning circles to fit within
@@ -27,6 +27,15 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, la
 	}
 
 	node := layoutDir(root, sizeMetric, labels)
+
+	// The root directory's disc is never rendered, so its label is never
+	// shown either. Strip the label reservation so the children fill the
+	// canvas instead of leaving whitespace for a label that won't appear.
+	if node.ShowLabel {
+		node.Radius -= LabelReservation
+		node.ShowLabel = false
+	}
+
 	scaleToFit(&node, float64(width), float64(height))
 
 	return node
@@ -55,6 +64,9 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 
 	if len(children) == 0 {
 		node.Radius = minFileRadius
+		if node.ShowLabel {
+			node.Radius += LabelReservation
+		}
 
 		return node
 	}
@@ -123,6 +135,33 @@ type bounds struct {
 	minY float64
 	maxX float64
 	maxY float64
+}
+
+func newEmptyBounds() bounds {
+	return bounds{
+		minX: math.MaxFloat64,
+		minY: math.MaxFloat64,
+		maxX: -math.MaxFloat64,
+		maxY: -math.MaxFloat64,
+	}
+}
+
+func expandBoundsForDisc(box *bounds, x, y, radius float64) {
+	if x-radius < box.minX {
+		box.minX = x - radius
+	}
+
+	if y-radius < box.minY {
+		box.minY = y - radius
+	}
+
+	if x+radius > box.maxX {
+		box.maxX = x + radius
+	}
+
+	if y+radius > box.maxY {
+		box.maxY = y + radius
+	}
 }
 
 type frontNode struct {
@@ -562,14 +601,22 @@ const canvasMarginFraction = 0.02 // 2% margin on each side
 // root bounding circle removes the large whitespace corners that a circle
 // fit would leave on a non-square canvas.
 func scaleToFit(node *BubbleNode, width, height float64) {
-	if node.Radius <= 0 || len(node.Children) == 0 {
+	if node.Radius <= 0 {
 		node.X = width / 2
 		node.Y = height / 2
 
 		return
 	}
 
-	box := childrenBounds(node)
+	if len(node.Children) == 0 {
+		node.X = width / 2
+		node.Y = height / 2
+		node.Radius = math.Min(width, height) * (1 - 2*canvasMarginFraction) / 2
+
+		return
+	}
+
+	box := occupiedBounds(node)
 
 	boxW := box.maxX - box.minX
 	boxH := box.maxY - box.minY
@@ -596,32 +643,17 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	applyScale(node, scale)
 }
 
-// childrenBounds returns the tight axis-aligned bounding box of all direct
-// children of node in node's local coordinate frame.
-func childrenBounds(node *BubbleNode) bounds {
-	box := bounds{
-		minX: math.MaxFloat64,
-		minY: math.MaxFloat64,
-		maxX: -math.MaxFloat64,
-		maxY: -math.MaxFloat64,
-	}
+// occupiedBounds returns the tight axis-aligned bounding box of the node's
+// occupied area in its local coordinate frame.
+func occupiedBounds(node *BubbleNode) bounds {
+	box := newEmptyBounds()
 
 	for _, c := range node.Children {
-		if c.X-c.Radius < box.minX {
-			box.minX = c.X - c.Radius
-		}
+		expandBoundsForDisc(&box, c.X, c.Y, c.Radius)
+	}
 
-		if c.Y-c.Radius < box.minY {
-			box.minY = c.Y - c.Radius
-		}
-
-		if c.X+c.Radius > box.maxX {
-			box.maxX = c.X + c.Radius
-		}
-
-		if c.Y+c.Radius > box.maxY {
-			box.maxY = c.Y + c.Radius
-		}
+	if node.ShowLabel && node.Radius > 0 {
+		expandBoundsForDisc(&box, 0, 0, node.Radius)
 	}
 
 	return box

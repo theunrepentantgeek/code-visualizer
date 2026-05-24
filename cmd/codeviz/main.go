@@ -58,7 +58,7 @@ func toStagesFlags(f *Flags) *stages.Flags {
 	}
 }
 
-func setupLogger(quiet, verbose, debug bool) { //nolint:revive // flag-parameter: boolean toggles are idiomatic for log verbosity
+func setupLogger(quiet, verbose, debug bool) { //nolint:revive,nolintlint // flag-parameter: boolean toggles are idiomatic for log verbosity
 	level := slog.LevelInfo
 
 	if quiet {
