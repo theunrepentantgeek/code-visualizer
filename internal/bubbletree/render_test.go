@@ -357,10 +357,12 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 		}
 	}
 
-	g.Expect(pkgLabelRadius).To(BeNumerically(">", maxDiscRadius),
+	g.Expect(pkgLabelRadius).To(
+		BeNumerically(">", maxDiscRadius),
 		"directory label should sit above the bubble edge, not on top of it",
 	)
-	g.Expect(pkgLabelRadius).To(BeNumerically(">", pkgNode.Radius),
+	g.Expect(pkgLabelRadius).To(
+		BeNumerically(">", pkgNode.Radius),
 		"rendered arc should use the reserved label band outside the bubble",
 	)
 }
@@ -385,7 +387,8 @@ func TestRenderBubbleToCanvas_EmptyLabelledDirectoryKeepsVisibleBubble(t *testin
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
 	g.Expect(backend.discs).NotTo(BeEmpty())
-	g.Expect(backend.discs[0].radius).To(BeNumerically(">", 0),
+	g.Expect(backend.discs[0].radius).To(
+		BeNumerically(">", 0),
 		"empty labelled directory should still render as a visible bubble",
 	)
 
@@ -399,10 +402,12 @@ func TestRenderBubbleToCanvas_EmptyLabelledDirectoryKeepsVisibleBubble(t *testin
 		}
 	}
 
-	g.Expect(childLabelRadius).To(BeNumerically(">", 0),
+	g.Expect(childLabelRadius).To(
+		BeNumerically(">", 0),
 		"empty labelled directory should still render its label",
 	)
-	g.Expect(childLabelRadius).To(BeNumerically(">", backend.discs[0].radius),
+	g.Expect(childLabelRadius).To(
+		BeNumerically(">", backend.discs[0].radius),
 		"empty labelled directory should reserve label space above its bubble",
 	)
 }
@@ -448,7 +453,8 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 	minY := int(math.Floor(dirNode.Y - dirNode.Radius))
 	maxY := int(math.Ceil(dirNode.Y - dirNode.Radius + bubbletree.LabelReservation))
 
-	g.Expect(hasNonWhitePixelInRect(img, minX, minY, maxX, maxY)).To(BeTrue(),
+	g.Expect(hasNonWhitePixelInRect(img, minX, minY, maxX, maxY)).To(
+		BeTrue(),
 		"expected raster output to place the directory label in the reserved band above the bubble",
 	)
 }

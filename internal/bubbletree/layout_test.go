@@ -262,7 +262,8 @@ func TestLayoutEmptyLabelledDirectoryReservesMoreSpaceThanFile(t *testing.T) {
 		return
 	}
 
-	g.Expect(dirNode.Radius).To(BeNumerically(">", fileNode.Radius),
+	g.Expect(dirNode.Radius).To(
+		BeNumerically(">", fileNode.Radius),
 		"empty labelled directory should reserve extra occupied space for its label",
 	)
 }
@@ -398,16 +399,20 @@ func TestLayoutRootOccupiedLabelAreaFitsWithinCanvas(t *testing.T) {
 	width, height := 1920, 1080
 	node := Layout(root, width, height, filesystem.FileSize, LabelFoldersOnly)
 
-	g.Expect(node.X-node.Radius).To(BeNumerically(">=", -1.0),
+	g.Expect(node.X-node.Radius).To(
+		BeNumerically(">=", -1.0),
 		"root occupied area should fit within the left edge of the canvas",
 	)
-	g.Expect(node.Y-node.Radius).To(BeNumerically(">=", -1.0),
+	g.Expect(node.Y-node.Radius).To(
+		BeNumerically(">=", -1.0),
 		"root occupied area should fit within the top edge of the canvas",
 	)
-	g.Expect(node.X+node.Radius).To(BeNumerically("<=", float64(width)+1.0),
+	g.Expect(node.X+node.Radius).To(
+		BeNumerically("<=", float64(width)+1.0),
 		"root occupied area should fit within the right edge of the canvas",
 	)
-	g.Expect(node.Y+node.Radius).To(BeNumerically("<=", float64(height)+1.0),
+	g.Expect(node.Y+node.Radius).To(
+		BeNumerically("<=", float64(height)+1.0),
 		"root occupied area should fit within the bottom edge of the canvas",
 	)
 }
@@ -421,16 +426,20 @@ func TestLayoutEmptyRootOccupiedLabelAreaFitsWithinCanvas(t *testing.T) {
 	width, height := 20, 20
 	node := Layout(root, width, height, filesystem.FileSize, LabelFoldersOnly)
 
-	g.Expect(node.X-node.Radius).To(BeNumerically(">=", -1.0),
+	g.Expect(node.X-node.Radius).To(
+		BeNumerically(">=", -1.0),
 		"empty labelled root should fit within the left edge of the canvas",
 	)
-	g.Expect(node.Y-node.Radius).To(BeNumerically(">=", -1.0),
+	g.Expect(node.Y-node.Radius).To(
+		BeNumerically(">=", -1.0),
 		"empty labelled root should fit within the top edge of the canvas",
 	)
-	g.Expect(node.X+node.Radius).To(BeNumerically("<=", float64(width)+1.0),
+	g.Expect(node.X+node.Radius).To(
+		BeNumerically("<=", float64(width)+1.0),
 		"empty labelled root should fit within the right edge of the canvas",
 	)
-	g.Expect(node.Y+node.Radius).To(BeNumerically("<=", float64(height)+1.0),
+	g.Expect(node.Y+node.Radius).To(
+		BeNumerically("<=", float64(height)+1.0),
 		"empty labelled root should fit within the bottom edge of the canvas",
 	)
 }
