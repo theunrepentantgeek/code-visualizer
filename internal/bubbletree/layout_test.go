@@ -382,6 +382,36 @@ func TestLayoutFitsWithinCanvas(t *testing.T) {
 	g.Expect(box.maxY).To(BeNumerically("<=", float64(height)+1.0))
 }
 
+func TestLayoutRootOccupiedLabelAreaFitsWithinCanvas(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Files: []*model.File{
+			makeFile("a.go", 200),
+			makeFile("b.go", 300),
+			makeFile("c.go", 100),
+		},
+	}
+
+	width, height := 1920, 1080
+	node := Layout(root, width, height, filesystem.FileSize, LabelFoldersOnly)
+
+	g.Expect(node.X-node.Radius).To(BeNumerically(">=", -1.0),
+		"root occupied area should fit within the left edge of the canvas",
+	)
+	g.Expect(node.Y-node.Radius).To(BeNumerically(">=", -1.0),
+		"root occupied area should fit within the top edge of the canvas",
+	)
+	g.Expect(node.X+node.Radius).To(BeNumerically("<=", float64(width)+1.0),
+		"root occupied area should fit within the right edge of the canvas",
+	)
+	g.Expect(node.Y+node.Radius).To(BeNumerically("<=", float64(height)+1.0),
+		"root occupied area should fit within the bottom edge of the canvas",
+	)
+}
+
 // contentBoundsForTest returns the axis-aligned bounding box of all descendant
 // nodes (not the root itself, which is never drawn).
 func contentBoundsForTest(root BubbleNode) bounds {

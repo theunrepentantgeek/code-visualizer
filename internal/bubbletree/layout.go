@@ -128,6 +128,33 @@ type bounds struct {
 	maxY float64
 }
 
+func newEmptyBounds() bounds {
+	return bounds{
+		minX: math.MaxFloat64,
+		minY: math.MaxFloat64,
+		maxX: -math.MaxFloat64,
+		maxY: -math.MaxFloat64,
+	}
+}
+
+func expandBoundsForDisc(box *bounds, x, y, radius float64) {
+	if x-radius < box.minX {
+		box.minX = x - radius
+	}
+
+	if y-radius < box.minY {
+		box.minY = y - radius
+	}
+
+	if x+radius > box.maxX {
+		box.maxX = x + radius
+	}
+
+	if y+radius > box.maxY {
+		box.maxY = y + radius
+	}
+}
+
 type frontNode struct {
 	idx        int
 	prev, next *frontNode
@@ -572,7 +599,7 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 		return
 	}
 
-	box := childrenBounds(node)
+	box := occupiedBounds(node)
 
 	boxW := box.maxX - box.minX
 	boxH := box.maxY - box.minY
@@ -599,32 +626,17 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	applyScale(node, scale)
 }
 
-// childrenBounds returns the tight axis-aligned bounding box of all direct
-// children of node in node's local coordinate frame.
-func childrenBounds(node *BubbleNode) bounds {
-	box := bounds{
-		minX: math.MaxFloat64,
-		minY: math.MaxFloat64,
-		maxX: -math.MaxFloat64,
-		maxY: -math.MaxFloat64,
-	}
+// occupiedBounds returns the tight axis-aligned bounding box of the node's
+// occupied area in its local coordinate frame.
+func occupiedBounds(node *BubbleNode) bounds {
+	box := newEmptyBounds()
 
 	for _, c := range node.Children {
-		if c.X-c.Radius < box.minX {
-			box.minX = c.X - c.Radius
-		}
+		expandBoundsForDisc(&box, c.X, c.Y, c.Radius)
+	}
 
-		if c.Y-c.Radius < box.minY {
-			box.minY = c.Y - c.Radius
-		}
-
-		if c.X+c.Radius > box.maxX {
-			box.maxX = c.X + c.Radius
-		}
-
-		if c.Y+c.Radius > box.maxY {
-			box.maxY = c.Y + c.Radius
-		}
+	if node.ShowLabel && node.Radius > 0 {
+		expandBoundsForDisc(&box, 0, 0, node.Radius)
 	}
 
 	return box
