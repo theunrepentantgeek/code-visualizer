@@ -1,6 +1,7 @@
 package scatter
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -127,4 +128,38 @@ func TestLayout_NumericYAxisPlacesHigherValuesHigherOnCanvas(t *testing.T) {
 
 	g.Expect(points["high.go"].Y).To(BeNumerically("<", points["low.go"].Y))
 	g.Expect(layout.YAxis.Numeric.Ticks).NotTo(BeEmpty())
+}
+
+func TestLayout_CrowdedPlotKeepsMinimumDiscRadius(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	files := make([]*model.File, 0, 500)
+	for i := range 500 {
+		file := scatterTestFile(fmt.Sprintf("file-%03d.go", i))
+		file.SetClassification(filesystem.FileType, "go")
+		file.SetQuantity(filesystem.FileLines, int64(i+1))
+		file.SetQuantity(filesystem.FileSize, int64(i+1))
+		files = append(files, file)
+	}
+
+	root := &model.Directory{Files: files}
+	dataset := CollectDataset(
+		root,
+		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
+		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
+		filesystem.FileSize,
+	)
+
+	layout := Layout(
+		dataset,
+		800,
+		600,
+		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
+		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
+	)
+
+	for _, point := range layout.Points {
+		g.Expect(point.Radius).To(BeNumerically(">=", scatterMinRadius))
+	}
 }

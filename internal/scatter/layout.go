@@ -54,8 +54,8 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 	}
 
 	minSize, maxSize := sizeExtent(dataset.Points)
-	maxRadius := maxPointRadius(layout, len(dataset.Points))
-	minRadius := math.Min(scatterMinRadius, maxRadius)
+	maxRadius := math.Max(scatterMinRadius, maxPointRadius(layout, len(dataset.Points)))
+	minRadius := scatterMinRadius
 
 	layout.Points = make([]ScatterPoint, 0, len(dataset.Points))
 	for _, point := range dataset.Points {
