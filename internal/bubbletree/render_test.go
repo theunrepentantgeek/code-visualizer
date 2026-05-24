@@ -272,14 +272,17 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 	g.Expect(nodes.Children).To(HaveLen(3))
 
 	var pkgNode *bubbletree.BubbleNode
+
 	for i := range nodes.Children {
 		if nodes.Children[i].IsDirectory {
 			pkgNode = &nodes.Children[i]
+
 			break
 		}
 	}
 
 	g.Expect(pkgNode).NotTo(BeNil())
+
 	if pkgNode == nil {
 		return
 	}
@@ -294,9 +297,11 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 	g.Expect(maxDiscRadius).To(BeNumerically("~", pkgNode.Radius-bubbletree.LabelReservation, 0.001))
 
 	var pkgLabelRadius float64
+
 	for _, arcText := range backend.arcTexts {
 		if arcText.text == "pkg" {
 			pkgLabelRadius = arcText.radius
+
 			break
 		}
 	}
@@ -306,5 +311,47 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 	)
 	g.Expect(pkgLabelRadius).To(BeNumerically(">", pkgNode.Radius),
 		"rendered arc should use the reserved label band outside the bubble",
+	)
+}
+
+func TestRenderBubbleToCanvas_EmptyLabelledDirectoryKeepsVisibleBubble(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Path: "root",
+		Dirs: []*model.Directory{{
+			Name: "a",
+			Path: "root/a",
+		}},
+	}
+	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
+
+	backend := &captureBackend{}
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	g.Expect(backend.discs).NotTo(BeEmpty())
+	g.Expect(backend.discs[0].radius).To(BeNumerically(">", 0),
+		"empty labelled directory should still render as a visible bubble",
+	)
+
+	var childLabelRadius float64
+
+	for _, arcText := range backend.arcTexts {
+		if arcText.text == "a" {
+			childLabelRadius = arcText.radius
+
+			break
+		}
+	}
+
+	g.Expect(childLabelRadius).To(BeNumerically(">", 0),
+		"empty labelled directory should still render its label",
+	)
+	g.Expect(childLabelRadius).To(BeNumerically(">", backend.discs[0].radius),
+		"empty labelled directory should reserve label space above its bubble",
 	)
 }

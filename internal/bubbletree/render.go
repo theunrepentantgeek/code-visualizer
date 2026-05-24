@@ -224,17 +224,22 @@ func bubbleDirDiscRadius(node BubbleNode) float64 {
 	return node.Radius
 }
 
-func bubbleDirLabelRadiusHint(node BubbleNode) float64 {
-	return bubbleDirDiscRadius(node) + LabelReservation/2 + bubbleArcLabelInset
-}
-
 func bubbleDirLabelRadius(node BubbleNode, fontSize float64) float64 {
 	return bubbleDirDiscRadius(node) + fontSize/2 + bubbleArcLabelInset
 }
 
+func bubbleDirLabelFontSize(node BubbleNode) float64 {
+	fontSize := bubbleArcFontSize(node.Label, bubbleDirLabelRadius(node, bubbleDefaultFontSize))
+	if fontSize == 0 {
+		return 0
+	}
+
+	return bubbleArcFontSize(node.Label, bubbleDirLabelRadius(node, fontSize))
+}
+
 // addBubbleDirLabel adds an arc text label curved just above the top of a directory circle.
 func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode) {
-	fontSize := bubbleArcFontSize(node.Label, bubbleDirLabelRadiusHint(node))
+	fontSize := bubbleDirLabelFontSize(node)
 	if fontSize == 0 {
 		return
 	}

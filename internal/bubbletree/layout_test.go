@@ -224,6 +224,49 @@ func TestLayoutEmptyDirectory(t *testing.T) {
 	g.Expect(node.Children).To(BeEmpty())
 }
 
+func TestLayoutEmptyLabelledDirectoryReservesMoreSpaceThanFile(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Path: "root",
+		Dirs: []*model.Directory{{
+			Name: "a",
+			Path: "root/a",
+		}},
+		Files: []*model.File{{
+			Name: "plain.go",
+			Path: "root/plain.go",
+		}},
+	}
+
+	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelFoldersOnly)
+	g.Expect(node.Children).To(HaveLen(2))
+
+	var dirNode, fileNode *BubbleNode
+
+	for i := range node.Children {
+		child := &node.Children[i]
+		if child.IsDirectory {
+			dirNode = child
+		} else {
+			fileNode = child
+		}
+	}
+
+	g.Expect(dirNode).NotTo(BeNil())
+	g.Expect(fileNode).NotTo(BeNil())
+
+	if dirNode == nil || fileNode == nil {
+		return
+	}
+
+	g.Expect(dirNode.Radius).To(BeNumerically(">", fileNode.Radius),
+		"empty labelled directory should reserve extra occupied space for its label",
+	)
+}
+
 func TestLayoutSingleFile(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

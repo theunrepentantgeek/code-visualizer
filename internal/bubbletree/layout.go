@@ -55,6 +55,9 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 
 	if len(children) == 0 {
 		node.Radius = minFileRadius
+		if node.ShowLabel {
+			node.Radius += LabelReservation
+		}
 
 		return node
 	}
