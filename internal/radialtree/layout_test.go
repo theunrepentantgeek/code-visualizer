@@ -113,6 +113,65 @@ func TestLayoutAnglesFullCircle(t *testing.T) {
 	}
 }
 
+func TestLayoutDirectoryGroupsAddAngularGaps(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{
+			{
+				Name: "species",
+				Files: []*model.File{
+					makeFile("centauri", 100),
+					makeFile("human", 100),
+				},
+			},
+			{
+				Name: "ambassadors",
+				Files: []*model.File{
+					makeFile("delenn", 100),
+					makeFile("gkar", 100),
+				},
+			},
+		},
+	}
+
+	node := Layout(root, 800, filesystem.FileSize, LabelAll)
+	g.Expect(node.Children).To(HaveLen(2))
+	g.Expect(node.Children[0].Children).To(HaveLen(2))
+	g.Expect(node.Children[1].Children).To(HaveLen(2))
+
+	speciesGap := clockwiseGap(node.Children[0].Children[0].Angle, node.Children[0].Children[1].Angle)
+	ambassadorsGap := clockwiseGap(node.Children[1].Children[0].Angle, node.Children[1].Children[1].Angle)
+	betweenGroups := clockwiseGap(node.Children[0].Children[1].Angle, node.Children[1].Children[0].Angle)
+	wrapGap := clockwiseGap(node.Children[1].Children[1].Angle, node.Children[0].Children[0].Angle)
+
+	g.Expect(speciesGap).To(BeNumerically("~", ambassadorsGap, 0.001))
+	g.Expect(betweenGroups).To(BeNumerically(">", speciesGap))
+	g.Expect(betweenGroups).To(BeNumerically("~", wrapGap, 0.001))
+}
+
+func TestLayoutEmptySiblingDirectoriesGetDistinctSectors(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{
+			{Name: "empty-a"},
+			{Name: "empty-b"},
+		},
+	}
+
+	node := Layout(root, 800, filesystem.FileSize, LabelAll)
+	g.Expect(node.Children).To(HaveLen(2))
+	g.Expect(node.Children[0].Angle).NotTo(BeNumerically("~", node.Children[1].Angle, 0.001))
+
+	gap := clockwiseGap(node.Children[0].Angle, node.Children[1].Angle)
+	g.Expect(gap).To(BeNumerically("~", math.Pi, 0.001))
+}
+
 func TestLayoutNestedDepth(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -359,4 +418,17 @@ func TestClamp_AtBoundaries(t *testing.T) {
 
 	g.Expect(clamp(0.0, 0.0, 10.0)).To(BeNumerically("==", 0.0))
 	g.Expect(clamp(10.0, 0.0, 10.0)).To(BeNumerically("==", 10.0))
+}
+
+func clockwiseGap(from, to float64) float64 {
+	return math.Mod(normalizeAngle(to)-normalizeAngle(from)+2*math.Pi, 2*math.Pi)
+}
+
+func normalizeAngle(angle float64) float64 {
+	normalized := math.Mod(angle, 2*math.Pi)
+	if normalized < 0 {
+		normalized += 2 * math.Pi
+	}
+
+	return normalized
 }

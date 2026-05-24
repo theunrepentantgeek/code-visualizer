@@ -10,6 +10,27 @@
 
 <!-- Append learnings below -->
 
+### Issue #256 — Move Bubble Labels (2026-05-24)
+
+- **Occupied vs visible radius:** `internal/bubbletree/layout.go` keeps `BubbleNode.Radius` as the occupied area for layout/fit, while `internal/bubbletree/render.go` derives a smaller visible directory disc radius so labels can live above the bubble without being overdrawn.
+- **Root fit rule:** outside bubble labels require `scaleToFit()` to use `occupiedBounds()` and to scale empty labelled roots even when they have no children; otherwise the root label can clip off-canvas.
+- **Shared geometry contract:** `internal/canvas/model/backend.go` now owns `ArcTextInset`, which both raster/SVG backends and bubbletree rendering use to keep reserved label space aligned with actual arc text placement.
+- **Key verification files:** `internal/bubbletree/layout_test.go`, `internal/bubbletree/render_test.go`, and `internal/canvas/svg/backend_test.go` now cover child labels, empty labelled directories, root label fit, raster reserved-band rendering, and SVG glyph centering.
+### Issue #284 — Radial Group Gaps (2026-05-23)
+
+- **Layout pattern:** `internal/radialtree/layout.go` is the sole source of angular placement; rendering in `internal/radialtree/render.go` just consumes node angles/positions, so visual spacing changes belong in layout, not rendering.
+- **Gap design:** Non-root directory sectors now reserve one child-sized blank slot at both the leading and trailing edges of the sector. This keeps sibling folder groups visually separated without adding CLI/config surface.
+- **Allocation rule:** Angular budgeting must count empty directories too. `childAllocationUnits()` sums direct files plus `childWeight()` for each subdir, where empty subdirs still reserve one unit instead of collapsing onto the same angle.
+- **Regression coverage:** `internal/radialtree/layout_test.go` now covers both grouped file gaps and empty sibling directories getting distinct sectors.
+- **Key files:** `internal/radialtree/layout.go`, `internal/radialtree/layout_test.go`, `cmd/codeviz/radialtree_cmd.go`.
+### Issue #282 — Bubbletree Legend Overlap (2026-05-23)
+
+- **Root cause:** `internal/bubbletree/stages.go` explicitly left legend handling in overlay mode; unlike treemap, bubbletree ran layout against the full canvas and only attached the legend at render time.
+- **Adopted pattern:** Use shared legend helpers from `internal/legend/reserve.go` — `ReserveAndLayout()` to shrink the layout area and `LayoutOffset()` to translate the finished layout into the non-legend region.
+- **Bubble-specific detail:** Bubbletree needed its own recursive translation helper (`OffsetNodes` in `internal/bubbletree/layout.go`) because its layout stores absolute node centres, not rectangles.
+- **Regression coverage:** `internal/bubbletree/layout_stage_test.go` verifies top and left legend positions reserve space and keep bubble content inside the remaining drawable bounds.
+- **Key files:** `internal/bubbletree/stages.go`, `internal/bubbletree/layout.go`, `internal/bubbletree/layout_stage_test.go`, `internal/legend/reserve.go`, `internal/treemap/stages.go`.
+
 ### PR Review Etiquette (Team Directive, 2026-05-13)
 
 - **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
