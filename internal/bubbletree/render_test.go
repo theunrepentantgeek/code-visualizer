@@ -7,8 +7,11 @@ import (
 	"image/color"
 	_ "image/jpeg"
 	_ "image/png"
+	"math"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -89,6 +92,54 @@ func testRoot() *model.Directory {
 			},
 		},
 	}
+}
+
+func decodeImage(t *testing.T, path string) image.Image {
+	t.Helper()
+
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("open image: %v", err)
+	}
+
+	defer f.Close()
+
+	img, _, err := image.Decode(f)
+	if err != nil {
+		t.Fatalf("decode image: %v", err)
+	}
+
+	return img
+}
+
+func hasNonWhitePixelInRect(img image.Image, minX, minY, maxX, maxY int) bool {
+	bounds := img.Bounds()
+	minX = max(minX, bounds.Min.X)
+	minY = max(minY, bounds.Min.Y)
+	maxX = min(maxX, bounds.Max.X)
+	maxY = min(maxY, bounds.Max.Y)
+
+	for y := minY; y < maxY; y++ {
+		for x := minX; x < maxX; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			if a != 0xffff || r != 0xffff || g != 0xffff || b != 0xffff {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func mustParseFloat(t *testing.T, value string) float64 {
+	t.Helper()
+
+	f, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		t.Fatalf("parse float %q: %v", value, err)
+	}
+
+	return f
 }
 
 func TestRenderBubbleToCanvas_PNG(t *testing.T) {
@@ -354,4 +405,90 @@ func TestRenderBubbleToCanvas_EmptyLabelledDirectoryKeepsVisibleBubble(t *testin
 	g.Expect(childLabelRadius).To(BeNumerically(">", backend.discs[0].radius),
 		"empty labelled directory should reserve label space above its bubble",
 	)
+}
+
+func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Path: "root",
+		Dirs: []*model.Directory{{
+			Name: "pkg",
+			Path: "root/pkg",
+		}},
+	}
+	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
+
+	var dirNode *bubbletree.BubbleNode
+
+	for i := range nodes.Children {
+		if nodes.Children[i].IsDirectory {
+			dirNode = &nodes.Children[i]
+
+			break
+		}
+	}
+
+	g.Expect(dirNode).NotTo(BeNil())
+
+	if dirNode == nil {
+		return
+	}
+
+	out := filepath.Join(t.TempDir(), "label-band.png")
+	g.Expect(cv.Render(out)).To(Succeed())
+
+	img := decodeImage(t, out)
+	minX := int(math.Floor(dirNode.X - dirNode.Radius/2))
+	maxX := int(math.Ceil(dirNode.X + dirNode.Radius/2))
+	minY := int(math.Floor(dirNode.Y - dirNode.Radius))
+	maxY := int(math.Ceil(dirNode.Y - dirNode.Radius + bubbletree.LabelReservation))
+
+	g.Expect(hasNonWhitePixelInRect(img, minX, minY, maxX, maxY)).To(BeTrue(),
+		"expected raster output to place the directory label in the reserved band above the bubble",
+	)
+}
+
+func TestRenderBubbleToCanvas_SVGKeepsRootLabelPathWithinCanvas(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Path: "root",
+		Files: []*model.File{
+			makeFile("main.go", "go", 100),
+			makeFile("style.css", "css", 50),
+		},
+	}
+	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
+
+	out := filepath.Join(t.TempDir(), "root-label.svg")
+	g.Expect(cv.Render(out)).To(Succeed())
+
+	data, err := os.ReadFile(out)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(bytes.Contains(data, []byte(">root</textPath>"))).To(BeTrue())
+
+	pathPattern := regexp.MustCompile(
+		`<path id="[^"]+" d="M([0-9.\-]+),([0-9.\-]+) A[0-9.\-]+,[0-9.\-]+ 0 0,1 ([0-9.\-]+),([0-9.\-]+)"`,
+	)
+	match := pathPattern.FindStringSubmatch(string(data))
+	g.Expect(match).To(HaveLen(5))
+
+	startX := mustParseFloat(t, match[1])
+	startY := mustParseFloat(t, match[2])
+	endX := mustParseFloat(t, match[3])
+	endY := mustParseFloat(t, match[4])
+
+	g.Expect(startX).To(BeNumerically(">=", 0.0))
+	g.Expect(startY).To(BeNumerically(">=", 0.0))
+	g.Expect(endX).To(BeNumerically("<=", 800.0))
+	g.Expect(endY).To(BeNumerically("<=", 600.0))
 }
