@@ -14,56 +14,66 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
-func TestLayoutStage_ReservesTopLegendSpace(t *testing.T) {
+func TestLayoutStage_ReservesLegendSpace(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	cfg := testLegendConfig(canvasmodel.LegendPositionTopCenter, canvasmodel.LegendOrientationHorizontal)
-	state := &State{
-		CommonState:  stages.CommonState{Root: testLayoutRoot(), Width: 1200, Height: 800},
-		Size:         filesystem.FileSize,
-		Labels:       LabelAll,
-		LegendConfig: cfg,
+	tests := []struct {
+		name         string
+		position     canvasmodel.LegendPosition
+		orientation  canvasmodel.LegendOrientation
+		startOnX     bool
+		startMessage string
+	}{
+		{
+			name:         "top legend",
+			position:     canvasmodel.LegendPositionTopCenter,
+			orientation:  canvasmodel.LegendOrientationHorizontal,
+			startMessage: "bubble layout should start below the reserved top legend area",
+		},
+		{
+			name:         "left legend",
+			position:     canvasmodel.LegendPositionCenterLeft,
+			orientation:  canvasmodel.LegendOrientationVertical,
+			startOnX:     true,
+			startMessage: "bubble layout should start to the right of the reserved left legend area",
+		},
 	}
 
-	g.Expect(LayoutStage(state)).To(Succeed())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-	wReduce, hReduce := cfg.ReserveSpace()
-	layoutW, layoutH := legend.ReserveAndLayout(cfg, state.Width, state.Height)
-	dx, dy := legend.LayoutOffset(cfg, wReduce, hReduce)
-	box := childrenBounds(&state.Nodes)
+			cfg := testLegendConfig(tt.position, tt.orientation)
+			state := &State{
+				CommonState:  stages.CommonState{Root: testLayoutRoot(), Width: 1200, Height: 800},
+				Size:         filesystem.FileSize,
+				Labels:       LabelAll,
+				LegendConfig: cfg,
+			}
 
-	g.Expect(box.minY).To(BeNumerically(">=", dy-1.0),
-		"bubble layout should start below the reserved top legend area")
-	g.Expect(box.maxY).To(BeNumerically("<=", dy+float64(layoutH)+1.0))
-	g.Expect(box.minX).To(BeNumerically(">=", dx-1.0))
-	g.Expect(box.maxX).To(BeNumerically("<=", dx+float64(layoutW)+1.0))
-}
+			g.Expect(LayoutStage(state)).To(Succeed())
 
-func TestLayoutStage_ReservesLeftLegendSpace(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
+			wReduce, hReduce := cfg.ReserveSpace()
+			layoutW, layoutH := legend.ReserveAndLayout(cfg, state.Width, state.Height)
+			dx, dy := legend.LayoutOffset(cfg, wReduce, hReduce)
+			box := childrenBounds(&state.Nodes)
 
-	cfg := testLegendConfig(canvasmodel.LegendPositionCenterLeft, canvasmodel.LegendOrientationVertical)
-	state := &State{
-		CommonState:  stages.CommonState{Root: testLayoutRoot(), Width: 1200, Height: 800},
-		Size:         filesystem.FileSize,
-		Labels:       LabelAll,
-		LegendConfig: cfg,
+			if tt.startOnX {
+				g.Expect(box.minX).To(BeNumerically(">=", dx-1.0), tt.startMessage)
+				g.Expect(box.maxX).To(BeNumerically("<=", dx+float64(layoutW)+1.0))
+				g.Expect(box.minY).To(BeNumerically(">=", dy-1.0))
+				g.Expect(box.maxY).To(BeNumerically("<=", dy+float64(layoutH)+1.0))
+
+				return
+			}
+
+			g.Expect(box.minY).To(BeNumerically(">=", dy-1.0), tt.startMessage)
+			g.Expect(box.maxY).To(BeNumerically("<=", dy+float64(layoutH)+1.0))
+			g.Expect(box.minX).To(BeNumerically(">=", dx-1.0))
+			g.Expect(box.maxX).To(BeNumerically("<=", dx+float64(layoutW)+1.0))
+		})
 	}
-
-	g.Expect(LayoutStage(state)).To(Succeed())
-
-	wReduce, hReduce := cfg.ReserveSpace()
-	layoutW, layoutH := legend.ReserveAndLayout(cfg, state.Width, state.Height)
-	dx, dy := legend.LayoutOffset(cfg, wReduce, hReduce)
-	box := childrenBounds(&state.Nodes)
-
-	g.Expect(box.minX).To(BeNumerically(">=", dx-1.0),
-		"bubble layout should start to the right of the reserved left legend area")
-	g.Expect(box.maxX).To(BeNumerically("<=", dx+float64(layoutW)+1.0))
-	g.Expect(box.minY).To(BeNumerically(">=", dy-1.0))
-	g.Expect(box.maxY).To(BeNumerically("<=", dy+float64(layoutH)+1.0))
 }
 
 func testLegendConfig(pos canvasmodel.LegendPosition, orient canvasmodel.LegendOrientation) *canvas.LegendConfig {
