@@ -10,6 +10,14 @@
 
 <!-- Append learnings below -->
 
+### Issue #282 — Bubbletree Legend Overlap (2026-05-23)
+
+- **Root cause:** `internal/bubbletree/stages.go` explicitly left legend handling in overlay mode; unlike treemap, bubbletree ran layout against the full canvas and only attached the legend at render time.
+- **Adopted pattern:** Use shared legend helpers from `internal/legend/reserve.go` — `ReserveAndLayout()` to shrink the layout area and `LayoutOffset()` to translate the finished layout into the non-legend region.
+- **Bubble-specific detail:** Bubbletree needed its own recursive translation helper (`OffsetNodes` in `internal/bubbletree/layout.go`) because its layout stores absolute node centres, not rectangles.
+- **Regression coverage:** `internal/bubbletree/layout_stage_test.go` verifies top and left legend positions reserve space and keep bubble content inside the remaining drawable bounds.
+- **Key files:** `internal/bubbletree/stages.go`, `internal/bubbletree/layout.go`, `internal/bubbletree/layout_stage_test.go`, `internal/legend/reserve.go`, `internal/treemap/stages.go`.
+
 ### PR Review Etiquette (Team Directive, 2026-05-13)
 
 - **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
