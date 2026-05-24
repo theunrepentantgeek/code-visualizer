@@ -321,6 +321,31 @@ func TestTreemapCmd_MissingSizeEverywhere_NilAfterMerge(t *testing.T) {
 	g.Expect(cfg.Treemap.Size).To(BeNil())
 }
 
+func TestTreemapCmd_Run_WritesFileLabelsIntoSVG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "alpha.go")
+	g.Expect(os.WriteFile(filePath, []byte("package main\n\nfunc main() {}\n"), 0o600)).To(Succeed())
+
+	out := filepath.Join(dir, "treemap.svg")
+	cmd := &TreemapCmd{
+		TargetPath: dir,
+		Output:     out,
+		Size:       filesystem.FileLines,
+		Width:      320,
+		Height:     240,
+	}
+
+	flags := &Flags{Config: config.New()}
+	g.Expect(cmd.Run(flags)).To(Succeed())
+
+	data, err := os.ReadFile(out)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(ContainSubstring("alpha.go"))
+}
+
 // validateConfig validates the merged config (single source of truth).
 
 func TestTreemapCmd_ValidateConfig_ConfigSuppliesFillAndPalette(t *testing.T) {
