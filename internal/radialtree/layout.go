@@ -98,10 +98,7 @@ func layoutDir(
 	angle := startAngle + sweepAngle/2
 	radius := float64(depth) * ringSpacing
 
-	dirDisc := ringSpacing * dirDiscFactor
-	if dirDisc < minDirDisc {
-		dirDisc = minDirDisc
-	}
+	dirDisc := math.Max(ringSpacing*dirDiscFactor, minDirDisc)
 
 	node := RadialNode{
 		X:           radius * math.Cos(angle),
@@ -113,18 +110,28 @@ func layoutDir(
 		ShowLabel:   labels == LabelAll || labels == LabelFoldersOnly,
 	}
 
-	parentLeafCount := computeLeafCount(dir)
-	if parentLeafCount == 0 {
-		parentLeafCount = 1
+	allocationUnits := childAllocationUnits(dir)
+	if allocationUnits == 0 {
+		return node
 	}
 
+	contentSweep := sweepAngle
 	childStart := startAngle
-	childRadius := float64(depth+1) * ringSpacing
 
-	// Files first: each file is a leaf occupying 1/parentLeafCount of the sweep.
+	if depth > 0 {
+		// Reserve one child-sized blank slot on each side of non-root directory
+		// groups so sibling folders don't run directly into each other.
+		paddingSweep := sweepAngle / float64(allocationUnits+2)
+		contentSweep -= 2 * paddingSweep
+		childStart += paddingSweep
+	}
+
+	childRadius := float64(depth+1) * ringSpacing
+	fileSweep := contentSweep / float64(allocationUnits)
+
+	// Files first: each file occupies one allocation unit of the padded sweep.
 	for _, f := range dir.Files {
-		childSweep := sweepAngle / float64(parentLeafCount)
-		childAngle := childStart + childSweep/2
+		childAngle := childStart + fileSweep/2
 
 		fileNode := RadialNode{
 			X:           childRadius * math.Cos(childAngle),
@@ -137,17 +144,14 @@ func layoutDir(
 		}
 
 		node.Children = append(node.Children, fileNode)
-		childStart += childSweep
+		childStart += fileSweep
 	}
 
-	// Subdirs: each gets a proportional slice of the sweep based on its leaf count.
+	// Subdirs: each gets a proportional slice of the padded sweep based on its
+	// file-leaf weight, with empty directories still reserving one unit.
 	for _, d := range dir.Dirs {
-		childLeafCount := computeLeafCount(d)
-		if childLeafCount == 0 {
-			childLeafCount = 1
-		}
-
-		childSweep := float64(childLeafCount) / float64(parentLeafCount) * sweepAngle
+		weight := childWeight(d)
+		childSweep := float64(weight) / float64(allocationUnits) * contentSweep
 		child := layoutDir(d, depth+1, childStart, childSweep, ringSpacing, discMetric, labels, dp)
 		node.Children = append(node.Children, child)
 		childStart += childSweep
@@ -209,6 +213,24 @@ func computeLeafCount(dir *model.Directory) int {
 	}
 
 	return count
+}
+
+func childAllocationUnits(dir *model.Directory) int {
+	units := len(dir.Files)
+	for _, d := range dir.Dirs {
+		units += childWeight(d)
+	}
+
+	return units
+}
+
+func childWeight(dir *model.Directory) int {
+	leafCount := computeLeafCount(dir)
+	if leafCount == 0 {
+		return 1
+	}
+
+	return leafCount
 }
 
 // computeMaxDepth returns the maximum depth of any node in the tree rooted at dir.

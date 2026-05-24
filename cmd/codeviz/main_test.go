@@ -80,6 +80,41 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.Render.Treemap.Flat).To(BeTrue())
 }
 
+func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "legend",
+			args:    []string{"render", "bubbletree", ".", "-o", "out.png", "--legend", "sideways"},
+			wantErr: "--legend must be one of",
+		},
+		{
+			name:    "legend-orientation",
+			args:    []string{"render", "bubbletree", ".", "-o", "out.png", "--legend-orientation", "diagonal"},
+			wantErr: "--legend-orientation must be one of",
+		},
+	}
+
+	for _, tc := range cases {
+		cli := CLI{}
+		parser, err := kong.New(
+			&cli,
+			kong.Name("codeviz"),
+			kong.Exit(func(int) {}),
+		)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		_, err = parser.Parse(tc.args)
+		g.Expect(err).To(MatchError(ContainSubstring(tc.wantErr)), tc.name)
+	}
+}
+
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

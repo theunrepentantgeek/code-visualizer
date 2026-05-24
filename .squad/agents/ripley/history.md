@@ -10,6 +10,13 @@
 
 <!-- Append learnings below -->
 
+### Issue #284 — Radial Group Gaps (2026-05-23)
+
+- **Layout pattern:** `internal/radialtree/layout.go` is the sole source of angular placement; rendering in `internal/radialtree/render.go` just consumes node angles/positions, so visual spacing changes belong in layout, not rendering.
+- **Gap design:** Non-root directory sectors now reserve one child-sized blank slot at both the leading and trailing edges of the sector. This keeps sibling folder groups visually separated without adding CLI/config surface.
+- **Allocation rule:** Angular budgeting must count empty directories too. `childAllocationUnits()` sums direct files plus `childWeight()` for each subdir, where empty subdirs still reserve one unit instead of collapsing onto the same angle.
+- **Regression coverage:** `internal/radialtree/layout_test.go` now covers both grouped file gaps and empty sibling directories getting distinct sectors.
+- **Key files:** `internal/radialtree/layout.go`, `internal/radialtree/layout_test.go`, `cmd/codeviz/radialtree_cmd.go`.
 ### Issue #282 — Bubbletree Legend Overlap (2026-05-23)
 
 - **Root cause:** `internal/bubbletree/stages.go` explicitly left legend handling in overlay mode; unlike treemap, bubbletree ran layout against the full canvas and only attached the legend at render time.
