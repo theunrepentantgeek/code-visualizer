@@ -542,3 +542,70 @@ func TestScatterCmd_ValidateConfig_SizeMustBeNumeric(t *testing.T) {
 	err := cmd.validateConfig(cfg.Scatter)
 	g.Expect(err).To(MatchError(ContainSubstring("size metric must be numeric")))
 }
+
+func TestScatterCmd_ConfigSuppliesAxesAndSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &ScatterCmd{TargetPath: ".", Output: "out.png"}
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Scatter).NotTo(BeNil())
+	g.Expect(cfg.Scatter.XAxis).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.XAxis).To(Equal("file-type"))
+	g.Expect(cfg.Scatter.YAxis).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.YAxis).To(Equal("file-lines"))
+	g.Expect(cfg.Scatter.Size).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
+}
+
+func TestScatterCmd_CLIAxesOverrideConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("scatter:\n  xAxis: file-lines\n  yAxis: file-size\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &ScatterCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		XAxis:      "file-type",
+		YAxis:      "file-lines",
+		Size:       "file-size",
+	}
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Scatter).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.XAxis).To(Equal("file-type"))
+	g.Expect(*cfg.Scatter.YAxis).To(Equal("file-lines"))
+	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
+}
+
+func TestScatterCmd_MergeConfigAndValidate_LoadsScatterConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(cfgPath, []byte("scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &ScatterCmd{TargetPath: ".", Output: filepath.Join(dir, "out.png")}
+	flags := &Flags{Config: cfg, configPath: cfgPath}
+
+	err := cmd.mergeConfigAndValidate(flags)
+	g.Expect(err).NotTo(HaveOccurred())
+}
