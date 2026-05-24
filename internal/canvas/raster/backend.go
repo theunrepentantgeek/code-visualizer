@@ -12,12 +12,10 @@ import (
 	"strings"
 
 	"github.com/fogleman/gg"
-	"github.com/golang/freetype/truetype"
 	"github.com/rotisserie/eris"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/goregular"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 )
 
 const jpegQuality = 95
@@ -25,27 +23,6 @@ const jpegQuality = 95
 // defaultFontSize is the font size used when callers pass fontSize <= 0,
 // indicating "use the backend's default".
 const defaultFontSize = 12.0
-
-// goFont is the parsed Go Regular TrueType font, used to create
-// font faces at arbitrary point sizes.
-//
-//nolint:gochecknoglobals // parsed once, read-only after init
-var goFont *truetype.Font
-
-func init() {
-	var err error
-
-	goFont, err = truetype.Parse(goregular.TTF)
-	if err != nil {
-		panic("raster: failed to parse Go Regular font: " + err.Error())
-	}
-}
-
-// fontFaceForSize returns a font.Face for the Go Regular font at the given
-// point size.
-func fontFaceForSize(points float64) font.Face {
-	return truetype.NewFace(goFont, &truetype.Options{Size: points})
-}
 
 type rasterBackend struct {
 	dc *gg.Context
@@ -218,7 +195,12 @@ func (r *rasterBackend) DrawText(
 		fontSize = defaultFontSize
 	}
 
-	r.dc.SetFontFace(fontFaceForSize(fontSize))
+	face := textlayout.FontFace(fontSize)
+	if closer, ok := face.(interface{ Close() error }); ok {
+		defer func() { _ = closer.Close() }()
+	}
+
+	r.dc.SetFontFace(face)
 	r.dc.SetColor(nrgba(ink))
 
 	ax := anchorX(anchor)
@@ -249,7 +231,7 @@ func (r *rasterBackend) DrawArcText(
 		fontSize = defaultFontSize
 	}
 
-	r.dc.SetFontFace(fontFaceForSize(fontSize))
+	r.dc.SetFontFace(textlayout.FontFace(fontSize))
 	r.dc.SetColor(nrgba(ink))
 
 	arcRadius := radius - 14.0

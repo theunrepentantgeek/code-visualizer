@@ -16,12 +16,12 @@ import (
 )
 
 type CLI struct {
-	Quiet   bool   `help:"Suppress all non-essential output; only warnings and errors are shown." short:"q" xor:"verbosity"` //nolint:revive // kong struct tags require long lines
+	Quiet   bool   `help:"Suppress all non-essential output; only warnings and errors are shown." short:"q" xor:"verbosity"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Verbose bool   `help:"Show detailed progress during scanning and metric calculation." short:"v" xor:"verbosity"`
 	Debug   bool   `help:"Show per-directory scan progress (implies verbose output)." xor:"verbosity"`
 	Config  string `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
 
-	//nolint:revive // Long help text is more important than minimizing line length, and annotations can't be wrapped
+	//nolint:revive,nolintlint // Long help text is more important than minimizing line length, and annotations can't be wrapped
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 	ExportData   string `help:"Write computed metrics to file (.json or .yaml/.yml)." name:"export-data" optional:""`
 

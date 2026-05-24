@@ -165,23 +165,6 @@ func addFileRectForFile(
 		Border: borderMV,
 		Focus:  focus,
 	})
-
-	if rect.Label != "" && rect.W >= 40 && rect.H >= 16 {
-		fillColour := inks.Fill.Dip(fillMV)
-		labelColour := canvas.TextColourFor(fillColour)
-
-		labelSpec := &canvas.TextSpec{
-			Ink:      canvas.FixedInk(labelColour),
-			FontSize: 0,
-			Anchor:   canvas.AnchorMiddle,
-		}
-		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec:    labelSpec,
-			X:       rect.X + rect.W/2,
-			Y:       rect.Y + rect.H/2,
-			Content: rect.Label,
-		})
-	}
 }
 
 func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) canvasmodel.Point {

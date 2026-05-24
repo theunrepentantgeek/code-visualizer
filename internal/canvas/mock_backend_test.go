@@ -8,14 +8,18 @@ import (
 
 // drawCall records a single drawing operation dispatched to the mock backend.
 type drawCall struct {
-	method    string
-	pos       Position
-	size      Size
-	fill      color.RGBA
-	border    color.RGBA
-	rawFill   model.Fill
-	rawBorder model.Fill
-	text      string
+	method      string
+	pos         Position
+	size        Size
+	fill        color.RGBA
+	border      color.RGBA
+	rawFill     model.Fill
+	rawBorder   model.Fill
+	text        string
+	fontSize    float64
+	anchor      TextAnchor
+	rotation    float64
+	strokeWidth float64
 }
 
 // mockBackend records all drawing calls for test assertions.
@@ -52,10 +56,12 @@ func (m *mockBackend) DrawDisc(center Position, _ float64, fill, border model.Fi
 	})
 }
 
-func (m *mockBackend) DrawLine(from, _ Position, _ color.RGBA, _ float64) {
+func (m *mockBackend) DrawLine(from, _ Position, stroke color.RGBA, strokeWidth float64) {
 	m.calls = append(m.calls, drawCall{
-		method: "DrawLine",
-		pos:    from,
+		method:      "DrawLine",
+		pos:         from,
+		fill:        stroke,
+		strokeWidth: strokeWidth,
 	})
 }
 
@@ -66,13 +72,16 @@ func (m *mockBackend) DrawPath(_ []Position, _ color.RGBA, _ float64) {
 }
 
 func (m *mockBackend) DrawText(
-	pos Position, text string, ink color.RGBA, _ float64, _ TextAnchor, _ float64,
+	pos Position, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64,
 ) {
 	m.calls = append(m.calls, drawCall{
-		method: "DrawText",
-		pos:    pos,
-		text:   text,
-		fill:   ink,
+		method:   "DrawText",
+		pos:      pos,
+		text:     text,
+		fill:     ink,
+		fontSize: fontSize,
+		anchor:   anchor,
+		rotation: rotation,
 	})
 }
 
