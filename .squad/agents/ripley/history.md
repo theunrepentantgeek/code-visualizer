@@ -17,6 +17,13 @@
 - **Allocation rule:** Angular budgeting must count empty directories too. `childAllocationUnits()` sums direct files plus `childWeight()` for each subdir, where empty subdirs still reserve one unit instead of collapsing onto the same angle.
 - **Regression coverage:** `internal/radialtree/layout_test.go` now covers both grouped file gaps and empty sibling directories getting distinct sectors.
 - **Key files:** `internal/radialtree/layout.go`, `internal/radialtree/layout_test.go`, `cmd/codeviz/radialtree_cmd.go`.
+### Issue #282 — Bubbletree Legend Overlap (2026-05-23)
+
+- **Root cause:** `internal/bubbletree/stages.go` explicitly left legend handling in overlay mode; unlike treemap, bubbletree ran layout against the full canvas and only attached the legend at render time.
+- **Adopted pattern:** Use shared legend helpers from `internal/legend/reserve.go` — `ReserveAndLayout()` to shrink the layout area and `LayoutOffset()` to translate the finished layout into the non-legend region.
+- **Bubble-specific detail:** Bubbletree needed its own recursive translation helper (`OffsetNodes` in `internal/bubbletree/layout.go`) because its layout stores absolute node centres, not rectangles.
+- **Regression coverage:** `internal/bubbletree/layout_stage_test.go` verifies top and left legend positions reserve space and keep bubble content inside the remaining drawable bounds.
+- **Key files:** `internal/bubbletree/stages.go`, `internal/bubbletree/layout.go`, `internal/bubbletree/layout_stage_test.go`, `internal/legend/reserve.go`, `internal/treemap/stages.go`.
 
 ### PR Review Etiquette (Team Directive, 2026-05-13)
 

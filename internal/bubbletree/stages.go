@@ -55,8 +55,7 @@ func BuildInksStage(s *State) error {
 	return nil
 }
 
-// BuildLegendStage builds the legend config from inks. Bubbletree does not
-// reserve canvas space for the legend; the legend overlays the bubbles.
+// BuildLegendStage builds the legend config from inks.
 func BuildLegendStage(s *State) error {
 	pos, orient := legend.ResolveOptions(
 		stages.PtrString(s.Config.Legend),
@@ -72,11 +71,21 @@ func BuildLegendStage(s *State) error {
 	return nil
 }
 
-// LayoutStage runs the bubble layout algorithm.
+// LayoutStage reserves legend space, runs the bubble layout algorithm, and
+// offsets the result into the remaining canvas area.
 func LayoutStage(s *State) error {
 	c := s.Common()
+	layoutW, layoutH := legend.ReserveAndLayout(s.LegendConfig, c.Width, c.Height)
 
-	s.Nodes = Layout(c.Root, c.Width, c.Height, s.Size, s.Labels)
+	s.Nodes = Layout(c.Root, layoutW, layoutH, s.Size, s.Labels)
+
+	if layoutW < c.Width || layoutH < c.Height {
+		if s.LegendConfig != nil {
+			wReduce, hReduce := s.LegendConfig.ReserveSpace()
+			dx, dy := legend.LayoutOffset(s.LegendConfig, wReduce, hReduce)
+			OffsetNodes(&s.Nodes, dx, dy)
+		}
+	}
 
 	return nil
 }
