@@ -98,10 +98,7 @@ func layoutDir(
 	angle := startAngle + sweepAngle/2
 	radius := float64(depth) * ringSpacing
 
-	dirDisc := ringSpacing * dirDiscFactor
-	if dirDisc < minDirDisc {
-		dirDisc = minDirDisc
-	}
+	dirDisc := math.Max(ringSpacing*dirDiscFactor, minDirDisc)
 
 	node := RadialNode{
 		X:           radius * math.Cos(angle),
@@ -120,6 +117,7 @@ func layoutDir(
 
 	contentSweep := sweepAngle
 	childStart := startAngle
+
 	if depth > 0 {
 		// Reserve one child-sized blank slot on each side of non-root directory
 		// groups so sibling folders don't run directly into each other.
