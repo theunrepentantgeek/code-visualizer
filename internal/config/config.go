@@ -34,6 +34,7 @@ type Config struct {
 	Radial     *Radial       `yaml:"radial,omitempty"     json:"radial,omitempty"`
 	Bubbletree *Bubbletree   `yaml:"bubbletree,omitempty" json:"bubbletree,omitempty"`
 	Spiral     *Spiral       `yaml:"spiral,omitempty"     json:"spiral,omitempty"`
+	Scatter    *Scatter      `yaml:"scatter,omitempty"    json:"scatter,omitempty"`
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 
 	// Source is the path of the config file from which this Config was loaded, or nil if it was not loaded from a file.
@@ -54,6 +55,7 @@ func New() *Config {
 		Radial:     &Radial{Labels: new("all")},
 		Bubbletree: &Bubbletree{Labels: new("folders")},
 		Spiral:     &Spiral{Resolution: new("daily"), Labels: new("laps")},
+		Scatter:    &Scatter{},
 		FileFilter: []filter.Rule{
 			{Pattern: ".*", Mode: filter.Exclude},
 		},

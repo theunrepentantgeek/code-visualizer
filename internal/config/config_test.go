@@ -505,3 +505,38 @@ func TestTryAutoLoad_AlreadyLoaded_SkipsAutoLoad(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*cfg.Width).To(Equal(1600)) // unchanged
 }
+
+func TestNew_ScatterDefaultsSet(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	g.Expect(cfg.Scatter).NotTo(BeNil())
+}
+
+func TestLoad_ScatterConfig_ParsesAxesAndSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := `scatter:
+  xAxis: file-type
+  yAxis: file-lines
+  size: file-size
+`
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+	err := cfg.Load(path)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Scatter).NotTo(BeNil())
+	g.Expect(cfg.Scatter.XAxis).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.XAxis).To(Equal("file-type"))
+	g.Expect(cfg.Scatter.YAxis).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.YAxis).To(Equal("file-lines"))
+	g.Expect(cfg.Scatter.Size).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
+}
