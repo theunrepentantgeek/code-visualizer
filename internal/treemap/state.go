@@ -25,10 +25,14 @@ type State struct {
 	Inks          Inks
 	Root          TreemapRectangle
 	LegendConfig  *canvas.LegendConfig
+	BlockLabels   []canvas.BlockLabel
 }
 
 // Common exposes the embedded CommonState so shared stages can mutate it.
 func (s *State) Common() *stages.CommonState { return &s.CommonState }
+
+// CanvasLabels exposes the block labels staged for later canvas overlay.
+func (s *State) CanvasLabels() []canvas.BlockLabel { return s.BlockLabels }
 
 // IncludeBinary lets State satisfy stages.BinaryFilterToggler.
 func (s *State) IncludeBinary() bool { return s.IncludeBinaryFiles }

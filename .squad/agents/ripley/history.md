@@ -16,6 +16,13 @@
 - **Root fit rule:** outside bubble labels require `scaleToFit()` to use `occupiedBounds()` and to scale empty labelled roots even when they have no children; otherwise the root label can clip off-canvas.
 - **Shared geometry contract:** `internal/canvas/model/backend.go` now owns `ArcTextInset`, which both raster/SVG backends and bubbletree rendering use to keep reserved label space aligned with actual arc text placement.
 - **Key verification files:** `internal/bubbletree/layout_test.go`, `internal/bubbletree/render_test.go`, and `internal/canvas/svg/backend_test.go` now cover child labels, empty labelled directories, root label fit, raster reserved-band rendering, and SVG glyph centering.
+### Issue #284 — Radial Group Gaps (2026-05-23)
+
+- **Layout pattern:** `internal/radialtree/layout.go` is the sole source of angular placement; rendering in `internal/radialtree/render.go` just consumes node angles/positions, so visual spacing changes belong in layout, not rendering.
+- **Gap design:** Non-root directory sectors now reserve one child-sized blank slot at both the leading and trailing edges of the sector. This keeps sibling folder groups visually separated without adding CLI/config surface.
+- **Allocation rule:** Angular budgeting must count empty directories too. `childAllocationUnits()` sums direct files plus `childWeight()` for each subdir, where empty subdirs still reserve one unit instead of collapsing onto the same angle.
+- **Regression coverage:** `internal/radialtree/layout_test.go` now covers both grouped file gaps and empty sibling directories getting distinct sectors.
+- **Key files:** `internal/radialtree/layout.go`, `internal/radialtree/layout_test.go`, `cmd/codeviz/radialtree_cmd.go`.
 ### Issue #282 — Bubbletree Legend Overlap (2026-05-23)
 
 - **Root cause:** `internal/bubbletree/stages.go` explicitly left legend handling in overlay mode; unlike treemap, bubbletree ran layout against the full canvas and only attached the legend at render time.

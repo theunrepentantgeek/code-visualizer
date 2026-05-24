@@ -126,6 +126,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		treemap.BuildLegendStage,
 		treemap.LayoutStage,
 		treemap.RenderStage,
+		treemap.LabelStage,
+		stages.ApplyCanvasBlockLabels[*treemap.State],
 		stages.WriteCanvas,
 		treemap.LogResult,
 	)

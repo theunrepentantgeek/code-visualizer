@@ -102,6 +102,17 @@ func RenderStage(s *State) error {
 	return nil
 }
 
+// LabelStage builds the reusable block labels for treemap file rectangles.
+func LabelStage(s *State) error {
+	s.BlockLabels = buildBlockLabels(s.Root, s.Common().Root, s.Inks.Fill, LabelMetrics{
+		Size:   s.Size,
+		Fill:   s.Config.Fill.MetricName(),
+		Border: s.Config.Border.MetricName(),
+	})
+
+	return nil
+}
+
 // LogResult logs the final summary.
 func LogResult(s *State) error {
 	c := s.Common()
@@ -131,5 +142,6 @@ var (
 	_ pipeline.Stage[*State] = BuildLegendStage
 	_ pipeline.Stage[*State] = LayoutStage
 	_ pipeline.Stage[*State] = RenderStage
+	_ pipeline.Stage[*State] = LabelStage
 	_ pipeline.Stage[*State] = LogResult
 )

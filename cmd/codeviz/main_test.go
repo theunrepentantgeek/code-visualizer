@@ -80,6 +80,41 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.Render.Treemap.Flat).To(BeTrue())
 }
 
+func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "legend",
+			args:    []string{"render", "bubbletree", ".", "-o", "out.png", "--legend", "sideways"},
+			wantErr: "--legend must be one of",
+		},
+		{
+			name:    "legend-orientation",
+			args:    []string{"render", "bubbletree", ".", "-o", "out.png", "--legend-orientation", "diagonal"},
+			wantErr: "--legend-orientation must be one of",
+		},
+	}
+
+	for _, tc := range cases {
+		cli := CLI{}
+		parser, err := kong.New(
+			&cli,
+			kong.Name("codeviz"),
+			kong.Exit(func(int) {}),
+		)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		_, err = parser.Parse(tc.args)
+		g.Expect(err).To(MatchError(ContainSubstring(tc.wantErr)), tc.name)
+	}
+}
+
 func TestClassifyNoFilesAfterFilterError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -319,6 +354,31 @@ func TestTreemapCmd_MissingSizeEverywhere_NilAfterMerge(t *testing.T) {
 	// After merge with no size from either source, effective size is nil.
 	// validateConfig (called from Run) should surface a clear error.
 	g.Expect(cfg.Treemap.Size).To(BeNil())
+}
+
+func TestTreemapCmd_Run_WritesFileLabelsIntoSVG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "alpha.go")
+	g.Expect(os.WriteFile(filePath, []byte("package main\n\nfunc main() {}\n"), 0o600)).To(Succeed())
+
+	out := filepath.Join(dir, "treemap.svg")
+	cmd := &TreemapCmd{
+		TargetPath: dir,
+		Output:     out,
+		Size:       filesystem.FileLines,
+		Width:      320,
+		Height:     240,
+	}
+
+	flags := &Flags{Config: config.New()}
+	g.Expect(cmd.Run(flags)).To(Succeed())
+
+	data, err := os.ReadFile(out)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(ContainSubstring("alpha.go"))
 }
 
 // validateConfig validates the merged config (single source of truth).
