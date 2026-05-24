@@ -27,6 +27,15 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, la
 	}
 
 	node := layoutDir(root, sizeMetric, labels)
+
+	// The root directory's disc is never rendered, so its label is never
+	// shown either. Strip the label reservation so the children fill the
+	// canvas instead of leaving whitespace for a label that won't appear.
+	if node.ShowLabel {
+		node.Radius -= LabelReservation
+		node.ShowLabel = false
+	}
+
 	scaleToFit(&node, float64(width), float64(height))
 
 	return node

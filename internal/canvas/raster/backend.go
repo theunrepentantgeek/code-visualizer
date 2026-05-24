@@ -250,7 +250,12 @@ func (r *rasterBackend) DrawArcText(
 
 		r.dc.Push()
 		r.dc.RotateAbout(angle+math.Pi/2.0, cx, cy)
-		r.dc.DrawStringAnchored(string(ch), cx, cy, 0.5, 0.5)
+		// gg's DrawStringAnchored places the baseline at cy + ay*h. Using
+		// ay=0.5 puts the baseline at the rim of the underlying circle so
+		// non-descender letters touch the rim. Use ay=0.25 to match the
+		// SVG backend's dominant-baseline="middle" behaviour, which lifts
+		// the baseline so descenders just graze the rim instead.
+		r.dc.DrawStringAnchored(string(ch), cx, cy, 0.5, 0.25)
 		r.dc.Pop()
 	}
 }

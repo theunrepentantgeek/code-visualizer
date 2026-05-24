@@ -163,7 +163,7 @@ func TestLayoutLabelAll(t *testing.T) {
 	}
 
 	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
-	g.Expect(node.ShowLabel).To(BeTrue())
+	g.Expect(node.ShowLabel).To(BeFalse(), "root label is never rendered")
 	g.Expect(node.Children).To(HaveLen(1))
 	g.Expect(node.Children[0].ShowLabel).To(BeTrue())
 }
@@ -183,7 +183,7 @@ func TestLayoutLabelFoldersOnly(t *testing.T) {
 
 	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelFoldersOnly)
 	g.Expect(node.IsDirectory).To(BeTrue())
-	g.Expect(node.ShowLabel).To(BeTrue())
+	g.Expect(node.ShowLabel).To(BeFalse(), "root label is never rendered")
 
 	g.Expect(node.Children).To(HaveLen(1))
 	subNode := node.Children[0]
@@ -381,67 +381,6 @@ func TestLayoutFitsWithinCanvas(t *testing.T) {
 	g.Expect(box.minY).To(BeNumerically(">=", -1.0))
 	g.Expect(box.maxX).To(BeNumerically("<=", float64(width)+1.0))
 	g.Expect(box.maxY).To(BeNumerically("<=", float64(height)+1.0))
-}
-
-func TestLayoutRootOccupiedLabelAreaFitsWithinCanvas(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := &model.Directory{
-		Name: "root",
-		Files: []*model.File{
-			makeFile("a.go", 200),
-			makeFile("b.go", 300),
-			makeFile("c.go", 100),
-		},
-	}
-
-	width, height := 1920, 1080
-	node := Layout(root, width, height, filesystem.FileSize, LabelFoldersOnly)
-
-	g.Expect(node.X-node.Radius).To(
-		BeNumerically(">=", -1.0),
-		"root occupied area should fit within the left edge of the canvas",
-	)
-	g.Expect(node.Y-node.Radius).To(
-		BeNumerically(">=", -1.0),
-		"root occupied area should fit within the top edge of the canvas",
-	)
-	g.Expect(node.X+node.Radius).To(
-		BeNumerically("<=", float64(width)+1.0),
-		"root occupied area should fit within the right edge of the canvas",
-	)
-	g.Expect(node.Y+node.Radius).To(
-		BeNumerically("<=", float64(height)+1.0),
-		"root occupied area should fit within the bottom edge of the canvas",
-	)
-}
-
-func TestLayoutEmptyRootOccupiedLabelAreaFitsWithinCanvas(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := &model.Directory{Name: "root"}
-
-	width, height := 20, 20
-	node := Layout(root, width, height, filesystem.FileSize, LabelFoldersOnly)
-
-	g.Expect(node.X-node.Radius).To(
-		BeNumerically(">=", -1.0),
-		"empty labelled root should fit within the left edge of the canvas",
-	)
-	g.Expect(node.Y-node.Radius).To(
-		BeNumerically(">=", -1.0),
-		"empty labelled root should fit within the top edge of the canvas",
-	)
-	g.Expect(node.X+node.Radius).To(
-		BeNumerically("<=", float64(width)+1.0),
-		"empty labelled root should fit within the right edge of the canvas",
-	)
-	g.Expect(node.Y+node.Radius).To(
-		BeNumerically("<=", float64(height)+1.0),
-		"empty labelled root should fit within the bottom edge of the canvas",
-	)
 }
 
 // contentBoundsForTest returns the axis-aligned bounding box of all descendant

@@ -10,8 +10,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -129,17 +127,6 @@ func hasNonWhitePixelInRect(img image.Image, minX, minY, maxX, maxY int) bool {
 	}
 
 	return false
-}
-
-func mustParseFloat(t *testing.T, value string) float64 {
-	t.Helper()
-
-	f, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		t.Fatalf("parse float %q: %v", value, err)
-	}
-
-	return f
 }
 
 func TestRenderBubbleToCanvas_PNG(t *testing.T) {
@@ -459,7 +446,7 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 	)
 }
 
-func TestRenderBubbleToCanvas_SVGKeepsRootLabelPathWithinCanvas(t *testing.T) {
+func TestRenderBubbleToCanvas_SVGOmitsRootLabel(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -480,21 +467,8 @@ func TestRenderBubbleToCanvas_SVGKeepsRootLabelPathWithinCanvas(t *testing.T) {
 
 	data, err := os.ReadFile(out)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(bytes.Contains(data, []byte(">root</textPath>"))).To(BeTrue())
-
-	pathPattern := regexp.MustCompile(
-		`<path id="[^"]+" d="M([0-9.\-]+),([0-9.\-]+) A[0-9.\-]+,[0-9.\-]+ 0 0,1 ([0-9.\-]+),([0-9.\-]+)"`,
+	g.Expect(bytes.Contains(data, []byte(">root</textPath>"))).To(
+		BeFalse(),
+		"root directory disc is not rendered, so its label should be omitted",
 	)
-	match := pathPattern.FindStringSubmatch(string(data))
-	g.Expect(match).To(HaveLen(5))
-
-	startX := mustParseFloat(t, match[1])
-	startY := mustParseFloat(t, match[2])
-	endX := mustParseFloat(t, match[3])
-	endY := mustParseFloat(t, match[4])
-
-	g.Expect(startX).To(BeNumerically(">=", 0.0))
-	g.Expect(startY).To(BeNumerically(">=", 0.0))
-	g.Expect(endX).To(BeNumerically("<=", 800.0))
-	g.Expect(endY).To(BeNumerically("<=", 600.0))
 }
