@@ -660,3 +660,13 @@ func applyScale(parent *BubbleNode, scale float64) {
 		applyScale(child, scale)
 	}
 }
+
+// OffsetNodes shifts every node in the tree by (dx, dy).
+func OffsetNodes(node *BubbleNode, dx, dy float64) {
+	node.X += dx
+	node.Y += dy
+
+	for i := range node.Children {
+		OffsetNodes(&node.Children[i], dx, dy)
+	}
+}

@@ -16,6 +16,13 @@
 - **Root fit rule:** outside bubble labels require `scaleToFit()` to use `occupiedBounds()` and to scale empty labelled roots even when they have no children; otherwise the root label can clip off-canvas.
 - **Shared geometry contract:** `internal/canvas/model/backend.go` now owns `ArcTextInset`, which both raster/SVG backends and bubbletree rendering use to keep reserved label space aligned with actual arc text placement.
 - **Key verification files:** `internal/bubbletree/layout_test.go`, `internal/bubbletree/render_test.go`, and `internal/canvas/svg/backend_test.go` now cover child labels, empty labelled directories, root label fit, raster reserved-band rendering, and SVG glyph centering.
+### Issue #282 — Bubbletree Legend Overlap (2026-05-23)
+
+- **Root cause:** `internal/bubbletree/stages.go` explicitly left legend handling in overlay mode; unlike treemap, bubbletree ran layout against the full canvas and only attached the legend at render time.
+- **Adopted pattern:** Use shared legend helpers from `internal/legend/reserve.go` — `ReserveAndLayout()` to shrink the layout area and `LayoutOffset()` to translate the finished layout into the non-legend region.
+- **Bubble-specific detail:** Bubbletree needed its own recursive translation helper (`OffsetNodes` in `internal/bubbletree/layout.go`) because its layout stores absolute node centres, not rectangles.
+- **Regression coverage:** `internal/bubbletree/layout_stage_test.go` verifies top and left legend positions reserve space and keep bubble content inside the remaining drawable bounds.
+- **Key files:** `internal/bubbletree/stages.go`, `internal/bubbletree/layout.go`, `internal/bubbletree/layout_stage_test.go`, `internal/legend/reserve.go`, `internal/treemap/stages.go`.
 
 ### PR Review Etiquette (Team Directive, 2026-05-13)
 
