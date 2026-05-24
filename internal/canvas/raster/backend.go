@@ -195,7 +195,12 @@ func (r *rasterBackend) DrawText(
 		fontSize = defaultFontSize
 	}
 
-	r.dc.SetFontFace(textlayout.FontFace(fontSize))
+	face := textlayout.FontFace(fontSize)
+	if closer, ok := face.(interface{ Close() error }); ok {
+		defer func() { _ = closer.Close() }()
+	}
+
+	r.dc.SetFontFace(face)
 	r.dc.SetColor(nrgba(ink))
 
 	ax := anchorX(anchor)
