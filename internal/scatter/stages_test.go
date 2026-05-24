@@ -26,8 +26,8 @@ func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(s.XAxis).To(Equal(AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification}))
 	g.Expect(s.YAxis).To(Equal(AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity}))
-	g.Expect(s.Size).To(Equal(metric.Name(filesystem.FileSize)))
-	g.Expect(s.FillMetric).To(Equal(metric.Name(filesystem.FileSize)))
+	g.Expect(s.Size).To(Equal(filesystem.FileSize))
+	g.Expect(s.FillMetric).To(Equal(filesystem.FileSize))
 	g.Expect(s.Common().Requested).To(Equal([]metric.Name{
 		filesystem.FileType,
 		filesystem.FileLines,
@@ -53,8 +53,8 @@ func TestResolveMetrics_FillAndBorderOverrideDefaults(t *testing.T) {
 
 	err := ResolveMetrics(s)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(s.FillMetric).To(Equal(metric.Name(filesystem.FileType)))
-	g.Expect(s.BorderMetric).To(Equal(metric.Name(filesystem.FileLines)))
+	g.Expect(s.FillMetric).To(Equal(filesystem.FileType))
+	g.Expect(s.BorderMetric).To(Equal(filesystem.FileLines))
 	g.Expect(s.Common().Requested).To(Equal([]metric.Name{
 		filesystem.FileLines,
 		filesystem.FileSize,

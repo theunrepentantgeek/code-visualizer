@@ -54,6 +54,7 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 
 	size := ptrString(cfg.Size)
 	d, ok := provider.GetDescriptor(metric.Name(size))
+
 	if !ok {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}

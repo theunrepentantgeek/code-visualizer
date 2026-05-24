@@ -47,15 +47,19 @@ func CollectDataset(root *model.Directory, xAxis, yAxis AxisSpec, sizeMetric met
 		x, okX := axisValueForFile(file, xAxis)
 		y, okY := axisValueForFile(file, yAxis)
 		size, okSize := numericValueForFile(file, sizeMetric)
+
 		if !okX {
 			dataset.Skipped.MissingX++
 		}
+
 		if !okY {
 			dataset.Skipped.MissingY++
 		}
+
 		if !okSize {
 			dataset.Skipped.MissingSize++
 		}
+
 		if !okX || !okY || !okSize {
 			return
 		}
@@ -81,6 +85,7 @@ func axisValueForFile(file *model.File, axis AxisSpec) (AxisValue, bool) {
 		if value, ok := file.Quantity(axis.Metric); ok {
 			return AxisValue{Numeric: float64(value)}, true
 		}
+
 		if value, ok := file.Measure(axis.Metric); ok {
 			return AxisValue{Numeric: value}, true
 		}
@@ -93,6 +98,7 @@ func numericValueForFile(file *model.File, name metric.Name) (float64, bool) {
 	if value, ok := file.Quantity(name); ok {
 		return float64(value), true
 	}
+
 	if value, ok := file.Measure(name); ok {
 		return value, true
 	}

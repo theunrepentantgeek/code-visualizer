@@ -21,6 +21,7 @@ func ResolveMetrics(s *State) error {
 	if err != nil {
 		return err
 	}
+
 	yAxis, err := resolveAxisSpec(cfg.YAxis)
 	if err != nil {
 		return err
@@ -45,6 +46,7 @@ func ResolveMetrics(s *State) error {
 func resolveAxisSpec(name *string) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
 	descriptor, ok := provider.GetDescriptor(metricName)
+
 	if !ok {
 		return AxisSpec{}, eris.Errorf("unknown axis metric %q", metricName)
 	}
@@ -63,10 +65,12 @@ func resolveFillMetric(cfg *config.Scatter, size metric.Name) metric.Name {
 func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *config.MetricSpec) []metric.Name {
 	seen := map[metric.Name]bool{}
 	names := make([]metric.Name, 0, 5)
+
 	for _, name := range []metric.Name{xAxis, yAxis, size, fill.MetricName(), border.MetricName()} {
 		if name == "" || seen[name] {
 			continue
 		}
+
 		seen[name] = true
 		names = append(names, name)
 	}

@@ -55,6 +55,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 
 	f, err := os.Open(out)
 	g.Expect(err).NotTo(HaveOccurred())
+
 	defer f.Close()
 
 	_, format, err := image.DecodeConfig(f)
@@ -96,7 +97,9 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 	g.Expect(bytes.Contains(data, []byte("main"))).To(BeTrue())
 
 	dec := xml.NewDecoder(bytes.NewReader(data))
+
 	var rootElement string
+
 	for {
 		tok, xmlErr := dec.Token()
 		if xmlErr != nil {
@@ -105,6 +108,7 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 
 		if se, ok := tok.(xml.StartElement); ok {
 			rootElement = se.Name.Local
+
 			break
 		}
 	}

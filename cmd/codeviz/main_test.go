@@ -549,7 +549,8 @@ func TestScatterCmd_ConfigSuppliesAxesAndSize(t *testing.T) {
 
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
-	g.Expect(os.WriteFile(cfgPath, []byte("scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"), 0o600)).To(Succeed())
+	configText := "scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"
+	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
 
 	cfg := config.New()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
@@ -572,7 +573,8 @@ func TestScatterCmd_CLIAxesOverrideConfig(t *testing.T) {
 
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
-	g.Expect(os.WriteFile(cfgPath, []byte("scatter:\n  xAxis: file-lines\n  yAxis: file-size\n  size: file-size\n"), 0o600)).To(Succeed())
+	configText := "scatter:\n  xAxis: file-lines\n  yAxis: file-size\n  size: file-size\n"
+	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
 
 	cfg := config.New()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
@@ -598,7 +600,8 @@ func TestScatterCmd_MergeConfigAndValidate_LoadsScatterConfig(t *testing.T) {
 
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
-	g.Expect(os.WriteFile(cfgPath, []byte("scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"), 0o600)).To(Succeed())
+	configText := "scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"
+	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
 
 	cfg := config.New()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())

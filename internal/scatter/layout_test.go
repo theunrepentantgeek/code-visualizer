@@ -135,6 +135,7 @@ func TestLayout_CrowdedPlotKeepsMinimumDiscRadius(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	files := make([]*model.File, 0, 500)
+
 	for i := range 500 {
 		file := scatterTestFile(fmt.Sprintf("file-%03d.go", i))
 		file.SetClassification(filesystem.FileType, "go")

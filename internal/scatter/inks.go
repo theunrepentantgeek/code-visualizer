@@ -64,28 +64,41 @@ func buildMetricInk(
 	}
 
 	pal := palette.GetPalette(paletteName)
+
 	if descriptor.Kind == metric.Quantity || descriptor.Kind == metric.Measure {
-		values := make([]float64, 0, len(files))
-		for _, file := range files {
-			if value, ok := numericValueForFile(file, name); ok {
-				values = append(values, value)
-			}
-		}
-		if len(values) == 0 {
-			return canvas.FixedInk(fallback)
-		}
-
-		return canvas.NumericInk(name, values, pal)
+		return buildNumericInk(files, name, pal, fallback)
 	}
 
-	seen := map[string]bool{}
-	categories := make([]string, 0, len(files))
+	return buildCategoricalInk(files, name, pal, fallback)
+}
+
+func buildNumericInk(
+	files []*model.File,
+	name metric.Name,
+	pal palette.ColourPalette,
+	fallback color.RGBA,
+) canvas.Ink {
+	values := make([]float64, 0, len(files))
 	for _, file := range files {
-		if value, ok := file.Classification(name); ok && !seen[value] {
-			seen[value] = true
-			categories = append(categories, value)
+		if value, ok := numericValueForFile(file, name); ok {
+			values = append(values, value)
 		}
 	}
+
+	if len(values) == 0 {
+		return canvas.FixedInk(fallback)
+	}
+
+	return canvas.NumericInk(name, values, pal)
+}
+
+func buildCategoricalInk(
+	files []*model.File,
+	name metric.Name,
+	pal palette.ColourPalette,
+	fallback color.RGBA,
+) canvas.Ink {
+	categories := uniqueCategories(files, name)
 	if len(categories) == 0 {
 		return canvas.FixedInk(fallback)
 	}
@@ -93,4 +106,18 @@ func buildMetricInk(
 	slices.Sort(categories)
 
 	return canvas.CategoricalInk(name, categories, pal)
+}
+
+func uniqueCategories(files []*model.File, name metric.Name) []string {
+	seen := map[string]bool{}
+	categories := make([]string, 0, len(files))
+
+	for _, file := range files {
+		if value, ok := file.Classification(name); ok && !seen[value] {
+			seen[value] = true
+			categories = append(categories, value)
+		}
+	}
+
+	return categories
 }

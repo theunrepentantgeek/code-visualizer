@@ -1,3 +1,4 @@
+//nolint:dupl // Different visualization types will evolve in different ways
 package config
 
 // Spiral holds persistent configuration for spiral timeline visualizations.
