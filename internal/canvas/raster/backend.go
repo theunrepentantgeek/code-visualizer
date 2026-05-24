@@ -252,7 +252,7 @@ func (r *rasterBackend) DrawArcText(
 	r.dc.SetFontFace(fontFaceForSize(fontSize))
 	r.dc.SetColor(nrgba(ink))
 
-	arcRadius := radius - 14.0
+	arcRadius := radius - model.ArcTextInset
 	if arcRadius <= 0 {
 		return
 	}

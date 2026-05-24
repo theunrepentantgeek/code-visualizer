@@ -36,7 +36,7 @@ type ArcTextSpec struct {
 type ArcText struct {
 	Spec   *ArcTextSpec
 	X, Y   float64 // circle centre
-	Radius float64 // circle radius (label is inset from this)
+	Radius float64 // reference arc radius; backends apply their fixed inset from this value
 	Text   string
 }
 

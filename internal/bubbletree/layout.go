@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	minFileRadius    = 2.0  // minimum circle radius for any file node
-	siblingPadding   = 3.0  // gap between sibling circles at the same level
-	parentPadding    = 6.0  // inset from parent circle edge
-	LabelReservation = 14.0 // occupied radius reserved above labelled directory bubbles
+	minFileRadius    = 2.0                   // minimum circle radius for any file node
+	siblingPadding   = 3.0                   // gap between sibling circles at the same level
+	parentPadding    = 6.0                   // inset from parent circle edge
+	LabelReservation = bubbleDefaultFontSize // occupied radius reserved above labelled directory bubbles
 )
 
 // Layout builds a bubble tree from root, positioning circles to fit within
@@ -592,9 +592,17 @@ const canvasMarginFraction = 0.02 // 2% margin on each side
 // root bounding circle removes the large whitespace corners that a circle
 // fit would leave on a non-square canvas.
 func scaleToFit(node *BubbleNode, width, height float64) {
-	if node.Radius <= 0 || len(node.Children) == 0 {
+	if node.Radius <= 0 {
 		node.X = width / 2
 		node.Y = height / 2
+
+		return
+	}
+
+	if len(node.Children) == 0 {
+		node.X = width / 2
+		node.Y = height / 2
+		node.Radius = math.Min(width, height) * (1 - 2*canvasMarginFraction) / 2
 
 		return
 	}

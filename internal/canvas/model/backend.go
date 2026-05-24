@@ -44,3 +44,8 @@ const (
 // DefaultFontSize signals that the backend should use its built-in default
 // font size. Callers can set FontSize to this value instead of a bare 0.
 const DefaultFontSize float64 = 0
+
+// ArcTextInset is the fixed inset applied by canvas backends when drawing text
+// along a circle arc. Callers that need layout-aware arc geometry should use
+// the same value so reserved label space matches rendered output.
+const ArcTextInset float64 = 14.0
