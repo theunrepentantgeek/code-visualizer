@@ -25,6 +25,16 @@
 
 <!-- Append learnings below -->
 
+### Issue #301 — Scatter Visualization Architecture Research (2026-05-23)
+
+- **Recommended package boundary:** add a dedicated `internal/scatter/` package plus `cmd/codeviz/scatter_cmd.go`, following the existing per-viz pattern used by `treemap`, `radialtree`, `bubbletree`, and `spiral`.
+- **Recommended model shape:** treat scatter as a flat file-point layout (`[]ScatterPoint` / `ScatterLayout`), not a tree. Placement is per file, so hierarchy should stay in the scanned model, not in the rendered node type.
+- **Pipeline pattern confirmed:** each viz owns `State`, `ResolveMetrics`, `BuildInksStage`, `BuildLegendStage`, `LayoutStage`, `RenderStage`, and `LogResult`, all built on `stages.CommonState` and `pipeline.Run`.
+- **Canvas constraint:** occlusion ordering is already solved structurally — `internal/canvas` sorts by layer, then preserves insertion order, so scatter can satisfy “draw larger discs first” by sorting points largest-first before `AddDisc`.
+- **Metric/design constraint:** `internal/inks/CollectNumericValues` / `extractNumeric` collapse missing numeric values to `0`, which is fine for colour bucketing but unsafe for scatter axes. Scatter should preserve the distinction between “missing” and zero for X/Y/size placement.
+- **Legend fit:** the shared legend builder already understands fill, border, and size channels; X/Y should remain axis concerns rather than legend entries.
+- **Key file paths:** `internal/treemap/stages.go`, `internal/radialtree/render.go`, `internal/bubbletree/render.go`, `internal/spiral/layout.go`, `internal/canvas/canvas.go`, `internal/canvas/layer.go`, `internal/inks/inks.go`, `internal/legend/legend.go`, `internal/config/*.go`, `cmd/codeviz/*_cmd.go`.
+
 ### PR Review Etiquette (Team Directive, 2026-05-13)
 
 - **PR review reply protocol:** After addressing a PR review comment, ALWAYS reply to the comment indicating what was done. Don't leave reviewers hanging. This closes the feedback loop and keeps communication clear for all stakeholders.
@@ -171,3 +181,13 @@
 - Renamed file `cmd/codeviz/viz_inks.go` → `cmd/codeviz/shape_inks.go` to match the type name
 - Updated all 24 references across 5 files: `shape_inks.go`, `treemap_canvas.go`, `radial_canvas.go`, `bubble_canvas.go`, `spiral_canvas.go`
 - CI clean: build, all tests, lint (76 linters, 0 issues)
+
+### Issue #301 — Scatter Visualization Implementation (2026-05-24)
+
+- **Status:** ✅ Implemented on branch `squad/301-scatter-visualization` in worktree `/home/bevan/github/code-visualizer-301`
+- **Package shape:** scatter follows the existing per-viz pipeline boundary with `internal/scatter/{state,axis,data,inks,layout,render,stages}.go` plus `cmd/codeviz/scatter_cmd.go` and `internal/config/scatter.go`.
+- **Model pattern:** keep scatter flat and file-centric — `Dataset` filters files with complete X/Y/size data, `ScatterLayout` carries plot geometry plus resolved axes, and rendering consumes sorted `[]ScatterPoint` rather than a tree.
+- **Axis pattern:** axis resolution stays local to scatter; numeric axes produce ticks/ranges, categorical axes produce alphabetical equal-width bands, and axis titles carry X/Y semantics instead of legend entries.
+- **Rendering rule:** z-order is handled structurally by sorting points radius-descending before `AddDisc`; labels are always rendered on `LayerOverlay`, and crowded plots clamp radii to a readable minimum even when that collapses size differentiation.
+- **Observability:** skipped files are counted separately for missing X, Y, and size and logged in `internal/scatter/stages.go` so scatter never silently coerces missing numeric values to zero.
+- **Key file paths:** `internal/scatter/layout.go`, `internal/scatter/render.go`, `internal/scatter/stages.go`, `internal/scatter/data.go`, `cmd/codeviz/scatter_cmd.go`, `internal/config/scatter.go`.
