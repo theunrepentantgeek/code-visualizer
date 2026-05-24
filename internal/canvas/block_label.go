@@ -26,22 +26,23 @@ func (c *Canvas) AddBlockLabel(layer Layer, label BlockLabel, format ImageFormat
 		return
 	}
 
-	fontSize, widths, lineHeight, totalHeight, ok := fitBlockLabel(lines, label.W, label.H)
+	layout, ok := fitBlockLabel(lines, label.W, label.H)
 	if !ok {
 		return
 	}
 
 	if format != FormatSVG {
 		switch {
-		case lineHeight <= omittedLineHeight:
+		case layout.lineHeight <= omittedLineHeight:
 			return
-		case lineHeight <= greekedLineHeight:
-			c.addGreekedBlockLabel(layer, label, widths, lineHeight, totalHeight)
+		case layout.lineHeight <= greekedLineHeight:
+			c.addGreekedBlockLabel(layer, label, layout.widths, layout.lineHeight, layout.totalHeight)
+
 			return
 		}
 	}
 
-	c.addTextBlockLabel(layer, label, lines, fontSize, lineHeight, totalHeight)
+	c.addTextBlockLabel(layer, label, lines, layout.fontSize, layout.lineHeight, layout.totalHeight)
 }
 
 func compactLabelLines(lines []string) []string {
@@ -55,54 +56,61 @@ func compactLabelLines(lines []string) []string {
 	return compact
 }
 
-func fitBlockLabel(lines []string, maxWidth, maxHeight float64) (
-	fontSize float64,
-	widths []float64,
-	lineHeight float64,
-	totalHeight float64,
-	ok bool,
-) {
+type fittedBlockLabel struct {
+	fontSize    float64
+	widths      []float64
+	lineHeight  float64
+	totalHeight float64
+}
+
+func fitBlockLabel(lines []string, maxWidth, maxHeight float64) (fittedBlockLabel, bool) {
 	upper := min(maxWidth, maxHeight/float64(len(lines)))
 	if upper <= 0 {
-		return 0, nil, 0, 0, false
+		return fittedBlockLabel{}, false
 	}
 
 	low := 0.0
 	high := upper
+	best := fittedBlockLabel{}
+
 	for range 14 {
 		mid := (low + high) / 2.0
 		if mid <= 0 {
 			break
 		}
 
-		candidateWidths, candidateLineHeight, candidateTotalHeight := measureBlockLabel(lines, mid)
-		if candidateTotalHeight <= maxHeight && slices.Max(candidateWidths) <= maxWidth {
+		candidate := measureBlockLabel(lines, mid)
+		if candidate.totalHeight <= maxHeight && slices.Max(candidate.widths) <= maxWidth {
 			low = mid
-			widths = candidateWidths
-			lineHeight = candidateLineHeight
-			totalHeight = candidateTotalHeight
+			candidate.fontSize = mid
+			best = candidate
 		} else {
 			high = mid
 		}
 	}
 
 	if low <= 0 {
-		return 0, nil, 0, 0, false
+		return fittedBlockLabel{}, false
 	}
 
-	return low, widths, lineHeight, totalHeight, true
+	return best, true
 }
 
-func measureBlockLabel(lines []string, fontSize float64) ([]float64, float64, float64) {
+func measureBlockLabel(lines []string, fontSize float64) fittedBlockLabel {
 	widths := make([]float64, len(lines))
 	lineHeight := 0.0
+
 	for i, line := range lines {
 		width, measuredLineHeight := textlayout.MeasureString(line, fontSize)
 		widths[i] = width
 		lineHeight = max(lineHeight, measuredLineHeight)
 	}
 
-	return widths, lineHeight, lineHeight * float64(len(lines))
+	return fittedBlockLabel{
+		widths:      widths,
+		lineHeight:  lineHeight,
+		totalHeight: lineHeight * float64(len(lines)),
+	}
 }
 
 func (c *Canvas) addTextBlockLabel(

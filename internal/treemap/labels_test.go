@@ -39,6 +39,11 @@ func TestBuildBlockLabels_IncludesOnlyConfiguredMetricLines(t *testing.T) {
 		Border: filesystem.FileLines,
 	})
 	g.Expect(labels).To(HaveLen(1))
+
+	if len(labels) == 0 {
+		return
+	}
+
 	g.Expect(labels[0].Lines).To(Equal([]string{"alpha.go", "128", "go", "12"}))
 }
 
@@ -63,7 +68,17 @@ func TestBuildBlockLabels_OmitsUnconfiguredMetrics(t *testing.T) {
 		}},
 	}
 
-	labels := buildBlockLabels(rects, root, canvas.FixedInk(color.RGBA{A: 255}), LabelMetrics{Size: filesystem.FileSize})
+	labels := buildBlockLabels(
+		rects,
+		root,
+		canvas.FixedInk(color.RGBA{A: 255}),
+		LabelMetrics{Size: filesystem.FileSize},
+	)
 	g.Expect(labels).To(HaveLen(1))
+
+	if len(labels) == 0 {
+		return
+	}
+
 	g.Expect(labels[0].Lines).To(Equal([]string{"beta.go", "64"}))
 }

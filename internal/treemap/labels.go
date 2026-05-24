@@ -24,36 +24,63 @@ func buildBlockLabels(
 	fillInk canvas.Ink,
 	metrics LabelMetrics,
 ) []canvas.BlockLabel {
-	if dir == nil {
-		return nil
-	}
-
 	labels := make([]canvas.BlockLabel, 0)
-	if !rect.IsDirectory {
+	if dir == nil || !rect.IsDirectory {
 		return labels
 	}
 
 	fileIdx := 0
 	dirIdx := 0
+
 	for i := range rect.Children {
 		child := rect.Children[i]
-		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			labels = append(labels, buildBlockLabels(child, dir.Dirs[dirIdx], fillInk, metrics)...)
-			dirIdx++
+		if child.IsDirectory {
+			labels, dirIdx = appendDirectoryLabels(labels, child, dir, dirIdx, fillInk, metrics)
+
 			continue
 		}
 
-		if child.IsDirectory || fileIdx >= len(dir.Files) {
-			continue
-		}
-
-		if label, ok := buildFileLabel(child, dir.Files[fileIdx], fillInk, metrics); ok {
-			labels = append(labels, label)
-		}
-		fileIdx++
+		labels, fileIdx = appendFileLabels(labels, child, dir, fileIdx, fillInk, metrics)
 	}
 
 	return labels
+}
+
+func appendDirectoryLabels(
+	labels []canvas.BlockLabel,
+	child TreemapRectangle,
+	dir *model.Directory,
+	dirIdx int,
+	fillInk canvas.Ink,
+	metrics LabelMetrics,
+) ([]canvas.BlockLabel, int) {
+	if dirIdx >= len(dir.Dirs) {
+		return labels, dirIdx
+	}
+
+	labels = append(labels, buildBlockLabels(child, dir.Dirs[dirIdx], fillInk, metrics)...)
+
+	return labels, dirIdx + 1
+}
+
+func appendFileLabels(
+	labels []canvas.BlockLabel,
+	child TreemapRectangle,
+	dir *model.Directory,
+	fileIdx int,
+	fillInk canvas.Ink,
+	metrics LabelMetrics,
+) ([]canvas.BlockLabel, int) {
+	if fileIdx >= len(dir.Files) {
+		return labels, fileIdx
+	}
+
+	file := dir.Files[fileIdx]
+	if label, ok := buildFileLabel(child, file, fillInk, metrics); ok {
+		labels = append(labels, label)
+	}
+
+	return labels, fileIdx + 1
 }
 
 func buildFileLabel(
@@ -66,46 +93,55 @@ func buildFileLabel(
 		return canvas.BlockLabel{}, false
 	}
 
-	x, y, w, h, ok := insetLabelBounds(rect, blockLabelPadding)
+	bounds, ok := insetLabelBounds(rect, blockLabelPadding)
 	if !ok {
 		return canvas.BlockLabel{}, false
 	}
 
 	lines := []string{rect.Label}
-	if line, ok := formatMetricValue(file, metrics.Size); ok {
-		lines = append(lines, line)
-	}
-	if metrics.Fill != "" {
-		if line, ok := formatMetricValue(file, metrics.Fill); ok {
-			lines = append(lines, line)
-		}
-	}
-	if metrics.Border != "" {
-		if line, ok := formatMetricValue(file, metrics.Border); ok {
-			lines = append(lines, line)
-		}
-	}
+	lines = appendMetricLine(lines, file, metrics.Size)
+	lines = appendMetricLine(lines, file, metrics.Fill)
+	lines = appendMetricLine(lines, file, metrics.Border)
 
 	fillColour := fillInk.Dip(pkginks.MetricValueForFile(file, fillInk))
 
 	return canvas.BlockLabel{
-		X:     x,
-		Y:     y,
-		W:     w,
-		H:     h,
+		X:     bounds.x,
+		Y:     bounds.y,
+		W:     bounds.w,
+		H:     bounds.h,
 		Lines: lines,
 		Ink:   canvas.TextColourFor(fillColour),
 	}, true
 }
 
-func insetLabelBounds(rect TreemapRectangle, padding float64) (x, y, w, h float64, ok bool) {
-	w = rect.W - 2*padding
-	h = rect.H - 2*padding
-	if w <= 0 || h <= 0 {
-		return 0, 0, 0, 0, false
+type labelBounds struct {
+	x float64
+	y float64
+	w float64
+	h float64
+}
+
+func insetLabelBounds(rect TreemapRectangle, padding float64) (labelBounds, bool) {
+	bounds := labelBounds{
+		x: rect.X + padding,
+		y: rect.Y + padding,
+		w: rect.W - 2*padding,
+		h: rect.H - 2*padding,
+	}
+	if bounds.w <= 0 || bounds.h <= 0 {
+		return labelBounds{}, false
 	}
 
-	return rect.X + padding, rect.Y + padding, w, h, true
+	return bounds, true
+}
+
+func appendMetricLine(lines []string, file *model.File, name metric.Name) []string {
+	if line, ok := formatMetricValue(file, name); ok {
+		return append(lines, line)
+	}
+
+	return lines
 }
 
 func formatMetricValue(file *model.File, name metric.Name) (string, bool) {
@@ -116,9 +152,11 @@ func formatMetricValue(file *model.File, name metric.Name) (string, bool) {
 	if value, ok := file.Quantity(name); ok {
 		return strconv.FormatInt(value, 10), true
 	}
+
 	if value, ok := file.Measure(name); ok {
 		return strconv.FormatFloat(value, 'f', -1, 64), true
 	}
+
 	if value, ok := file.Classification(name); ok {
 		return value, true
 	}
