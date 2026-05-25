@@ -10,6 +10,7 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
@@ -531,4 +532,143 @@ func TestSpiralCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	cmd := &SpiralCmd{}
 	err := cmd.validateConfig(cfg.Spiral)
 	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
+}
+
+func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"render", "scatter", ".",
+		"-o", "out.png",
+		"--x-axis", "file-type",
+		"--y-axis", "file-lines",
+		"-s", "file-size",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.Render.Scatter.XAxis).To(Equal(metric.Name("file-type")))
+	g.Expect(cli.Render.Scatter.YAxis).To(Equal(metric.Name("file-lines")))
+	g.Expect(cli.Render.Scatter.Size).To(Equal(metric.Name("file-size")))
+}
+
+func TestScatterCmd_Validate_EmptyAxesPass(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cmd := &ScatterCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		XAxis:      "",
+		YAxis:      "",
+		Size:       "",
+	}
+
+	err := cmd.Validate()
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestScatterCmd_ValidateConfig_CategoricalAxesAreAccepted(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Scatter.XAxis = new("file-type")
+	cfg.Scatter.YAxis = new("file-lines")
+	cfg.Scatter.Size = new("file-size")
+
+	cmd := &ScatterCmd{}
+	err := cmd.validateConfig(cfg.Scatter)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestScatterCmd_ValidateConfig_SizeMustBeNumeric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Scatter.XAxis = new("file-type")
+	cfg.Scatter.YAxis = new("file-lines")
+	cfg.Scatter.Size = new("file-type")
+
+	cmd := &ScatterCmd{}
+	err := cmd.validateConfig(cfg.Scatter)
+	g.Expect(err).To(MatchError(ContainSubstring("size metric must be numeric")))
+}
+
+func TestScatterCmd_ConfigSuppliesAxesAndSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	configText := "scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"
+	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &ScatterCmd{TargetPath: ".", Output: "out.png"}
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Scatter).NotTo(BeNil())
+	g.Expect(cfg.Scatter.XAxis).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.XAxis).To(Equal("file-type"))
+	g.Expect(cfg.Scatter.YAxis).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.YAxis).To(Equal("file-lines"))
+	g.Expect(cfg.Scatter.Size).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
+}
+
+func TestScatterCmd_CLIAxesOverrideConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	configText := "scatter:\n  xAxis: file-lines\n  yAxis: file-size\n  size: file-size\n"
+	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &ScatterCmd{
+		TargetPath: ".",
+		Output:     "out.png",
+		XAxis:      "file-type",
+		YAxis:      "file-lines",
+		Size:       "file-size",
+	}
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Scatter).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.XAxis).To(Equal("file-type"))
+	g.Expect(*cfg.Scatter.YAxis).To(Equal("file-lines"))
+	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
+}
+
+func TestScatterCmd_MergeConfigAndValidate_LoadsScatterConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+	configText := "scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"
+	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
+
+	cfg := config.New()
+	g.Expect(cfg.Load(cfgPath)).To(Succeed())
+
+	cmd := &ScatterCmd{TargetPath: ".", Output: filepath.Join(dir, "out.png")}
+	flags := &Flags{Config: cfg, configPath: cfgPath}
+
+	err := cmd.mergeConfigAndValidate(flags)
+	g.Expect(err).NotTo(HaveOccurred())
 }
