@@ -17,14 +17,20 @@ import (
 func ResolveMetrics(s *State) error {
 	cfg := s.Config
 
+	if stages.PtrString(cfg.XAxis) == "" {
+		return eris.New("x-axis metric is required")
+	}
 	xAxis, err := resolveAxisSpec(cfg.XAxis)
 	if err != nil {
-		return err
+		return eris.Wrap(err, "invalid x-axis metric")
 	}
 
+	if stages.PtrString(cfg.YAxis) == "" {
+		return eris.New("y-axis metric is required")
+	}
 	yAxis, err := resolveAxisSpec(cfg.YAxis)
 	if err != nil {
-		return err
+		return eris.Wrap(err, "invalid y-axis metric")
 	}
 
 	size := metric.Name(stages.PtrString(cfg.Size))
