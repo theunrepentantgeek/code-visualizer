@@ -20,6 +20,7 @@ func ResolveMetrics(s *State) error {
 	if stages.PtrString(cfg.XAxis) == "" {
 		return eris.New("x-axis metric is required")
 	}
+
 	xAxis, err := resolveAxisSpec(cfg.XAxis)
 	if err != nil {
 		return eris.Wrap(err, "invalid x-axis metric")
@@ -28,6 +29,7 @@ func ResolveMetrics(s *State) error {
 	if stages.PtrString(cfg.YAxis) == "" {
 		return eris.New("y-axis metric is required")
 	}
+
 	yAxis, err := resolveAxisSpec(cfg.YAxis)
 	if err != nil {
 		return eris.Wrap(err, "invalid y-axis metric")
