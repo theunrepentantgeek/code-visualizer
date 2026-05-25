@@ -8,7 +8,9 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/golang"
 	"github.com/theunrepentantgeek/code-visualizer/internal/table"
 )
 
@@ -18,27 +20,56 @@ type HelpMetricsCmd struct{}
 //nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpMetricsCmd) Run(_ *Flags) error {
 	descriptors := provider.AllDescriptors()
-
-	tbl := table.New("Metric", "Kind", "Default Palette", "Description")
-	tbl.SetMaxWidth(consoleWidth())
+	groups := map[string][]provider.MetricDescriptor{
+		"Filesystem metrics": nil,
+		"Git metrics":        nil,
+		"Go metrics":         nil,
+		"Other metrics":      nil,
+	}
 
 	hasGit := false
 
 	for _, d := range descriptors {
-		k := kindLabel(d.Kind)
-		desc := d.Description
-
 		if git.IsGitMetric(d.Name) {
 			hasGit = true
-			desc += " †"
 		}
 
-		tbl.AddRow(string(d.Name), k, string(d.DefaultPalette), desc)
+		groups[providerGroupLabel(d.Name)] = append(groups[providerGroupLabel(d.Name)], d)
 	}
 
 	content := &strings.Builder{}
+	for _, label := range []string{
+		"Filesystem metrics",
+		"Git metrics",
+		"Go metrics",
+		"Other metrics",
+	} {
+		group := groups[label]
+		if len(group) == 0 {
+			continue
+		}
 
-	tbl.WriteTo(content)
+		if content.Len() > 0 {
+			content.WriteString("\n")
+		}
+
+		content.WriteString(label)
+		content.WriteString("\n\n")
+
+		tbl := table.New("Metric", "Kind", "Default Palette", "Description")
+		tbl.SetMaxWidth(consoleWidth())
+
+		for _, d := range group {
+			desc := d.Description
+			if git.IsGitMetric(d.Name) {
+				desc += " †"
+			}
+
+			tbl.AddRow(string(d.Name), kindLabel(d.Kind), string(d.DefaultPalette), desc)
+		}
+
+		tbl.WriteTo(content)
+	}
 
 	fmt.Print(content.String())
 
@@ -47,6 +78,19 @@ func (HelpMetricsCmd) Run(_ *Flags) error {
 	}
 
 	return nil
+}
+
+func providerGroupLabel(name metric.Name) string {
+	switch {
+	case git.IsGitMetric(name):
+		return "Git metrics"
+	case golang.IsGoMetric(name):
+		return "Go metrics"
+	case name == filesystem.FileSize || name == filesystem.FileLines || name == filesystem.FileType:
+		return "Filesystem metrics"
+	default:
+		return "Other metrics"
+	}
 }
 
 // consoleWidth returns the width of the terminal, falling back to 120.
