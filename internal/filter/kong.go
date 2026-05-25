@@ -9,75 +9,102 @@ import (
 
 const RuleMapperName = "filterrule"
 
-// RuleMapper decodes --include/--exclude flags into filter rules.
-type RuleMapper struct{}
+var ruleSliceType = reflect.TypeOf([]Rule{})
 
-func (RuleMapper) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
+type ruleBinding struct {
+	filters *[]Rule
+	mode    Mode
+}
+
+// RuleMapper decodes --include/--exclude flags into filter rules.
+type RuleMapper struct {
+	bindings map[uintptr]ruleBinding
+}
+
+func NewRuleMapper(root any) RuleMapper {
+	mapper := RuleMapper{
+		bindings: make(map[uintptr]ruleBinding),
+	}
+
+	mapper.bindValue(reflect.ValueOf(root))
+
+	return mapper
+}
+
+func (m RuleMapper) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
 	var pattern string
 	if err := ctx.Scan.PopValueInto("pattern", &pattern); err != nil {
 		return err
 	}
 
-	mode := Include
-	if ctx.Value.Name == "exclude" {
-		mode = Exclude
+	binding, ok := m.bindings[ctx.Value.Target.Addr().Pointer()]
+	if !ok {
+		return eris.Errorf("filter rule mapper not bound for %q", ctx.Value.Name)
 	}
 
-	rule, err := NewRule(pattern, mode)
+	rule, err := NewRule(pattern, binding.mode)
 	if err != nil {
 		return eris.Wrapf(err, "invalid %s %q", ctx.Value.Name, pattern)
 	}
 
 	target.Set(reflect.Append(target, reflect.ValueOf(rule)))
+	*binding.filters = append(*binding.filters, rule)
 
 	return nil
 }
 
-// MergeFlagRules merges parsed include/exclude rules in the order their flags
-// appeared on the command line.
-func MergeFlagRules(kctx *kong.Context, includes []Rule, excludes []Rule) ([]Rule, error) {
-	if kctx == nil {
-		rules := make([]Rule, 0, len(includes)+len(excludes))
-		rules = append(rules, includes...)
-		rules = append(rules, excludes...)
-
-		return rules, nil
+func (m RuleMapper) bindValue(value reflect.Value) {
+	if !value.IsValid() {
+		return
 	}
 
-	rules := make([]Rule, 0, len(includes)+len(excludes))
-	includeIndex := 0
-	excludeIndex := 0
-
-	for _, path := range kctx.Path {
-		if path.Flag == nil || path.Resolved {
-			continue
+	for value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return
 		}
 
-		switch path.Flag.Name {
-		case "include":
-			if includeIndex >= len(includes) {
-				return nil, eris.New("failed to reconcile include flags")
-			}
+		value = value.Elem()
+	}
 
-			rules = append(rules, includes[includeIndex])
-			includeIndex++
-		case "exclude":
-			if excludeIndex >= len(excludes) {
-				return nil, eris.New("failed to reconcile exclude flags")
-			}
+	if value.Kind() != reflect.Struct {
+		return
+	}
 
-			rules = append(rules, excludes[excludeIndex])
-			excludeIndex++
+	m.bindStruct(value)
+
+	for i := range value.NumField() {
+		field := value.Field(i)
+		switch field.Kind() {
+		case reflect.Pointer, reflect.Struct:
+			m.bindValue(field)
 		}
 	}
+}
 
-	if includeIndex != len(includes) {
-		return nil, eris.New("failed to reconcile include flags")
+func (m RuleMapper) bindStruct(value reflect.Value) {
+	include := value.FieldByName("Include")
+	exclude := value.FieldByName("Exclude")
+	filters := value.FieldByName("Filters")
+
+	if !include.IsValid() || !exclude.IsValid() || !filters.IsValid() {
+		return
 	}
 
-	if excludeIndex != len(excludes) {
-		return nil, eris.New("failed to reconcile exclude flags")
+	if include.Type() != ruleSliceType || exclude.Type() != ruleSliceType || filters.Type() != ruleSliceType {
+		return
 	}
 
-	return rules, nil
+	filtersPtr, ok := filters.Addr().Interface().(*[]Rule)
+	if !ok {
+		return
+	}
+
+	m.bindings[include.Addr().Pointer()] = ruleBinding{
+		filters: filtersPtr,
+		mode:    Include,
+	}
+	m.bindings[exclude.Addr().Pointer()] = ruleBinding{
+		filters: filtersPtr,
+		mode:    Exclude,
+	}
 }

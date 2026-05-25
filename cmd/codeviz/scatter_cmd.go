@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/alecthomas/kong"
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
@@ -37,17 +36,6 @@ type ScatterCmd struct {
 }
 
 func (c *ScatterCmd) Validate() error {
-	return nil
-}
-
-func (c *ScatterCmd) AfterApply(kctx *kong.Context) error {
-	rules, err := filter.MergeFlagRules(kctx, c.Include, c.Exclude)
-	if err != nil {
-		return err
-	}
-
-	c.Filters = rules
-
 	return nil
 }
 

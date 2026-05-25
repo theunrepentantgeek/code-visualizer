@@ -204,32 +204,37 @@ func TestParseFilterFlag_BangOnly(t *testing.T) {
 	g.Expect(err.Error()).To(ContainSubstring("empty filter"))
 }
 
-func TestMergeFlagRules_PreservesCommandLineOrder(t *testing.T) {
+func TestRuleMapper_PopulatesFiltersDuringParseInCommandLineOrder(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	var cli struct {
-		Include []Rule `type:"filterrule"`
-		Exclude []Rule `type:"filterrule"`
+		Include []Rule `type:"filterrule" name:"include"`
+		Exclude []Rule `type:"filterrule" name:"exclude"`
 		Filters []Rule `kong:"-"`
 	}
 
 	parser, err := kong.New(
 		&cli,
-		kong.NamedMapper(RuleMapperName, RuleMapper{}),
+		kong.NamedMapper(RuleMapperName, NewRuleMapper(&cli)),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	kctx, err := parser.Parse([]string{
+	_, err = parser.Parse([]string{
 		"--exclude", ".*",
 		"--include", ".github/**",
 		"--exclude", "**/*.log",
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 
-	rules, err := MergeFlagRules(kctx, cli.Include, cli.Exclude)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(rules).To(Equal([]Rule{
+	g.Expect(cli.Include).To(Equal([]Rule{
+		{Pattern: ".github/**", Mode: Include},
+	}))
+	g.Expect(cli.Exclude).To(Equal([]Rule{
+		{Pattern: ".*", Mode: Exclude},
+		{Pattern: "**/*.log", Mode: Exclude},
+	}))
+	g.Expect(cli.Filters).To(Equal([]Rule{
 		{Pattern: ".*", Mode: Exclude},
 		{Pattern: ".github/**", Mode: Include},
 		{Pattern: "**/*.log", Mode: Exclude},

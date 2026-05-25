@@ -2,7 +2,6 @@
 package main
 
 import (
-	"github.com/alecthomas/kong"
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
@@ -39,17 +38,6 @@ type BubbletreeCmd struct {
 }
 
 func (c *BubbletreeCmd) Validate() error {
-	return nil
-}
-
-func (c *BubbletreeCmd) AfterApply(kctx *kong.Context) error {
-	rules, err := filter.MergeFlagRules(kctx, c.Include, c.Exclude)
-	if err != nil {
-		return err
-	}
-
-	c.Filters = rules
-
 	return nil
 }
 

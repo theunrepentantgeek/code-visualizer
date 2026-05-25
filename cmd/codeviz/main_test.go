@@ -47,7 +47,12 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 	for _, tc := range cases {
 		cli := CLI{}
 
-		parser, err := newParser(&cli, kong.Exit(func(int) {}))
+		parser, err := kong.New(
+			&cli,
+			kong.Name("codeviz"),
+			filterMapperOption(&cli),
+			kong.Exit(func(int) {}),
+		)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		_, err = parser.Parse(tc.args)
@@ -67,7 +72,12 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cli := CLI{}
-	parser, err := newParser(&cli, kong.Exit(func(int) {}))
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(&cli),
+		kong.Exit(func(int) {}),
+	)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{"render", "treemap", ".", "-o", "out.png", "-s", "file-size", "--flat"})
@@ -98,7 +108,12 @@ func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 
 	for _, tc := range cases {
 		cli := CLI{}
-		parser, err := newParser(&cli, kong.Exit(func(int) {}))
+		parser, err := kong.New(
+			&cli,
+			kong.Name("codeviz"),
+			filterMapperOption(&cli),
+			kong.Exit(func(int) {}),
+		)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		_, err = parser.Parse(tc.args)
@@ -206,7 +221,12 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cli := CLI{}
-	parser, err := newParser(&cli, kong.Exit(func(int) {}))
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(&cli),
+		kong.Exit(func(int) {}),
+	)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
@@ -231,7 +251,7 @@ func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
 		Exclude:    []filter.Rule{{Pattern: ".*", Mode: filter.Exclude}, {Pattern: "**/*.log", Mode: filter.Exclude}},
 	}
 
-	err := cmd.AfterApply(nil)
+	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -240,7 +260,12 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cli := CLI{}
-	parser, err := newParser(&cli, kong.Exit(func(int) {}))
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(&cli),
+		kong.Exit(func(int) {}),
+	)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
@@ -573,7 +598,12 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cli := CLI{}
-	parser, err := newParser(&cli, kong.Exit(func(int) {}))
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(&cli),
+		kong.Exit(func(int) {}),
+	)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
