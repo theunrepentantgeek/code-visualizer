@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/alecthomas/kong"
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
@@ -31,16 +32,19 @@ type SpiralCmd struct {
 	Width  int `default:"1920" help:"Canvas width in pixels."`
 	Height int `default:"1920" help:"Canvas height in pixels."`
 
-	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
-	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	Filters            []filter.Rule `kong:"-"`
+	Include            []string      `name:"include" help:"Include pattern." placeholder:"PATTERN"`
+	Exclude            []string      `name:"exclude" help:"Exclude pattern." placeholder:"PATTERN"`
+	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 }
 
-func (c *SpiralCmd) Validate() error {
-	for _, f := range c.Filter {
-		if _, err := filter.ParseFilterFlag(f); err != nil {
-			return eris.Wrapf(err, "invalid filter %q", f)
-		}
+func (c *SpiralCmd) Validate(kctx *kong.Context) error {
+	rules, err := buildOrderedFilters(kctx, c.Include, c.Exclude)
+	if err != nil {
+		return err
 	}
+
+	c.Filters = rules
 
 	return nil
 }
@@ -94,7 +98,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
-			CLIFilters: c.Filter,
+			CLIFilters: c.Filters,
 		},
 		Config:             flags.Config.Spiral,
 		IncludeBinaryFiles: c.IncludeBinaryFiles,

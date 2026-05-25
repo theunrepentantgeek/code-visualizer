@@ -107,8 +107,19 @@ func ParseFilterFlag(s string) (Rule, error) {
 		pattern = s[1:]
 	}
 
+	return NewRule(pattern, mode)
+}
+
+// NewRule validates a glob pattern and constructs a Rule with the given mode.
+func NewRule(pattern string, mode Mode) (Rule, error) {
 	if pattern == "" {
 		return Rule{}, eris.New("empty filter pattern after prefix")
+	}
+
+	switch mode {
+	case Include, Exclude:
+	default:
+		return Rule{}, eris.Errorf("unknown filter mode: %d", mode)
 	}
 
 	// Validate the glob pattern

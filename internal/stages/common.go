@@ -33,7 +33,7 @@ type CommonState struct {
 	Output     string
 	Flags      *Flags
 	RootConfig *config.Config
-	CLIFilters []string
+	CLIFilters []filter.Rule
 
 	// Populated by shared stages during the pipeline:
 	FilterRules []filter.Rule    // BuildFilterRules

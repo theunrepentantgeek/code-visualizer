@@ -10,6 +10,7 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -219,12 +220,12 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 		TargetPath: ".",
 		Output:     "out.png",
 		Size:       "file-size",
-		Filter:     []string{"![invalid"},
+		Exclude:    []string{"[invalid"},
 	}
 
-	err := cmd.Validate()
+	err := cmd.Validate(nil)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring("invalid filter")))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid exclude")))
 }
 
 func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
@@ -235,11 +236,40 @@ func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
 		TargetPath: ".",
 		Output:     "out.png",
 		Size:       "file-size",
-		Filter:     []string{"!.*", "*.go", "!**/*.log"},
+		Include:    []string{"*.go"},
+		Exclude:    []string{".*", "**/*.log"},
 	}
 
-	err := cmd.Validate()
+	err := cmd.Validate(nil)
 	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"render", "treemap", ".",
+		"-o", "out.png",
+		"-s", "file-size",
+		"--exclude", ".*",
+		"--include", ".github/**",
+		"--exclude", "**/*.log",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.Render.Treemap.Filters).To(Equal([]filter.Rule{
+		{Pattern: ".*", Mode: filter.Exclude},
+		{Pattern: ".github/**", Mode: filter.Include},
+		{Pattern: "**/*.log", Mode: filter.Exclude},
+	}))
 }
 
 // Issue #99 — config-supplied parameters bypass early validation.
@@ -257,7 +287,7 @@ func TestTreemapCmd_Validate_EmptySize_Passes(t *testing.T) {
 		Size:       "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate()
+	err := cmd.Validate(nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -271,7 +301,7 @@ func TestRadialCmd_Validate_EmptyDiscSize_Passes(t *testing.T) {
 		DiscSize:   "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate()
+	err := cmd.Validate(nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -285,7 +315,7 @@ func TestBubbletreeCmd_Validate_EmptySize_Passes(t *testing.T) {
 		Size:       "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate()
+	err := cmd.Validate(nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -455,7 +485,7 @@ func TestSpiralCmd_Validate_EmptySize_Passes(t *testing.T) {
 		Size:       "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate()
+	err := cmd.Validate(nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -571,7 +601,7 @@ func TestScatterCmd_Validate_EmptyAxesPass(t *testing.T) {
 		Size:       "",
 	}
 
-	err := cmd.Validate()
+	err := cmd.Validate(nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
