@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -46,11 +47,7 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 	for _, tc := range cases {
 		cli := CLI{}
 
-		parser, err := kong.New(
-			&cli,
-			kong.Name("codeviz"),
-			kong.Exit(func(int) {}),
-		)
+		parser, err := newParser(&cli, kong.Exit(func(int) {}))
 		g.Expect(err).NotTo(HaveOccurred())
 
 		_, err = parser.Parse(tc.args)
@@ -70,11 +67,7 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cli := CLI{}
-	parser, err := kong.New(
-		&cli,
-		kong.Name("codeviz"),
-		kong.Exit(func(int) {}),
-	)
+	parser, err := newParser(&cli, kong.Exit(func(int) {}))
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{"render", "treemap", ".", "-o", "out.png", "-s", "file-size", "--flat"})
@@ -105,11 +98,7 @@ func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 
 	for _, tc := range cases {
 		cli := CLI{}
-		parser, err := kong.New(
-			&cli,
-			kong.Name("codeviz"),
-			kong.Exit(func(int) {}),
-		)
+		parser, err := newParser(&cli, kong.Exit(func(int) {}))
 		g.Expect(err).NotTo(HaveOccurred())
 
 		_, err = parser.Parse(tc.args)
@@ -216,14 +205,16 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cmd := &TreemapCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		Size:       "file-size",
-		Exclude:    []string{"[invalid"},
-	}
+	cli := CLI{}
+	parser, err := newParser(&cli, kong.Exit(func(int) {}))
+	g.Expect(err).NotTo(HaveOccurred())
 
-	err := cmd.Validate(nil)
+	_, err = parser.Parse([]string{
+		"render", "treemap", ".",
+		"-o", "out.png",
+		"-s", "file-size",
+		"--exclude", "[invalid",
+	})
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(ContainSubstring("invalid exclude")))
 }
@@ -236,11 +227,11 @@ func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
 		TargetPath: ".",
 		Output:     "out.png",
 		Size:       "file-size",
-		Include:    []string{"*.go"},
-		Exclude:    []string{".*", "**/*.log"},
+		Include:    []filter.Rule{{Pattern: "*.go", Mode: filter.Include}},
+		Exclude:    []filter.Rule{{Pattern: ".*", Mode: filter.Exclude}, {Pattern: "**/*.log", Mode: filter.Exclude}},
 	}
 
-	err := cmd.Validate(nil)
+	err := cmd.AfterApply(nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -249,11 +240,7 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cli := CLI{}
-	parser, err := kong.New(
-		&cli,
-		kong.Name("codeviz"),
-		kong.Exit(func(int) {}),
-	)
+	parser, err := newParser(&cli, kong.Exit(func(int) {}))
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
@@ -265,11 +252,28 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 		"--exclude", "**/*.log",
 	})
 	g.Expect(err).NotTo(HaveOccurred())
+	expectRuleSliceField(g, cli.Render.Treemap, "Include", []filter.Rule{
+		{Pattern: ".github/**", Mode: filter.Include},
+	})
+	expectRuleSliceField(g, cli.Render.Treemap, "Exclude", []filter.Rule{
+		{Pattern: ".*", Mode: filter.Exclude},
+		{Pattern: "**/*.log", Mode: filter.Exclude},
+	})
 	g.Expect(cli.Render.Treemap.Filters).To(Equal([]filter.Rule{
 		{Pattern: ".*", Mode: filter.Exclude},
 		{Pattern: ".github/**", Mode: filter.Include},
 		{Pattern: "**/*.log", Mode: filter.Exclude},
 	}))
+}
+
+func expectRuleSliceField(g *WithT, cmd any, fieldName string, want []filter.Rule) {
+	value := reflect.ValueOf(cmd)
+	field := value.FieldByName(fieldName)
+	g.Expect(field.IsValid()).To(BeTrue())
+	g.Expect(field.Type()).To(Equal(reflect.TypeOf([]filter.Rule{})))
+
+	got := field.Interface().([]filter.Rule)
+	g.Expect(got).To(Equal(want))
 }
 
 // Issue #99 — config-supplied parameters bypass early validation.
@@ -287,7 +291,7 @@ func TestTreemapCmd_Validate_EmptySize_Passes(t *testing.T) {
 		Size:       "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate(nil)
+	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -301,7 +305,7 @@ func TestRadialCmd_Validate_EmptyDiscSize_Passes(t *testing.T) {
 		DiscSize:   "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate(nil)
+	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -315,7 +319,7 @@ func TestBubbletreeCmd_Validate_EmptySize_Passes(t *testing.T) {
 		Size:       "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate(nil)
+	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -485,7 +489,7 @@ func TestSpiralCmd_Validate_EmptySize_Passes(t *testing.T) {
 		Size:       "", // will be supplied by config file later in Run()
 	}
 
-	err := cmd.Validate(nil)
+	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -569,11 +573,7 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cli := CLI{}
-	parser, err := kong.New(
-		&cli,
-		kong.Name("codeviz"),
-		kong.Exit(func(int) {}),
-	)
+	parser, err := newParser(&cli, kong.Exit(func(int) {}))
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
@@ -601,7 +601,7 @@ func TestScatterCmd_Validate_EmptyAxesPass(t *testing.T) {
 		Size:       "",
 	}
 
-	err := cmd.Validate(nil)
+	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
 }
 

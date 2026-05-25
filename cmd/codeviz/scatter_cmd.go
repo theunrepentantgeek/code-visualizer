@@ -31,13 +31,17 @@ type ScatterCmd struct {
 	Height int `default:"1080" help:"Image height in pixels."`
 
 	Filters            []filter.Rule `kong:"-"`
-	Include            []string      `name:"include" help:"Include pattern." placeholder:"PATTERN"`
-	Exclude            []string      `name:"exclude" help:"Exclude pattern." placeholder:"PATTERN"`
+	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`
+	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 }
 
-func (c *ScatterCmd) Validate(kctx *kong.Context) error {
-	rules, err := buildOrderedFilters(kctx, c.Include, c.Exclude)
+func (c *ScatterCmd) Validate() error {
+	return nil
+}
+
+func (c *ScatterCmd) AfterApply(kctx *kong.Context) error {
+	rules, err := filter.MergeFlagRules(kctx, c.Include, c.Exclude)
 	if err != nil {
 		return err
 	}

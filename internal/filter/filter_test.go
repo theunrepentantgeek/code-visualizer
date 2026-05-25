@@ -3,6 +3,7 @@ package filter
 import (
 	"testing"
 
+	"github.com/alecthomas/kong"
 	. "github.com/onsi/gomega"
 )
 
@@ -201,4 +202,36 @@ func TestParseFilterFlag_BangOnly(t *testing.T) {
 	_, err := ParseFilterFlag("!")
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("empty filter"))
+}
+
+func TestMergeFlagRules_PreservesCommandLineOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var cli struct {
+		Include []Rule `type:"filterrule"`
+		Exclude []Rule `type:"filterrule"`
+		Filters []Rule `kong:"-"`
+	}
+
+	parser, err := kong.New(
+		&cli,
+		kong.NamedMapper(RuleMapperName, RuleMapper{}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	kctx, err := parser.Parse([]string{
+		"--exclude", ".*",
+		"--include", ".github/**",
+		"--exclude", "**/*.log",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	rules, err := MergeFlagRules(kctx, cli.Include, cli.Exclude)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(rules).To(Equal([]Rule{
+		{Pattern: ".*", Mode: Exclude},
+		{Pattern: ".github/**", Mode: Include},
+		{Pattern: "**/*.log", Mode: Exclude},
+	}))
 }
