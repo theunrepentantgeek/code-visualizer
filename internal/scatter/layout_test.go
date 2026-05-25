@@ -2,6 +2,7 @@ package scatter
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -162,5 +163,40 @@ func TestLayout_CrowdedPlotKeepsMinimumDiscRadius(t *testing.T) {
 
 	for _, point := range layout.Points {
 		g.Expect(point.Radius).To(BeNumerically(">=", scatterMinRadius))
+	}
+}
+
+func TestNumericTicks_UsesRegularNiceSteps(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := numericTicks(0.219, 0.875, plot, horizontalAxis)
+
+	g.Expect(ticks).To(HaveLen(8))
+	g.Expect(ticks[0].Value).To(BeNumerically("~", 0.2, 1e-9))
+	g.Expect(ticks[len(ticks)-1].Value).To(BeNumerically("~", 0.9, 1e-9))
+
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Value - ticks[i-1].Value).To(BeNumerically("~", 0.1, 1e-9))
+	}
+}
+
+func TestNumericTicks_NearZeroRangeIncludesZeroTick(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := numericTicks(9, 842, plot, horizontalAxis)
+
+	g.Expect(ticks).To(HaveLen(10))
+	g.Expect(ticks[0].Value).To(Equal(0.0))
+
+	step := ticks[1].Value - ticks[0].Value
+	g.Expect(step).To(Equal(100.0))
+
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Value - ticks[i-1].Value).To(BeNumerically("~", step, 1e-9))
+		g.Expect(math.Mod(ticks[i].Value, step)).To(BeNumerically("~", 0, 1e-9))
 	}
 }
