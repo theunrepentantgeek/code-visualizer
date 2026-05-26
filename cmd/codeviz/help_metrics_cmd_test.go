@@ -10,6 +10,7 @@ import (
 )
 
 func TestHelpMetricsCmdRun_GroupsMetricsByProvider(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	output := captureStdout(t, func() {
@@ -46,19 +47,39 @@ func captureStdout(t *testing.T, run func()) string {
 		t.Fatalf("create pipe: %v", err)
 	}
 
-	os.Stdout = writer
-	defer func() {
+	t.Cleanup(func() {
+		_ = reader.Close()
+		_ = writer.Close()
 		os.Stdout = oldStdout
+	})
+
+	os.Stdout = writer
+
+	dataCh := make(chan []byte, 1)
+	errCh := make(chan error, 1)
+
+	go func() {
+		data, readErr := io.ReadAll(reader)
+		if readErr != nil {
+			errCh <- readErr
+
+			return
+		}
+
+		dataCh <- data
 	}()
 
 	run()
 
 	_ = writer.Close()
+	os.Stdout = oldStdout
 
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		t.Fatalf("read stdout: %v", err)
+	select {
+	case readErr := <-errCh:
+		t.Fatalf("read stdout: %v", readErr)
+	case data := <-dataCh:
+		return string(data)
 	}
 
-	return string(data)
+	return ""
 }

@@ -211,3 +211,13 @@ func TestFileLinesProviderHandlesEmptyFile(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(Equal(int64(0)))
 }
+
+func TestIsFilesystemMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(IsFilesystemMetric(FileSize)).To(BeTrue())
+	g.Expect(IsFilesystemMetric(FileLines)).To(BeTrue())
+	g.Expect(IsFilesystemMetric(FileType)).To(BeTrue())
+	g.Expect(IsFilesystemMetric(metric.Name("commit-count"))).To(BeFalse())
+}

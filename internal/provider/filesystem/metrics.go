@@ -24,6 +24,16 @@ const (
 	FileType  metric.Name = "file-type"
 )
 
+// IsFilesystemMetric reports whether name is provided by the filesystem provider.
+func IsFilesystemMetric(name metric.Name) bool {
+	switch name {
+	case FileSize, FileLines, FileType:
+		return true
+	default:
+		return false
+	}
+}
+
 // FileSizeProvider reports file size in bytes. Value is set during scan; Load is a no-op.
 type FileSizeProvider struct{}
 

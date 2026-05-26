@@ -17,14 +17,39 @@ import (
 // HelpMetricsCmd prints a table of all registered metrics.
 type HelpMetricsCmd struct{}
 
+const (
+	filesystemMetricsSection = "Filesystem metrics"
+	gitMetricsSection        = "Git metrics"
+	goMetricsSection         = "Go metrics"
+	otherMetricsSection      = "Other metrics"
+)
+
+var providerSectionOrder = []string{
+	filesystemMetricsSection,
+	gitMetricsSection,
+	goMetricsSection,
+	otherMetricsSection,
+}
+
 //nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpMetricsCmd) Run(_ *Flags) error {
 	descriptors := provider.AllDescriptors()
+	groups, hasGit := buildProviderGroups(descriptors)
+	fmt.Print(renderProviderGroups(groups))
+
+	if hasGit {
+		fmt.Printf("\n%s\n", "† requires a git repository")
+	}
+
+	return nil
+}
+
+func buildProviderGroups(descriptors []provider.MetricDescriptor) (map[string][]provider.MetricDescriptor, bool) {
 	groups := map[string][]provider.MetricDescriptor{
-		"Filesystem metrics": nil,
-		"Git metrics":        nil,
-		"Go metrics":         nil,
-		"Other metrics":      nil,
+		filesystemMetricsSection: nil,
+		gitMetricsSection:        nil,
+		goMetricsSection:         nil,
+		otherMetricsSection:      nil,
 	}
 
 	hasGit := false
@@ -34,16 +59,17 @@ func (HelpMetricsCmd) Run(_ *Flags) error {
 			hasGit = true
 		}
 
-		groups[providerGroupLabel(d.Name)] = append(groups[providerGroupLabel(d.Name)], d)
+		label := providerGroupLabel(d.Name)
+		groups[label] = append(groups[label], d)
 	}
 
+	return groups, hasGit
+}
+
+func renderProviderGroups(groups map[string][]provider.MetricDescriptor) string {
 	content := &strings.Builder{}
-	for _, label := range []string{
-		"Filesystem metrics",
-		"Git metrics",
-		"Go metrics",
-		"Other metrics",
-	} {
+
+	for _, label := range providerSectionOrder {
 		group := groups[label]
 		if len(group) == 0 {
 			continue
@@ -56,40 +82,38 @@ func (HelpMetricsCmd) Run(_ *Flags) error {
 		content.WriteString(label)
 		content.WriteString("\n\n")
 
-		tbl := table.New("Metric", "Kind", "Default Palette", "Description")
-		tbl.SetMaxWidth(consoleWidth())
+		writeProviderGroupTable(content, group)
+	}
 
-		for _, d := range group {
-			desc := d.Description
-			if git.IsGitMetric(d.Name) {
-				desc += " †"
-			}
+	return content.String()
+}
 
-			tbl.AddRow(string(d.Name), kindLabel(d.Kind), string(d.DefaultPalette), desc)
+func writeProviderGroupTable(content *strings.Builder, group []provider.MetricDescriptor) {
+	tbl := table.New("Metric", "Kind", "Default Palette", "Description")
+	tbl.SetMaxWidth(consoleWidth())
+
+	for _, d := range group {
+		desc := d.Description
+		if git.IsGitMetric(d.Name) {
+			desc += " †"
 		}
 
-		tbl.WriteTo(content)
+		tbl.AddRow(string(d.Name), kindLabel(d.Kind), string(d.DefaultPalette), desc)
 	}
 
-	fmt.Print(content.String())
-
-	if hasGit {
-		fmt.Printf("\n%s\n", "† requires a git repository")
-	}
-
-	return nil
+	tbl.WriteTo(content)
 }
 
 func providerGroupLabel(name metric.Name) string {
 	switch {
 	case git.IsGitMetric(name):
-		return "Git metrics"
+		return gitMetricsSection
 	case golang.IsGoMetric(name):
-		return "Go metrics"
-	case name == filesystem.FileSize || name == filesystem.FileLines || name == filesystem.FileType:
-		return "Filesystem metrics"
+		return goMetricsSection
+	case filesystem.IsFilesystemMetric(name):
+		return filesystemMetricsSection
 	default:
-		return "Other metrics"
+		return otherMetricsSection
 	}
 }
 
