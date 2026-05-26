@@ -1,6 +1,7 @@
 package treemap_test
 
 import (
+	"image/color"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -89,6 +90,7 @@ func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
 				Name:  "root",
 				Files: []*model.File{makeTestFile("a.go", "go", 100)},
 			}
+
 			s := &treemap.State{
 				CommonState: stages.CommonState{Root: root, Output: "out.png", Width: 100, Height: 100},
 				FillMetric:  filesystem.FileSize,
@@ -102,4 +104,37 @@ func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
 			g.Expect(isWrapped).To(Equal(tc.wantWrapped))
 		})
 	}
+}
+
+func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s := &treemap.State{
+		Config: &config.Treemap{
+			Fill:   &config.MetricSpec{Metric: "file-type"},
+			Border: &config.MetricSpec{Metric: "file-lines"},
+		},
+		FillMetric:   metric.Name("file-type"),
+		BorderMetric: metric.Name("file-lines"),
+		Size:         metric.Name("file-size"),
+		Inks: treemap.Inks{
+			Fill:   canvas.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
+			Border: canvas.FixedInk(color.RGBA{R: 0, G: 0, B: 0, A: 255}),
+		},
+	}
+
+	g.Expect(treemap.BuildLegendStage(s)).To(Succeed())
+	g.Expect(s.LegendConfig).NotTo(BeNil())
+
+	if s.LegendConfig == nil {
+		return
+	}
+
+	g.Expect(s.LegendConfig.LabelSample).To(Equal([]string{
+		"file-name",
+		"file-size",
+		"file-type",
+		"file-lines",
+	}))
 }

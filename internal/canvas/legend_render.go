@@ -68,6 +68,13 @@ func (lb *legendBuilder) addEntriesV(
 ) {
 	cy := y
 
+	if data.LabelSample != nil {
+		cy = lb.addLabelSample(data.LabelSample, x, cy)
+		if len(data.Entries) > 0 {
+			cy += model.EntryGap
+		}
+	}
+
 	for i, entry := range data.Entries {
 		if i > 0 {
 			cy += model.EntryGap
@@ -81,6 +88,15 @@ func (lb *legendBuilder) addEntriesH(
 	data *model.LegendData, x, y float64,
 ) {
 	cx := x
+
+	if data.LabelSample != nil {
+		sampleW, _ := legendlayout.MeasureLabelSample(data.LabelSample)
+		lb.addLabelSample(data.LabelSample, cx, y)
+		cx += sampleW
+		if len(data.Entries) > 0 {
+			cx += model.EntryGap
+		}
+	}
 
 	for i, entry := range data.Entries {
 		if i > 0 {
@@ -243,6 +259,36 @@ func (lb *legendBuilder) addCategorySwatchesH(
 	}
 
 	return y + model.SwatchSize + model.LegendLineHeight + model.LabelGap
+}
+
+func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y float64) float64 {
+	if sample == nil {
+		return y
+	}
+
+	w, h := legendlayout.MeasureLabelSample(sample)
+	if w <= 0 || h <= 0 {
+		return y
+	}
+
+	lb.addRect(x, y, w, h, white, lb.swBorder, 0.5)
+
+	centerX := x + w/2
+	totalH := float64(len(sample.Lines)) * model.LegendLineHeight
+	startY := y + (h-totalH)/2 + model.LegendLineHeight/2
+
+	for i, line := range sample.Lines {
+		lb.addTextShape(
+			centerX,
+			startY+float64(i)*model.LegendLineHeight,
+			line,
+			lb.labelInk,
+			model.LegendFontSize,
+			AnchorMiddle,
+		)
+	}
+
+	return y + h
 }
 
 func (lb *legendBuilder) addSwatch(x, y float64, fill color.RGBA) {

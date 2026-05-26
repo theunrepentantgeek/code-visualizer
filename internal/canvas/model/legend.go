@@ -44,7 +44,14 @@ const (
 type LegendData struct {
 	Position    LegendPosition
 	Orientation LegendOrientation
+	LabelSample *LegendLabelSample
 	Entries     []LegendEntryData
+}
+
+// LegendLabelSample describes the multi-line label preview rendered
+// before legend entries when a visualization displays inline shape labels.
+type LegendLabelSample struct {
+	Lines []string
 }
 
 // LegendEntryData describes one metric section within the legend.

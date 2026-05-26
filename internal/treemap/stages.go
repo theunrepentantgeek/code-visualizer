@@ -61,6 +61,9 @@ func BuildLegendStage(s *State) error {
 		s.Inks.Border, s.BorderMetric,
 		s.Size,
 	)
+	if s.LegendConfig != nil {
+		s.LegendConfig.LabelSample = labelSampleLines(labelMetricsForState(s))
+	}
 
 	return nil
 }
@@ -104,13 +107,17 @@ func RenderStage(s *State) error {
 
 // LabelStage builds the reusable block labels for treemap file rectangles.
 func LabelStage(s *State) error {
-	s.BlockLabels = buildBlockLabels(s.Root, s.Common().Root, s.Inks.Fill, LabelMetrics{
+	s.BlockLabels = buildBlockLabels(s.Root, s.Common().Root, s.Inks.Fill, labelMetricsForState(s))
+
+	return nil
+}
+
+func labelMetricsForState(s *State) LabelMetrics {
+	return LabelMetrics{
 		Size:   s.Size,
 		Fill:   s.Config.Fill.MetricName(),
 		Border: s.Config.Border.MetricName(),
-	})
-
-	return nil
+	}
 }
 
 // LogResult logs the final summary.

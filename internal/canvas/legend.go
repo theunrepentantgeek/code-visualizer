@@ -25,6 +25,7 @@ type LegendEntry struct {
 type LegendConfig struct {
 	Position    model.LegendPosition
 	Orientation model.LegendOrientation
+	LabelSample []string
 	Entries     []LegendEntry
 }
 
@@ -74,6 +75,28 @@ func (lc *LegendConfig) toLegendData() *model.LegendData {
 	return &model.LegendData{
 		Position:    lc.Position,
 		Orientation: orient,
+		LabelSample: labelSampleData(lc.LabelSample),
 		Entries:     entries,
 	}
+}
+
+func labelSampleData(lines []string) *model.LegendLabelSample {
+	if len(lines) == 0 {
+		return nil
+	}
+
+	sample := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		sample = append(sample, line)
+	}
+
+	if len(sample) == 0 {
+		return nil
+	}
+
+	return &model.LegendLabelSample{Lines: sample}
 }

@@ -144,6 +144,23 @@ func appendMetricLine(lines []string, file *model.File, name metric.Name) []stri
 	return lines
 }
 
+func labelSampleLines(metrics LabelMetrics) []string {
+	lines := []string{"file-name"}
+	lines = appendMetricName(lines, metrics.Size)
+	lines = appendMetricName(lines, metrics.Fill)
+	lines = appendMetricName(lines, metrics.Border)
+
+	return lines
+}
+
+func appendMetricName(lines []string, name metric.Name) []string {
+	if name == "" {
+		return lines
+	}
+
+	return append(lines, string(name))
+}
+
 func formatMetricValue(file *model.File, name metric.Name) (string, bool) {
 	if name == "" || file == nil {
 		return "", false
