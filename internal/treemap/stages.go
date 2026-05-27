@@ -55,6 +55,7 @@ func BuildLegendStage(s *State) error {
 		stages.PtrString(s.Config.Legend),
 		stages.PtrString(s.Config.LegendOrientation),
 	)
+
 	s.LegendConfig = legend.Build(
 		pos, orient,
 		s.Inks.Fill, s.FillMetric,

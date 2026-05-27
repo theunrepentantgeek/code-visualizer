@@ -92,6 +92,7 @@ func (lb *legendBuilder) addEntriesH(
 	if data.LabelSample != nil {
 		sampleW, _ := legendlayout.MeasureLabelSample(data.LabelSample)
 		lb.addLabelSample(data.LabelSample, cx, y)
+
 		cx += sampleW
 		if len(data.Entries) > 0 {
 			cx += model.EntryGap

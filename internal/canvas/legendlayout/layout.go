@@ -91,7 +91,7 @@ func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, hei
 	maxW := 0.0
 
 	if data.LabelSample != nil {
-		sampleW, sampleH := measureLabelSample(measurer, data.LabelSample)
+		sampleW, sampleH := measureLabelSampleImpl(measurer, data.LabelSample)
 		totalH += sampleH
 		maxW = max(maxW, sampleW)
 
@@ -129,7 +129,7 @@ func measureLegendH(measurer StringMeasurer, data *model.LegendData) (width, hei
 	maxH := 0.0
 
 	if data.LabelSample != nil {
-		sampleW, sampleH := measureLabelSample(measurer, data.LabelSample)
+		sampleW, sampleH := measureLabelSampleImpl(measurer, data.LabelSample)
 		totalW += sampleW
 		maxH = max(maxH, sampleH)
 
@@ -276,15 +276,16 @@ func MeasureCatSwatchColumnWidth(label string) float64 {
 
 // MeasureLabelSample returns the width and height for a label sample square.
 func MeasureLabelSample(sample *model.LegendLabelSample) (width, height float64) {
-	return measureLabelSample(NewBasicMeasurer(), sample)
+	return measureLabelSampleImpl(NewBasicMeasurer(), sample)
 }
 
-func measureLabelSample(measurer StringMeasurer, sample *model.LegendLabelSample) (width, height float64) {
+func measureLabelSampleImpl(measurer StringMeasurer, sample *model.LegendLabelSample) (width, height float64) {
 	if sample == nil || len(sample.Lines) == 0 {
 		return 0, 0
 	}
 
 	maxTextW := 0.0
+
 	for _, line := range sample.Lines {
 		tw, _ := measurer.MeasureString(line)
 		maxTextW = max(maxTextW, tw)
