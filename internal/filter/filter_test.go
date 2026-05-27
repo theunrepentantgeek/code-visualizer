@@ -3,8 +3,9 @@ package filter
 import (
 	"testing"
 
-	"github.com/alecthomas/kong"
 	. "github.com/onsi/gomega"
+
+	"github.com/alecthomas/kong"
 )
 
 func TestIsIncluded_NoRules_ReturnsTrue(t *testing.T) {

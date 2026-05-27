@@ -9,7 +9,7 @@ import (
 
 const RuleMapperName = "filterrule"
 
-var ruleSliceType = reflect.TypeOf([]Rule{})
+var ruleSliceType = reflect.TypeFor[[]Rule]()
 
 type ruleBinding struct {
 	filters *[]Rule
@@ -34,7 +34,7 @@ func NewRuleMapper(root any) RuleMapper {
 func (m RuleMapper) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
 	var pattern string
 	if err := ctx.Scan.PopValueInto("pattern", &pattern); err != nil {
-		return err
+		return eris.Wrapf(err, "failed to read filter pattern for %q", ctx.Value.Name)
 	}
 
 	binding, ok := m.bindings[ctx.Value.Target.Addr().Pointer()]
@@ -72,11 +72,11 @@ func (m RuleMapper) bindValue(value reflect.Value) {
 
 	m.bindStruct(value)
 
-	for i := range value.NumField() {
-		field := value.Field(i)
+	for _, field := range value.Fields() {
 		switch field.Kind() {
 		case reflect.Pointer, reflect.Struct:
 			m.bindValue(field)
+		default:
 		}
 	}
 }

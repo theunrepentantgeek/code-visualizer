@@ -1,4 +1,4 @@
-//nolint:dupl // Coincidental similarity with bubbletree
+//nolint:dupl // Coincidental similarity with treemap --- IGNORE ---
 package main
 
 import (
@@ -31,12 +31,12 @@ type RadialCmd struct {
 	Height int `default:"1920" help:"Image height in pixels."`
 
 	Filters            []filter.Rule `kong:"-"`
-	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`
-	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`
+	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
+	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive // kong struct tags require long lines
 }
 
-func (c *RadialCmd) Validate() error {
+func (*RadialCmd) Validate() error {
 	return nil
 }
 

@@ -30,13 +30,13 @@ type TreemapCmd struct {
 	Height int `default:"1080" help:"Image height in pixels."`
 
 	Filters            []filter.Rule `kong:"-"`
-	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`
-	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`
+	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
+	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	Flat               bool          `help:"Disable pincushion shading (flat solid fills)." default:"false"`
 }
 
-func (c *TreemapCmd) Validate() error {
+func (*TreemapCmd) Validate() error {
 	return nil
 }
 
