@@ -90,6 +90,7 @@ func main() {
 		&cli,
 		kong.Name("codeviz"),
 		kong.Description("Generate visualizations of file trees."),
+		filterMapperOption(&cli),
 	)
 	if err != nil {
 		slog.Error("failed to initialize CLI", "error", err)

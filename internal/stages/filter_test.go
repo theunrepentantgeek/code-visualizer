@@ -19,7 +19,10 @@ func TestBuildFilterRulesHelper_MergesConfigAndCLI(t *testing.T) {
 
 	cfg := &config.Config{FileFilter: []filter.Rule{rule}}
 
-	got := stages.BuildFilterRulesHelper(cfg, []string{"!*_test.go"})
+	excludeRule, err := filter.NewRule("*_test.go", filter.Exclude)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	got := stages.BuildFilterRulesHelper(cfg, []filter.Rule{excludeRule})
 
 	g.Expect(got).To(HaveLen(2))
 }
@@ -30,7 +33,7 @@ func TestBuildFilterRules_Stage_PopulatesCommon(t *testing.T) {
 
 	s := &fakeState{common: stages.CommonState{
 		RootConfig: &config.Config{},
-		CLIFilters: []string{"*.go"},
+		CLIFilters: []filter.Rule{{Pattern: "*.go", Mode: filter.Include}},
 	}}
 
 	g.Expect(stages.BuildFilterRules[*fakeState](s)).To(Succeed())

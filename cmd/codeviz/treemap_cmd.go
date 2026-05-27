@@ -29,18 +29,14 @@ type TreemapCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
-	Filter             []string `help:"Filter rule: glob to include, !glob to exclude (repeatable, order-preserved)."`
-	IncludeBinaryFiles bool     `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
-	Flat               bool     `help:"Disable pincushion shading (flat solid fills)." default:"false"`
+	Filters            []filter.Rule `kong:"-"`
+	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
+	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
+	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	Flat               bool          `help:"Disable pincushion shading (flat solid fills)." default:"false"`
 }
 
-func (c *TreemapCmd) Validate() error {
-	for _, f := range c.Filter {
-		if _, err := filter.ParseFilterFlag(f); err != nil {
-			return eris.Wrapf(err, "invalid filter %q", f)
-		}
-	}
-
+func (*TreemapCmd) Validate() error {
 	return nil
 }
 
@@ -103,7 +99,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
-			CLIFilters: c.Filter,
+			CLIFilters: c.Filters,
 		},
 		Config:             flags.Config.Treemap,
 		IncludeBinaryFiles: c.IncludeBinaryFiles,

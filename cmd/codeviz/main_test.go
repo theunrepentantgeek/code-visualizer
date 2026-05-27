@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -10,6 +11,7 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -48,6 +50,7 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 		parser, err := kong.New(
 			&cli,
 			kong.Name("codeviz"),
+			filterMapperOption(&cli),
 			kong.Exit(func(int) {}),
 		)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -72,6 +75,7 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
+		filterMapperOption(&cli),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -107,6 +111,7 @@ func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 		parser, err := kong.New(
 			&cli,
 			kong.Name("codeviz"),
+			filterMapperOption(&cli),
 			kong.Exit(func(int) {}),
 		)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -215,16 +220,23 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cmd := &TreemapCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		Size:       "file-size",
-		Filter:     []string{"![invalid"},
-	}
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(&cli),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
 
-	err := cmd.Validate()
+	_, err = parser.Parse([]string{
+		"render", "treemap", ".",
+		"-o", "out.png",
+		"-s", "file-size",
+		"--exclude", "[invalid",
+	})
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring("invalid filter")))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid exclude")))
 }
 
 func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
@@ -235,11 +247,59 @@ func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
 		TargetPath: ".",
 		Output:     "out.png",
 		Size:       "file-size",
-		Filter:     []string{"!.*", "*.go", "!**/*.log"},
+		Include:    []filter.Rule{{Pattern: "*.go", Mode: filter.Include}},
+		Exclude:    []filter.Rule{{Pattern: ".*", Mode: filter.Exclude}, {Pattern: "**/*.log", Mode: filter.Exclude}},
 	}
 
 	err := cmd.Validate()
 	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(&cli),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"render", "treemap", ".",
+		"-o", "out.png",
+		"-s", "file-size",
+		"--exclude", ".*",
+		"--include", ".github/**",
+		"--exclude", "**/*.log",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+	expectRuleSliceField(g, cli.Render.Treemap, "Include", []filter.Rule{
+		{Pattern: ".github/**", Mode: filter.Include},
+	})
+	expectRuleSliceField(g, cli.Render.Treemap, "Exclude", []filter.Rule{
+		{Pattern: ".*", Mode: filter.Exclude},
+		{Pattern: "**/*.log", Mode: filter.Exclude},
+	})
+	g.Expect(cli.Render.Treemap.Filters).To(Equal([]filter.Rule{
+		{Pattern: ".*", Mode: filter.Exclude},
+		{Pattern: ".github/**", Mode: filter.Include},
+		{Pattern: "**/*.log", Mode: filter.Exclude},
+	}))
+}
+
+func expectRuleSliceField(g *WithT, cmd any, fieldName string, want []filter.Rule) {
+	value := reflect.ValueOf(cmd)
+	field := value.FieldByName(fieldName)
+	g.Expect(field.IsValid()).To(BeTrue())
+	g.Expect(field.Type()).To(Equal(reflect.TypeFor[[]filter.Rule]()))
+
+	got, ok := field.Interface().([]filter.Rule)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(got).To(Equal(want))
 }
 
 // Issue #99 — config-supplied parameters bypass early validation.
@@ -542,6 +602,7 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
+		filterMapperOption(&cli),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
