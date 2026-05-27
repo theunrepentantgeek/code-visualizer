@@ -16,6 +16,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/golang"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -23,6 +24,7 @@ import (
 func TestMain(m *testing.M) {
 	filesystem.Register()
 	git.Register()
+	golang.Register()
 	m.Run()
 }
 
