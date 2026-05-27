@@ -34,17 +34,15 @@ var providerSectionOrder = []string{
 //nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpMetricsCmd) Run(_ *Flags) error {
 	descriptors := provider.AllDescriptors()
-	groups, hasGit := buildProviderGroups(descriptors)
+	groups := buildProviderGroups(descriptors)
 	fmt.Print(renderProviderGroups(groups))
-
-	if hasGit {
-		fmt.Printf("\n%s\n", "† requires a git repository")
-	}
 
 	return nil
 }
 
-func buildProviderGroups(descriptors []provider.MetricDescriptor) (map[string][]provider.MetricDescriptor, bool) {
+func buildProviderGroups(
+	descriptors []provider.MetricDescriptor,
+) map[string][]provider.MetricDescriptor {
 	groups := map[string][]provider.MetricDescriptor{
 		filesystemMetricsSection: nil,
 		gitMetricsSection:        nil,
@@ -52,18 +50,12 @@ func buildProviderGroups(descriptors []provider.MetricDescriptor) (map[string][]
 		otherMetricsSection:      nil,
 	}
 
-	hasGit := false
-
 	for _, d := range descriptors {
-		if git.IsGitMetric(d.Name) {
-			hasGit = true
-		}
-
 		label := providerGroupLabel(d.Name)
 		groups[label] = append(groups[label], d)
 	}
 
-	return groups, hasGit
+	return groups
 }
 
 func renderProviderGroups(groups map[string][]provider.MetricDescriptor) string {
@@ -94,10 +86,6 @@ func writeProviderGroupTable(content *strings.Builder, group []provider.MetricDe
 
 	for _, d := range group {
 		desc := d.Description
-		if git.IsGitMetric(d.Name) {
-			desc += " †"
-		}
-
 		tbl.AddRow(string(d.Name), kindLabel(d.Kind), string(d.DefaultPalette), desc)
 	}
 
