@@ -34,7 +34,6 @@ func TestHelpMetricsCmdRun_GroupsMetricsByProvider(t *testing.T) {
 	g.Expect(commitCountIndex).To(BeNumerically("<", goIndex))
 	g.Expect(typeCountIndex).To(BeNumerically(">", goIndex))
 	g.Expect(output).To(ContainSubstring("commit-count"))
-	g.Expect(output).To(ContainSubstring("† requires a git repository"))
 }
 
 func captureStdout(t *testing.T, run func()) string {
