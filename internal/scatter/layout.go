@@ -225,6 +225,7 @@ func numericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirec
 	step, niceStart, niceEnd := niceTickStep(niceMin, niceMax)
 	gapCount := int(math.Round((niceEnd - niceStart) / step))
 	ticks := make([]AxisTick, gapCount+1)
+
 	for i := range gapCount + 1 {
 		value := niceStart + step*float64(i)
 		if i == gapCount {
@@ -248,11 +249,13 @@ func includeNearZero(minValue, maxValue float64) (float64, float64) {
 		return minValue, maxValue
 	}
 
-	if minValue > 0 && minValue <= span*scatterZeroGapRatio {
+	snapMargin := span * scatterZeroGapRatio
+
+	if minValue > 0 && minValue <= snapMargin {
 		minValue = 0
 	}
 
-	if maxValue < 0 && -maxValue <= span*scatterZeroGapRatio {
+	if maxValue < 0 && -maxValue <= snapMargin {
 		maxValue = 0
 	}
 
@@ -279,12 +282,14 @@ func niceTickStep(minValue, maxValue float64) (step, start, end float64) {
 			candidateStep := anchor * scale
 			candidateStart := math.Floor(minValue/candidateStep) * candidateStep
 			candidateEnd := math.Ceil(maxValue/candidateStep) * candidateStep
+
 			gaps := int(math.Round((candidateEnd - candidateStart) / candidateStep))
 			if gaps < scatterMinTickGaps || gaps > scatterMaxTickGaps {
 				continue
 			}
 
 			gapDelta := math.Abs(float64(gaps - scatterTargetTickGaps))
+
 			padding := (minValue-candidateStart)/candidateStep + (candidateEnd-maxValue)/candidateStep
 			if gapDelta < bestGapDelta ||
 				(gapDelta == bestGapDelta && gaps > bestGaps) ||
