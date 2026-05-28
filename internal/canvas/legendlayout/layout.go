@@ -105,11 +105,16 @@ func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, hei
 			totalH += model.EntryGap
 		}
 
-		tw, _ := measurer.MeasureString(entry.Title)
-		totalH += model.TitleFontSize + model.LabelGap
+		lw, _ := measurer.MeasureString(entry.Label)
+		mw, _ := measurer.MeasureString(entry.Metric)
+		totalH += titleHeight()
 
-		if tw > maxW {
-			maxW = tw
+		if lw > maxW {
+			maxW = lw
+		}
+
+		if mw > maxW {
+			maxW = mw
 		}
 
 		entryW, entryH := measureEntryV(measurer, entry)
@@ -155,13 +160,14 @@ func measureLegendH(measurer StringMeasurer, data *model.LegendData) (width, hei
 }
 
 func measureSingleEntryH(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
-	tw, _ := measurer.MeasureString(entry.Title)
-	titleH := model.TitleFontSize + model.LabelGap
+	lw, _ := measurer.MeasureString(entry.Label)
+	mw, _ := measurer.MeasureString(entry.Metric)
+	titleW := max(lw, mw)
 
 	entryW, entryH := measureEntryH(measurer, entry)
 
-	w := max(tw, entryW)
-	h := titleH + entryH
+	w := max(titleW, entryW)
+	h := titleHeight() + entryH
 
 	return w, h
 }
@@ -263,6 +269,22 @@ func MeasureEntryHWidth(entry model.LegendEntryData) float64 {
 	w, _ := measureSingleEntryH(measurer, entry)
 
 	return w
+}
+
+// MeasureEntryVContentWidth returns the swatch-column content width of
+// one legend entry in vertical layout mode. Used by the Canvas layer to
+// compute the center x-position for the two-line entry title.
+func MeasureEntryVContentWidth(entry model.LegendEntryData) float64 {
+	measurer := NewBasicMeasurer()
+	w, _ := measureEntryV(measurer, entry)
+
+	return w
+}
+
+// titleHeight returns the vertical space reserved for a two-line entry
+// title (label + metric name), including the gap below the title block.
+func titleHeight() float64 {
+	return 2*model.LegendLineHeight + model.LabelGap
 }
 
 // MeasureCatSwatchColumnWidth returns the width of a single categorical

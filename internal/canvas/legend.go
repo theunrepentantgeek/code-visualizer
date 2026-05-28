@@ -60,7 +60,8 @@ func (lc *LegendConfig) toLegendData() *model.LegendData {
 
 	for i, e := range lc.Entries {
 		entries[i] = model.LegendEntryData{
-			Title:    string(e.Role) + ": " + e.MetricName,
+			Label:    string(e.Role),
+			Metric:   e.MetricName,
 			Kind:     e.Ink.legendEntryKind(),
 			Swatches: e.Ink.legendSwatches(),
 			IsBorder: e.Role == LegendRoleBorder,
