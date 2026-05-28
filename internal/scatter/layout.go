@@ -18,7 +18,10 @@ const (
 	scatterMinRadius        = 12.0
 	scatterMaxRadiusFactor  = 0.45
 	scatterMinNumericSlots  = 8.0
-	scatterTickCount        = 5
+	scatterMinTickGaps      = 4
+	scatterMaxTickGaps      = 10
+	scatterTargetTickGaps   = 7
+	scatterZeroGapRatio     = 0.2
 )
 
 // ScatterPoint is one fully laid-out disc.
@@ -213,18 +216,26 @@ func numericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirec
 	if minValue == maxValue {
 		return []AxisTick{{
 			Value:    minValue,
-			Label:    formatTick(minValue),
+			Label:    formatTick(minValue, 0),
 			Position: direction.center(plot),
 		}}
 	}
 
-	ticks := make([]AxisTick, scatterTickCount)
-	for i := range scatterTickCount {
-		norm := float64(i) / float64(scatterTickCount-1)
-		value := minValue + (maxValue-minValue)*norm
+	niceMin, niceMax := includeNearZero(minValue, maxValue)
+	step, niceStart, niceEnd := niceTickStep(niceMin, niceMax)
+	gapCount := int(math.Round((niceEnd - niceStart) / step))
+	ticks := make([]AxisTick, gapCount+1)
+
+	for i := range gapCount + 1 {
+		value := niceStart + step*float64(i)
+		if i == gapCount {
+			value = niceEnd
+		}
+
+		norm := (value - niceStart) / (niceEnd - niceStart)
 		ticks[i] = AxisTick{
 			Value:    value,
-			Label:    formatTick(value),
+			Label:    formatTick(value, step),
 			Position: direction.position(plot, norm),
 		}
 	}
@@ -232,8 +243,140 @@ func numericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirec
 	return ticks
 }
 
-func formatTick(value float64) string {
-	return strconv.FormatFloat(value, 'g', 3, 64)
+func includeNearZero(
+	minValue float64,
+	maxValue float64,
+) (lowerBound float64, upperBound float64) {
+	span := maxValue - minValue
+	if span <= 0 {
+		return minValue, maxValue
+	}
+
+	snapMargin := span * scatterZeroGapRatio
+
+	if minValue > 0 && minValue <= snapMargin {
+		minValue = 0
+	}
+
+	if maxValue < 0 && -maxValue <= snapMargin {
+		maxValue = 0
+	}
+
+	return minValue, maxValue
+}
+
+type tickCandidate struct {
+	step     float64
+	start    float64
+	end      float64
+	gaps     int
+	gapDelta float64
+	padding  float64
+}
+
+// betterThan reports whether c is a preferable tick layout to other.
+func (c tickCandidate) betterThan(other tickCandidate) bool {
+	if c.gapDelta != other.gapDelta {
+		return c.gapDelta < other.gapDelta
+	}
+
+	if c.gaps != other.gaps {
+		return c.gaps > other.gaps
+	}
+
+	return c.padding < other.padding
+}
+
+// makeTickCandidate evaluates a candidate step against [minValue, maxValue].
+// Returns false if the resulting gap count is outside the allowed range.
+func makeTickCandidate(
+	minValue float64,
+	maxValue float64,
+	candidateStep float64,
+) (tickCandidate, bool) {
+	start := math.Floor(minValue/candidateStep) * candidateStep
+	end := math.Ceil(maxValue/candidateStep) * candidateStep
+	gaps := int(math.Round((end - start) / candidateStep))
+
+	if gaps < scatterMinTickGaps || gaps > scatterMaxTickGaps {
+		return tickCandidate{}, false
+	}
+
+	return tickCandidate{
+		step:     candidateStep,
+		start:    start,
+		end:      end,
+		gaps:     gaps,
+		gapDelta: math.Abs(float64(gaps - scatterTargetTickGaps)),
+		padding:  (minValue-start)/candidateStep + (end-maxValue)/candidateStep,
+	}, true
+}
+
+// bestTickCandidate searches the anchor/exponent grid for the best tick layout.
+func bestTickCandidate(
+	minValue float64,
+	maxValue float64,
+) (tickCandidate, bool) {
+	span := maxValue - minValue
+	rawStep := span / float64(scatterTargetTickGaps)
+	baseExponent := math.Floor(math.Log10(rawStep))
+	anchors := []float64{1, 2, 2.5, 5, 10}
+
+	var (
+		best  tickCandidate
+		found bool
+	)
+
+	for exponent := baseExponent - 1; exponent <= baseExponent+1; exponent++ {
+		scale := math.Pow(10, exponent)
+		for _, anchor := range anchors {
+			cand, ok := makeTickCandidate(minValue, maxValue, anchor*scale)
+			if !ok {
+				continue
+			}
+
+			if !found || cand.betterThan(best) {
+				best = cand
+				found = true
+			}
+		}
+	}
+
+	return best, found
+}
+
+func niceTickStep(
+	minValue float64,
+	maxValue float64,
+) (step float64, start float64, end float64) {
+	span := maxValue - minValue
+	if span <= 0 {
+		return 1, minValue, maxValue
+	}
+
+	if best, ok := bestTickCandidate(minValue, maxValue); ok {
+		return best.step, best.start, best.end
+	}
+
+	return span / float64(scatterTargetTickGaps), minValue, maxValue
+}
+
+func formatTick(value, step float64) string {
+	if step <= 0 {
+		return strconv.FormatFloat(value, 'g', 6, 64)
+	}
+
+	decimals := 0
+	for decimals < 6 {
+		scaled := step * math.Pow(10, float64(decimals))
+		if math.Abs(scaled-math.Round(scaled)) < 1e-9 {
+			break
+		}
+
+		decimals++
+	}
+
+	return strconv.FormatFloat(value, 'f', decimals, 64)
 }
 
 func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, direction axisDirection) float64 {
