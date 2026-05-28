@@ -265,55 +265,100 @@ func includeNearZero(
 	return minValue, maxValue
 }
 
-func niceTickStep(minValue, maxValue float64) (step, start, end float64) {
+type tickCandidate struct {
+	step     float64
+	start    float64
+	end      float64
+	gaps     int
+	gapDelta float64
+	padding  float64
+}
+
+// betterThan reports whether c is a preferable tick layout to other.
+func (c tickCandidate) betterThan(other tickCandidate) bool {
+	if c.gapDelta != other.gapDelta {
+		return c.gapDelta < other.gapDelta
+	}
+
+	if c.gaps != other.gaps {
+		return c.gaps > other.gaps
+	}
+
+	return c.padding < other.padding
+}
+
+// makeTickCandidate evaluates a candidate step against [minValue, maxValue].
+// Returns false if the resulting gap count is outside the allowed range.
+func makeTickCandidate(
+	minValue float64,
+	maxValue float64,
+	candidateStep float64,
+) (tickCandidate, bool) {
+	start := math.Floor(minValue/candidateStep) * candidateStep
+	end := math.Ceil(maxValue/candidateStep) * candidateStep
+	gaps := int(math.Round((end - start) / candidateStep))
+
+	if gaps < scatterMinTickGaps || gaps > scatterMaxTickGaps {
+		return tickCandidate{}, false
+	}
+
+	return tickCandidate{
+		step:     candidateStep,
+		start:    start,
+		end:      end,
+		gaps:     gaps,
+		gapDelta: math.Abs(float64(gaps - scatterTargetTickGaps)),
+		padding:  (minValue-start)/candidateStep + (end-maxValue)/candidateStep,
+	}, true
+}
+
+// bestTickCandidate searches the anchor/exponent grid for the best tick layout.
+func bestTickCandidate(
+	minValue float64,
+	maxValue float64,
+) (tickCandidate, bool) {
+	span := maxValue - minValue
+	rawStep := span / float64(scatterTargetTickGaps)
+	baseExponent := math.Floor(math.Log10(rawStep))
+	anchors := []float64{1, 2, 2.5, 5, 10}
+
+	var (
+		best  tickCandidate
+		found bool
+	)
+
+	for exponent := baseExponent - 1; exponent <= baseExponent+1; exponent++ {
+		scale := math.Pow(10, exponent)
+		for _, anchor := range anchors {
+			cand, ok := makeTickCandidate(minValue, maxValue, anchor*scale)
+			if !ok {
+				continue
+			}
+
+			if !found || cand.betterThan(best) {
+				best = cand
+				found = true
+			}
+		}
+	}
+
+	return best, found
+}
+
+func niceTickStep(
+	minValue float64,
+	maxValue float64,
+) (step float64, start float64, end float64) {
 	span := maxValue - minValue
 	if span <= 0 {
 		return 1, minValue, maxValue
 	}
 
-	anchors := []float64{1, 2, 2.5, 5, 10}
-	rawStep := span / float64(scatterTargetTickGaps)
-	baseExponent := math.Floor(math.Log10(rawStep))
-
-	bestGapDelta := math.MaxFloat64
-	bestGaps := -1
-	bestPadding := math.MaxFloat64
-
-	for exponent := baseExponent - 1; exponent <= baseExponent+1; exponent++ {
-		scale := math.Pow(10, exponent)
-		for _, anchor := range anchors {
-			candidateStep := anchor * scale
-			candidateStart := math.Floor(minValue/candidateStep) * candidateStep
-			candidateEnd := math.Ceil(maxValue/candidateStep) * candidateStep
-
-			gaps := int(math.Round((candidateEnd - candidateStart) / candidateStep))
-			if gaps < scatterMinTickGaps || gaps > scatterMaxTickGaps {
-				continue
-			}
-
-			gapDelta := math.Abs(float64(gaps - scatterTargetTickGaps))
-
-			padding := (minValue-candidateStart)/candidateStep + (candidateEnd-maxValue)/candidateStep
-			if gapDelta < bestGapDelta ||
-				(gapDelta == bestGapDelta && gaps > bestGaps) ||
-				(gapDelta == bestGapDelta && gaps == bestGaps && padding < bestPadding) {
-				step = candidateStep
-				start = candidateStart
-				end = candidateEnd
-				bestGapDelta = gapDelta
-				bestGaps = gaps
-				bestPadding = padding
-			}
-		}
+	if best, ok := bestTickCandidate(minValue, maxValue); ok {
+		return best.step, best.start, best.end
 	}
 
-	if step == 0 {
-		step = span / float64(scatterTargetTickGaps)
-		start = minValue
-		end = maxValue
-	}
-
-	return step, start, end
+	return span / float64(scatterTargetTickGaps), minValue, maxValue
 }
 
 func formatTick(value, step float64) string {
