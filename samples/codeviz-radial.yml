@@ -10,6 +10,8 @@ radial:
         metric: file-freshness
         palette: good-bad
     labels: all
+    legend: bottom-center
+    legendOrientation: horizontal
 bubbletree:
     labels: folders
 spiral:
