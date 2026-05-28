@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-20T09:47:06Z",
-  "run_id": "26154644905",
+  "last_run": "2026-05-28T11:22:16Z",
+  "run_id": "26571560796",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -34,24 +34,11 @@
     "278": "2026-05-18T11:48:00Z",
     "280": "2026-05-20T09:47:06Z",
     "282": "2026-05-20T09:47:06Z",
-    "284": "2026-05-20T09:47:06Z"
+    "284": "2026-05-20T09:47:06Z",
+    "315": "2026-05-28T11:22:16Z"
   },
   "prs_created": [
-    {"branch": "repo-assist/fix-issue-261-center-label-color-ed769a2f5365cab7", "pr_number": 264, "title": "[repo-assist] fix(radialtree): use dark labelColour for centre label in SVG", "status": "open", "closes": [261]},
-    {"branch": "repo-assist/fix-issue-255-bubbletree-scale-30c889644ca4629f", "pr_number": 265, "title": "[repo-assist] fix(bubbletree): scale content to canvas using AABB", "status": "open", "closes": [255]},
-    {"branch": "repo-assist/fix-issue-258-bubbletree-border-width-24867c99ec7d67c7", "pr_number": 266, "title": "[repo-assist] fix(bubbletree): use thicker border stroke when border metric is active", "status": "open", "closes": [258]},
-    {"branch": "repo-assist/improve-legend-border-swatches-259-5a8e6ee973594831", "pr_number": 267, "title": "[repo-assist] feat(legend): render border-metric swatches as outlines", "status": "open", "closes": [259]},
-    {"branch": "repo-assist/fix-issue-260-radial-label-alignment-841802a2ccd8dfa3", "pr_number": 268, "title": "[repo-assist] fix(radialtree): consistent label orientation for files within a parent directory", "status": "open", "closes": [260]},
-    {"branch": "repo-assist/fix-issue-262-radial-label-suppression-b2498d3b500190ab", "pr_number": 269, "title": "[repo-assist] fix(radialtree): suppress overlapping labels (superseded by #280)", "status": "open - should be closed", "closes": [262]},
-    {"branch": "repo-assist/test-treemap-inks-20260518-3e8200ece0acd4de", "pr_number": 270, "title": "[repo-assist] test(treemap): add BuildInks tests covering all ink configurations", "status": "open", "closes": []},
-    {"branch": "repo-assist/eng-add-fmt-check-to-ci-20260518-283c49605798a068", "pr_number": 272, "title": "[repo-assist] chore(ci): add fmt:check to task ci", "status": "open", "closes": []},
-    {"branch": "repo-assist/refactor-legend-typed-constants-198-a14e336201dd6838", "pr_number": 273, "title": "[repo-assist] refactor(canvas): move LegendPosition/LegendOrientation types to model package", "status": "open - should be closed (issue #198 dismissed by maintainer)", "closes": [198]},
-    {"branch": "repo-assist/test-stages-helpers-20260518-70f07302f82e4bd6", "pr_number": 274, "title": "[repo-assist] test(stages): add tests for PtrInt/PtrString and stages metrics helpers", "status": "open", "closes": []},
-    {"branch": "repo-assist/test-radialtree-stages-20260518-54cbbae1316cb6f3", "pr_number": 275, "title": "[repo-assist] test(radialtree): add stages_test.go covering ResolveMetrics and State", "status": "open", "closes": []},
-    {"branch": "repo-assist/test-bubbletree-stages-20260518-9ec3b97395fcd3dc", "pr_number": 276, "title": "[repo-assist] test(bubbletree): add stages_test.go covering ResolveMetrics and State", "status": "open", "closes": []},
-    {"branch": "repo-assist/test-spiral-stages-20260518", "pr_number": 277, "title": "[repo-assist] test(spiral): add stages_test.go covering ResolveMetrics and State", "status": "open", "closes": []},
-    {"branch": "repo-assist/eng-add-mod-check-to-ci-20260518", "pr_number": 279, "title": "[repo-assist] chore(ci): add mod:check task and wire into task ci", "status": "open", "closes": []},
-    {"branch": "repo-assist/fix-262-label-arc-expansion-fe575a17068b4a06", "pr_number": 280, "title": "[repo-assist] radial: expand arc allocation for shallow file labels (fix #262)", "status": "open - updated to remove Stage 2 (canvas-bounds regression fixed)", "closes": [262]}
+    {"branch": "repo-assist/fix-issue-315-legend-title-layout", "pr_number": null, "title": "[repo-assist] fix(legend): render entry title as two centered lines with correct spacing", "status": "open - pending PR number", "closes": [315]}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -65,22 +52,23 @@
     "194": "CLOSED as completed by maintainer 2026-05-17",
     "225": "commented 2026-05-15: gradient fills implementation sketch",
     "253": "bug fixed via PR #254 (merged 2026-05-18)",
-    "255": "bubbletree AABB scale fix PR #265 open",
+    "255": "bubbletree AABB scale fix - merged",
     "256": "bubble label move implementation approach commented 2026-05-18",
     "257": "treemap labels implementation notes commented 2026-05-18",
-    "258": "bubbletree border width fix PR #266 submitted",
-    "259": "legend border outline swatch PR #267 submitted",
-    "260": "radial label alignment fix PR #268 submitted",
-    "261": "bug fix PR #264 submitted",
-    "262": "arc-expansion PR #280 updated (Stage 2 removed); PR #269 superseded",
+    "258": "bubbletree border width fix - merged",
+    "259": "legend border outline swatch - merged",
+    "260": "radial label alignment fix - merged",
+    "261": "bug fix - merged",
+    "262": "arc-expansion PR #280 merged",
     "263": "pincushion treemap implementation approach commented 2026-05-18",
-    "198": "issue closed; PR #273 still open - should be closed",
+    "198": "issue closed; PR #273 closed",
     "278": "transient push failure; commented 2026-05-18",
     "282": "bubbletree legend overlap: labelled bug; commented 2026-05-20",
-    "284": "radial gaps: labelled enhancement; commented 2026-05-20"
+    "284": "radial gaps: labelled enhancement; commented 2026-05-20",
+    "315": "legend title spacing: labelled bug; PR created 2026-05-28; commented"
   },
   "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
-  "backlog_cursor": {"issues": 284, "prs": 0},
-  "checked_off_summary": "Apr-May 2026: PRs #61,62,73,75,79,81,87,95,96,98,106,115,119,120,122,123,125,126,129,130,132,135,137,147,148,149,150,151,163,164,170,171,172,207,233,234,235,239,240,241,243,254,271 merged/closed. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194 closed.",
-  "notes": "PR #269 superseded by #280 (should be closed). PR #273 dismissed by maintainer (should be closed). Issues #256,257,263,282,284 feature work. PR #280 updated - Stage 2 removed, canvas-bounds regression fixed."
+  "backlog_cursor": {"issues": 315, "prs": 0},
+  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194 closed.",
+  "notes": "All previous PRs (#264-#280) merged or closed by maintainer. New PR pending for #315 (legend title fix) - branch repo-assist/fix-issue-315-legend-title-layout, need to track PR number next run. Issues #256,257,263,282,284,225 are open feature requests with comments."
 }
