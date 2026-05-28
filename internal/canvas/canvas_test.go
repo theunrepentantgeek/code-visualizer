@@ -603,6 +603,52 @@ func TestCanvas_SetLegend_DecomposesToPrimitives(t *testing.T) {
 	g.Expect(hasTitle).To(BeTrue(), "expected title text 'Fill: file-size'")
 }
 
+func TestCanvas_SetLegend_WithLabelSample_RendersSampleBeforeEntries(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+	pal := palette.GetPalette(palette.Temperature)
+	fillInk := NumericInk("file-size", []float64{10, 50, 100}, pal)
+
+	c.SetLegend(LegendConfig{
+		Position:    model.LegendPositionBottomRight,
+		Orientation: model.LegendOrientationVertical,
+		LabelSample: []string{"file-name", "file-size", "file-type"},
+		Entries: []LegendEntry{
+			{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk},
+		},
+	})
+
+	mb := newMockBackend()
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	var sampleY float64
+
+	var sampleFound bool
+
+	var titleY float64
+
+	var titleFound bool
+
+	for _, call := range mb.calls {
+		if call.method == "DrawText" && call.text == "file-name" {
+			sampleY = call.pos.Y
+			sampleFound = true
+		}
+
+		if call.method == "DrawText" && call.text == "Fill: file-size" {
+			titleY = call.pos.Y
+			titleFound = true
+		}
+	}
+
+	g.Expect(sampleFound).To(BeTrue())
+	g.Expect(titleFound).To(BeTrue())
+	g.Expect(sampleY).To(BeNumerically("<", titleY))
+}
+
 func TestCanvas_NoLegend_NoPrimitives(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
