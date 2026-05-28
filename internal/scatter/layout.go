@@ -243,7 +243,10 @@ func numericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirec
 	return ticks
 }
 
-func includeNearZero(minValue, maxValue float64) (float64, float64) {
+func includeNearZero(
+	minValue float64,
+	maxValue float64,
+) (lowerBound float64, upperBound float64) {
 	span := maxValue - minValue
 	if span <= 0 {
 		return minValue, maxValue
