@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-29T05:01:14Z",
-  "run_id": "26618978014",
+  "last_run": "2026-05-29T16:30:06Z",
+  "run_id": "26649181895",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -16,12 +16,13 @@
     "315": "2026-05-28T11:22:16Z",
     "320": "2026-05-29T05:01:14Z",
     "321": "2026-05-29T05:01:14Z",
-    "322": "2026-05-29T05:01:14Z"
+    "322": "2026-05-29T05:01:14Z",
+    "327": "2026-05-29T16:30:06Z",
+    "332": "2026-05-29T16:30:06Z"
   },
   "prs_created": [
-    {"branch": "repo-assist/fix-issue-315-legend-title-layout-d5e6de12f906fa38", "pr_number": 318, "title": "[repo-assist] fix(legend): render entry title as two centered lines with correct spacing", "status": "open", "closes": [315]},
-    {"branch": "repo-assist/improve-disc-gradient-fills-9db17ab88846313f", "pr_number": 319, "title": "[repo-assist] feat(bubbletree): radial gradient fills for disc shapes", "status": "open", "closes": [225]},
-    {"branch": "repo-assist/test-radialtree-inks", "pr_number": null, "title": "[repo-assist] test(radialtree): add BuildInks unit tests", "status": "open - pending PR number", "closes": []}
+    {"branch": "repo-assist/eng-deps-2026-05-29", "pr_number": null, "title": "[repo-assist] chore(deps): update golang.org/x/* indirect dependencies", "status": "open - pending PR number", "closes": []},
+    {"branch": "repo-assist/improve-model-walk-332", "pr_number": null, "title": "[repo-assist] refactor(walk): move tree traversal helpers out of model package", "status": "open - pending PR number", "closes": [332]}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -30,14 +31,16 @@
     "128": "fixed via PR #130 (merged 2026-04-30)",
     "155": "refactor done via PR #170 (merged 2026-05-06, issue closed)",
     "159": "refactor done via PR #171 (merged 2026-05-06, issue closed)",
-    "225": "gradient fills - disc gradients PR #319 open",
-    "315": "legend title: PR #318 open",
+    "225": "gradient fills - disc gradients PR #319 merged",
+    "315": "legend title: PR #318 merged",
     "320": "legend config: labelled enhancement+refactor; commented 2026-05-29",
     "321": "noisy export: labelled enhancement; commented 2026-05-29",
-    "322": "image size config: labelled enhancement+refactor; commented 2026-05-29"
+    "322": "image size config: labelled enhancement+refactor; commented 2026-05-29",
+    "327": "Kong filter adapter: commented 2026-05-29",
+    "332": "model/walk split: commented + PR created 2026-05-29"
   },
   "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
-  "backlog_cursor": {"issues": 322, "prs": 0},
-  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed.",
-  "notes": "PR #318 open (legend fix, closes #315). PR #319 open (disc gradient fills, branch repo-assist/improve-disc-gradient-fills-9db17ab88846313f, addresses #225). New PR open (radialtree inks tests, branch repo-assist/test-radialtree-inks). Issues #320, #321, #322 newly opened by maintainer - labelled and commented. Issue #251 (dep update) still open as a review-needed issue."
+  "backlog_cursor": {"issues": 335, "prs": 0},
+  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed. PRs #318,#319,#323 merged.",
+  "notes": "12 new refactor issues filed 2026-05-29 (#324-335). Two new PRs open: dep update (branch eng-deps-2026-05-29) and walk refactor (branch improve-model-walk-332, closes #332). Many remaining refactor issues are implementable in future runs: #324 (bubbletree/layout), #327 (Kong filter adapter), #328 (git service split), #329 (legend orientation), #330 (fill strategy), #331 (scatter axis), #333 (legend model), #334 (export duplicate tree), #335 (radialtree traversal)."
 }
