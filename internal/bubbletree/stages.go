@@ -3,6 +3,7 @@ package bubbletree
 import (
 	"log/slog"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -51,6 +52,9 @@ func BuildInksStage(s *State) error {
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
 	s.Inks = BuildInks(c.Root, s.FillMetric, s.FillPalette, s.BorderMetric, s.BorderPalette)
+	if !s.Flat {
+		s.Inks.Fill = canvas.NewRadialGradientInk(s.Inks.Fill)
+	}
 
 	return nil
 }

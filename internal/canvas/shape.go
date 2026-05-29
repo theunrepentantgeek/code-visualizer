@@ -34,7 +34,7 @@ type Disc struct {
 }
 
 func (d *Disc) drawTo(b Backend) {
-	fill := model.SolidFill{Color: d.Spec.Fill.Dip(d.Fill)}
+	fill := d.Spec.Fill.Fill(d.Fill, model.Point{X: 0.5, Y: 0.5})
 	border := model.SolidFill{Color: d.Spec.Border.Dip(d.Border)}
 
 	b.DrawDisc(

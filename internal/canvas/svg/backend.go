@@ -86,14 +86,21 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 func (s *svgBackend) DrawDisc(
 	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
-	fillColour := solidColor(fill)
+	fillAttr := rgbaToCSS(solidColor(fill))
+
+	switch f := fill.(type) {
+	case model.RadialGradientFill:
+		fillAttr = fmt.Sprintf("url(#%s)", s.emitRadialGradient(f))
+	default:
+	}
+
 	borderColour := solidColor(border)
 
 	fmt.Fprintf(
 		&s.buf,
 		`<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		center.X, center.Y, radius,
-		rgbaToCSS(fillColour), rgbaToCSS(borderColour), borderWidth,
+		fillAttr, rgbaToCSS(borderColour), borderWidth,
 	)
 }
 

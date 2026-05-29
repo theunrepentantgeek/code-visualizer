@@ -14,6 +14,7 @@ type State struct {
 
 	Config             *config.Bubbletree
 	IncludeBinaryFiles bool
+	Flat               bool
 
 	// Resolved during the pipeline:
 	Size          metric.Name

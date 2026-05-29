@@ -134,10 +134,18 @@ func lerpColour(a, b color.RGBA, t float64) color.RGBA {
 func (r *rasterBackend) DrawDisc(
 	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
-	fillColour := solidColor(fill)
-	r.dc.SetColor(nrgba(fillColour))
-	r.dc.DrawCircle(center.X, center.Y, radius)
-	r.dc.Fill()
+	switch f := fill.(type) {
+	case model.SolidFill:
+		r.dc.SetColor(nrgba(f.Color))
+		r.dc.DrawCircle(center.X, center.Y, radius)
+		r.dc.Fill()
+	case model.RadialGradientFill:
+		r.drawRadialGradientDisc(center, radius, f)
+	default:
+		r.dc.SetColor(nrgba(color.RGBA{A: 255}))
+		r.dc.DrawCircle(center.X, center.Y, radius)
+		r.dc.Fill()
+	}
 
 	if borderWidth > 0 {
 		borderColour := solidColor(border)
@@ -145,6 +153,52 @@ func (r *rasterBackend) DrawDisc(
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawCircle(center.X, center.Y, radius)
 		r.dc.Stroke()
+	}
+}
+
+func (r *rasterBackend) drawRadialGradientDisc(
+	center model.Position, radius float64, grad model.RadialGradientFill,
+) {
+	if radius == 0 {
+		return
+	}
+
+	img, ok := r.dc.Image().(*image.RGBA)
+	if !ok {
+		r.dc.SetColor(nrgba(grad.Center))
+		r.dc.DrawCircle(center.X, center.Y, radius)
+		r.dc.Fill()
+
+		return
+	}
+
+	fx := center.X + (grad.Focus.X-0.5)*2*radius
+	fy := center.Y + (grad.Focus.Y-0.5)*2*radius
+
+	bounds := img.Bounds()
+	x0 := max(int(center.X-radius), bounds.Min.X)
+	y0 := max(int(center.Y-radius), bounds.Min.Y)
+	x1 := min(int(center.X+radius)+1, bounds.Max.X)
+	y1 := min(int(center.Y+radius)+1, bounds.Max.Y)
+
+	r2 := radius * radius
+	invRadius := 1.0 / radius
+
+	for py := y0; py < y1; py++ {
+		dy := float64(py) + 0.5 - center.Y
+
+		for px := x0; px < x1; px++ {
+			dx := float64(px) + 0.5 - center.X
+			if dx*dx+dy*dy > r2 {
+				continue
+			}
+
+			gdx := float64(px) + 0.5 - fx
+			gdy := float64(py) + 0.5 - fy
+			dist := math.Sqrt(gdx*gdx + gdy*gdy)
+			t := min(dist*invRadius, 1.0)
+			img.SetRGBA(px, py, lerpColour(grad.Center, grad.Edge, t))
+		}
 	}
 }
 
