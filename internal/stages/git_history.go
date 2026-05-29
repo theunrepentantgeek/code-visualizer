@@ -7,6 +7,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
@@ -163,7 +164,7 @@ func CommitTimeRange(fileRanges map[*model.File]TimeRange) TimeRange {
 func buildTrackedPathSet(root *model.Directory, repoRoot string) map[string]bool {
 	tracked := make(map[string]bool)
 
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		rel, err := filepath.Rel(repoRoot, f.Path)
 		if err != nil {
 			return
@@ -178,7 +179,7 @@ func buildTrackedPathSet(root *model.Directory, repoRoot string) map[string]bool
 func indexFilesByRepoRelativePath(root *model.Directory, repoRoot string) map[string]*model.File {
 	index := make(map[string]*model.File)
 
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		rel, err := filepath.Rel(repoRoot, f.Path)
 		if err != nil {
 			return

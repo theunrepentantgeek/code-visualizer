@@ -12,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
@@ -215,7 +216,7 @@ func extractNumeric(f *model.File, m metric.Name) float64 {
 func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
 	var values []float64
 
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		values = append(values, extractNumeric(f, m))
 	})
 
@@ -225,7 +226,7 @@ func collectNumericValues(root *model.Directory, m metric.Name) []float64 {
 func collectDistinctTypes(root *model.Directory, m metric.Name) []string {
 	seen := map[string]bool{}
 
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		if v, ok := f.Classification(m); ok {
 			seen[v] = true
 		}

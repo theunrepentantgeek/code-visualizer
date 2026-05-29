@@ -5,7 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
@@ -17,7 +17,7 @@ func RunProviders[S VizState](s S) error {
 
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
+	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, walk.CountFiles(c.Root))
 
 	if err := provider.Run(c.Root, c.Requested, metricProg); err != nil {
 		stopMetricTicker()

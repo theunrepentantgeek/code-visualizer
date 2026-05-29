@@ -3,6 +3,7 @@ package scatter
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 )
 
 // PointDatum holds the resolved metric values for one plottable file.
@@ -43,7 +44,7 @@ func CollectDataset(root *model.Directory, xAxis, yAxis AxisSpec, sizeMetric met
 		return dataset
 	}
 
-	model.WalkFiles(root, func(file *model.File) {
+	walk.Files(root, func(file *model.File) {
 		x, okX := axisValueForFile(file, xAxis)
 		y, okY := axisValueForFile(file, yAxis)
 		size, okSize := numericValueForFile(file, sizeMetric)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 )
 
 const (
@@ -55,7 +56,7 @@ func walkGitFiles(
 			"metric", desc, "error", prewarmErr)
 	}
 
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		if onFile != nil {
 			defer onFile()
 		}
@@ -78,7 +79,7 @@ func walkGitFiles(
 func buildRelPathSet(s *repoService, root *model.Directory) map[string]bool {
 	paths := make(map[string]bool)
 
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		relPath, err := filepath.Rel(s.RepoRoot(), f.Path)
 		if err == nil {
 			paths[relPath] = true

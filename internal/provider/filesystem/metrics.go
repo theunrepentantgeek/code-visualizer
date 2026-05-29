@@ -14,6 +14,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -68,7 +69,7 @@ func (*FileLinesProvider) DefaultPalette() palette.PaletteName { return palette.
 func (p *FileLinesProvider) SetOnFileProcessed(fn func()) { p.onFile = fn }
 
 func (p *FileLinesProvider) Load(root *model.Directory) error {
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		if p.onFile != nil {
 			defer p.onFile()
 		}

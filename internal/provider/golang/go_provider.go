@@ -10,6 +10,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -136,7 +137,7 @@ func walkGoFiles(
 	onFile func(),
 	extract goExtractor,
 ) {
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		if onFile != nil {
 			defer onFile()
 		}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 )
 
 const (
@@ -255,7 +256,7 @@ func computeMaxDepth(dir *model.Directory) int {
 func collectFileMetricValues(root *model.Directory, discMetric metric.Name) []float64 {
 	var vals []float64
 
-	model.WalkFiles(root, func(f *model.File) {
+	walk.Files(root, func(f *model.File) {
 		v := fileMetricValue(f, discMetric)
 		if v > 0 {
 			vals = append(vals, v)

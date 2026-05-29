@@ -14,6 +14,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/walk"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
@@ -43,7 +44,7 @@ func Scan(path string, rules []filter.Rule, progress Progress) (*model.Directory
 		return nil, errors.New("no files found in directory")
 	}
 
-	slog.Info("Scan complete", "files", model.CountFiles(root), "directories", model.CountDirs(root))
+	slog.Info("Scan complete", "files", walk.CountFiles(root), "directories", walk.CountDirs(root))
 
 	return root, nil
 }
