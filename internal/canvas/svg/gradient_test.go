@@ -76,4 +76,3 @@ func TestSVGBackend_DrawDisc_WithRadialGradientFill_EmitsGradient(t *testing.T) 
 	g.Expect(svg).To(ContainSubstring("<circle"))
 	g.Expect(strings.Count(svg, "<stop")).To(BeNumerically(">=", 2))
 }
-

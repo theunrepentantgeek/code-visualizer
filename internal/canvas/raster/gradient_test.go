@@ -132,7 +132,6 @@ func TestRasterBackend_DrawDisc_WithRadialGradientFill(t *testing.T) {
 	g.Expect(center.B).To(BeNumerically(">", edge.B))
 }
 
-
 func loadImage(t *testing.T, path string) image.Image {
 	t.Helper()
 
