@@ -196,7 +196,7 @@ func makeSampleLegendData(orientation model.LegendOrientation) *model.LegendData
 			{
 				Label:  "Fill",
 				Metric: "file-size",
-				Kind:  model.LegendEntryNumeric,
+				Kind:   model.LegendEntryNumeric,
 				Swatches: []model.LegendSwatch{
 					{Colour: color.RGBA{R: 50, G: 50, B: 200, A: 255}, Label: "100"},
 					{Colour: color.RGBA{R: 100, G: 100, B: 200, A: 255}, Label: "500"},
@@ -208,7 +208,7 @@ func makeSampleLegendData(orientation model.LegendOrientation) *model.LegendData
 			{
 				Label:  "Border",
 				Metric: "file-type",
-				Kind:  model.LegendEntryCategorical,
+				Kind:   model.LegendEntryCategorical,
 				Swatches: []model.LegendSwatch{
 					{Colour: color.RGBA{R: 0, G: 173, B: 216, A: 255}, Label: "go"},
 					{Colour: color.RGBA{R: 222, G: 165, B: 132, A: 255}, Label: "rs"},
