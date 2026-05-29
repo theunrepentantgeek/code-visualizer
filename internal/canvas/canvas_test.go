@@ -591,16 +591,22 @@ func TestCanvas_SetLegend_DecomposesToPrimitives(t *testing.T) {
 	// First call is the background rectangle.
 	g.Expect(mb.calls[0].method).To(Equal("DrawRectangle"))
 
-	// Should contain at least one text call for the title.
-	hasTitle := false
+	// Should contain text calls for the label and metric on separate lines.
+	hasLabel := false
+	hasMetric := false
 
 	for _, call := range mb.calls {
-		if call.method == "DrawText" && call.text == "Fill: file-size" {
-			hasTitle = true
+		if call.method == "DrawText" && call.text == "Fill" {
+			hasLabel = true
+		}
+
+		if call.method == "DrawText" && call.text == "file-size" {
+			hasMetric = true
 		}
 	}
 
-	g.Expect(hasTitle).To(BeTrue(), "expected title text 'Fill: file-size'")
+	g.Expect(hasLabel).To(BeTrue(), "expected label text 'Fill'")
+	g.Expect(hasMetric).To(BeTrue(), "expected metric text 'file-size'")
 }
 
 func TestCanvas_SetLegend_WithLabelSample_RendersSampleBeforeEntries(t *testing.T) {
@@ -638,7 +644,7 @@ func TestCanvas_SetLegend_WithLabelSample_RendersSampleBeforeEntries(t *testing.
 			sampleFound = true
 		}
 
-		if call.method == "DrawText" && call.text == "Fill: file-size" {
+		if call.method == "DrawText" && call.text == "Fill" {
 			titleY = call.pos.Y
 			titleFound = true
 		}

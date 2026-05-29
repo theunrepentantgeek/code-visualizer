@@ -1,0 +1,537 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080">
+<rect x="0.00" y="0.00" width="1920.00" height="1080.00" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="0.0"/>
+<rect x="96.00" y="48.00" width="1512.00" height="936.00" fill="rgb(255,255,255)" stroke="rgb(119,119,119)" stroke-width="1.5"/>
+<line x1="96.00" y1="48.00" x2="96.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="348.00" y1="48.00" x2="348.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="600.00" y1="48.00" x2="600.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="852.00" y1="48.00" x2="852.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="1104.00" y1="48.00" x2="1104.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="1356.00" y1="48.00" x2="1356.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="1608.00" y1="48.00" x2="1608.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="984.00" x2="1608.00" y2="984.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="880.00" x2="1608.00" y2="880.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="776.00" x2="1608.00" y2="776.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="672.00" x2="1608.00" y2="672.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="568.00" x2="1608.00" y2="568.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="464.00" x2="1608.00" y2="464.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="360.00" x2="1608.00" y2="360.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="256.00" x2="1608.00" y2="256.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="152.00" x2="1608.00" y2="152.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<line x1="96.00" y1="48.00" x2="1608.00" y2="48.00" stroke="rgb(221,221,221)" stroke-width="1.0"/>
+<circle cx="766.69" cy="961.94" r="27.89" fill="rgb(25,120,20)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="301.19" cy="957.26" r="26.31" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="1057.79" cy="807.24" r="25.91" fill="rgb(25,120,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="1168.42" cy="936.69" r="25.91" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="1165.91" cy="887.55" r="25.11" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="434.51" cy="808.38" r="25.11" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="1608.00" cy="854.45" r="25.11" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="1125.01" cy="907.16" r="24.72" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="724.42" cy="934.69" r="24.72" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="869.31" cy="818.27" r="23.52" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="241.67" cy="620.70" r="23.13" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="853.49" cy="839.44" r="23.13" fill="rgb(25,120,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="452.30" cy="957.39" r="21.93" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="494.15" cy="940.72" r="21.93" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="965.49" cy="976.19" r="21.54" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="737.25" cy="958.53" r="21.54" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="522.93" cy="741.91" r="21.14" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="823.82" cy="978.15" r="21.14" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="539.64" cy="888.41" r="20.74" fill="rgb(25,120,20)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="699.58" cy="961.58" r="19.95" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="397.19" cy="969.83" r="19.15" fill="rgb(25,120,20)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="372.18" cy="871.40" r="19.15" fill="rgb(25,120,20)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="381.73" cy="875.36" r="19.15" fill="rgb(25,120,20)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="552.18" cy="904.76" r="18.76" fill="rgb(80,165,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="377.43" cy="914.37" r="18.76" fill="rgb(80,165,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="560.18" cy="789.98" r="18.76" fill="rgb(80,165,40)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="608.60" cy="827.05" r="18.76" fill="rgb(80,165,40)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="557.49" cy="919.49" r="18.76" fill="rgb(80,165,40)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="491.22" cy="971.98" r="18.36" fill="rgb(80,165,40)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="514.15" cy="942.50" r="18.36" fill="rgb(80,165,40)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="416.90" cy="805.71" r="18.36" fill="rgb(80,165,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="450.03" cy="886.75" r="18.36" fill="rgb(80,165,40)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="479.58" cy="858.89" r="17.96" fill="rgb(80,165,40)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="447.94" cy="931.82" r="17.56" fill="rgb(80,165,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="708.78" cy="863.93" r="17.56" fill="rgb(80,165,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="473.73" cy="901.71" r="17.56" fill="rgb(80,165,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="442.27" cy="907.59" r="17.56" fill="rgb(80,165,40)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="355.94" cy="924.20" r="17.56" fill="rgb(80,165,40)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="382.99" cy="939.12" r="17.56" fill="rgb(80,165,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="322.39" cy="872.99" r="17.56" fill="rgb(80,165,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="405.31" cy="952.35" r="17.56" fill="rgb(80,165,40)" stroke="rgb(25,120,20)" stroke-width="2.0"/>
+<circle cx="577.01" cy="901.71" r="17.17" fill="rgb(80,165,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="316.12" cy="799.57" r="17.17" fill="rgb(80,165,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="382.09" cy="912.69" r="17.17" fill="rgb(80,165,40)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="298.51" cy="922.12" r="17.17" fill="rgb(80,165,40)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="480.36" cy="978.46" r="17.17" fill="rgb(80,165,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="371.34" cy="884.95" r="17.17" fill="rgb(80,165,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="243.64" cy="827.11" r="17.17" fill="rgb(80,165,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="499.52" cy="979.20" r="17.17" fill="rgb(80,165,40)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="306.33" cy="863.93" r="17.17" fill="rgb(80,165,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="289.97" cy="880.48" r="17.17" fill="rgb(80,165,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="477.31" cy="948.34" r="16.77" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="391.40" cy="874.29" r="16.77" fill="rgb(165,200,50)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="351.70" cy="975.64" r="16.77" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="408.90" cy="758.41" r="16.77" fill="rgb(165,200,50)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="394.45" cy="912.69" r="16.77" fill="rgb(165,200,50)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="350.63" cy="872.24" r="16.37" fill="rgb(165,200,50)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="277.97" cy="984.00" r="16.37" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="272.42" cy="962.61" r="16.37" fill="rgb(165,200,50)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="399.40" cy="705.33" r="16.37" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="228.24" cy="968.27" r="16.37" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="430.27" cy="801.02" r="15.97" fill="rgb(165,200,50)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="406.63" cy="732.85" r="15.97" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="181.49" cy="740.88" r="15.97" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="373.01" cy="984.00" r="15.97" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="237.13" cy="961.71" r="15.97" fill="rgb(165,200,50)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="582.63" cy="946.39" r="15.97" fill="rgb(165,200,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="296.24" cy="968.38" r="15.58" fill="rgb(240,215,50)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="417.91" cy="948.10" r="15.58" fill="rgb(240,215,50)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="309.85" cy="984.00" r="15.58" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="173.37" cy="931.82" r="15.58" fill="rgb(240,215,50)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="298.81" cy="975.96" r="15.58" fill="rgb(240,215,50)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="445.91" cy="965.12" r="15.58" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="236.18" cy="816.86" r="15.58" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="226.75" cy="984.00" r="15.58" fill="rgb(240,215,50)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="259.40" cy="970.29" r="15.58" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="467.58" cy="867.73" r="15.58" fill="rgb(240,215,50)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="204.36" cy="897.27" r="15.58" fill="rgb(240,215,50)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="321.43" cy="948.04" r="15.58" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="193.37" cy="350.10" r="15.18" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="154.99" cy="727.27" r="15.18" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="250.09" cy="805.71" r="15.18" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="282.33" cy="838.60" r="15.18" fill="rgb(240,215,50)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="224.36" cy="792.98" r="15.18" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="428.12" cy="957.91" r="15.18" fill="rgb(240,215,50)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="172.24" cy="856.65" r="15.18" fill="rgb(240,215,50)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="345.73" cy="799.01" r="15.18" fill="rgb(240,215,50)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="295.94" cy="801.66" r="14.78" fill="rgb(230,175,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="175.82" cy="897.27" r="14.78" fill="rgb(230,175,40)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="414.03" cy="934.37" r="14.78" fill="rgb(230,175,40)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="351.16" cy="984.00" r="14.78" fill="rgb(230,175,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="201.49" cy="291.83" r="14.78" fill="rgb(230,175,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="202.93" cy="291.83" r="14.78" fill="rgb(230,175,40)" stroke="rgb(165,200,50)" stroke-width="2.0"/>
+<circle cx="163.40" cy="627.43" r="14.78" fill="rgb(230,175,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="214.27" cy="733.29" r="14.78" fill="rgb(230,175,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="422.21" cy="868.11" r="14.78" fill="rgb(230,175,40)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="262.33" cy="843.92" r="14.38" fill="rgb(230,175,40)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="265.73" cy="650.81" r="14.38" fill="rgb(230,175,40)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="190.15" cy="270.86" r="14.38" fill="rgb(230,175,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="224.84" cy="918.77" r="14.38" fill="rgb(230,175,40)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="182.57" cy="871.40" r="14.38" fill="rgb(230,175,40)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="456.12" cy="984.00" r="14.38" fill="rgb(230,175,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="357.13" cy="917.66" r="14.38" fill="rgb(230,175,40)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="204.78" cy="822.53" r="14.38" fill="rgb(230,175,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="199.58" cy="951.09" r="14.38" fill="rgb(230,175,40)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="193.13" cy="943.63" r="14.38" fill="rgb(230,175,40)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="185.31" cy="342.17" r="14.38" fill="rgb(230,175,40)" stroke="rgb(240,215,50)" stroke-width="2.0"/>
+<circle cx="424.48" cy="913.28" r="14.38" fill="rgb(230,175,40)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="225.67" cy="932.24" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="186.81" cy="964.19" r="13.99" fill="rgb(210,130,30)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="405.97" cy="862.90" r="13.99" fill="rgb(210,130,30)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="262.03" cy="894.86" r="13.99" fill="rgb(210,130,30)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="145.91" cy="984.00" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="190.51" cy="984.00" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="448.54" cy="933.06" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="123.34" cy="686.86" r="13.99" fill="rgb(210,130,30)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="191.04" cy="867.73" r="13.99" fill="rgb(210,130,30)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="219.22" cy="984.00" r="13.99" fill="rgb(210,130,30)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="208.60" cy="878.54" r="13.99" fill="rgb(210,130,30)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="261.97" cy="915.43" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="407.52" cy="852.81" r="13.99" fill="rgb(210,130,30)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="419.10" cy="872.38" r="13.99" fill="rgb(210,130,30)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="241.67" cy="969.92" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="231.76" cy="984.00" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="170.57" cy="325.71" r="13.99" fill="rgb(210,130,30)" stroke="rgb(230,175,40)" stroke-width="2.0"/>
+<circle cx="133.07" cy="785.90" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="191.40" cy="749.18" r="13.59" fill="rgb(175,95,25)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="219.46" cy="780.24" r="13.59" fill="rgb(175,95,25)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="251.10" cy="741.53" r="13.59" fill="rgb(175,95,25)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="177.85" cy="984.00" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="142.69" cy="746.29" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="298.69" cy="943.25" r="13.59" fill="rgb(175,95,25)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="230.09" cy="970.95" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="214.45" cy="891.78" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="277.79" cy="834.74" r="13.59" fill="rgb(175,95,25)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="228.96" cy="913.62" r="13.59" fill="rgb(175,95,25)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="204.36" cy="984.00" r="13.59" fill="rgb(175,95,25)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="247.64" cy="984.00" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="117.01" cy="181.71" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="120.66" cy="48.00" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="191.46" cy="891.78" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="116.72" cy="48.00" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="138.33" cy="477.29" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="136.78" cy="477.29" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="146.99" cy="372.73" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="258.15" cy="984.00" r="13.59" fill="rgb(175,95,25)" stroke="rgb(210,130,30)" stroke-width="2.0"/>
+<circle cx="243.52" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="194.45" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="130.21" cy="780.24" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="236.66" cy="889.61" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="141.55" cy="825.52" r="13.19" fill="rgb(130,70,20)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="128.48" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="180.12" cy="925.65" r="13.19" fill="rgb(130,70,20)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="114.39" cy="698.74" r="13.19" fill="rgb(130,70,20)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="154.09" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="287.34" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="201.55" cy="801.92" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="146.87" cy="589.89" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="141.79" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="142.63" cy="589.89" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="146.57" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="201.97" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="185.67" cy="562.60" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="139.22" cy="984.00" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="197.13" cy="770.06" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="114.75" cy="716.57" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="162.21" cy="778.29" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="148.12" cy="869.39" r="13.19" fill="rgb(130,70,20)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="156.30" cy="652.02" r="13.19" fill="rgb(130,70,20)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="173.13" cy="740.88" r="12.79" fill="rgb(85,45,15)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="228.12" cy="270.86" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="135.76" cy="984.00" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="151.52" cy="678.37" r="12.79" fill="rgb(85,45,15)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="152.54" cy="984.00" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="326.27" cy="925.12" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="134.27" cy="882.12" r="12.79" fill="rgb(85,45,15)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="134.39" cy="984.00" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="142.63" cy="855.63" r="12.79" fill="rgb(85,45,15)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="137.07" cy="984.00" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="231.64" cy="802.97" r="12.79" fill="rgb(85,45,15)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="193.61" cy="831.18" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="115.76" cy="716.57" r="12.79" fill="rgb(85,45,15)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="180.18" cy="862.44" r="12.79" fill="rgb(85,45,15)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="218.09" cy="984.00" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="270.69" cy="984.00" r="12.79" fill="rgb(85,45,15)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="113.43" cy="770.06" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="168.36" cy="957.26" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="151.28" cy="805.71" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="151.46" cy="860.57" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="153.73" cy="819.43" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="151.10" cy="805.71" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="145.91" cy="984.00" r="12.79" fill="rgb(85,45,15)" stroke="rgb(130,70,20)" stroke-width="2.0"/>
+<circle cx="108.66" cy="449.14" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="144.36" cy="792.98" r="12.40" fill="rgb(45,25,10)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="109.79" cy="901.71" r="12.40" fill="rgb(45,25,10)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="132.36" cy="950.57" r="12.40" fill="rgb(45,25,10)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="136.96" cy="805.71" r="12.40" fill="rgb(45,25,10)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="141.97" cy="984.00" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="185.61" cy="984.00" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="102.21" cy="627.43" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="121.01" cy="937.49" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="205.49" cy="984.00" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="129.43" cy="984.00" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="132.60" cy="206.03" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="134.69" cy="877.03" r="12.40" fill="rgb(45,25,10)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="129.49" cy="877.03" r="12.40" fill="rgb(45,25,10)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="185.91" cy="984.00" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="124.42" cy="984.00" r="12.40" fill="rgb(45,25,10)" stroke="rgb(85,45,15)" stroke-width="2.0"/>
+<circle cx="176.42" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="143.76" cy="805.71" r="12.00" fill="rgb(15,10,5)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="205.01" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="96.00" cy="850.29" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="114.03" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="100.66" cy="716.57" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="113.73" cy="917.14" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="161.67" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="96.48" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="101.49" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="102.09" cy="877.03" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="632.72" cy="974.14" r="12.00" fill="rgb(15,10,5)" stroke="rgb(15,10,5)" stroke-width="2.0"/>
+<circle cx="103.64" cy="831.18" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="100.90" cy="850.29" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="101.01" cy="850.29" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="111.70" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="102.21" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="128.36" cy="901.71" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="101.49" cy="984.00" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<circle cx="108.18" cy="805.71" r="12.00" fill="rgb(15,10,5)" stroke="rgb(45,25,10)" stroke-width="2.0"/>
+<text x="852.00" y="1040.00" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-size</text>
+<text x="24.00" y="516.00" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" transform="rotate(-90.00 24.00 516.00)">comment-ratio</text>
+<text x="96.00" y="1002.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">0</text>
+<text x="348.00" y="1002.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">5000</text>
+<text x="600.00" y="1002.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">10000</text>
+<text x="852.00" y="1002.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">15000</text>
+<text x="1104.00" y="1002.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">20000</text>
+<text x="1356.00" y="1002.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">25000</text>
+<text x="1608.00" y="1002.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">30000</text>
+<text x="88.00" y="984.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.0</text>
+<text x="88.00" y="880.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.1</text>
+<text x="88.00" y="776.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.2</text>
+<text x="88.00" y="672.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.3</text>
+<text x="88.00" y="568.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.4</text>
+<text x="88.00" y="464.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.5</text>
+<text x="88.00" y="360.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.6</text>
+<text x="88.00" y="256.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.7</text>
+<text x="88.00" y="152.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.8</text>
+<text x="88.00" y="48.00" fill="rgb(34,34,34)" font-size="10.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central">0.9</text>
+<text x="766.69" y="961.94" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">layo…</text>
+<text x="301.19" y="957.26" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">metr…</text>
+<text x="1057.79" y="807.24" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">layo…</text>
+<text x="1168.42" y="936.69" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">main…</text>
+<text x="1165.91" y="887.55" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">layo…</text>
+<text x="434.51" y="808.38" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">metr…</text>
+<text x="1608.00" y="854.45" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">metr…</text>
+<text x="1125.01" y="907.16" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">layo…</text>
+<text x="724.42" y="934.69" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">metr…</text>
+<text x="869.31" y="818.27" fill="rgb(255,255,255)" font-size="14.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">con…</text>
+<text x="241.67" y="620.70" fill="rgb(255,255,255)" font-size="13.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">leg…</text>
+<text x="853.49" y="839.44" fill="rgb(255,255,255)" font-size="13.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ser…</text>
+<text x="452.30" y="957.39" fill="rgb(255,255,255)" font-size="13.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ove…</text>
+<text x="494.15" y="940.72" fill="rgb(255,255,255)" font-size="13.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">run…</text>
+<text x="965.49" y="976.19" fill="rgb(255,255,255)" font-size="12.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">can…</text>
+<text x="737.25" y="958.53" fill="rgb(255,255,255)" font-size="12.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="522.93" y="741.91" fill="rgb(255,255,255)" font-size="12.7" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pal…</text>
+<text x="823.82" y="978.15" fill="rgb(255,255,255)" font-size="12.7" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="539.64" y="888.41" fill="rgb(255,255,255)" font-size="12.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="699.58" y="961.58" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sca…</text>
+<text x="397.19" y="969.83" fill="rgb(255,255,255)" font-size="11.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="372.18" y="871.40" fill="rgb(255,255,255)" font-size="11.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">go_…</text>
+<text x="381.73" y="875.36" fill="rgb(255,255,255)" font-size="11.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="552.18" y="904.76" fill="rgb(255,255,255)" font-size="11.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bac…</text>
+<text x="377.43" y="914.37" fill="rgb(255,255,255)" font-size="11.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="560.18" y="789.98" fill="rgb(255,255,255)" font-size="11.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="608.60" y="827.05" fill="rgb(255,255,255)" font-size="11.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="557.49" y="919.49" fill="rgb(255,255,255)" font-size="11.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tim…</text>
+<text x="491.22" y="971.98" fill="rgb(255,255,255)" font-size="11.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="514.15" y="942.50" fill="rgb(255,255,255)" font-size="11.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">leg…</text>
+<text x="416.90" y="805.71" fill="rgb(255,255,255)" font-size="11.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pro…</text>
+<text x="450.03" y="886.75" fill="rgb(255,255,255)" font-size="11.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tab…</text>
+<text x="479.58" y="858.89" fill="rgb(255,255,255)" font-size="10.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">exp…</text>
+<text x="447.94" y="931.82" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bac…</text>
+<text x="708.78" y="863.93" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">exp…</text>
+<text x="473.73" y="901.71" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="442.27" y="907.59" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pal…</text>
+<text x="355.94" y="924.20" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="382.99" y="939.12" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="322.39" y="872.99" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="405.31" y="952.35" fill="rgb(255,255,255)" font-size="10.5" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">wal…</text>
+<text x="577.01" y="901.71" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bac…</text>
+<text x="316.12" y="799.57" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">can…</text>
+<text x="382.09" y="912.69" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="298.51" y="922.12" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="480.36" y="978.46" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">leg…</text>
+<text x="371.34" y="884.95" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="243.64" y="827.11" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">reg…</text>
+<text x="499.52" y="979.20" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="306.33" y="863.93" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="289.97" y="880.48" fill="rgb(255,255,255)" font-size="10.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="477.31" y="948.34" fill="rgb(255,255,255)" font-size="10.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bac…</text>
+<text x="391.40" y="874.29" fill="rgb(255,255,255)" font-size="10.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">git…</text>
+<text x="351.70" y="975.64" fill="rgb(255,255,255)" font-size="10.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="408.90" y="758.41" fill="rgb(255,255,255)" font-size="10.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="394.45" y="912.69" fill="rgb(255,255,255)" font-size="10.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">run…</text>
+<text x="350.63" y="872.24" fill="rgb(255,255,255)" font-size="9.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">git…</text>
+<text x="277.97" y="984.00" fill="rgb(255,255,255)" font-size="9.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="272.42" y="962.61" fill="rgb(255,255,255)" font-size="9.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="399.40" y="705.33" fill="rgb(255,255,255)" font-size="9.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="228.24" y="968.27" fill="rgb(255,255,255)" font-size="9.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">reg…</text>
+<text x="430.27" y="801.02" fill="rgb(255,255,255)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bul…</text>
+<text x="406.63" y="732.85" fill="rgb(255,255,255)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">con…</text>
+<text x="181.49" y="740.88" fill="rgb(255,255,255)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="373.01" y="984.00" fill="rgb(255,255,255)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="237.13" y="961.71" fill="rgb(255,255,255)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">moc…</text>
+<text x="582.63" y="946.39" fill="rgb(255,255,255)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="296.24" y="968.38" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">blo…</text>
+<text x="417.91" y="948.10" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">git…</text>
+<text x="309.85" y="984.00" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="173.37" y="931.82" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="298.81" y="975.96" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lab…</text>
+<text x="445.91" y="965.12" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">leg…</text>
+<text x="236.18" y="816.86" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="226.75" y="984.00" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pip…</text>
+<text x="259.40" y="970.29" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="467.58" y="867.73" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sca…</text>
+<text x="204.36" y="897.27" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sha…</text>
+<text x="321.43" y="948.04" fill="rgb(0,0,0)" font-size="9.3" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="193.37" y="350.10" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bac…</text>
+<text x="154.99" y="727.27" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">err…</text>
+<text x="250.09" y="805.71" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="282.33" y="838.60" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">imp…</text>
+<text x="224.36" y="792.98" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">leg…</text>
+<text x="428.12" y="957.91" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="172.24" y="856.65" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">rad…</text>
+<text x="345.73" y="799.01" fill="rgb(0,0,0)" font-size="9.1" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tab…</text>
+<text x="295.94" y="801.66" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">buc…</text>
+<text x="175.82" y="897.27" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="414.03" y="934.37" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="351.16" y="984.00" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="201.49" y="291.83" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sca…</text>
+<text x="202.93" y="291.83" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">spi…</text>
+<text x="163.40" y="627.43" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tex…</text>
+<text x="214.27" y="733.29" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tim…</text>
+<text x="422.21" y="868.11" fill="rgb(255,255,255)" font-size="8.9" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tre…</text>
+<text x="262.33" y="843.92" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">agg…</text>
+<text x="265.73" y="650.81" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">agg…</text>
+<text x="190.15" y="270.86" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bub…</text>
+<text x="224.84" y="918.77" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">dat…</text>
+<text x="182.57" y="871.40" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="456.12" y="984.00" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="357.13" y="917.66" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">mai…</text>
+<text x="204.78" y="822.53" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="199.58" y="951.09" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">mod…</text>
+<text x="193.13" y="943.63" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pat…</text>
+<text x="185.31" y="342.17" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">rad…</text>
+<text x="424.48" y="913.28" fill="rgb(255,255,255)" font-size="8.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sca…</text>
+<text x="225.67" y="932.24" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bin…</text>
+<text x="186.81" y="964.19" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bin…</text>
+<text x="405.97" y="862.90" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bub…</text>
+<text x="262.03" y="894.86" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">com…</text>
+<text x="145.91" y="984.00" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">dim…</text>
+<text x="190.51" y="984.00" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">dir…</text>
+<text x="448.54" y="933.06" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="123.34" y="686.86" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="191.04" y="867.73" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">git…</text>
+<text x="219.22" y="984.00" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="208.60" y="878.54" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">mai…</text>
+<text x="261.97" y="915.43" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">rad…</text>
+<text x="407.52" y="852.81" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">rad…</text>
+<text x="419.10" y="872.38" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">spi…</text>
+<text x="241.67" y="969.92" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="231.76" y="984.00" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="170.57" y="325.71" fill="rgb(255,255,255)" font-size="8.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tre…</text>
+<text x="133.07" y="785.90" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">axi…</text>
+<text x="191.40" y="749.18" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bin…</text>
+<text x="219.46" y="780.24" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">buc…</text>
+<text x="251.10" y="741.53" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">com…</text>
+<text x="177.85" y="984.00" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="142.69" y="746.29" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">for…</text>
+<text x="298.69" y="943.25" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">gra…</text>
+<text x="230.09" y="970.95" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">imp…</text>
+<text x="214.45" y="891.78" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="277.79" y="834.74" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="228.96" y="913.62" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="204.36" y="984.00" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="247.64" y="984.00" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="117.01" y="181.71" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lab…</text>
+<text x="120.66" y="48.00" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="191.46" y="891.78" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">map…</text>
+<text x="116.72" y="48.00" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="138.33" y="477.29" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">nod…</text>
+<text x="136.78" y="477.29" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">nod…</text>
+<text x="146.99" y="372.73" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">nod…</text>
+<text x="258.15" y="984.00" fill="rgb(255,255,255)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="243.52" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">blo…</text>
+<text x="194.45" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">com…</text>
+<text x="130.21" y="780.24" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">dim…</text>
+<text x="236.66" y="889.61" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">dis…</text>
+<text x="141.55" y="825.52" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">exp…</text>
+<text x="128.48" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">hel…</text>
+<text x="180.12" y="925.65" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">hel…</text>
+<text x="114.39" y="698.74" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ink…</text>
+<text x="154.09" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lab…</text>
+<text x="287.34" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="201.55" y="801.92" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">map…</text>
+<text x="146.87" y="589.89" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">mea…</text>
+<text x="141.79" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">mea…</text>
+<text x="142.63" y="589.89" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="146.57" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="201.97" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">nod…</text>
+<text x="185.67" y="562.60" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pro…</text>
+<text x="139.22" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="197.13" y="770.06" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">res…</text>
+<text x="114.75" y="716.57" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">spe…</text>
+<text x="162.21" y="778.29" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="148.12" y="869.39" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tex…</text>
+<text x="156.30" y="652.02" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">wal…</text>
+<text x="173.13" y="740.88" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bin…</text>
+<text x="228.12" y="270.86" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">com…</text>
+<text x="135.76" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="151.52" y="678.37" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="152.54" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">git…</text>
+<text x="326.27" y="925.12" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">go_…</text>
+<text x="134.27" y="882.12" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">hel…</text>
+<text x="134.39" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lab…</text>
+<text x="142.63" y="855.63" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lab…</text>
+<text x="137.07" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lay…</text>
+<text x="231.64" y="802.97" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">leg…</text>
+<text x="193.61" y="831.18" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="115.76" y="716.57" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ove…</text>
+<text x="180.18" y="862.44" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pat…</text>
+<text x="218.09" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="270.69" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="113.43" y="770.06" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">res…</text>
+<text x="168.36" y="957.26" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sca…</text>
+<text x="151.28" y="805.71" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="151.46" y="860.57" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="153.73" y="819.43" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="151.10" y="805.71" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="145.91" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tex…</text>
+<text x="108.66" y="449.14" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">bac…</text>
+<text x="144.36" y="792.98" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">buc…</text>
+<text x="109.79" y="901.71" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">can…</text>
+<text x="132.36" y="950.57" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">com…</text>
+<text x="136.96" y="805.71" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">dis…</text>
+<text x="141.97" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="185.61" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">for…</text>
+<text x="102.21" y="627.43" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">geo…</text>
+<text x="121.01" y="937.49" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">git…</text>
+<text x="205.49" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">lab…</text>
+<text x="129.43" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="132.60" y="206.03" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pip…</text>
+<text x="134.69" y="877.03" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pro…</text>
+<text x="129.49" y="877.03" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sca…</text>
+<text x="185.91" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sta…</text>
+<text x="124.42" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tex…</text>
+<text x="176.42" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">com…</text>
+<text x="143.76" y="805.71" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">cyc…</text>
+<text x="205.01" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">cyc…</text>
+<text x="96.00" y="850.29" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">dir…</text>
+<text x="114.03" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">exp…</text>
+<text x="100.66" y="716.57" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">fil…</text>
+<text x="113.73" y="917.14" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">git…</text>
+<text x="161.67" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">gra…</text>
+<text x="96.48" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">mai…</text>
+<text x="101.49" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">met…</text>
+<text x="102.09" y="877.03" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">nod…</text>
+<text x="632.72" y="974.14" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">pro…</text>
+<text x="103.64" y="831.18" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">reg…</text>
+<text x="100.90" y="850.29" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">reg…</text>
+<text x="101.01" y="850.29" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">reg…</text>
+<text x="111.70" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="102.21" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">ren…</text>
+<text x="128.36" y="901.71" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sca…</text>
+<text x="101.49" y="984.00" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tes…</text>
+<text x="108.18" y="805.71" fill="rgb(255,255,255)" font-size="8.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tex…</text>
+<rect x="1656.00" y="374.00" width="248.00" height="690.00" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.0"/>
+<text x="1668.00" y="399.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Fill: declaration-count</text>
+<rect x="1668.00" y="405.00" width="28.00" height="28.00" fill="rgb(15,10,5)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="433.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">2</text>
+<rect x="1668.00" y="433.00" width="28.00" height="28.00" fill="rgb(45,25,10)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="461.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">3</text>
+<rect x="1668.00" y="461.00" width="28.00" height="28.00" fill="rgb(85,45,15)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="489.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">4</text>
+<rect x="1668.00" y="489.00" width="28.00" height="28.00" fill="rgb(130,70,20)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="517.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">5</text>
+<rect x="1668.00" y="517.00" width="28.00" height="28.00" fill="rgb(175,95,25)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="545.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">6</text>
+<rect x="1668.00" y="545.00" width="28.00" height="28.00" fill="rgb(210,130,30)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="573.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">7</text>
+<rect x="1668.00" y="573.00" width="28.00" height="28.00" fill="rgb(230,175,40)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="601.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">9</text>
+<rect x="1668.00" y="601.00" width="28.00" height="28.00" fill="rgb(240,215,50)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="629.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">11</text>
+<rect x="1668.00" y="629.00" width="28.00" height="28.00" fill="rgb(165,200,50)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="657.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">14</text>
+<rect x="1668.00" y="657.00" width="28.00" height="28.00" fill="rgb(80,165,40)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1702.00" y="685.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">19</text>
+<rect x="1668.00" y="685.00" width="28.00" height="28.00" fill="rgb(25,120,20)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="1668.00" y="740.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Border: public-declaration-count</text>
+<rect x="1668.00" y="746.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(15,10,5)" stroke-width="6.0"/>
+<text x="1702.00" y="774.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">1</text>
+<rect x="1668.00" y="780.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(45,25,10)" stroke-width="6.0"/>
+<text x="1702.00" y="808.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">2</text>
+<rect x="1668.00" y="814.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(85,45,15)" stroke-width="6.0"/>
+<text x="1702.00" y="842.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">3</text>
+<rect x="1668.00" y="848.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(130,70,20)" stroke-width="6.0"/>
+<text x="1702.00" y="876.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">5</text>
+<rect x="1668.00" y="882.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(210,130,30)" stroke-width="6.0"/>
+<text x="1702.00" y="910.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">6</text>
+<rect x="1668.00" y="916.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(230,175,40)" stroke-width="6.0"/>
+<text x="1702.00" y="944.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">7</text>
+<rect x="1668.00" y="950.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(240,215,50)" stroke-width="6.0"/>
+<text x="1702.00" y="978.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">8</text>
+<rect x="1668.00" y="984.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(165,200,50)" stroke-width="6.0"/>
+<text x="1702.00" y="1012.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">15</text>
+<rect x="1668.00" y="1018.00" width="28.00" height="28.00" fill="rgb(255,255,255)" stroke="rgb(25,120,20)" stroke-width="6.0"/>
+</svg>

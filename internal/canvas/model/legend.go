@@ -56,7 +56,8 @@ type LegendLabelSample struct {
 
 // LegendEntryData describes one metric section within the legend.
 type LegendEntryData struct {
-	Title    string // e.g., "Fill: file-size"
+	Label    string // role label, e.g. "Fill", "Border", "Size"
+	Metric   string // metric name, e.g. "file-size"
 	Kind     LegendEntryKind
 	Swatches []LegendSwatch
 	IsBorder bool // true when swatches represent border colours (render as outlines)
