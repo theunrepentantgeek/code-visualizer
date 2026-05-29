@@ -1,13 +1,15 @@
 width: 1920
 height: 1080
 treemap:
-    size: file-size
+    size: file-lines
     fill:
         metric: file-type
         palette: categorization
     border:
         metric: file-freshness
         palette: good-bad
+    legend: top-left
+    legendOrientation: vertical
 radial:
     labels: all
 bubbletree:
@@ -16,5 +18,9 @@ spiral:
     resolution: daily
     labels: laps
 fileFilter:
-    - pattern: .*
+    - pattern: superpowers
+      mode: exclude
+    - pattern: "*.svg"
+      mode: exclude
+    - pattern: ".*"
       mode: exclude

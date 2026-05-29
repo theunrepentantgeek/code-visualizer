@@ -1,0 +1,25 @@
+width: 1920
+height: 1080
+treemap: {}
+radial:
+    labels: all
+bubbletree:
+    labels: folders
+spiral:
+    resolution: daily
+    labels: laps
+scatter:
+    xAxis: file-size
+    yAxis: comment-ratio
+    size: declaration-count
+    fill:
+        metric: declaration-count
+        palette: foliage
+    border:
+        metric: public-declaration-count
+        palette: foliage
+fileFilter:
+    - pattern: .*
+      mode: exclude
+    - pattern: testdata
+      mode: exclude

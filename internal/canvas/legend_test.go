@@ -73,7 +73,8 @@ func TestToLegendData_NumericEntry_ProducesSwatches(t *testing.T) {
 	g.Expect(data.Position).To(Equal(model.LegendPositionBottomRight))
 	g.Expect(data.Orientation).To(Equal(model.LegendOrientationVertical))
 	g.Expect(data.Entries).To(HaveLen(1))
-	g.Expect(data.Entries[0].Title).To(Equal("Fill: file-size"))
+	g.Expect(data.Entries[0].Label).To(Equal("Fill"))
+	g.Expect(data.Entries[0].Metric).To(Equal("file-size"))
 	g.Expect(data.Entries[0].Kind).To(Equal(model.LegendEntryNumeric))
 	g.Expect(data.Entries[0].Swatches).NotTo(BeEmpty())
 }

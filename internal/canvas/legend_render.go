@@ -113,12 +113,26 @@ func (lb *legendBuilder) addEntriesH(
 func (lb *legendBuilder) addEntry(
 	orientation model.LegendOrientation, entry model.LegendEntryData, x, y float64,
 ) float64 {
+	// Compute center x for the two-line title: center over the swatch column.
+	var contentW float64
+	if orientation == model.LegendOrientationHorizontal {
+		contentW = legendlayout.MeasureEntryHWidth(entry)
+	} else {
+		contentW = legendlayout.MeasureEntryVContentWidth(entry)
+	}
+
+	centerX := x + contentW/2
+
 	lb.addTextShape(
-		x, y+model.TitleFontSize,
-		entry.Title, lb.titleInk, model.TitleFontSize, AnchorStart,
+		centerX, y+model.LegendLineHeight/2,
+		entry.Label, lb.titleInk, model.TitleFontSize, AnchorMiddle,
+	)
+	lb.addTextShape(
+		centerX, y+model.LegendLineHeight+model.LegendLineHeight/2,
+		entry.Metric, lb.titleInk, model.TitleFontSize, AnchorMiddle,
 	)
 
-	y += model.TitleFontSize + model.LabelGap
+	y += 2*model.LegendLineHeight + model.LabelGap
 
 	if entry.Kind == model.LegendEntryCategorical {
 		return lb.addCategorySwatches(orientation, entry, x, y)
