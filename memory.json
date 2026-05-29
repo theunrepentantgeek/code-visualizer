@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-28T16:43:43Z",
-  "run_id": "26588529908",
+  "last_run": "2026-05-29T05:01:14Z",
+  "run_id": "26618978014",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -9,15 +9,19 @@
     "133": "2026-05-01T12:44:04Z",
     "155": "2026-05-05T12:59:05Z",
     "159": "2026-05-06T09:08:11Z",
-    "162": "2026-05-07T13:44:22Z",
+    "162": "2026-05-07T13:44:26Z",
     "176": "2026-05-09T12:43:55Z",
     "194": "2026-05-15T09:46:09Z",
     "225": "2026-05-15T09:46:09Z",
-    "315": "2026-05-28T11:22:16Z"
+    "315": "2026-05-28T11:22:16Z",
+    "320": "2026-05-29T05:01:14Z",
+    "321": "2026-05-29T05:01:14Z",
+    "322": "2026-05-29T05:01:14Z"
   },
   "prs_created": [
     {"branch": "repo-assist/fix-issue-315-legend-title-layout-d5e6de12f906fa38", "pr_number": 318, "title": "[repo-assist] fix(legend): render entry title as two centered lines with correct spacing", "status": "open", "closes": [315]},
-    {"branch": "repo-assist/improve-disc-gradient-fills", "pr_number": null, "title": "[repo-assist] feat(bubbletree): radial gradient fills for disc shapes", "status": "open - pending PR number", "closes": []}
+    {"branch": "repo-assist/improve-disc-gradient-fills-9db17ab88846313f", "pr_number": 319, "title": "[repo-assist] feat(bubbletree): radial gradient fills for disc shapes", "status": "open", "closes": [225]},
+    {"branch": "repo-assist/test-radialtree-inks", "pr_number": null, "title": "[repo-assist] test(radialtree): add BuildInks unit tests", "status": "open - pending PR number", "closes": []}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -26,13 +30,14 @@
     "128": "fixed via PR #130 (merged 2026-04-30)",
     "155": "refactor done via PR #170 (merged 2026-05-06, issue closed)",
     "159": "refactor done via PR #171 (merged 2026-05-06, issue closed)",
-    "225": "gradient fills - commented 2026-05-15; disc gradient PR created 2026-05-28",
-    "282": "closed by maintainer 2026-05-24",
-    "284": "closed by maintainer 2026-05-24",
-    "315": "legend title: labelled bug; PR #318 open"
+    "225": "gradient fills - disc gradients PR #319 open",
+    "315": "legend title: PR #318 open",
+    "320": "legend config: labelled enhancement+refactor; commented 2026-05-29",
+    "321": "noisy export: labelled enhancement; commented 2026-05-29",
+    "322": "image size config: labelled enhancement+refactor; commented 2026-05-29"
   },
   "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
-  "backlog_cursor": {"issues": 318, "prs": 0},
+  "backlog_cursor": {"issues": 322, "prs": 0},
   "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed.",
-  "notes": "PR #318 open (legend fix, closes #315). New PR open (disc gradient fills, branch repo-assist/improve-disc-gradient-fills). Issue #225 (gradient fills) still open - partially addressed by disc gradients in new PR. Issue #251 (dep update) still open as a review-needed issue. Issue #315 is open with PR #318."
+  "notes": "PR #318 open (legend fix, closes #315). PR #319 open (disc gradient fills, branch repo-assist/improve-disc-gradient-fills-9db17ab88846313f, addresses #225). New PR open (radialtree inks tests, branch repo-assist/test-radialtree-inks). Issues #320, #321, #322 newly opened by maintainer - labelled and commented. Issue #251 (dep update) still open as a review-needed issue."
 }
