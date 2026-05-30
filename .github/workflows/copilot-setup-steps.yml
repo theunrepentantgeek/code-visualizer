@@ -24,9 +24,9 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pinned to 6.0.2
 
       - name: Install gh-aw extension
-        uses: github/gh-aw-actions/setup-cli@97f280b14527ca95859c0facba201aeccb2c097f # v0.77.3
+        uses: github/gh-aw-actions/setup-cli@46d564922b082d0db93244972e8005ea6904ee5f # v0.76.1
         with:
-          version: v0.74.8
+          version: v0.76.1
 
       - name: Install Dependencies
         run: sudo .devcontainer/install-dependencies.sh --skip-installed
