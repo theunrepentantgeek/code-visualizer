@@ -29,10 +29,13 @@ type RadialCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1920" help:"Image height in pixels."`
 
-	Filters            []filter.Rule `kong:"-"`
 	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive // kong struct tags require long lines
+}
+
+func (c *RadialCmd) Filters() []filter.Rule {
+	return filter.Merge(c.Include, c.Exclude)
 }
 
 func (*RadialCmd) Validate() error {
@@ -76,6 +79,7 @@ func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Radial)
 }
 
+//nolint:dupl // pipeline wiring is structurally similar across commands but not refactorable
 func (c *RadialCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -87,7 +91,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
-			CLIFilters: c.Filters,
+			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Radial,
 		IncludeBinaryFiles: c.IncludeBinaryFiles,

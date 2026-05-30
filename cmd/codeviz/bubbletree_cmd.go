@@ -30,11 +30,14 @@ type BubbletreeCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
-	Filters            []filter.Rule `kong:"-"`
 	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive // kong struct tags require long lines
 	Flat               bool          `help:"Disable radial gradient shading (flat solid fills)." default:"false"`
+}
+
+func (c *BubbletreeCmd) Filters() []filter.Rule {
+	return filter.Merge(c.Include, c.Exclude)
 }
 
 func (*BubbletreeCmd) Validate() error {
@@ -89,7 +92,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
-			CLIFilters: c.Filters,
+			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Bubbletree,
 		IncludeBinaryFiles: c.IncludeBinaryFiles,

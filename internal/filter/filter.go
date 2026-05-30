@@ -2,7 +2,9 @@ package filter
 
 import (
 	"fmt"
+	"slices"
 	"strings"
+	"sync/atomic"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rotisserie/eris"
@@ -22,7 +24,10 @@ const (
 type Rule struct {
 	Pattern string `yaml:"pattern" json:"pattern"`
 	Mode    Mode   `yaml:"mode"   json:"mode"`
+	index   int
 }
+
+var ruleCounter atomic.Int64
 
 // IsIncluded evaluates relativePath against rules in order.
 // The first matching rule wins. Returns true if the entry should be included.
@@ -127,5 +132,30 @@ func NewRule(pattern string, mode Mode) (Rule, error) {
 		return Rule{}, eris.Wrapf(err, "invalid glob pattern %q", pattern)
 	}
 
-	return Rule{Pattern: pattern, Mode: mode}, nil
+	return Rule{
+		Pattern: pattern,
+		Mode:    mode,
+		index:   int(ruleCounter.Add(1)),
+	}, nil
+}
+
+// CompareByIndex compares two rules by their internal construction index.
+// For use with slices.SortFunc to recover original command-line order.
+func CompareByIndex(a, b Rule) int {
+	return a.index - b.index
+}
+
+// Merge combines include and exclude rule slices, sorting by construction
+// order so the result matches original command-line flag order.
+func Merge(include, exclude []Rule) []Rule {
+	if len(include) == 0 && len(exclude) == 0 {
+		return []Rule{}
+	}
+
+	result := make([]Rule, 0, len(include)+len(exclude))
+	result = append(result, include...)
+	result = append(result, exclude...)
+	slices.SortFunc(result, CompareByIndex)
+
+	return result
 }

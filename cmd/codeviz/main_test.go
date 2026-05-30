@@ -52,7 +52,7 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 		parser, err := kong.New(
 			&cli,
 			kong.Name("codeviz"),
-			filterMapperOption(&cli),
+			filterMapperOption(),
 			kong.Exit(func(int) {}),
 		)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -77,7 +77,7 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -113,7 +113,7 @@ func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 		parser, err := kong.New(
 			&cli,
 			kong.Name("codeviz"),
-			filterMapperOption(&cli),
+			filterMapperOption(),
 			kong.Exit(func(int) {}),
 		)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -226,7 +226,7 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -265,7 +265,7 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -286,11 +286,11 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 		{Pattern: ".*", Mode: filter.Exclude},
 		{Pattern: "**/*.log", Mode: filter.Exclude},
 	})
-	g.Expect(cli.Render.Treemap.Filters).To(Equal([]filter.Rule{
+	expectRuleSlice(g, cli.Render.Treemap.Filters(), []filter.Rule{
 		{Pattern: ".*", Mode: filter.Exclude},
 		{Pattern: ".github/**", Mode: filter.Include},
 		{Pattern: "**/*.log", Mode: filter.Exclude},
-	}))
+	})
 }
 
 func expectRuleSliceField(g *WithT, cmd any, fieldName string, want []filter.Rule) {
@@ -301,7 +301,16 @@ func expectRuleSliceField(g *WithT, cmd any, fieldName string, want []filter.Rul
 
 	got, ok := field.Interface().([]filter.Rule)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(got).To(Equal(want))
+	expectRuleSlice(g, got, want)
+}
+
+func expectRuleSlice(g *WithT, got, want []filter.Rule) {
+	g.Expect(got).To(HaveLen(len(want)))
+
+	for i := range want {
+		g.Expect(got[i].Pattern).To(Equal(want[i].Pattern))
+		g.Expect(got[i].Mode).To(Equal(want[i].Mode))
+	}
 }
 
 // Issue #99 — config-supplied parameters bypass early validation.
@@ -604,7 +613,7 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
