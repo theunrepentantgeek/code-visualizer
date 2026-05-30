@@ -76,7 +76,10 @@ func TestLayoutOffset_TopCenter_YOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := &canvas.LegendConfig{Position: model0.LegendPositionTopCenter, Orientation: model0.LegendOrientationHorizontal}
+	cfg := &canvas.LegendConfig{
+		Position:    model0.LegendPositionTopCenter,
+		Orientation: model0.LegendOrientationHorizontal,
+	}
 	dx, dy := legend.LayoutOffset(cfg, 0, 150)
 	g.Expect(dx).To(Equal(0.0))
 	g.Expect(dy).To(Equal(150.0))
@@ -86,7 +89,10 @@ func TestLayoutOffset_CenterLeft_XOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := &canvas.LegendConfig{Position: model0.LegendPositionCenterLeft, Orientation: model0.LegendOrientationVertical}
+	cfg := &canvas.LegendConfig{
+		Position:    model0.LegendPositionCenterLeft,
+		Orientation: model0.LegendOrientationVertical,
+	}
 	dx, dy := legend.LayoutOffset(cfg, 200, 0)
 	g.Expect(dx).To(Equal(200.0))
 	g.Expect(dy).To(Equal(0.0))
@@ -108,7 +114,10 @@ func TestLayoutOffset_BottomLeft_Vertical_XOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := &canvas.LegendConfig{Position: model0.LegendPositionBottomLeft, Orientation: model0.LegendOrientationVertical}
+	cfg := &canvas.LegendConfig{
+		Position:    model0.LegendPositionBottomLeft,
+		Orientation: model0.LegendOrientationVertical,
+	}
 	dx, dy := legend.LayoutOffset(cfg, 200, 150)
 	g.Expect(dx).To(Equal(200.0))
 	g.Expect(dy).To(Equal(0.0))
@@ -128,7 +137,10 @@ func TestLayoutOffset_BottomRight_Vertical_ZeroOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := &canvas.LegendConfig{Position: model0.LegendPositionBottomRight, Orientation: model0.LegendOrientationVertical}
+	cfg := &canvas.LegendConfig{
+		Position:    model0.LegendPositionBottomRight,
+		Orientation: model0.LegendOrientationVertical,
+	}
 	dx, dy := legend.LayoutOffset(cfg, 200, 150)
 	g.Expect(dx).To(Equal(0.0))
 	g.Expect(dy).To(Equal(0.0))
@@ -150,7 +162,10 @@ func TestLayoutOffset_TopRight_Horizontal_YOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := &canvas.LegendConfig{Position: model0.LegendPositionTopRight, Orientation: model0.LegendOrientationHorizontal}
+	cfg := &canvas.LegendConfig{
+		Position:    model0.LegendPositionTopRight,
+		Orientation: model0.LegendOrientationHorizontal,
+	}
 	dx, dy := legend.LayoutOffset(cfg, 200, 150)
 	g.Expect(dx).To(Equal(0.0))
 	g.Expect(dy).To(Equal(150.0))
@@ -160,7 +175,10 @@ func TestLayoutOffset_BottomLeft_Horizontal_ZeroOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := &canvas.LegendConfig{Position: model0.LegendPositionBottomLeft, Orientation: model0.LegendOrientationHorizontal}
+	cfg := &canvas.LegendConfig{
+		Position:    model0.LegendPositionBottomLeft,
+		Orientation: model0.LegendOrientationHorizontal,
+	}
 	dx, dy := legend.LayoutOffset(cfg, 200, 150)
 	g.Expect(dx).To(Equal(0.0))
 	g.Expect(dy).To(Equal(0.0))
@@ -170,7 +188,10 @@ func TestLayoutOffset_BottomRight_Horizontal_ZeroOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := &canvas.LegendConfig{Position: model0.LegendPositionBottomRight, Orientation: model0.LegendOrientationHorizontal}
+	cfg := &canvas.LegendConfig{
+		Position:    model0.LegendPositionBottomRight,
+		Orientation: model0.LegendOrientationHorizontal,
+	}
 	dx, dy := legend.LayoutOffset(cfg, 200, 150)
 	g.Expect(dx).To(Equal(0.0))
 	g.Expect(dy).To(Equal(0.0))
