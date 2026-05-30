@@ -3,9 +3,11 @@ package golang
 import (
 	"log/slog"
 	"path/filepath"
+	"runtime"
 	"sync"
 
 	"github.com/rotisserie/eris"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -130,30 +132,52 @@ func getOrAnalyze(path string) (*fileStats, error) {
 
 // walkGoFiles walks all .go files under root and calls the extract function
 // with cached fileStats for each. Non-.go files are silently skipped.
+// Files are analyzed concurrently using a bounded goroutine pool.
 func walkGoFiles(
 	root *model.Directory,
 	name metric.Name,
 	onFile func(),
 	extract goExtractor,
 ) {
+	// Collect all files first so we can parallelize analysis below.
+	var files []*model.File
+
 	model.WalkFiles(root, func(f *model.File) {
-		if onFile != nil {
-			defer onFile()
-		}
-
-		if f.Extension != "go" {
-			return
-		}
-
-		stats, err := getOrAnalyze(f.Path)
-		if err != nil {
-			slog.Warn("could not analyze Go file", "path", f.Path, "error", err)
-
-			return
-		}
-
-		extract(name, stats, f)
+		files = append(files, f)
 	})
+
+	g := new(errgroup.Group)
+	g.SetLimit(runtime.NumCPU())
+
+	for _, f := range files {
+		g.Go(func() error {
+			processGoFile(name, f, onFile, extract)
+
+			return nil
+		})
+	}
+
+	_ = g.Wait()
+}
+
+// processGoFile analyzes a single file and calls the extract function if it is a Go file.
+func processGoFile(name metric.Name, f *model.File, onFile func(), extract goExtractor) {
+	if onFile != nil {
+		defer onFile()
+	}
+
+	if f.Extension != "go" {
+		return
+	}
+
+	stats, err := getOrAnalyze(f.Path)
+	if err != nil {
+		slog.Warn("could not analyze Go file", "path", f.Path, "error", err)
+
+		return
+	}
+
+	extract(name, stats, f)
 }
 
 // quantityField returns a goExtractor that reads an int64 field from fileStats.
