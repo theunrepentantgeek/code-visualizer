@@ -241,3 +241,54 @@ func TestRuleMapper_PopulatesFiltersDuringParseInCommandLineOrder(t *testing.T) 
 		{Pattern: "**/*.log", Mode: Exclude},
 	}))
 }
+
+func TestCompareByIndex_ReturnsNegativeForEarlierRule(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	a, err := NewRule("*.go", Include)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	b, err := NewRule("*.log", Exclude)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	g.Expect(CompareByIndex(a, b)).To(BeNumerically("<", 0))
+	g.Expect(CompareByIndex(b, a)).To(BeNumerically(">", 0))
+	g.Expect(CompareByIndex(a, a)).To(Equal(0))
+}
+
+func TestMerge_PreservesConstructionOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Create rules in a specific interleaved order
+	excl1, err := NewRule(".*", Exclude)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	incl1, err := NewRule(".github/**", Include)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	excl2, err := NewRule("**/*.log", Exclude)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	include := []Rule{incl1}
+	exclude := []Rule{excl1, excl2}
+
+	merged := Merge(include, exclude)
+
+	g.Expect(merged).To(HaveLen(3))
+	g.Expect(merged[0].Pattern).To(Equal(".*"))
+	g.Expect(merged[0].Mode).To(Equal(Exclude))
+	g.Expect(merged[1].Pattern).To(Equal(".github/**"))
+	g.Expect(merged[1].Mode).To(Equal(Include))
+	g.Expect(merged[2].Pattern).To(Equal("**/*.log"))
+	g.Expect(merged[2].Mode).To(Equal(Exclude))
+}
+
+func TestMerge_EmptySlices_ReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(Merge(nil, nil)).To(BeEmpty())
+	g.Expect(Merge([]Rule{}, []Rule{})).To(BeEmpty())
+}
