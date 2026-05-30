@@ -29,10 +29,13 @@ type ScatterCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
-	Filters            []filter.Rule `kong:"-"`
 	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+}
+
+func (c *ScatterCmd) Filters() []filter.Rule {
+	return filter.Merge(c.Include, c.Exclude)
 }
 
 func (*ScatterCmd) Validate() error {
@@ -100,7 +103,7 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
-			CLIFilters: c.Filters,
+			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Scatter,
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
