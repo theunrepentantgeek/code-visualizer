@@ -151,28 +151,33 @@ func walkGoFiles(
 
 	for _, f := range files {
 		g.Go(func() error {
-			if onFile != nil {
-				defer onFile()
-			}
-
-			if f.Extension != "go" {
-				return nil
-			}
-
-			stats, err := getOrAnalyze(f.Path)
-			if err != nil {
-				slog.Warn("could not analyze Go file", "path", f.Path, "error", err)
-
-				return nil
-			}
-
-			extract(name, stats, f)
+			processGoFile(name, f, onFile, extract)
 
 			return nil
 		})
 	}
 
 	_ = g.Wait()
+}
+
+// processGoFile analyzes a single file and calls the extract function if it is a Go file.
+func processGoFile(name metric.Name, f *model.File, onFile func(), extract goExtractor) {
+	if onFile != nil {
+		defer onFile()
+	}
+
+	if f.Extension != "go" {
+		return
+	}
+
+	stats, err := getOrAnalyze(f.Path)
+	if err != nil {
+		slog.Warn("could not analyze Go file", "path", f.Path, "error", err)
+
+		return
+	}
+
+	extract(name, stats, f)
 }
 
 // quantityField returns a goExtractor that reads an int64 field from fileStats.
