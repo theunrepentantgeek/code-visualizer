@@ -52,7 +52,7 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 		parser, err := kong.New(
 			&cli,
 			kong.Name("codeviz"),
-			filterMapperOption(&cli),
+			filterMapperOption(),
 			kong.Exit(func(int) {}),
 		)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -77,7 +77,7 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -113,7 +113,7 @@ func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 		parser, err := kong.New(
 			&cli,
 			kong.Name("codeviz"),
-			filterMapperOption(&cli),
+			filterMapperOption(),
 			kong.Exit(func(int) {}),
 		)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -226,7 +226,7 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -265,7 +265,7 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -604,7 +604,7 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	parser, err := kong.New(
 		&cli,
 		kong.Name("codeviz"),
-		filterMapperOption(&cli),
+		filterMapperOption(),
 		kong.Exit(func(int) {}),
 	)
 	g.Expect(err).NotTo(HaveOccurred())

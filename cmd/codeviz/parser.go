@@ -6,6 +6,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 )
 
-func filterMapperOption(cli any) kong.Option {
-	return kong.NamedMapper(filter.RuleMapperName, filter.NewRuleMapper(cli))
+func filterMapperOption() kong.Option {
+	return kong.NamedMapper(filter.RuleMapperName, filter.RuleMapper{})
 }
