@@ -79,6 +79,7 @@ func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Radial)
 }
 
+//nolint:dupl // pipeline wiring is structurally similar across commands but not refactorable
 func (c *RadialCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err

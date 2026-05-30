@@ -92,6 +92,7 @@ func (c *ScatterCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Scatter)
 }
 
+//nolint:dupl // pipeline wiring is structurally similar across commands but not refactorable
 func (c *ScatterCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err

@@ -148,6 +148,10 @@ func CompareByIndex(a, b Rule) int {
 // Merge combines include and exclude rule slices, sorting by construction
 // order so the result matches original command-line flag order.
 func Merge(include, exclude []Rule) []Rule {
+	if len(include) == 0 && len(exclude) == 0 {
+		return []Rule{}
+	}
+
 	result := make([]Rule, 0, len(include)+len(exclude))
 	result = append(result, include...)
 	result = append(result, exclude...)

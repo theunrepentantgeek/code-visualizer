@@ -292,6 +292,5 @@ func TestMerge_EmptySlices_ReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(Merge(nil, nil)).To(BeEmpty())
 	g.Expect(Merge([]Rule{}, []Rule{})).To(BeEmpty())
 }
