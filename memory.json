@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-30T04:40:52Z",
-  "run_id": "26674696968",
+  "last_run": "2026-05-30T14:19:00Z",
+  "run_id": "26686053519",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -18,14 +18,16 @@
     "321": "2026-05-29T05:01:14Z",
     "322": "2026-05-29T05:01:14Z",
     "324": "2026-05-30T04:40:52Z",
+    "325": "2026-05-30T14:19:00Z",
+    "326": "2026-05-30T14:19:00Z",
     "327": "2026-05-29T16:30:06Z",
     "328": "2026-05-30T04:40:52Z",
     "332": "2026-05-29T16:30:06Z"
   },
   "prs_created": [
-    {"branch": "repo-assist/eng-deps-2026-05-29", "pr_number": null, "title": "[repo-assist] chore(deps): update golang.org/x/* indirect dependencies", "status": "open - pending PR number", "closes": []},
-    {"branch": "repo-assist/improve-model-walk-332-69d73bc6e788c095", "pr_number": 337, "title": "[repo-assist] refactor(walk): move tree traversal helpers out of model package", "status": "open", "closes": [332]},
-    {"branch": "repo-assist/test-legend-reserve", "pr_number": null, "title": "[repo-assist] test(legend): add tests for reserve.go (ReserveAndLayout and LayoutOffset)", "status": "open - pending PR number", "closes": []}
+    {"branch": "repo-assist/eng-deps-2026-05-30", "pr_number": null, "title": "[repo-assist] chore(deps): update golang.org/x indirect dependencies", "status": "open - pending PR number", "closes": [251]},
+    {"branch": "repo-assist/perf-parallel-go-analysis", "pr_number": null, "title": "[repo-assist] perf(golang): parallelize Go file analysis in walkGoFiles", "status": "open - pending PR number", "closes": []},
+    {"branch": "repo-assist/test-legend-reserve-23756d7017d70fda", "pr_number": 338, "title": "[repo-assist] test(legend): add tests for reserve.go", "status": "open", "closes": []}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -40,12 +42,15 @@
     "321": "noisy export: labelled enhancement; commented 2026-05-29",
     "322": "image size config: labelled enhancement+refactor; commented 2026-05-29",
     "324": "bubbletree/layout split: commented geometry-first approach 2026-05-30",
+    "325": "CommonState split: commented two-phase InputState/PipelineState approach 2026-05-30",
+    "326": "scanner decompose: commented walker+nodeBuilder split, noted existing separations 2026-05-30",
     "327": "Kong filter adapter: commented 2026-05-29",
     "328": "git service split: commented metric-accessor pattern + structural split 2026-05-30",
-    "332": "model/walk split: commented + PR #337 created 2026-05-29"
+    "332": "model/walk split: PR #337 created then closed by maintainer as 'known antipattern' - do NOT attempt similar refactors moving code to new packages"
   },
   "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
-  "backlog_cursor": {"issues": 328, "prs": 0},
-  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed. PRs #318,#319,#323 merged.",
-  "notes": "12 refactor issues filed 2026-05-29 (#324-335). Open PRs: dep update (eng-deps-2026-05-29), walk refactor #337 (closes #332), legend reserve tests (test-legend-reserve). Remaining uncommented refactor issues: #325,#326,#329,#330,#331,#333,#334,#335. Issue #225 (treemap linear gradient) still open."
+  "backlog_cursor": {"issues": 326, "prs": 0},
+  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed. PRs #318,#319,#323 merged. PR #337 closed as 'known antipattern'.",
+  "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as 'known antipattern'. Keep refactors within-package only.",
+  "notes": "12 refactor issues #324-335. Commented on #324,#325,#326,#327,#328,#332. Remaining uncommented: #329,#330,#331,#333,#334,#335. Issue #225 still open. Open Repo Assist PRs: #338 (legend tests), eng-deps-2026-05-30 (deps update), perf-parallel-go-analysis (Go file parallelism)."
 }
