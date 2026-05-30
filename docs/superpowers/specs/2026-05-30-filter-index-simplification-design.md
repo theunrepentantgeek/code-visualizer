@@ -82,9 +82,14 @@ func (RuleMapper) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
         return eris.Wrapf(err, "failed to read filter pattern for %q", ctx.Value.Name)
     }
 
-    mode := Include
-    if ctx.Value.Name == "exclude" {
+    var mode Mode
+    switch ctx.Value.Name {
+    case "include":
+        mode = Include
+    case "exclude":
         mode = Exclude
+    default:
+        return eris.Errorf("unexpected filter flag name %q", ctx.Value.Name)
     }
 
     rule, err := NewRule(pattern, mode)
