@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	"go.yaml.in/yaml/v3"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
@@ -165,6 +166,49 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	g.Expect(cfg.Treemap.Fill.Palette).To(Equal(palette.PaletteName("categorization")))
 }
 
+func TestLoad_JSONLegacyWidth_ParsesIntoImageSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{"width":800}`
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	// Act
+	err := cfg.Load(path)
+
+	// Assert
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1080))
+}
+
+func TestLoad_ImageSizeTakesPrecedenceOverLegacyWidth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "width: 700\nimageSize:\n  width: 800\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	// Act
+	err := cfg.Load(path)
+
+	// Assert
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+}
+
 func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -214,64 +258,63 @@ func TestSave_UnknownExtension_ReturnsError(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("unsupported config file extension")))
 }
 
-func TestSave_YAML_WritesImageSizeObject(t *testing.T) {
+func TestSave_WritesImageSizeObject(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	// Arrange
-	dir := t.TempDir()
-	path := filepath.Join(dir, "out.yaml")
-	cfg := New()
+	tests := []struct {
+		name     string
+		fileName string
+		decode   func([]byte, any) error
+		width    any
+		height   any
+	}{
+		{
+			name:     "yaml",
+			fileName: "out.yaml",
+			decode:   yaml.Unmarshal,
+			width:    1920,
+			height:   1080,
+		},
+		{
+			name:     "json",
+			fileName: "out.json",
+			decode:   json.Unmarshal,
+			width:    1920.0,
+			height:   1080.0,
+		},
+	}
 
-	// Act
-	err := cfg.Save(path)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
+			// Arrange
+			dir := t.TempDir()
+			path := filepath.Join(dir, tc.fileName)
+			cfg := New()
 
-	data, readErr := os.ReadFile(path)
-	g.Expect(readErr).NotTo(HaveOccurred())
+			// Act
+			err := cfg.Save(path)
 
-	var decoded map[string]any
-	g.Expect(yaml.Unmarshal(data, &decoded)).To(Succeed())
-	g.Expect(decoded).To(HaveKey("imageSize"))
-	g.Expect(decoded).NotTo(HaveKey("width"))
-	g.Expect(decoded).NotTo(HaveKey("height"))
+			// Assert
+			g.Expect(err).NotTo(HaveOccurred())
 
-	imageSize, ok := decoded["imageSize"].(map[string]any)
-	g.Expect(ok).To(BeTrue())
-	g.Expect(imageSize["width"]).To(Equal(1920))
-	g.Expect(imageSize["height"]).To(Equal(1080))
-}
+			data, readErr := os.ReadFile(path)
+			g.Expect(readErr).NotTo(HaveOccurred())
 
-func TestSave_JSON_WritesImageSizeObject(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
+			var decoded map[string]any
+			g.Expect(tc.decode(data, &decoded)).To(Succeed())
+			g.Expect(decoded).To(HaveKey("imageSize"))
+			g.Expect(decoded).NotTo(HaveKey("width"))
+			g.Expect(decoded).NotTo(HaveKey("height"))
 
-	// Arrange
-	dir := t.TempDir()
-	path := filepath.Join(dir, "out.json")
-	cfg := New()
-
-	// Act
-	err := cfg.Save(path)
-
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
-
-	data, readErr := os.ReadFile(path)
-	g.Expect(readErr).NotTo(HaveOccurred())
-
-	var decoded map[string]any
-	g.Expect(json.Unmarshal(data, &decoded)).To(Succeed())
-	g.Expect(decoded).To(HaveKey("imageSize"))
-	g.Expect(decoded).NotTo(HaveKey("width"))
-	g.Expect(decoded).NotTo(HaveKey("height"))
-
-	imageSize, ok := decoded["imageSize"].(map[string]any)
-	g.Expect(ok).To(BeTrue())
-	g.Expect(imageSize["width"]).To(Equal(1920.0))
-	g.Expect(imageSize["height"]).To(Equal(1080.0))
+			imageSize, ok := decoded["imageSize"].(map[string]any)
+			g.Expect(ok).To(BeTrue())
+			g.Expect(imageSize["width"]).To(Equal(tc.width))
+			g.Expect(imageSize["height"]).To(Equal(tc.height))
+		})
+	}
 }
 
 func TestSave_ThenLoad_RoundTrips(t *testing.T) {

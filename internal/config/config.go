@@ -92,6 +92,7 @@ func (c *Config) Load(path string) error {
 		if err := yaml.Unmarshal(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
 		}
+
 		if err := yaml.Unmarshal(data, &compat); err != nil {
 			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
 		}
@@ -99,6 +100,7 @@ func (c *Config) Load(path string) error {
 		if err := json.Unmarshal(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
 		}
+
 		if err := json.Unmarshal(data, &compat); err != nil {
 			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
 		}
