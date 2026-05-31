@@ -61,12 +61,22 @@ func New() *Config {
 	height := 1080
 
 	return &Config{
-		ImageSize:  &ImageSize{Width: &width, Height: &height},
-		Treemap:    &Treemap{},
-		Radial:     &Radial{Labels: new("all")},
-		Bubbletree: &Bubbletree{Labels: new("folders")},
-		Spiral:     &Spiral{Resolution: new("daily"), Labels: new("laps")},
-		Scatter:    &Scatter{},
+		ImageSize: &ImageSize{
+			Width:  &width,
+			Height: &height,
+		},
+		Treemap: &Treemap{},
+		Radial: &Radial{
+			Labels: new("all"),
+		},
+		Bubbletree: &Bubbletree{
+			Labels: new("folders"),
+		},
+		Spiral: &Spiral{
+			Resolution: new("daily"),
+			Labels:     new("laps"),
+		},
+		Scatter: &Scatter{},
 		FileFilter: []filter.Rule{
 			{Pattern: ".*", Mode: filter.Exclude},
 		},
@@ -192,13 +202,13 @@ func (c *Config) applyLegacyImageSize(compat imageSizeCompatConfig) {
 	}
 }
 
-// OverrideWidth sets Width to v if v is non-zero.
+// OverrideWidth sets ImageSize.Width to v if v is non-zero.
 func (c *Config) OverrideWidth(v int) {
 	c.ensureImageSize()
 	overrideInt(&c.ImageSize.Width, v)
 }
 
-// OverrideHeight sets Height to v if v is non-zero.
+// OverrideHeight sets ImageSize.Height to v if v is non-zero.
 func (c *Config) OverrideHeight(v int) {
 	c.ensureImageSize()
 	overrideInt(&c.ImageSize.Height, v)
