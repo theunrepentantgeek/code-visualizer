@@ -110,6 +110,32 @@ func (c *Config) TryAutoLoad(outputPath string) error {
 	return nil
 }
 
+// ForExport returns a shallow copy of c with only the requested
+// visualization section populated.
+func (c *Config) ForExport(vizName string) *Config {
+	exported := &Config{
+		Width:      c.Width,
+		Height:     c.Height,
+		FileFilter: c.FileFilter,
+		Source:     c.Source,
+	}
+
+	switch vizName {
+	case "treemap":
+		exported.Treemap = c.Treemap
+	case "radial":
+		exported.Radial = c.Radial
+	case "bubbletree":
+		exported.Bubbletree = c.Bubbletree
+	case "spiral":
+		exported.Spiral = c.Spiral
+	case "scatter":
+		exported.Scatter = c.Scatter
+	}
+
+	return exported
+}
+
 // Save writes c to path in YAML or JSON format, determined by the file extension.
 // The format is: .yaml/.yml → YAML, .json → JSON.
 // The file is created or overwritten with mode 0600.

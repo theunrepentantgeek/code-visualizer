@@ -15,7 +15,8 @@ func ExportConfig[S VizState](s S) error {
 		return nil
 	}
 
-	if err := c.RootConfig.Save(c.Flags.ExportConfig); err != nil {
+	exportCfg := c.RootConfig.ForExport(c.VizName)
+	if err := exportCfg.Save(c.Flags.ExportConfig); err != nil {
 		return eris.Wrap(err, "failed to save config")
 	}
 

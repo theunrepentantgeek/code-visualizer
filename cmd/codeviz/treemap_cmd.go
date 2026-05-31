@@ -102,6 +102,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
+			VizName:    "treemap",
 			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Treemap,

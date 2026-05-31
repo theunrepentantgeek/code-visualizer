@@ -295,6 +295,55 @@ func TestSave_OmitsNilFields(t *testing.T) {
 	g.Expect(string(data)).NotTo(ContainSubstring("border"))
 }
 
+func TestForExport_OnlyIncludesRelevantViz(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("treemap")
+
+	g.Expect(exported.Treemap).To(BeIdenticalTo(cfg.Treemap))
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_PreservesWidthHeightAndFilter(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	width := 800
+	height := 600
+	cfg := New()
+	cfg.Width = &width
+	cfg.Height = &height
+	cfg.FileFilter = []filter.Rule{{Pattern: "*.go", Mode: filter.Include}}
+
+	exported := cfg.ForExport("scatter")
+
+	g.Expect(exported.Width).To(BeIdenticalTo(cfg.Width))
+	g.Expect(exported.Height).To(BeIdenticalTo(cfg.Height))
+	g.Expect(exported.FileFilter).To(Equal(cfg.FileFilter))
+	g.Expect(exported.Scatter).To(BeIdenticalTo(cfg.Scatter))
+}
+
+func TestForExport_UnknownViz_ExportsNoVizSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("unknown")
+
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
 func TestNew_DefaultFileFilter(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
