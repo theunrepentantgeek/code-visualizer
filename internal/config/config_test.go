@@ -1,11 +1,14 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"go.yaml.in/yaml/v3"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -33,10 +36,11 @@ func TestNew_DefaultsSet(t *testing.T) {
 	cfg := New()
 
 	// Assert
-	g.Expect(cfg.Width).NotTo(BeNil())
-	g.Expect(*cfg.Width).To(Equal(1920))
-	g.Expect(cfg.Height).NotTo(BeNil())
-	g.Expect(*cfg.Height).To(Equal(1080))
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(cfg.ImageSize.Width).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(1920))
+	g.Expect(cfg.ImageSize.Height).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1080))
 }
 
 func TestNew_TreemapDefaultsSet(t *testing.T) {
@@ -96,7 +100,29 @@ func TestLoad_MissingFile_ReturnsError(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("failed to read config file")))
 }
 
-func TestLoad_YAMLPartialConfig_OverridesWidth(t *testing.T) {
+func TestLoad_YAMLImageSize_OverridesWidth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "imageSize:\n  width: 800\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	// Act
+	err := cfg.Load(path)
+
+	// Assert
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1080)) // default preserved
+}
+
+func TestLoad_YAMLLegacyWidth_ParsesIntoImageSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -113,11 +139,12 @@ func TestLoad_YAMLPartialConfig_OverridesWidth(t *testing.T) {
 
 	// Assert
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(*cfg.Width).To(Equal(800))
-	g.Expect(*cfg.Height).To(Equal(1080)) // default preserved
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1080)) // default preserved
 }
 
-func TestLoad_YMLExtension_ParsesCorrectly(t *testing.T) {
+func TestLoad_YMLExtension_ParsesLegacyHeight(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -134,8 +161,9 @@ func TestLoad_YMLExtension_ParsesCorrectly(t *testing.T) {
 
 	// Assert
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(*cfg.Height).To(Equal(720))
-	g.Expect(*cfg.Width).To(Equal(1920)) // default preserved
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Height).To(Equal(720))
+	g.Expect(*cfg.ImageSize.Width).To(Equal(1920)) // default preserved
 }
 
 func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
@@ -158,6 +186,49 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	g.Expect(cfg.Treemap.Fill).NotTo(BeNil())
 	g.Expect(cfg.Treemap.Fill.Metric).To(Equal(metric.Name("file-type")))
 	g.Expect(cfg.Treemap.Fill.Palette).To(Equal(palette.PaletteName("categorization")))
+}
+
+func TestLoad_JSONLegacyWidth_ParsesIntoImageSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{"width":800}`
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	// Act
+	err := cfg.Load(path)
+
+	// Assert
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1080))
+}
+
+func TestLoad_ImageSizeTakesPrecedenceOverLegacyWidth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "width: 700\nimageSize:\n  width: 800\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	// Act
+	err := cfg.Load(path)
+
+	// Assert
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
 }
 
 func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
@@ -209,46 +280,63 @@ func TestSave_UnknownExtension_ReturnsError(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("unsupported config file extension")))
 }
 
-func TestSave_YAML_WritesFile(t *testing.T) {
+func TestSave_WritesImageSizeObject(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	// Arrange
-	dir := t.TempDir()
-	path := filepath.Join(dir, "out.yaml")
-	cfg := New()
+	tests := []struct {
+		name     string
+		fileName string
+		decode   func([]byte, any) error
+		width    any
+		height   any
+	}{
+		{
+			name:     "yaml",
+			fileName: "out.yaml",
+			decode:   yaml.Unmarshal,
+			width:    1920,
+			height:   1080,
+		},
+		{
+			name:     "json",
+			fileName: "out.json",
+			decode:   json.Unmarshal,
+			width:    1920.0,
+			height:   1080.0,
+		},
+	}
 
-	// Act
-	err := cfg.Save(path)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
+			// Arrange
+			dir := t.TempDir()
+			path := filepath.Join(dir, tc.fileName)
+			cfg := New()
 
-	data, readErr := os.ReadFile(path)
-	g.Expect(readErr).NotTo(HaveOccurred())
-	g.Expect(string(data)).To(ContainSubstring("width: 1920"))
-	g.Expect(string(data)).To(ContainSubstring("height: 1080"))
-}
+			// Act
+			err := cfg.Save(path)
 
-func TestSave_JSON_WritesFile(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
+			// Assert
+			g.Expect(err).NotTo(HaveOccurred())
 
-	// Arrange
-	dir := t.TempDir()
-	path := filepath.Join(dir, "out.json")
-	cfg := New()
+			data, readErr := os.ReadFile(path)
+			g.Expect(readErr).NotTo(HaveOccurred())
 
-	// Act
-	err := cfg.Save(path)
+			var decoded map[string]any
+			g.Expect(tc.decode(data, &decoded)).To(Succeed())
+			g.Expect(decoded).To(HaveKey("imageSize"))
+			g.Expect(decoded).NotTo(HaveKey("width"))
+			g.Expect(decoded).NotTo(HaveKey("height"))
 
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
-
-	data, readErr := os.ReadFile(path)
-	g.Expect(readErr).NotTo(HaveOccurred())
-	g.Expect(string(data)).To(ContainSubstring(`"width": 1920`))
-	g.Expect(string(data)).To(ContainSubstring(`"height": 1080`))
+			imageSize, ok := decoded["imageSize"].(map[string]any)
+			g.Expect(ok).To(BeTrue())
+			g.Expect(imageSize["width"]).To(Equal(tc.width))
+			g.Expect(imageSize["height"]).To(Equal(tc.height))
+		})
+	}
 }
 
 func TestSave_ThenLoad_RoundTrips(t *testing.T) {
@@ -269,8 +357,9 @@ func TestSave_ThenLoad_RoundTrips(t *testing.T) {
 	g.Expect(loaded.Load(path)).To(Succeed())
 
 	// Assert
-	g.Expect(*loaded.Width).To(Equal(1920))
-	g.Expect(*loaded.Height).To(Equal(1080))
+	g.Expect(loaded.ImageSize).NotTo(BeNil())
+	g.Expect(*loaded.ImageSize.Width).To(Equal(1920))
+	g.Expect(*loaded.ImageSize.Height).To(Equal(1080))
 	g.Expect(loaded.Treemap.Fill).NotTo(BeNil())
 	g.Expect(loaded.Treemap.Fill.Metric).To(Equal(metric.Name("file-type")))
 }
@@ -479,7 +568,8 @@ func TestTryAutoLoad_ConfigFilePresent_LoadsIt(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cfg.Source).NotTo(BeNil())
 	g.Expect(*cfg.Source).To(Equal(configPath))
-	g.Expect(*cfg.Width).To(Equal(800))
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
 }
 
 func TestTryAutoLoad_AlreadyLoaded_SkipsAutoLoad(t *testing.T) {
@@ -503,7 +593,8 @@ func TestTryAutoLoad_AlreadyLoaded_SkipsAutoLoad(t *testing.T) {
 	// TryAutoLoad should be a no-op because Source is already set
 	err := cfg.TryAutoLoad(outputPath)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(*cfg.Width).To(Equal(1600)) // unchanged
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(1600)) // unchanged
 }
 
 func TestNew_ScatterDefaultsSet(t *testing.T) {

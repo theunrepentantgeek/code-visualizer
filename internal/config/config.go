@@ -21,6 +21,12 @@ const (
 	extJSON = ".json"
 )
 
+// ImageSize groups the output image dimensions.
+type ImageSize struct {
+	Width  *int `yaml:"width,omitempty"  json:"width,omitempty"`
+	Height *int `yaml:"height,omitempty" json:"height,omitempty"`
+}
+
 // Config is the root configuration struct for the application.
 // It is the single source of truth for all configuration, regardless of
 // whether values came from defaults, a config file, or CLI flags.
@@ -28,8 +34,7 @@ const (
 // non-nil or non-empty means it was explicitly set (by a config file or
 // by a CLI flag override).
 type Config struct {
-	Width      *int          `yaml:"width,omitempty"      json:"width,omitempty"`
-	Height     *int          `yaml:"height,omitempty"     json:"height,omitempty"`
+	ImageSize  *ImageSize    `yaml:"imageSize,omitempty"  json:"imageSize,omitempty"`
 	Treemap    *Treemap      `yaml:"treemap,omitempty"    json:"treemap,omitempty"`
 	Radial     *Radial       `yaml:"radial,omitempty"     json:"radial,omitempty"`
 	Bubbletree *Bubbletree   `yaml:"bubbletree,omitempty" json:"bubbletree,omitempty"`
@@ -41,6 +46,13 @@ type Config struct {
 	Source *string `yaml:"-" json:"-"`
 }
 
+// imageSizeCompatConfig captures both the new and legacy image dimension formats.
+type imageSizeCompatConfig struct {
+	ImageSize *ImageSize `yaml:"imageSize,omitempty" json:"imageSize,omitempty"`
+	Width     *int       `yaml:"width,omitempty"     json:"width,omitempty"`
+	Height    *int       `yaml:"height,omitempty"    json:"height,omitempty"`
+}
+
 // New returns a Config populated with sensible defaults.
 // Call this unconditionally at startup; subsequent layers (config file, CLI
 // flags) overlay their values on top of the struct returned here.
@@ -49,13 +61,22 @@ func New() *Config {
 	height := 1080
 
 	return &Config{
-		Width:      &width,
-		Height:     &height,
-		Treemap:    &Treemap{},
-		Radial:     &Radial{Labels: new("all")},
-		Bubbletree: &Bubbletree{Labels: new("folders")},
-		Spiral:     &Spiral{Resolution: new("daily"), Labels: new("laps")},
-		Scatter:    &Scatter{},
+		ImageSize: &ImageSize{
+			Width:  &width,
+			Height: &height,
+		},
+		Treemap: &Treemap{},
+		Radial: &Radial{
+			Labels: new("all"),
+		},
+		Bubbletree: &Bubbletree{
+			Labels: new("folders"),
+		},
+		Spiral: &Spiral{
+			Resolution: new("daily"),
+			Labels:     new("laps"),
+		},
+		Scatter: &Scatter{},
 		FileFilter: []filter.Rule{
 			{Pattern: ".*", Mode: filter.Exclude},
 		},
@@ -74,18 +95,32 @@ func (c *Config) Load(path string) error {
 
 	ext := strings.ToLower(filepath.Ext(path))
 
+	// Parse into a small compatibility struct as well so legacy top-level width/height
+	// values can be migrated into ImageSize without changing the persisted format.
+	var compat imageSizeCompatConfig
+
 	switch ext {
 	case extYAML, extYML:
 		if err := yaml.Unmarshal(data, c); err != nil {
+			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
+		}
+
+		if err := yaml.Unmarshal(data, &compat); err != nil {
 			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
 		}
 	case extJSON:
 		if err := json.Unmarshal(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
 		}
+
+		if err := json.Unmarshal(data, &compat); err != nil {
+			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
+		}
 	default:
 		return eris.Errorf("unsupported config file extension %q (use .yaml, .yml, or .json)", ext)
 	}
+
+	c.applyLegacyImageSize(compat)
 
 	// Record the source path for informational purposes.
 	c.Source = &path
@@ -147,11 +182,37 @@ func (c *Config) Save(path string) error {
 	return nil
 }
 
-// OverrideWidth sets Width to v if v is non-zero.
-func (c *Config) OverrideWidth(v int) { overrideInt(&c.Width, v) }
+func (c *Config) ensureImageSize() {
+	if c.ImageSize == nil {
+		c.ImageSize = &ImageSize{}
+	}
+}
 
-// OverrideHeight sets Height to v if v is non-zero.
-func (c *Config) OverrideHeight(v int) { overrideInt(&c.Height, v) }
+func (c *Config) applyLegacyImageSize(compat imageSizeCompatConfig) {
+	if compat.ImageSize != nil || compat.Width != nil || compat.Height != nil {
+		c.ensureImageSize()
+	}
+
+	if compat.Width != nil && (compat.ImageSize == nil || compat.ImageSize.Width == nil) {
+		c.ImageSize.Width = compat.Width
+	}
+
+	if compat.Height != nil && (compat.ImageSize == nil || compat.ImageSize.Height == nil) {
+		c.ImageSize.Height = compat.Height
+	}
+}
+
+// OverrideWidth sets ImageSize.Width to v if v is non-zero.
+func (c *Config) OverrideWidth(v int) {
+	c.ensureImageSize()
+	overrideInt(&c.ImageSize.Width, v)
+}
+
+// OverrideHeight sets ImageSize.Height to v if v is non-zero.
+func (c *Config) OverrideHeight(v int) {
+	c.ensureImageSize()
+	overrideInt(&c.ImageSize.Height, v)
+}
 
 // FindAutoConfig looks for a config file alongside the output file.
 // It strips the output file extension, appends "-config", and probes for

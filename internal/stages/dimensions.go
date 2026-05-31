@@ -1,6 +1,9 @@
 package stages
 
-import "github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+)
 
 // PtrInt safely dereferences *int, returning fallback if nil.
 func PtrInt(p *int, fallback int) int {
@@ -24,8 +27,20 @@ func PtrString(p *string) string {
 // RootConfig, applying the documented defaults (1920x1080).
 func ResolveDimensions[S VizState](s S) error {
 	c := s.Common()
-	c.Width = PtrInt(c.RootConfig.Width, 1920)
-	c.Height = PtrInt(c.RootConfig.Height, 1080)
+
+	var imageSize *config.ImageSize
+	if c.RootConfig != nil {
+		imageSize = c.RootConfig.ImageSize
+	}
+
+	var width, height *int
+	if imageSize != nil {
+		width = imageSize.Width
+		height = imageSize.Height
+	}
+
+	c.Width = PtrInt(width, 1920)
+	c.Height = PtrInt(height, 1080)
 
 	return nil
 }
