@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-30T14:19:00Z",
-  "run_id": "26686053519",
+  "last_run": "2026-05-31T05:09:43Z",
+  "run_id": "26703915582",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -22,12 +22,15 @@
     "326": "2026-05-30T14:19:00Z",
     "327": "2026-05-29T16:30:06Z",
     "328": "2026-05-30T04:40:52Z",
-    "332": "2026-05-29T16:30:06Z"
+    "329": "2026-05-31T05:09:43Z",
+    "330": "2026-05-31T05:09:43Z",
+    "332": "2026-05-29T16:30:06Z",
+    "333": "2026-05-31T05:09:43Z",
+    "334": "2026-05-31T05:09:43Z",
+    "335": "2026-05-31T05:09:43Z"
   },
   "prs_created": [
-    {"branch": "repo-assist/eng-deps-2026-05-30", "pr_number": null, "title": "[repo-assist] chore(deps): update golang.org/x indirect dependencies", "status": "open - pending PR number", "closes": [251]},
-    {"branch": "repo-assist/perf-parallel-go-analysis", "pr_number": null, "title": "[repo-assist] perf(golang): parallelize Go file analysis in walkGoFiles", "status": "open - pending PR number", "closes": []},
-    {"branch": "repo-assist/test-legend-reserve-23756d7017d70fda", "pr_number": 338, "title": "[repo-assist] test(legend): add tests for reserve.go", "status": "open", "closes": []}
+    {"branch": "repo-assist/eng-deps-2026-05-31", "pr_number": null, "title": "[repo-assist] chore(deps): update golang.org/x indirect dependencies (2026-05-31)", "status": "open - pending PR number", "closes": []}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -43,14 +46,19 @@
     "322": "image size config: labelled enhancement+refactor; commented 2026-05-29",
     "324": "bubbletree/layout split: commented geometry-first approach 2026-05-30",
     "325": "CommonState split: commented two-phase InputState/PipelineState approach 2026-05-30",
-    "326": "scanner decompose: commented walker+nodeBuilder split, noted existing separations 2026-05-30",
+    "326": "scanner decompose: commented walker+nodeBuilder split; maintainer created PR #346 2026-05-31",
     "327": "Kong filter adapter: commented 2026-05-29",
-    "328": "git service split: commented metric-accessor pattern + structural split 2026-05-30",
-    "332": "model/walk split: PR #337 created then closed by maintainer as 'known antipattern' - do NOT attempt similar refactors moving code to new packages"
+    "328": "git service split: commented metric-accessor pattern; maintainer created PR #345 2026-05-31",
+    "329": "legend orientation cursor abstraction: commented 2026-05-31",
+    "330": "fill strategy extraction: commented 2026-05-31",
+    "332": "model/walk split: PR #337 created then closed by maintainer as 'known antipattern' - do NOT attempt similar refactors moving code to new packages",
+    "333": "legend domain model decoupling: commented 2026-05-31",
+    "334": "export duplicate tree: commented marshaling adapter approach 2026-05-31",
+    "335": "radialtree render/layout unification: commented render command abstraction 2026-05-31"
   },
   "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
-  "backlog_cursor": {"issues": 326, "prs": 0},
-  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed. PRs #318,#319,#323 merged. PR #337 closed as 'known antipattern'.",
-  "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as 'known antipattern'. Keep refactors within-package only.",
-  "notes": "12 refactor issues #324-335. Commented on #324,#325,#326,#327,#328,#332. Remaining uncommented: #329,#330,#331,#333,#334,#335. Issue #225 still open. Open Repo Assist PRs: #338 (legend tests), eng-deps-2026-05-30 (deps update), perf-parallel-go-analysis (Go file parallelism)."
+  "backlog_cursor": {"issues": 335, "prs": 0},
+  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. PR #338 (legend reserve tests) merged 2026-05-31. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed. PRs #318,#319,#323,#338 merged. PRs #337 closed as 'known antipattern'.",
+  "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as 'known antipattern'. Keep refactors within-package only. Maintainer is actively implementing refactors from #324-335 series himself (PRs #345, #346).",
+  "notes": "12 refactor issues #324-335 - now commented on all. Maintainer actively implementing some (#326 via PR #346, #328 via PR #345). Issue #225 still open (treemap linear gradient). All 12 refactor issues commented."
 }
