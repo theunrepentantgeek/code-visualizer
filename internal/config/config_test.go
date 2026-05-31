@@ -122,6 +122,28 @@ func TestLoad_YAMLImageSize_OverridesWidth(t *testing.T) {
 	g.Expect(*cfg.ImageSize.Height).To(Equal(1080)) // default preserved
 }
 
+func TestLoad_YAMLLegacyWidth_ParsesIntoImageSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "width: 800\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	// Act
+	err := cfg.Load(path)
+
+	// Assert
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1080)) // default preserved
+}
+
 func TestLoad_YMLExtension_ParsesLegacyHeight(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

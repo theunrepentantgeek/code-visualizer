@@ -85,6 +85,8 @@ func (c *Config) Load(path string) error {
 
 	ext := strings.ToLower(filepath.Ext(path))
 
+	// Parse into a small compatibility struct as well so legacy top-level width/height
+	// values can be migrated into ImageSize without changing the persisted format.
 	var compat imageSizeCompatConfig
 
 	switch ext {

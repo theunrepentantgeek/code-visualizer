@@ -26,14 +26,10 @@ func TestResolveDimensions_UsesConfigValues(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	g.Expect(os.WriteFile(path, []byte("imageSize:\n  width: 800\n  height: 600\n"), 0o600)).To(Succeed())
-
-	cfg := config.New()
-	g.Expect(cfg.Load(path)).To(Succeed())
-
-	s := &fakeState{common: stages.CommonState{RootConfig: cfg}}
+	width, height := 800, 600
+	s := &fakeState{common: stages.CommonState{
+		RootConfig: &config.Config{ImageSize: &config.ImageSize{Width: &width, Height: &height}},
+	}}
 
 	g.Expect(stages.ResolveDimensions[*fakeState](s)).To(Succeed())
 	g.Expect(s.Common().Width).To(Equal(800))
