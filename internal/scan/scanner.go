@@ -7,14 +7,11 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
 
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
 // Progress receives notifications as directories are scanned.
@@ -189,71 +186,6 @@ func processDir(
 	return nil
 }
 
-func processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, entryPath string) {
-	ext := strings.TrimPrefix(filepath.Ext(entry.Name()), ".")
-
-	fileType := ext
-	if fileType == "" {
-		fileType = "no-extension"
-	}
-
-	binary, err := IsBinaryFile(entryPath)
-	if err != nil {
-		slog.Warn("binary probe failed, assuming text", "path", entryPath, "error", err)
-	}
-
-	f := &model.File{
-		Path:      entryPath,
-		Name:      entry.Name(),
-		Extension: ext,
-		IsBinary:  binary,
-	}
-
-	f.SetQuantity(filesystem.FileSize, info.Size())
-	f.SetClassification(filesystem.FileType, fileType)
-
-	node.Files = append(node.Files, f)
-}
-
 func isSymlink(entry os.DirEntry) bool {
 	return entry.Type()&os.ModeSymlink != 0
-}
-
-// hasFiles reports whether the directory tree rooted at node contains at least
-// one file. It returns true as soon as the first file is found, avoiding a full
-// traversal of large trees.
-func hasFiles(node *model.Directory) bool {
-	if len(node.Files) > 0 {
-		return true
-	}
-
-	return slices.ContainsFunc(node.Dirs, hasFiles)
-}
-
-// FilterBinaryFiles returns a copy of the directory tree with binary files removed.
-// Directories that become empty after removal are also pruned.
-func FilterBinaryFiles(node *model.Directory) *model.Directory {
-	result := &model.Directory{
-		Path: node.Path,
-		Name: node.Name,
-	}
-
-	for _, f := range node.Files {
-		if f.IsBinary {
-			slog.Debug("excluding binary file", "path", f.Path)
-
-			continue
-		}
-
-		result.Files = append(result.Files, f)
-	}
-
-	for _, d := range node.Dirs {
-		filtered := FilterBinaryFiles(d)
-		if len(filtered.Files) > 0 || len(filtered.Dirs) > 0 {
-			result.Dirs = append(result.Dirs, filtered)
-		}
-	}
-
-	return result
 }
