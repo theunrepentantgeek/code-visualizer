@@ -85,7 +85,6 @@ func ReserveSpace(data *model.LegendData, measurer StringMeasurer) (widthReducti
 	}
 }
 
-//nolint:revive // refactor this later
 func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, height float64) {
 	var totalH float64
 
@@ -106,24 +105,9 @@ func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, hei
 			totalH += model.EntryGap
 		}
 
-		lw, _ := measurer.MeasureString(entry.Label)
-		mw, _ := measurer.MeasureString(entry.Metric)
-		totalH += titleHeight()
-
-		if lw > maxW {
-			maxW = lw
-		}
-
-		if mw > maxW {
-			maxW = mw
-		}
-
-		entryW, entryH := measureEntryV(measurer, entry)
+		entryW, entryH := measureSingleEntryV(measurer, entry)
 		totalH += entryH
-
-		if entryW > maxW {
-			maxW = entryW
-		}
+		maxW = max(maxW, entryW)
 	}
 
 	return maxW + 2*model.LegendPadding, totalH + 2*model.LegendPadding
@@ -171,6 +155,14 @@ func measureSingleEntryH(measurer StringMeasurer, entry model.LegendEntryData) (
 	h := titleHeight() + entryH
 
 	return w, h
+}
+
+func measureSingleEntryV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
+	lw, _ := measurer.MeasureString(entry.Label)
+	mw, _ := measurer.MeasureString(entry.Metric)
+	entryW, entryH := measureEntryV(measurer, entry)
+
+	return max(max(lw, mw), entryW), titleHeight() + entryH
 }
 
 func measureEntryV(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {

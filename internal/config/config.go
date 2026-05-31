@@ -131,6 +131,7 @@ func (c *Config) ForExport(vizName string) *Config {
 		exported.Spiral = c.Spiral
 	case "scatter":
 		exported.Scatter = c.Scatter
+	default:
 	}
 
 	return exported
