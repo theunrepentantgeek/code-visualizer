@@ -93,6 +93,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
+			VizName:    "spiral",
 			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Spiral,
