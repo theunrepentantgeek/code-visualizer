@@ -22,6 +22,17 @@ func TestResolveDimensions_AppliesDefaults(t *testing.T) {
 	g.Expect(s.Common().Height).To(Equal(1080))
 }
 
+func TestResolveDimensions_NilRootConfig_UsesDefaults(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s := &fakeState{common: stages.CommonState{RootConfig: nil}}
+
+	g.Expect(stages.ResolveDimensions[*fakeState](s)).To(Succeed())
+	g.Expect(s.Common().Width).To(Equal(1920))
+	g.Expect(s.Common().Height).To(Equal(1080))
+}
+
 func TestResolveDimensions_UsesConfigValues(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
