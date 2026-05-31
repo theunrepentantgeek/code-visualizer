@@ -20,16 +20,16 @@ type ResolvedAxis struct {
 	Categorical *CategoricalAxis
 }
 
-func (a ResolvedAxis) NumericTicks() []AxisTick {
-	if a.Numeric == nil {
+func (a *ResolvedAxis) NumericTicks() []AxisTick {
+	if a == nil || a.Numeric == nil {
 		return nil
 	}
 
 	return a.Numeric.Ticks
 }
 
-func (a ResolvedAxis) CategoricalBands() []AxisBand {
-	if a.Categorical == nil {
+func (a *ResolvedAxis) CategoricalBands() []AxisBand {
+	if a == nil || a.Categorical == nil {
 		return nil
 	}
 
