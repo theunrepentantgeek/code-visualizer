@@ -85,7 +85,6 @@ func ReserveSpace(data *model.LegendData, measurer StringMeasurer) (widthReducti
 	}
 }
 
-//nolint:revive // refactor this later
 func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, height float64) {
 	var totalH float64
 
