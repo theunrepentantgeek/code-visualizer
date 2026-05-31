@@ -1,5 +1,6 @@
-width: 2048
-height: 2048
+imageSize:
+    width: 2048
+    height: 2048
 treemap:
     size: file-lines
     fill: file-freshness
