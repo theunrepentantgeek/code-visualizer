@@ -1,5 +1,6 @@
-width: 1920
-height: 1920
+imageSize:
+    width: 1920
+    height: 1920
 treemap: {}
 radial:
     discSize: file-lines

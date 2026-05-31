@@ -16,16 +16,17 @@ func TestConfig_OverrideWidth_SetsWhenNonZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 	cfg := New()
 	cfg.OverrideWidth(2560)
-	g.Expect(*cfg.Width).To(Equal(2560))
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Width).To(Equal(2560))
 }
 
 func TestConfig_OverrideWidth_SkipsWhenZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	cfg := New()
-	original := *cfg.Width
+	original := *cfg.ImageSize.Width
 	cfg.OverrideWidth(0)
-	g.Expect(*cfg.Width).To(Equal(original))
+	g.Expect(*cfg.ImageSize.Width).To(Equal(original))
 }
 
 func TestConfig_OverrideHeight_SetsWhenNonZero(t *testing.T) {
@@ -33,16 +34,17 @@ func TestConfig_OverrideHeight_SetsWhenNonZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 	cfg := New()
 	cfg.OverrideHeight(1440)
-	g.Expect(*cfg.Height).To(Equal(1440))
+	g.Expect(cfg.ImageSize).NotTo(BeNil())
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1440))
 }
 
 func TestConfig_OverrideHeight_SkipsWhenZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	cfg := New()
-	original := *cfg.Height
+	original := *cfg.ImageSize.Height
 	cfg.OverrideHeight(0)
-	g.Expect(*cfg.Height).To(Equal(original))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(original))
 }
 
 // Treemap overrides

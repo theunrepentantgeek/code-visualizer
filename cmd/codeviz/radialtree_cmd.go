@@ -91,6 +91,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
+			VizName:    "radial",
 			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Radial,

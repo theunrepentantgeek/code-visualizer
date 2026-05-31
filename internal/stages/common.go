@@ -33,6 +33,7 @@ type CommonState struct {
 	Output     string
 	Flags      *Flags
 	RootConfig *config.Config
+	VizName    string // active visualization name for export trimming
 	CLIFilters []filter.Rule
 
 	// Populated by shared stages during the pipeline:

@@ -92,6 +92,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
+			VizName:    "bubbletree",
 			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Bubbletree,

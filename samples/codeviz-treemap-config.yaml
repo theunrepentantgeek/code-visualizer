@@ -1,5 +1,6 @@
-width: 2048
-height: 2048
+imageSize:
+    width: 2048
+    height: 2048
 treemap:
     fill: file-type
     fillPalette: categorization

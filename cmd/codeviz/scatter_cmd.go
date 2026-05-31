@@ -104,6 +104,7 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 			Output:     c.Output,
 			Flags:      toStagesFlags(flags),
 			RootConfig: flags.Config,
+			VizName:    "scatter",
 			CLIFilters: c.Filters(),
 		},
 		Config:             flags.Config.Scatter,
