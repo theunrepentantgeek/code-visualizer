@@ -200,3 +200,29 @@ func TestNumericTicks_NearZeroRangeIncludesZeroTick(t *testing.T) {
 		g.Expect(math.Mod(ticks[i].Value, step)).To(BeNumerically("~", 0, 1e-9))
 	}
 }
+
+func TestResolvedAxis_OffsetShiftsNumericTicks(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	axis := ResolvedAxis{
+		Numeric: &NumericAxis{Ticks: []AxisTick{{Position: 10}, {Position: 25}}},
+	}
+
+	axis.Offset(7.5)
+
+	g.Expect(axis.Numeric.Ticks).To(Equal([]AxisTick{{Position: 17.5}, {Position: 32.5}}))
+}
+
+func TestResolvedAxis_OffsetShiftsCategoricalBands(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	axis := ResolvedAxis{
+		Categorical: &CategoricalAxis{Bands: []AxisBand{{Label: "go", Start: 10, End: 20, Center: 15}}},
+	}
+
+	axis.Offset(-5)
+
+	g.Expect(axis.Categorical.Bands).To(Equal([]AxisBand{{Label: "go", Start: 5, End: 15, Center: 10}}))
+}

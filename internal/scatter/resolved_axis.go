@@ -19,3 +19,35 @@ type ResolvedAxis struct {
 	Numeric     *NumericAxis
 	Categorical *CategoricalAxis
 }
+
+func (a ResolvedAxis) NumericTicks() []AxisTick {
+	if a.Numeric == nil {
+		return nil
+	}
+
+	return a.Numeric.Ticks
+}
+
+func (a ResolvedAxis) CategoricalBands() []AxisBand {
+	if a.Categorical == nil {
+		return nil
+	}
+
+	return a.Categorical.Bands
+}
+
+func (a *ResolvedAxis) Offset(delta float64) {
+	if a == nil {
+		return
+	}
+
+	for i := range a.NumericTicks() {
+		a.Numeric.Ticks[i].Position += delta
+	}
+
+	for i := range a.CategoricalBands() {
+		a.Categorical.Bands[i].Start += delta
+		a.Categorical.Bands[i].End += delta
+		a.Categorical.Bands[i].Center += delta
+	}
+}
