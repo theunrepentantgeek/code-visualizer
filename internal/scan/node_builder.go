@@ -51,10 +51,6 @@ func (b nodeBuilder) processFile(node *model.Directory, entry os.DirEntry, info 
 	node.Files = append(node.Files, file)
 }
 
-func processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, entryPath string) {
-	newNodeBuilder(IsBinaryFile).processFile(node, entry, info, entryPath)
-}
-
 func hasFiles(node *model.Directory) bool {
 	if len(node.Files) > 0 {
 		return true

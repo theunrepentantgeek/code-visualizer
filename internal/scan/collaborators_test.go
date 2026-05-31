@@ -7,9 +7,19 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
+
+type progressCall struct {
+	path      string
+	fileCount int
+}
+
+type recordingProgress struct {
+	calls []progressCall
+}
 
 type stubDirEntry struct {
 	name string
@@ -46,6 +56,25 @@ func mustStatFile(t *testing.T, path string) os.FileInfo {
 	return info
 }
 
+func (r *recordingProgress) OnDirectoryScanned(path string, fileCount int) {
+	r.calls = append(r.calls, progressCall{path: path, fileCount: fileCount})
+}
+
+func TestFilterPolicyIncludesUsesRelativePath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root, err := filepath.Abs(filepath.Join("testdata", "with-dotfiles"))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	policy := newFilterPolicy(root, []filter.Rule{{Pattern: ".*", Mode: filter.Exclude}})
+
+	included, relPath, err := policy.includes(filepath.Join(root, ".hidden"))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(relPath).To(Equal(".hidden"))
+	g.Expect(included).To(BeFalse())
+}
+
 func TestNodeBuilderProcessFileAddsMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -53,6 +82,7 @@ func TestNodeBuilderProcessFileAddsMetadata(t *testing.T) {
 	dir := filepath.Join("testdata", "flat")
 	entry := stubDirEntry{name: "small.txt"}
 	entryPath := filepath.Join(dir, entry.Name())
+
 	info := mustStatFile(t, entryPath)
 
 	node := &model.Directory{Path: dir, Name: "flat"}
@@ -78,4 +108,23 @@ func TestNodeBuilderProcessFileAddsMetadata(t *testing.T) {
 	fileType, ok := file.Classification(filesystem.FileType)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(fileType).To(Equal("txt"))
+}
+
+func TestWalkerScanDirReportsProgressPerDirectory(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root, err := filepath.Abs(filepath.Join("testdata", "nested"))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	progress := &recordingProgress{}
+	walker := newWalker(root, nil, progress)
+
+	_, err = walker.scanDir(root)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(progress.calls).To(ConsistOf(
+		progressCall{path: root, fileCount: 1},
+		progressCall{path: filepath.Join(root, "sub"), fileCount: 1},
+		progressCall{path: filepath.Join(root, "sub", "deep"), fileCount: 1},
+	))
 }
