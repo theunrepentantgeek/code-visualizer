@@ -399,21 +399,19 @@ func TestForExport_OnlyIncludesRelevantViz(t *testing.T) {
 	g.Expect(exported.Scatter).To(BeNil())
 }
 
-func TestForExport_PreservesWidthHeightAndFilter(t *testing.T) {
+func TestForExport_PreservesImageSizeAndFilter(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	width := 800
 	height := 600
 	cfg := New()
-	cfg.Width = &width
-	cfg.Height = &height
+	cfg.ImageSize = &ImageSize{Width: &width, Height: &height}
 	cfg.FileFilter = []filter.Rule{{Pattern: "*.go", Mode: filter.Include}}
 
 	exported := cfg.ForExport("scatter")
 
-	g.Expect(exported.Width).To(BeIdenticalTo(cfg.Width))
-	g.Expect(exported.Height).To(BeIdenticalTo(cfg.Height))
+	g.Expect(exported.ImageSize).To(BeIdenticalTo(cfg.ImageSize))
 	g.Expect(exported.FileFilter).To(Equal(cfg.FileFilter))
 	g.Expect(exported.Scatter).To(BeIdenticalTo(cfg.Scatter))
 }

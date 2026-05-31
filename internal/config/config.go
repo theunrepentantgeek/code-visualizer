@@ -149,8 +149,7 @@ func (c *Config) TryAutoLoad(outputPath string) error {
 // visualization section populated.
 func (c *Config) ForExport(vizName string) *Config {
 	exported := &Config{
-		Width:      c.Width,
-		Height:     c.Height,
+		ImageSize:  c.ImageSize,
 		FileFilter: c.FileFilter,
 		Source:     c.Source,
 	}
