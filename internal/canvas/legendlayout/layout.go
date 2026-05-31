@@ -109,20 +109,10 @@ func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, hei
 		mw, _ := measurer.MeasureString(entry.Metric)
 		totalH += titleHeight()
 
-		if lw > maxW {
-			maxW = lw
-		}
-
-		if mw > maxW {
-			maxW = mw
-		}
-
 		entryW, entryH := measureEntryV(measurer, entry)
 		totalH += entryH
 
-		if entryW > maxW {
-			maxW = entryW
-		}
+		maxW = max(maxW, lw, mw, entryW)
 	}
 
 	return maxW + 2*model.LegendPadding, totalH + 2*model.LegendPadding
