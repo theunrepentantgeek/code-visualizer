@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-
 )
 
 func TestIsIncluded_NoRules_ReturnsTrue(t *testing.T) {
@@ -203,7 +202,6 @@ func TestParseFilterFlag_BangOnly(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("empty filter"))
 }
-
 
 func TestCompareByIndex_ReturnsNegativeForEarlierRule(t *testing.T) {
 	t.Parallel()
