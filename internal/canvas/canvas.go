@@ -107,6 +107,16 @@ func (c *Canvas) SetLegend(config LegendConfig) {
 	c.legend = &config
 }
 
+// FooterText returns the current footer text, or an empty string if no footer
+// has been set. Primarily useful for testing.
+func (c *Canvas) FooterText() string {
+	if c.footer == nil {
+		return ""
+	}
+
+	return *c.footer
+}
+
 // SetFooter configures the attribution footer text for this canvas.
 // An empty string clears a previously set footer.
 func (c *Canvas) SetFooter(text string) {
