@@ -29,6 +29,9 @@ type TreemapCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
+	Footer     string `default:"" help:"Override footer text on the generated image." optional:""`
+	HideFooter bool   `default:"false" help:"Suppress the attribution footer." name:"hide-footer" optional:""`
+
 	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
@@ -128,6 +131,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		treemap.RenderStage,
 		treemap.LabelStage,
 		stages.ApplyCanvasBlockLabels[*treemap.State],
+		stages.ApplyFooter[*treemap.State],
 		stages.WriteCanvas,
 		treemap.LogResult,
 	)
@@ -140,6 +144,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 	cfg.OverrideWidth(c.Width)
 	cfg.OverrideHeight(c.Height)
+	cfg.OverrideFooterText(c.Footer)
+	cfg.OverrideHideFooter(c.HideFooter)
 	cfg.Treemap.OverrideSize(string(c.Size))
 	cfg.Treemap.OverrideFill(c.Fill)
 	cfg.Treemap.OverrideBorder(c.Border)

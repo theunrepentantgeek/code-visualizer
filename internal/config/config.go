@@ -40,6 +40,7 @@ type Config struct {
 	Bubbletree *Bubbletree   `yaml:"bubbletree,omitempty" json:"bubbletree,omitempty"`
 	Spiral     *Spiral       `yaml:"spiral,omitempty"     json:"spiral,omitempty"`
 	Scatter    *Scatter      `yaml:"scatter,omitempty"    json:"scatter,omitempty"`
+	Footer     *Footer       `yaml:"footer,omitempty"     json:"footer,omitempty"`
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 
 	// Source is the path of the config file from which this Config was loaded, or nil if it was not loaded from a file.
@@ -238,6 +239,25 @@ func (c *Config) OverrideWidth(v int) {
 func (c *Config) OverrideHeight(v int) {
 	c.ensureImageSize()
 	overrideInt(&c.ImageSize.Height, v)
+}
+
+// OverrideFooterText sets Footer.Text to v if v is non-empty.
+func (c *Config) OverrideFooterText(v string) {
+	c.ensureFooter()
+	c.Footer.OverrideText(v)
+}
+
+// OverrideHideFooter sets Footer.Hidden to true when v is true.
+func (c *Config) OverrideHideFooter(v bool) {
+	c.ensureFooter()
+	c.Footer.OverrideHidden(v)
+}
+
+// ensureFooter initialises Footer if it is nil.
+func (c *Config) ensureFooter() {
+	if c.Footer == nil {
+		c.Footer = &Footer{}
+	}
 }
 
 // FindAutoConfig looks for a config file alongside the output file.

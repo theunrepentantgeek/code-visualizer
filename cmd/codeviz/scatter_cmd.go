@@ -29,6 +29,9 @@ type ScatterCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
+	Footer     string `default:"" help:"Override footer text on the generated image." optional:""`
+	HideFooter bool   `default:"false" help:"Suppress the attribution footer." name:"hide-footer" optional:""`
+
 	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	IncludeBinaryFiles bool          `help:"Include binary files in the visualization (excluded by default)." name:"include-binary-files" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
@@ -127,6 +130,7 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 		scatterviz.BuildLegendStage,
 		scatterviz.LayoutStage,
 		scatterviz.RenderStage,
+		stages.ApplyFooter[*scatterviz.State],
 		stages.WriteCanvas,
 		scatterviz.LogResult,
 	)
@@ -137,6 +141,8 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
 	cfg.OverrideWidth(c.Width)
 	cfg.OverrideHeight(c.Height)
+	cfg.OverrideFooterText(c.Footer)
+	cfg.OverrideHideFooter(c.HideFooter)
 
 	if cfg.Scatter == nil {
 		cfg.Scatter = &config.Scatter{}

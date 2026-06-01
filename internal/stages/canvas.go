@@ -17,3 +17,23 @@ func WriteCanvas[S VizState](s S) error {
 }
 
 var _ pipeline.Stage[VizState] = WriteCanvas[VizState]
+
+// ApplyFooter sets the footer on Common().Canvas from RootConfig.Footer.
+// A nil or hidden Footer leaves the canvas footer unset (no footer rendered).
+func ApplyFooter[S VizState](s S) error {
+	c := s.Common()
+	if c.Canvas == nil || c.RootConfig == nil {
+		return nil
+	}
+
+	footer := c.RootConfig.Footer
+	if footer.IsHidden() {
+		return nil
+	}
+
+	c.Canvas.SetFooter(footer.EffectiveText())
+
+	return nil
+}
+
+var _ pipeline.Stage[VizState] = ApplyFooter[VizState]

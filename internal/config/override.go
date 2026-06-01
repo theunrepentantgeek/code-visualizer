@@ -15,6 +15,14 @@ func overrideInt(dst **int, v int) {
 	}
 }
 
+// overrideBool sets *dst to true if v is true.
+// Zero-valued (false) v is treated as "not set" to preserve the config-file value.
+func overrideBool(dst **bool, v bool) {
+	if v {
+		*dst = &v
+	}
+}
+
 // overrideMetricSpec sets *dst to a copy of v if v is non-zero.
 func overrideMetricSpec(dst **MetricSpec, v MetricSpec) {
 	if !v.IsZero() {
