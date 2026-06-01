@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-31T14:23:03Z",
-  "run_id": "26715130994",
+  "last_run": "2026-06-01T05:31:12Z",
+  "run_id": "26736981365",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -14,8 +14,6 @@
     "194": "2026-05-15T09:46:09Z",
     "315": "2026-05-28T11:22:16Z",
     "320": "2026-05-29T05:01:14Z",
-    "321": "2026-05-29T05:01:14Z",
-    "322": "2026-05-29T05:01:14Z",
     "324": "2026-05-30T04:40:52Z",
     "325": "2026-05-30T14:19:00Z",
     "326": "2026-05-30T14:19:00Z",
@@ -30,7 +28,8 @@
     "350": "2026-05-31T14:23:03Z"
   },
   "prs_created": [
-    {"branch": "repo-assist/refactor-filter-kong-adapter-327", "pr_number": null, "title": "refactor(filter): move Kong adapter out of filter package (#327)", "status": "open - pending PR number", "closes": [327]}
+    {"branch": "repo-assist/refactor-filter-kong-adapter-327-eb02338c50ecc65b", "pr_number": 351, "title": "[repo-assist] refactor(filter): move Kong adapter out of filter package (#327)", "status": "open", "closes": [327]},
+    {"branch": "repo-assist/feat-attribution-footer-350", "pr_number": null, "title": "[repo-assist] feat(footer): add attribution footer to all visualizations", "status": "open - pending PR number", "closes": [350]}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -39,27 +38,27 @@
     "128": "fixed via PR #130 (merged 2026-04-30)",
     "155": "refactor done via PR #170 (merged 2026-05-06, issue closed)",
     "159": "refactor done via PR #171 (merged 2026-05-06, issue closed)",
-    "225": "gradient fills - closed as completed 2026-05-30 (PR #319 merged)",
+    "225": "gradient fills - closed as completed (PR #319 merged)",
     "315": "legend title: PR #318 merged",
     "320": "legend config: labelled enhancement+refactor; commented 2026-05-29",
-    "321": "noisy export: closed as completed 2026-05-31 (PR #347 merged)",
-    "322": "image size config: closed as completed 2026-05-31 (PR #348 merged)",
+    "321": "noisy export: closed (PR #347 merged)",
+    "322": "image size config: closed (PR #348 merged)",
     "324": "bubbletree/layout split: commented geometry-first approach 2026-05-30",
     "325": "CommonState split: commented two-phase InputState/PipelineState approach 2026-05-30",
-    "326": "scanner decompose: commented walker+nodeBuilder split; maintainer created PR #346 2026-05-31",
-    "327": "Kong filter adapter: commented 2026-05-29; PR created 2026-05-31",
-    "328": "git service split: commented metric-accessor pattern; maintainer created PR #345 2026-05-31",
+    "326": "scanner decompose: commented; maintainer created PR #346 2026-05-31",
+    "327": "Kong filter adapter: commented; PR #351 created 2026-05-31",
+    "328": "git service split: commented; maintainer created PR #345 2026-05-31",
     "329": "legend orientation cursor abstraction: commented 2026-05-31",
     "330": "fill strategy extraction: commented 2026-05-31",
-    "332": "model/walk split: PR #337 created then closed by maintainer as 'known antipattern' - do NOT attempt similar refactors moving code to new packages",
+    "332": "model/walk split: PR #337 closed by maintainer as known antipattern - do NOT attempt",
     "333": "legend domain model decoupling: commented 2026-05-31",
     "334": "export duplicate tree: commented marshaling adapter approach 2026-05-31",
     "335": "radialtree render/layout unification: commented render command abstraction 2026-05-31",
-    "350": "attribution footer: labelled enhancement + commented 2026-05-31"
+    "350": "attribution footer: labelled + commented 2026-05-31; PR created 2026-06-01"
   },
-  "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
+  "monthly_summary_issue": {"number": null, "month": "2026-06", "status": "open - pending issue number (temporary_id: aw_jun2026)"},
   "backlog_cursor": {"issues": 350, "prs": 0},
-  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. PR #338 (legend reserve tests) merged 2026-05-31. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,225,256,257,261-263,282,284,321,322,331 closed. PRs #318,#319,#323,#338,#342,#344,#347,#348 merged. PRs #337 closed as 'known antipattern'.",
-  "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as 'known antipattern'. Keep refactors within-package only OR moving from domain packages to cmd layer (that is acceptable). Maintainer is actively implementing refactors from #324-335 series himself (PRs #345, #346).",
-  "notes": "Issue #327 (Kong filter adapter): PR created 2026-05-31 moving RuleMapper from internal/filter to cmd/codeviz. Issue #349 (deps update): push blocked by GitHub Actions permissions - needs manual apply. Open refactor issues #324-335 all commented."
+  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,225,256,257,261-263,282,284,321,322,331 closed. PRs #318,#319,#323,#338,#342,#344,#347,#348 merged. PRs #337 closed as known antipattern. Issue #252 (May summary) closed 2026-06-01.",
+  "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as known antipattern. Keep refactors within-package only OR moving from domain packages to cmd layer (acceptable). Maintainer implementing refactors from #324-335 series himself (PRs #345, #346).",
+  "notes": "Open refactor issues #324-335 all commented. Maintainer PRs #345 (git service) and #346 (scanner) open. Our PR #351 (Kong adapter) open. Attribution footer PR created (branch repo-assist/feat-attribution-footer-350). Issues #251 and #349 (old deps updates blocked by permissions) still open - suggest maintainer close."
 }
