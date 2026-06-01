@@ -112,6 +112,7 @@ func (c *Canvas) SetLegend(config LegendConfig) {
 func (c *Canvas) SetFooter(text string) {
 	if text == "" {
 		c.footer = nil
+
 		return
 	}
 

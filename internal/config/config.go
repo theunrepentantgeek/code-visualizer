@@ -256,6 +256,8 @@ func (c *Config) OverrideFooterText(v string) {
 }
 
 // OverrideHideFooter sets Footer.Hidden to true when v is true.
+//
+//nolint:revive // v isn't a command flag
 func (c *Config) OverrideHideFooter(v bool) {
 	if c.Footer == nil && !v {
 		return
