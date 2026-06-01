@@ -40,7 +40,7 @@ func TestApplyCanvasBlockLabels_AddsLabelsToCanvas(t *testing.T) {
 		}},
 	}
 
-	err := ApplyCanvasBlockLabels[*fakeLabelState](state)
+	err := ApplyCanvasBlockLabels(state)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(state.Canvas.Render(out)).To(Succeed())
 

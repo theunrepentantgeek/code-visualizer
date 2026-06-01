@@ -1,13 +1,22 @@
 package canvas
 
 import (
+	"image/color"
 	"slices"
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/raster"
 	svgbackend "github.com/theunrepentantgeek/code-visualizer/internal/canvas/svg"
 )
+
+const (
+	footerFontSize = 13.0
+	footerMarginY  = 14.0
+)
+
+var footerColor = color.RGBA{R: 128, G: 128, B: 128, A: 200}
 
 // drawnShape is implemented by every concrete shape that can be rendered.
 type drawnShape interface {
@@ -28,6 +37,7 @@ type Canvas struct {
 	height int
 	shapes []layeredShape
 	legend *LegendConfig
+	footer *string
 }
 
 // NewCanvas creates a canvas for the given dimensions.
@@ -97,6 +107,18 @@ func (c *Canvas) SetLegend(config LegendConfig) {
 	c.legend = &config
 }
 
+// SetFooter configures the attribution footer text for this canvas.
+// An empty string clears a previously set footer.
+func (c *Canvas) SetFooter(text string) {
+	if text == "" {
+		c.footer = nil
+
+		return
+	}
+
+	c.footer = &text
+}
+
 // Render resolves all inks, sorts shapes by layer, selects the backend
 // from the file extension, and writes the output.
 func (c *Canvas) Render(outputPath string) error {
@@ -143,6 +165,14 @@ func (c *Canvas) RenderTo(backend Backend) error {
 
 	for _, s := range allShapes {
 		s.shape.drawTo(backend)
+	}
+
+	if c.footer != nil {
+		pos := model.Position{
+			X: float64(c.width) / 2,
+			Y: float64(c.height) - footerMarginY,
+		}
+		backend.DrawText(pos, *c.footer, footerColor, footerFontSize, model.AnchorMiddle, 0)
 	}
 
 	return nil
