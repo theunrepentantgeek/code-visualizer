@@ -1,11 +1,7 @@
 package main
 
-import (
-	"github.com/alecthomas/kong"
-
-	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
-)
+import "github.com/alecthomas/kong"
 
 func filterMapperOption() kong.Option {
-	return kong.NamedMapper(filter.RuleMapperName, filter.RuleMapper{})
+	return kong.NamedMapper(ruleMapperName, ruleMapper{})
 }
