@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-05-31T05:09:43Z",
-  "run_id": "26703915582",
+  "last_run": "2026-06-01T18:28:34Z",
+  "run_id": "26773854406",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -27,10 +27,12 @@
     "332": "2026-05-29T16:30:06Z",
     "333": "2026-05-31T05:09:43Z",
     "334": "2026-05-31T05:09:43Z",
-    "335": "2026-05-31T05:09:43Z"
+    "335": "2026-05-31T05:09:43Z",
+    "354": "2026-06-01T18:28:34Z",
+    "355": "2026-06-01T18:28:34Z"
   },
   "prs_created": [
-    {"branch": "repo-assist/eng-deps-2026-05-31", "pr_number": null, "title": "[repo-assist] chore(deps): update golang.org/x indirect dependencies (2026-05-31)", "status": "open - pending PR number", "closes": []}
+    {"branch": "repo-assist/test-apply-footer-canvas", "pr_number": null, "title": "[repo-assist] test(stages): add tests for ApplyFooter stage", "status": "open - pending PR number", "closes": []}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -42,23 +44,26 @@
     "225": "gradient fills - disc gradients PR #319 merged",
     "315": "legend title: PR #318 merged",
     "320": "legend config: labelled enhancement+refactor; commented 2026-05-29",
-    "321": "noisy export: labelled enhancement; commented 2026-05-29",
-    "322": "image size config: labelled enhancement+refactor; commented 2026-05-29",
+    "321": "noisy export: labelled enhancement; commented 2026-05-29; fixed via PR #347",
+    "322": "image size config: labelled enhancement+refactor; commented 2026-05-29; fixed via PR #348",
     "324": "bubbletree/layout split: commented geometry-first approach 2026-05-30",
     "325": "CommonState split: commented two-phase InputState/PipelineState approach 2026-05-30",
-    "326": "scanner decompose: commented walker+nodeBuilder split; maintainer created PR #346 2026-05-31",
-    "327": "Kong filter adapter: commented 2026-05-29",
-    "328": "git service split: commented metric-accessor pattern; maintainer created PR #345 2026-05-31",
+    "326": "scanner decompose: commented walker+nodeBuilder split; fixed via PR #346",
+    "327": "Kong filter adapter: commented 2026-05-29; fixed via PR #351",
+    "328": "git service split: commented metric-accessor pattern; maintainer created PR #345",
     "329": "legend orientation cursor abstraction: commented 2026-05-31",
     "330": "fill strategy extraction: commented 2026-05-31",
-    "332": "model/walk split: PR #337 created then closed by maintainer as 'known antipattern' - do NOT attempt similar refactors moving code to new packages",
+    "332": "model/walk split: PR #337 created then closed by maintainer as 'known antipattern'",
     "333": "legend domain model decoupling: commented 2026-05-31",
     "334": "export duplicate tree: commented marshaling adapter approach 2026-05-31",
-    "335": "radialtree render/layout unification: commented render command abstraction 2026-05-31"
+    "335": "radialtree render/layout unification: commented render command abstraction 2026-05-31",
+    "350": "attribution footer: commented architecture 2026-05-31; fixed via PR #352 (merged)",
+    "354": "visualization title: labelled enhancement; commented architecture 2026-06-01",
+    "355": "footer space reservation bug: labelled bug; commented root cause + fix approach 2026-06-01"
   },
-  "monthly_summary_issue": {"number": 252, "month": "2026-05", "status": "open"},
-  "backlog_cursor": {"issues": 335, "prs": 0},
-  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. PR #338 (legend reserve tests) merged 2026-05-31. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284 closed. PRs #318,#319,#323,#338 merged. PRs #337 closed as 'known antipattern'.",
-  "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as 'known antipattern'. Keep refactors within-package only. Maintainer is actively implementing refactors from #324-335 series himself (PRs #345, #346).",
-  "notes": "12 refactor issues #324-335 - now commented on all. Maintainer actively implementing some (#326 via PR #346, #328 via PR #345). Issue #225 still open (treemap linear gradient). All 12 refactor issues commented."
+  "monthly_summary_issue": {"number": 353, "month": "2026-06", "status": "open"},
+  "backlog_cursor": {"issues": 355, "prs": 0},
+  "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. PR #338 (legend reserve tests) merged. PR #351 (Kong adapter) merged. PR #352 (footer) merged. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,256,257,261-263,282,284,321,322,326,327 closed. PRs #318,#319,#323,#338,#347,#348,#346,#351,#352 merged. PR #337 closed as 'known antipattern'.",
+  "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as 'known antipattern'. Keep refactors within-package only. Maintainer is actively implementing refactors from #324-335 series himself.",
+  "notes": "Issue #355 (footer space reservation): root cause identified - layout stages use full c.Height before footer is set. Fix: shared helper effectiveFooterHeight(config) used in all 5 layout stages. Canvas.FooterText() accessor added. New PR for ApplyFooter tests created (pending PR number). Issue #354 (viz title): architecture commented - similar to footer pattern but needs space reservation from the start."
 }
