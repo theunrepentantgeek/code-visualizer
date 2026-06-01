@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	footerFontSize = 10.0
+	footerFontSize = 13.0
 	footerMarginY  = 14.0
 )
 

@@ -1,6 +1,9 @@
 package stages
 
 import (
+	"strings"
+	"time"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
@@ -19,7 +22,8 @@ func WriteCanvas[S VizState](s S) error {
 var _ pipeline.Stage[VizState] = WriteCanvas[VizState]
 
 // ApplyFooter sets the footer on Common().Canvas from RootConfig.Footer.
-// A nil or hidden Footer leaves the canvas footer unset (no footer rendered).
+// If the Footer is hidden, the canvas footer is left unset (no footer rendered).
+// If the Footer is nil or has no explicit text, the built-in default text is used.
 func ApplyFooter[S VizState](s S) error {
 	c := s.Common()
 	if c.Canvas == nil || c.RootConfig == nil {
@@ -27,11 +31,18 @@ func ApplyFooter[S VizState](s S) error {
 	}
 
 	footer := c.RootConfig.Footer
-	if footer.IsHidden() {
+	if !footer.ShowFooter() {
 		return nil
 	}
 
-	c.Canvas.SetFooter(footer.EffectiveText())
+	now := time.Now()
+	rep := strings.NewReplacer(
+		"$date", now.Format(time.DateOnly),
+		"$time", now.Format(time.TimeOnly),
+	)
+
+	text := rep.Replace(*footer.Text)
+	c.Canvas.SetFooter(text)
 
 	return nil
 }
