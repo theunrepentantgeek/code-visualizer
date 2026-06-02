@@ -127,29 +127,29 @@ func TestApplyFooter_FooterRendersWithoutError(t *testing.T) {
 }
 
 func TestEffectiveFooterHeight_NilConfig_ReturnsZero(t *testing.T) {
-t.Parallel()
-g := NewGomegaWithT(t)
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-g.Expect(stages.EffectiveFooterHeight(nil)).To(Equal(0))
+	g.Expect(stages.EffectiveFooterHeight(nil)).To(Equal(0))
 }
 
 func TestEffectiveFooterHeight_FooterHidden_ReturnsZero(t *testing.T) {
-t.Parallel()
-g := NewGomegaWithT(t)
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-cfg := config.New()
-cfg.OverrideHideFooter(true)
+	cfg := config.New()
+	cfg.OverrideHideFooter(true)
 
-g.Expect(stages.EffectiveFooterHeight(cfg)).To(Equal(0))
+	g.Expect(stages.EffectiveFooterHeight(cfg)).To(Equal(0))
 }
 
 func TestEffectiveFooterHeight_FooterShown_ReturnsPositive(t *testing.T) {
-t.Parallel()
-g := NewGomegaWithT(t)
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-cfg := config.New()
+	cfg := config.New()
 
-height := stages.EffectiveFooterHeight(cfg)
-g.Expect(height).To(BeNumerically(">", 0))
-g.Expect(height).To(Equal(int(canvas.FooterReservedHeight)))
+	height := stages.EffectiveFooterHeight(cfg)
+	g.Expect(height).To(BeNumerically(">", 0))
+	g.Expect(height).To(Equal(int(canvas.FooterReservedHeight)))
 }
