@@ -138,3 +138,86 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 		"file-lines",
 	}))
 }
+
+func TestLayoutStage_FooterEnabled_ReducesAvailableHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeTestFile("a.go", "go", 100)},
+	}
+
+	cfg := config.New()
+	// Footer has text set by default (from config.New()), so it will be shown.
+
+	const width, height = 800, 600
+
+	s := &treemap.State{
+		CommonState: stages.CommonState{
+			Root:       root,
+			Width:      width,
+			Height:     height,
+			RootConfig: cfg,
+		},
+		Size:        metric.Name("file-size"),
+		FillMetric:  metric.Name("file-size"),
+		FillPalette: palette.Temperature,
+	}
+
+	g.Expect(treemap.LayoutStage(s)).To(Succeed())
+
+	// The layout rectangle must not extend into the footer zone.
+	footerH := canvas.FooterReservedHeight
+	maxY := s.Root.Y + s.Root.H
+	g.Expect(maxY).To(BeNumerically("<=", float64(height)-footerH),
+		"layout rect extends into footer zone")
+}
+
+func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeTestFile("a.go", "go", 100)},
+	}
+
+	cfgWithFooter := config.New()
+	cfgWithFooter.OverrideHideFooter(true)
+
+	const width, height = 800, 600
+
+	sNoFooter := &treemap.State{
+		CommonState: stages.CommonState{
+			Root:       root,
+			Width:      width,
+			Height:     height,
+			RootConfig: cfgWithFooter,
+		},
+		Size:        metric.Name("file-size"),
+		FillMetric:  metric.Name("file-size"),
+		FillPalette: palette.Temperature,
+	}
+
+	sWithFooter := &treemap.State{
+		CommonState: stages.CommonState{
+			Root:       root,
+			Width:      width,
+			Height:     height,
+			RootConfig: config.New(),
+		},
+		Size:        metric.Name("file-size"),
+		FillMetric:  metric.Name("file-size"),
+		FillPalette: palette.Temperature,
+	}
+
+	g.Expect(treemap.LayoutStage(sNoFooter)).To(Succeed())
+	g.Expect(treemap.LayoutStage(sWithFooter)).To(Succeed())
+
+	// With footer hidden, layout uses more vertical space than when footer is shown.
+	maxYNoFooter := sNoFooter.Root.Y + sNoFooter.Root.H
+	maxYWithFooter := sWithFooter.Root.Y + sWithFooter.Root.H
+	g.Expect(maxYNoFooter).To(BeNumerically(">", maxYWithFooter),
+		"footer-hidden layout should use more height than footer-shown layout")
+}

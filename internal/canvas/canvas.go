@@ -14,6 +14,12 @@ import (
 const (
 	footerFontSize = 13.0
 	footerMarginY  = 14.0
+
+	// FooterReservedHeight is the vertical space (in pixels) that the footer
+	// occupies when rendered. Layout stages subtract this from the available
+	// height when the footer is enabled, preventing content from being drawn
+	// underneath it.
+	FooterReservedHeight = footerFontSize + footerMarginY
 )
 
 var footerColor = color.RGBA{R: 128, G: 128, B: 128, A: 200}
