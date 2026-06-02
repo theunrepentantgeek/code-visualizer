@@ -127,9 +127,10 @@ func BuildLegendStage(s *State) error {
 // LayoutStage runs the spiral layout algorithm and applies disc sizing.
 func LayoutStage(s *State) error {
 	c := s.Common()
+	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
 
-	layout := Layout(s.Buckets, c.Width, c.Height, s.Resolution, s.Labels)
-	maxDisc := MaxDiscRadius(len(s.Buckets), c.Width, c.Height, s.Resolution)
+	layout := Layout(s.Buckets, c.Width, availH, s.Resolution, s.Labels)
+	maxDisc := MaxDiscRadius(len(s.Buckets), c.Width, availH, s.Resolution)
 
 	ApplyDiscSizes(layout.Nodes, s.Buckets, maxDisc)
 

@@ -74,7 +74,8 @@ func BuildLegendStage(s *State) error {
 // Radial uses a square canvas: canvasSize = min(Width, Height).
 func LayoutStage(s *State) error {
 	c := s.Common()
-	canvasSize := min(c.Width, c.Height)
+	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
+	canvasSize := min(c.Width, availH)
 
 	s.Nodes = Layout(c.Root, canvasSize, s.DiscSize, s.Labels)
 
