@@ -350,10 +350,9 @@ func anyOverlap(pos point, radius float64, placed []BubbleNode, skipA, skipB int
 
 		dx := pos.x - placed[j].X
 		dy := pos.y - placed[j].Y
-		dist := math.Sqrt(dx*dx + dy*dy)
-		minSep := radius + placed[j].Radius + siblingPadding
-
-		if dist < minSep-1e-6 {
+		// Avoid math.Sqrt: dist < minSep-ε  ⟺  dist² < (minSep-ε)²  (when minSep-ε > 0)
+		minSep := radius + placed[j].Radius + siblingPadding - 1e-6
+		if minSep > 0 && dx*dx+dy*dy < minSep*minSep {
 			return true
 		}
 	}
@@ -428,8 +427,13 @@ func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure
 func encloses(outer, inner enclosure) bool {
 	dx := inner.x - outer.x
 	dy := inner.y - outer.y
+	// Avoid math.Sqrt: sqrt(dist²)+r_inner <= r_outer+ε  ⟺  dist² <= (r_outer+ε-r_inner)²
+	rhs := outer.radius + 1e-6 - inner.radius
+	if rhs < 0 {
+		return false
+	}
 
-	return math.Sqrt(dx*dx+dy*dy)+inner.radius <= outer.radius+1e-6
+	return dx*dx+dy*dy <= rhs*rhs
 }
 
 func trivialEnclosing(boundary []enclosure) enclosure {
