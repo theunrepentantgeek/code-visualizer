@@ -131,7 +131,7 @@ func exportDirectory(dir *model.Directory, requested []metric.Name) *DirectoryEx
 		Path: dir.Path,
 	}
 
-	collectDirectoryMetrics(de, dir, requested)
+	de.Quantities, de.Measures, de.Classifications = collectMetrics(&dir.MetricContainer, requested)
 
 	for _, f := range dir.Files {
 		de.Files = append(de.Files, exportFile(f, requested))
@@ -153,53 +153,33 @@ func exportFile(f *model.File, requested []metric.Name) *FileExport {
 		IsBinary:  f.IsBinary,
 	}
 
-	collectFileMetrics(fe, f, requested)
+	fe.Quantities, fe.Measures, fe.Classifications = collectMetrics(&f.MetricContainer, requested)
 
 	return fe
 }
 
-// collectDirectoryMetrics populates a DirectoryExport's metric maps from the
-// model directory, including only the requested metrics that are present.
-func collectDirectoryMetrics(
-	de *DirectoryExport,
-	dir *model.Directory,
+// collectMetrics extracts the requested metrics from a MetricContainer,
+// returning the populated quantity, measure, and classification maps.
+// Only metrics present in the container are included.
+func collectMetrics(
+	mc *model.MetricContainer,
 	requested []metric.Name,
-) {
+) (quantities map[string]int64, measures map[string]float64, classifications map[string]string) {
 	for _, name := range requested {
-		if q, ok := dir.Quantity(name); ok {
-			de.Quantities = addQuantity(de.Quantities, string(name), q)
+		if q, ok := mc.Quantity(name); ok {
+			quantities = addQuantity(quantities, string(name), q)
 		}
 
-		if m, ok := dir.Measure(name); ok {
-			de.Measures = addMeasure(de.Measures, string(name), m)
+		if m, ok := mc.Measure(name); ok {
+			measures = addMeasure(measures, string(name), m)
 		}
 
-		if c, ok := dir.Classification(name); ok {
-			de.Classifications = addClassification(de.Classifications, string(name), c)
+		if c, ok := mc.Classification(name); ok {
+			classifications = addClassification(classifications, string(name), c)
 		}
 	}
-}
 
-// collectFileMetrics populates a FileExport's metric maps from the model file,
-// including only the requested metrics that are present.
-func collectFileMetrics(
-	fe *FileExport,
-	f *model.File,
-	requested []metric.Name,
-) {
-	for _, name := range requested {
-		if q, ok := f.Quantity(name); ok {
-			fe.Quantities = addQuantity(fe.Quantities, string(name), q)
-		}
-
-		if m, ok := f.Measure(name); ok {
-			fe.Measures = addMeasure(fe.Measures, string(name), m)
-		}
-
-		if c, ok := f.Classification(name); ok {
-			fe.Classifications = addClassification(fe.Classifications, string(name), c)
-		}
-	}
+	return quantities, measures, classifications
 }
 
 func addQuantity(m map[string]int64, key string, value int64) map[string]int64 {
