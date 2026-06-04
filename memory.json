@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-06-03T17:34:38Z",
-  "run_id": "26901876229",
+  "last_run": "2026-06-04T05:27:43Z",
+  "run_id": "26932699219",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -35,7 +35,9 @@
   "prs_created": [
     {"branch": "repo-assist/feat-viz-title-354-a0b6fbf2660dd9f4", "pr_number": 358, "title": "[repo-assist] feat(title): add --title flag to all visualization commands", "status": "open", "closes": [354]},
     {"branch": "repo-assist/refactor-export-metrics-334-b3a05bacfde6bbe7", "pr_number": 359, "title": "[repo-assist] refactor(export): deduplicate metric collection in export package", "status": "open", "closes": [334]},
-    {"branch": "repo-assist/perf-bubbletree-sqrt-elimination", "pr_number": 360, "title": "[repo-assist] perf(bubbletree): eliminate math.Sqrt in hot overlap/enclosure checks", "status": "open - pending PR number confirmation", "closes": []}
+    {"branch": "repo-assist/perf-bubbletree-sqrt-elimination", "pr_number": 360, "title": "[repo-assist] perf(bubbletree): eliminate math.Sqrt in hot overlap/enclosure checks", "status": "open", "closes": []},
+    {"branch": "repo-assist/eng-deps-2026-06-04", "pr_number": null, "title": "[repo-assist] chore(deps): update golang.org/x indirect dependencies (2026-06-04)", "status": "open - pending PR number", "closes": []},
+    {"branch": "repo-assist/test-stages-errors-2026-06-04", "pr_number": null, "title": "[repo-assist] test(stages): add tests for error types and CheckGitRepoHelper", "status": "open - pending PR number", "closes": []}
   ],
   "issues_actioned": {
     "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
@@ -68,5 +70,5 @@
   "backlog_cursor": {"issues": 360, "prs": 0},
   "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed. Jun 2026: PR #357 (footer space fix) merged. Issue #355 closed.",
   "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as known antipattern. Keep refactors within-package only. Maintainer actively implementing refactors from #324-335 series. Title feature: default hidden, no text; one flag --title TEXT only. Legend config: no migration needed (alpha), no override semantics (YAGNI).",
-  "notes": "Title feature (#354) implemented via PR #358 (open). Export metric dedup (#334) implemented via PR #359 (open). Perf improvement (bubbletree sqrt elimination) via PR #360 (open). Issue #320 (legend config) ready to implement - maintainer confirmed simplified scope."
+  "notes": "Title feature (#354) implemented via PR #358 (open). Export metric dedup (#334) via PR #359 (open). Perf bubbletree sqrt via PR #360 (open). Deps update PR created (open, #349 superseded). Test stages errors PR created (open). Issue #320 (legend config) ready to implement - maintainer confirmed simplified scope."
 }
