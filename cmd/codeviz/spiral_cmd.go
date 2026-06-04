@@ -149,6 +149,6 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.Spiral.OverrideFill(c.Fill)
 	cfg.Spiral.OverrideBorder(c.Border)
 	cfg.Spiral.OverrideLabels(c.Labels)
-	cfg.Spiral.OverrideLegend(c.Legend)
-	cfg.Spiral.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

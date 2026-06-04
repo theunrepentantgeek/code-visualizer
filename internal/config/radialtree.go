@@ -8,8 +8,6 @@ type Radial struct {
 	Fill              *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
 	Border            *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
 	Labels            *string     `yaml:"labels,omitempty"            json:"labels,omitempty"`
-	Legend            *string     `yaml:"legend,omitempty"            json:"legend,omitempty"`
-	LegendOrientation *string     `yaml:"legendOrientation,omitempty" json:"legendOrientation,omitempty"`
 }
 
 // OverrideDiscSize sets DiscSize to v if v is non-empty.
@@ -23,9 +21,3 @@ func (r *Radial) OverrideBorder(v MetricSpec) { overrideMetricSpec(&r.Border, v)
 
 // OverrideLabels sets Labels to v if v is non-empty.
 func (r *Radial) OverrideLabels(v string) { overrideString(&r.Labels, v) }
-
-// OverrideLegend sets Legend to v if v is non-empty.
-func (r *Radial) OverrideLegend(v string) { overrideString(&r.Legend, v) }
-
-// OverrideLegendOrientation sets LegendOrientation to v if v is non-empty.
-func (r *Radial) OverrideLegendOrientation(v string) { overrideString(&r.LegendOrientation, v) }

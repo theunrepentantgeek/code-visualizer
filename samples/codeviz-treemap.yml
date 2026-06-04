@@ -1,6 +1,9 @@
 imageSize:
     width: 1920
     height: 1080
+legend:
+    position: top-left
+    orientation: vertical
 treemap:
     size: file-lines
     fill:
@@ -9,8 +12,6 @@ treemap:
     border:
         metric: file-freshness
         palette: good-bad
-    legend: top-left
-    legendOrientation: vertical
 radial:
     labels: all
 bubbletree:

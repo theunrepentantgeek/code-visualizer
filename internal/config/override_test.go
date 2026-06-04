@@ -84,20 +84,28 @@ func TestTreemap_OverrideFill_SkipsWhenZero(t *testing.T) {
 	g.Expect(*tm.Fill).To(Equal(existing))
 }
 
-func TestTreemap_OverrideLegend_SetsWhenNonEmpty(t *testing.T) {
+func TestConfig_OverrideLegendPosition_SetsWhenNonEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	tm := &Treemap{}
-	tm.OverrideLegend("top-right")
-	g.Expect(*tm.Legend).To(Equal("top-right"))
+	cfg := &Config{}
+	cfg.OverrideLegendPosition("top-right")
+	g.Expect(*cfg.Legend.Position).To(Equal("top-right"))
 }
 
-func TestTreemap_OverrideLegendOrientation_SetsWhenNonEmpty(t *testing.T) {
+func TestConfig_OverrideLegendPosition_SkipsWhenEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	tm := &Treemap{}
-	tm.OverrideLegendOrientation("horizontal")
-	g.Expect(*tm.LegendOrientation).To(Equal("horizontal"))
+	cfg := &Config{}
+	cfg.OverrideLegendPosition("")
+	g.Expect(cfg.Legend).To(BeNil())
+}
+
+func TestConfig_OverrideLegendOrientation_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := &Config{}
+	cfg.OverrideLegendOrientation("horizontal")
+	g.Expect(*cfg.Legend.Orientation).To(Equal("horizontal"))
 }
 
 // Radial overrides
@@ -170,40 +178,6 @@ func TestBubbletree_OverrideBorder_SkipsWhenZero(t *testing.T) {
 	b := &Bubbletree{Border: &existing}
 	b.OverrideBorder(MetricSpec{})
 	g.Expect(*b.Border).To(Equal(existing))
-}
-
-func TestBubbletree_OverrideLegend_SetsWhenNonEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-	b := &Bubbletree{}
-	b.OverrideLegend("top-right")
-	g.Expect(*b.Legend).To(Equal("top-right"))
-}
-
-func TestBubbletree_OverrideLegend_SkipsWhenEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-	existing := "bottom-left"
-	b := &Bubbletree{Legend: &existing}
-	b.OverrideLegend("")
-	g.Expect(*b.Legend).To(Equal("bottom-left"))
-}
-
-func TestBubbletree_OverrideLegendOrientation_SetsWhenNonEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-	b := &Bubbletree{}
-	b.OverrideLegendOrientation("horizontal")
-	g.Expect(*b.LegendOrientation).To(Equal("horizontal"))
-}
-
-func TestBubbletree_OverrideLegendOrientation_SkipsWhenEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-	existing := "vertical"
-	b := &Bubbletree{LegendOrientation: &existing}
-	b.OverrideLegendOrientation("")
-	g.Expect(*b.LegendOrientation).To(Equal("vertical"))
 }
 
 // Spiral overrides

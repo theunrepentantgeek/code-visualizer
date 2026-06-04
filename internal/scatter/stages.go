@@ -101,8 +101,8 @@ func BuildInksStage(s *State) error {
 // BuildLegendStage builds the legend config from the resolved inks.
 func BuildLegendStage(s *State) error {
 	pos, orient := legend.ResolveOptions(
-		stages.PtrString(s.Config.Legend),
-		stages.PtrString(s.Config.LegendOrientation),
+		s.Common().RootConfig.LegendPositionStr(),
+		s.Common().RootConfig.LegendOrientationStr(),
 	)
 
 	s.LegendConfig = legend.Build(

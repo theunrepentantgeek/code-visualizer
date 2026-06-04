@@ -10,8 +10,6 @@ type Scatter struct {
 	Size              *string     `yaml:"size,omitempty"              json:"size,omitempty"`
 	Fill              *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
 	Border            *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
-	Legend            *string     `yaml:"legend,omitempty"            json:"legend,omitempty"`
-	LegendOrientation *string     `yaml:"legendOrientation,omitempty" json:"legendOrientation,omitempty"`
 }
 
 // OverrideXAxis sets XAxis to v if v is non-empty.
@@ -28,9 +26,3 @@ func (s *Scatter) OverrideFill(v MetricSpec) { overrideMetricSpec(&s.Fill, v) }
 
 // OverrideBorder sets Border to v if v is non-zero.
 func (s *Scatter) OverrideBorder(v MetricSpec) { overrideMetricSpec(&s.Border, v) }
-
-// OverrideLegend sets Legend to v if v is non-empty.
-func (s *Scatter) OverrideLegend(v string) { overrideString(&s.Legend, v) }
-
-// OverrideLegendOrientation sets LegendOrientation to v if v is non-empty.
-func (s *Scatter) OverrideLegendOrientation(v string) { overrideString(&s.LegendOrientation, v) }

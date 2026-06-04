@@ -143,6 +143,6 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 	cfg.Bubbletree.OverrideFill(c.Fill)
 	cfg.Bubbletree.OverrideBorder(c.Border)
 	cfg.Bubbletree.OverrideLabels(c.Labels)
-	cfg.Bubbletree.OverrideLegend(c.Legend)
-	cfg.Bubbletree.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

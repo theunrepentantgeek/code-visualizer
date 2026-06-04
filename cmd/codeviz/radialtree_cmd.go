@@ -141,6 +141,6 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideFill(c.Fill)
 	cfg.Radial.OverrideBorder(c.Border)
 	cfg.Radial.OverrideLabels(c.Labels)
-	cfg.Radial.OverrideLegend(c.Legend)
-	cfg.Radial.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

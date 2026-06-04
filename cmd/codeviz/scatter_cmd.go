@@ -153,6 +153,6 @@ func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
 	cfg.Scatter.OverrideSize(string(c.Size))
 	cfg.Scatter.OverrideFill(c.Fill)
 	cfg.Scatter.OverrideBorder(c.Border)
-	cfg.Scatter.OverrideLegend(c.Legend)
-	cfg.Scatter.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

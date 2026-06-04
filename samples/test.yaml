@@ -1,13 +1,14 @@
 imageSize:
     width: 2048
     height: 2048
+legend:
+    position: bottom-center
 treemap:
     size: file-lines
     fill: file-freshness
     fillPalette: foliage
     border: file-type
     borderPalette: categorization
-    legend: bottom-center
 radial:
     labels: all
 bubbletree:
