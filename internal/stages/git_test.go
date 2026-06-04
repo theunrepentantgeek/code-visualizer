@@ -44,3 +44,14 @@ func TestCheckGitRequirement_Stage_FailsWhenGitMetricRequestedAndNoRepo(t *testi
 	var gre *stages.GitRequiredError
 	g.Expect(errors.As(err, &gre)).To(BeTrue())
 }
+
+func TestCheckGitRepoHelper_NonGitDir_ReturnsGitRequiredError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	err := stages.CheckGitRepoHelper(dir)
+
+	var gre *stages.GitRequiredError
+	g.Expect(errors.As(err, &gre)).To(BeTrue())
+}
