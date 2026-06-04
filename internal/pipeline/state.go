@@ -1,5 +1,7 @@
 package pipeline
 
+import "reflect"
+
 // State is a simple key-value store where the key is the type of the value.
 type State struct {
 	content map[string]any
@@ -34,4 +36,11 @@ func Lookup[S any](s *State) (S, bool) {
 func store[S any](s *State, value S) {
 	key := keyOf[S]()
 	s.content[key] = value
+}
+
+// keyOf returns the name of the type T as a string.
+// This is used to generate keys for storing and retrieving values in the pipeline state.
+func keyOf[T any]() string {
+	// Using the new generic function instead of TypeOf
+	return reflect.TypeFor[T]().Name()
 }
