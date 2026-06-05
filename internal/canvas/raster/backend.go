@@ -93,42 +93,42 @@ func (r *rasterBackend) drawRadialGradientRect(
 
 	invMax := 1.0 / maxDist
 
+	// Precompute float64 colour channels and deltas once outside both loops
+	// to avoid repeated uint8→float64 conversions on every pixel.
+	cr, cg, cb, ca := float64(grad.Center.R), float64(grad.Center.G), float64(grad.Center.B), float64(grad.Center.A)
+	dr, dg, db, da := float64(grad.Edge.R)-cr, float64(grad.Edge.G)-cg, float64(grad.Edge.B)-cb, float64(grad.Edge.A)-ca
+
 	for py := y0; py < y1; py++ {
 		dy := float64(py) + 0.5 - fy
+		dy2 := dy * dy // precompute dy² once per row
 
 		for px := x0; px < x1; px++ {
 			dx := float64(px) + 0.5 - fx
-			dist := math.Sqrt(dx*dx + dy*dy)
+			dist := math.Sqrt(dx*dx + dy2)
 			t := min(dist*invMax, 1.0)
-			img.SetRGBA(px, py, lerpColour(grad.Center, grad.Edge, t))
+			img.SetRGBA(px, py, color.RGBA{ //nolint:gosec // t∈[0,1] and channels ∈[0,255]: result is always in [0,255]
+				R: uint8(cr + dr*t),
+				G: uint8(cg + dg*t),
+				B: uint8(cb + db*t),
+				A: uint8(ca + da*t),
+			})
 		}
 	}
 }
 
+// maxCornerDist returns the maximum distance from point (fx,fy) to any corner
+// of the rectangle with top-left (rx,ry), width w, and height h.
+//
+// The maximum of dx²+dy² over the four corners decomposes as
+// max(dx0²,dx1²) + max(dy0²,dy1²) because dx and dy are independent, so only
+// one math.Sqrt is required instead of four.
 func maxCornerDist(fx, fy, rx, ry, w, h float64) float64 {
-	corners := [4][2]float64{{rx, ry}, {rx + w, ry}, {rx, ry + h}, {rx + w, ry + h}}
-	maxDist := 0.0
+	dx0 := rx - fx
+	dx1 := rx + w - fx
+	dy0 := ry - fy
+	dy1 := ry + h - fy
 
-	for _, corner := range corners {
-		dx := corner[0] - fx
-		dy := corner[1] - fy
-		dist := math.Sqrt(dx*dx + dy*dy)
-
-		if dist > maxDist {
-			maxDist = dist
-		}
-	}
-
-	return maxDist
-}
-
-func lerpColour(a, b color.RGBA, t float64) color.RGBA {
-	return color.RGBA{
-		R: uint8(float64(a.R) + (float64(b.R)-float64(a.R))*t),
-		G: uint8(float64(a.G) + (float64(b.G)-float64(a.G))*t),
-		B: uint8(float64(a.B) + (float64(b.B)-float64(a.B))*t),
-		A: uint8(float64(a.A) + (float64(b.A)-float64(a.A))*t),
-	}
+	return math.Sqrt(max(dx0*dx0, dx1*dx1) + max(dy0*dy0, dy1*dy1))
 }
 
 func (r *rasterBackend) DrawDisc(
@@ -184,12 +184,18 @@ func (r *rasterBackend) drawRadialGradientDisc(
 	r2 := radius * radius
 	invRadius := 1.0 / radius
 
+	// Precompute float64 colour channels and deltas once outside both loops
+	// to avoid repeated uint8→float64 conversions on every pixel.
+	cr, cg, cb, ca := float64(grad.Center.R), float64(grad.Center.G), float64(grad.Center.B), float64(grad.Center.A)
+	dr, dg, db, da := float64(grad.Edge.R)-cr, float64(grad.Edge.G)-cg, float64(grad.Edge.B)-cb, float64(grad.Edge.A)-ca
+
 	for py := y0; py < y1; py++ {
 		dy := float64(py) + 0.5 - center.Y
+		dy2 := dy * dy // precompute dy² once per row
 
 		for px := x0; px < x1; px++ {
 			dx := float64(px) + 0.5 - center.X
-			if dx*dx+dy*dy > r2 {
+			if dx*dx+dy2 > r2 {
 				continue
 			}
 
@@ -197,7 +203,12 @@ func (r *rasterBackend) drawRadialGradientDisc(
 			gdy := float64(py) + 0.5 - fy
 			dist := math.Sqrt(gdx*gdx + gdy*gdy)
 			t := min(dist*invRadius, 1.0)
-			img.SetRGBA(px, py, lerpColour(grad.Center, grad.Edge, t))
+			img.SetRGBA(px, py, color.RGBA{ //nolint:gosec // t∈[0,1] and channels ∈[0,255]: result is always in [0,255]
+				R: uint8(cr + dr*t),
+				G: uint8(cg + dg*t),
+				B: uint8(cb + db*t),
+				A: uint8(ca + da*t),
+			})
 		}
 	}
 }
