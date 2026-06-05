@@ -203,6 +203,29 @@ func TestRasterBackend_DrawArcText_FontSizeZero_ProducesValidPNG(t *testing.T) {
 	g.Expect(img.Bounds().Dx()).To(Equal(400))
 }
 
+func TestRasterBackend_DrawArcText_MultiByteRunes_ProducesValidPNG(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(400, 400)
+	blk := color.RGBA{A: 255}
+
+	// "héllo" has a multi-byte rune (é = U+00E9, 2 bytes in UTF-8).
+	// Previously DrawArcText used the byte offset as the rune index, placing
+	// characters after the 2-byte rune at the wrong angular position.
+	b.DrawArcText(
+		model.Position{X: 200, Y: 200},
+		100, "héllo", blk, 14.0,
+	)
+
+	out := filepath.Join(t.TempDir(), "arctext-multibyte.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	img := loadImage(t, out)
+	g.Expect(img.Bounds().Dx()).To(Equal(400))
+}
+
 func TestRasterBackend_DrawText_FontSizeZero_ProducesValidPNG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
