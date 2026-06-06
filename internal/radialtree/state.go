@@ -8,8 +8,7 @@ import (
 
 // State is the viz-specific pipeline state for the radial tree visualization.
 type State struct {
-	IncludeBinaryFiles bool
-
+	// Resolved during the pipeline:
 	DiscSize      metric.Name
 	FillMetric    metric.Name
 	FillPalette   palette.PaletteName

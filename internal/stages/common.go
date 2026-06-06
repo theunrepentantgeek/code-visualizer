@@ -30,12 +30,13 @@ type Flags struct {
 // type-keyed *pipeline.State.
 type CommonState struct {
 	// Inputs: set by the orchestrator before applying any stages.
-	TargetPath string
-	Output     string
-	Flags      *Flags
-	RootConfig *config.Config
-	VizName    string // active visualization name for export trimming
-	CLIFilters []filter.Rule
+	TargetPath         string
+	Output             string
+	Flags              *Flags
+	RootConfig         *config.Config
+	VizName            string // active visualization name for export trimming
+	CLIFilters         []filter.Rule
+	IncludeBinaryFiles bool // when true, retain binary files in the scanned tree
 
 	// Populated by shared stages during the pipeline:
 	FilterRules []filter.Rule    // BuildFilterRules

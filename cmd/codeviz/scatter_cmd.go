@@ -102,17 +102,16 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 	}
 
 	common := &stages.CommonState{
-		TargetPath: c.TargetPath,
-		Output:     c.Output,
-		Flags:      toStagesFlags(flags),
-		RootConfig: flags.Config,
-		VizName:    "scatter",
-		CLIFilters: c.Filters(),
-	}
-	cfg := flags.Config.Scatter
-	viz := &scatterviz.State{
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              toStagesFlags(flags),
+		RootConfig:         flags.Config,
+		VizName:            "scatter",
+		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
+	cfg := flags.Config.Scatter
+	viz := &scatterviz.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
 
@@ -123,7 +122,7 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
 	pipeline.ApplyFuncX(s, stages.RunProviders)
-	pipeline.ApplyFuncXY(s, scatterviz.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, scatterviz.BuildInksStage)

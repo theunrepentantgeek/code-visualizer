@@ -8,8 +8,7 @@ import (
 
 // State is the viz-specific pipeline state for the spiral visualization.
 type State struct {
-	IncludeBinaryFiles bool
-
+	// Resolved during the pipeline:
 	Size          metric.Name
 	FillMetric    metric.Name
 	FillPalette   palette.PaletteName

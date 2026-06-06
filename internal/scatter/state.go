@@ -8,8 +8,6 @@ import (
 
 // State is the viz-specific pipeline state for the scatter visualization.
 type State struct {
-	IncludeBinaryFiles bool
-
 	XAxis         AxisSpec
 	YAxis         AxisSpec
 	Size          metric.Name

@@ -89,17 +89,16 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	}
 
 	common := &stages.CommonState{
-		TargetPath: c.TargetPath,
-		Output:     c.Output,
-		Flags:      toStagesFlags(flags),
-		RootConfig: flags.Config,
-		VizName:    "radial",
-		CLIFilters: c.Filters(),
-	}
-	cfg := flags.Config.Radial
-	viz := &radialtree.State{
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              toStagesFlags(flags),
+		RootConfig:         flags.Config,
+		VizName:            "radial",
+		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
+	cfg := flags.Config.Radial
+	viz := &radialtree.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
 
@@ -110,7 +109,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
 	pipeline.ApplyFuncX(s, stages.RunProviders)
-	pipeline.ApplyFuncXY(s, radialtree.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, radialtree.BuildInksStage)

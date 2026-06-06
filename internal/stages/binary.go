@@ -20,11 +20,16 @@ func CountAll(node *model.Directory) (files int, dirs int) {
 	return files, dirs
 }
 
-// FilterBinaryFilesHelper removes binary files from the tree in place.
-// Returns *NoFilesAfterFilterError if nothing remains.
-func FilterBinaryFilesHelper(root *model.Directory) error {
-	beforeCount, _ := CountAll(root)
-	filtered := scan.FilterBinaryFiles(root)
+// FilterBinaryFiles removes binary files from c.Root in place unless
+// c.IncludeBinaryFiles is true. Returns *NoFilesAfterFilterError if nothing
+// remains.
+func FilterBinaryFiles(c *CommonState) error {
+	if c.IncludeBinaryFiles {
+		return nil
+	}
+
+	beforeCount, _ := CountAll(c.Root)
+	filtered := scan.FilterBinaryFiles(c.Root)
 	afterCount, _ := CountAll(filtered)
 	excluded := beforeCount - afterCount
 	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
@@ -34,20 +39,8 @@ func FilterBinaryFilesHelper(root *model.Directory) error {
 	}
 
 	// Update root in place — avoid struct copy which would copy the mutex.
-	root.Files = filtered.Files
-	root.Dirs = filtered.Dirs
+	c.Root.Files = filtered.Files
+	c.Root.Dirs = filtered.Dirs
 
 	return nil
-}
-
-// FilterBinaryFiles removes binary files from c.Root in place unless include
-// is true. Per-viz adapter functions call this with t.IncludeBinaryFiles.
-//
-//nolint:revive // intentional include-toggle; per-viz wrappers translate from typed state.
-func FilterBinaryFiles(c *CommonState, include bool) error {
-	if include {
-		return nil
-	}
-
-	return FilterBinaryFilesHelper(c.Root)
 }

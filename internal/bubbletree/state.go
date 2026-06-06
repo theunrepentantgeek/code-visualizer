@@ -8,9 +8,9 @@ import (
 
 // State is the viz-specific pipeline state for the bubbletree visualization.
 type State struct {
-	IncludeBinaryFiles bool
-	Flat               bool
+	Flat bool
 
+	// Resolved during the pipeline:
 	Size          metric.Name
 	FillMetric    metric.Name
 	FillPalette   palette.PaletteName

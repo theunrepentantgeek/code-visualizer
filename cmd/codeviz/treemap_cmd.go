@@ -100,17 +100,17 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	common := &stages.CommonState{
-		TargetPath: c.TargetPath,
-		Output:     c.Output,
-		Flags:      toStagesFlags(flags),
-		RootConfig: flags.Config,
-		VizName:    "treemap",
-		CLIFilters: c.Filters(),
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              toStagesFlags(flags),
+		RootConfig:         flags.Config,
+		VizName:            "treemap",
+		CLIFilters:         c.Filters(),
+		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
 	cfg := flags.Config.Treemap
 	viz := &treemap.State{
-		IncludeBinaryFiles: c.IncludeBinaryFiles,
-		Flat:               c.Flat,
+		Flat: c.Flat,
 	}
 
 	s := pipeline.NewState(common, cfg, viz)
@@ -122,7 +122,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
 	pipeline.ApplyFuncX(s, stages.RunProviders)
-	pipeline.ApplyFuncXY(s, treemap.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, treemap.BuildInksStage)
