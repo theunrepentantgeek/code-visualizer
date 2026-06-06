@@ -6,7 +6,6 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
@@ -56,11 +55,7 @@ func findGitMetric(requested []metric.Name) (metric.Name, bool) {
 	return "", false
 }
 
-// CheckGitRequirement is a pipeline.Stage wrapping CheckGitRequirementHelper.
-func CheckGitRequirement[S VizState](s S) error {
-	c := s.Common()
-
+// CheckGitRequirement wraps CheckGitRequirementHelper.
+func CheckGitRequirement(c *CommonState) error {
 	return CheckGitRequirementHelper(c.TargetPath, c.Requested)
 }
-
-var _ pipeline.Stage[VizState] = CheckGitRequirement[VizState]

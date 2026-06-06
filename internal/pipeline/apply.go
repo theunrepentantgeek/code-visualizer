@@ -17,7 +17,7 @@ func ApplyFuncX[X any](
 		return
 	}
 
-	v, ok := Lookup[X](s)
+	v, ok := lookup[X](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[X]())
 		panic(msg)
@@ -43,7 +43,7 @@ func ApplyFuncXR[X any, R any](
 		return
 	}
 
-	v, ok := Lookup[X](s)
+	v, ok := lookup[X](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[X]())
 		panic(msg)
@@ -74,13 +74,13 @@ func ApplyFuncXYR[X any, Y any, R any](
 		return
 	}
 
-	vx, ok := Lookup[X](s)
+	vx, ok := lookup[X](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[X]())
 		panic(msg)
 	}
 
-	vy, ok := Lookup[Y](s)
+	vy, ok := lookup[Y](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[Y]())
 		panic(msg)
@@ -94,4 +94,60 @@ func ApplyFuncXYR[X any, Y any, R any](
 	}
 
 	store(s, r)
+}
+
+// ApplyFuncXY updates pipeline state by applying an error-returning function
+// that consumes two typed inputs and mutates them in place. Panics if either
+// input type is absent from the state. Short-circuits when state already
+// holds an error.
+func ApplyFuncXY[X any, Y any](
+	s *State,
+	f func(X, Y) error,
+) {
+	if s.Err() != nil {
+		return
+	}
+
+	vx, ok := lookup[X](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[X]()))
+	}
+
+	vy, ok := lookup[Y](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Y]()))
+	}
+
+	if err := f(vx, vy); err != nil {
+		s.setErr(err)
+	}
+}
+
+// ApplyFuncXYZ is the three-input variant of ApplyFuncXY.
+func ApplyFuncXYZ[X any, Y any, Z any](
+	s *State,
+	f func(X, Y, Z) error,
+) {
+	if s.Err() != nil {
+		return
+	}
+
+	vx, ok := lookup[X](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[X]()))
+	}
+
+	vy, ok := lookup[Y](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Y]()))
+	}
+
+	vz, ok := lookup[Z](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Z]()))
+	}
+
+	if err := f(vx, vy, vz); err != nil {
+		s.setErr(err)
+	}
 }

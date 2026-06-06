@@ -45,19 +45,19 @@ func TestLayoutStage_ReservesLegendSpace(t *testing.T) {
 			g := NewGomegaWithT(t)
 
 			cfg := testLegendConfig(tt.position, tt.orientation)
-			state := &State{
-				CommonState:  stages.CommonState{Root: testLayoutRoot(), Width: 1200, Height: 800},
+			common := &stages.CommonState{Root: testLayoutRoot(), Width: 1200, Height: 800}
+			viz := &State{
 				Size:         filesystem.FileSize,
 				Labels:       LabelAll,
 				LegendConfig: cfg,
 			}
 
-			g.Expect(LayoutStage(state)).To(Succeed())
+			g.Expect(LayoutStage(common, viz)).To(Succeed())
 
 			wReduce, hReduce := cfg.ReserveSpace()
-			layoutW, layoutH := legend.ReserveAndLayout(cfg, state.Width, state.Height)
+			layoutW, layoutH := legend.ReserveAndLayout(cfg, common.Width, common.Height)
 			dx, dy := legend.LayoutOffset(cfg, wReduce, hReduce)
-			box := contentBoundsForTest(state.Nodes)
+			box := contentBoundsForTest(viz.Nodes)
 
 			if tt.startOnX {
 				g.Expect(box.minX).To(BeNumerically(">=", dx-1.0), tt.startMessage)

@@ -7,7 +7,6 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
@@ -25,12 +24,10 @@ type TimeRange struct {
 	Latest   time.Time
 }
 
-// LoadGitHistory walks the commit graph once and populates Common().GitHistory.
+// LoadGitHistory walks the commit graph once and populates c.GitHistory.
 // It returns an error when no commits touch any tracked file — visualizations
 // that depend on git history cannot proceed in that case.
-func LoadGitHistory[S VizState](s S) error {
-	c := s.Common()
-
+func LoadGitHistory(c *CommonState) error {
 	repoRoot, err := git.RepoRootFor(c.Root.Path)
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
@@ -57,11 +54,9 @@ func LoadGitHistory[S VizState](s S) error {
 	return nil
 }
 
-// GroupGitHistoryByFile joins Common().GitHistory against Common().Root and
-// writes Common().FileHistory: each file maps to the CommitRefs that touched it.
-func GroupGitHistoryByFile[S VizState](s S) error {
-	c := s.Common()
-
+// GroupGitHistoryByFile joins c.GitHistory against c.Root and writes
+// c.FileHistory: each file maps to the CommitRefs that touched it.
+func GroupGitHistoryByFile(c *CommonState) error {
 	repoRoot, err := git.RepoRootFor(c.Root.Path)
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
@@ -92,11 +87,9 @@ func GroupGitHistoryByFile[S VizState](s S) error {
 	return nil
 }
 
-// ExtractFileHistory folds Common().FileHistory into per-file earliest/latest
-// timestamps and writes Common().FileTimeRange.
-func ExtractFileHistory[S VizState](s S) error {
-	c := s.Common()
-
+// ExtractFileHistory folds c.FileHistory into per-file earliest/latest
+// timestamps and writes c.FileTimeRange.
+func ExtractFileHistory(c *CommonState) error {
 	result := make(map[*model.File]TimeRange, len(c.FileHistory))
 
 	for file, refs := range c.FileHistory {
@@ -189,9 +182,3 @@ func indexFilesByRepoRelativePath(root *model.Directory, repoRoot string) map[st
 
 	return index
 }
-
-var (
-	_ pipeline.Stage[VizState] = LoadGitHistory[VizState]
-	_ pipeline.Stage[VizState] = GroupGitHistoryByFile[VizState]
-	_ pipeline.Stage[VizState] = ExtractFileHistory[VizState]
-)

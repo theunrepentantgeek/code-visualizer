@@ -3,7 +3,6 @@ package stages
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 )
 
 // BuildFilterRulesHelper merges config-file filter rules with CLI filter
@@ -17,13 +16,10 @@ func BuildFilterRulesHelper(cfg *config.Config, cliFilters []filter.Rule) []filt
 	return rules
 }
 
-// BuildFilterRules is a pipeline.Stage that populates Common().FilterRules
-// from Common().RootConfig.FileFilter plus Common().CLIFilters.
-func BuildFilterRules[S VizState](s S) error {
-	c := s.Common()
+// BuildFilterRules populates c.FilterRules from c.RootConfig.FileFilter plus
+// c.CLIFilters.
+func BuildFilterRules(c *CommonState) error {
 	c.FilterRules = BuildFilterRulesHelper(c.RootConfig, c.CLIFilters)
 
 	return nil
 }
-
-var _ pipeline.Stage[VizState] = BuildFilterRules[VizState]

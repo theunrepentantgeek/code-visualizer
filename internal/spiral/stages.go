@@ -8,23 +8,20 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 // ResolveMetrics resolves size, fill, border, resolution, and label settings
-// from the spiral config and populates Common().Requested.
-func ResolveMetrics(s *State) error {
-	cfg := s.Config
+// from the spiral config and populates c.Requested.
+func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
+	p.Size = metric.Name(stages.PtrString(cfg.Size))
+	p.FillMetric = cfg.Fill.MetricName()
+	p.FillPalette = stages.ResolveFillPalette(cfg.Fill, p.FillMetric)
+	p.BorderMetric, p.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	p.Resolution = resolveResolution(cfg)
+	p.Labels = resolveLabels(cfg)
 
-	s.Size = metric.Name(stages.PtrString(cfg.Size))
-	s.FillMetric = cfg.Fill.MetricName()
-	s.FillPalette = stages.ResolveFillPalette(cfg.Fill, s.FillMetric)
-	s.BorderMetric, s.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
-	s.Resolution = resolveResolution(cfg)
-	s.Labels = resolveLabels(cfg)
-
-	s.Common().Requested = collectRequestedMetrics(s.Size, cfg.Fill, cfg.Border)
+	c.Requested = collectRequestedMetrics(p.Size, cfg.Fill, cfg.Border)
 
 	return nil
 }
@@ -67,40 +64,38 @@ func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) 
 	return names
 }
 
-// BuildTimeBucketsStage builds time buckets from Common().FileTimeRange and
-// distributes files into them from Common().FileHistory.
-func BuildTimeBucketsStage(s *State) error {
-	c := s.Common()
-
+// BuildTimeBucketsStage builds time buckets from c.FileTimeRange and
+// distributes files into them from c.FileHistory.
+func BuildTimeBucketsStage(c *stages.CommonState, p *State) error {
 	tr := stages.CommitTimeRange(c.FileTimeRange)
 	if tr.Earliest.IsZero() {
 		return eris.New("no commit timestamps available to build time buckets")
 	}
 
-	buckets := BuildTimeBuckets(s.Resolution, tr.Earliest, tr.Latest)
+	buckets := BuildTimeBuckets(p.Resolution, tr.Earliest, tr.Latest)
 	if len(buckets) == 0 {
 		return eris.New("no time buckets created from commit time range")
 	}
 
 	AssignFilesToBuckets(buckets, c.FileHistory)
 
-	s.Buckets = buckets
+	p.Buckets = buckets
 
 	return nil
 }
 
 // AggregateBucketMetricsStage fills in per-bucket aggregated metric values.
-func AggregateBucketMetricsStage(s *State) error {
-	AggregateBucketMetrics(s.Buckets, s.Size, s.FillMetric, s.BorderMetric)
+func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
+	_ = c
+
+	AggregateBucketMetrics(p.Buckets, p.Size, p.FillMetric, p.BorderMetric)
 
 	return nil
 }
 
 // BuildInksStage builds spiral inks and emits the Rendering image log line.
-func BuildInksStage(s *State) error {
-	c := s.Common()
-
-	s.Inks = BuildInks(s.Buckets, s.FillMetric, s.FillPalette, s.BorderMetric, s.BorderPalette)
+func BuildInksStage(c *stages.CommonState, p *State) error {
+	p.Inks = BuildInks(p.Buckets, p.FillMetric, p.FillPalette, p.BorderMetric, p.BorderPalette)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
@@ -108,45 +103,43 @@ func BuildInksStage(s *State) error {
 }
 
 // BuildLegendStage builds the legend config from the inks.
-func BuildLegendStage(s *State) error {
+func BuildLegendStage(c *stages.CommonState, p *State, cfg *config.Spiral) error {
+	_ = c
 	pos, orient := legend.ResolveOptions(
-		stages.PtrString(s.Config.Legend),
-		stages.PtrString(s.Config.LegendOrientation),
+		stages.PtrString(cfg.Legend),
+		stages.PtrString(cfg.LegendOrientation),
 	)
 
-	s.LegendConfig = legend.Build(
+	p.LegendConfig = legend.Build(
 		pos, orient,
-		s.Inks.Fill, s.FillMetric,
-		s.Inks.Border, s.BorderMetric,
-		s.Size,
+		p.Inks.Fill, p.FillMetric,
+		p.Inks.Border, p.BorderMetric,
+		p.Size,
 	)
 
 	return nil
 }
 
 // LayoutStage runs the spiral layout algorithm and applies disc sizing.
-func LayoutStage(s *State) error {
-	c := s.Common()
+func LayoutStage(c *stages.CommonState, p *State) error {
 	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
 
-	layout := Layout(s.Buckets, c.Width, availH, s.Resolution, s.Labels)
-	maxDisc := MaxDiscRadius(len(s.Buckets), c.Width, availH, s.Resolution)
+	layout := Layout(p.Buckets, c.Width, availH, p.Resolution, p.Labels)
+	maxDisc := MaxDiscRadius(len(p.Buckets), c.Width, availH, p.Resolution)
 
-	ApplyDiscSizes(layout.Nodes, s.Buckets, maxDisc)
+	ApplyDiscSizes(layout.Nodes, p.Buckets, maxDisc)
 
-	s.Layout = layout
+	p.Layout = layout
 
 	return nil
 }
 
 // RenderStage renders the spiral to a canvas and attaches the legend.
-func RenderStage(s *State) error {
-	c := s.Common()
+func RenderStage(c *stages.CommonState, p *State) error {
+	cv := RenderToCanvas(p.Layout, p.Buckets, c.Width, c.Height, p.Inks)
 
-	cv := RenderToCanvas(s.Layout, s.Buckets, c.Width, c.Height, s.Inks)
-
-	if s.LegendConfig != nil {
-		cv.SetLegend(*s.LegendConfig)
+	if p.LegendConfig != nil {
+		cv.SetLegend(*p.LegendConfig)
 	}
 
 	c.Canvas = cv
@@ -154,10 +147,8 @@ func RenderStage(s *State) error {
 	return nil
 }
 
-// LogResult logs the final summary line, matching today's `Rendered spiral …`.
-func LogResult(s *State) error {
-	c := s.Common()
-
+// LogResult logs the final summary line.
+func LogResult(c *stages.CommonState, p *State) error {
 	files, dirs := stages.CountAll(c.Root)
 
 	slog.Info(
@@ -166,23 +157,12 @@ func LogResult(s *State) error {
 		"directories", dirs,
 		"width", c.Width,
 		"height", c.Height,
-		"size_metric", string(s.Size),
-		"fill_metric", string(s.FillMetric),
-		"fill_palette", string(s.FillPalette),
-		"border_metric", string(s.BorderMetric),
-		"border_palette", string(s.BorderPalette),
+		"size_metric", string(p.Size),
+		"fill_metric", string(p.FillMetric),
+		"fill_palette", string(p.FillPalette),
+		"border_metric", string(p.BorderMetric),
+		"border_palette", string(p.BorderPalette),
 	)
 
 	return nil
 }
-
-var (
-	_ pipeline.Stage[*State] = ResolveMetrics
-	_ pipeline.Stage[*State] = BuildTimeBucketsStage
-	_ pipeline.Stage[*State] = AggregateBucketMetricsStage
-	_ pipeline.Stage[*State] = BuildInksStage
-	_ pipeline.Stage[*State] = BuildLegendStage
-	_ pipeline.Stage[*State] = LayoutStage
-	_ pipeline.Stage[*State] = RenderStage
-	_ pipeline.Stage[*State] = LogResult
-)
