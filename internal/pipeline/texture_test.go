@@ -7,11 +7,15 @@ type Texture struct {
 	name string
 }
 
-// CreateTexture is a pipeline funciton creates a new Texture with the given Color and Kind.
-// name is the name of the texture to set.
+// CreateTexture is a pipeline function creates a new Texture with the given Color and Kind.
+// color is the Color to use for the Texture.
+// kind is the Kind to use for the Texture.
+// Returns a new Texture with a name derived from the Color and Kind, or an error if the Texture cannot be created.
 func CreateTexture(color Color, kind Kind) (Texture, error) {
 	var t Texture
+
 	t.name = fmt.Sprintf("%s-%s", color.name, kind.name)
+
 	return t, nil
 }
 
@@ -21,6 +25,7 @@ func CreateTexture(color Color, kind Kind) (Texture, error) {
 func ExtractTexture(v **string) func(Texture) (Texture, error) {
 	return func(t Texture) (Texture, error) {
 		*v = &t.name
+
 		return t, nil
 	}
 }

@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -16,6 +16,7 @@ func Test_ApplyFuncX_WhenStateDoesNotContainX_Panics(t *testing.T) {
 	g := NewWithT(t)
 
 	var c Color
+
 	state := NewState(c)
 
 	g.Expect(func() {
@@ -28,10 +29,13 @@ func Test_ApplyFuncX_WhenStateContainsX_CallsMethod(t *testing.T) {
 	g := NewWithT(t)
 
 	var k Kind
+
 	state := NewState(k)
 	called := false
+
 	ApplyFuncX(state, func(Kind) error {
 		called = true
+
 		return nil
 	})
 	g.Expect(state.Err()).ToNot(HaveOccurred())
@@ -43,9 +47,10 @@ func Test_ApplyFuncX_WhenMethodReturnsError_SetsErrorInState(t *testing.T) {
 	g := NewWithT(t)
 
 	var k Kind
+
 	state := NewState(k)
 	ApplyFuncX(state, func(Kind) error {
-		return fmt.Errorf("error")
+		return errors.New("error")
 	})
 	g.Expect(state.Err()).To(MatchError(ContainSubstring("error")))
 }
@@ -59,6 +64,7 @@ func Test_ApplyFuncXR_WhenStateDoesNotContainX_Panics(t *testing.T) {
 	g := NewWithT(t)
 
 	var c Color
+
 	state := NewState(c)
 
 	g.Expect(func() {
@@ -71,6 +77,7 @@ func Test_ApplyFuncXR_WhenStateContainsX_CallsMethod(t *testing.T) {
 	g := NewWithT(t)
 
 	var k Kind
+
 	state := NewState(k)
 	ApplyFuncXR(state, SetKind("k"))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
@@ -79,7 +86,10 @@ func Test_ApplyFuncXR_WhenStateContainsX_CallsMethod(t *testing.T) {
 	ApplyFuncXR(state, ExtractKind(&name))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 	g.Expect(name).ToNot(BeNil())
-	g.Expect(*name).To(Equal("k"))
+
+	if name != nil {
+		g.Expect(*name).To(Equal("k"))
+	}
 }
 
 func Test_ApplyFuncXR_WhenMethodReturnsValue_SavesValueInState(t *testing.T) {
@@ -87,6 +97,7 @@ func Test_ApplyFuncXR_WhenMethodReturnsValue_SavesValueInState(t *testing.T) {
 	g := NewWithT(t)
 
 	var k Kind
+
 	state := NewState(k)
 	ApplyFuncXR(state, SetKind("k"))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
@@ -101,9 +112,10 @@ func Test_ApplyFuncXR_WhenMethodReturnsError_SetsErrorInState(t *testing.T) {
 	g := NewWithT(t)
 
 	var k Kind
+
 	state := NewState(k)
 	ApplyFuncXR(state, func(Kind) (Kind, error) {
-		return Kind{}, fmt.Errorf("error")
+		return Kind{}, errors.New("error")
 	})
 	g.Expect(state.Err()).To(MatchError(ContainSubstring("error")))
 }
@@ -164,5 +176,8 @@ func Test_ApplyFuncXYR_WhenStateContainsXAndY_StoresResultInState(t *testing.T) 
 	ApplyFuncXR(state, ExtractTexture(&name))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 	g.Expect(name).ToNot(BeNil())
-	g.Expect(*name).To(Equal("red-stripes"))
+
+	if name != nil {
+		g.Expect(*name).To(Equal("red-stripes"))
+	}
 }

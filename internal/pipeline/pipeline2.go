@@ -52,6 +52,7 @@ func ApplyFuncXR[X any, R any](
 	r, err := f(v)
 	if err != nil {
 		s.setErr(err)
+
 		return
 	}
 
@@ -88,6 +89,7 @@ func ApplyFuncXYR[X any, Y any, R any](
 	r, err := f(vx, vy)
 	if err != nil {
 		s.setErr(err)
+
 		return
 	}
 

@@ -11,6 +11,7 @@ type Kind struct {
 func SetKind(name string) func(Kind) (Kind, error) {
 	return func(k Kind) (Kind, error) {
 		k.name = name
+
 		return k, nil
 	}
 }
@@ -21,6 +22,7 @@ func SetKind(name string) func(Kind) (Kind, error) {
 func ExtractKind(v **string) func(Kind) (Kind, error) {
 	return func(k Kind) (Kind, error) {
 		*v = &k.name
+
 		return k, nil
 	}
 }

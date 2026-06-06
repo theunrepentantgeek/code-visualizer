@@ -11,6 +11,7 @@ type Color struct {
 func SetColor(name string) func(Color) (Color, error) {
 	return func(c Color) (Color, error) {
 		c.name = name
+
 		return c, nil
 	}
 }
@@ -21,6 +22,7 @@ func SetColor(name string) func(Color) (Color, error) {
 func ExtractColor(v **string) func(Color) (Color, error) {
 	return func(c Color) (Color, error) {
 		*v = &c.name
+
 		return c, nil
 	}
 }
