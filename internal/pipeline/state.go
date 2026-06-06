@@ -8,17 +8,22 @@ type State struct {
 	err     error
 }
 
-// NewState creates a new State with an initial value of type S.
-// initial is the initial value to store in the state.
-// Returns a pointer to a new State containing the initial value.
-func NewState[S any](initial S) *State {
-	key := keyOf[S]()
-
-	return &State{
-		content: map[reflect.Type]any{
-			key: initial,
-		},
+// NewState creates a new State pre-populated with the given values. Each
+// value is keyed by its dynamic Go type. Panics if any value is nil (no
+// usable type information) or if the same type is supplied twice.
+func NewState(values ...any) *State {
+	s := &State{content: map[reflect.Type]any{}}
+	for _, v := range values {
+		if v == nil {
+			panic("pipeline.NewState: nil value has no type")
+		}
+		key := reflect.TypeOf(v)
+		if _, exists := s.content[key]; exists {
+			panic("pipeline.NewState: duplicate value for type " + key.String())
+		}
+		s.content[key] = v
 	}
+	return s
 }
 
 // Lookup retrieves a value of type S from the state.
@@ -35,16 +40,15 @@ func Lookup[S any](s *State) (S, bool) {
 	return zero, false
 }
 
-// store saves a value of type S in the state.
-func store[S any](s *State, value S) {
+// Store saves a value of type S in the state, overwriting any existing
+// value of the same type.
+func Store[S any](s *State, value S) {
 	key := keyOf[S]()
 	s.content[key] = value
 }
 
 // keyOf returns a key to use for the specified type.
-// This is used to generate keys for storing and retrieving values in the pipeline state.
 func keyOf[T any]() reflect.Type {
-	// Using the new generic function instead of TypeOf
 	return reflect.TypeFor[T]()
 }
 

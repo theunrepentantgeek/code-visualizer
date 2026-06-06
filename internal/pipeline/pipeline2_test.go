@@ -167,7 +167,7 @@ func Test_ApplyFuncXYR_WhenStateContainsXAndY_StoresResultInState(t *testing.T) 
 	}
 
 	state := NewState(c)
-	store(state, k)
+	Store(state, k)
 
 	ApplyFuncXYR(state, CreateTexture)
 	g.Expect(state.Err()).ToNot(HaveOccurred())
@@ -180,4 +180,95 @@ func Test_ApplyFuncXYR_WhenStateContainsXAndY_StoresResultInState(t *testing.T) 
 	if name != nil {
 		g.Expect(*name).To(Equal("red-stripes"))
 	}
+}
+
+/*
+ * ApplyFuncXY Tests (in-place mutation, no return value)
+ */
+
+func Test_ApplyFuncXY_WhenStateMissingX_Panics(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	var k Kind
+	state := NewState(k)
+
+	g.Expect(func() {
+		ApplyFuncXY(state, func(Color, Kind) error { return nil })
+	}).To(PanicWith(ContainSubstring("Color")))
+}
+
+func Test_ApplyFuncXY_WhenBothPresent_CallsFunc(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{name: "k"}, Color{name: "c"})
+	called := false
+
+	ApplyFuncXY(state, func(Kind, Color) error {
+		called = true
+		return nil
+	})
+	g.Expect(state.Err()).ToNot(HaveOccurred())
+	g.Expect(called).To(BeTrue())
+}
+
+func Test_ApplyFuncXY_WhenFuncReturnsError_SetsStateErr(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{}, Color{})
+	ApplyFuncXY(state, func(Kind, Color) error { return errors.New("boom") })
+	g.Expect(state.Err()).To(MatchError(ContainSubstring("boom")))
+}
+
+func Test_ApplyFuncXY_WhenAlreadyErrored_ShortCircuits(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{}, Color{})
+	state.setErr(errors.New("prior"))
+
+	called := false
+	ApplyFuncXY(state, func(Kind, Color) error { called = true; return nil })
+	g.Expect(called).To(BeFalse())
+}
+
+/*
+ * ApplyFuncXYZ Tests
+ */
+
+func Test_ApplyFuncXYZ_WhenStateMissingZ_Panics(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{}, Color{})
+
+	g.Expect(func() {
+		ApplyFuncXYZ(state, func(Kind, Color, Texture) error { return nil })
+	}).To(PanicWith(ContainSubstring("Texture")))
+}
+
+func Test_ApplyFuncXYZ_WhenAllPresent_CallsFunc(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{name: "k"}, Color{name: "c"}, Texture{name: "t"})
+	called := false
+
+	ApplyFuncXYZ(state, func(Kind, Color, Texture) error {
+		called = true
+		return nil
+	})
+	g.Expect(state.Err()).ToNot(HaveOccurred())
+	g.Expect(called).To(BeTrue())
+}
+
+func Test_ApplyFuncXYZ_WhenFuncReturnsError_SetsStateErr(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{}, Color{}, Texture{})
+	ApplyFuncXYZ(state, func(Kind, Color, Texture) error { return errors.New("boom") })
+	g.Expect(state.Err()).To(MatchError(ContainSubstring("boom")))
 }

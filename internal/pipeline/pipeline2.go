@@ -56,7 +56,7 @@ func ApplyFuncXR[X any, R any](
 		return
 	}
 
-	store(s, r)
+	Store(s, r)
 }
 
 // ApplyFuncXYR is a variant of ApplyFuncXR that works with functions that take two inputs (X and Y) and produce an
@@ -93,5 +93,61 @@ func ApplyFuncXYR[X any, Y any, R any](
 		return
 	}
 
-	store(s, r)
+	Store(s, r)
+}
+
+// ApplyFuncXY updates pipeline state by applying an error-returning function
+// that consumes two typed inputs and mutates them in place. Panics if either
+// input type is absent from the state. Short-circuits when state already
+// holds an error.
+func ApplyFuncXY[X any, Y any](
+	s *State,
+	f func(X, Y) error,
+) {
+	if s.Err() != nil {
+		return
+	}
+
+	vx, ok := Lookup[X](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[X]()))
+	}
+
+	vy, ok := Lookup[Y](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Y]()))
+	}
+
+	if err := f(vx, vy); err != nil {
+		s.setErr(err)
+	}
+}
+
+// ApplyFuncXYZ is the three-input variant of ApplyFuncXY.
+func ApplyFuncXYZ[X any, Y any, Z any](
+	s *State,
+	f func(X, Y, Z) error,
+) {
+	if s.Err() != nil {
+		return
+	}
+
+	vx, ok := Lookup[X](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[X]()))
+	}
+
+	vy, ok := Lookup[Y](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Y]()))
+	}
+
+	vz, ok := Lookup[Z](s)
+	if !ok {
+		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Z]()))
+	}
+
+	if err := f(vx, vy, vz); err != nil {
+		s.setErr(err)
+	}
 }
