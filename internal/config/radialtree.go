@@ -4,10 +4,10 @@ package config
 // Radial holds persistent configuration for radial tree visualizations.
 // All fields are pointers: nil means not configured, non-nil means explicitly set.
 type Radial struct {
-	DiscSize          *string     `yaml:"discSize,omitempty"          json:"discSize,omitempty"`
-	Fill              *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
-	Border            *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
-	Labels            *string     `yaml:"labels,omitempty"            json:"labels,omitempty"`
+	DiscSize *string     `yaml:"discSize,omitempty"          json:"discSize,omitempty"`
+	Fill     *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
+	Border   *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
+	Labels   *string     `yaml:"labels,omitempty"            json:"labels,omitempty"`
 }
 
 // OverrideDiscSize sets DiscSize to v if v is non-empty.

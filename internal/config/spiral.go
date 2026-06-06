@@ -5,11 +5,11 @@ package config
 // All fields are pointers: nil means the field was not configured, non-nil
 // means it was explicitly set (by a config file or by a CLI flag override).
 type Spiral struct {
-	Resolution        *string     `yaml:"resolution,omitempty"        json:"resolution,omitempty"`
-	Size              *string     `yaml:"size,omitempty"              json:"size,omitempty"`
-	Fill              *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
-	Border            *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
-	Labels            *string     `yaml:"labels,omitempty"            json:"labels,omitempty"`
+	Resolution *string     `yaml:"resolution,omitempty"        json:"resolution,omitempty"`
+	Size       *string     `yaml:"size,omitempty"              json:"size,omitempty"`
+	Fill       *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
+	Border     *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
+	Labels     *string     `yaml:"labels,omitempty"            json:"labels,omitempty"`
 }
 
 // OverrideResolution sets Resolution to v if v is non-empty.

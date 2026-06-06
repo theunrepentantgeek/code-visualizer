@@ -5,11 +5,11 @@ package config
 // All fields are pointers: nil means the field was not configured, non-nil
 // means it was explicitly set (by a config file or by a CLI flag override).
 type Scatter struct {
-	XAxis             *string     `yaml:"xAxis,omitempty"             json:"xAxis,omitempty"`
-	YAxis             *string     `yaml:"yAxis,omitempty"             json:"yAxis,omitempty"`
-	Size              *string     `yaml:"size,omitempty"              json:"size,omitempty"`
-	Fill              *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
-	Border            *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
+	XAxis  *string     `yaml:"xAxis,omitempty"             json:"xAxis,omitempty"`
+	YAxis  *string     `yaml:"yAxis,omitempty"             json:"yAxis,omitempty"`
+	Size   *string     `yaml:"size,omitempty"              json:"size,omitempty"`
+	Fill   *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
+	Border *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
 }
 
 // OverrideXAxis sets XAxis to v if v is non-empty.
