@@ -4,7 +4,7 @@ import "reflect"
 
 // State is a simple key-value store where the key is the type of the value.
 type State struct {
-	content map[string]any
+	content map[reflect.Type]any
 	err     error
 }
 
@@ -12,10 +12,10 @@ type State struct {
 // initial is the initial value to store in the state.
 // Returns a pointer to a new State containing the initial value.
 func NewState[S any](initial S) *State {
-	key := keyOf[S]()
+	key := reflect.TypeFor[S]()
 
 	return &State{
-		content: map[string]any{
+		content: map[reflect.Type]any{
 			key: initial,
 		},
 	}
@@ -25,7 +25,7 @@ func NewState[S any](initial S) *State {
 // It returns the value and a boolean indicating whether the value was found.
 func Lookup[S any](s *State) (S, bool) {
 	var zero S
-	key := keyOf[S]()
+	key := reflect.TypeFor[S]()
 	if v, ok := s.content[key]; ok {
 		return v.(S), true
 	}
@@ -35,15 +35,8 @@ func Lookup[S any](s *State) (S, bool) {
 
 // store saves a value of type S in the state.
 func store[S any](s *State, value S) {
-	key := keyOf[S]()
+	key := reflect.TypeFor[S]()
 	s.content[key] = value
-}
-
-// keyOf returns the name of the type T as a string.
-// This is used to generate keys for storing and retrieving values in the pipeline state.
-func keyOf[T any]() string {
-	// Using the new generic function instead of TypeOf
-	return reflect.TypeFor[T]().String()
 }
 
 // setErr sets the error in the state. This is used to store any error that occurred during pipeline execution.
