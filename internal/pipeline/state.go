@@ -43,7 +43,7 @@ func store[S any](s *State, value S) {
 // This is used to generate keys for storing and retrieving values in the pipeline state.
 func keyOf[T any]() string {
 	// Using the new generic function instead of TypeOf
-	return reflect.TypeFor[T]().Name()
+	return reflect.TypeFor[T]().String()
 }
 
 // setErr sets the error in the state. This is used to store any error that occurred during pipeline execution.
