@@ -51,7 +51,7 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 }
 
 // BuildLegendStage builds the legend config from inks.
-func BuildLegendStage(c *stages.CommonState, r *State, cfg *config.Radial) error {
+func BuildLegendStage(c *stages.CommonState, r *State) error {
 	pos, orient := legend.ResolveOptions(
 		c.RootConfig.LegendPositionStr(),
 		c.RootConfig.LegendOrientationStr(),

@@ -120,7 +120,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncXY(s, spiral.BuildTimeBucketsStage)
 	pipeline.ApplyFuncXY(s, spiral.AggregateBucketMetricsStage)
 	pipeline.ApplyFuncXY(s, spiral.BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, spiral.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, spiral.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, spiral.LayoutStage)
 	pipeline.ApplyFuncXY(s, spiral.RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)

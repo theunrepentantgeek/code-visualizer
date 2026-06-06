@@ -113,7 +113,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, radialtree.BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, radialtree.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, radialtree.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, radialtree.LayoutStage)
 	pipeline.ApplyFuncXY(s, radialtree.RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)

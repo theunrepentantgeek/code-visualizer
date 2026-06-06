@@ -116,7 +116,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, bubbletree.BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, bubbletree.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, bubbletree.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, bubbletree.LayoutStage)
 	pipeline.ApplyFuncXY(s, bubbletree.RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
