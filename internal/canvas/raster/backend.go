@@ -318,6 +318,7 @@ func (r *rasterBackend) DrawArcText(
 		// the baseline so descenders just graze the rim instead.
 		r.dc.DrawStringAnchored(string(ch), cx, cy, 0.5, 0.25)
 		r.dc.Pop()
+
 		ri++
 	}
 }
