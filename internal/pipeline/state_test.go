@@ -92,7 +92,7 @@ func TestNewState_GivenDuplicateType_Panics(t *testing.T) {
 	g.Expect(func() { NewState(a, b) }).To(PanicWith(ContainSubstring("duplicate value for type")))
 }
 
-func TestStore_StoresValue(t *testing.T) {
+func Test_store_StoresValue(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 
