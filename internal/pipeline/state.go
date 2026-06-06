@@ -30,9 +30,9 @@ func NewState(values ...any) *State {
 	return s
 }
 
-// Lookup retrieves a value of type S from the state.
+// lookup retrieves a value of type S from the state.
 // It returns the value and a boolean indicating whether the value was found.
-func Lookup[S any](s *State) (S, bool) {
+func lookup[S any](s *State) (S, bool) {
 	var zero S
 
 	key := keyOf[S]()
@@ -44,9 +44,9 @@ func Lookup[S any](s *State) (S, bool) {
 	return zero, false
 }
 
-// Store saves a value of type S in the state, overwriting any existing
+// store saves a value of type S in the state, overwriting any existing
 // value of the same type.
-func Store[S any](s *State, value S) {
+func store[S any](s *State, value S) {
 	key := keyOf[S]()
 	s.content[key] = value
 }

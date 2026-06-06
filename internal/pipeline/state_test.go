@@ -16,7 +16,7 @@ func TestNewState_GivenValue_ReturnsValueViaLookup(t *testing.T) {
 
 	state := NewState(k)
 
-	v, ok := Lookup[Kind](state)
+	v, ok := lookup[Kind](state)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(Equal(k))
 }
@@ -31,7 +31,7 @@ func TestState_Lookup_WhenValueNotPresent_ReturnsZeroValue(t *testing.T) {
 
 	state := NewState(alpha)
 
-	_, ok := Lookup[Color](state)
+	_, ok := lookup[Color](state)
 	g.Expect(ok).To(BeFalse())
 }
 
@@ -49,9 +49,9 @@ func TestState_Store_WhenValuePresent_OverwritesValue(t *testing.T) {
 		name: "beta",
 	}
 
-	Store(state, beta)
+	store(state, beta)
 
-	v, ok := Lookup[Kind](state)
+	v, ok := lookup[Kind](state)
 
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(Equal(beta))
@@ -66,8 +66,8 @@ func TestNewState_GivenMultipleValues_StoresAll(t *testing.T) {
 
 	state := NewState(k, c)
 
-	kv, kok := Lookup[Kind](state)
-	cv, cok := Lookup[Color](state)
+	kv, kok := lookup[Kind](state)
+	cv, cok := lookup[Color](state)
 
 	g.Expect(kok).To(BeTrue())
 	g.Expect(cok).To(BeTrue())
@@ -97,9 +97,9 @@ func TestStore_StoresValue(t *testing.T) {
 	g := NewWithT(t)
 
 	state := NewState()
-	Store(state, Kind{name: "x"})
+	store(state, Kind{name: "x"})
 
-	v, ok := Lookup[Kind](state)
+	v, ok := lookup[Kind](state)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v.name).To(Equal("x"))
 }

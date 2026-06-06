@@ -17,7 +17,7 @@ func ApplyFuncX[X any](
 		return
 	}
 
-	v, ok := Lookup[X](s)
+	v, ok := lookup[X](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[X]())
 		panic(msg)
@@ -43,7 +43,7 @@ func ApplyFuncXR[X any, R any](
 		return
 	}
 
-	v, ok := Lookup[X](s)
+	v, ok := lookup[X](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[X]())
 		panic(msg)
@@ -56,7 +56,7 @@ func ApplyFuncXR[X any, R any](
 		return
 	}
 
-	Store(s, r)
+	store(s, r)
 }
 
 // ApplyFuncXYR is a variant of ApplyFuncXR that works with functions that take two inputs (X and Y) and produce an
@@ -74,13 +74,13 @@ func ApplyFuncXYR[X any, Y any, R any](
 		return
 	}
 
-	vx, ok := Lookup[X](s)
+	vx, ok := lookup[X](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[X]())
 		panic(msg)
 	}
 
-	vy, ok := Lookup[Y](s)
+	vy, ok := lookup[Y](s)
 	if !ok {
 		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[Y]())
 		panic(msg)
@@ -93,7 +93,7 @@ func ApplyFuncXYR[X any, Y any, R any](
 		return
 	}
 
-	Store(s, r)
+	store(s, r)
 }
 
 // ApplyFuncXY updates pipeline state by applying an error-returning function
@@ -108,12 +108,12 @@ func ApplyFuncXY[X any, Y any](
 		return
 	}
 
-	vx, ok := Lookup[X](s)
+	vx, ok := lookup[X](s)
 	if !ok {
 		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[X]()))
 	}
 
-	vy, ok := Lookup[Y](s)
+	vy, ok := lookup[Y](s)
 	if !ok {
 		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Y]()))
 	}
@@ -132,17 +132,17 @@ func ApplyFuncXYZ[X any, Y any, Z any](
 		return
 	}
 
-	vx, ok := Lookup[X](s)
+	vx, ok := lookup[X](s)
 	if !ok {
 		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[X]()))
 	}
 
-	vy, ok := Lookup[Y](s)
+	vy, ok := lookup[Y](s)
 	if !ok {
 		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Y]()))
 	}
 
-	vz, ok := Lookup[Z](s)
+	vz, ok := lookup[Z](s)
 	if !ok {
 		panic(fmt.Sprintf("state does not contain value of type %s", keyOf[Z]()))
 	}

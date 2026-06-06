@@ -102,7 +102,7 @@ func Test_ApplyFuncXR_WhenMethodReturnsValue_SavesValueInState(t *testing.T) {
 	ApplyFuncXR(state, SetKind("k"))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 
-	v, ok := Lookup[Kind](state)
+	v, ok := lookup[Kind](state)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v.name).To(Equal("k"))
 }
@@ -167,7 +167,7 @@ func Test_ApplyFuncXYR_WhenStateContainsXAndY_StoresResultInState(t *testing.T) 
 	}
 
 	state := NewState(c)
-	Store(state, k)
+	store(state, k)
 
 	ApplyFuncXYR(state, CreateTexture)
 	g.Expect(state.Err()).ToNot(HaveOccurred())
