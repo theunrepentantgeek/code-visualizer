@@ -29,7 +29,7 @@ type Flags struct {
 // stores a *CommonState alongside the per-viz state and config in the
 // type-keyed *pipeline.State.
 type CommonState struct {
-	// Inputs: set by the orchestrator before pipeline.Run.
+	// Inputs: set by the orchestrator before applying any stages.
 	TargetPath string
 	Output     string
 	Flags      *Flags
