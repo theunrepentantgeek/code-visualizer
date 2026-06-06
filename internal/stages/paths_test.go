@@ -40,3 +40,16 @@ func TestValidatePathsHelper_OK(t *testing.T) {
 
 	g.Expect(stages.ValidatePathsHelper(dir, out)).To(Succeed())
 }
+
+func TestValidatePaths_WrapsError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := &stages.CommonState{TargetPath: "/no/such/path", Output: "out.png"}
+	err := stages.ValidatePaths(c)
+
+	g.Expect(err).To(HaveOccurred())
+
+	var tpe *stages.TargetPathError
+	g.Expect(errors.As(err, &tpe)).To(BeTrue())
+}
