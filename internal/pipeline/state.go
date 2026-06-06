@@ -5,6 +5,7 @@ import "reflect"
 // State is a simple key-value store where the key is the type of the value.
 type State struct {
 	content map[string]any
+	err     error
 }
 
 // NewState creates a new State with an initial value of type S.
@@ -43,4 +44,14 @@ func store[S any](s *State, value S) {
 func keyOf[T any]() string {
 	// Using the new generic function instead of TypeOf
 	return reflect.TypeFor[T]().Name()
+}
+
+// setErr sets the error in the state. This is used to store any error that occurred during pipeline execution.
+func (s *State) setErr(err error) {
+	s.err = err
+}
+
+// Err returns the error stored in the state, if any.
+func (s *State) Err() error {
+	return s.err
 }
