@@ -21,12 +21,12 @@ func TestCheckGitRequirement_Stage_SkipsWhenNoGitMetricRequested(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	s := &fakeState{common: stages.CommonState{
+	s := &stages.CommonState{
 		TargetPath: "/no/such/dir",
 		Requested:  []metric.Name{"file-size"},
-	}}
+	}
 
-	g.Expect(stages.CheckGitRequirement[*fakeState](s)).To(Succeed())
+	g.Expect(stages.CheckGitRequirement(s)).To(Succeed())
 }
 
 func TestCheckGitRequirement_Stage_FailsWhenGitMetricRequestedAndNoRepo(t *testing.T) {
@@ -35,11 +35,11 @@ func TestCheckGitRequirement_Stage_FailsWhenGitMetricRequestedAndNoRepo(t *testi
 
 	dir := t.TempDir()
 
-	s := &fakeState{common: stages.CommonState{
+	s := &stages.CommonState{
 		TargetPath: dir,
 		Requested:  []metric.Name{"file-age"},
-	}}
-	err := stages.CheckGitRequirement[*fakeState](s)
+	}
+	err := stages.CheckGitRequirement(s)
 
 	var gre *stages.GitRequiredError
 	g.Expect(errors.As(err, &gre)).To(BeTrue())

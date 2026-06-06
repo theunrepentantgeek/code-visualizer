@@ -14,12 +14,12 @@ func TestExportConfig_NoFlag_NoOp(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	s := &fakeState{common: stages.CommonState{
+	s := &stages.CommonState{
 		Flags:      &stages.Flags{ExportConfig: ""},
 		RootConfig: config.New(),
-	}}
+	}
 
-	g.Expect(stages.ExportConfig[*fakeState](s)).To(Succeed())
+	g.Expect(stages.ExportConfig(s)).To(Succeed())
 }
 
 func TestExportConfig_OnlyWritesSelectedVizSection(t *testing.T) {
@@ -30,13 +30,13 @@ func TestExportConfig_OnlyWritesSelectedVizSection(t *testing.T) {
 	path := filepath.Join(dir, "out.yaml")
 	rootCfg := config.New()
 
-	s := &fakeState{common: stages.CommonState{
+	s := &stages.CommonState{
 		Flags:      &stages.Flags{ExportConfig: path},
 		RootConfig: rootCfg,
 		VizName:    "treemap",
-	}}
+	}
 
-	g.Expect(stages.ExportConfig[*fakeState](s)).To(Succeed())
+	g.Expect(stages.ExportConfig(s)).To(Succeed())
 
 	loaded := &config.Config{}
 	g.Expect(loaded.Load(path)).To(Succeed())
