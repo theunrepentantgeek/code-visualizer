@@ -87,6 +87,7 @@ func BuildTimeBucketsStage(c *stages.CommonState, p *State) error {
 // AggregateBucketMetricsStage fills in per-bucket aggregated metric values.
 func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
 	_ = c
+
 	AggregateBucketMetrics(p.Buckets, p.Size, p.FillMetric, p.BorderMetric)
 
 	return nil

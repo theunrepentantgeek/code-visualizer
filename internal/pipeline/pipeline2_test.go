@@ -191,6 +191,7 @@ func Test_ApplyFuncXY_WhenStateMissingX_Panics(t *testing.T) {
 	g := NewWithT(t)
 
 	var k Kind
+
 	state := NewState(k)
 
 	g.Expect(func() {
@@ -207,6 +208,7 @@ func Test_ApplyFuncXY_WhenBothPresent_CallsFunc(t *testing.T) {
 
 	ApplyFuncXY(state, func(Kind, Color) error {
 		called = true
+
 		return nil
 	})
 	g.Expect(state.Err()).ToNot(HaveOccurred())
@@ -230,7 +232,12 @@ func Test_ApplyFuncXY_WhenAlreadyErrored_ShortCircuits(t *testing.T) {
 	state.setErr(errors.New("prior"))
 
 	called := false
-	ApplyFuncXY(state, func(Kind, Color) error { called = true; return nil })
+
+	ApplyFuncXY(state, func(Kind, Color) error {
+		called = true
+
+		return nil
+	})
 	g.Expect(called).To(BeFalse())
 }
 
@@ -258,6 +265,7 @@ func Test_ApplyFuncXYZ_WhenAllPresent_CallsFunc(t *testing.T) {
 
 	ApplyFuncXYZ(state, func(Kind, Color, Texture) error {
 		called = true
+
 		return nil
 	})
 	g.Expect(state.Err()).ToNot(HaveOccurred())

@@ -68,6 +68,7 @@ func TestNewState_GivenMultipleValues_StoresAll(t *testing.T) {
 
 	kv, kok := Lookup[Kind](state)
 	cv, cok := Lookup[Color](state)
+
 	g.Expect(kok).To(BeTrue())
 	g.Expect(cok).To(BeTrue())
 	g.Expect(kv).To(Equal(k))

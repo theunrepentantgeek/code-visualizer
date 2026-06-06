@@ -13,16 +13,20 @@ type State struct {
 // usable type information) or if the same type is supplied twice.
 func NewState(values ...any) *State {
 	s := &State{content: map[reflect.Type]any{}}
+
 	for _, v := range values {
 		if v == nil {
 			panic("pipeline.NewState: nil value has no type")
 		}
+
 		key := reflect.TypeOf(v)
 		if _, exists := s.content[key]; exists {
 			panic("pipeline.NewState: duplicate value for type " + key.String())
 		}
+
 		s.content[key] = v
 	}
+
 	return s
 }
 

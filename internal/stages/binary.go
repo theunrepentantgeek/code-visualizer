@@ -42,6 +42,8 @@ func FilterBinaryFilesHelper(root *model.Directory) error {
 
 // FilterBinaryFiles removes binary files from c.Root in place unless include
 // is true. Per-viz adapter functions call this with t.IncludeBinaryFiles.
+//
+//nolint:revive // intentional include-toggle; per-viz wrappers translate from typed state.
 func FilterBinaryFiles(c *CommonState, include bool) error {
 	if include {
 		return nil

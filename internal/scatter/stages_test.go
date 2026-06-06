@@ -12,8 +12,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
-func strPtr(s string) *string { return &s }
-
 func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -21,9 +19,9 @@ func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &scatter.State{}
 	cfg := &config.Scatter{
-		XAxis: strPtr("file-type"),
-		YAxis: strPtr("file-lines"),
-		Size:  strPtr("file-size"),
+		XAxis: new("file-type"),
+		YAxis: new("file-lines"),
+		Size:  new("file-size"),
 	}
 
 	err := scatter.ResolveMetrics(common, viz, cfg)
@@ -46,9 +44,9 @@ func TestResolveMetrics_FillAndBorderOverrideDefaults(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &scatter.State{}
 	cfg := &config.Scatter{
-		XAxis: strPtr("file-lines"),
-		YAxis: strPtr("file-size"),
-		Size:  strPtr("file-size"),
+		XAxis: new("file-lines"),
+		YAxis: new("file-size"),
+		Size:  new("file-size"),
 		Fill:  &config.MetricSpec{Metric: filesystem.FileType},
 		Border: &config.MetricSpec{
 			Metric: filesystem.FileLines,
