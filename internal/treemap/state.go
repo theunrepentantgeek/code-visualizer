@@ -2,21 +2,16 @@ package treemap
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
-	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
-// State is the pipeline state for the treemap visualization.
+// State is the viz-specific pipeline state for the treemap visualization.
+// Shared state lives in *stages.CommonState; treemap config in *config.Treemap.
 type State struct {
-	stages.CommonState
-
-	Config             *config.Treemap
 	IncludeBinaryFiles bool
 	Flat               bool
 
-	// Resolved during the pipeline:
 	Size          metric.Name
 	FillMetric    metric.Name
 	FillPalette   palette.PaletteName
@@ -27,12 +22,3 @@ type State struct {
 	LegendConfig  *canvas.LegendConfig
 	BlockLabels   []canvas.BlockLabel
 }
-
-// Common exposes the embedded CommonState so shared stages can mutate it.
-func (s *State) Common() *stages.CommonState { return &s.CommonState }
-
-// CanvasLabels exposes the block labels staged for later canvas overlay.
-func (s *State) CanvasLabels() []canvas.BlockLabel { return s.BlockLabels }
-
-// IncludeBinary lets State satisfy stages.BinaryFilterToggler.
-func (s *State) IncludeBinary() bool { return s.IncludeBinaryFiles }

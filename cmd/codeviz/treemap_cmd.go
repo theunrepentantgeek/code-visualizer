@@ -99,44 +99,43 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	state := &treemap.State{
-		CommonState: stages.CommonState{
-			TargetPath: c.TargetPath,
-			Output:     c.Output,
-			Flags:      toStagesFlags(flags),
-			RootConfig: flags.Config,
-			VizName:    "treemap",
-			CLIFilters: c.Filters(),
-		},
-		Config:             flags.Config.Treemap,
+	common := &stages.CommonState{
+		TargetPath: c.TargetPath,
+		Output:     c.Output,
+		Flags:      toStagesFlags(flags),
+		RootConfig: flags.Config,
+		VizName:    "treemap",
+		CLIFilters: c.Filters(),
+	}
+	cfg := flags.Config.Treemap
+	viz := &treemap.State{
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 		Flat:               c.Flat,
 	}
 
-	_, err := pipeline.Run[*treemap.State](
-		state,
-		stages.ValidatePaths,
-		stages.ExportConfig,
-		stages.BuildFilterRules,
-		treemap.ResolveMetrics,
-		stages.ScanFilesystem,
-		stages.CheckGitRequirement,
-		stages.RunProviders,
-		stages.FilterBinaryFiles,
-		stages.ExportData,
-		stages.ResolveDimensions,
-		treemap.BuildInksStage,
-		treemap.BuildLegendStage,
-		treemap.LayoutStage,
-		treemap.RenderStage,
-		treemap.LabelStage,
-		stages.ApplyCanvasBlockLabels[*treemap.State],
-		stages.ApplyFooter[*treemap.State],
-		stages.WriteCanvas,
-		treemap.LogResult,
-	)
+	s := pipeline.NewState(common, cfg, viz)
 
-	return eris.Wrap(err, "treemap pipeline failed")
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
+	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
+	pipeline.ApplyFuncX(s, stages.RunProviders)
+	pipeline.ApplyFuncXY(s, treemap.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.ExportData)
+	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
+	pipeline.ApplyFuncXY(s, treemap.BuildInksStage)
+	pipeline.ApplyFuncXYZ(s, treemap.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, treemap.LayoutStage)
+	pipeline.ApplyFuncXY(s, treemap.RenderStage)
+	pipeline.ApplyFuncXYZ(s, treemap.LabelStage)
+	pipeline.ApplyFuncXY(s, treemap.ApplyCanvasBlockLabels)
+	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+	pipeline.ApplyFuncX(s, stages.WriteCanvas)
+	pipeline.ApplyFuncXY(s, treemap.LogResult)
+
+	return eris.Wrap(s.Err(), "treemap pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

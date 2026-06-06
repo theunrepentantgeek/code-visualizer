@@ -4,7 +4,6 @@ import (
 	"log/slog"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
@@ -41,22 +40,12 @@ func FilterBinaryFilesHelper(root *model.Directory) error {
 	return nil
 }
 
-// BinaryFilterToggler is implemented by per-viz state types that expose an
-// "include binary files" flag. FilterBinaryFiles uses this to decide
-// whether to run.
-type BinaryFilterToggler interface {
-	VizState
-	IncludeBinary() bool
-}
-
-// FilterBinaryFiles is a pipeline.Stage that removes binary files from
-// Common().Root unless the state's IncludeBinary() returns true.
-func FilterBinaryFiles[S BinaryFilterToggler](s S) error {
-	if s.IncludeBinary() {
+// FilterBinaryFiles removes binary files from c.Root in place unless include
+// is true. Per-viz adapter functions call this with t.IncludeBinaryFiles.
+func FilterBinaryFiles(c *CommonState, include bool) error {
+	if include {
 		return nil
 	}
 
-	return FilterBinaryFilesHelper(s.Common().Root)
+	return FilterBinaryFilesHelper(c.Root)
 }
-
-var _ pipeline.Stage[BinaryFilterToggler] = FilterBinaryFiles[BinaryFilterToggler]

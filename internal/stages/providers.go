@@ -6,15 +6,11 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
-// RunProviders calculates Common().Requested metrics against Common().Root,
-// wiring progress reporting based on Flags verbosity.
-func RunProviders[S VizState](s S) error {
-	c := s.Common()
-
+// RunProviders calculates c.Requested metrics against c.Root.
+func RunProviders(c *CommonState) error {
 	slog.Info("Calculating metrics")
 
 	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
@@ -29,5 +25,3 @@ func RunProviders[S VizState](s S) error {
 
 	return nil
 }
-
-var _ pipeline.Stage[VizState] = RunProviders[VizState]

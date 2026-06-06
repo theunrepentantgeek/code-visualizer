@@ -2,7 +2,6 @@ package stages
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 )
 
 // PtrInt safely dereferences *int, returning fallback if nil.
@@ -23,11 +22,9 @@ func PtrString(p *string) string {
 	return *p
 }
 
-// ResolveDimensions populates Common().Width and Common().Height from
-// RootConfig, applying the documented defaults (1920x1080).
-func ResolveDimensions[S VizState](s S) error {
-	c := s.Common()
-
+// ResolveDimensions populates c.Width and c.Height from RootConfig, applying
+// the documented defaults (1920x1080).
+func ResolveDimensions(c *CommonState) error {
 	var imageSize *config.ImageSize
 	if c.RootConfig != nil {
 		imageSize = c.RootConfig.ImageSize
@@ -44,5 +41,3 @@ func ResolveDimensions[S VizState](s S) error {
 
 	return nil
 }
-
-var _ pipeline.Stage[VizState] = ResolveDimensions[VizState]

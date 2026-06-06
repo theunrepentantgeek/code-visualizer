@@ -1,6 +1,6 @@
 // Package stages provides shared visualization-pipeline stages and the
-// CommonState type that they operate on. Visualization-specific state
-// types embed CommonState and satisfy the VizState interface.
+// CommonState type that they operate on. Viz-specific state is kept
+// alongside CommonState in the type-keyed *pipeline.State.
 package stages
 
 import (
@@ -25,8 +25,9 @@ type Flags struct {
 	Config       *config.Config
 }
 
-// CommonState contains fields used by shared stages. Every viz state struct
-// embeds this and exposes it via a pointer-receiver Common() method.
+// CommonState contains fields used by shared stages. Each viz pipeline
+// stores a *CommonState alongside the per-viz state and config in the
+// type-keyed *pipeline.State.
 type CommonState struct {
 	// Inputs: set by the orchestrator before pipeline.Run.
 	TargetPath string
@@ -50,12 +51,4 @@ type CommonState struct {
 	GitHistory    []git.Commit
 	FileHistory   map[*model.File][]CommitRef
 	FileTimeRange map[*model.File]TimeRange
-}
-
-// VizState is satisfied by any state type that embeds CommonState and
-// exposes it via a Common() method. Shared stages are generic over this
-// interface; in practice the type argument is always a pointer type
-// (e.g. *treemap.State).
-type VizState interface {
-	Common() *CommonState
 }
