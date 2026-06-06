@@ -31,11 +31,11 @@ func TestBuildFilterRules_Stage_PopulatesCommon(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	s := &fakeState{common: stages.CommonState{
+	s := &stages.CommonState{
 		RootConfig: &config.Config{},
 		CLIFilters: []filter.Rule{{Pattern: "*.go", Mode: filter.Include}},
-	}}
+	}
 
-	g.Expect(stages.BuildFilterRules[*fakeState](s)).To(Succeed())
-	g.Expect(s.Common().FilterRules).To(HaveLen(1))
+	g.Expect(stages.BuildFilterRules(s)).To(Succeed())
+	g.Expect(s.FilterRules).To(HaveLen(1))
 }

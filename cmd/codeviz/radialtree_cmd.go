@@ -88,41 +88,39 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	state := &radialtree.State{
-		CommonState: stages.CommonState{
-			TargetPath: c.TargetPath,
-			Output:     c.Output,
-			Flags:      toStagesFlags(flags),
-			RootConfig: flags.Config,
-			VizName:    "radial",
-			CLIFilters: c.Filters(),
-		},
-		Config:             flags.Config.Radial,
+	common := &stages.CommonState{
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              toStagesFlags(flags),
+		RootConfig:         flags.Config,
+		VizName:            "radial",
+		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
+	cfg := flags.Config.Radial
+	viz := &radialtree.State{}
 
-	_, err := pipeline.Run[*radialtree.State](
-		state,
-		stages.ValidatePaths,
-		stages.ExportConfig,
-		stages.BuildFilterRules,
-		radialtree.ResolveMetrics,
-		stages.ScanFilesystem,
-		stages.CheckGitRequirement,
-		stages.RunProviders,
-		stages.FilterBinaryFiles,
-		stages.ExportData,
-		stages.ResolveDimensions,
-		radialtree.BuildInksStage,
-		radialtree.BuildLegendStage,
-		radialtree.LayoutStage,
-		radialtree.RenderStage,
-		stages.ApplyFooter[*radialtree.State],
-		stages.WriteCanvas,
-		radialtree.LogResult,
-	)
+	s := pipeline.NewState(common, cfg, viz)
 
-	return eris.Wrap(err, "radialtree pipeline failed")
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
+	pipeline.ApplyFuncX(s, stages.RunProviders)
+	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.ExportData)
+	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
+	pipeline.ApplyFuncXY(s, radialtree.BuildInksStage)
+	pipeline.ApplyFuncXYZ(s, radialtree.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, radialtree.LayoutStage)
+	pipeline.ApplyFuncXY(s, radialtree.RenderStage)
+	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+	pipeline.ApplyFuncX(s, stages.WriteCanvas)
+	pipeline.ApplyFuncXY(s, radialtree.LogResult)
+
+	return eris.Wrap(s.Err(), "radialtree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

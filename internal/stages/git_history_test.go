@@ -61,7 +61,7 @@ func setupHistoryRepo(t *testing.T) string {
 	return dir
 }
 
-func buildHistoryState(dir string) *historyTestState {
+func buildHistoryState(dir string) *CommonState {
 	root := &model.Directory{Path: dir, Name: filepath.Base(dir)}
 
 	for _, name := range []string{"a.go", "b.go", "c.go"} {
@@ -71,20 +71,12 @@ func buildHistoryState(dir string) *historyTestState {
 		})
 	}
 
-	return &historyTestState{
-		CommonState: CommonState{
-			TargetPath: dir,
-			Root:       root,
-			Flags:      &Flags{Config: &config.Config{}},
-		},
+	return &CommonState{
+		TargetPath: dir,
+		Root:       root,
+		Flags:      &Flags{Config: &config.Config{}},
 	}
 }
-
-type historyTestState struct {
-	CommonState
-}
-
-func (s *historyTestState) Common() *CommonState { return &s.CommonState }
 
 func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
 	t.Parallel()

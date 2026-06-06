@@ -8,7 +8,6 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 )
 
 // ValidatePathsHelper validates the target directory and output file paths.
@@ -48,16 +47,11 @@ func ValidatePathsHelper(targetPath, output string) error {
 	return nil
 }
 
-// ValidatePaths is a pipeline.Stage that validates Common().TargetPath and
-// Common().Output.
-func ValidatePaths[S VizState](s S) error {
-	c := s.Common()
+// ValidatePaths validates c.TargetPath and c.Output.
+func ValidatePaths(c *CommonState) error {
 	if err := ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
 		return eris.Wrap(err, "invalid paths")
 	}
 
 	return nil
 }
-
-// Compile-time assurance the signature is a valid Stage.
-var _ pipeline.Stage[VizState] = ValidatePaths[VizState]

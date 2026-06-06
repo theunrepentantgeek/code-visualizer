@@ -90,46 +90,44 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	state := &spiral.State{
-		CommonState: stages.CommonState{
-			TargetPath: c.TargetPath,
-			Output:     c.Output,
-			Flags:      toStagesFlags(flags),
-			RootConfig: flags.Config,
-			VizName:    "spiral",
-			CLIFilters: c.Filters(),
-		},
-		Config:             flags.Config.Spiral,
+	common := &stages.CommonState{
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              toStagesFlags(flags),
+		RootConfig:         flags.Config,
+		VizName:            "spiral",
+		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
+	cfg := flags.Config.Spiral
+	viz := &spiral.State{}
 
-	_, err := pipeline.Run[*spiral.State](
-		state,
-		stages.ValidatePaths,
-		stages.ExportConfig,
-		stages.BuildFilterRules,
-		spiral.ResolveMetrics,
-		stages.ScanFilesystem,
-		stages.CheckGitRequirement,
-		stages.RunProviders,
-		stages.FilterBinaryFiles,
-		stages.ExportData,
-		stages.LoadGitHistory,
-		stages.GroupGitHistoryByFile,
-		stages.ExtractFileHistory,
-		stages.ResolveDimensions,
-		spiral.BuildTimeBucketsStage,
-		spiral.AggregateBucketMetricsStage,
-		spiral.BuildInksStage,
-		spiral.BuildLegendStage,
-		spiral.LayoutStage,
-		spiral.RenderStage,
-		stages.ApplyFooter[*spiral.State],
-		stages.WriteCanvas,
-		spiral.LogResult,
-	)
+	s := pipeline.NewState(common, cfg, viz)
 
-	return eris.Wrap(err, "spiral pipeline failed")
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
+	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
+	pipeline.ApplyFuncX(s, stages.RunProviders)
+	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.ExportData)
+	pipeline.ApplyFuncX(s, stages.LoadGitHistory)
+	pipeline.ApplyFuncX(s, stages.GroupGitHistoryByFile)
+	pipeline.ApplyFuncX(s, stages.ExtractFileHistory)
+	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
+	pipeline.ApplyFuncXY(s, spiral.BuildTimeBucketsStage)
+	pipeline.ApplyFuncXY(s, spiral.AggregateBucketMetricsStage)
+	pipeline.ApplyFuncXY(s, spiral.BuildInksStage)
+	pipeline.ApplyFuncXYZ(s, spiral.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, spiral.LayoutStage)
+	pipeline.ApplyFuncXY(s, spiral.RenderStage)
+	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+	pipeline.ApplyFuncX(s, stages.WriteCanvas)
+	pipeline.ApplyFuncXY(s, spiral.LogResult)
+
+	return eris.Wrap(s.Err(), "spiral pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

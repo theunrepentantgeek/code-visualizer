@@ -8,15 +8,12 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 // ResolveMetrics resolves scatter axes, size, fill, and border settings.
-func ResolveMetrics(s *State) error {
-	cfg := s.Config
-
+func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error {
 	if stages.PtrString(cfg.XAxis) == "" {
 		return eris.New("x-axis metric is required")
 	}
@@ -40,13 +37,13 @@ func ResolveMetrics(s *State) error {
 		return eris.New("size metric is required")
 	}
 
-	s.XAxis = xAxis
-	s.YAxis = yAxis
-	s.Size = size
-	s.FillMetric = resolveFillMetric(cfg, size)
-	s.FillPalette = stages.ResolveFillPalette(cfg.Fill, s.FillMetric)
-	s.BorderMetric, s.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
-	s.Common().Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border)
+	x.XAxis = xAxis
+	x.YAxis = yAxis
+	x.Size = size
+	x.FillMetric = resolveFillMetric(cfg, size)
+	x.FillPalette = stages.ResolveFillPalette(cfg.Fill, x.FillMetric)
+	x.BorderMetric, x.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	c.Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border)
 
 	return nil
 }
@@ -87,11 +84,9 @@ func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *confi
 }
 
 // BuildInksStage collects plottable files and creates point inks.
-func BuildInksStage(s *State) error {
-	c := s.Common()
-
-	s.Dataset = CollectDataset(c.Root, s.XAxis, s.YAxis, s.Size)
-	s.Inks = BuildInks(s.Dataset, s.FillMetric, s.FillPalette, s.BorderMetric, s.BorderPalette)
+func BuildInksStage(c *stages.CommonState, x *State) error {
+	x.Dataset = CollectDataset(c.Root, x.XAxis, x.YAxis, x.Size)
+	x.Inks = BuildInks(x.Dataset, x.FillMetric, x.FillPalette, x.BorderMetric, x.BorderPalette)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
@@ -99,52 +94,49 @@ func BuildInksStage(s *State) error {
 }
 
 // BuildLegendStage builds the legend config from the resolved inks.
-func BuildLegendStage(s *State) error {
+func BuildLegendStage(c *stages.CommonState, x *State, cfg *config.Scatter) error {
 	pos, orient := legend.ResolveOptions(
-		s.Common().RootConfig.LegendPositionStr(),
-		s.Common().RootConfig.LegendOrientationStr(),
+		c.RootConfig.LegendPositionStr(),
+		c.RootConfig.LegendOrientationStr(),
 	)
 
-	s.LegendConfig = legend.Build(
+	x.LegendConfig = legend.Build(
 		pos,
 		orient,
-		s.Inks.Fill,
-		s.FillMetric,
-		s.Inks.Border,
-		s.BorderMetric,
-		s.Size,
+		x.Inks.Fill,
+		x.FillMetric,
+		x.Inks.Border,
+		x.BorderMetric,
+		x.Size,
 	)
 
 	return nil
 }
 
 // LayoutStage positions scatter points within the drawable plot area.
-func LayoutStage(s *State) error {
-	c := s.Common()
+func LayoutStage(c *stages.CommonState, x *State) error {
 	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
-	layoutW, layoutH := legend.ReserveAndLayout(s.LegendConfig, c.Width, availH)
+	layoutW, layoutH := legend.ReserveAndLayout(x.LegendConfig, c.Width, availH)
 
-	layout := Layout(s.Dataset, layoutW, layoutH, s.XAxis, s.YAxis)
+	layout := Layout(x.Dataset, layoutW, layoutH, x.XAxis, x.YAxis)
 	if layoutW < c.Width || layoutH < availH {
-		if s.LegendConfig != nil {
-			wReduce, hReduce := s.LegendConfig.ReserveSpace()
-			dx, dy := legend.LayoutOffset(s.LegendConfig, wReduce, hReduce)
+		if x.LegendConfig != nil {
+			wReduce, hReduce := x.LegendConfig.ReserveSpace()
+			dx, dy := legend.LayoutOffset(x.LegendConfig, wReduce, hReduce)
 			OffsetLayout(&layout, dx, dy)
 		}
 	}
 
-	s.Layout = layout
+	x.Layout = layout
 
 	return nil
 }
 
 // RenderStage renders the scatter plot to a canvas.
-func RenderStage(s *State) error {
-	c := s.Common()
-
-	cv := RenderToCanvas(s.Layout, c.Width, c.Height, s.Inks)
-	if s.LegendConfig != nil {
-		cv.SetLegend(*s.LegendConfig)
+func RenderStage(c *stages.CommonState, x *State) error {
+	cv := RenderToCanvas(x.Layout, c.Width, c.Height, x.Inks)
+	if x.LegendConfig != nil {
+		cv.SetLegend(*x.LegendConfig)
 	}
 
 	c.Canvas = cv
@@ -153,37 +145,27 @@ func RenderStage(s *State) error {
 }
 
 // LogResult logs the final scatter summary.
-func LogResult(s *State) error {
-	c := s.Common()
-	skipped := s.Dataset.Skipped.MissingX + s.Dataset.Skipped.MissingY + s.Dataset.Skipped.MissingSize
+func LogResult(c *stages.CommonState, x *State) error {
+	skipped := x.Dataset.Skipped.MissingX + x.Dataset.Skipped.MissingY + x.Dataset.Skipped.MissingSize
 
 	slog.Info(
 		"Rendered scatter plot",
-		"files", len(s.Dataset.Points),
-		"skipped_missing_x", s.Dataset.Skipped.MissingX,
-		"skipped_missing_y", s.Dataset.Skipped.MissingY,
-		"skipped_missing_size", s.Dataset.Skipped.MissingSize,
+		"files", len(x.Dataset.Points),
+		"skipped_missing_x", x.Dataset.Skipped.MissingX,
+		"skipped_missing_y", x.Dataset.Skipped.MissingY,
+		"skipped_missing_size", x.Dataset.Skipped.MissingSize,
 		"skipped_total", skipped,
 		"output", c.Output,
 		"width", c.Width,
 		"height", c.Height,
-		"x_axis", string(s.XAxis.Metric),
-		"y_axis", string(s.YAxis.Metric),
-		"size_metric", string(s.Size),
-		"fill_metric", string(s.FillMetric),
-		"fill_palette", string(s.FillPalette),
-		"border_metric", string(s.BorderMetric),
-		"border_palette", string(s.BorderPalette),
+		"x_axis", string(x.XAxis.Metric),
+		"y_axis", string(x.YAxis.Metric),
+		"size_metric", string(x.Size),
+		"fill_metric", string(x.FillMetric),
+		"fill_palette", string(x.FillPalette),
+		"border_metric", string(x.BorderMetric),
+		"border_palette", string(x.BorderPalette),
 	)
 
 	return nil
 }
-
-var (
-	_ pipeline.Stage[*State] = ResolveMetrics
-	_ pipeline.Stage[*State] = BuildInksStage
-	_ pipeline.Stage[*State] = BuildLegendStage
-	_ pipeline.Stage[*State] = LayoutStage
-	_ pipeline.Stage[*State] = RenderStage
-	_ pipeline.Stage[*State] = LogResult
-)

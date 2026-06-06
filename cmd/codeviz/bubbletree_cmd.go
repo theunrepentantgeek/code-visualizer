@@ -89,42 +89,41 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	state := &bubbletree.State{
-		CommonState: stages.CommonState{
-			TargetPath: c.TargetPath,
-			Output:     c.Output,
-			Flags:      toStagesFlags(flags),
-			RootConfig: flags.Config,
-			VizName:    "bubbletree",
-			CLIFilters: c.Filters(),
-		},
-		Config:             flags.Config.Bubbletree,
+	common := &stages.CommonState{
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              toStagesFlags(flags),
+		RootConfig:         flags.Config,
+		VizName:            "bubbletree",
+		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
-		Flat:               c.Flat,
+	}
+	cfg := flags.Config.Bubbletree
+	viz := &bubbletree.State{
+		Flat: c.Flat,
 	}
 
-	_, err := pipeline.Run[*bubbletree.State](
-		state,
-		stages.ValidatePaths,
-		stages.ExportConfig,
-		stages.BuildFilterRules,
-		bubbletree.ResolveMetrics,
-		stages.ScanFilesystem,
-		stages.CheckGitRequirement,
-		stages.RunProviders,
-		stages.FilterBinaryFiles,
-		stages.ExportData,
-		stages.ResolveDimensions,
-		bubbletree.BuildInksStage,
-		bubbletree.BuildLegendStage,
-		bubbletree.LayoutStage,
-		bubbletree.RenderStage,
-		stages.ApplyFooter[*bubbletree.State],
-		stages.WriteCanvas,
-		bubbletree.LogResult,
-	)
+	s := pipeline.NewState(common, cfg, viz)
 
-	return eris.Wrap(err, "bubbletree pipeline failed")
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
+	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
+	pipeline.ApplyFuncX(s, stages.RunProviders)
+	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.ExportData)
+	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
+	pipeline.ApplyFuncXY(s, bubbletree.BuildInksStage)
+	pipeline.ApplyFuncXYZ(s, bubbletree.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, bubbletree.LayoutStage)
+	pipeline.ApplyFuncXY(s, bubbletree.RenderStage)
+	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+	pipeline.ApplyFuncX(s, stages.WriteCanvas)
+	pipeline.ApplyFuncXY(s, bubbletree.LogResult)
+
+	return eris.Wrap(s.Err(), "bubbletree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
