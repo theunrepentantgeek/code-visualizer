@@ -8,6 +8,49 @@ import (
 )
 
 /*
+ * ApplyFuncX Tests
+ */
+
+func Test_ApplyFuncX_WhenStateDoesNotContainX_Panics(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	var c Color
+	state := NewState(c)
+
+	g.Expect(func() {
+		ApplyFuncX(state, func(Kind) error { return nil })
+	}).To(PanicWith(ContainSubstring("Kind")))
+}
+
+func Test_ApplyFuncX_WhenStateContainsX_CallsMethod(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	var k Kind
+	state := NewState(k)
+	called := false
+	ApplyFuncX(state, func(Kind) error {
+		called = true
+		return nil
+	})
+	g.Expect(state.Err()).ToNot(HaveOccurred())
+	g.Expect(called).To(BeTrue())
+}
+
+func Test_ApplyFuncX_WhenMethodReturnsError_SetsErrorInState(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	var k Kind
+	state := NewState(k)
+	ApplyFuncX(state, func(Kind) error {
+		return fmt.Errorf("error")
+	})
+	g.Expect(state.Err()).To(MatchError(ContainSubstring("error")))
+}
+
+/*
  * ApplyFuncXR Tests
  */
 

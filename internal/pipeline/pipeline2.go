@@ -4,6 +4,31 @@ import (
 	"fmt"
 )
 
+// ApplyFuncX updates pipeline state by applying a function that takes an input of type X.
+// It retrieves the value of type X from the state and applies the function.
+// If the value of type X is not found in the state, panics (as this is a programming error).
+// If the function returns an error, it stores the error in the state.
+// If already in an error state, it does not apply the function and simply returns.
+func ApplyFuncX[X any](
+	s *State,
+	f func(X) error,
+) {
+	if s.Err() != nil {
+		return
+	}
+
+	v, ok := Lookup[X](s)
+	if !ok {
+		msg := fmt.Sprintf("state does not contain value of type %s", keyOf[X]())
+		panic(msg)
+	}
+
+	err := f(v)
+	if err != nil {
+		s.setErr(err)
+	}
+}
+
 // ApplyFuncXR updates pipeline state by applying a function that takes an input of type X and produces an output of
 // type R.
 // It retrieves the value of type X from the state, applies the function, and stores the result back in the state.
