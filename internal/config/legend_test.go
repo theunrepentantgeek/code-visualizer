@@ -9,6 +9,7 @@ import (
 func TestLegend_PositionStr_NilReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+
 	var l *Legend
 	g.Expect(l.PositionStr()).To(Equal(""))
 }
@@ -42,6 +43,7 @@ func TestLegend_PositionStr_VisibleTrueReturnsPosition(t *testing.T) {
 func TestLegend_OrientationStr_NilReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+
 	var l *Legend
 	g.Expect(l.OrientationStr()).To(Equal(""))
 }

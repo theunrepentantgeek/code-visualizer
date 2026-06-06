@@ -1,4 +1,3 @@
-//nolint:dupl // Different visualization types will evolve in different ways
 package config
 
 // Scatter holds persistent configuration for scatter plot visualizations.

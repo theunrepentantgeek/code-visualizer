@@ -53,7 +53,7 @@ func BuildInksStage(c *stages.CommonState, b *State) error {
 }
 
 // BuildLegendStage builds the legend config from inks.
-func BuildLegendStage(c *stages.CommonState, b *State, cfg *config.Bubbletree) error {
+func BuildLegendStage(c *stages.CommonState, b *State, _ *config.Bubbletree) error {
 	pos, orient := legend.ResolveOptions(
 		c.RootConfig.LegendPositionStr(),
 		c.RootConfig.LegendOrientationStr(),

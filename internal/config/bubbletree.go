@@ -1,4 +1,3 @@
-//nolint:dupl // Different visualization types will evolve in different ways
 package config
 
 // Bubbletree holds persistent configuration for bubble tree visualizations.
