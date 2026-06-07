@@ -30,6 +30,7 @@ type BubbletreeCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
+	Title      string `default:"" help:"Override title text on the generated image." optional:""`
 	Footer     string `default:"" help:"Override footer text on the generated image." optional:""`
 	HideFooter bool   `default:"false" help:"Suppress the attribution footer." name:"hide-footer" optional:""`
 
@@ -119,6 +120,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncXYZ(s, bubbletree.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, bubbletree.LayoutStage)
 	pipeline.ApplyFuncXY(s, bubbletree.RenderStage)
+	pipeline.ApplyFuncX(s, stages.ApplyTitle)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 	pipeline.ApplyFuncXY(s, bubbletree.LogResult)
@@ -131,6 +133,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 	cfg.OverrideWidth(c.Width)
 	cfg.OverrideHeight(c.Height)
+	cfg.OverrideTitleText(c.Title)
 	cfg.OverrideFooterText(c.Footer)
 	cfg.OverrideHideFooter(c.HideFooter)
 
