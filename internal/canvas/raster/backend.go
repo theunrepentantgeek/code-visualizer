@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/fogleman/gg"
 	"github.com/rotisserie/eris"
@@ -293,12 +294,7 @@ func (r *rasterBackend) DrawArcText(
 		return
 	}
 
-	totalAngle := float64(len([]rune(text))) * fontSize * 0.6 / arcRadius
-	startAngle := -math.Pi/2.0 - totalAngle/2.0
-	charAngle := totalAngle / float64(len([]rune(text)))
-
-	for i, ch := range text {
-		angle := startAngle + float64(i)*charAngle + charAngle/2.0
+	forEachArcTextRune(text, fontSize, arcRadius, func(ch rune, angle float64) {
 		cx := center.X + arcRadius*math.Cos(angle)
 		cy := center.Y + arcRadius*math.Sin(angle)
 
@@ -311,6 +307,26 @@ func (r *rasterBackend) DrawArcText(
 		// the baseline so descenders just graze the rim instead.
 		r.dc.DrawStringAnchored(string(ch), cx, cy, 0.5, 0.25)
 		r.dc.Pop()
+	})
+}
+
+func forEachArcTextRune(text string, fontSize, arcRadius float64, yield func(ch rune, angle float64)) {
+	if text == "" {
+		return
+	}
+
+	// Use a rune count rather than []rune(text) to avoid a heap allocation,
+	// and track the rune index separately so character placement is correct
+	// for multi-byte (non-ASCII) code points.
+	n := utf8.RuneCountInString(text)
+	totalAngle := float64(n) * fontSize * 0.6 / arcRadius
+	startAngle := -math.Pi/2.0 - totalAngle/2.0
+	charAngle := totalAngle / float64(n)
+
+	var runeIndex int
+	for _, ch := range text {
+		yield(ch, startAngle+float64(runeIndex)*charAngle+charAngle/2.0)
+		runeIndex++
 	}
 }
 

@@ -203,6 +203,30 @@ func TestRasterBackend_DrawArcText_FontSizeZero_ProducesValidPNG(t *testing.T) {
 	g.Expect(img.Bounds().Dx()).To(Equal(400))
 }
 
+func TestForEachArcTextRune_MultiByteRunes_UsesRuneSpacing(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const fontSize = 14.0
+
+	var runes []rune
+
+	var angles []float64
+
+	forEachArcTextRune("héllo", fontSize, 100-model.ArcTextInset, func(ch rune, angle float64) {
+		runes = append(runes, ch)
+		angles = append(angles, angle)
+	})
+
+	g.Expect(string(runes)).To(Equal("héllo"))
+	g.Expect(angles).To(HaveLen(5))
+
+	wantStep := fontSize * 0.6 / (100 - model.ArcTextInset)
+	for i := 1; i < len(angles); i++ {
+		g.Expect(angles[i] - angles[i-1]).To(BeNumerically("~", wantStep, 1e-12))
+	}
+}
+
 func TestRasterBackend_DrawText_FontSizeZero_ProducesValidPNG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
