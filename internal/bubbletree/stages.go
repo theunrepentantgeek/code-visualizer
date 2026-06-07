@@ -79,6 +79,7 @@ func LayoutStage(c *stages.CommonState, b *State) error {
 	b.Nodes = Layout(c.Root, layoutW, layoutH, b.Size, b.Labels)
 
 	dx, dy := float64(0), float64(titleH)
+
 	if layoutW < c.Width || layoutH < availH {
 		if b.LegendConfig != nil {
 			wReduce, hReduce := b.LegendConfig.ReserveSpace()

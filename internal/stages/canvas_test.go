@@ -196,6 +196,7 @@ func TestApplyTitle_TitleHidden_NoTitleOnCanvas(t *testing.T) {
 
 	cfg := config.New()
 	cfg.OverrideTitleText("My Project")
+
 	hidden := true
 	cfg.Title.Hidden = &hidden
 

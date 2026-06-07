@@ -123,6 +123,7 @@ func LayoutStage(c *stages.CommonState, x *State) error {
 	layout := Layout(x.Dataset, layoutW, layoutH, x.XAxis, x.YAxis)
 
 	dx, dy := float64(0), float64(titleH)
+
 	if layoutW < c.Width || layoutH < availH {
 		if x.LegendConfig != nil {
 			wReduce, hReduce := x.LegendConfig.ReserveSpace()
