@@ -37,3 +37,26 @@ func MeasureString(s string, points float64) (width, height float64) {
 
 	return float64(advance >> 6), float64(face.Metrics().Height >> 6)
 }
+
+// MeasureStrings returns the rendered widths and common line height for
+// multiple strings at the given font size, creating the font face only once.
+// This is more efficient than calling MeasureString in a loop when measuring
+// many strings at the same size.
+func MeasureStrings(lines []string, points float64) (widths []float64, lineHeight float64) {
+	face := FontFace(points)
+	defer func() {
+		if closer, ok := face.(interface{ Close() error }); ok {
+			_ = closer.Close()
+		}
+	}()
+
+	drawer := &font.Drawer{Face: face}
+	lineHeight = float64(face.Metrics().Height >> 6)
+	widths = make([]float64, len(lines))
+
+	for i, line := range lines {
+		widths[i] = float64(drawer.MeasureString(line) >> 6)
+	}
+
+	return widths, lineHeight
+}

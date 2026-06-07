@@ -63,54 +63,58 @@ type fittedBlockLabel struct {
 	totalHeight float64
 }
 
+// fitBlockLabel finds the largest font size that fits within (maxWidth × maxHeight).
+//
+// TrueType glyph metrics scale proportionally with point size, so measuring
+// all lines once at a reference size lets us compute the tight-fitting size
+// directly — no 14-step binary search required.
 func fitBlockLabel(lines []string, maxWidth, maxHeight float64) (fittedBlockLabel, bool) {
-	upper := min(maxWidth, maxHeight/float64(len(lines)))
-	if upper <= 0 {
+	if maxWidth <= 0 || maxHeight <= 0 {
 		return fittedBlockLabel{}, false
 	}
 
-	low := 0.0
-	high := upper
-	best := fittedBlockLabel{}
+	// Measure every line once at a comfortable reference size.
+	const refSize = 12.0
 
-	for range 14 {
-		mid := (low + high) / 2.0
-		if mid <= 0 {
-			break
-		}
-
-		candidate := measureBlockLabel(lines, mid)
-		if candidate.totalHeight <= maxHeight && slices.Max(candidate.widths) <= maxWidth {
-			low = mid
-			candidate.fontSize = mid
-			best = candidate
-		} else {
-			high = mid
-		}
-	}
-
-	if low <= 0 {
+	refWidths, refLineH := textlayout.MeasureStrings(lines, refSize)
+	if refLineH <= 0 {
 		return fittedBlockLabel{}, false
 	}
 
-	return best, true
-}
+	nLines := float64(len(lines))
+	maxRefWidth := slices.Max(refWidths)
 
-func measureBlockLabel(lines []string, fontSize float64) fittedBlockLabel {
-	widths := make([]float64, len(lines))
-	lineHeight := 0.0
+	// Both width and height scale linearly with font size.
+	// scaleFromH: largest scale so that (refLineH * nLines * scale) ≤ maxHeight
+	// scaleFromW: largest scale so that (maxRefWidth * scale) ≤ maxWidth
+	scaleFromH := maxHeight / (refLineH * nLines)
 
-	for i, line := range lines {
-		width, measuredLineHeight := textlayout.MeasureString(line, fontSize)
-		widths[i] = width
-		lineHeight = max(lineHeight, measuredLineHeight)
+	var scaleFromW float64
+	if maxRefWidth > 0 {
+		scaleFromW = maxWidth / maxRefWidth
+	} else {
+		scaleFromW = scaleFromH // all lines empty; height is the only constraint
+	}
+
+	scale := min(scaleFromW, scaleFromH)
+	if scale <= 0 {
+		return fittedBlockLabel{}, false
+	}
+
+	fontSize := refSize * scale
+	lineHeight := refLineH * scale
+	widths := make([]float64, len(refWidths))
+
+	for i, w := range refWidths {
+		widths[i] = w * scale
 	}
 
 	return fittedBlockLabel{
+		fontSize:    fontSize,
 		widths:      widths,
 		lineHeight:  lineHeight,
-		totalHeight: lineHeight * float64(len(lines)),
-	}
+		totalHeight: lineHeight * nLines,
+	}, true
 }
 
 func (c *Canvas) addTextBlockLabel(
