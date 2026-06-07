@@ -37,7 +37,6 @@ func lookup[S any](s *State) (S, bool) {
 
 	key := keyOf[S]()
 	if v, ok := s.content[key]; ok {
-		//nolint:revive // Invariant is that this value will be of type S
 		return v.(S), true
 	}
 
