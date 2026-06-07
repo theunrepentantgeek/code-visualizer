@@ -116,18 +116,23 @@ func BuildLegendStage(c *stages.CommonState, x *State, cfg *config.Scatter) erro
 
 // LayoutStage positions scatter points within the drawable plot area.
 func LayoutStage(c *stages.CommonState, x *State) error {
-	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
+	titleH := stages.EffectiveTitleHeight(c.RootConfig)
+	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
 	layoutW, layoutH := legend.ReserveAndLayout(x.LegendConfig, c.Width, availH)
 
 	layout := Layout(x.Dataset, layoutW, layoutH, x.XAxis, x.YAxis)
+
+	dx, dy := float64(0), float64(titleH)
 	if layoutW < c.Width || layoutH < availH {
 		if x.LegendConfig != nil {
 			wReduce, hReduce := x.LegendConfig.ReserveSpace()
-			dx, dy := legend.LayoutOffset(x.LegendConfig, wReduce, hReduce)
-			OffsetLayout(&layout, dx, dy)
+			ldx, ldy := legend.LayoutOffset(x.LegendConfig, wReduce, hReduce)
+			dx += ldx
+			dy += ldy
 		}
 	}
 
+	OffsetLayout(&layout, dx, dy)
 	x.Layout = layout
 
 	return nil
