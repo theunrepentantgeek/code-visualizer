@@ -7,21 +7,18 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
-// ResolveMetrics resolves size, fill, and border metrics + palettes and
-// fills Common().Requested.
-func ResolveMetrics(s *State) error {
-	cfg := s.Config
+// ResolveMetrics resolves size, fill, and border metrics + palettes and fills
+// c.Requested.
+func ResolveMetrics(c *stages.CommonState, t *State, cfg *config.Treemap) error {
+	t.Size = metric.Name(stages.PtrString(cfg.Size))
+	t.FillMetric = resolveFillMetric(cfg)
+	t.FillPalette = stages.ResolveFillPalette(cfg.Fill, t.FillMetric)
+	t.BorderMetric, t.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
 
-	s.Size = metric.Name(stages.PtrString(cfg.Size))
-	s.FillMetric = resolveFillMetric(cfg)
-	s.FillPalette = stages.ResolveFillPalette(cfg.Fill, s.FillMetric)
-	s.BorderMetric, s.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
-
-	s.Common().Requested = stages.CollectRequestedMetrics(s.Size, cfg.Fill, cfg.Border)
+	c.Requested = stages.CollectRequestedMetrics(t.Size, cfg.Fill, cfg.Border)
 
 	return nil
 }
@@ -36,34 +33,32 @@ func resolveFillMetric(cfg *config.Treemap) metric.Name {
 
 // BuildInksStage builds the treemap inks. Also emits the "Rendering image"
 // log line preserved from the legacy renderAndLog helper.
-func BuildInksStage(s *State) error {
-	c := s.Common()
-
+func BuildInksStage(c *stages.CommonState, t *State) error {
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
-	s.Inks = BuildInks(c.Root, s.FillMetric, s.FillPalette, s.BorderMetric, s.BorderPalette)
-	if !s.Flat {
-		s.Inks.Fill = canvas.NewRadialGradientInk(s.Inks.Fill)
+	t.Inks = BuildInks(c.Root, t.FillMetric, t.FillPalette, t.BorderMetric, t.BorderPalette)
+	if !t.Flat {
+		t.Inks.Fill = canvas.NewRadialGradientInk(t.Inks.Fill)
 	}
 
 	return nil
 }
 
 // BuildLegendStage builds the legend config from inks.
-func BuildLegendStage(s *State) error {
+func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) error {
 	pos, orient := legend.ResolveOptions(
-		stages.PtrString(s.Config.Legend),
-		stages.PtrString(s.Config.LegendOrientation),
+		c.RootConfig.LegendPositionStr(),
+		c.RootConfig.LegendOrientationStr(),
 	)
 
-	s.LegendConfig = legend.Build(
+	t.LegendConfig = legend.Build(
 		pos, orient,
-		s.Inks.Fill, s.FillMetric,
-		s.Inks.Border, s.BorderMetric,
-		s.Size,
+		t.Inks.Fill, t.FillMetric,
+		t.Inks.Border, t.BorderMetric,
+		t.Size,
 	)
-	if s.LegendConfig != nil {
-		s.LegendConfig.LabelSample = labelSampleLines(labelMetricsForState(s))
+	if t.LegendConfig != nil {
+		t.LegendConfig.LabelSample = labelSampleLines(labelMetricsFor(t, cfg))
 	}
 
 	return nil
@@ -71,33 +66,35 @@ func BuildLegendStage(s *State) error {
 
 // LayoutStage reserves legend space, lays out rectangles, and applies the
 // resulting offset.
-func LayoutStage(s *State) error {
-	c := s.Common()
-	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
-	layoutW, layoutH := legend.ReserveAndLayout(s.LegendConfig, c.Width, availH)
+func LayoutStage(c *stages.CommonState, t *State) error {
+	titleH := stages.EffectiveTitleHeight(c.RootConfig)
+	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
+	layoutW, layoutH := legend.ReserveAndLayout(t.LegendConfig, c.Width, availH)
 
-	rect := Layout(c.Root, layoutW, layoutH, s.Size)
+	rect := Layout(c.Root, layoutW, layoutH, t.Size)
+
+	dx, dy := float64(0), float64(titleH)
 
 	if layoutW < c.Width || layoutH < availH {
-		if s.LegendConfig != nil {
-			wReduce, hReduce := s.LegendConfig.ReserveSpace()
-			dx, dy := legend.LayoutOffset(s.LegendConfig, wReduce, hReduce)
-			OffsetRects(&rect, dx, dy)
+		if t.LegendConfig != nil {
+			wReduce, hReduce := t.LegendConfig.ReserveSpace()
+			ldx, ldy := legend.LayoutOffset(t.LegendConfig, wReduce, hReduce)
+			dx += ldx
+			dy += ldy
 		}
 	}
 
-	s.Root = rect
+	OffsetRects(&rect, dx, dy)
+	t.Root = rect
 
 	return nil
 }
 
 // RenderStage renders the treemap to a canvas and attaches the legend.
-func RenderStage(s *State) error {
-	c := s.Common()
-
-	cv := RenderToCanvas(s.Root, c.Root, c.Width, c.Height, s.Inks, s.Size)
-	if s.LegendConfig != nil {
-		cv.SetLegend(*s.LegendConfig)
+func RenderStage(c *stages.CommonState, t *State) error {
+	cv := RenderToCanvas(t.Root, c.Root, c.Width, c.Height, t.Inks, t.Size)
+	if t.LegendConfig != nil {
+		cv.SetLegend(*t.LegendConfig)
 	}
 
 	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
@@ -108,23 +105,22 @@ func RenderStage(s *State) error {
 }
 
 // LabelStage builds the reusable block labels for treemap file rectangles.
-func LabelStage(s *State) error {
-	s.BlockLabels = buildBlockLabels(s.Root, s.Common().Root, s.Inks.Fill, labelMetricsForState(s))
+func LabelStage(c *stages.CommonState, t *State, cfg *config.Treemap) error {
+	t.BlockLabels = buildBlockLabels(t.Root, c.Root, t.Inks.Fill, labelMetricsFor(t, cfg))
 
 	return nil
 }
 
-func labelMetricsForState(s *State) LabelMetrics {
+func labelMetricsFor(t *State, cfg *config.Treemap) LabelMetrics {
 	return LabelMetrics{
-		Size:   s.Size,
-		Fill:   s.Config.Fill.MetricName(),
-		Border: s.Config.Border.MetricName(),
+		Size:   t.Size,
+		Fill:   cfg.Fill.MetricName(),
+		Border: cfg.Border.MetricName(),
 	}
 }
 
 // LogResult logs the final summary.
-func LogResult(s *State) error {
-	c := s.Common()
+func LogResult(c *stages.CommonState, t *State) error {
 	files, dirs := stages.CountAll(c.Root)
 
 	slog.Info(
@@ -134,23 +130,12 @@ func LogResult(s *State) error {
 		"output", c.Output,
 		"width", c.Width,
 		"height", c.Height,
-		"size_metric", string(s.Size),
-		"fill_metric", string(s.FillMetric),
-		"fill_palette", string(s.FillPalette),
-		"border_metric", string(s.BorderMetric),
-		"border_palette", string(s.BorderPalette),
+		"size_metric", string(t.Size),
+		"fill_metric", string(t.FillMetric),
+		"fill_palette", string(t.FillPalette),
+		"border_metric", string(t.BorderMetric),
+		"border_palette", string(t.BorderPalette),
 	)
 
 	return nil
 }
-
-// Compile-time checks.
-var (
-	_ pipeline.Stage[*State] = ResolveMetrics
-	_ pipeline.Stage[*State] = BuildInksStage
-	_ pipeline.Stage[*State] = BuildLegendStage
-	_ pipeline.Stage[*State] = LayoutStage
-	_ pipeline.Stage[*State] = RenderStage
-	_ pipeline.Stage[*State] = LabelStage
-	_ pipeline.Stage[*State] = LogResult
-)

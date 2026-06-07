@@ -8,12 +8,10 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 )
 
-// WriteCanvas writes Common().Canvas to Common().Output.
-func WriteCanvas[S VizState](s S) error {
-	c := s.Common()
+// WriteCanvas writes c.Canvas to c.Output.
+func WriteCanvas(c *CommonState) error {
 	if err := c.Canvas.Render(c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
@@ -21,13 +19,10 @@ func WriteCanvas[S VizState](s S) error {
 	return nil
 }
 
-var _ pipeline.Stage[VizState] = WriteCanvas[VizState]
-
-// ApplyFooter sets the footer on Common().Canvas from RootConfig.Footer.
-// If the Footer is hidden, the canvas footer is left unset (no footer rendered).
+// ApplyFooter sets the footer on c.Canvas from RootConfig.Footer.
+// If the Footer is hidden, the canvas footer is left unset.
 // If the Footer is nil or has no explicit text, the built-in default text is used.
-func ApplyFooter[S VizState](s S) error {
-	c := s.Common()
+func ApplyFooter(c *CommonState) error {
 	if c.Canvas == nil || c.RootConfig == nil {
 		return nil
 	}
@@ -49,12 +44,8 @@ func ApplyFooter[S VizState](s S) error {
 	return nil
 }
 
-var _ pipeline.Stage[VizState] = ApplyFooter[VizState]
-
 // EffectiveFooterHeight returns the number of pixels that the footer occupies
-// when rendered. Layout stages should subtract this from the available height
-// so that visualisation content does not overlap the footer.
-// Returns 0 when cfg is nil or the footer is not shown.
+// when rendered. Returns 0 when cfg is nil or the footer is not shown.
 func EffectiveFooterHeight(cfg *config.Config) int {
 	if cfg == nil {
 		return 0
@@ -65,4 +56,37 @@ func EffectiveFooterHeight(cfg *config.Config) int {
 	}
 
 	return int(canvas.FooterReservedHeight)
+}
+
+// ApplyTitle sets the title on c.Canvas from RootConfig.Title.
+// If the Title is nil, hidden, or has no text, the canvas title is left unset.
+func ApplyTitle(c *CommonState) error {
+	if c.Canvas == nil || c.RootConfig == nil {
+		return nil
+	}
+
+	title := c.RootConfig.Title
+	if !title.ShowTitle() {
+		return nil
+	}
+
+	c.Canvas.SetTitle(*title.Text)
+
+	return nil
+}
+
+// EffectiveTitleHeight returns the number of pixels that the title occupies
+// when rendered. Layout stages subtract this from the top of the available
+// area so that visualisation content does not overlap the title.
+// Returns 0 when cfg is nil or the title is not shown.
+func EffectiveTitleHeight(cfg *config.Config) int {
+	if cfg == nil {
+		return 0
+	}
+
+	if !cfg.Title.ShowTitle() {
+		return 0
+	}
+
+	return int(canvas.TitleReservedHeight)
 }

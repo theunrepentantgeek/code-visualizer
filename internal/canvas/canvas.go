@@ -20,9 +20,20 @@ const (
 	// height when the footer is enabled, preventing content from being drawn
 	// underneath it.
 	FooterReservedHeight = footerFontSize + footerMarginY
+
+	titleFontSize = 18.0
+	titleMarginY  = 20.0
+
+	// TitleReservedHeight is the vertical space (in pixels) that the title
+	// occupies when rendered. Layout stages subtract this from the available
+	// height (offset from the top) when the title is enabled.
+	TitleReservedHeight = titleFontSize + titleMarginY
 )
 
-var footerColor = color.RGBA{R: 128, G: 128, B: 128, A: 200}
+var (
+	footerColor = color.RGBA{R: 128, G: 128, B: 128, A: 200}
+	titleColor  = color.RGBA{R: 40, G: 40, B: 40, A: 255}
+)
 
 // drawnShape is implemented by every concrete shape that can be rendered.
 type drawnShape interface {
@@ -43,6 +54,7 @@ type Canvas struct {
 	height int
 	shapes []layeredShape
 	legend *LegendConfig
+	title  *string
 	footer *string
 }
 
@@ -135,6 +147,28 @@ func (c *Canvas) SetFooter(text string) {
 	c.footer = &text
 }
 
+// TitleText returns the current title text, or an empty string if no title
+// has been set. Primarily useful for testing.
+func (c *Canvas) TitleText() string {
+	if c.title == nil {
+		return ""
+	}
+
+	return *c.title
+}
+
+// SetTitle configures the title text for this canvas.
+// An empty string clears a previously set title.
+func (c *Canvas) SetTitle(text string) {
+	if text == "" {
+		c.title = nil
+
+		return
+	}
+
+	c.title = &text
+}
+
 // Render resolves all inks, sorts shapes by layer, selects the backend
 // from the file extension, and writes the output.
 func (c *Canvas) Render(outputPath string) error {
@@ -181,6 +215,14 @@ func (c *Canvas) RenderTo(backend Backend) error {
 
 	for _, s := range allShapes {
 		s.shape.drawTo(backend)
+	}
+
+	if c.title != nil {
+		pos := model.Position{
+			X: float64(c.width) / 2,
+			Y: titleMarginY,
+		}
+		backend.DrawText(pos, *c.title, titleColor, titleFontSize, model.AnchorMiddle, 0)
 	}
 
 	if c.footer != nil {

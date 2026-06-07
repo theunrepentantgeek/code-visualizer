@@ -6,22 +6,19 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
-// ResolveMetrics resolves disc-size, fill, and border metrics + palettes
-// and fills Common().Requested with the metrics the pipeline must collect.
-func ResolveMetrics(s *State) error {
-	cfg := s.Config
+// ResolveMetrics resolves disc-size, fill, and border metrics + palettes and
+// fills c.Requested.
+func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
+	r.DiscSize = metric.Name(stages.PtrString(cfg.DiscSize))
+	r.FillMetric = resolveFillMetric(cfg, r.DiscSize)
+	r.FillPalette = stages.ResolveFillPalette(cfg.Fill, r.FillMetric)
+	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	r.Labels = resolveLabels(cfg)
 
-	s.DiscSize = metric.Name(stages.PtrString(cfg.DiscSize))
-	s.FillMetric = resolveFillMetric(cfg, s.DiscSize)
-	s.FillPalette = stages.ResolveFillPalette(cfg.Fill, s.FillMetric)
-	s.BorderMetric, s.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
-	s.Labels = resolveLabels(cfg)
-
-	s.Common().Requested = stages.CollectRequestedMetrics(s.DiscSize, cfg.Fill, cfg.Border)
+	c.Requested = stages.CollectRequestedMetrics(r.DiscSize, cfg.Fill, cfg.Border)
 
 	return nil
 }
@@ -42,29 +39,28 @@ func resolveLabels(cfg *config.Radial) LabelMode {
 	return LabelAll
 }
 
-// BuildInksStage builds the radial inks and emits the "Rendering image" log line.
-func BuildInksStage(s *State) error {
-	c := s.Common()
+// BuildInksStage builds the radial inks and emits the Rendering image log line.
+func BuildInksStage(c *stages.CommonState, r *State) error {
 	canvasSize := min(c.Width, c.Height)
 
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
-	s.Inks = BuildInks(c.Root, s.FillMetric, s.FillPalette, s.BorderMetric, s.BorderPalette)
+	r.Inks = BuildInks(c.Root, r.FillMetric, r.FillPalette, r.BorderMetric, r.BorderPalette)
 
 	return nil
 }
 
 // BuildLegendStage builds the legend config from inks.
-func BuildLegendStage(s *State) error {
+func BuildLegendStage(c *stages.CommonState, r *State) error {
 	pos, orient := legend.ResolveOptions(
-		stages.PtrString(s.Config.Legend),
-		stages.PtrString(s.Config.LegendOrientation),
+		c.RootConfig.LegendPositionStr(),
+		c.RootConfig.LegendOrientationStr(),
 	)
-	s.LegendConfig = legend.Build(
+	r.LegendConfig = legend.Build(
 		pos, orient,
-		s.Inks.Fill, s.FillMetric,
-		s.Inks.Border, s.BorderMetric,
-		s.DiscSize,
+		r.Inks.Fill, r.FillMetric,
+		r.Inks.Border, r.BorderMetric,
+		r.DiscSize,
 	)
 
 	return nil
@@ -72,24 +68,24 @@ func BuildLegendStage(s *State) error {
 
 // LayoutStage runs the radial tree layout algorithm.
 // Radial uses a square canvas: canvasSize = min(Width, Height).
-func LayoutStage(s *State) error {
-	c := s.Common()
-	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
+func LayoutStage(c *stages.CommonState, r *State) error {
+	titleH := stages.EffectiveTitleHeight(c.RootConfig)
+	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
 	canvasSize := min(c.Width, availH)
 
-	s.Nodes = Layout(c.Root, canvasSize, s.DiscSize, s.Labels)
+	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.Labels)
 
 	return nil
 }
 
 // RenderStage renders the radial tree to a canvas and attaches the legend.
-func RenderStage(s *State) error {
-	c := s.Common()
+func RenderStage(c *stages.CommonState, r *State) error {
+	titleH := stages.EffectiveTitleHeight(c.RootConfig)
 	canvasSize := min(c.Width, c.Height)
 
-	cv := RenderToCanvas(&s.Nodes, c.Root, canvasSize, s.Inks)
-	if s.LegendConfig != nil {
-		cv.SetLegend(*s.LegendConfig)
+	cv := RenderToCanvas(&r.Nodes, c.Root, canvasSize, titleH, r.Inks)
+	if r.LegendConfig != nil {
+		cv.SetLegend(*r.LegendConfig)
 	}
 
 	c.Canvas = cv
@@ -98,8 +94,7 @@ func RenderStage(s *State) error {
 }
 
 // LogResult logs the final summary.
-func LogResult(s *State) error {
-	c := s.Common()
+func LogResult(c *stages.CommonState, r *State) error {
 	files, dirs := stages.CountAll(c.Root)
 	canvasSize := min(c.Width, c.Height)
 
@@ -109,22 +104,12 @@ func LogResult(s *State) error {
 		"directories", dirs,
 		"output", c.Output,
 		"canvas_size", canvasSize,
-		"disc_metric", string(s.DiscSize),
-		"fill_metric", string(s.FillMetric),
-		"fill_palette", string(s.FillPalette),
-		"border_metric", string(s.BorderMetric),
-		"border_palette", string(s.BorderPalette),
+		"disc_metric", string(r.DiscSize),
+		"fill_metric", string(r.FillMetric),
+		"fill_palette", string(r.FillPalette),
+		"border_metric", string(r.BorderMetric),
+		"border_palette", string(r.BorderPalette),
 	)
 
 	return nil
 }
-
-// Compile-time checks.
-var (
-	_ pipeline.Stage[*State] = ResolveMetrics
-	_ pipeline.Stage[*State] = BuildInksStage
-	_ pipeline.Stage[*State] = BuildLegendStage
-	_ pipeline.Stage[*State] = LayoutStage
-	_ pipeline.Stage[*State] = RenderStage
-	_ pipeline.Stage[*State] = LogResult
-)

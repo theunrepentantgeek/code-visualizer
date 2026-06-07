@@ -1,6 +1,9 @@
 imageSize:
     width: 1920
     height: 1920
+legend:
+    position: bottom-center
+    orientation: horizontal
 treemap: {}
 radial:
     discSize: file-lines
@@ -11,8 +14,6 @@ radial:
         metric: file-freshness
         palette: good-bad
     labels: all
-    legend: bottom-center
-    legendOrientation: horizontal
 bubbletree:
     labels: folders
 spiral:

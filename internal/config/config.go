@@ -35,11 +35,13 @@ type ImageSize struct {
 // by a CLI flag override).
 type Config struct {
 	ImageSize  *ImageSize    `yaml:"imageSize,omitempty"  json:"imageSize,omitempty"`
+	Legend     *Legend       `yaml:"legend,omitempty"     json:"legend,omitempty"`
 	Treemap    *Treemap      `yaml:"treemap,omitempty"    json:"treemap,omitempty"`
 	Radial     *Radial       `yaml:"radial,omitempty"     json:"radial,omitempty"`
 	Bubbletree *Bubbletree   `yaml:"bubbletree,omitempty" json:"bubbletree,omitempty"`
 	Spiral     *Spiral       `yaml:"spiral,omitempty"     json:"spiral,omitempty"`
 	Scatter    *Scatter      `yaml:"scatter,omitempty"    json:"scatter,omitempty"`
+	Title      *Title        `yaml:"title,omitempty"      json:"title,omitempty"`
 	Footer     *Footer       `yaml:"footer,omitempty"     json:"footer,omitempty"`
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 
@@ -155,6 +157,7 @@ func (c *Config) TryAutoLoad(outputPath string) error {
 func (c *Config) ForExport(vizName string) *Config {
 	exported := &Config{
 		ImageSize:  c.ImageSize,
+		Legend:     c.Legend,
 		FileFilter: c.FileFilter,
 		Source:     c.Source,
 	}
@@ -233,6 +236,53 @@ func (c *Config) applyLegacyImageSize(compat imageSizeCompatConfig) {
 	}
 }
 
+// LegendPositionStr returns the legend position string, or empty string when
+// the Legend field is nil.
+func (c *Config) LegendPositionStr() string {
+	if c == nil {
+		return ""
+	}
+
+	return c.Legend.PositionStr()
+}
+
+// LegendOrientationStr returns the legend orientation string, or empty string
+// when the Legend field is nil.
+func (c *Config) LegendOrientationStr() string {
+	if c == nil {
+		return ""
+	}
+
+	return c.Legend.OrientationStr()
+}
+
+// OverrideLegendPosition sets Legend.Position to v if v is non-empty.
+func (c *Config) OverrideLegendPosition(v string) {
+	if c.Legend == nil && v == "" {
+		return
+	}
+
+	c.ensureLegend()
+	c.Legend.OverridePosition(v)
+}
+
+// OverrideLegendOrientation sets Legend.Orientation to v if v is non-empty.
+func (c *Config) OverrideLegendOrientation(v string) {
+	if c.Legend == nil && v == "" {
+		return
+	}
+
+	c.ensureLegend()
+	c.Legend.OverrideOrientation(v)
+}
+
+// ensureLegend initialises Legend if it is nil.
+func (c *Config) ensureLegend() {
+	if c.Legend == nil {
+		c.Legend = &Legend{}
+	}
+}
+
 // OverrideWidth sets ImageSize.Width to v if v is non-zero.
 func (c *Config) OverrideWidth(v int) {
 	c.ensureImageSize()
@@ -243,6 +293,23 @@ func (c *Config) OverrideWidth(v int) {
 func (c *Config) OverrideHeight(v int) {
 	c.ensureImageSize()
 	overrideInt(&c.ImageSize.Height, v)
+}
+
+// OverrideTitleText sets Title.Text to v if v is non-empty.
+func (c *Config) OverrideTitleText(v string) {
+	if c.Title == nil && v == "" {
+		return
+	}
+
+	c.ensureTitle()
+	c.Title.OverrideText(v)
+}
+
+// ensureTitle initialises Title if it is nil.
+func (c *Config) ensureTitle() {
+	if c.Title == nil {
+		c.Title = &Title{}
+	}
 }
 
 // OverrideFooterText sets Footer.Text to v if v is non-empty.

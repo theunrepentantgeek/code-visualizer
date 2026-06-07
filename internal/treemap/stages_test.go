@@ -21,14 +21,14 @@ func TestResolveMetrics_SizeOnly(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	sizeStr := "file-size"
-	s := &treemap.State{
-		Config: &config.Treemap{Size: &sizeStr},
-	}
+	common := &stages.CommonState{}
+	viz := &treemap.State{}
+	cfg := &config.Treemap{Size: &sizeStr}
 
-	g.Expect(treemap.ResolveMetrics(s)).To(Succeed())
-	g.Expect(s.Size).To(Equal(metric.Name("file-size")))
-	g.Expect(s.FillMetric).To(Equal(metric.Name("file-size")))
-	g.Expect(s.Common().Requested).To(ConsistOf(metric.Name("file-size")))
+	g.Expect(treemap.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.Size).To(Equal(metric.Name("file-size")))
+	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-size")))
+	g.Expect(common.Requested).To(ConsistOf(metric.Name("file-size")))
 }
 
 func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
@@ -36,39 +36,16 @@ func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	sizeStr := "file-size"
-	s := &treemap.State{
-		Config: &config.Treemap{
-			Size: &sizeStr,
-			Fill: &config.MetricSpec{Metric: "file-type"},
-		},
+	common := &stages.CommonState{}
+	viz := &treemap.State{}
+	cfg := &config.Treemap{
+		Size: &sizeStr,
+		Fill: &config.MetricSpec{Metric: "file-type"},
 	}
 
-	g.Expect(treemap.ResolveMetrics(s)).To(Succeed())
-	g.Expect(s.FillMetric).To(Equal(metric.Name("file-type")))
-	g.Expect(s.Common().Requested).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
-}
-
-func TestState_CommonReturnsEmbeddedPointer(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	s := &treemap.State{}
-	c := s.Common()
-	c.Width = 42
-	g.Expect(s.CommonState.Width).To(Equal(42))
-}
-
-func TestState_IncludeBinary(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	on := &treemap.State{IncludeBinaryFiles: true}
-	off := &treemap.State{IncludeBinaryFiles: false}
-
-	g.Expect(on.IncludeBinary()).To(BeTrue())
-	g.Expect(off.IncludeBinary()).To(BeFalse())
-
-	var _ stages.BinaryFilterToggler = on
+	g.Expect(treemap.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-type")))
+	g.Expect(common.Requested).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
 func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
@@ -91,16 +68,16 @@ func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
 				Files: []*model.File{makeTestFile("a.go", "go", 100)},
 			}
 
-			s := &treemap.State{
-				CommonState: stages.CommonState{Root: root, Output: "out.png", Width: 100, Height: 100},
+			common := &stages.CommonState{Root: root, Output: "out.png", Width: 100, Height: 100}
+			viz := &treemap.State{
 				FillMetric:  filesystem.FileSize,
 				FillPalette: palette.Temperature,
 				Flat:        tc.flat,
 			}
 
-			g.Expect(treemap.BuildInksStage(s)).To(Succeed())
+			g.Expect(treemap.BuildInksStage(common, viz)).To(Succeed())
 
-			_, isWrapped := s.Inks.Fill.(*canvas.RadialGradientInk)
+			_, isWrapped := viz.Inks.Fill.(*canvas.RadialGradientInk)
 			g.Expect(isWrapped).To(Equal(tc.wantWrapped))
 		})
 	}
@@ -110,11 +87,8 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	s := &treemap.State{
-		Config: &config.Treemap{
-			Fill:   &config.MetricSpec{Metric: "file-type"},
-			Border: &config.MetricSpec{Metric: "file-lines"},
-		},
+	common := &stages.CommonState{}
+	viz := &treemap.State{
 		FillMetric:   metric.Name("file-type"),
 		BorderMetric: metric.Name("file-lines"),
 		Size:         metric.Name("file-size"),
@@ -123,15 +97,19 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 			Border: canvas.FixedInk(color.RGBA{R: 0, G: 0, B: 0, A: 255}),
 		},
 	}
+	cfg := &config.Treemap{
+		Fill:   &config.MetricSpec{Metric: "file-type"},
+		Border: &config.MetricSpec{Metric: "file-lines"},
+	}
 
-	g.Expect(treemap.BuildLegendStage(s)).To(Succeed())
-	g.Expect(s.LegendConfig).NotTo(BeNil())
+	g.Expect(treemap.BuildLegendStage(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.LegendConfig).NotTo(BeNil())
 
-	if s.LegendConfig == nil {
+	if viz.LegendConfig == nil {
 		return
 	}
 
-	g.Expect(s.LegendConfig.LabelSample).To(Equal([]string{
+	g.Expect(viz.LegendConfig.LabelSample).To(Equal([]string{
 		"file-name",
 		"file-size",
 		"file-type",
@@ -153,23 +131,23 @@ func TestLayoutStage_FooterEnabled_ReducesAvailableHeight(t *testing.T) {
 
 	const width, height = 800, 600
 
-	s := &treemap.State{
-		CommonState: stages.CommonState{
-			Root:       root,
-			Width:      width,
-			Height:     height,
-			RootConfig: cfg,
-		},
+	common := &stages.CommonState{
+		Root:       root,
+		Width:      width,
+		Height:     height,
+		RootConfig: cfg,
+	}
+	viz := &treemap.State{
 		Size:        metric.Name("file-size"),
 		FillMetric:  metric.Name("file-size"),
 		FillPalette: palette.Temperature,
 	}
 
-	g.Expect(treemap.LayoutStage(s)).To(Succeed())
+	g.Expect(treemap.LayoutStage(common, viz)).To(Succeed())
 
 	// The layout rectangle must not extend into the footer zone.
 	footerH := canvas.FooterReservedHeight
-	maxY := s.Root.Y + s.Root.H
+	maxY := viz.Root.Y + viz.Root.H
 	g.Expect(maxY).To(BeNumerically("<=", float64(height)-footerH),
 		"layout rect extends into footer zone")
 }
@@ -188,36 +166,36 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 
 	const width, height = 800, 600
 
-	sNoFooter := &treemap.State{
-		CommonState: stages.CommonState{
-			Root:       root,
-			Width:      width,
-			Height:     height,
-			RootConfig: cfgWithFooter,
-		},
+	commonNoFooter := &stages.CommonState{
+		Root:       root,
+		Width:      width,
+		Height:     height,
+		RootConfig: cfgWithFooter,
+	}
+	vizNoFooter := &treemap.State{
 		Size:        metric.Name("file-size"),
 		FillMetric:  metric.Name("file-size"),
 		FillPalette: palette.Temperature,
 	}
 
-	sWithFooter := &treemap.State{
-		CommonState: stages.CommonState{
-			Root:       root,
-			Width:      width,
-			Height:     height,
-			RootConfig: config.New(),
-		},
+	commonWithFooter := &stages.CommonState{
+		Root:       root,
+		Width:      width,
+		Height:     height,
+		RootConfig: config.New(),
+	}
+	vizWithFooter := &treemap.State{
 		Size:        metric.Name("file-size"),
 		FillMetric:  metric.Name("file-size"),
 		FillPalette: palette.Temperature,
 	}
 
-	g.Expect(treemap.LayoutStage(sNoFooter)).To(Succeed())
-	g.Expect(treemap.LayoutStage(sWithFooter)).To(Succeed())
+	g.Expect(treemap.LayoutStage(commonNoFooter, vizNoFooter)).To(Succeed())
+	g.Expect(treemap.LayoutStage(commonWithFooter, vizWithFooter)).To(Succeed())
 
 	// With footer hidden, layout uses more vertical space than when footer is shown.
-	maxYNoFooter := sNoFooter.Root.Y + sNoFooter.Root.H
-	maxYWithFooter := sWithFooter.Root.Y + sWithFooter.Root.H
+	maxYNoFooter := vizNoFooter.Root.Y + vizNoFooter.Root.H
+	maxYWithFooter := vizWithFooter.Root.Y + vizWithFooter.Root.H
 	g.Expect(maxYNoFooter).To(BeNumerically(">", maxYWithFooter),
 		"footer-hidden layout should use more height than footer-shown layout")
 }

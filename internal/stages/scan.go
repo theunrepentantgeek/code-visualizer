@@ -5,15 +5,12 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
-// ScanFilesystem walks Common().TargetPath, populates Common().Root, and
-// wires progress reporting based on Flags verbosity.
-func ScanFilesystem[S VizState](s S) error {
-	c := s.Common()
-
+// ScanFilesystem walks c.TargetPath, populates c.Root, and wires progress
+// reporting based on Flags verbosity.
+func ScanFilesystem(c *CommonState) error {
 	slog.Info("Scanning filesystem", "path", c.TargetPath)
 
 	scanProg, stopScanTicker := BuildScanProgress(c.Flags)
@@ -30,5 +27,3 @@ func ScanFilesystem[S VizState](s S) error {
 
 	return nil
 }
-
-var _ pipeline.Stage[VizState] = ScanFilesystem[VizState]
