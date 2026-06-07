@@ -126,7 +126,7 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, scatterviz.BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, scatterviz.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, scatterviz.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, scatterviz.LayoutStage)
 	pipeline.ApplyFuncXY(s, scatterviz.RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
@@ -151,6 +151,6 @@ func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
 	cfg.Scatter.OverrideSize(string(c.Size))
 	cfg.Scatter.OverrideFill(c.Fill)
 	cfg.Scatter.OverrideBorder(c.Border)
-	cfg.Scatter.OverrideLegend(c.Legend)
-	cfg.Scatter.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

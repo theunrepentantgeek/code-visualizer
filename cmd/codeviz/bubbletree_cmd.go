@@ -116,7 +116,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, bubbletree.BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, bubbletree.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, bubbletree.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, bubbletree.LayoutStage)
 	pipeline.ApplyFuncXY(s, bubbletree.RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
@@ -142,6 +142,6 @@ func (c *BubbletreeCmd) applyOverrides(cfg *config.Config) {
 	cfg.Bubbletree.OverrideFill(c.Fill)
 	cfg.Bubbletree.OverrideBorder(c.Border)
 	cfg.Bubbletree.OverrideLabels(c.Labels)
-	cfg.Bubbletree.OverrideLegend(c.Legend)
-	cfg.Bubbletree.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

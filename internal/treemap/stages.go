@@ -46,10 +46,9 @@ func BuildInksStage(c *stages.CommonState, t *State) error {
 
 // BuildLegendStage builds the legend config from inks.
 func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) error {
-	_ = c
 	pos, orient := legend.ResolveOptions(
-		stages.PtrString(cfg.Legend),
-		stages.PtrString(cfg.LegendOrientation),
+		c.RootConfig.LegendPositionStr(),
+		c.RootConfig.LegendOrientationStr(),
 	)
 
 	t.LegendConfig = legend.Build(
