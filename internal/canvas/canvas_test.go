@@ -768,3 +768,61 @@ func TestCanvas_NoFooter_NoExtraDrawCall(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.calls).To(BeEmpty())
 }
+
+func TestCanvas_SetTitle_RendersTextAtTop(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+	c.SetTitle("My Repository")
+
+	mb := newMockBackend()
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	g.Expect(mb.calls).To(HaveLen(1))
+	g.Expect(mb.calls[0].method).To(Equal("DrawText"))
+	g.Expect(mb.calls[0].text).To(Equal("My Repository"))
+	g.Expect(mb.calls[0].pos.X).To(Equal(400.0)) // width/2
+	g.Expect(mb.calls[0].anchor).To(Equal(AnchorMiddle))
+}
+
+func TestCanvas_SetTitle_EmptyString_NoTitleRendered(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+	c.SetTitle("some title")
+	c.SetTitle("") // clear it
+
+	mb := newMockBackend()
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(mb.calls).To(BeEmpty())
+}
+
+func TestCanvas_NoTitle_NoExtraDrawCall(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+
+	mb := newMockBackend()
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(mb.calls).To(BeEmpty())
+}
+
+func TestCanvas_TitleText_ReturnsSetValue(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+	g.Expect(c.TitleText()).To(BeEmpty())
+
+	c.SetTitle("Hello")
+	g.Expect(c.TitleText()).To(Equal("Hello"))
+
+	c.SetTitle("")
+	g.Expect(c.TitleText()).To(BeEmpty())
+}
