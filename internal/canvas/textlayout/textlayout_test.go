@@ -25,19 +25,19 @@ func TestMeasureString_GrowsWithFontSize(t *testing.T) {
 	g.Expect(largeHeight).To(BeNumerically(">", smallHeight))
 }
 
-
 func TestMeasureStrings_MatchesMeasureStringPerCall(t *testing.T) {
-t.Parallel()
-g := NewGomegaWithT(t)
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-lines := []string{"alpha.go", "128", "hello world"}
-const size = 14.0
+	lines := []string{"alpha.go", "128", "hello world"}
 
-batchWidths, batchH := MeasureStrings(lines, size)
+	const size = 14.0
 
-for i, line := range lines {
-w, h := MeasureString(line, size)
-g.Expect(batchWidths[i]).To(BeNumerically("~", w, 0.01), "width mismatch for line %d", i)
-g.Expect(batchH).To(BeNumerically("~", h, 0.01), "height mismatch for line %d", i)
-}
+	batchWidths, batchH := MeasureStrings(lines, size)
+
+	for i, line := range lines {
+		w, h := MeasureString(line, size)
+		g.Expect(batchWidths[i]).To(BeNumerically("~", w, 0.01), "width mismatch for line %d", i)
+		g.Expect(batchH).To(BeNumerically("~", h, 0.01), "height mismatch for line %d", i)
+	}
 }
