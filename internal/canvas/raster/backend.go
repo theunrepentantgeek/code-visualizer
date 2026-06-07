@@ -112,7 +112,7 @@ func (r *rasterBackend) drawRadialGradientRect(
 			dx := float64(px) + 0.5 - fx
 			dist := math.Sqrt(dx*dx + dy2)
 			t := min(dist*invMax, 1.0)
-			img.SetRGBA(px, py, color.RGBA{ //nolint:gosec // t∈[0,1] and channels ∈[0,255]: result is always in [0,255]
+			img.SetRGBA(px, py, color.RGBA{
 				R: uint8(cr + dr*t),
 				G: uint8(cg + dg*t),
 				B: uint8(cb + db*t),
@@ -215,7 +215,7 @@ func (r *rasterBackend) drawRadialGradientDisc(
 			gdy := float64(py) + 0.5 - fy
 			dist := math.Sqrt(gdx*gdx + gdy*gdy)
 			t := min(dist*invRadius, 1.0)
-			img.SetRGBA(px, py, color.RGBA{ //nolint:gosec // t∈[0,1] and channels ∈[0,255]: result is always in [0,255]
+			img.SetRGBA(px, py, color.RGBA{
 				R: uint8(cr + dr*t),
 				G: uint8(cg + dg*t),
 				B: uint8(cb + db*t),
