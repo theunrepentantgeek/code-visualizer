@@ -131,3 +131,108 @@ func TestEffectiveFooterHeight_FooterShown_ReturnsPositive(t *testing.T) {
 	g.Expect(height).To(BeNumerically(">", 0))
 	g.Expect(height).To(Equal(int(canvas.FooterReservedHeight)))
 }
+
+func TestApplyTitle_NilCanvas_ReturnsNil(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := &stages.CommonState{
+		Canvas:     nil,
+		RootConfig: config.New(),
+	}
+
+	g.Expect(stages.ApplyTitle(c)).To(Succeed())
+}
+
+func TestApplyTitle_NilRootConfig_ReturnsNil(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := &stages.CommonState{
+		Canvas:     canvas.NewCanvas(100, 100),
+		RootConfig: nil,
+	}
+
+	g.Expect(stages.ApplyTitle(c)).To(Succeed())
+}
+
+func TestApplyTitle_NoTitle_NoTitleOnCanvas(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	// Default config has no title text; ShowTitle() is false.
+
+	cv := canvas.NewCanvas(800, 600)
+	c := &stages.CommonState{
+		Canvas:     cv,
+		RootConfig: cfg,
+	}
+
+	g.Expect(stages.ApplyTitle(c)).To(Succeed())
+	g.Expect(cv.TitleText()).To(BeEmpty())
+}
+
+func TestApplyTitle_WithTitle_SetsTitleOnCanvas(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.OverrideTitleText("My Project")
+
+	cv := canvas.NewCanvas(800, 600)
+	c := &stages.CommonState{
+		Canvas:     cv,
+		RootConfig: cfg,
+	}
+
+	g.Expect(stages.ApplyTitle(c)).To(Succeed())
+	g.Expect(cv.TitleText()).To(Equal("My Project"))
+}
+
+func TestApplyTitle_TitleHidden_NoTitleOnCanvas(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.OverrideTitleText("My Project")
+
+	hidden := true
+	cfg.Title.Hidden = &hidden
+
+	cv := canvas.NewCanvas(800, 600)
+	c := &stages.CommonState{
+		Canvas:     cv,
+		RootConfig: cfg,
+	}
+
+	g.Expect(stages.ApplyTitle(c)).To(Succeed())
+	g.Expect(cv.TitleText()).To(BeEmpty())
+}
+
+func TestEffectiveTitleHeight_NilConfig_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(stages.EffectiveTitleHeight(nil)).To(Equal(0))
+}
+
+func TestEffectiveTitleHeight_NoTitle_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	g.Expect(stages.EffectiveTitleHeight(cfg)).To(Equal(0))
+}
+
+func TestEffectiveTitleHeight_TitleShown_ReturnsPositive(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.OverrideTitleText("My Project")
+
+	height := stages.EffectiveTitleHeight(cfg)
+	g.Expect(height).To(BeNumerically(">", 0))
+	g.Expect(height).To(Equal(int(canvas.TitleReservedHeight)))
+}

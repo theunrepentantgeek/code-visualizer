@@ -14,10 +14,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func radialTestFile(name, ext string, size int64) *model.File {
@@ -107,7 +109,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 	root := radialTestRoot()
 	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, inks)
+	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "radial.png")
 	err := cv.Render(out)
@@ -130,7 +132,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 	root := radialTestRoot()
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, inks)
+	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "radial.svg")
 	err := cv.Render(out)
@@ -181,7 +183,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 
 	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, inks)
+	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "nested.png")
 	err := cv.Render(out)
@@ -203,7 +205,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, inks)
+	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "empty.png")
 	err := cv.Render(out)
@@ -215,6 +217,44 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 	if info != nil {
 		g.Expect(info.Size()).To(BeNumerically(">", 0))
 	}
+}
+
+func TestRenderStage_DefaultFooterKeepsConfiguredCanvasSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := radialTestRoot()
+	cfg := config.New()
+	common := &stages.CommonState{
+		Root:       root,
+		RootConfig: cfg,
+		Width:      2000,
+		Height:     1080,
+	}
+	state := &State{
+		DiscSize:    filesystem.FileSize,
+		FillMetric:  filesystem.FileSize,
+		FillPalette: palette.Temperature,
+		Labels:      LabelNone,
+	}
+
+	g.Expect(BuildInksStage(common, state)).To(Succeed())
+	g.Expect(LayoutStage(common, state)).To(Succeed())
+	g.Expect(RenderStage(common, state)).To(Succeed())
+
+	out := filepath.Join(t.TempDir(), "radial-stage.png")
+	g.Expect(common.Canvas.Render(out)).To(Succeed())
+
+	f, err := os.Open(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	defer f.Close()
+
+	cfgOut, format, err := image.DecodeConfig(f)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(format).To(Equal("png"))
+	g.Expect(cfgOut.Width).To(Equal(1080))
+	g.Expect(cfgOut.Height).To(Equal(1080))
 }
 
 func TestCollectRadialDiscs_SortOrder(t *testing.T) {

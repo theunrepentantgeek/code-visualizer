@@ -41,6 +41,7 @@ type Config struct {
 	Bubbletree *Bubbletree   `yaml:"bubbletree,omitempty" json:"bubbletree,omitempty"`
 	Spiral     *Spiral       `yaml:"spiral,omitempty"     json:"spiral,omitempty"`
 	Scatter    *Scatter      `yaml:"scatter,omitempty"    json:"scatter,omitempty"`
+	Title      *Title        `yaml:"title,omitempty"      json:"title,omitempty"`
 	Footer     *Footer       `yaml:"footer,omitempty"     json:"footer,omitempty"`
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 
@@ -292,6 +293,23 @@ func (c *Config) OverrideWidth(v int) {
 func (c *Config) OverrideHeight(v int) {
 	c.ensureImageSize()
 	overrideInt(&c.ImageSize.Height, v)
+}
+
+// OverrideTitleText sets Title.Text to v if v is non-empty.
+func (c *Config) OverrideTitleText(v string) {
+	if c.Title == nil && v == "" {
+		return
+	}
+
+	c.ensureTitle()
+	c.Title.OverrideText(v)
+}
+
+// ensureTitle initialises Title if it is nil.
+func (c *Config) ensureTitle() {
+	if c.Title == nil {
+		c.Title = &Title{}
+	}
 }
 
 // OverrideFooterText sets Footer.Text to v if v is non-empty.

@@ -57,3 +57,36 @@ func EffectiveFooterHeight(cfg *config.Config) int {
 
 	return int(canvas.FooterReservedHeight)
 }
+
+// ApplyTitle sets the title on c.Canvas from RootConfig.Title.
+// If the Title is nil, hidden, or has no text, the canvas title is left unset.
+func ApplyTitle(c *CommonState) error {
+	if c.Canvas == nil || c.RootConfig == nil {
+		return nil
+	}
+
+	title := c.RootConfig.Title
+	if !title.ShowTitle() {
+		return nil
+	}
+
+	c.Canvas.SetTitle(*title.Text)
+
+	return nil
+}
+
+// EffectiveTitleHeight returns the number of pixels that the title occupies
+// when rendered. Layout stages subtract this from the top of the available
+// area so that visualisation content does not overlap the title.
+// Returns 0 when cfg is nil or the title is not shown.
+func EffectiveTitleHeight(cfg *config.Config) int {
+	if cfg == nil {
+		return 0
+	}
+
+	if !cfg.Title.ShowTitle() {
+		return 0
+	}
+
+	return int(canvas.TitleReservedHeight)
+}

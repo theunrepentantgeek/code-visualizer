@@ -29,6 +29,7 @@ type TreemapCmd struct {
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
 
+	Title      string `default:"" help:"Override title text on the generated image." optional:""`
 	Footer     string `default:"" help:"Override footer text on the generated image." optional:""`
 	HideFooter bool   `default:"false" help:"Suppress the attribution footer." name:"hide-footer" optional:""`
 
@@ -131,6 +132,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncXY(s, treemap.RenderStage)
 	pipeline.ApplyFuncXYZ(s, treemap.LabelStage)
 	pipeline.ApplyFuncXY(s, treemap.ApplyCanvasBlockLabels)
+	pipeline.ApplyFuncX(s, stages.ApplyTitle)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 	pipeline.ApplyFuncXY(s, treemap.LogResult)
@@ -143,6 +145,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 	cfg.OverrideWidth(c.Width)
 	cfg.OverrideHeight(c.Height)
+	cfg.OverrideTitleText(c.Title)
 	cfg.OverrideFooterText(c.Footer)
 	cfg.OverrideHideFooter(c.HideFooter)
 	cfg.Treemap.OverrideSize(string(c.Size))
