@@ -103,3 +103,15 @@ func Test_store_StoresValue(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v.name).To(Equal("x"))
 }
+
+func TestLookup_WhenStoredValueTypeMismatchesKey_PanicsWithHelpfulMessage(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState()
+	state.content[keyOf[Kind]()] = Color{name: "wrong-type"}
+
+	g.Expect(func() {
+		_, _ = lookup[Kind](state)
+	}).To(PanicWith(ContainSubstring("pipeline.lookup: stored value type mismatch")))
+}

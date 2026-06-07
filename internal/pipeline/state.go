@@ -37,8 +37,11 @@ func lookup[S any](s *State) (S, bool) {
 
 	key := keyOf[S]()
 	if v, ok := s.content[key]; ok {
-		//nolint:revive // Invariant is that this value will be of type S
-		return v.(S), true
+		if typedValue, typeOK := v.(S); typeOK {
+			return typedValue, true
+		}
+
+		panic("pipeline.lookup: stored value type mismatch for " + key.String())
 	}
 
 	return zero, false
