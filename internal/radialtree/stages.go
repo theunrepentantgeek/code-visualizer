@@ -81,8 +81,7 @@ func LayoutStage(c *stages.CommonState, r *State) error {
 // RenderStage renders the radial tree to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, r *State) error {
 	titleH := stages.EffectiveTitleHeight(c.RootConfig)
-	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
-	canvasSize := min(c.Width, availH)
+	canvasSize := min(c.Width, c.Height)
 
 	cv := RenderToCanvas(&r.Nodes, c.Root, canvasSize, titleH, r.Inks)
 	if r.LegendConfig != nil {
