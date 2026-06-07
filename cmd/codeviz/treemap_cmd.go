@@ -151,8 +151,8 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 	cfg.Treemap.OverrideSize(string(c.Size))
 	cfg.Treemap.OverrideFill(c.Fill)
 	cfg.Treemap.OverrideBorder(c.Border)
-	cfg.Treemap.OverrideLegend(c.Legend)
-	cfg.Treemap.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }
 
 // ptrString safely dereferences a *string, returning "" if nil.

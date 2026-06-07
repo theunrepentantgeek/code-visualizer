@@ -114,7 +114,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncXY(s, radialtree.BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, radialtree.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, radialtree.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, radialtree.LayoutStage)
 	pipeline.ApplyFuncXY(s, radialtree.RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyTitle)
@@ -142,6 +142,6 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideFill(c.Fill)
 	cfg.Radial.OverrideBorder(c.Border)
 	cfg.Radial.OverrideLabels(c.Labels)
-	cfg.Radial.OverrideLegend(c.Legend)
-	cfg.Radial.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

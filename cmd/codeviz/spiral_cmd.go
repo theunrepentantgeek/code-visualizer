@@ -121,7 +121,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncXY(s, spiral.BuildTimeBucketsStage)
 	pipeline.ApplyFuncXY(s, spiral.AggregateBucketMetricsStage)
 	pipeline.ApplyFuncXY(s, spiral.BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, spiral.BuildLegendStage)
+	pipeline.ApplyFuncXY(s, spiral.BuildLegendStage)
 	pipeline.ApplyFuncXY(s, spiral.LayoutStage)
 	pipeline.ApplyFuncXY(s, spiral.RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyTitle)
@@ -150,6 +150,6 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.Spiral.OverrideFill(c.Fill)
 	cfg.Spiral.OverrideBorder(c.Border)
 	cfg.Spiral.OverrideLabels(c.Labels)
-	cfg.Spiral.OverrideLegend(c.Legend)
-	cfg.Spiral.OverrideLegendOrientation(c.LegendOrientation)
+	cfg.OverrideLegendPosition(c.Legend)
+	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }
