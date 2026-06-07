@@ -95,8 +95,14 @@ func (r *rasterBackend) drawRadialGradientRect(
 
 	// Precompute float64 colour channels and deltas once outside both loops
 	// to avoid repeated uint8→float64 conversions on every pixel.
-	cr, cg, cb, ca := float64(grad.Center.R), float64(grad.Center.G), float64(grad.Center.B), float64(grad.Center.A)
-	dr, dg, db, da := float64(grad.Edge.R)-cr, float64(grad.Edge.G)-cg, float64(grad.Edge.B)-cb, float64(grad.Edge.A)-ca
+	cr := float64(grad.Center.R)
+	cg := float64(grad.Center.G)
+	cb := float64(grad.Center.B)
+	ca := float64(grad.Center.A)
+	dr := float64(grad.Edge.R) - cr
+	dg := float64(grad.Edge.G) - cg
+	db := float64(grad.Edge.B) - cb
+	da := float64(grad.Edge.A) - ca
 
 	for py := y0; py < y1; py++ {
 		dy := float64(py) + 0.5 - fy
@@ -186,8 +192,14 @@ func (r *rasterBackend) drawRadialGradientDisc(
 
 	// Precompute float64 colour channels and deltas once outside both loops
 	// to avoid repeated uint8→float64 conversions on every pixel.
-	cr, cg, cb, ca := float64(grad.Center.R), float64(grad.Center.G), float64(grad.Center.B), float64(grad.Center.A)
-	dr, dg, db, da := float64(grad.Edge.R)-cr, float64(grad.Edge.G)-cg, float64(grad.Edge.B)-cb, float64(grad.Edge.A)-ca
+	cr := float64(grad.Center.R)
+	cg := float64(grad.Center.G)
+	cb := float64(grad.Center.B)
+	ca := float64(grad.Center.A)
+	dr := float64(grad.Edge.R) - cr
+	dg := float64(grad.Edge.G) - cg
+	db := float64(grad.Edge.B) - cb
+	da := float64(grad.Edge.A) - ca
 
 	for py := y0; py < y1; py++ {
 		dy := float64(py) + 0.5 - center.Y
