@@ -210,6 +210,7 @@ func TestForEachArcTextRune_MultiByteRunes_UsesRuneSpacing(t *testing.T) {
 	const fontSize = 14.0
 
 	var runes []rune
+
 	var angles []float64
 
 	forEachArcTextRune("héllo", fontSize, 100-model.ArcTextInset, func(ch rune, angle float64) {
