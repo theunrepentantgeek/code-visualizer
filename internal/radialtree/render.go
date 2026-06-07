@@ -17,19 +17,24 @@ const (
 )
 
 // RenderToCanvas walks the layout and model trees, adding shapes to the canvas.
-// canvasSize is the side length (pixels) of the square canvas.
+// canvasSize is the side length (pixels) of the square content area.
+// topOffset is the number of pixels to reserve at the top (e.g. for a title);
+// the canvas height becomes canvasSize + topOffset and the content centre is
+// shifted down by topOffset so it fits below the reserved area.
 func RenderToCanvas(
 	nodes *RadialNode,
 	root *model.Directory,
 	canvasSize int,
+	topOffset int,
 	inks Inks,
 ) *canvas.Canvas {
-	cv := canvas.NewCanvas(canvasSize, canvasSize)
+	canvasHeight := canvasSize + topOffset
+	cv := canvas.NewCanvas(canvasSize, canvasHeight)
 
 	cx := float64(canvasSize) / 2.0
-	cy := float64(canvasSize) / 2.0
+	cy := float64(canvasSize)/2.0 + float64(topOffset)
 
-	addBackground(cv, canvasSize)
+	addBackground(cv, canvasSize, canvasHeight)
 	addEdges(cv, *nodes, cx, cy)
 	addDiscs(cv, nodes, root, cx, cy, inks)
 	addLabels(cv, *nodes, cx, cy, inks)
@@ -38,7 +43,7 @@ func RenderToCanvas(
 }
 
 // addBackground adds a white background rectangle.
-func addBackground(cv *canvas.Canvas, canvasSize int) {
+func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        canvas.FixedInk(bgColour),
@@ -49,8 +54,8 @@ func addBackground(cv *canvas.Canvas, canvasSize int) {
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec:  bgSpec,
-		W:     float64(canvasSize),
-		H:     float64(canvasSize),
+		W:     float64(canvasWidth),
+		H:     float64(canvasHeight),
 		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 }

@@ -70,7 +70,8 @@ func BuildLegendStage(c *stages.CommonState, r *State, cfg *config.Radial) error
 // LayoutStage runs the radial tree layout algorithm.
 // Radial uses a square canvas: canvasSize = min(Width, Height).
 func LayoutStage(c *stages.CommonState, r *State) error {
-	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig)
+	titleH := stages.EffectiveTitleHeight(c.RootConfig)
+	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
 	canvasSize := min(c.Width, availH)
 
 	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.Labels)
@@ -80,9 +81,11 @@ func LayoutStage(c *stages.CommonState, r *State) error {
 
 // RenderStage renders the radial tree to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, r *State) error {
-	canvasSize := min(c.Width, c.Height)
+	titleH := stages.EffectiveTitleHeight(c.RootConfig)
+	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
+	canvasSize := min(c.Width, availH)
 
-	cv := RenderToCanvas(&r.Nodes, c.Root, canvasSize, r.Inks)
+	cv := RenderToCanvas(&r.Nodes, c.Root, canvasSize, titleH, r.Inks)
 	if r.LegendConfig != nil {
 		cv.SetLegend(*r.LegendConfig)
 	}

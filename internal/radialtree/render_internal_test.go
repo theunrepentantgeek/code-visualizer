@@ -107,7 +107,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 	root := radialTestRoot()
 	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, inks)
+	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "radial.png")
 	err := cv.Render(out)
@@ -130,7 +130,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 	root := radialTestRoot()
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, inks)
+	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "radial.svg")
 	err := cv.Render(out)
@@ -181,7 +181,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 
 	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, inks)
+	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "nested.png")
 	err := cv.Render(out)
@@ -203,7 +203,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
 	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, inks)
+	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "empty.png")
 	err := cv.Render(out)
