@@ -50,8 +50,8 @@ type layeredShape struct {
 // Canvas is a retained-then-render drawing surface.
 // Shapes are added with layer assignments, then rendered in batch.
 type Canvas struct {
-	width  int
-	height int
+	width       int
+	height      int
 	shapes      []layeredShape
 	legend      *LegendConfig
 	title       *string

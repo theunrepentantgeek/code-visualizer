@@ -47,6 +47,7 @@ func TestLayoutStage_ReservesLegendSpace(t *testing.T) {
 			cfg := testLegendConfig(tt.position, tt.orientation)
 			common := &stages.CommonState{Root: testLayoutRoot(), Width: 1200, Height: 800}
 			stages.InitDrawingBounds(common) //nolint:errcheck // always succeeds
+
 			viz := &State{
 				Size:         filesystem.FileSize,
 				Labels:       LabelAll,
