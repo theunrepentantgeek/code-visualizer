@@ -52,18 +52,31 @@ type layeredShape struct {
 type Canvas struct {
 	width  int
 	height int
-	shapes []layeredShape
-	legend *LegendConfig
-	title  *string
-	footer *string
+	shapes      []layeredShape
+	legend      *LegendConfig
+	title       *string
+	footer      *string
+	drawingMinY int // top of content area (pixels below title)
+	drawingMaxY int // bottom of content area (pixels above footer)
 }
 
 // NewCanvas creates a canvas for the given dimensions.
 func NewCanvas(width, height int) *Canvas {
 	return &Canvas{
-		width:  width,
-		height: height,
+		width:       width,
+		height:      height,
+		drawingMaxY: height, // default: full canvas
 	}
+}
+
+// SetDrawingBounds stores the vertical drawing bounds for legend placement.
+// topY is the first pixel available for content (0 unless there's a title).
+// bottomY is the last+1 pixel available (height unless there's a footer).
+// Call this before Render so top-center / bottom-center legends are placed
+// below the title and above the footer respectively.
+func (c *Canvas) SetDrawingBounds(topY, bottomY int) {
+	c.drawingMinY = topY
+	c.drawingMaxY = bottomY
 }
 
 // AddRectangle records a rectangle on the given layer.

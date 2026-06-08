@@ -71,13 +71,13 @@ func BuildLegendStage(c *stages.CommonState, b *State) error {
 // LayoutStage reserves legend space, runs the bubble layout algorithm, and
 // offsets the result into the remaining canvas area.
 func LayoutStage(c *stages.CommonState, b *State) error {
-	titleH := stages.EffectiveTitleHeight(c.RootConfig)
-	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
+	bounds := c.DrawingBounds
+	availH := bounds.Height()
 	layoutW, layoutH := legend.ReserveAndLayout(b.LegendConfig, c.Width, availH)
 
 	b.Nodes = Layout(c.Root, layoutW, layoutH, b.Size, b.Labels)
 
-	dx, dy := float64(0), float64(titleH)
+	dx, dy := float64(0), float64(bounds.MinY)
 
 	if layoutW < c.Width || layoutH < availH {
 		if b.LegendConfig != nil {
