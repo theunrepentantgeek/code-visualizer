@@ -26,6 +26,7 @@ type CLI struct {
 	ExportData   string `help:"Write computed metrics to file (.json or .yaml/.yml)." name:"export-data" optional:""`
 
 	Render       RenderCmd       `cmd:"" help:"Render a visualization."`
+	Run          RunCmd          `cmd:"" help:"Run a preset visualization."`
 	HelpMetrics  HelpMetricsCmd  `cmd:"" help:"List all available metrics."`
 	HelpPalettes HelpPalettesCmd `cmd:"" help:"List all available colour palettes."`
 }
