@@ -5,6 +5,7 @@
 
 # Go
 bin/
+build/
 hack/tools/
 *.exe
 *.test
