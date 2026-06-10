@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-10T00:00:00Z",
-  "run_id": "27254515991",
+  "last_run": "2026-06-11T00:00:00Z",
+  "run_id": "27290130520",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 381,
+  "backlog_cursor": 385,
   "comments_made": {
     "324": "2026-06-01",
     "325": "2026-06-01",
@@ -14,37 +14,40 @@
     "354": "2026-06-02",
     "355": "2026-06-02",
     "320": "2026-06-04",
-    "373": "2026-06-07",
-    "374": "2026-06-07"
+    "373": "2026-06-08",
+    "374": "2026-06-07",
+    "385": "2026-06-11"
   },
   "prs_created": {
     "352": { "issue": 350, "branch": "repo-assist/feat-attribution-footer", "date": "2026-06-01", "status": "merged" },
     "357": { "issue": 355, "branch": "repo-assist/fix-issue-355-footer-space", "date": "2026-06-02", "status": "merged" },
-    "358": { "issue": 354, "branch": "repo-assist/feat-viz-title-354-a0b6fbf2660dd9f4", "date": "2026-06-02", "status": "merged" },
-    "359": { "issue": 334, "branch": "repo-assist/refactor-export-metrics-334-b3a05bacfde6bbe7", "date": "2026-06-03", "status": "merged" },
+    "358": { "issue": 354, "branch": "repo-assist/feat-viz-title-354", "date": "2026-06-02", "status": "merged" },
+    "359": { "issue": 334, "branch": "repo-assist/refactor-export-metrics-334", "date": "2026-06-03", "status": "merged" },
     "360": { "issue": null, "branch": "repo-assist/perf-bubbletree-sqrt-2026-06-03", "date": "2026-06-03", "status": "merged" },
-    "362": { "issue": null, "branch": "repo-assist/test-stages-errors-2026-06-04-17f511a0f39c8fc8", "date": "2026-06-04", "status": "merged" },
-    "363": { "issue": 320, "branch": "repo-assist/feat-legend-config-320-c284240d91ddffbf", "date": "2026-06-04", "status": "merged" },
-    "364": { "issue": null, "branch": "repo-assist/perf-raster-gradient-2026-06-05-6d26fb4-af37b7c774ce41e5", "date": "2026-06-05", "status": "open", "description": "perf(raster): optimise pixel-loop hot path" },
-    "365": { "issue": null, "branch": "repo-assist/fix-arc-text-rune-index-e98d520ab4eba20b", "date": "2026-06-05", "status": "merged" },
-    "367": { "issue": null, "branch": "repo-assist/perf-blocklabel-fitting-2026-06-06-4009cdaefc89b1be", "date": "2026-06-06", "status": "merged" },
-    "377": { "issue": null, "branch": "repo-assist/test-canvas-title-dims-2026-06-07-433554563ec75fd5", "date": "2026-06-07", "status": "open", "description": "test(canvas,stages): add SetTitle/TitleText + ResolveDimensions tests" },
-    "379": { "issue": 374, "branch": "repo-assist/feat-run-presets-374-2026-06-08-362e6cd0d0232c3b", "date": "2026-06-08", "status": "open", "description": "feat(cmd): add run command with named presets" },
-    "380": { "issue": 373, "branch": "repo-assist/feat-drawing-bounds-373-2026-06-08-1792c59da521530c-401e7961816c3737", "date": "2026-06-08", "status": "open", "description": "feat(stages): add DrawingBounds to CommonState, fix legend overlap" },
+    "362": { "issue": null, "branch": "repo-assist/test-stages-errors-2026-06-04", "date": "2026-06-04", "status": "merged" },
+    "363": { "issue": 320, "branch": "repo-assist/feat-legend-config-320", "date": "2026-06-04", "status": "merged" },
+    "365": { "issue": null, "branch": "repo-assist/fix-arc-text-rune-index", "date": "2026-06-05", "status": "merged" },
+    "367": { "issue": null, "branch": "repo-assist/perf-blocklabel-fitting-2026-06-06", "date": "2026-06-06", "status": "merged" },
+    "377": { "issue": null, "branch": "repo-assist/test-canvas-title-dims-2026-06-07", "date": "2026-06-07", "status": "merged" },
+    "379": { "issue": 374, "branch": "repo-assist/feat-run-presets-374-2026-06-08", "date": "2026-06-08", "status": "open", "description": "feat(cmd): add run command with named presets" },
+    "380": { "issue": 373, "branch": "repo-assist/feat-drawing-bounds-373-2026-06-08", "date": "2026-06-08", "status": "merged" },
     "381": { "issue": null, "branch": "repo-assist/test-config-scatter-dims-2026-06-09", "date": "2026-06-09", "status": "open", "description": "test(config,stages): Scatter overrides + Spiral/Radial/Treemap Fill/Border + ResolveDimensions" },
-    "382": { "issue": null, "branch": "repo-assist/perf-svg-grad-dedup-2026-06-09", "date": "2026-06-09", "status": "open", "description": "perf(svg): deduplicate identical radial gradient definitions" },
-    "eng-build-release-2026-06-10": { "issue": 378, "branch": "repo-assist/eng-build-release-2026-06-10", "date": "2026-06-10", "status": "open - pending PR number", "description": "feat(build): add cross-platform release build task, closes #378" },
-    "perf-svg-colour-cache-2026-06-10": { "issue": null, "branch": "repo-assist/perf-svg-colour-cache-2026-06-10", "date": "2026-06-10", "status": "open - pending PR number", "description": "perf(svg): cache colour CSS strings to reduce allocations" }
+    "382": { "issue": null, "branch": "repo-assist/perf-svg-grad-dedup-2026-06-09", "date": "2026-06-09", "status": "merged" },
+    "383": { "issue": 378, "branch": "repo-assist/eng-build-release-2026-06-10-1c7e770035649680", "date": "2026-06-10", "status": "open", "description": "feat(build): add cross-platform release build task, closes #378. Updated this run to add build:release step to release.yml" },
+    "384": { "issue": null, "branch": "repo-assist/perf-svg-colour-cache-2026-06-10-35282432aef07789", "date": "2026-06-10", "status": "open", "description": "perf(svg): cache colour CSS strings to reduce allocations" },
+    "fix-385": { "issue": 385, "branch": "repo-assist/fix-issue-385-metric-progress-info", "date": "2026-06-11", "status": "open - pending PR number", "description": "fix(stages): restore periodic Info-level metric progress logging, closes #385" },
+    "progress-tests": { "issue": null, "branch": "repo-assist/improve-progress-tests", "date": "2026-06-11", "status": "open - pending PR number", "description": "test(stages): add progress function tests; simplify RunProviders with defer" }
   },
   "issues_created": {
     "361": { "date": "2026-06-04", "description": "chore(deps): update golang.org/x indirect deps — go.mod protected, manual action needed" },
-    "378": { "date": "2026-06-08", "description": "ci(release): add cross-platform build task — now addressed by PR eng-build-release-2026-06-10" }
+    "378": { "date": "2026-06-08", "description": "ci(release): add cross-platform build task — addressed by PR #383" }
   },
   "issues_labelled": {
     "354": ["enhancement"],
     "355": ["bug"],
     "373": ["enhancement", "refactor"],
-    "374": ["enhancement"]
+    "374": ["enhancement"],
+    "385": ["bug"]
   },
   "maintainer_preferences": [
     "Do not move helpers to new packages — keep refactors within-package",
@@ -52,5 +55,5 @@
     "Title feature: one --title TEXT flag only (not per-command separate flags)",
     "go.mod and go.sum are protected files — cannot be pushed by automation"
   ],
-  "notes": "Open Repo Assist PRs: #364 (raster gradient perf), #377 (test canvas title), #379 (run presets, closes #374), #380 (DrawingBounds, closes #373), #381 (test config/scatter dims), #382 (SVG gradient dedup). Two new PRs pending numbers: eng-build-release-2026-06-10 (closes #378), perf-svg-colour-cache-2026-06-10 (SVG colour cache). All open issues already have recent RA comments; no new human activity. Refactor issues #324-335 awaiting maintainer. Issues #251, #349, #361 blocked/superseded."
+  "notes": "Open Repo Assist PRs: #379 (run presets closes #374), #381 (test config/scatter), #383 (build:release closes #378, updated to add release.yml step), #384 (SVG colour cache). Two new PRs pending numbers: fix-issue-385-metric-progress-info (closes #385 bug), improve-progress-tests (progress tests + defer cleanup). Issue #385 commented with root cause. Refactor issues #324-335 awaiting maintainer. Issues #251, #349, #361 blocked/superseded."
 }
