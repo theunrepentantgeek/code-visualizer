@@ -67,13 +67,13 @@ func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) erro
 // LayoutStage reserves legend space, lays out rectangles, and applies the
 // resulting offset.
 func LayoutStage(c *stages.CommonState, t *State) error {
-	titleH := stages.EffectiveTitleHeight(c.RootConfig)
-	availH := c.Height - stages.EffectiveFooterHeight(c.RootConfig) - titleH
+	bounds := c.DrawingBounds
+	availH := bounds.Height()
 	layoutW, layoutH := legend.ReserveAndLayout(t.LegendConfig, c.Width, availH)
 
 	rect := Layout(c.Root, layoutW, layoutH, t.Size)
 
-	dx, dy := float64(0), float64(titleH)
+	dx, dy := float64(0), float64(bounds.MinY)
 
 	if layoutW < c.Width || layoutH < availH {
 		if t.LegendConfig != nil {
