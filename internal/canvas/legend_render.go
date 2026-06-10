@@ -40,9 +40,7 @@ func (c *Canvas) decomposeLegend() []layeredShape {
 	}
 
 	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
-	ox, oy := legendlayout.LegendOrigin(
-		data.Position, float64(c.width), float64(c.height), w, h,
-	)
+	ox, oy := c.legendOrigin(data.Position, w, h)
 
 	lb := newLegendBuilder(len(c.shapes))
 	lb.addBackground(ox, oy, w, h)
@@ -57,6 +55,29 @@ func (c *Canvas) decomposeLegend() []layeredShape {
 	}
 
 	return lb.shapes
+}
+
+// legendOrigin computes the top-left (x, y) of the legend, respecting the
+// drawing bounds for top-center and bottom-center positions so that the
+// legend doesn't overlap the title or footer.
+func (c *Canvas) legendOrigin(
+	position model.LegendPosition,
+	legendW, legendH float64,
+) (ox, oy float64) {
+	m := model.LegendMargin
+	cw := float64(c.width)
+	ch := float64(c.height)
+
+	switch position {
+	case model.LegendPositionTopCenter:
+		// Start below the title (if any) rather than at the canvas top.
+		return (cw - legendW) / 2, float64(c.drawingMinY) + m
+	case model.LegendPositionBottomCenter:
+		// End above the footer (if any) rather than at the canvas bottom.
+		return (cw - legendW) / 2, float64(c.drawingMaxY) - legendH - m
+	default:
+		return legendlayout.LegendOrigin(position, cw, ch, legendW, legendH)
+	}
 }
 
 func (lb *legendBuilder) addBackground(x, y, w, h float64) {
