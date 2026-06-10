@@ -21,15 +21,20 @@ import (
 const defaultFontSize = 12.0
 
 type svgBackend struct {
-	width  int
-	height int
-	buf    bytes.Buffer
-	gradID int
+	width     int
+	height    int
+	buf       bytes.Buffer
+	gradID    int
+	gradCache map[string]string
 }
 
 // New creates an SVG backend with the given dimensions.
 func New(width, height int) model.Backend {
-	b := &svgBackend{width: width, height: height}
+	b := &svgBackend{
+		width:     width,
+		height:    height,
+		gradCache: make(map[string]string),
+	}
 	b.writeHeader()
 
 	return b
@@ -65,6 +70,16 @@ func (s *svgBackend) DrawRectangle(
 }
 
 func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
+	key := fmt.Sprintf(
+		"%s|%s|%.1f|%.1f",
+		rgbaToCSS(grad.Center), rgbaToCSS(grad.Edge),
+		grad.Focus.X*100, grad.Focus.Y*100,
+	)
+
+	if id, ok := s.gradCache[key]; ok {
+		return id
+	}
+
 	s.gradID++
 	id := fmt.Sprintf("rg%d", s.gradID)
 
@@ -79,6 +94,8 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 		grad.Focus.X*100, grad.Focus.Y*100,
 		rgbaToCSS(grad.Center), rgbaToCSS(grad.Edge),
 	)
+
+	s.gradCache[key] = id
 
 	return id
 }
