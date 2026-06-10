@@ -73,4 +73,3 @@ func TestResolveDimensions_PartialDimensions_UsesDefaultForMissing(t *testing.T)
 	g.Expect(c.Width).To(Equal(2560))
 	g.Expect(c.Height).To(Equal(1080))
 }
-
