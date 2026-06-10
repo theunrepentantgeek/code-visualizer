@@ -40,27 +40,32 @@ type presetDef struct {
 // presets is the registry of all available presets.
 var presets = []presetDef{
 	{
-		Name:         "structure-treemap",
+		Name: "structure-treemap",
+		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
 		Description:  "Treemap sized by file lines; colour shows file type. Quick overview of code structure.",
 		DefaultTitle: "Code Structure",
 	},
 	{
-		Name:         "structure-bubbletree",
+		Name: "structure-bubbletree",
+		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
 		Description:  "Bubble tree sized by file lines; colour shows file type. Alternative overview of code structure.",
 		DefaultTitle: "Code Structure",
 	},
 	{
-		Name:         "history-treemap",
+		Name: "history-treemap",
+		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
 		Description:  "Treemap sized by file lines; colour shows commit count. Highlights frequently-changed hotspots.",
 		DefaultTitle: "Commit Hotspots",
 	},
 	{
-		Name:         "age-treemap",
+		Name: "age-treemap",
+		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
 		Description:  "Treemap sized by file lines; colour shows file age. Reveals stale and actively-maintained areas.",
 		DefaultTitle: "File Age",
 	},
 	{
-		Name:         "contributors-treemap",
+		Name: "contributors-treemap",
+		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
 		Description:  "Treemap sized by file lines; colour shows distinct author count. Useful for bus-factor analysis.",
 		DefaultTitle: "Author Coverage",
 	},
@@ -125,7 +130,7 @@ func (r *RunCmd) Run(flags *Flags) error {
 	return r.runPreset(preset, flags)
 }
 
-func (r *RunCmd) listPresets() error {
+func (*RunCmd) listPresets() error {
 	tbl := table.New("Preset", "Description")
 	tbl.SetMaxWidth(120)
 
@@ -149,72 +154,96 @@ func (r *RunCmd) effectiveTitle(preset *presetDef) string {
 	return preset.DefaultTitle
 }
 
+// presetRunner is the common interface satisfied by each viz command's Run method.
+type presetRunner interface {
+	Run(flags *Flags) error
+}
+
 // runPreset dispatches execution to the appropriate viz command.
 func (r *RunCmd) runPreset(preset *presetDef, flags *Flags) error {
 	title := r.effectiveTitle(preset)
 
+	var cmd presetRunner
+
 	switch preset.Name {
 	case "structure-treemap":
-		return (&TreemapCmd{
-			TargetPath: r.TargetPath,
-			Output:     r.Output,
-			Size:       metric.Name("file-lines"),
-			Fill:       config.MetricSpec{Metric: "file-type"},
-			Width:      r.Width,
-			Height:     r.Height,
-			HideFooter: r.HideFooter,
-			Title:      title,
-		}).Run(flags)
-
+		cmd = r.structureTreemap(title)
 	case "structure-bubbletree":
-		return (&BubbletreeCmd{
-			TargetPath: r.TargetPath,
-			Output:     r.Output,
-			Size:       metric.Name("file-lines"),
-			Fill:       config.MetricSpec{Metric: "file-type"},
-			Width:      r.Width,
-			Height:     r.Height,
-			HideFooter: r.HideFooter,
-			Title:      title,
-		}).Run(flags)
-
+		cmd = r.structureBubbletree(title)
 	case "history-treemap":
-		return (&TreemapCmd{
-			TargetPath: r.TargetPath,
-			Output:     r.Output,
-			Size:       metric.Name("file-lines"),
-			Fill:       config.MetricSpec{Metric: "commit-count"},
-			Width:      r.Width,
-			Height:     r.Height,
-			HideFooter: r.HideFooter,
-			Title:      title,
-		}).Run(flags)
-
+		cmd = r.historyTreemap(title)
 	case "age-treemap":
-		return (&TreemapCmd{
-			TargetPath: r.TargetPath,
-			Output:     r.Output,
-			Size:       metric.Name("file-lines"),
-			Fill:       config.MetricSpec{Metric: "file-age"},
-			Width:      r.Width,
-			Height:     r.Height,
-			HideFooter: r.HideFooter,
-			Title:      title,
-		}).Run(flags)
-
+		cmd = r.ageTreemap(title)
 	case "contributors-treemap":
-		return (&TreemapCmd{
-			TargetPath: r.TargetPath,
-			Output:     r.Output,
-			Size:       metric.Name("file-lines"),
-			Fill:       config.MetricSpec{Metric: "author-count"},
-			Width:      r.Width,
-			Height:     r.Height,
-			HideFooter: r.HideFooter,
-			Title:      title,
-		}).Run(flags)
-
+		cmd = r.contributorsTreemap(title)
 	default:
 		return eris.Errorf("unhandled preset %q", preset.Name)
+	}
+
+	return cmd.Run(flags)
+}
+
+func (r *RunCmd) structureTreemap(title string) *TreemapCmd {
+	return &TreemapCmd{
+		TargetPath: r.TargetPath,
+		Output:     r.Output,
+		Size:       metric.Name("file-lines"),
+		Fill:       config.MetricSpec{Metric: "file-type"},
+		Width:      r.Width,
+		Height:     r.Height,
+		HideFooter: r.HideFooter,
+		Title:      title,
+	}
+}
+
+func (r *RunCmd) structureBubbletree(title string) *BubbletreeCmd {
+	return &BubbletreeCmd{
+		TargetPath: r.TargetPath,
+		Output:     r.Output,
+		Size:       metric.Name("file-lines"),
+		Fill:       config.MetricSpec{Metric: "file-type"},
+		Width:      r.Width,
+		Height:     r.Height,
+		HideFooter: r.HideFooter,
+		Title:      title,
+	}
+}
+
+func (r *RunCmd) historyTreemap(title string) *TreemapCmd {
+	return &TreemapCmd{
+		TargetPath: r.TargetPath,
+		Output:     r.Output,
+		Size:       metric.Name("file-lines"),
+		Fill:       config.MetricSpec{Metric: "commit-count"},
+		Width:      r.Width,
+		Height:     r.Height,
+		HideFooter: r.HideFooter,
+		Title:      title,
+	}
+}
+
+func (r *RunCmd) ageTreemap(title string) *TreemapCmd {
+	return &TreemapCmd{
+		TargetPath: r.TargetPath,
+		Output:     r.Output,
+		Size:       metric.Name("file-lines"),
+		Fill:       config.MetricSpec{Metric: "file-age"},
+		Width:      r.Width,
+		Height:     r.Height,
+		HideFooter: r.HideFooter,
+		Title:      title,
+	}
+}
+
+func (r *RunCmd) contributorsTreemap(title string) *TreemapCmd {
+	return &TreemapCmd{
+		TargetPath: r.TargetPath,
+		Output:     r.Output,
+		Size:       metric.Name("file-lines"),
+		Fill:       config.MetricSpec{Metric: "author-count"},
+		Width:      r.Width,
+		Height:     r.Height,
+		HideFooter: r.HideFooter,
+		Title:      title,
 	}
 }
