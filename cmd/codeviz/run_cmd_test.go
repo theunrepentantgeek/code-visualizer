@@ -57,8 +57,12 @@ func TestRunCmd_EffectiveTitle_UsesTitleWhenSet(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	preset := findPreset("structure-treemap")
-	r := &RunCmd{Title: "Custom Title"}
-	g.Expect(r.effectiveTitle(preset)).To(Equal("Custom Title"))
+	g.Expect(preset).Error()NotTo(BeNil(), "preset should exist")
+
+	if preset != nil {
+		r := &RunCmd{Title: "Custom Title"}
+		g.Expect(r.effectiveTitle(preset)).To(Equal("Custom Title"))
+	}
 }
 
 func TestRunCmd_EffectiveTitle_UsesPresetDefaultWhenTitleEmpty(t *testing.T) {

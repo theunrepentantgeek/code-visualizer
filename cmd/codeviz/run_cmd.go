@@ -20,6 +20,7 @@ import (
 //	codeviz run                                  # list available presets
 //	codeviz run <preset> <target> -o <output>    # run a preset
 type RunCmd struct {
+	//nolint:revive,nolintlint // Long help text is more important than minimizing line length, and annotations can't be wrapped
 	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to run; omit to list available presets."`
 	TargetPath string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
@@ -180,7 +181,12 @@ func (r *RunCmd) runPreset(preset *presetDef, flags *Flags) error {
 		return eris.Errorf("unhandled preset %q", preset.Name)
 	}
 
-	return cmd.Run(flags)
+	err := cmd.Run(flags)
+	if err != nil {
+		return eris.Wrapf(err, "failed to run preset %q", preset.Name)
+	}
+
+	return nil
 }
 
 func (r *RunCmd) structureTreemap(title string) *TreemapCmd {
