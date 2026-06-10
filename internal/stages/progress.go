@@ -26,12 +26,13 @@ func BuildScanProgress(flags *Flags) (scan.Progress, func()) {
 	return counter, stop
 }
 
-// BuildMetricProgress creates a provider.MetricProgress adapter for verbose mode.
+// BuildMetricProgress creates a provider.MetricProgress adapter that logs periodic
+// progress during metric calculation.
 // totalFiles is the number of files in the scanned tree, used as the denominator
 // for per-file progress reporting.
 // The caller must invoke the returned stop function when metric calculation completes.
 func BuildMetricProgress(flags *Flags, totalFiles int) (provider.MetricProgress, func()) {
-	if !flags.Verbose && !flags.Debug {
+	if flags.Quiet {
 		return nil, func() {}
 	}
 
@@ -166,11 +167,11 @@ func logMetricProgress(tracker *metricProgressTracker) {
 	for _, name := range active {
 		files := tracker.filesProcessed(name)
 		if files > 0 {
-			slog.Debug("Calculating...",
+			slog.Info("Calculating...",
 				"metric", string(name),
 				"files", fmt.Sprintf("%d/%d", files, tracker.totalFiles))
 		} else {
-			slog.Debug("Calculating...", "metric", string(name))
+			slog.Info("Calculating...", "metric", string(name))
 		}
 	}
 }
