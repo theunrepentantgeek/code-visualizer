@@ -133,7 +133,7 @@ func (r *RunCmd) Run(flags *Flags) error {
 
 func (*RunCmd) listPresets() error {
 	tbl := table.New("Preset", "Description")
-	tbl.SetMaxWidth(120)
+	tbl.SetMaxWidth(consoleWidth())
 
 	for _, p := range presets {
 		tbl.AddRow(p.Name, p.Description)
