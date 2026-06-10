@@ -237,7 +237,7 @@ func TestSpiral_OverrideBorder_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	s := &Spiral{}
-	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.PaletteName("fire")}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
 	s.OverrideBorder(spec)
 	g.Expect(*s.Border).To(Equal(spec))
 }
@@ -275,7 +275,7 @@ func TestRadial_OverrideBorder_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	r := &Radial{}
-	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.PaletteName("fire")}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
 	r.OverrideBorder(spec)
 	g.Expect(*r.Border).To(Equal(spec))
 }
@@ -295,7 +295,7 @@ func TestTreemap_OverrideBorder_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	tm := &Treemap{}
-	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.PaletteName("fire")}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
 	tm.OverrideBorder(spec)
 	g.Expect(*tm.Border).To(Equal(spec))
 }
@@ -384,7 +384,7 @@ func TestScatter_OverrideBorder_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	s := &Scatter{}
-	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.PaletteName("fire")}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
 	s.OverrideBorder(spec)
 	g.Expect(*s.Border).To(Equal(spec))
 }
