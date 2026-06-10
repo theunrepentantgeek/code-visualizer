@@ -21,6 +21,7 @@ tasks:
       - CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build -o build/codeviz-darwin-amd64  ./cmd/codeviz
       - CGO_ENABLED=0 GOOS=darwin  GOARCH=arm64 go build -o build/codeviz-darwin-arm64  ./cmd/codeviz
       - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o build/codeviz-windows-amd64.exe ./cmd/codeviz
+      - CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -o build/codeviz-windows-arm64.exe ./cmd/codeviz
 
   test:
     desc: Run all tests
