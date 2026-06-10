@@ -28,6 +28,11 @@ tasks:
       - go test ./... -count=1 -coverprofile=coverage.out
       - go tool cover -func=coverage.out
 
+  bench:
+    desc: Run benchmarks
+    cmds:
+      - go test ./... -bench=. -benchmem -run=^$ -count=1
+
   lint:
     desc: Run golangci-lint
     cmds:
