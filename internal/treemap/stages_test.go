@@ -137,6 +137,10 @@ func TestLayoutStage_FooterEnabled_ReducesAvailableHeight(t *testing.T) {
 		Height:     height,
 		RootConfig: cfg,
 	}
+	// InitDrawingBounds + ReserveFooterBounds mirror what the pipeline does before LayoutStage.
+	g.Expect(stages.InitDrawingBounds(common)).To(Succeed())
+	g.Expect(stages.ReserveFooterBounds(common)).To(Succeed())
+
 	viz := &treemap.State{
 		Size:        metric.Name("file-size"),
 		FillMetric:  metric.Name("file-size"),
@@ -172,6 +176,10 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 		Height:     height,
 		RootConfig: cfgWithFooter,
 	}
+	g.Expect(stages.InitDrawingBounds(commonNoFooter)).To(Succeed())
+	// ReserveFooterBounds is a no-op here since footer is hidden.
+	g.Expect(stages.ReserveFooterBounds(commonNoFooter)).To(Succeed())
+
 	vizNoFooter := &treemap.State{
 		Size:        metric.Name("file-size"),
 		FillMetric:  metric.Name("file-size"),
@@ -184,6 +192,9 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 		Height:     height,
 		RootConfig: config.New(),
 	}
+	g.Expect(stages.InitDrawingBounds(commonWithFooter)).To(Succeed())
+	g.Expect(stages.ReserveFooterBounds(commonWithFooter)).To(Succeed())
+
 	vizWithFooter := &treemap.State{
 		Size:        metric.Name("file-size"),
 		FillMetric:  metric.Name("file-size"),

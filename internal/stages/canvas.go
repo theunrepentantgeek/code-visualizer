@@ -12,6 +12,13 @@ import (
 
 // WriteCanvas writes c.Canvas to c.Output.
 func WriteCanvas(c *CommonState) error {
+	// Only override the canvas drawing bounds when they have been explicitly set
+	// via InitDrawingBounds. If the pipeline skipped that stage (e.g., in tests),
+	// the canvas keeps its constructor default (full dimensions).
+	if c.DrawingBounds.MaxY > 0 {
+		c.Canvas.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)
+	}
+
 	if err := c.Canvas.Render(c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}
@@ -89,4 +96,36 @@ func EffectiveTitleHeight(cfg *config.Config) int {
 	}
 
 	return int(canvas.TitleReservedHeight)
+}
+
+// InitDrawingBounds initializes c.DrawingBounds to the full canvas dimensions.
+// Run this immediately after ResolveDimensions, before any Reserve* stages.
+func InitDrawingBounds(c *CommonState) error {
+	c.DrawingBounds = DrawingBounds{MaxX: c.Width, MaxY: c.Height}
+
+	return nil
+}
+
+// ReserveTitleBounds shrinks DrawingBounds.MinY to reserve space for the title.
+// Must run after InitDrawingBounds. No-op when no title is configured or shown.
+func ReserveTitleBounds(c *CommonState) error {
+	if c.RootConfig == nil || !c.RootConfig.Title.ShowTitle() {
+		return nil
+	}
+
+	c.DrawingBounds.MinY = int(canvas.TitleReservedHeight)
+
+	return nil
+}
+
+// ReserveFooterBounds shrinks DrawingBounds.MaxY to reserve space for the footer.
+// Must run after InitDrawingBounds. No-op when no footer is configured or shown.
+func ReserveFooterBounds(c *CommonState) error {
+	if c.RootConfig == nil || !c.RootConfig.Footer.ShowFooter() {
+		return nil
+	}
+
+	c.DrawingBounds.MaxY -= int(canvas.FooterReservedHeight)
+
+	return nil
 }

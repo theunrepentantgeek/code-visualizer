@@ -26,6 +26,7 @@ type svgBackend struct {
 	buf         bytes.Buffer
 	gradID      int
 	colourCache map[color.RGBA]string
+	gradCache   map[string]string
 }
 
 // New creates an SVG backend with the given dimensions.
@@ -34,6 +35,7 @@ func New(width, height int) model.Backend {
 		width:       width,
 		height:      height,
 		colourCache: make(map[color.RGBA]string),
+		gradCache:   make(map[string]string),
 	}
 	b.writeHeader()
 
@@ -70,6 +72,16 @@ func (s *svgBackend) DrawRectangle(
 }
 
 func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
+	key := fmt.Sprintf(
+		"%s|%s|%.1f|%.1f",
+		rgbaToCSS(grad.Center), rgbaToCSS(grad.Edge),
+		grad.Focus.X*100, grad.Focus.Y*100,
+	)
+
+	if id, ok := s.gradCache[key]; ok {
+		return id
+	}
+
 	s.gradID++
 	id := fmt.Sprintf("rg%d", s.gradID)
 
@@ -84,6 +96,8 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 		grad.Focus.X*100, grad.Focus.Y*100,
 		s.colourCSS(grad.Center), s.colourCSS(grad.Edge),
 	)
+
+	s.gradCache[key] = id
 
 	return id
 }
