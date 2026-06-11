@@ -21,19 +21,21 @@ import (
 const defaultFontSize = 12.0
 
 type svgBackend struct {
-	width     int
-	height    int
-	buf       bytes.Buffer
-	gradID    int
-	gradCache map[string]string
+	width       int
+	height      int
+	buf         bytes.Buffer
+	gradID      int
+	colourCache map[color.RGBA]string
+	gradCache   map[string]string
 }
 
 // New creates an SVG backend with the given dimensions.
 func New(width, height int) model.Backend {
 	b := &svgBackend{
-		width:     width,
-		height:    height,
-		gradCache: make(map[string]string),
+		width:       width,
+		height:      height,
+		colourCache: make(map[color.RGBA]string),
+		gradCache:   make(map[string]string),
 	}
 	b.writeHeader()
 
@@ -51,7 +53,7 @@ func (s *svgBackend) writeHeader() {
 func (s *svgBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
-	fillAttr := rgbaToCSS(solidColor(fill))
+	fillAttr := s.colourCSS(solidColor(fill))
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
@@ -65,7 +67,7 @@ func (s *svgBackend) DrawRectangle(
 		&s.buf,
 		`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		pos.X, pos.Y, size.Width, size.Height,
-		fillAttr, rgbaToCSS(borderColour), borderWidth,
+		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
 }
 
@@ -92,7 +94,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 			`</radialGradient></defs>`+"\n",
 		id,
 		grad.Focus.X*100, grad.Focus.Y*100,
-		rgbaToCSS(grad.Center), rgbaToCSS(grad.Edge),
+		s.colourCSS(grad.Center), s.colourCSS(grad.Edge),
 	)
 
 	s.gradCache[key] = id
@@ -103,7 +105,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 func (s *svgBackend) DrawDisc(
 	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
-	fillAttr := rgbaToCSS(solidColor(fill))
+	fillAttr := s.colourCSS(solidColor(fill))
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
@@ -117,7 +119,7 @@ func (s *svgBackend) DrawDisc(
 		&s.buf,
 		`<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		center.X, center.Y, radius,
-		fillAttr, rgbaToCSS(borderColour), borderWidth,
+		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
 }
 
@@ -137,7 +139,7 @@ func (s *svgBackend) DrawLine(from, to model.Position, stroke color.RGBA, stroke
 		&s.buf,
 		`<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		from.X, from.Y, to.X, to.Y,
-		rgbaToCSS(stroke), strokeWidth,
+		s.colourCSS(stroke), strokeWidth,
 	)
 }
 
@@ -156,7 +158,7 @@ func (s *svgBackend) DrawPath(points []model.Position, stroke color.RGBA, stroke
 	fmt.Fprintf(
 		&s.buf,
 		`<path d="%s" fill="none" stroke="%s" stroke-width="%.1f"/>`+"\n",
-		b.String(), rgbaToCSS(stroke), strokeWidth,
+		b.String(), s.colourCSS(stroke), strokeWidth,
 	)
 }
 
@@ -183,7 +185,7 @@ func (s *svgBackend) DrawText(
 			`<text x="%.2f" y="%.2f" fill="%s" font-size="%.1f" font-family="sans-serif" `+
 				`text-anchor="%s" dominant-baseline="central" `+
 				`transform="rotate(%.2f %.2f %.2f)">%s</text>`+"\n",
-			pos.X, pos.Y, rgbaToCSS(ink), fontSize,
+			pos.X, pos.Y, s.colourCSS(ink), fontSize,
 			anchorStr, deg, pos.X, pos.Y, escaped,
 		)
 
@@ -194,7 +196,7 @@ func (s *svgBackend) DrawText(
 		&s.buf,
 		`<text x="%.2f" y="%.2f" fill="%s" font-size="%.1f" font-family="sans-serif" `+
 			`text-anchor="%s" dominant-baseline="central">%s</text>`+"\n",
-		pos.X, pos.Y, rgbaToCSS(ink), fontSize, anchorStr, escaped,
+		pos.X, pos.Y, s.colourCSS(ink), fontSize, anchorStr, escaped,
 	)
 }
 
@@ -238,7 +240,7 @@ func (s *svgBackend) DrawArcText(
 		&s.buf,
 		`<text fill="%s" font-size="%.1f" font-family="sans-serif" dominant-baseline="middle">`+
 			`<textPath href="#%s" startOffset="50%%" text-anchor="middle">%s</textPath></text>`+"\n",
-		rgbaToCSS(ink), fontSize, pathID, html.EscapeString(text),
+		s.colourCSS(ink), fontSize, pathID, html.EscapeString(text),
 	)
 }
 
@@ -261,6 +263,21 @@ func (s *svgBackend) Finish(outputPath string) (err error) {
 	}
 
 	return nil
+}
+
+// colourCSS returns the CSS colour string for c, using a per-backend cache to
+// avoid repeated fmt.Sprintf allocations for the same colour. In typical
+// visualizations, nodes share a small number of palette colours (e.g. 16
+// buckets), so the cache hit rate is high.
+func (s *svgBackend) colourCSS(c color.RGBA) string {
+	if cached, ok := s.colourCache[c]; ok {
+		return cached
+	}
+
+	result := rgbaToCSS(c)
+	s.colourCache[c] = result
+
+	return result
 }
 
 func rgbaToCSS(c color.RGBA) string {
