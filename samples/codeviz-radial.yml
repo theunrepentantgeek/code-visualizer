@@ -13,7 +13,7 @@ radial:
     border:
         metric: file-freshness
         palette: good-bad
-    labels: all
+    labels: folders
 bubbletree:
     labels: folders
 spiral:

@@ -36,7 +36,7 @@ func resolveLabels(cfg *config.Radial) LabelMode {
 		return LabelMode(lbl)
 	}
 
-	return LabelAll
+	return LabelFoldersOnly
 }
 
 // BuildInksStage builds the radial inks and emits the Rendering image log line.
