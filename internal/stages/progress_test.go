@@ -18,6 +18,7 @@ func TestBuildMetricProgress_VerboseMode_ReturnsTracker(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Verbose: true}
+
 	prog, stop := stages.BuildMetricProgress(flags, 10)
 	defer stop()
 
@@ -29,6 +30,7 @@ func TestBuildMetricProgress_DebugMode_ReturnsTracker(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Debug: true}
+
 	prog, stop := stages.BuildMetricProgress(flags, 10)
 	defer stop()
 
@@ -40,6 +42,7 @@ func TestBuildMetricProgress_QuietMode_ReturnsNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Quiet: true}
+
 	prog, stop := stages.BuildMetricProgress(flags, 10)
 	defer stop()
 
@@ -75,34 +78,42 @@ func TestBuildMetricProgress_OnMetricStarted_RecordsMetric(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Verbose: true}
+
 	prog, stop := stages.BuildMetricProgress(flags, 5)
 	defer stop()
 
-	prog.OnMetricStarted(metric.Name("file-lines"))
-	prog.OnMetricStarted(metric.Name("commit-count"))
+	g.Expect(prog).NotTo(BeNil())
 
-	// After starting both metrics, finishing one should leave the other active.
-	// We verify this by finishing one and then checking OnFileProcessed
-	// doesn't panic (it should be a no-op for finished metrics).
-	prog.OnMetricFinished(metric.Name("file-lines"))
-	prog.OnFileProcessed(metric.Name("file-lines"))
+	if prog != nil {
+		prog.OnMetricStarted(metric.Name("file-lines"))
+		prog.OnMetricStarted(metric.Name("commit-count"))
 
-	// Remaining metric still works.
-	prog.OnFileProcessed(metric.Name("commit-count"))
-	prog.OnMetricFinished(metric.Name("commit-count"))
+		// After starting both metrics, finishing one should leave the other active.
+		// We verify this by finishing one and then checking OnFileProcessed
+		// doesn't panic (it should be a no-op for finished metrics).
+		prog.OnMetricFinished(metric.Name("file-lines"))
+		prog.OnFileProcessed(metric.Name("file-lines"))
 
-	g.Expect(true).To(BeTrue()) // reached without panic
+		// Remaining metric still works.
+		prog.OnFileProcessed(metric.Name("commit-count"))
+		prog.OnMetricFinished(metric.Name("commit-count"))
+
+		g.Expect(true).To(BeTrue()) // reached without panic
+	}
 }
 
 func TestBuildMetricProgress_OnFileProcessed_UnknownMetric_IsNoop(t *testing.T) {
 	t.Parallel()
 
 	flags := &stages.Flags{Verbose: true}
+
 	prog, stop := stages.BuildMetricProgress(flags, 5)
 	defer stop()
 
-	// Processing a file for a metric that was never started should not panic.
-	prog.OnFileProcessed(metric.Name("unknown-metric"))
+	if prog != nil {
+		// Processing a file for a metric that was never started should not panic.
+		prog.OnFileProcessed(metric.Name("unknown-metric"))
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -114,6 +125,7 @@ func TestBuildScanProgress_VerboseMode_ReturnsProgress(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Verbose: true}
+
 	prog, stop := stages.BuildScanProgress(flags)
 	defer stop()
 
@@ -125,6 +137,7 @@ func TestBuildScanProgress_DebugMode_ReturnsProgress(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Debug: true}
+
 	prog, stop := stages.BuildScanProgress(flags)
 	defer stop()
 
@@ -140,6 +153,7 @@ func TestBuildHistoryProgress_VerboseMode_ReturnsCallback(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Verbose: true}
+
 	onCommit, stop := stages.BuildHistoryProgress(flags)
 	defer stop()
 
@@ -151,6 +165,7 @@ func TestBuildHistoryProgress_DebugMode_ReturnsCallback(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Debug: true}
+
 	onCommit, stop := stages.BuildHistoryProgress(flags)
 	defer stop()
 
@@ -162,6 +177,7 @@ func TestBuildHistoryProgress_QuietMode_ReturnsNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	flags := &stages.Flags{Quiet: true}
+
 	onCommit, stop := stages.BuildHistoryProgress(flags)
 	defer stop()
 
@@ -172,6 +188,7 @@ func TestBuildHistoryProgress_Callback_IsCallable(t *testing.T) {
 	t.Parallel()
 
 	flags := &stages.Flags{Verbose: true}
+
 	onCommit, stop := stages.BuildHistoryProgress(flags)
 	defer stop()
 
