@@ -14,14 +14,7 @@ func RunProviders(c *CommonState) error {
 	slog.Info("Calculating metrics")
 
 	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
+	defer stopMetricTicker()
 
-	if err := provider.Run(c.Root, c.Requested, metricProg); err != nil {
-		stopMetricTicker()
-
-		return eris.Wrap(err, "failed to load metrics")
-	}
-
-	stopMetricTicker()
-
-	return nil
+	return eris.Wrap(provider.Run(c.Root, c.Requested, metricProg), "failed to load metrics")
 }
