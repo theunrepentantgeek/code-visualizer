@@ -73,3 +73,19 @@ func TestResolveDimensions_PartialDimensions_UsesDefaultForMissing(t *testing.T)
 	g.Expect(c.Width).To(Equal(2560))
 	g.Expect(c.Height).To(Equal(1080))
 }
+
+func TestResolveDimensions_HeightOnly_WidthDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	h := 2160
+	c := &stages.CommonState{
+		RootConfig: &config.Config{
+			ImageSize: &config.ImageSize{Height: &h},
+		},
+	}
+	err := stages.ResolveDimensions(c)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(c.Width).To(Equal(1920))
+	g.Expect(c.Height).To(Equal(2160))
+}

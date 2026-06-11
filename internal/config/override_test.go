@@ -214,3 +214,186 @@ func TestSpiral_OverrideLabels_SetsWhenNonEmpty(t *testing.T) {
 	s.OverrideLabels("none")
 	g.Expect(*s.Labels).To(Equal("none"))
 }
+
+func TestSpiral_OverrideFill_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Spiral{}
+	spec := MetricSpec{Metric: metric.Name("file-lines"), Palette: palette.PaletteName("foliage")}
+	s.OverrideFill(spec)
+	g.Expect(*s.Fill).To(Equal(spec))
+}
+
+func TestSpiral_OverrideFill_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	s := &Spiral{Fill: &existing}
+	s.OverrideFill(MetricSpec{})
+	g.Expect(*s.Fill).To(Equal(existing))
+}
+
+func TestSpiral_OverrideBorder_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Spiral{}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
+	s.OverrideBorder(spec)
+	g.Expect(*s.Border).To(Equal(spec))
+}
+
+func TestSpiral_OverrideBorder_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	s := &Spiral{Border: &existing}
+	s.OverrideBorder(MetricSpec{})
+	g.Expect(*s.Border).To(Equal(existing))
+}
+
+// Radial overrides (fill/border)
+
+func TestRadial_OverrideFill_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	r := &Radial{}
+	spec := MetricSpec{Metric: metric.Name("file-lines"), Palette: palette.PaletteName("foliage")}
+	r.OverrideFill(spec)
+	g.Expect(*r.Fill).To(Equal(spec))
+}
+
+func TestRadial_OverrideFill_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	r := &Radial{Fill: &existing}
+	r.OverrideFill(MetricSpec{})
+	g.Expect(*r.Fill).To(Equal(existing))
+}
+
+func TestRadial_OverrideBorder_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	r := &Radial{}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
+	r.OverrideBorder(spec)
+	g.Expect(*r.Border).To(Equal(spec))
+}
+
+func TestRadial_OverrideBorder_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	r := &Radial{Border: &existing}
+	r.OverrideBorder(MetricSpec{})
+	g.Expect(*r.Border).To(Equal(existing))
+}
+
+// Treemap override (border)
+
+func TestTreemap_OverrideBorder_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	tm := &Treemap{}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
+	tm.OverrideBorder(spec)
+	g.Expect(*tm.Border).To(Equal(spec))
+}
+
+func TestTreemap_OverrideBorder_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	tm := &Treemap{Border: &existing}
+	tm.OverrideBorder(MetricSpec{})
+	g.Expect(*tm.Border).To(Equal(existing))
+}
+
+// Scatter overrides
+
+func TestScatter_OverrideXAxis_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+	s.OverrideXAxis("file-lines")
+	g.Expect(*s.XAxis).To(Equal("file-lines"))
+}
+
+func TestScatter_OverrideXAxis_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "file-age"
+	s := &Scatter{XAxis: &existing}
+	s.OverrideXAxis("")
+	g.Expect(*s.XAxis).To(Equal("file-age"))
+}
+
+func TestScatter_OverrideYAxis_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+	s.OverrideYAxis("commit-count")
+	g.Expect(*s.YAxis).To(Equal("commit-count"))
+}
+
+func TestScatter_OverrideYAxis_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "file-lines"
+	s := &Scatter{YAxis: &existing}
+	s.OverrideYAxis("")
+	g.Expect(*s.YAxis).To(Equal("file-lines"))
+}
+
+func TestScatter_OverrideSize_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+	s.OverrideSize("file-lines")
+	g.Expect(*s.Size).To(Equal("file-lines"))
+}
+
+func TestScatter_OverrideSize_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "commit-count"
+	s := &Scatter{Size: &existing}
+	s.OverrideSize("")
+	g.Expect(*s.Size).To(Equal("commit-count"))
+}
+
+func TestScatter_OverrideFill_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+	spec := MetricSpec{Metric: metric.Name("file-lines"), Palette: palette.PaletteName("foliage")}
+	s.OverrideFill(spec)
+	g.Expect(*s.Fill).To(Equal(spec))
+}
+
+func TestScatter_OverrideFill_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	s := &Scatter{Fill: &existing}
+	s.OverrideFill(MetricSpec{})
+	g.Expect(*s.Fill).To(Equal(existing))
+}
+
+func TestScatter_OverrideBorder_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
+	s.OverrideBorder(spec)
+	g.Expect(*s.Border).To(Equal(spec))
+}
+
+func TestScatter_OverrideBorder_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	s := &Scatter{Border: &existing}
+	s.OverrideBorder(MetricSpec{})
+	g.Expect(*s.Border).To(Equal(existing))
+}
