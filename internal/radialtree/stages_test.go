@@ -44,7 +44,7 @@ func TestResolveRadialMetrics_FillOverridesDiscSizeAsFillMetric(t *testing.T) {
 	g.Expect(common.Requested).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
-func TestResolveRadialMetrics_LabelsDefaultToAll(t *testing.T) {
+func TestResolveRadialMetrics_LabelsDefaultToFolders(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -54,7 +54,7 @@ func TestResolveRadialMetrics_LabelsDefaultToAll(t *testing.T) {
 	cfg := &config.Radial{DiscSize: &discSizeStr}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.Labels).To(Equal(radialtree.LabelAll))
+	g.Expect(viz.Labels).To(Equal(radialtree.LabelFoldersOnly))
 }
 
 func TestResolveRadialMetrics_LabelsNoneExplicit(t *testing.T) {
