@@ -13,6 +13,7 @@ type HelpDefaultCmd struct{}
 func (HelpDefaultCmd) Run(realCtx *kong.Context) error {
 	ctx, err := kong.Trace(realCtx.Kong, nil) // nil path => application root
 	if err != nil {
+		//nolint:wrapcheck // Returning the Kong usage error directly is fine here
 		return err
 	}
 
@@ -20,5 +21,6 @@ func (HelpDefaultCmd) Run(realCtx *kong.Context) error {
 		return ctx.Error
 	}
 
+	//nolint:wrapcheck // Returning the Kong usage error directly is fine here
 	return ctx.PrintUsage(false)
 }
