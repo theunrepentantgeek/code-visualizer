@@ -25,10 +25,9 @@ type CLI struct {
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 	ExportData   string `help:"Write computed metrics to file (.json or .yaml/.yml)." name:"export-data" optional:""`
 
-	Render       RenderCmd       `cmd:"" help:"Render a visualization."`
-	Run          RunCmd          `cmd:"" help:"Run a preset visualization."`
-	HelpMetrics  HelpMetricsCmd  `cmd:"" help:"List all available metrics."`
-	HelpPalettes HelpPalettesCmd `cmd:"" help:"List all available colour palettes."`
+	Render RenderCmd `cmd:"" help:"Render a visualization."`
+	Run    RunCmd    `cmd:"" help:"Run a preset visualization."`
+	Help   HelpCmd   `cmd:"" help:"Show this help message."`
 }
 
 // Flags bundles cross-cutting concerns that are passed to every command's Run method.

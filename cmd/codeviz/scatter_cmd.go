@@ -16,9 +16,9 @@ type ScatterCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
-	XAxis metric.Name `default:"" help:"Metric for X-axis position; run 'codeviz help-metrics' for available metrics." name:"x-axis" short:"x"` //nolint:revive,nolintlint // kong struct tags require long lines
-	YAxis metric.Name `default:"" help:"Metric for Y-axis position; run 'codeviz help-metrics' for available metrics." name:"y-axis" short:"y"` //nolint:revive,nolintlint // kong struct tags require long lines
-	Size  metric.Name `default:"" help:"Metric for disc size; run 'codeviz help-metrics' for available metrics." short:"s"`                     //nolint:revive,nolintlint // kong struct tags require long lines
+	XAxis metric.Name `default:"" help:"Metric for X-axis position; run 'codeviz help metrics' for available metrics." name:"x-axis" short:"x"` //nolint:revive,nolintlint // kong struct tags require long lines
+	YAxis metric.Name `default:"" help:"Metric for Y-axis position; run 'codeviz help metrics' for available metrics." name:"y-axis" short:"y"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Size  metric.Name `default:"" help:"Metric for disc size; run 'codeviz help metrics' for available metrics." short:"s"`                     //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
