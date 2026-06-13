@@ -1,5 +1,13 @@
 package scatter
 
+// ScaleType controls how numeric values are mapped to axis positions.
+type ScaleType int
+
+const (
+	Linear ScaleType = iota
+	Log
+)
+
 // NumericAxis holds the numeric range and ticks for one axis.
 type NumericAxis struct {
 	Min   float64

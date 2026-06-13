@@ -111,25 +111,27 @@ func BuildInksStage(c *stages.CommonState, x *State) error {
 
 // ValidateLogScale checks that all data values are positive when log scale is used.
 func ValidateLogScale(dataset Dataset, xAxis, yAxis AxisSpec) error {
-	if xAxis.Scale == Log {
-		for _, point := range dataset.Points {
-			if point.X.Numeric <= 0 {
-				return eris.Errorf(
-					"log scale on x-axis requires all values to be positive; file %q has value %g",
-					point.File.Name, point.X.Numeric,
-				)
-			}
-		}
+	xValue := func(p PointDatum) float64 { return p.X.Numeric }
+	if err := validateAxisPositive(dataset.Points, xAxis, "x-axis", xValue); err != nil {
+		return err
 	}
 
-	if yAxis.Scale == Log {
-		for _, point := range dataset.Points {
-			if point.Y.Numeric <= 0 {
-				return eris.Errorf(
-					"log scale on y-axis requires all values to be positive; file %q has value %g",
-					point.File.Name, point.Y.Numeric,
-				)
-			}
+	yValue := func(p PointDatum) float64 { return p.Y.Numeric }
+
+	return validateAxisPositive(dataset.Points, yAxis, "y-axis", yValue)
+}
+
+func validateAxisPositive(points []PointDatum, axis AxisSpec, label string, value func(PointDatum) float64) error {
+	if axis.Scale != Log {
+		return nil
+	}
+
+	for _, point := range points {
+		if value(point) <= 0 {
+			return eris.Errorf(
+				"log scale on %s requires all values to be positive; file %q has value %g",
+				label, point.File.Name, value(point),
+			)
 		}
 	}
 

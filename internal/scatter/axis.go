@@ -2,14 +2,6 @@ package scatter
 
 import "github.com/theunrepentantgeek/code-visualizer/internal/metric"
 
-// ScaleType controls how numeric values are mapped to axis positions.
-type ScaleType int
-
-const (
-	Linear ScaleType = iota
-	Log
-)
-
 // AxisSpec identifies the metric and kind used for one scatter axis.
 type AxisSpec struct {
 	Metric metric.Name
