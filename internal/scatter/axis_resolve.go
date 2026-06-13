@@ -32,10 +32,21 @@ func resolveAxis(points []PointDatum, plot PlotRect, spec AxisSpec, direction ax
 	}
 
 	minValue, maxValue := numericExtent(points, direction)
-	axis.Numeric = &NumericAxis{
-		Min:   minValue,
-		Max:   maxValue,
-		Ticks: numericTicks(minValue, maxValue, plot, direction),
+
+	if spec.Scale == Log {
+		axis.Numeric = &NumericAxis{
+			Min:   minValue,
+			Max:   maxValue,
+			Scale: Log,
+			Ticks: logNumericTicks(minValue, maxValue, plot, direction),
+		}
+	} else {
+		axis.Numeric = &NumericAxis{
+			Min:   minValue,
+			Max:   maxValue,
+			Scale: Linear,
+			Ticks: numericTicks(minValue, maxValue, plot, direction),
+		}
 	}
 
 	return axis
@@ -284,7 +295,12 @@ func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, directi
 		return direction.center(plot)
 	}
 
-	norm := (value.Numeric - minValue) / (maxValue - minValue)
+	var norm float64
+	if axis.Numeric.Scale == Log {
+		norm = (math.Log(value.Numeric) - math.Log(minValue)) / (math.Log(maxValue) - math.Log(minValue))
+	} else {
+		norm = (value.Numeric - minValue) / (maxValue - minValue)
+	}
 
 	return direction.position(plot, norm)
 }

@@ -288,3 +288,42 @@ func TestLogNumericTicks_SingleValue_ReturnsCenterTick(t *testing.T) {
 	g.Expect(ticks[0].Value).To(BeNumerically("~", 42, 1e-9))
 	g.Expect(ticks[0].Position).To(BeNumerically("~", 400, 1e-6)) // center of 800-wide plot
 }
+
+func TestLayout_LogScalePositionsPointsLogarithmically(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	small := scatterTestFile("small.go")
+	small.SetQuantity(filesystem.FileLines, 10)
+	small.SetQuantity(filesystem.FileSize, 100)
+
+	medium := scatterTestFile("medium.go")
+	medium.SetQuantity(filesystem.FileLines, 100)
+	medium.SetQuantity(filesystem.FileSize, 100)
+
+	large := scatterTestFile("large.go")
+	large.SetQuantity(filesystem.FileLines, 1000)
+	large.SetQuantity(filesystem.FileSize, 100)
+
+	root := &model.Directory{Files: []*model.File{small, medium, large}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	layout := Layout(dataset, 800, 600, xAxis, yAxis)
+
+	points := map[string]ScatterPoint{}
+	for _, point := range layout.Points {
+		points[point.File.Name] = point
+	}
+
+	// With log scale, the gap between 10→100 should equal the gap between 100→1000
+	// (both are one decade)
+	gap1 := points["medium.go"].X - points["small.go"].X
+	gap2 := points["large.go"].X - points["medium.go"].X
+	g.Expect(gap1).To(BeNumerically("~", gap2, 1.0))
+
+	// All X values should be within the plot area
+	g.Expect(points["small.go"].X).To(BeNumerically(">=", scatterPlotLeftMargin))
+	g.Expect(points["large.go"].X).To(BeNumerically("<=", 800-scatterPlotRightMargin))
+}
