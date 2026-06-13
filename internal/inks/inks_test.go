@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
@@ -29,6 +30,17 @@ func makeFile(name, ext string, size int64) *model.File {
 	f.SetClassification(filesystem.FileType, ext)
 
 	return f
+}
+
+func descriptorFor(t *testing.T, name metric.Name) provider.MetricDescriptor {
+	t.Helper()
+
+	d, ok := provider.GetDescriptor(name, metric.File)
+	if !ok {
+		t.Fatalf("descriptor not found for %q", name)
+	}
+
+	return d
 }
 
 func TestCollectDistinctTypes_ReturnsSortedTypes(t *testing.T) {
@@ -79,7 +91,7 @@ func TestBuildMetricInk_NumericKind(t *testing.T) {
 		},
 	}
 
-	ink := inks.BuildMetricInk(root, filesystem.FileSize, palette.Temperature, fallbackColour())
+	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileSize), palette.Temperature, fallbackColour())
 
 	g.Expect(ink.Info().Kind).To(Equal(canvas.InkNumeric))
 }
@@ -96,7 +108,7 @@ func TestBuildMetricInk_CategoricalKind(t *testing.T) {
 		},
 	}
 
-	ink := inks.BuildMetricInk(root, filesystem.FileType, palette.Categorization, fallbackColour())
+	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileType), palette.Categorization, fallbackColour())
 
 	g.Expect(ink.Info().Kind).To(Equal(canvas.InkCategorical))
 }
@@ -107,7 +119,7 @@ func TestBuildMetricInk_UnknownMetricFallsBackToFixed(t *testing.T) {
 
 	root := &model.Directory{Path: "/p"}
 
-	ink := inks.BuildMetricInk(root, metric.Name("does-not-exist"), palette.Temperature, fallbackColour())
+	ink := inks.BuildMetricInk(root, provider.MetricDescriptor{}, palette.Temperature, fallbackColour())
 
 	g.Expect(ink.Info().Kind).To(Equal(canvas.InkFixed))
 }
@@ -119,7 +131,7 @@ func TestBuildMetricInk_EmptyNumericFallsBackToFixed(t *testing.T) {
 	// Numeric descriptor exists, but the tree has no files → no values.
 	root := &model.Directory{Path: "/p"}
 
-	ink := inks.BuildMetricInk(root, filesystem.FileSize, palette.Temperature, fallbackColour())
+	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileSize), palette.Temperature, fallbackColour())
 
 	g.Expect(ink.Info().Kind).To(Equal(canvas.InkFixed))
 }
@@ -130,7 +142,7 @@ func TestMetricValueForFile_NumericInk(t *testing.T) {
 
 	file := makeFile("a.go", "go", 42)
 	root := &model.Directory{Path: "/p", Files: []*model.File{file}}
-	ink := inks.BuildMetricInk(root, filesystem.FileSize, palette.Temperature, fallbackColour())
+	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileSize), palette.Temperature, fallbackColour())
 
 	mv := inks.MetricValueForFile(file, ink)
 
@@ -144,7 +156,7 @@ func TestMetricValueForFile_CategoricalInk(t *testing.T) {
 
 	file := makeFile("a.go", "go", 1)
 	root := &model.Directory{Path: "/p", Files: []*model.File{file}}
-	ink := inks.BuildMetricInk(root, filesystem.FileType, palette.Categorization, fallbackColour())
+	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileType), palette.Categorization, fallbackColour())
 
 	mv := inks.MetricValueForFile(file, ink)
 
