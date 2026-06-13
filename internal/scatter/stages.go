@@ -18,7 +18,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 		return eris.New("x-axis metric is required")
 	}
 
-	xAxis, err := resolveAxisSpec(cfg.XAxis)
+	xAxis, err := resolveAxisSpec(cfg.XAxis, cfg.XScale)
 	if err != nil {
 		return eris.Wrap(err, "invalid x-axis metric")
 	}
@@ -27,7 +27,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 		return eris.New("y-axis metric is required")
 	}
 
-	yAxis, err := resolveAxisSpec(cfg.YAxis)
+	yAxis, err := resolveAxisSpec(cfg.YAxis, cfg.YScale)
 	if err != nil {
 		return eris.Wrap(err, "invalid y-axis metric")
 	}
@@ -48,7 +48,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 	return nil
 }
 
-func resolveAxisSpec(name *string) (AxisSpec, error) {
+func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
 	descriptor, ok := provider.GetDescriptor(metricName)
 
@@ -56,7 +56,18 @@ func resolveAxisSpec(name *string) (AxisSpec, error) {
 		return AxisSpec{}, eris.Errorf("unknown axis metric %q", metricName)
 	}
 
-	return AxisSpec{Metric: metricName, Kind: descriptor.Kind}, nil
+	spec := AxisSpec{Metric: metricName, Kind: descriptor.Kind}
+
+	switch stages.PtrString(scale) {
+	case "", "linear":
+		spec.Scale = Linear
+	case "log":
+		spec.Scale = Log
+	default:
+		return AxisSpec{}, eris.Errorf("unknown scale %q; must be \"linear\" or \"log\"", stages.PtrString(scale))
+	}
+
+	return spec, nil
 }
 
 func resolveFillMetric(cfg *config.Scatter, size metric.Name) metric.Name {
