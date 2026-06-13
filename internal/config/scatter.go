@@ -9,6 +9,8 @@ type Scatter struct {
 	Size   *string     `yaml:"size,omitempty"              json:"size,omitempty"`
 	Fill   *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
 	Border *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
+	XScale *string     `yaml:"xScale,omitempty"            json:"xScale,omitempty"`
+	YScale *string     `yaml:"yScale,omitempty"            json:"yScale,omitempty"`
 }
 
 // OverrideXAxis sets XAxis to v if v is non-empty.
@@ -25,3 +27,9 @@ func (s *Scatter) OverrideFill(v MetricSpec) { overrideMetricSpec(&s.Fill, v) }
 
 // OverrideBorder sets Border to v if v is non-zero.
 func (s *Scatter) OverrideBorder(v MetricSpec) { overrideMetricSpec(&s.Border, v) }
+
+// OverrideXScale sets XScale to v if v is non-empty.
+func (s *Scatter) OverrideXScale(v string) { overrideString(&s.XScale, v) }
+
+// OverrideYScale sets YScale to v if v is non-empty.
+func (s *Scatter) OverrideYScale(v string) { overrideString(&s.YScale, v) }

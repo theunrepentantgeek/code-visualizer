@@ -37,6 +37,26 @@ func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 	}))
 }
 
+func TestResolveMetrics_ParsesLogScale(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{}
+	viz := &scatter.State{}
+	cfg := &config.Scatter{
+		XAxis:  new("file-lines"),
+		YAxis:  new("file-size"),
+		Size:   new("file-size"),
+		XScale: new("log"),
+		YScale: new("linear"),
+	}
+
+	err := scatter.ResolveMetrics(common, viz, cfg)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(viz.XAxis.Scale).To(Equal(scatter.Log))
+	g.Expect(viz.YAxis.Scale).To(Equal(scatter.Linear))
+}
+
 func TestResolveMetrics_FillAndBorderOverrideDefaults(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

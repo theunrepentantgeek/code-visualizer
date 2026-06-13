@@ -6,6 +6,7 @@ import "github.com/theunrepentantgeek/code-visualizer/internal/metric"
 type AxisSpec struct {
 	Metric metric.Name
 	Kind   metric.Kind
+	Scale  ScaleType
 }
 
 // AxisValue carries one file's resolved value for a scatter axis.

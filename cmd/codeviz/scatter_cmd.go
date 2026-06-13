@@ -20,6 +20,9 @@ type ScatterCmd struct {
 	YAxis metric.Name `default:"" help:"Metric for Y-axis position; run 'codeviz help metrics' for available metrics." name:"y-axis" short:"y"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Size  metric.Name `default:"" help:"Metric for disc size; run 'codeviz help metrics' for available metrics." short:"s"`                     //nolint:revive,nolintlint // kong struct tags require long lines
 
+	XScale string `default:"" enum:",linear,log" help:"X-axis scale (linear or log)." name:"x-scale"` //nolint:revive,nolintlint // kong struct tags require long lines
+	YScale string `default:"" enum:",linear,log" help:"Y-axis scale (linear or log)." name:"y-scale"` //nolint:revive,nolintlint // kong struct tags require long lines
+
 	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
 
@@ -155,6 +158,8 @@ func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
 	cfg.Scatter.OverrideXAxis(string(c.XAxis))
 	cfg.Scatter.OverrideYAxis(string(c.YAxis))
 	cfg.Scatter.OverrideSize(string(c.Size))
+	cfg.Scatter.OverrideXScale(c.XScale)
+	cfg.Scatter.OverrideYScale(c.YScale)
 	cfg.Scatter.OverrideFill(c.Fill)
 	cfg.Scatter.OverrideBorder(c.Border)
 	cfg.OverrideLegendPosition(c.Legend)

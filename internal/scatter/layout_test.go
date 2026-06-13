@@ -226,3 +226,188 @@ func TestResolvedAxis_OffsetShiftsCategoricalBands(t *testing.T) {
 
 	g.Expect(axis.Categorical.Bands).To(Equal([]AxisBand{{Label: "go", Start: 5, End: 15, Center: 10}}))
 }
+
+func TestLogNumericTicks_SpansMultipleDecades(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := logNumericTicks(1, 10000, plot, horizontalAxis)
+
+	// Expect ticks at powers of 10: 1, 10, 100, 1000, 10000
+	g.Expect(ticks).To(HaveLen(5))
+	g.Expect(ticks[0].Value).To(BeNumerically("~", 1, 1e-9))
+	g.Expect(ticks[1].Value).To(BeNumerically("~", 10, 1e-9))
+	g.Expect(ticks[2].Value).To(BeNumerically("~", 100, 1e-9))
+	g.Expect(ticks[3].Value).To(BeNumerically("~", 1000, 1e-9))
+	g.Expect(ticks[4].Value).To(BeNumerically("~", 10000, 1e-9))
+
+	// Positions should be logarithmically spaced (equal increments in log space)
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position).To(BeNumerically(">", ticks[i-1].Position))
+	}
+
+	// Each gap should be the same size (equal decades = equal spacing)
+	gap := ticks[1].Position - ticks[0].Position
+	for i := 2; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position - ticks[i-1].Position).To(BeNumerically("~", gap, 1e-6))
+	}
+}
+
+func TestLogNumericTicks_NarrowRange_AddsIntermediateTicks(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := logNumericTicks(50, 500, plot, horizontalAxis)
+
+	// Range spans ~1 decade, so intermediate ticks (2x, 5x) are added.
+	// Expect at least 4 ticks.
+	g.Expect(len(ticks)).To(BeNumerically(">=", 4))
+
+	// All tick values should be within [50, 500]
+	for _, tick := range ticks {
+		g.Expect(tick.Value).To(BeNumerically(">=", 50))
+		g.Expect(tick.Value).To(BeNumerically("<=", 500))
+	}
+
+	// Positions should be monotonically increasing
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position).To(BeNumerically(">", ticks[i-1].Position))
+	}
+}
+
+func TestLogNumericTicks_SubDecadeRange_UsesFallback(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	// Range [11, 19] has no power-of-10 or subdivision candidate inside it
+	ticks := logNumericTicks(11, 19, plot, horizontalAxis)
+
+	// Fallback generates 5 evenly-spaced ticks in log space
+	g.Expect(ticks).To(HaveLen(5))
+	g.Expect(ticks[0].Value).To(BeNumerically("~", 11, 0.01))
+	g.Expect(ticks[4].Value).To(BeNumerically("~", 19, 0.01))
+
+	// Positions should be monotonically increasing
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position).To(BeNumerically(">", ticks[i-1].Position))
+	}
+}
+
+func TestLogNumericTicks_SingleValue_ReturnsCenterTick(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := logNumericTicks(42, 42, plot, horizontalAxis)
+
+	g.Expect(ticks).To(HaveLen(1))
+	g.Expect(ticks[0].Value).To(BeNumerically("~", 42, 1e-9))
+	g.Expect(ticks[0].Position).To(BeNumerically("~", 400, 1e-6)) // center of 800-wide plot
+}
+
+func TestLayout_LogScalePositionsPointsLogarithmically(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	small := scatterTestFile("small.go")
+	small.SetQuantity(filesystem.FileLines, 10)
+	small.SetQuantity(filesystem.FileSize, 100)
+
+	medium := scatterTestFile("medium.go")
+	medium.SetQuantity(filesystem.FileLines, 100)
+	medium.SetQuantity(filesystem.FileSize, 100)
+
+	large := scatterTestFile("large.go")
+	large.SetQuantity(filesystem.FileLines, 1000)
+	large.SetQuantity(filesystem.FileSize, 100)
+
+	root := &model.Directory{Files: []*model.File{small, medium, large}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	layout := Layout(dataset, 800, 600, xAxis, yAxis)
+
+	points := map[string]ScatterPoint{}
+	for _, point := range layout.Points {
+		points[point.File.Name] = point
+	}
+
+	// With log scale, the gap between 10→100 should equal the gap between 100→1000
+	// (both are one decade)
+	gap1 := points["medium.go"].X - points["small.go"].X
+	gap2 := points["large.go"].X - points["medium.go"].X
+	g.Expect(gap1).To(BeNumerically("~", gap2, 1.0))
+
+	// All X values should be within the plot area
+	g.Expect(points["small.go"].X).To(BeNumerically(">=", scatterPlotLeftMargin))
+	g.Expect(points["large.go"].X).To(BeNumerically("<=", 800-scatterPlotRightMargin))
+}
+
+func TestValidateLogScale_ErrorsOnZeroValue(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	zero := scatterTestFile("zero.go")
+	zero.SetQuantity(filesystem.FileLines, 0)
+	zero.SetQuantity(filesystem.FileSize, 100)
+
+	positive := scatterTestFile("positive.go")
+	positive.SetQuantity(filesystem.FileLines, 10)
+	positive.SetQuantity(filesystem.FileSize, 50)
+
+	root := &model.Directory{Files: []*model.File{zero, positive}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).To(HaveOccurred())
+	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
+	g.Expect(err.Error()).To(ContainSubstring("x-axis"))
+	g.Expect(err.Error()).To(ContainSubstring("zero.go"))
+}
+
+func TestValidateLogScale_PassesWhenAllPositive(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	a := scatterTestFile("a.go")
+	a.SetQuantity(filesystem.FileLines, 10)
+	a.SetQuantity(filesystem.FileSize, 100)
+
+	b := scatterTestFile("b.go")
+	b.SetQuantity(filesystem.FileLines, 200)
+	b.SetQuantity(filesystem.FileSize, 50)
+
+	root := &model.Directory{Files: []*model.File{a, b}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Log}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestValidateLogScale_SkipsLinearAxes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	zero := scatterTestFile("zero.go")
+	zero.SetQuantity(filesystem.FileLines, 0)
+	zero.SetQuantity(filesystem.FileSize, 100)
+
+	root := &model.Directory{Files: []*model.File{zero}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Linear}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).NotTo(HaveOccurred())
+}

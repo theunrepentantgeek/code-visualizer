@@ -32,10 +32,21 @@ func resolveAxis(points []PointDatum, plot PlotRect, spec AxisSpec, direction ax
 	}
 
 	minValue, maxValue := numericExtent(points, direction)
-	axis.Numeric = &NumericAxis{
-		Min:   minValue,
-		Max:   maxValue,
-		Ticks: numericTicks(minValue, maxValue, plot, direction),
+
+	if spec.Scale == Log {
+		axis.Numeric = &NumericAxis{
+			Min:   minValue,
+			Max:   maxValue,
+			Scale: Log,
+			Ticks: logNumericTicks(minValue, maxValue, plot, direction),
+		}
+	} else {
+		axis.Numeric = &NumericAxis{
+			Min:   minValue,
+			Max:   maxValue,
+			Scale: Linear,
+			Ticks: numericTicks(minValue, maxValue, plot, direction),
+		}
 	}
 
 	return axis
@@ -284,7 +295,12 @@ func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, directi
 		return direction.center(plot)
 	}
 
-	norm := (value.Numeric - minValue) / (maxValue - minValue)
+	var norm float64
+	if axis.Numeric.Scale == Log {
+		norm = (math.Log(value.Numeric) - math.Log(minValue)) / (math.Log(maxValue) - math.Log(minValue))
+	} else {
+		norm = (value.Numeric - minValue) / (maxValue - minValue)
+	}
 
 	return direction.position(plot, norm)
 }
@@ -335,4 +351,97 @@ func (d axisDirection) categoryValue(point PointDatum) string {
 	}
 
 	return point.Y.Category
+}
+
+func logNumericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirection) []AxisTick {
+	if minValue == maxValue {
+		return []AxisTick{{
+			Value:    minValue,
+			Label:    formatTick(minValue, 0),
+			Position: direction.center(plot),
+		}}
+	}
+
+	logMin := math.Log(minValue)
+	logMax := math.Log(maxValue)
+
+	// Collect candidate tick values at powers of 10 within [minValue, maxValue]
+	candidates := logTickCandidates(minValue, maxValue)
+
+	// If fewer than 4 ticks, add 2x and 5x intermediate values per decade
+	if len(candidates) < 4 {
+		candidates = logTickCandidatesWithSubdivisions(minValue, maxValue)
+	}
+
+	// Fallback: if still too few candidates (narrow sub-decade range), generate
+	// evenly-spaced ticks in log space using the endpoints and midpoints
+	if len(candidates) < 4 {
+		candidates = logTickFallback(minValue, maxValue)
+	}
+
+	ticks := make([]AxisTick, 0, len(candidates))
+	for _, value := range candidates {
+		norm := (math.Log(value) - logMin) / (logMax - logMin)
+		ticks = append(ticks, AxisTick{
+			Value:    value,
+			Label:    formatTick(value, 0),
+			Position: direction.position(plot, norm),
+		})
+	}
+
+	return ticks
+}
+
+const logFallbackTicks = 5
+
+// logTickFallback generates tick values evenly spaced in log space for narrow
+// ranges where no standard power-of-10 or subdivision candidates exist.
+func logTickFallback(minValue, maxValue float64) []float64 {
+	logMin := math.Log(minValue)
+	logMax := math.Log(maxValue)
+	candidates := make([]float64, logFallbackTicks)
+
+	for i := range logFallbackTicks {
+		t := float64(i) / float64(logFallbackTicks-1)
+		candidates[i] = math.Exp(logMin + t*(logMax-logMin))
+	}
+
+	return candidates
+}
+
+// logTickCandidates returns powers of 10 within [minValue, maxValue].
+func logTickCandidates(minValue, maxValue float64) []float64 {
+	startExp := math.Floor(math.Log10(minValue))
+	endExp := math.Ceil(math.Log10(maxValue))
+
+	candidates := make([]float64, 0, int(endExp-startExp)+1)
+	for exp := startExp; exp <= endExp; exp++ {
+		value := math.Pow(10, exp)
+		if value >= minValue && value <= maxValue {
+			candidates = append(candidates, value)
+		}
+	}
+
+	return candidates
+}
+
+// logTickCandidatesWithSubdivisions returns powers of 10 plus 2x and 5x
+// subdivisions within [minValue, maxValue].
+func logTickCandidatesWithSubdivisions(minValue, maxValue float64) []float64 {
+	startExp := math.Floor(math.Log10(minValue))
+	endExp := math.Ceil(math.Log10(maxValue))
+	multipliers := []float64{1, 2, 5}
+
+	candidates := make([]float64, 0, int(endExp-startExp)*3+1)
+	for exp := startExp; exp <= endExp; exp++ {
+		base := math.Pow(10, exp)
+		for _, m := range multipliers {
+			value := base * m
+			if value >= minValue && value <= maxValue {
+				candidates = append(candidates, value)
+			}
+		}
+	}
+
+	return candidates
 }

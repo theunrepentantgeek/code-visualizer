@@ -18,18 +18,18 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 		return eris.New("x-axis metric is required")
 	}
 
-	xAxis, err := resolveAxisSpec(cfg.XAxis)
+	xAxis, err := resolveAxisSpec(cfg.XAxis, cfg.XScale)
 	if err != nil {
-		return eris.Wrap(err, "invalid x-axis metric")
+		return eris.Wrap(err, "invalid x-axis configuration")
 	}
 
 	if stages.PtrString(cfg.YAxis) == "" {
 		return eris.New("y-axis metric is required")
 	}
 
-	yAxis, err := resolveAxisSpec(cfg.YAxis)
+	yAxis, err := resolveAxisSpec(cfg.YAxis, cfg.YScale)
 	if err != nil {
-		return eris.Wrap(err, "invalid y-axis metric")
+		return eris.Wrap(err, "invalid y-axis configuration")
 	}
 
 	size := metric.Name(stages.PtrString(cfg.Size))
@@ -48,7 +48,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 	return nil
 }
 
-func resolveAxisSpec(name *string) (AxisSpec, error) {
+func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
 	descriptor, ok := provider.GetDescriptor(metricName)
 
@@ -56,7 +56,26 @@ func resolveAxisSpec(name *string) (AxisSpec, error) {
 		return AxisSpec{}, eris.Errorf("unknown axis metric %q", metricName)
 	}
 
-	return AxisSpec{Metric: metricName, Kind: descriptor.Kind}, nil
+	spec := AxisSpec{Metric: metricName, Kind: descriptor.Kind}
+
+	scaleStr := stages.PtrString(scale)
+	switch scaleStr {
+	case "", "linear":
+		spec.Scale = Linear
+	case "log":
+		if descriptor.Kind == metric.Classification {
+			return AxisSpec{}, eris.Errorf(
+				"log scale is only valid for numeric metrics; %q is a classification metric",
+				metricName,
+			)
+		}
+
+		spec.Scale = Log
+	default:
+		return AxisSpec{}, eris.Errorf("unknown scale %q; must be \"linear\" or \"log\"", scaleStr)
+	}
+
+	return spec, nil
 }
 
 func resolveFillMetric(cfg *config.Scatter, size metric.Name) metric.Name {
@@ -86,9 +105,43 @@ func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *confi
 // BuildInksStage collects plottable files and creates point inks.
 func BuildInksStage(c *stages.CommonState, x *State) error {
 	x.Dataset = CollectDataset(c.Root, x.XAxis, x.YAxis, x.Size)
+
+	if err := ValidateLogScale(x.Dataset, x.XAxis, x.YAxis); err != nil {
+		return err
+	}
+
 	x.Inks = BuildInks(x.Dataset, x.FillMetric, x.FillPalette, x.BorderMetric, x.BorderPalette)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
+
+	return nil
+}
+
+// ValidateLogScale checks that all data values are positive when log scale is used.
+func ValidateLogScale(dataset Dataset, xAxis, yAxis AxisSpec) error {
+	xValue := func(p PointDatum) float64 { return p.X.Numeric }
+	if err := validateAxisPositive(dataset.Points, xAxis, "x-axis", xValue); err != nil {
+		return err
+	}
+
+	yValue := func(p PointDatum) float64 { return p.Y.Numeric }
+
+	return validateAxisPositive(dataset.Points, yAxis, "y-axis", yValue)
+}
+
+func validateAxisPositive(points []PointDatum, axis AxisSpec, label string, value func(PointDatum) float64) error {
+	if axis.Scale != Log {
+		return nil
+	}
+
+	for _, point := range points {
+		if value(point) <= 0 {
+			return eris.Errorf(
+				"log scale on %s requires all values to be positive; file %q has value %g",
+				label, point.File.Name, value(point),
+			)
+		}
+	}
 
 	return nil
 }
