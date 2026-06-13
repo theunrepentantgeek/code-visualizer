@@ -58,13 +58,17 @@ func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
 
 	spec := AxisSpec{Metric: metricName, Kind: descriptor.Kind}
 
-	switch stages.PtrString(scale) {
+	scaleStr := stages.PtrString(scale)
+	switch scaleStr {
 	case "", "linear":
 		spec.Scale = Linear
 	case "log":
+		if descriptor.Kind == metric.Classification {
+			return AxisSpec{}, eris.Errorf("log scale is only valid for numeric metrics; %q is a classification metric", metricName)
+		}
 		spec.Scale = Log
 	default:
-		return AxisSpec{}, eris.Errorf("unknown scale %q; must be \"linear\" or \"log\"", stages.PtrString(scale))
+		return AxisSpec{}, eris.Errorf("unknown scale %q; must be \"linear\" or \"log\"", scaleStr)
 	}
 
 	return spec, nil
