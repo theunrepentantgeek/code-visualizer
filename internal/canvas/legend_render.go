@@ -51,8 +51,8 @@ func (c *Canvas) decomposeLegend() []layeredShape {
 	if data.Orientation == model.LegendOrientationHorizontal {
 		lb.addEntriesH(data, px, py)
 	} else {
-		px += legendlayout.ContentOffsetV(data)
-		lb.addEntriesV(data, px, py)
+		contentAreaW := w - 2*model.LegendPadding
+		lb.addEntriesV(data, px, py, contentAreaW)
 	}
 
 	return lb.shapes
@@ -86,23 +86,28 @@ func (lb *legendBuilder) addBackground(x, y, w, h float64) {
 }
 
 func (lb *legendBuilder) addEntriesV(
-	data *model.LegendData, x, y float64,
+	data *model.LegendData, x, y float64, contentAreaW float64,
 ) {
 	cy := y
 
 	if data.LabelSample != nil {
-		cy = lb.addLabelSample(data.LabelSample, x, cy)
+		sampleW, _ := legendlayout.MeasureLabelSample(data.LabelSample)
+		sampleX := x + (contentAreaW-sampleW)/2
+		cy = lb.addLabelSample(data.LabelSample, sampleX, cy)
+
 		if len(data.Entries) > 0 {
 			cy += model.EntryGap
 		}
 	}
+
+	entryX := x + legendlayout.ContentOffsetV(data)
 
 	for i, entry := range data.Entries {
 		if i > 0 {
 			cy += model.EntryGap
 		}
 
-		cy = lb.addEntry(data.Orientation, entry, x, cy)
+		cy = lb.addEntry(data.Orientation, entry, entryX, cy)
 	}
 }
 

@@ -290,11 +290,13 @@ func MeasureCatSwatchColumnWidth(label string) float64 {
 }
 
 // ContentOffsetV computes the horizontal offset needed to centre the
-// visual content block within the legend content area for vertical layout.
+// entry content block within the legend content area for vertical layout.
 // The content block includes swatches (left-aligned) and titles (centred
 // over swatch columns); when titles are wider they extend beyond the swatch
 // column. This function returns the shift to apply so the overall visual
 // centre aligns with the legend centre.
+// Note: the label sample is centred independently and excluded from this
+// calculation.
 func ContentOffsetV(data *model.LegendData) float64 {
 	if data == nil || len(data.Entries) == 0 {
 		return 0
@@ -302,14 +304,9 @@ func ContentOffsetV(data *model.LegendData) float64 {
 
 	measurer := NewBasicMeasurer()
 
-	// Compute visual extent of all content relative to x=0.
+	// Compute visual extent of entries relative to x=0.
 	leftExtent := 0.0
 	rightExtent := 0.0
-
-	if data.LabelSample != nil {
-		sw, _ := measureLabelSampleImpl(measurer, data.LabelSample)
-		rightExtent = max(rightExtent, sw)
-	}
 
 	for _, entry := range data.Entries {
 		swColW, _ := measureEntryV(measurer, entry)
