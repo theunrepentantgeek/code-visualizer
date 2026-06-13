@@ -54,11 +54,7 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 
 	p, err := provider.FindWithHint(metric.Name(size), metric.File)
 	if err != nil {
-		if !strings.Contains(err.Error(), "exists for target") {
-			return eris.Errorf("invalid size metric: %s; available metrics: %s", err, formatMetricNames())
-		}
-
-		return eris.Wrap(err, "invalid size metric")
+		return eris.Wrapf(err, "invalid size metric; available file metrics: %s", formatMetricNames())
 	}
 
 	d := provider.Descriptor(p)

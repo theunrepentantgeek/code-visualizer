@@ -520,7 +520,7 @@ func TestTreemapCmd_ValidateConfig_InvalidSizeMetricListsAvailableMetrics(t *tes
 
 	errText := err.Error()
 	g.Expect(errText).To(ContainSubstring("invalid size metric"))
-	g.Expect(errText).To(ContainSubstring("available metrics:"))
+	g.Expect(errText).To(ContainSubstring("available file metrics:"))
 }
 
 func TestTreemapCmd_ValidateConfig_MeasureMetricAccepted(t *testing.T) {
