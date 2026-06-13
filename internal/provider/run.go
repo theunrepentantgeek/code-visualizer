@@ -125,7 +125,7 @@ func visitDep(
 			"unknown %s metric %q; available metrics: %s",
 			target,
 			name,
-			formatNames(reg.names(target)),
+			formatNames(reg.namesFor(target)),
 		)
 	}
 

@@ -78,7 +78,7 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 }
 
 func formatMetricNames() string {
-	names := provider.Names(metric.File)
+	names := provider.NamesFor(metric.File)
 	strs := make([]string, len(names))
 
 	for i, n := range names {

@@ -58,7 +58,33 @@ func (r *registry) get(name metric.Name, target metric.Target) (Interface, bool)
 	return p, true
 }
 
-func (r *registry) all(target metric.Target) []Interface {
+func (r *registry) all() []Interface {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var result []Interface
+
+	for _, inner := range r.providers {
+		for _, provider := range inner {
+			result = append(result, provider)
+		}
+	}
+
+	slices.SortFunc(
+		result,
+		func(left Interface, right Interface) int {
+			if byName := cmp.Compare(left.Name(), right.Name()); byName != 0 {
+				return byName
+			}
+
+			return cmp.Compare(left.Target(), right.Target())
+		},
+	)
+
+	return result
+}
+
+func (r *registry) allFor(target metric.Target) []Interface {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -78,7 +104,24 @@ func (r *registry) all(target metric.Target) []Interface {
 	return result
 }
 
-func (r *registry) names(target metric.Target) []metric.Name {
+func (r *registry) names() []metric.Name {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	unique := make(map[metric.Name]struct{})
+	for _, inner := range r.providers {
+		for name := range inner {
+			unique[name] = struct{}{}
+		}
+	}
+
+	names := slices.Collect(maps.Keys(unique))
+	slices.SortFunc(names, cmp.Compare)
+
+	return names
+}
+
+func (r *registry) namesFor(target metric.Target) []metric.Name {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -145,12 +188,15 @@ func GetDescriptor(name metric.Name, target metric.Target) (MetricDescriptor, bo
 	return Descriptor(p), true
 }
 
-// All returns all registered providers for the given target.
-func All(target metric.Target) []Interface { return globalRegistry.all(target) }
+// All returns all registered providers across all targets.
+func All() []Interface { return globalRegistry.all() }
 
-// AllDescriptors returns metadata for all registered providers for the given target.
-func AllDescriptors(target metric.Target) []MetricDescriptor {
-	providers := globalRegistry.all(target)
+// AllFor returns all registered providers for the given target.
+func AllFor(target metric.Target) []Interface { return globalRegistry.allFor(target) }
+
+// AllDescriptors returns metadata for all registered providers across all targets.
+func AllDescriptors() []MetricDescriptor {
+	providers := globalRegistry.all()
 
 	descriptors := make([]MetricDescriptor, len(providers))
 	for i, p := range providers {
@@ -160,8 +206,23 @@ func AllDescriptors(target metric.Target) []MetricDescriptor {
 	return descriptors
 }
 
-// Names returns the sorted names of all registered providers for the given target.
-func Names(target metric.Target) []metric.Name { return globalRegistry.names(target) }
+// AllDescriptorsFor returns metadata for all registered providers for the given target.
+func AllDescriptorsFor(target metric.Target) []MetricDescriptor {
+	providers := globalRegistry.allFor(target)
+
+	descriptors := make([]MetricDescriptor, len(providers))
+	for i, p := range providers {
+		descriptors[i] = Descriptor(p)
+	}
+
+	return descriptors
+}
+
+// Names returns the sorted, deduplicated names of all registered providers across all targets.
+func Names() []metric.Name { return globalRegistry.names() }
+
+// NamesFor returns the sorted names of all registered providers for the given target.
+func NamesFor(target metric.Target) []metric.Name { return globalRegistry.namesFor(target) }
 
 // FindWithHint looks up a provider by name and target. On failure, it checks
 // whether the metric exists for a different target and includes that as a hint.

@@ -33,7 +33,7 @@ var providerSectionOrder = []string{
 
 //nolint:unparam // nil error required to satisfy the interface for Kong
 func (HelpMetricsCmd) Run(_ *Flags) error {
-	descriptors := provider.AllDescriptors(metric.File)
+	descriptors := provider.AllDescriptors()
 	groups := buildProviderGroups(descriptors)
 	fmt.Print(renderProviderGroups(groups))
 

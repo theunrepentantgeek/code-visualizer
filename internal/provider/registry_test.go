@@ -105,11 +105,27 @@ func TestAllProviders(t *testing.T) {
 	reg.register(&stubProvider{name: "m2", kind: metric.Classification, target: metric.File})
 	reg.register(&stubProvider{name: "m3", kind: metric.Quantity, target: metric.Directory})
 
-	all := reg.all(metric.File)
+	all := reg.allFor(metric.File)
 	g.Expect(all).To(HaveLen(2))
 
-	allDir := reg.all(metric.Directory)
+	allDir := reg.allFor(metric.Directory)
 	g.Expect(allDir).To(HaveLen(1))
+}
+
+func TestAllProvidersAcrossTargets(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	reg.register(&stubProvider{name: "zeta", kind: metric.Quantity, target: metric.Directory})
+	reg.register(&stubProvider{name: "alpha", kind: metric.Quantity, target: metric.File})
+	reg.register(&stubProvider{name: "mid", kind: metric.Classification, target: metric.Directory})
+
+	all := reg.all()
+	g.Expect(all).To(HaveLen(3))
+	g.Expect([]metric.Name{all[0].Name(), all[1].Name(), all[2].Name()}).To(
+		Equal([]metric.Name{"alpha", "mid", "zeta"}),
+	)
 }
 
 func TestRegisterDuplicatePanics(t *testing.T) {
@@ -145,7 +161,21 @@ func TestNamesSorted(t *testing.T) {
 	reg.register(&stubProvider{name: "alpha", kind: metric.Quantity, target: metric.File})
 	reg.register(&stubProvider{name: "mid", kind: metric.Quantity, target: metric.File})
 
-	names := reg.names(metric.File)
+	names := reg.namesFor(metric.File)
+	g.Expect(names).To(Equal([]metric.Name{"alpha", "mid", "zebra"}))
+}
+
+func TestNamesDeduplicateAcrossTargets(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newRegistry()
+	reg.register(&stubProvider{name: "zebra", kind: metric.Quantity, target: metric.File})
+	reg.register(&stubProvider{name: "alpha", kind: metric.Quantity, target: metric.File})
+	reg.register(&stubProvider{name: "alpha", kind: metric.Quantity, target: metric.Directory})
+	reg.register(&stubProvider{name: "mid", kind: metric.Quantity, target: metric.Directory})
+
+	names := reg.names()
 	g.Expect(names).To(Equal([]metric.Name{"alpha", "mid", "zebra"}))
 }
 

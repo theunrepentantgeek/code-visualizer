@@ -100,7 +100,7 @@ func (m *MetricSpec) Validate(label string) error {
 
 	if m.Metric != "" {
 		if _, ok := provider.Get(m.Metric, metric.File); !ok {
-			names := provider.Names(metric.File)
+			names := provider.NamesFor(metric.File)
 			strs := make([]string, len(names))
 
 			for i, n := range names {
