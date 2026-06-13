@@ -46,7 +46,10 @@ func getService(repoPath string) (*repoService, error) {
 		return result.svc, result.err
 	}
 
-	repo, err := gogit.PlainOpenWithOptions(repoPath, &gogit.PlainOpenOptions{DetectDotGit: true})
+	repo, err := gogit.PlainOpenWithOptions(repoPath, &gogit.PlainOpenOptions{
+		DetectDotGit:          true,
+		EnableDotGitCommonDir: true,
+	})
 	if err != nil {
 		err = eris.Wrap(err, "failed to open git repository")
 		services[repoPath] = &serviceResult{nil, err}

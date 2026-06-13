@@ -9,7 +9,10 @@ import (
 
 // IsGitRepo checks if the given path is inside a git repository.
 func IsGitRepo(path string) (bool, error) {
-	_, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{DetectDotGit: true})
+	_, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
+		DetectDotGit:          true,
+		EnableDotGitCommonDir: true,
+	})
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {
 			return false, nil
