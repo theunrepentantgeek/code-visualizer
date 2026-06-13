@@ -66,7 +66,8 @@ func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
 		if descriptor.Kind == metric.Classification {
 			return AxisSpec{}, eris.Errorf(
 				"log scale is only valid for numeric metrics; %q is a classification metric",
-				metricName)
+				metricName,
+			)
 		}
 
 		spec.Scale = Log
