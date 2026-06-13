@@ -89,10 +89,9 @@ func resetService() {
 
 var errUntracked = errors.New("file has no git history")
 
-// metricFor is a generic helper that fetches commit data for a file and applies
-// the given compute function. It deduplicates the repeated "fetch → check → extract"
-// pattern across all metric methods.
-func metricFor[T int64 | float64](s *repoService, relPath string, compute func(*commitData) (T, error)) (T, error) {
+// metricFor is a generic helper that fetches commit data for a file, checks
+// whether the file is untracked (count == 0), and applies the compute function.
+func metricFor[T int64 | float64](s *repoService, relPath string, compute func(*commitData) T) (T, error) {
 	data, err := s.getCommitData(relPath)
 	if err != nil {
 		var zero T
@@ -100,83 +99,61 @@ func metricFor[T int64 | float64](s *repoService, relPath string, compute func(*
 		return zero, err
 	}
 
-	return compute(data)
+	if data.count == 0 {
+		var zero T
+
+		return zero, errUntracked
+	}
+
+	return compute(data), nil
 }
 
 func (s *repoService) fileAge(relPath string) (int64, error) {
-	return metricFor(s, relPath, func(data *commitData) (int64, error) {
-		if data.oldest.IsZero() {
-			return 0, errUntracked
-		}
-
-		return int64(time.Since(data.oldest).Hours() / 24), nil
+	return metricFor(s, relPath, func(data *commitData) int64 {
+		return int64(time.Since(data.oldest).Hours() / 24)
 	})
 }
 
 func (s *repoService) fileFreshness(relPath string) (int64, error) {
-	return metricFor(s, relPath, func(data *commitData) (int64, error) {
-		if data.newest.IsZero() {
-			return 0, errUntracked
-		}
-
-		return int64(time.Since(data.newest).Hours() / 24), nil
+	return metricFor(s, relPath, func(data *commitData) int64 {
+		return int64(time.Since(data.newest).Hours() / 24)
 	})
 }
 
 func (s *repoService) authorCount(relPath string) (int64, error) {
-	return metricFor(s, relPath, func(data *commitData) (int64, error) {
-		if len(data.authors) == 0 {
-			return 0, errUntracked
-		}
-
-		return int64(len(data.authors)), nil
+	return metricFor(s, relPath, func(data *commitData) int64 {
+		return int64(len(data.authors))
 	})
 }
 
 func (s *repoService) commitCount(relPath string) (int64, error) {
-	return metricFor(s, relPath, func(data *commitData) (int64, error) {
-		if data.count == 0 {
-			return 0, errUntracked
-		}
-
-		return data.count, nil
+	return metricFor(s, relPath, func(data *commitData) int64 {
+		return data.count
 	})
 }
 
 func (s *repoService) totalLinesAdded(relPath string) (int64, error) {
-	return metricFor(s, relPath, func(data *commitData) (int64, error) {
-		if data.count == 0 {
-			return 0, errUntracked
-		}
-
-		return data.linesAdded, nil
+	return metricFor(s, relPath, func(data *commitData) int64 {
+		return data.linesAdded
 	})
 }
 
 func (s *repoService) totalLinesRemoved(relPath string) (int64, error) {
-	return metricFor(s, relPath, func(data *commitData) (int64, error) {
-		if data.count == 0 {
-			return 0, errUntracked
-		}
-
-		return data.linesRemoved, nil
+	return metricFor(s, relPath, func(data *commitData) int64 {
+		return data.linesRemoved
 	})
 }
 
 const monthHours = 24 * 30.44
 
 func (s *repoService) commitDensity(relPath string) (float64, error) {
-	return metricFor(s, relPath, func(data *commitData) (float64, error) {
-		if data.count == 0 {
-			return 0, errUntracked
-		}
-
+	return metricFor(s, relPath, func(data *commitData) float64 {
 		fileAgeMonths := time.Since(data.oldest).Hours() / monthHours
 		if fileAgeMonths < 1 {
 			fileAgeMonths = 1
 		}
 
-		return float64(data.count) / fileAgeMonths, nil
+		return float64(data.count) / fileAgeMonths
 	})
 }
 
