@@ -20,7 +20,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 
 	xAxis, err := resolveAxisSpec(cfg.XAxis, cfg.XScale)
 	if err != nil {
-		return eris.Wrap(err, "invalid x-axis metric")
+		return eris.Wrap(err, "invalid x-axis configuration")
 	}
 
 	if stages.PtrString(cfg.YAxis) == "" {
