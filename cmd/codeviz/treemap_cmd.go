@@ -52,11 +52,16 @@ func (*TreemapCmd) Validate() error {
 func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 	size := ptrString(cfg.Size)
 
-	d, ok := provider.GetDescriptor(metric.Name(size), metric.File)
-	if !ok {
-		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
+	p, err := provider.FindWithHint(metric.Name(size), metric.File)
+	if err != nil {
+		if !strings.Contains(err.Error(), "exists for target") {
+			return eris.Errorf("invalid size metric: %s; available metrics: %s", err, formatMetricNames())
+		}
+
+		return eris.Wrap(err, "invalid size metric")
 	}
 
+	d := provider.Descriptor(p)
 	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, d.Kind)
 	}

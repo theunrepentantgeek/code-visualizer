@@ -504,6 +504,25 @@ func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
 }
 
+func TestTreemapCmd_ValidateConfig_InvalidSizeMetricListsAvailableMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Treemap.Size = new("not-a-real-metric")
+
+	cmd := &TreemapCmd{}
+
+	err := cmd.validateConfig(cfg.Treemap)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	errText := err.Error()
+	g.Expect(errText).To(ContainSubstring("invalid size metric"))
+	g.Expect(errText).To(ContainSubstring("available metrics:"))
+}
+
 func TestTreemapCmd_ValidateConfig_MeasureMetricAccepted(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
