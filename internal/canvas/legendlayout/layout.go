@@ -289,6 +289,49 @@ func MeasureCatSwatchColumnWidth(label string) float64 {
 	return max(model.SwatchSize, tw) + model.SwatchGap + model.LabelGap
 }
 
+// ContentOffsetV computes the horizontal offset needed to centre the
+// entry content block within the legend content area for vertical layout.
+// The content block includes swatches (left-aligned) and titles (centred
+// over swatch columns); when titles are wider they extend beyond the swatch
+// column. This function returns the shift to apply so the overall visual
+// centre aligns with the legend centre.
+// Note: the label sample is centred independently and excluded from this
+// calculation.
+func ContentOffsetV(data *model.LegendData) float64 {
+	if data == nil || len(data.Entries) == 0 {
+		return 0
+	}
+
+	measurer := NewBasicMeasurer()
+
+	// Compute visual extent of entries relative to x=0.
+	leftExtent := 0.0
+	rightExtent := 0.0
+
+	for _, entry := range data.Entries {
+		swColW, _ := measureEntryV(measurer, entry)
+		rightExtent = max(rightExtent, swColW)
+
+		lw, _ := measurer.MeasureString(entry.Label)
+		mw, _ := measurer.MeasureString(entry.Metric)
+		titleW := max(lw, mw)
+
+		titleLeft := swColW/2 - titleW/2
+		titleRight := swColW/2 + titleW/2
+
+		leftExtent = min(leftExtent, titleLeft)
+		rightExtent = max(rightExtent, titleRight)
+	}
+
+	contentBoundingWidth := rightExtent - leftExtent
+	legendContentW, _ := measureLegendV(measurer, data)
+	legendContentW -= 2 * model.LegendPadding
+
+	offset := (legendContentW-contentBoundingWidth)/2 - leftExtent
+
+	return max(0, offset)
+}
+
 // MeasureLabelSample returns the width and height for a label sample square.
 func MeasureLabelSample(sample *model.LegendLabelSample) (width, height float64) {
 	return measureLabelSampleImpl(NewBasicMeasurer(), sample)

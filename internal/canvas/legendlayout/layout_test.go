@@ -186,6 +186,75 @@ func TestReserveSpace_CornerHorizontal_ReducesHeight(t *testing.T) {
 	g.Expect(hReduce).To(BeNumerically(">", 0))
 }
 
+func TestContentOffsetV_NilData_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(ContentOffsetV(nil)).To(BeZero())
+}
+
+func TestContentOffsetV_NoEntries_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := &model.LegendData{Orientation: model.LegendOrientationVertical}
+	g.Expect(ContentOffsetV(data)).To(BeZero())
+}
+
+func TestContentOffsetV_WideTitleNarrowSwatches_ReturnsPositiveOffset(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Entry with a title much wider than the swatch column should produce
+	// a positive offset to shift content rightward so titles are centred.
+	data := &model.LegendData{
+		Position:    model.LegendPositionCenterLeft,
+		Orientation: model.LegendOrientationVertical,
+		Entries: []model.LegendEntryData{
+			{
+				Label:  "Fill",
+				Metric: "lines-of-code-excluding-blanks",
+				Kind:   model.LegendEntryNumeric,
+				Swatches: []model.LegendSwatch{
+					{Colour: color.RGBA{R: 100, A: 255}, Label: "10"},
+					{Colour: color.RGBA{R: 200, A: 255}, Label: ""},
+				},
+			},
+		},
+	}
+
+	offset := ContentOffsetV(data)
+	g.Expect(offset).To(BeNumerically(">", 0),
+		"offset should be positive when titles are wider than swatches")
+}
+
+func TestContentOffsetV_NarrowTitle_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Entry with narrow titles (shorter than swatches+labels) should
+	// produce zero or near-zero offset.
+	data := &model.LegendData{
+		Position:    model.LegendPositionCenterLeft,
+		Orientation: model.LegendOrientationVertical,
+		Entries: []model.LegendEntryData{
+			{
+				Label:  "X",
+				Metric: "Y",
+				Kind:   model.LegendEntryCategorical,
+				Swatches: []model.LegendSwatch{
+					{Colour: color.RGBA{R: 100, A: 255}, Label: "very-long-category-name"},
+					{Colour: color.RGBA{R: 200, A: 255}, Label: "another-long-one-here"},
+				},
+			},
+		},
+	}
+
+	offset := ContentOffsetV(data)
+	g.Expect(offset).To(BeNumerically("~", 0, 0.01),
+		"offset should be zero when swatches are wider than titles")
+}
+
 // makeSampleLegendData creates test legend data with both numeric and
 // categorical entries.
 func makeSampleLegendData(orientation model.LegendOrientation) *model.LegendData {
