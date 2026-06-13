@@ -373,6 +373,12 @@ func logNumericTicks(minValue, maxValue float64, plot PlotRect, direction axisDi
 		candidates = logTickCandidatesWithSubdivisions(minValue, maxValue)
 	}
 
+	// Fallback: if still no candidates (narrow sub-decade range), generate
+	// evenly-spaced ticks in log space using the endpoints and midpoints
+	if len(candidates) == 0 {
+		candidates = logTickFallback(minValue, maxValue)
+	}
+
 	ticks := make([]AxisTick, 0, len(candidates))
 	for _, value := range candidates {
 		norm := (math.Log(value) - logMin) / (logMax - logMin)
@@ -384,6 +390,23 @@ func logNumericTicks(minValue, maxValue float64, plot PlotRect, direction axisDi
 	}
 
 	return ticks
+}
+
+const logFallbackTicks = 5
+
+// logTickFallback generates tick values evenly spaced in log space for narrow
+// ranges where no standard power-of-10 or subdivision candidates exist.
+func logTickFallback(minValue, maxValue float64) []float64 {
+	logMin := math.Log(minValue)
+	logMax := math.Log(maxValue)
+	candidates := make([]float64, logFallbackTicks)
+
+	for i := range logFallbackTicks {
+		t := float64(i) / float64(logFallbackTicks-1)
+		candidates[i] = math.Exp(logMin + t*(logMax-logMin))
+	}
+
+	return candidates
 }
 
 // logTickCandidates returns powers of 10 within [minValue, maxValue].

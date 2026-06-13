@@ -277,6 +277,25 @@ func TestLogNumericTicks_NarrowRange_AddsIntermediateTicks(t *testing.T) {
 	}
 }
 
+func TestLogNumericTicks_SubDecadeRange_UsesFallback(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	// Range [11, 19] has no power-of-10 or subdivision candidate inside it
+	ticks := logNumericTicks(11, 19, plot, horizontalAxis)
+
+	// Fallback generates 5 evenly-spaced ticks in log space
+	g.Expect(ticks).To(HaveLen(5))
+	g.Expect(ticks[0].Value).To(BeNumerically("~", 11, 0.01))
+	g.Expect(ticks[4].Value).To(BeNumerically("~", 19, 0.01))
+
+	// Positions should be monotonically increasing
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position).To(BeNumerically(">", ticks[i-1].Position))
+	}
+}
+
 func TestLogNumericTicks_SingleValue_ReturnsCenterTick(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
