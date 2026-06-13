@@ -5,6 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
@@ -16,5 +17,5 @@ func RunProviders(c *CommonState) error {
 	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
 	defer stopMetricTicker()
 
-	return eris.Wrap(provider.Run(c.Root, c.Requested, metricProg), "failed to load metrics")
+	return eris.Wrap(provider.Run(c.Root, c.Requested, metric.File, metricProg), "failed to load metrics")
 }

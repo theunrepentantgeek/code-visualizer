@@ -58,7 +58,7 @@ func buildMetricInk(
 		return canvas.FixedInk(fallback)
 	}
 
-	descriptor, ok := provider.GetDescriptor(name)
+	descriptor, ok := provider.GetDescriptor(name, metric.File)
 	if !ok {
 		return canvas.FixedInk(fallback)
 	}

@@ -51,7 +51,7 @@ func (*RadialCmd) Validate() error {
 func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 	discSize := ptrString(cfg.DiscSize)
 
-	d, ok := provider.GetDescriptor(metric.Name(discSize))
+	d, ok := provider.GetDescriptor(metric.Name(discSize), metric.File)
 	if !ok {
 		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", discSize, formatMetricNames())
 	}

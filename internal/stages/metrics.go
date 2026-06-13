@@ -30,7 +30,7 @@ func ResolveFillPalette(fill *config.MetricSpec, fillMetric metric.Name) palette
 		return fp
 	}
 
-	if d, ok := provider.GetDescriptor(fillMetric); ok {
+	if d, ok := provider.GetDescriptor(fillMetric, metric.File); ok {
 		return d.DefaultPalette
 	}
 
@@ -47,7 +47,7 @@ func ResolveBorderMetricAndPalette(border *config.MetricSpec) (metric.Name, pale
 
 	borderPaletteName := border.PaletteName()
 	if borderPaletteName == "" {
-		if d, ok := provider.GetDescriptor(borderMetric); ok {
+		if d, ok := provider.GetDescriptor(borderMetric, metric.File); ok {
 			borderPaletteName = d.DefaultPalette
 		} else {
 			borderPaletteName = palette.Neutral

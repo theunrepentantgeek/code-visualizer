@@ -52,7 +52,7 @@ func (*TreemapCmd) Validate() error {
 func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 	size := ptrString(cfg.Size)
 
-	d, ok := provider.GetDescriptor(metric.Name(size))
+	d, ok := provider.GetDescriptor(metric.Name(size), metric.File)
 	if !ok {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}
@@ -73,7 +73,7 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 }
 
 func formatMetricNames() string {
-	names := provider.Names()
+	names := provider.Names(metric.File)
 	strs := make([]string, len(names))
 
 	for i, n := range names {

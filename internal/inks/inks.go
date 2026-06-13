@@ -22,7 +22,7 @@ func BuildMetricInk(
 	palName palette.PaletteName,
 	fallback color.RGBA,
 ) canvas.Ink {
-	d, ok := provider.GetDescriptor(m)
+	d, ok := provider.GetDescriptor(m, metric.File)
 	if !ok {
 		return canvas.FixedInk(fallback)
 	}
