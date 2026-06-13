@@ -4,6 +4,7 @@ package scatter
 type NumericAxis struct {
 	Min   float64
 	Max   float64
+	Scale ScaleType
 	Ticks []AxisTick
 }
 
