@@ -38,6 +38,7 @@ type mockProvider struct {
 
 func (m *mockProvider) Name() metric.Name                 { return m.name }
 func (m *mockProvider) Kind() metric.Kind                 { return m.kind }
+func (*mockProvider) Target() metric.Target               { return metric.File }
 func (*mockProvider) Description() string                 { return "" }
 func (m *mockProvider) Dependencies() []metric.Name       { return m.deps }
 func (*mockProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
@@ -164,6 +165,7 @@ type concurrentProvider struct {
 
 func (c *concurrentProvider) Name() metric.Name                 { return c.name }
 func (*concurrentProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*concurrentProvider) Target() metric.Target               { return metric.File }
 func (*concurrentProvider) Description() string                 { return "" }
 func (*concurrentProvider) Dependencies() []metric.Name         { return nil }
 func (*concurrentProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }

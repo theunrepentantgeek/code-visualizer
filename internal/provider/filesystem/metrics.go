@@ -39,6 +39,7 @@ type FileSizeProvider struct{}
 
 func (FileSizeProvider) Name() metric.Name                   { return FileSize }
 func (FileSizeProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (FileSizeProvider) Target() metric.Target               { return metric.File }
 func (FileSizeProvider) Description() string                 { return "Size of each file in bytes." }
 func (FileSizeProvider) Dependencies() []metric.Name         { return nil }
 func (FileSizeProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
@@ -49,6 +50,7 @@ type FileTypeProvider struct{}
 
 func (FileTypeProvider) Name() metric.Name                   { return FileType }
 func (FileTypeProvider) Kind() metric.Kind                   { return metric.Classification }
+func (FileTypeProvider) Target() metric.Target               { return metric.File }
 func (FileTypeProvider) Description() string                 { return "File extension category (e.g. go, md, png)." }
 func (FileTypeProvider) Dependencies() []metric.Name         { return nil }
 func (FileTypeProvider) DefaultPalette() palette.PaletteName { return palette.Categorization }
@@ -61,6 +63,7 @@ type FileLinesProvider struct {
 
 func (*FileLinesProvider) Name() metric.Name                   { return FileLines }
 func (*FileLinesProvider) Kind() metric.Kind                   { return metric.Quantity }
+func (*FileLinesProvider) Target() metric.Target               { return metric.File }
 func (*FileLinesProvider) Description() string                 { return "Number of lines in each text file." }
 func (*FileLinesProvider) Dependencies() []metric.Name         { return nil }
 func (*FileLinesProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }

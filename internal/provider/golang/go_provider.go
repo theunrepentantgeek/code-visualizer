@@ -30,6 +30,7 @@ type goProvider struct {
 
 func (p *goProvider) Name() metric.Name                   { return p.name }
 func (p *goProvider) Kind() metric.Kind                   { return p.kind }
+func (*goProvider) Target() metric.Target                 { return metric.File }
 func (p *goProvider) Description() string                 { return p.description }
 func (*goProvider) Dependencies() []metric.Name           { return nil }
 func (p *goProvider) DefaultPalette() palette.PaletteName { return p.defaultPalette }
