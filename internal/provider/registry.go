@@ -27,15 +27,18 @@ func (r *registry) register(p Interface) {
 	defer r.mu.Unlock()
 
 	target := p.Target()
-	if r.providers[target] == nil {
-		r.providers[target] = make(map[metric.Name]Interface)
+	targetProviders := r.providers[target]
+
+	if targetProviders == nil {
+		targetProviders = make(map[metric.Name]Interface)
+		r.providers[target] = targetProviders
 	}
 
-	if _, exists := r.providers[target][p.Name()]; exists {
+	if _, exists := targetProviders[p.Name()]; exists {
 		panic(fmt.Sprintf("provider %q already registered for target %q", p.Name(), target))
 	}
 
-	r.providers[target][p.Name()] = p
+	targetProviders[p.Name()] = p
 }
 
 func (r *registry) get(name metric.Name, target metric.Target) (Interface, bool) {
