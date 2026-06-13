@@ -336,3 +336,73 @@ func (d axisDirection) categoryValue(point PointDatum) string {
 
 	return point.Y.Category
 }
+
+func logNumericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirection) []AxisTick {
+	if minValue == maxValue {
+		return []AxisTick{{
+			Value:    minValue,
+			Label:    formatTick(minValue, 0),
+			Position: direction.center(plot),
+		}}
+	}
+
+	logMin := math.Log(minValue)
+	logMax := math.Log(maxValue)
+
+	// Collect candidate tick values at powers of 10 within [minValue, maxValue]
+	candidates := logTickCandidates(minValue, maxValue)
+
+	// If fewer than 4 ticks, add 2x and 5x intermediate values per decade
+	if len(candidates) < 4 {
+		candidates = logTickCandidatesWithSubdivisions(minValue, maxValue)
+	}
+
+	ticks := make([]AxisTick, 0, len(candidates))
+	for _, value := range candidates {
+		norm := (math.Log(value) - logMin) / (logMax - logMin)
+		ticks = append(ticks, AxisTick{
+			Value:    value,
+			Label:    formatTick(value, 0),
+			Position: direction.position(plot, norm),
+		})
+	}
+
+	return ticks
+}
+
+// logTickCandidates returns powers of 10 within [minValue, maxValue].
+func logTickCandidates(minValue, maxValue float64) []float64 {
+	startExp := math.Floor(math.Log10(minValue))
+	endExp := math.Ceil(math.Log10(maxValue))
+
+	candidates := make([]float64, 0, int(endExp-startExp)+1)
+	for exp := startExp; exp <= endExp; exp++ {
+		value := math.Pow(10, exp)
+		if value >= minValue && value <= maxValue {
+			candidates = append(candidates, value)
+		}
+	}
+
+	return candidates
+}
+
+// logTickCandidatesWithSubdivisions returns powers of 10 plus 2x and 5x
+// subdivisions within [minValue, maxValue].
+func logTickCandidatesWithSubdivisions(minValue, maxValue float64) []float64 {
+	startExp := math.Floor(math.Log10(minValue))
+	endExp := math.Ceil(math.Log10(maxValue))
+	multipliers := []float64{1, 2, 5}
+
+	candidates := make([]float64, 0, int(endExp-startExp)*3+1)
+	for exp := startExp; exp <= endExp; exp++ {
+		base := math.Pow(10, exp)
+		for _, m := range multipliers {
+			value := base * m
+			if value >= minValue && value <= maxValue {
+				candidates = append(candidates, value)
+			}
+		}
+	}
+
+	return candidates
+}

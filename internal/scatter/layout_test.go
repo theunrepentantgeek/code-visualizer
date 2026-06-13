@@ -226,3 +226,65 @@ func TestResolvedAxis_OffsetShiftsCategoricalBands(t *testing.T) {
 
 	g.Expect(axis.Categorical.Bands).To(Equal([]AxisBand{{Label: "go", Start: 5, End: 15, Center: 10}}))
 }
+
+func TestLogNumericTicks_SpansMultipleDecades(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := logNumericTicks(1, 10000, plot, horizontalAxis)
+
+	// Expect ticks at powers of 10: 1, 10, 100, 1000, 10000
+	g.Expect(ticks).To(HaveLen(5))
+	g.Expect(ticks[0].Value).To(BeNumerically("~", 1, 1e-9))
+	g.Expect(ticks[1].Value).To(BeNumerically("~", 10, 1e-9))
+	g.Expect(ticks[2].Value).To(BeNumerically("~", 100, 1e-9))
+	g.Expect(ticks[3].Value).To(BeNumerically("~", 1000, 1e-9))
+	g.Expect(ticks[4].Value).To(BeNumerically("~", 10000, 1e-9))
+
+	// Positions should be logarithmically spaced (equal increments in log space)
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position).To(BeNumerically(">", ticks[i-1].Position))
+	}
+
+	// Each gap should be the same size (equal decades = equal spacing)
+	gap := ticks[1].Position - ticks[0].Position
+	for i := 2; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position - ticks[i-1].Position).To(BeNumerically("~", gap, 1e-6))
+	}
+}
+
+func TestLogNumericTicks_NarrowRange_AddsIntermediateTicks(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := logNumericTicks(50, 500, plot, horizontalAxis)
+
+	// Range spans ~1 decade, so intermediate ticks (2x, 5x) are added.
+	// Expect at least 4 ticks.
+	g.Expect(len(ticks)).To(BeNumerically(">=", 4))
+
+	// All tick values should be within [50, 500]
+	for _, tick := range ticks {
+		g.Expect(tick.Value).To(BeNumerically(">=", 50))
+		g.Expect(tick.Value).To(BeNumerically("<=", 500))
+	}
+
+	// Positions should be monotonically increasing
+	for i := 1; i < len(ticks); i++ {
+		g.Expect(ticks[i].Position).To(BeNumerically(">", ticks[i-1].Position))
+	}
+}
+
+func TestLogNumericTicks_SingleValue_ReturnsCenterTick(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	ticks := logNumericTicks(42, 42, plot, horizontalAxis)
+
+	g.Expect(ticks).To(HaveLen(1))
+	g.Expect(ticks[0].Value).To(BeNumerically("~", 42, 1e-9))
+	g.Expect(ticks[0].Position).To(BeNumerically("~", 400, 1e-6)) // center of 800-wide plot
+}
