@@ -110,6 +110,7 @@ func (r *registry) names() []metric.Name {
 	defer r.mu.RUnlock()
 
 	unique := make(map[metric.Name]struct{})
+
 	for _, inner := range r.providers {
 		for name := range inner {
 			unique[name] = struct{}{}

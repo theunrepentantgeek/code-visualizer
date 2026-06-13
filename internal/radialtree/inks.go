@@ -41,6 +41,7 @@ func BuildInks(
 
 	fillDesc, _ := provider.GetDescriptor(fillMetric, metric.File)
 	inks.Fill = pkginks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFileFill)
+
 	if borderMetric != "" {
 		borderDesc, _ := provider.GetDescriptor(borderMetric, metric.File)
 		inks.Border = pkginks.BuildMetricInk(root, borderDesc, borderPaletteName, defaultBorder)

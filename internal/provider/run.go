@@ -121,25 +121,7 @@ func visitDep(
 
 	p, ok := reg.get(name, target)
 	if !ok || p == nil {
-		targets := reg.targetsForName(name)
-		if len(targets) > 0 {
-			targetStrs := make([]string, len(targets))
-			for i, t := range targets {
-				targetStrs[i] = t.String()
-			}
-
-			return eris.Errorf(
-				"unknown %s metric %q; metric %q exists for target(s): %s",
-				target, name, name, strings.Join(targetStrs, ", "),
-			)
-		}
-
-		return eris.Errorf(
-			"unknown %s metric %q; available metrics: %s",
-			target,
-			name,
-			formatNames(reg.namesFor(target)),
-		)
+		return metricNotFoundError(reg, name, target)
 	}
 
 	seen[name] = true
@@ -152,6 +134,30 @@ func visitDep(
 	}
 
 	return nil
+}
+
+// metricNotFoundError builds an error for a missing metric, including a hint
+// if the metric exists for a different target.
+func metricNotFoundError(reg *registry, name metric.Name, target metric.Target) error {
+	targets := reg.targetsForName(name)
+	if len(targets) > 0 {
+		targetStrs := make([]string, len(targets))
+		for i, t := range targets {
+			targetStrs[i] = t.String()
+		}
+
+		return eris.Errorf(
+			"unknown %s metric %q; metric %q exists for target(s): %s",
+			target, name, name, strings.Join(targetStrs, ", "),
+		)
+	}
+
+	return eris.Errorf(
+		"unknown %s metric %q; available metrics: %s",
+		target,
+		name,
+		formatNames(reg.namesFor(target)),
+	)
 }
 
 // topoSort groups metrics into execution levels. Each level's metrics have

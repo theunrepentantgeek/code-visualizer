@@ -123,9 +123,13 @@ func TestAllProvidersAcrossTargets(t *testing.T) {
 
 	all := reg.all()
 	g.Expect(all).To(HaveLen(3))
-	g.Expect([]metric.Name{all[0].Name(), all[1].Name(), all[2].Name()}).To(
-		Equal([]metric.Name{"alpha", "mid", "zeta"}),
-	)
+
+	names := make([]metric.Name, len(all))
+	for i, p := range all {
+		names[i] = p.Name()
+	}
+
+	g.Expect(names).To(Equal([]metric.Name{"alpha", "mid", "zeta"}))
 }
 
 func TestRegisterDuplicatePanics(t *testing.T) {
