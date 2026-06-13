@@ -327,3 +327,67 @@ func TestLayout_LogScalePositionsPointsLogarithmically(t *testing.T) {
 	g.Expect(points["small.go"].X).To(BeNumerically(">=", scatterPlotLeftMargin))
 	g.Expect(points["large.go"].X).To(BeNumerically("<=", 800-scatterPlotRightMargin))
 }
+
+func TestValidateLogScale_ErrorsOnZeroValue(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	zero := scatterTestFile("zero.go")
+	zero.SetQuantity(filesystem.FileLines, 0)
+	zero.SetQuantity(filesystem.FileSize, 100)
+
+	positive := scatterTestFile("positive.go")
+	positive.SetQuantity(filesystem.FileLines, 10)
+	positive.SetQuantity(filesystem.FileSize, 50)
+
+	root := &model.Directory{Files: []*model.File{zero, positive}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("x-axis"))
+	g.Expect(err.Error()).To(ContainSubstring("zero.go"))
+}
+
+func TestValidateLogScale_PassesWhenAllPositive(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	a := scatterTestFile("a.go")
+	a.SetQuantity(filesystem.FileLines, 10)
+	a.SetQuantity(filesystem.FileSize, 100)
+
+	b := scatterTestFile("b.go")
+	b.SetQuantity(filesystem.FileLines, 200)
+	b.SetQuantity(filesystem.FileSize, 50)
+
+	root := &model.Directory{Files: []*model.File{a, b}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Log}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestValidateLogScale_SkipsLinearAxes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	zero := scatterTestFile("zero.go")
+	zero.SetQuantity(filesystem.FileLines, 0)
+	zero.SetQuantity(filesystem.FileSize, 100)
+
+	root := &model.Directory{Files: []*model.File{zero}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Linear}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).NotTo(HaveOccurred())
+}

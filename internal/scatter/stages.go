@@ -97,9 +97,41 @@ func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *confi
 // BuildInksStage collects plottable files and creates point inks.
 func BuildInksStage(c *stages.CommonState, x *State) error {
 	x.Dataset = CollectDataset(c.Root, x.XAxis, x.YAxis, x.Size)
+
+	if err := ValidateLogScale(x.Dataset, x.XAxis, x.YAxis); err != nil {
+		return err
+	}
+
 	x.Inks = BuildInks(x.Dataset, x.FillMetric, x.FillPalette, x.BorderMetric, x.BorderPalette)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
+
+	return nil
+}
+
+// ValidateLogScale checks that all data values are positive when log scale is used.
+func ValidateLogScale(dataset Dataset, xAxis, yAxis AxisSpec) error {
+	if xAxis.Scale == Log {
+		for _, point := range dataset.Points {
+			if point.X.Numeric <= 0 {
+				return eris.Errorf(
+					"log scale on x-axis requires all values to be positive; file %q has value %g",
+					point.File.Name, point.X.Numeric,
+				)
+			}
+		}
+	}
+
+	if yAxis.Scale == Log {
+		for _, point := range dataset.Points {
+			if point.Y.Numeric <= 0 {
+				return eris.Errorf(
+					"log scale on y-axis requires all values to be positive; file %q has value %g",
+					point.File.Name, point.Y.Numeric,
+				)
+			}
+		}
+	}
 
 	return nil
 }
