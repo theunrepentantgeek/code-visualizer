@@ -51,6 +51,7 @@ func (c *Canvas) decomposeLegend() []layeredShape {
 	if data.Orientation == model.LegendOrientationHorizontal {
 		lb.addEntriesH(data, px, py)
 	} else {
+		px += legendlayout.ContentOffsetV(data)
 		lb.addEntriesV(data, px, py)
 	}
 
