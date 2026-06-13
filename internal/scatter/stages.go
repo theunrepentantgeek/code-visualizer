@@ -29,7 +29,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 
 	yAxis, err := resolveAxisSpec(cfg.YAxis, cfg.YScale)
 	if err != nil {
-		return eris.Wrap(err, "invalid y-axis metric")
+		return eris.Wrap(err, "invalid y-axis configuration")
 	}
 
 	size := metric.Name(stages.PtrString(cfg.Size))
