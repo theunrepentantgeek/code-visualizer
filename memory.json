@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-11T00:00:00Z",
-  "run_id": "27290130520",
+  "last_run": "2026-06-13T14:55:44Z",
+  "run_id": "27470070820",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 385,
+  "backlog_cursor": 405,
   "comments_made": {
     "324": "2026-06-01",
     "325": "2026-06-01",
@@ -16,38 +16,41 @@
     "320": "2026-06-04",
     "373": "2026-06-08",
     "374": "2026-06-07",
-    "385": "2026-06-11"
+    "385": "2026-06-11",
+    "394": "2026-06-13",
+    "402": "2026-06-13"
   },
   "prs_created": {
-    "352": { "issue": 350, "branch": "repo-assist/feat-attribution-footer", "date": "2026-06-01", "status": "merged" },
-    "357": { "issue": 355, "branch": "repo-assist/fix-issue-355-footer-space", "date": "2026-06-02", "status": "merged" },
-    "358": { "issue": 354, "branch": "repo-assist/feat-viz-title-354", "date": "2026-06-02", "status": "merged" },
-    "359": { "issue": 334, "branch": "repo-assist/refactor-export-metrics-334", "date": "2026-06-03", "status": "merged" },
-    "360": { "issue": null, "branch": "repo-assist/perf-bubbletree-sqrt-2026-06-03", "date": "2026-06-03", "status": "merged" },
-    "362": { "issue": null, "branch": "repo-assist/test-stages-errors-2026-06-04", "date": "2026-06-04", "status": "merged" },
-    "363": { "issue": 320, "branch": "repo-assist/feat-legend-config-320", "date": "2026-06-04", "status": "merged" },
-    "365": { "issue": null, "branch": "repo-assist/fix-arc-text-rune-index", "date": "2026-06-05", "status": "merged" },
-    "367": { "issue": null, "branch": "repo-assist/perf-blocklabel-fitting-2026-06-06", "date": "2026-06-06", "status": "merged" },
-    "377": { "issue": null, "branch": "repo-assist/test-canvas-title-dims-2026-06-07", "date": "2026-06-07", "status": "merged" },
-    "379": { "issue": 374, "branch": "repo-assist/feat-run-presets-374-2026-06-08", "date": "2026-06-08", "status": "open", "description": "feat(cmd): add run command with named presets" },
-    "380": { "issue": 373, "branch": "repo-assist/feat-drawing-bounds-373-2026-06-08", "date": "2026-06-08", "status": "merged" },
-    "381": { "issue": null, "branch": "repo-assist/test-config-scatter-dims-2026-06-09", "date": "2026-06-09", "status": "open", "description": "test(config,stages): Scatter overrides + Spiral/Radial/Treemap Fill/Border + ResolveDimensions" },
-    "382": { "issue": null, "branch": "repo-assist/perf-svg-grad-dedup-2026-06-09", "date": "2026-06-09", "status": "merged" },
-    "383": { "issue": 378, "branch": "repo-assist/eng-build-release-2026-06-10-1c7e770035649680", "date": "2026-06-10", "status": "open", "description": "feat(build): add cross-platform release build task, closes #378. Updated this run to add build:release step to release.yml" },
-    "384": { "issue": null, "branch": "repo-assist/perf-svg-colour-cache-2026-06-10-35282432aef07789", "date": "2026-06-10", "status": "open", "description": "perf(svg): cache colour CSS strings to reduce allocations" },
-    "fix-385": { "issue": 385, "branch": "repo-assist/fix-issue-385-metric-progress-info", "date": "2026-06-11", "status": "open - pending PR number", "description": "fix(stages): restore periodic Info-level metric progress logging, closes #385" },
-    "progress-tests": { "issue": null, "branch": "repo-assist/improve-progress-tests", "date": "2026-06-11", "status": "open - pending PR number", "description": "test(stages): add progress function tests; simplify RunProviders with defer" }
-  },
-  "issues_created": {
-    "361": { "date": "2026-06-04", "description": "chore(deps): update golang.org/x indirect deps — go.mod protected, manual action needed" },
-    "378": { "date": "2026-06-08", "description": "ci(release): add cross-platform build task — addressed by PR #383" }
+    "improve-progress-tests": {
+      "issue": null,
+      "branch": "repo-assist/improve-progress-tests",
+      "date": "2026-06-11",
+      "status": "open - pending PR number",
+      "description": "test(stages): add progress function tests; simplify RunProviders with defer"
+    },
+    "bundle-deps": {
+      "issue": null,
+      "branch": "repo-assist/eng-bundle-deps-2026-06-13",
+      "date": "2026-06-13",
+      "status": "open - protected files may have created patch",
+      "description": "chore(deps): bundle golang.org/x text 0.38 / image 0.42 / sync 0.21 — closes Dependabot #408 #409 #410"
+    },
+    "selection-metrics": {
+      "issue": 402,
+      "branch": "repo-assist/feat-selection-metrics-402",
+      "date": "2026-06-13",
+      "status": "open - pending confirmation",
+      "description": "feat(config,provider): add selection-metrics config and classification provider (foundation for #402)"
+    }
   },
   "issues_labelled": {
     "354": ["enhancement"],
     "355": ["bug"],
     "373": ["enhancement", "refactor"],
     "374": ["enhancement"],
-    "385": ["bug"]
+    "385": ["bug"],
+    "402": ["enhancement"],
+    "405": ["enhancement"]
   },
   "maintainer_preferences": [
     "Do not move helpers to new packages — keep refactors within-package",
@@ -55,5 +58,5 @@
     "Title feature: one --title TEXT flag only (not per-command separate flags)",
     "go.mod and go.sum are protected files — cannot be pushed by automation"
   ],
-  "notes": "Open Repo Assist PRs: #379 (run presets closes #374), #381 (test config/scatter), #383 (build:release closes #378, updated to add release.yml step), #384 (SVG colour cache). Two new PRs pending numbers: fix-issue-385-metric-progress-info (closes #385 bug), improve-progress-tests (progress tests + defer cleanup). Issue #385 commented with root cause. Refactor issues #324-335 awaiting maintainer. Issues #251, #349, #361 blocked/superseded."
+  "notes": "All prior open repo-assist PRs (#379,#381,#383,#384) merged by maintainer. Two PRs from 2026-06-13 run pending confirmation: bundle-deps and feat-selection-metrics-402. Progress-tests branch (repo-assist/improve-progress-tests) created 2026-06-11 still pending. Issue #394 (radial dir metrics) on hold — depends on PR #406 (metric target types) by maintainer. Issue #402 (manual file classification) commented + labelled + foundation PR submitted. Dependabot PRs #408/#409/#410 bundled. #405 labelled enhancement (maintainer has PR #406 for it). Checked-off items by maintainer: #379,#381,#383,#384, fix-385 PR, #325 comment — all merged/addressed."
 }
