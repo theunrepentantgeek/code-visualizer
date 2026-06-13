@@ -172,7 +172,8 @@ func FindWithHint(name metric.Name, target metric.Target) (Interface, error) {
 	if len(targets) > 0 {
 		return nil, fmt.Errorf(
 			"unknown %s metric %q; metric %q exists for target %q",
-			target, name, name, targets[0])
+			target, name, name, targets[0],
+		)
 	}
 
 	return nil, fmt.Errorf("unknown %s metric %q", target, name)

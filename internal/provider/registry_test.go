@@ -36,6 +36,11 @@ func TestRegisterAndGet(t *testing.T) {
 	got, ok := reg.get("test-metric", metric.File)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(got).ToNot(BeNil())
+
+	if got == nil {
+		return
+	}
+
 	g.Expect(got.Name()).To(Equal(metric.Name("test-metric")))
 }
 
@@ -66,15 +71,28 @@ func TestSameNameDifferentTargets(t *testing.T) {
 	reg := newRegistry()
 	fileP := &stubProvider{name: "size", kind: metric.Quantity, target: metric.File}
 	dirP := &stubProvider{name: "size", kind: metric.Quantity, target: metric.Directory}
+
 	reg.register(fileP)
 	reg.register(dirP)
 
 	gotFile, ok := reg.get("size", metric.File)
 	g.Expect(ok).To(BeTrue())
+	g.Expect(gotFile).ToNot(BeNil())
+
+	if gotFile == nil {
+		return
+	}
+
 	g.Expect(gotFile.Target()).To(Equal(metric.File))
 
 	gotDir, ok := reg.get("size", metric.Directory)
 	g.Expect(ok).To(BeTrue())
+	g.Expect(gotDir).ToNot(BeNil())
+
+	if gotDir == nil {
+		return
+	}
+
 	g.Expect(gotDir.Target()).To(Equal(metric.Directory))
 }
 
