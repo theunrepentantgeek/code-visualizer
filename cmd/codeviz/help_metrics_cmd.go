@@ -81,12 +81,12 @@ func renderProviderGroups(groups map[string][]provider.MetricDescriptor) string 
 }
 
 func writeProviderGroupTable(content *strings.Builder, group []provider.MetricDescriptor) {
-	tbl := table.New("Metric", "Kind", "Default Palette", "Description")
+	tbl := table.New("Metric", "Target", "Kind", "Default Palette", "Description")
 	tbl.SetMaxWidth(consoleWidth())
 
 	for _, d := range group {
 		desc := d.Description
-		tbl.AddRow(string(d.Name), kindLabel(d.Kind), string(d.DefaultPalette), desc)
+		tbl.AddRow(string(d.Name), d.Target.String(), kindLabel(d.Kind), string(d.DefaultPalette), desc)
 	}
 
 	tbl.WriteTo(content)
