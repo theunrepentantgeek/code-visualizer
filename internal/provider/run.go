@@ -121,6 +121,19 @@ func visitDep(
 
 	p, ok := reg.get(name, target)
 	if !ok || p == nil {
+		targets := reg.targetsForName(name)
+		if len(targets) > 0 {
+			targetStrs := make([]string, len(targets))
+			for i, t := range targets {
+				targetStrs[i] = t.String()
+			}
+
+			return eris.Errorf(
+				"unknown %s metric %q; metric %q exists for target(s): %s",
+				target, name, name, strings.Join(targetStrs, ", "),
+			)
+		}
+
 		return eris.Errorf(
 			"unknown %s metric %q; available metrics: %s",
 			target,
