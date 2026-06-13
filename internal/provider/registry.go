@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -234,9 +235,18 @@ func FindWithHint(name metric.Name, target metric.Target) (Interface, error) {
 
 	targets := globalRegistry.targetsForName(name)
 	if len(targets) > 0 {
+		slices.SortFunc(targets, func(a, b metric.Target) int {
+			return cmp.Compare(a.String(), b.String())
+		})
+
+		targetStrs := make([]string, len(targets))
+		for i, t := range targets {
+			targetStrs[i] = t.String()
+		}
+
 		return nil, fmt.Errorf(
-			"unknown %s metric %q; metric %q exists for target %q",
-			target, name, name, targets[0],
+			"unknown %s metric %q; metric %q exists for target(s): %s",
+			target, name, name, strings.Join(targetStrs, ", "),
 		)
 	}
 
