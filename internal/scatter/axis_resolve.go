@@ -373,9 +373,9 @@ func logNumericTicks(minValue, maxValue float64, plot PlotRect, direction axisDi
 		candidates = logTickCandidatesWithSubdivisions(minValue, maxValue)
 	}
 
-	// Fallback: if still no candidates (narrow sub-decade range), generate
+	// Fallback: if still too few candidates (narrow sub-decade range), generate
 	// evenly-spaced ticks in log space using the endpoints and midpoints
-	if len(candidates) == 0 {
+	if len(candidates) < 4 {
 		candidates = logTickFallback(minValue, maxValue)
 	}
 
