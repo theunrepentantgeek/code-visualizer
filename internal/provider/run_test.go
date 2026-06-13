@@ -59,7 +59,7 @@ func TestRunBasicExecution(t *testing.T) {
 	tracker := &orderTracker{}
 	reg.register(&mockProvider{name: "m1", kind: metric.Quantity, tracker: tracker})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"m1"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"m1"}, metric.File, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(tracker.calls).To(Equal([]metric.Name{"m1"}))
 }
@@ -73,7 +73,7 @@ func TestRunTransitiveDependencies(t *testing.T) {
 	reg.register(&mockProvider{name: "base", kind: metric.Quantity, tracker: tracker})
 	reg.register(&mockProvider{name: "derived", kind: metric.Quantity, deps: []metric.Name{"base"}, tracker: tracker})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"derived"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"derived"}, metric.File, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	// "base" must run before "derived"
@@ -103,7 +103,7 @@ func TestRunCycleDetection(t *testing.T) {
 	reg.register(&mockProvider{name: "a", kind: metric.Quantity, deps: []metric.Name{"b"}})
 	reg.register(&mockProvider{name: "b", kind: metric.Quantity, deps: []metric.Name{"a"}})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"a"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"a"}, metric.File, nil)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(ContainSubstring("circular dependency")))
 }
@@ -115,9 +115,9 @@ func TestRunUnknownDependency(t *testing.T) {
 	reg := newRegistry()
 	reg.register(&mockProvider{name: "a", kind: metric.Quantity, deps: []metric.Name{"missing"}})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"a"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"a"}, metric.File, nil)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring("unknown metric")))
+	g.Expect(err).To(MatchError(ContainSubstring(`unknown file metric "missing"`)))
 }
 
 func TestRunUnknownRequestedMetric(t *testing.T) {
@@ -126,9 +126,9 @@ func TestRunUnknownRequestedMetric(t *testing.T) {
 
 	reg := newRegistry()
 
-	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"}, metric.File, nil)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring("unknown metric")))
+	g.Expect(err).To(MatchError(ContainSubstring(`unknown file metric "nonexistent"`)))
 }
 
 func TestRunUnknownMetricListsAvailable(t *testing.T) {
@@ -139,7 +139,7 @@ func TestRunUnknownMetricListsAvailable(t *testing.T) {
 	reg.register(&mockProvider{name: "alpha", kind: metric.Quantity})
 	reg.register(&mockProvider{name: "beta", kind: metric.Quantity})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"}, metric.File, nil)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(ContainSubstring("available metrics: alpha, beta")))
 }
@@ -151,7 +151,7 @@ func TestRunErrorPropagation(t *testing.T) {
 	reg := newRegistry()
 	reg.register(&mockProvider{name: "fail", kind: metric.Quantity, loadErr: errors.New("load failed")})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"fail"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"fail"}, metric.File, nil)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(ContainSubstring("load failed")))
 }
@@ -204,7 +204,7 @@ func TestRunParallelExecution(t *testing.T) {
 	reg.register(&concurrentProvider{name: "p2", counter: &counter, maxConcurrent: &maxConcurrent})
 	reg.register(&concurrentProvider{name: "p3", counter: &counter, maxConcurrent: &maxConcurrent})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"p1", "p2", "p3"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"p1", "p2", "p3"}, metric.File, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(maxConcurrent.Load()).To(BeNumerically(">", 1), "expected concurrent execution")
 }
@@ -215,7 +215,7 @@ func TestRunEmptyRequest(t *testing.T) {
 
 	reg := newRegistry()
 
-	err := runWithRegistry(reg, nil, []metric.Name{}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{}, metric.File, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -230,7 +230,7 @@ func TestRunAutoExpandsDependencies(t *testing.T) {
 	reg.register(&mockProvider{name: "top", kind: metric.Quantity, deps: []metric.Name{"mid"}, tracker: tracker})
 
 	// Only request "top" — "mid" and "base" should be auto-included
-	err := runWithRegistry(reg, nil, []metric.Name{"top"}, nil)
+	err := runWithRegistry(reg, nil, []metric.Name{"top"}, metric.File, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(tracker.calls).To(HaveLen(3))
 }
