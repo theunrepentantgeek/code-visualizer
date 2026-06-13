@@ -369,7 +369,8 @@ func TestMetricSpec_Validate_UnknownMetric_ReturnsError(t *testing.T) {
 	ms := &MetricSpec{Metric: "not-a-real-metric"}
 	err := ms.Validate("fill")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring(`invalid fill metric "not-a-real-metric"`)))
+	g.Expect(err).To(MatchError(ContainSubstring(`invalid fill metric`)))
+	g.Expect(err).To(MatchError(ContainSubstring(`"not-a-real-metric"`)))
 }
 
 func TestMetricSpec_Validate_KnownMetricAndValidPalette_ReturnsNil(t *testing.T) {

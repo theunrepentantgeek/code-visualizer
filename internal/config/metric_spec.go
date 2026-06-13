@@ -99,15 +99,8 @@ func (m *MetricSpec) Validate(label string) error {
 	}
 
 	if m.Metric != "" {
-		if _, ok := provider.Get(m.Metric, metric.File); !ok {
-			names := provider.NamesFor(metric.File)
-			strs := make([]string, len(names))
-
-			for i, n := range names {
-				strs[i] = string(n)
-			}
-
-			return eris.Errorf("invalid %s metric %q; available metrics: %s", label, m.Metric, strings.Join(strs, ", "))
+		if _, err := provider.FindWithHint(m.Metric, metric.File); err != nil {
+			return eris.Wrapf(err, "invalid %s metric", label)
 		}
 	}
 
