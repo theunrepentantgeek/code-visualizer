@@ -53,17 +53,20 @@ func ClassifyRequestedMetrics(names []metric.Name, targetLevel metric.MetricLeve
 		expr, parseErr := metric.ParseExpression(string(name))
 		if parseErr != nil {
 			result.Legacy = append(result.Legacy, name)
+
 			continue
 		}
 
 		resolved, resolveErr := provider.ResolveExpression(expr, targetLevel)
 		if resolveErr != nil {
 			result.Legacy = append(result.Legacy, name)
+
 			continue
 		}
 
 		if !resolved.NeedsAggregation {
 			result.Legacy = append(result.Legacy, name)
+
 			continue
 		}
 
