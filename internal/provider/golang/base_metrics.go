@@ -2,6 +2,7 @@ package golang
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
@@ -37,7 +38,18 @@ var (
 	goSummaryAggs     = []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean}
 	goVisibilityNames = []metric.FilterName{"public", "private"}
 	goImportFilters   = []metric.FilterName{"stdlib", "external", "internal"}
-	goBaseMetrics     = []provider.BaseMetricDescriptor{
+
+	// goDeclarationFilter evaluates visibility filters against a Declaration node.
+	goDeclarationFilter = func(filter metric.FilterName, node any) bool {
+		d, ok := node.(*model.Declaration)
+		if !ok {
+			return false
+		}
+
+		return d.MatchesFilter(filter)
+	}
+
+	goBaseMetrics = []provider.BaseMetricDescriptor{
 		{
 			Name:           Types,
 			Kind:           metric.Quantity,
@@ -46,6 +58,7 @@ var (
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           Interfaces,
@@ -55,6 +68,7 @@ var (
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           Structs,
@@ -64,6 +78,7 @@ var (
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           Functions,
@@ -73,6 +88,7 @@ var (
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           Methods,
@@ -82,6 +98,7 @@ var (
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           Constants,
@@ -91,6 +108,7 @@ var (
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           Variables,
@@ -100,6 +118,7 @@ var (
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           Imports,
@@ -115,16 +134,20 @@ var (
 			Kind:           metric.Quantity,
 			Level:          metric.LevelDeclaration,
 			Description:    "Cyclomatic complexity per function.",
+			Filters:        goVisibilityNames,
 			Aggregations:   goNumericAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           FunctionLength,
 			Kind:           metric.Quantity,
 			Level:          metric.LevelDeclaration,
 			Description:    "Function length in lines.",
+			Filters:        goVisibilityNames,
 			Aggregations:   goNumericAggs,
 			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
 		},
 		{
 			Name:           CommentRatio,

@@ -113,6 +113,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
 	pipeline.ApplyFuncX(s, stages.RunProviders)
+	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
 	pipeline.ApplyFuncX(s, stages.RunAggregations)
 	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
 	pipeline.ApplyFuncX(s, stages.ExportData)

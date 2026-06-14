@@ -42,6 +42,28 @@ func (r RequestedMetrics) LegacyNames() []metric.Name {
 	return result
 }
 
+// HasDeclarationExpressions reports whether any expression needs declaration-level data.
+func (r RequestedMetrics) HasDeclarationExpressions() bool {
+	for _, expr := range r.Expressions {
+		if expr.SourceLevel == metric.LevelDeclaration {
+			return true
+		}
+	}
+
+	return false
+}
+
+// HasCommitExpressions reports whether any expression needs commit-level data.
+func (r RequestedMetrics) HasCommitExpressions() bool {
+	for _, expr := range r.Expressions {
+		if expr.SourceLevel == metric.LevelCommit {
+			return true
+		}
+	}
+
+	return false
+}
+
 // ClassifyRequestedMetrics takes a flat list of metric name strings and
 // classifies each as either a resolvable expression or a legacy metric name.
 func ClassifyRequestedMetrics(names []metric.Name, targetLevel metric.MetricLevel) RequestedMetrics {
@@ -72,7 +94,9 @@ func ClassifyRequestedMetrics(names []metric.Name, targetLevel metric.MetricLeve
 
 		result.Expressions = append(result.Expressions, resolved)
 
-		if !baseSeen[expr.Base] {
+		// Only add to BaseMetrics if the source is file-level (needs provider.Run).
+		// Declaration and commit level metrics are populated by separate stages.
+		if resolved.SourceLevel == metric.LevelFile && !baseSeen[expr.Base] {
 			baseSeen[expr.Base] = true
 			result.BaseMetrics = append(result.BaseMetrics, expr.Base)
 		}
