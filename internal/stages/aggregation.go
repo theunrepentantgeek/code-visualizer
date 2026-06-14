@@ -12,33 +12,29 @@ import (
 // values for each resolved expression. Each directory gets its own aggregate
 // computed from all descendant source-level nodes.
 func ComputeAggregations(root *model.Directory, expressions []provider.ResolvedMetric) error {
-	if len(expressions) == 0 {
-		return nil
-	}
-
 	for _, resolved := range expressions {
-		switch resolved.SourceLevel {
-		case metric.LevelFile:
-			if err := aggregateDirectory(root, resolved); err != nil {
-				return err
-			}
-		case metric.LevelDeclaration:
-			if err := aggregateDeclarations(root, resolved); err != nil {
-				return err
-			}
-		case metric.LevelCommit:
-			if err := aggregateCommits(root, resolved); err != nil {
-				return err
-			}
-		default:
-			return eris.Errorf(
-				"aggregation of %s-level metric %q is not supported",
-				resolved.SourceLevel, resolved.Expression.Base,
-			)
+		if err := computeOneAggregation(root, resolved); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func computeOneAggregation(root *model.Directory, resolved provider.ResolvedMetric) error {
+	switch resolved.SourceLevel {
+	case metric.LevelFile:
+		return aggregateDirectory(root, resolved)
+	case metric.LevelDeclaration:
+		return aggregateDeclarations(root, resolved)
+	case metric.LevelCommit:
+		return aggregateCommits(root, resolved)
+	default:
+		return eris.Errorf(
+			"aggregation of %s-level metric %q is not supported",
+			resolved.SourceLevel, resolved.Expression.Base,
+		)
+	}
 }
 
 func aggregateDirectory(dir *model.Directory, resolved provider.ResolvedMetric) error {
@@ -249,13 +245,7 @@ func collectDeclarationNumericValues(dir *model.Directory, resolved provider.Res
 	var values []float64
 
 	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
-		if !resolved.Expression.Filter.IsZero() {
-			if !resolved.Descriptor.PassesFilter(resolved.Expression.Filter, d) {
-				return
-			}
-		}
-
-		if !matchesDeclKind(d, resolved.Expression.Base) {
+		if !declarationMatchesExpression(d, resolved) {
 			return
 		}
 
@@ -271,23 +261,31 @@ func collectDeclarationNumericValues(dir *model.Directory, resolved provider.Res
 			if v, ok := d.Measure(resolved.Expression.Base); ok {
 				values = append(values, v)
 			}
+		default:
+			// Classification metrics use collectDeclarationClassificationValues
 		}
 	})
 
 	return values
 }
 
+// declarationMatchesExpression returns true if the declaration passes the
+// filter and kind checks required by the resolved expression.
+func declarationMatchesExpression(d *model.Declaration, resolved provider.ResolvedMetric) bool {
+	if !resolved.Expression.Filter.IsZero() {
+		if !resolved.Descriptor.PassesFilter(resolved.Expression.Filter, d) {
+			return false
+		}
+	}
+
+	return matchesDeclKind(d, resolved.Expression.Base)
+}
+
 func collectDeclarationClassificationValues(dir *model.Directory, resolved provider.ResolvedMetric) []string {
 	var values []string
 
 	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
-		if !resolved.Expression.Filter.IsZero() {
-			if !resolved.Descriptor.PassesFilter(resolved.Expression.Filter, d) {
-				return
-			}
-		}
-
-		if !matchesDeclKind(d, resolved.Expression.Base) {
+		if !declarationMatchesExpression(d, resolved) {
 			return
 		}
 
@@ -299,29 +297,35 @@ func collectDeclarationClassificationValues(dir *model.Directory, resolved provi
 	return values
 }
 
+// declKindMap maps base metric names to acceptable declaration kinds.
+// Metrics not in this map accept any declaration kind.
+var declKindMap = map[metric.Name][]string{
+	"types":                 {"type", "struct", "interface"},
+	"interfaces":           {"interface"},
+	"structs":              {"struct"},
+	"functions":            {"function"},
+	"methods":              {"method"},
+	"constants":            {"constant"},
+	"variables":            {"variable"},
+	"cyclomatic-complexity": {"function", "method"},
+	"function-length":       {"function", "method"},
+}
+
 // matchesDeclKind checks whether a declaration matches the semantic category
 // implied by the base metric name.
 func matchesDeclKind(d *model.Declaration, baseName metric.Name) bool {
-	switch baseName {
-	case "types":
-		return d.Kind == "type" || d.Kind == "struct" || d.Kind == "interface"
-	case "interfaces":
-		return d.Kind == "interface"
-	case "structs":
-		return d.Kind == "struct"
-	case "functions":
-		return d.Kind == "function"
-	case "methods":
-		return d.Kind == "method"
-	case "constants":
-		return d.Kind == "constant"
-	case "variables":
-		return d.Kind == "variable"
-	case "cyclomatic-complexity", "function-length":
-		return d.Kind == "function" || d.Kind == "method"
-	default:
+	kinds, ok := declKindMap[baseName]
+	if !ok {
 		return true
 	}
+
+	for _, k := range kinds {
+		if d.Kind == k {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ---------------------------------------------------------------------------
@@ -385,6 +389,8 @@ func collectCommitNumericValues(dir *model.Directory, resolved provider.Resolved
 			if v, ok := c.Measure(resolved.Expression.Base); ok {
 				values = append(values, v)
 			}
+		default:
+			// Commit-level classification metrics not yet supported
 		}
 	})
 

@@ -18,6 +18,7 @@ func TestCommit_SetAndGetMetrics(t *testing.T) {
 		Author: "dev@example.com",
 		Date:   time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC),
 	}
+	g.Expect(c.Hash).To(Equal("abc123"))
 
 	c.SetQuantity("lines-added", 42)
 	v, ok := c.Quantity("lines-added")
@@ -34,6 +35,7 @@ func TestCommit_SetAndGetMeasure(t *testing.T) {
 		Author: "dev@example.com",
 		Date:   time.Date(2026, 2, 20, 14, 0, 0, 0, time.UTC),
 	}
+	g.Expect(c.Author).To(Equal("dev@example.com"))
 
 	c.SetMeasure("churn-ratio", 0.75)
 	v, ok := c.Measure("churn-ratio")

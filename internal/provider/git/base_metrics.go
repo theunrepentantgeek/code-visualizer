@@ -14,6 +14,11 @@ var GitProvider = provider.ProviderDescriptor{
 
 // RegisterBase adds git base metric descriptors to the global base registry.
 func RegisterBase() {
+	registerFileMetrics()
+	registerCommitMetrics()
+}
+
+func registerFileMetrics() {
 	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
 		Name:           FileAge,
 		Kind:           metric.Quantity,
@@ -76,8 +81,9 @@ func RegisterBase() {
 		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
 		DefaultPalette: palette.Temperature,
 	}, GitProvider)
+}
 
-	// Commit-level base metrics (per-commit granularity)
+func registerCommitMetrics() {
 	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
 		Name:           LinesAdded,
 		Kind:           metric.Quantity,

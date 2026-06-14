@@ -10,7 +10,7 @@ bubbletree:
         metric: file-type
         palette: categorization
     border:
-        metric: file-freshness
+        metric: public.methods.count
         palette: good-bad
     labels: folders
 spiral:

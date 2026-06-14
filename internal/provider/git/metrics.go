@@ -19,8 +19,8 @@ const (
 	TotalLinesRemoved metric.Name = "total-lines-removed"
 	CommitDensity     metric.Name = "commit-density"
 
-	// Commit-level metrics (per-commit granularity)
-	LinesAdded   metric.Name = "lines-added"
+	// LinesAdded is a commit-level metric tracking lines added per commit.
+	LinesAdded metric.Name = "lines-added"
 	LinesRemoved metric.Name = "lines-removed"
 	LinesChanged metric.Name = "lines-changed"
 )

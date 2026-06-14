@@ -216,10 +216,10 @@ func declarationKindForToken(tok token.Token) string {
 
 func visibilityForName(name string) string {
 	if token.IsExported(name) {
-		return "public"
+		return string(filterPublic)
 	}
 
-	return "private"
+	return string(filterPrivate)
 }
 
 func functionLength(

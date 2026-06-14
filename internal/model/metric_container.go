@@ -20,6 +20,10 @@ func (mc *MetricContainer) Quantity(name metric.Name) (int64, bool) {
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
 
+	if mc.quantities == nil {
+		return 0, false
+	}
+
 	v, ok := mc.quantities[name]
 
 	return v, ok

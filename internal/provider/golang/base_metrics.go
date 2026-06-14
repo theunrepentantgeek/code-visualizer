@@ -20,15 +20,20 @@ const (
 	FunctionLength       metric.Name = "function-length"
 )
 
+const (
+	filterPublic  metric.FilterName = "public"
+	filterPrivate metric.FilterName = "private"
+)
+
 // GoProvider is the provider descriptor for Go metrics.
 var GoProvider = provider.ProviderDescriptor{
 	Name: "go",
 	Filters: map[metric.FilterName]string{
-		"public":   "Exported declarations only",
-		"private":  "Unexported declarations only",
-		"stdlib":   "Standard library imports only",
-		"external": "External (third-party) imports only",
-		"internal": "Internal (same module) imports only",
+		filterPublic:  "Exported declarations only",
+		filterPrivate: "Unexported declarations only",
+		"stdlib":      "Standard library imports only",
+		"external":    "External (third-party) imports only",
+		"internal":    "Internal (same module) imports only",
 	},
 }
 
@@ -36,7 +41,7 @@ var (
 	goDeclCountAggs   = []metric.AggregationName{metric.AggCount, metric.AggSum}
 	goNumericAggs     = []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean}
 	goSummaryAggs     = []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean}
-	goVisibilityNames = []metric.FilterName{"public", "private"}
+	goVisibilityNames = []metric.FilterName{filterPublic, filterPrivate}
 	goImportFilters   = []metric.FilterName{"stdlib", "external", "internal"}
 
 	// goDeclarationFilter evaluates visibility filters against a Declaration node.

@@ -18,6 +18,7 @@ func TestDeclaration_SetAndGetMetrics(t *testing.T) {
 		Kind:       "function",
 		Visibility: "public",
 	}
+	g.Expect(d.Name).To(Equal("HandleRequest"))
 
 	d.SetQuantity("cyclomatic-complexity", 5)
 	v, ok := d.Quantity("cyclomatic-complexity")

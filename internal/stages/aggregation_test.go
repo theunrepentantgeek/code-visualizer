@@ -178,8 +178,12 @@ func TestComputeAggregations_DeclarationLevel_EmptyDirNoError(t *testing.T) {
 	root := &model.Directory{Name: "root"}
 
 	resolved := provider.ResolvedMetric{
-		Expression:       metric.MetricExpression{Base: "cyclomatic-complexity", Aggregation: metric.AggMean},
-		Descriptor:       provider.BaseMetricDescriptor{Name: "cyclomatic-complexity", Kind: metric.Quantity, Level: metric.LevelDeclaration},
+		Expression: metric.MetricExpression{Base: "cyclomatic-complexity", Aggregation: metric.AggMean},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "cyclomatic-complexity",
+			Kind:  metric.Quantity,
+			Level: metric.LevelDeclaration,
+		},
 		SourceLevel:      metric.LevelDeclaration,
 		TargetLevel:      metric.LevelDirectory,
 		ResultKind:       metric.Measure,
@@ -330,8 +334,10 @@ func TestComputeAggregations_DeclarationLevel_MeanCyclomaticComplexity(t *testin
 
 	d1 := &model.Declaration{Name: "A", Kind: "function", Visibility: "public"}
 	d1.SetQuantity("cyclomatic-complexity", 2)
+
 	d2 := &model.Declaration{Name: "B", Kind: "function", Visibility: "public"}
 	d2.SetQuantity("cyclomatic-complexity", 4)
+
 	d3 := &model.Declaration{Name: "C", Kind: "method", Visibility: "private"}
 	d3.SetQuantity("cyclomatic-complexity", 6)
 
@@ -374,6 +380,7 @@ func TestComputeAggregations_DeclarationLevel_FilterExcludesNonMatching(t *testi
 
 	d1 := &model.Declaration{Name: "Pub", Kind: "function", Visibility: "public"}
 	d1.SetQuantity("cyclomatic-complexity", 10)
+
 	d2 := &model.Declaration{Name: "priv", Kind: "function", Visibility: "private"}
 	d2.SetQuantity("cyclomatic-complexity", 2)
 
@@ -431,8 +438,10 @@ func TestComputeAggregations_CommitLevel_MaxLinesChanged(t *testing.T) {
 
 	c1 := &model.Commit{Hash: "aaa"}
 	c1.SetQuantity("lines-changed", 10)
+
 	c2 := &model.Commit{Hash: "bbb"}
 	c2.SetQuantity("lines-changed", 50)
+
 	c3 := &model.Commit{Hash: "ccc"}
 	c3.SetQuantity("lines-changed", 25)
 

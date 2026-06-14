@@ -111,7 +111,8 @@ tasks:
       - for:
           matrix:
             IMAGE: [png, svg]
-            VIZ: [treemap, bubbletree, radial, spiral, scatter]
-        cmd: "{{.CODEVIZ}} render {{.ITEM.VIZ}} . --config samples/codeviz-{{.ITEM.VIZ}}.yml --output samples/codeviz-{{.ITEM.VIZ}}.{{.ITEM.IMAGE}}"
+            #VIZ: [treemap, bubbletree, radial, spiral, scatter]
+            VIZ: [bubbletree]
+        cmd: "{{.CODEVIZ}} render {{.ITEM.VIZ}} . --config samples/codeviz-{{.ITEM.VIZ}}.yml --output samples/codeviz-{{.ITEM.VIZ}}.{{.ITEM.IMAGE}} ; echo ''"
     vars:
       CODEVIZ: '{{joinPath .ROOT_DIR "bin" "codeviz"}}'

@@ -14,10 +14,10 @@ scatter:
     yAxis: comment-ratio
     size: declaration-count
     fill:
-        metric: declaration-count
+        metric: declaration.count
         palette: foliage
     border:
-        metric: public-declaration-count
+        metric: public.declaration.count
         palette: foliage
 fileFilter:
     - pattern: .*
