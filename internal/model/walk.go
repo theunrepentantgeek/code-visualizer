@@ -44,3 +44,21 @@ func WalkDirectories(dir *Directory, fn func(*Directory)) {
 
 	fn(dir)
 }
+
+// WalkDeclarations calls fn for every declaration in every file in the tree.
+func WalkDeclarations(dir *Directory, fn func(*Declaration, *File)) {
+	WalkFiles(dir, func(f *File) {
+		for _, d := range f.Declarations {
+			fn(d, f)
+		}
+	})
+}
+
+// WalkCommits calls fn for every commit record in every file in the tree.
+func WalkCommits(dir *Directory, fn func(*Commit, *File)) {
+	WalkFiles(dir, func(f *File) {
+		for _, c := range f.Commits {
+			fn(c, f)
+		}
+	})
+}

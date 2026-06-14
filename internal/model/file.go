@@ -4,8 +4,10 @@ package model
 // File represents a single file in the scanned tree.
 type File struct {
 	MetricContainer
-	Path      string
-	Name      string
-	Extension string
-	IsBinary  bool
+	Path         string
+	Name         string
+	Extension    string
+	IsBinary     bool
+	Declarations []*Declaration
+	Commits      []*Commit
 }
