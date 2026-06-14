@@ -202,4 +202,5 @@ func ResetCacheForTesting() {
 		errs:  make(map[string]error),
 	}
 	globalModuleCache = newModuleCache()
+	ResetDeclCacheForTesting()
 }
