@@ -120,7 +120,7 @@ func TestSVGBackend_DrawPath_ProducesValidSVG(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	content := readFile(t, out)
-	g.Expect(content).To(ContainSubstring("<path"))
+	g.Expect(content).To(ContainSubstring(`<path d="M 10.0 10.0 L 100.0 50.0 L 190.0 10.0" fill="none"`))
 }
 
 func TestSVGBackend_DrawArcText_ProducesValidSVG(t *testing.T) {

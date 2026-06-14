@@ -9,7 +9,6 @@ import (
 	"image/color"
 	"math"
 	"os"
-	"strings"
 
 	"github.com/rotisserie/eris"
 
@@ -148,18 +147,17 @@ func (s *svgBackend) DrawPath(points []model.Position, stroke color.RGBA, stroke
 		return
 	}
 
-	var b strings.Builder
-	fmt.Fprintf(&b, "M %.1f %.1f", points[0].X, points[0].Y)
+	// Write the path data directly into s.buf to avoid an intermediate
+	// strings.Builder allocation and the subsequent copy into s.buf.
+	// For spiral tracks (500–1500+ points) this saves ~6–22 KB of allocation.
+	fmt.Fprintf(&s.buf, `<path d="M %.1f %.1f`, points[0].X, points[0].Y)
 
 	for _, p := range points[1:] {
-		fmt.Fprintf(&b, " L %.1f %.1f", p.X, p.Y)
+		fmt.Fprintf(&s.buf, ` L %.1f %.1f`, p.X, p.Y)
 	}
 
-	fmt.Fprintf(
-		&s.buf,
-		`<path d="%s" fill="none" stroke="%s" stroke-width="%.1f"/>`+"\n",
-		b.String(), s.colourCSS(stroke), strokeWidth,
-	)
+	fmt.Fprintf(&s.buf, `" fill="none" stroke="%s" stroke-width="%.1f"/>`+"\n",
+		s.colourCSS(stroke), strokeWidth)
 }
 
 func (s *svgBackend) DrawText(
