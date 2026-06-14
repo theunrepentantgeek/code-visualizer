@@ -99,8 +99,8 @@ func (m *MetricSpec) Validate(label string) error {
 	}
 
 	if m.Metric != "" {
-		if _, err := provider.FindWithHint(m.Metric, metric.File); err != nil {
-			return eris.Wrapf(err, "invalid %s metric", label)
+		if err := m.validateMetric(label); err != nil {
+			return err
 		}
 	}
 
@@ -108,6 +108,28 @@ func (m *MetricSpec) Validate(label string) error {
 		if !m.Palette.IsValid() {
 			return eris.Errorf("invalid %s palette %q", label, m.Palette)
 		}
+	}
+
+	return nil
+}
+
+func (m *MetricSpec) validateMetric(label string) error {
+	expr, parseErr := metric.ParseExpression(string(m.Metric))
+	if parseErr == nil {
+		_, resolveErr := provider.ResolveExpression(expr, metric.LevelFile)
+		if resolveErr == nil {
+			return nil
+		}
+
+		if _, legacyOK := provider.Get(m.Metric, metric.File); legacyOK {
+			return nil
+		}
+
+		return eris.Wrapf(resolveErr, "invalid %s metric", label)
+	}
+
+	if _, err := provider.FindWithHint(m.Metric, metric.File); err != nil {
+		return eris.Wrapf(err, "invalid %s metric", label)
 	}
 
 	return nil
