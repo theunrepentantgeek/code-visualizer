@@ -8,7 +8,7 @@ import (
 )
 
 // MetricExpression is the parsed form of a user-provided metric string.
-// Format: [filter.]base-metric[.aggregation]
+// Format: [filter.]base-metric[.aggregation].
 type MetricExpression struct {
 	Filter      FilterName
 	Base        Name
@@ -30,13 +30,15 @@ func ParseExpression(input string) (MetricExpression, error) {
 
 	if len(segments) > 3 {
 		return MetricExpression{}, eris.Errorf(
-			"metric expression %q has too many segments (max 3: filter.base.aggregation)", input)
+			"metric expression %q has too many segments (max 3: filter.base.aggregation)", input,
+		)
 	}
 
 	for _, seg := range segments {
 		if !validSegment.MatchString(seg) {
 			return MetricExpression{}, eris.Errorf(
-				"metric expression %q contains invalid segment %q (must be lowercase kebab-case)", input, seg)
+				"metric expression %q contains invalid segment %q (must be lowercase kebab-case)", input, seg,
+			)
 		}
 	}
 
@@ -71,7 +73,8 @@ func parseThreeSegments(segments []string) (MetricExpression, error) {
 	last := AggregationName(segments[2])
 	if !last.IsKnown() {
 		return MetricExpression{}, eris.Errorf(
-			"metric expression segment %q is not a known aggregation function", segments[2])
+			"metric expression segment %q is not a known aggregation function", segments[2],
+		)
 	}
 
 	return MetricExpression{

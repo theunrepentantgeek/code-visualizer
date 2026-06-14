@@ -81,7 +81,8 @@ func (r *baseRegistry) allForLevel(level metric.MetricLevel) []BaseMetricDescrip
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var result []BaseMetricDescriptor
+	result := make([]BaseMetricDescriptor, 0)
+
 	for _, d := range r.descriptors {
 		if d.Level == level {
 			result = append(result, d)

@@ -4,10 +4,10 @@ package metric
 type MetricLevel int
 
 const (
-	LevelFile MetricLevel = iota // native to files (file-size, file-lines)
-	LevelDeclaration             // native to declarations (cyclomatic-complexity)
-	LevelCommit                  // native to commits (commit-date)
-	LevelDirectory               // native to directories (computed aggregates)
+	LevelFile        MetricLevel = iota // native to files (file-size, file-lines)
+	LevelDeclaration                    // native to declarations (cyclomatic-complexity)
+	LevelCommit                         // native to commits (commit-date)
+	LevelDirectory                      // native to directories (computed aggregates)
 )
 
 // String returns the human-readable name of the level.
