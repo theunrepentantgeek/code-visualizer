@@ -31,6 +31,17 @@ type BaseMetricDescriptor struct {
 	Aggregations   []metric.AggregationName
 	Dependencies   []metric.Name
 	DefaultPalette palette.PaletteName
+	FilterFunc     func(filter metric.FilterName, node any) bool
+}
+
+// PassesFilter evaluates the FilterFunc for the given filter and node.
+// Returns true if no FilterFunc is registered (no filtering applied).
+func (d BaseMetricDescriptor) PassesFilter(filter metric.FilterName, node any) bool {
+	if d.FilterFunc == nil {
+		return true
+	}
+
+	return d.FilterFunc(filter, node)
 }
 
 // SupportsAggregation reports whether this base metric declares the given
