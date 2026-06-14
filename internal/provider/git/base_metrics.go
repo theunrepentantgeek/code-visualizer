@@ -76,4 +76,32 @@ func RegisterBase() {
 		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
 		DefaultPalette: palette.Temperature,
 	}, GitProvider)
+
+	// Commit-level base metrics (per-commit granularity)
+	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
+		Name:           LinesAdded,
+		Kind:           metric.Quantity,
+		Level:          metric.LevelCommit,
+		Description:    "Lines added in a single commit.",
+		Aggregations:   []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean},
+		DefaultPalette: palette.Temperature,
+	}, GitProvider)
+
+	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
+		Name:           LinesRemoved,
+		Kind:           metric.Quantity,
+		Level:          metric.LevelCommit,
+		Description:    "Lines removed in a single commit.",
+		Aggregations:   []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean},
+		DefaultPalette: palette.Temperature,
+	}, GitProvider)
+
+	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
+		Name:           LinesChanged,
+		Kind:           metric.Quantity,
+		Level:          metric.LevelCommit,
+		Description:    "Lines changed (added + removed) in a single commit.",
+		Aggregations:   []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean},
+		DefaultPalette: palette.Temperature,
+	}, GitProvider)
 }
