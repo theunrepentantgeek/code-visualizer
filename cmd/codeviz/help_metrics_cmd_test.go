@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	. "github.com/onsi/gomega"
 )
@@ -18,22 +19,43 @@ func TestHelpMetricsCmdRun_GroupsMetricsByProvider(t *testing.T) {
 		g.Expect(err).NotTo(HaveOccurred())
 	})
 
+	syntaxIndex := strings.Index(output, "Syntax:")
 	filesystemIndex := strings.Index(output, "Filesystem metrics")
 	gitIndex := strings.Index(output, "Git metrics")
 	goIndex := strings.Index(output, "Go metrics")
-	fileSizeIndex := strings.Index(output, "file-size")
-	commitCountIndex := strings.Index(output, "commit-count")
-	typeCountIndex := strings.Index(output, "type-count")
+	otherIndex := strings.Index(output, "Other metrics")
 
+	g.Expect(syntaxIndex).To(BeNumerically(">=", 0))
 	g.Expect(filesystemIndex).To(BeNumerically(">=", 0))
 	g.Expect(gitIndex).To(BeNumerically(">", filesystemIndex))
 	g.Expect(goIndex).To(BeNumerically(">", gitIndex))
-	g.Expect(fileSizeIndex).To(BeNumerically(">", filesystemIndex))
-	g.Expect(fileSizeIndex).To(BeNumerically("<", gitIndex))
-	g.Expect(commitCountIndex).To(BeNumerically(">", gitIndex))
-	g.Expect(commitCountIndex).To(BeNumerically("<", goIndex))
-	g.Expect(typeCountIndex).To(BeNumerically(">", goIndex))
-	g.Expect(output).To(ContainSubstring("commit-count"))
+	g.Expect(otherIndex).To(BeNumerically(">", goIndex))
+
+	filesystemSection := output[filesystemIndex:gitIndex]
+	goSection := output[goIndex:otherIndex]
+
+	g.Expect(filesystemSection).To(ContainSubstring("file-size"))
+	g.Expect(filesystemSection).To(ContainSubstring("sum"))
+	g.Expect(filesystemSection).To(ContainSubstring("min"))
+	g.Expect(goSection).To(MatchRegexp(`public \(Exported\s+declarations only\)`))
+	g.Expect(goSection).To(MatchRegexp(`Filters:\s+public,\s+private`))
+	g.Expect(output).To(ContainSubstring("Other metrics"))
+	g.Expect(output).To(ContainSubstring("type-count"))
+}
+
+func TestHelpMetricsCmdRun_WrapsOutputToConsoleWidth(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	t.Setenv("COLUMNS", "30")
+
+	output := captureStdout(t, func() {
+		err := (HelpMetricsCmd{}).Run(&Flags{})
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	for line := range strings.SplitSeq(output, "\n") {
+		g.Expect(utf8.RuneCountInString(line)).To(BeNumerically("<=", 30), "line exceeds console width: %q", line)
+	}
 }
 
 func captureStdout(t *testing.T, run func()) string {
