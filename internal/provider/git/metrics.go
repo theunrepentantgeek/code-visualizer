@@ -20,7 +20,7 @@ const (
 	CommitDensity     metric.Name = "commit-density"
 
 	// LinesAdded is a commit-level metric tracking lines added per commit.
-	LinesAdded metric.Name = "lines-added"
+	LinesAdded   metric.Name = "lines-added"
 	LinesRemoved metric.Name = "lines-removed"
 	LinesChanged metric.Name = "lines-changed"
 )

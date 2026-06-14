@@ -301,12 +301,12 @@ func collectDeclarationClassificationValues(dir *model.Directory, resolved provi
 // Metrics not in this map accept any declaration kind.
 var declKindMap = map[metric.Name][]string{
 	"types":                 {"type", "struct", "interface"},
-	"interfaces":           {"interface"},
-	"structs":              {"struct"},
-	"functions":            {"function"},
-	"methods":              {"method"},
-	"constants":            {"constant"},
-	"variables":            {"variable"},
+	"interfaces":            {"interface"},
+	"structs":               {"struct"},
+	"functions":             {"function"},
+	"methods":               {"method"},
+	"constants":             {"constant"},
+	"variables":             {"variable"},
 	"cyclomatic-complexity": {"function", "method"},
 	"function-length":       {"function", "method"},
 }
