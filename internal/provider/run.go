@@ -26,21 +26,27 @@ type FileProgressReporter interface {
 
 // Run loads the requested metrics (plus transitive dependencies) onto the tree.
 // Providers run in parallel where dependency ordering allows.
-func Run(root *model.Directory, requested []metric.Name, progress MetricProgress) error {
-	return runWithRegistry(globalRegistry, root, requested, progress)
+func Run(root *model.Directory, requested []metric.Name, target metric.Target, progress MetricProgress) error {
+	return runWithRegistry(globalRegistry, root, requested, target, progress)
 }
 
-func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Name, progress MetricProgress) error {
+func runWithRegistry(
+	reg *registry,
+	root *model.Directory,
+	requested []metric.Name,
+	target metric.Target,
+	progress MetricProgress,
+) error {
 	if len(requested) == 0 {
 		return nil
 	}
 
-	expanded, err := expandDeps(reg, requested)
+	expanded, err := expandDeps(reg, requested, target)
 	if err != nil {
 		return err
 	}
 
-	levels, err := topoSort(reg, expanded)
+	levels, err := topoSort(reg, expanded, target)
 	if err != nil {
 		return err
 	}
@@ -49,7 +55,7 @@ func runWithRegistry(reg *registry, root *model.Directory, requested []metric.Na
 		g := new(errgroup.Group)
 
 		for _, name := range level {
-			p, _ := reg.get(name)
+			p, _ := reg.get(name, target)
 
 			g.Go(func() error {
 				return runProvider(p, root, name, progress)
@@ -88,13 +94,13 @@ func runProvider(p Interface, root *model.Directory, name metric.Name, progress 
 }
 
 // expandDeps returns the transitive closure of requested metric names.
-func expandDeps(reg *registry, requested []metric.Name) ([]metric.Name, error) {
+func expandDeps(reg *registry, requested []metric.Name, target metric.Target) ([]metric.Name, error) {
 	seen := make(map[metric.Name]bool)
 
 	var result []metric.Name
 
 	for _, name := range requested {
-		if err := visitDep(reg, name, seen, &result); err != nil {
+		if err := visitDep(reg, name, seen, &result, target); err != nil {
 			return nil, err
 		}
 	}
@@ -102,21 +108,27 @@ func expandDeps(reg *registry, requested []metric.Name) ([]metric.Name, error) {
 	return result, nil
 }
 
-func visitDep(reg *registry, name metric.Name, seen map[metric.Name]bool, result *[]metric.Name) error {
+func visitDep(
+	reg *registry,
+	name metric.Name,
+	seen map[metric.Name]bool,
+	result *[]metric.Name,
+	target metric.Target,
+) error {
 	if seen[name] {
 		return nil
 	}
 
-	p, ok := reg.get(name)
+	p, ok := reg.get(name, target)
 	if !ok || p == nil {
-		return eris.Errorf("unknown metric %q; available metrics: %s", name, formatNames(reg.names()))
+		return metricNotFoundError(reg, name, target)
 	}
 
 	seen[name] = true
 	*result = append(*result, name)
 
 	for _, dep := range p.Dependencies() {
-		if err := visitDep(reg, dep, seen, result); err != nil {
+		if err := visitDep(reg, dep, seen, result, target); err != nil {
 			return err
 		}
 	}
@@ -124,15 +136,43 @@ func visitDep(reg *registry, name metric.Name, seen map[metric.Name]bool, result
 	return nil
 }
 
+// metricNotFoundError builds an error for a missing metric, including a hint
+// if the metric exists for a different target.
+func metricNotFoundError(reg *registry, name metric.Name, target metric.Target) error {
+	targets := reg.targetsForName(name)
+	if len(targets) > 0 {
+		targetStrs := make([]string, len(targets))
+		for i, t := range targets {
+			targetStrs[i] = t.String()
+		}
+
+		return eris.Errorf(
+			"unknown %s metric %q; metric %q exists for target(s): %s",
+			target, name, name, strings.Join(targetStrs, ", "),
+		)
+	}
+
+	return eris.Errorf(
+		"unknown %s metric %q; available metrics: %s",
+		target,
+		name,
+		formatNames(reg.namesFor(target)),
+	)
+}
+
 // topoSort groups metrics into execution levels. Each level's metrics have
 // all dependencies satisfied by previous levels.
-func topoSort(reg *registry, names []metric.Name) ([][]metric.Name, error) {
-	inDegree, dependents := buildDepGraph(reg, names)
+func topoSort(reg *registry, names []metric.Name, target metric.Target) ([][]metric.Name, error) {
+	inDegree, dependents := buildDepGraph(reg, names, target)
 
 	return computeLevels(names, inDegree, dependents)
 }
 
-func buildDepGraph(reg *registry, names []metric.Name) (map[metric.Name]int, map[metric.Name][]metric.Name) {
+func buildDepGraph(
+	reg *registry,
+	names []metric.Name,
+	target metric.Target,
+) (map[metric.Name]int, map[metric.Name][]metric.Name) {
 	nameSet := make(map[metric.Name]bool, len(names))
 	for _, n := range names {
 		nameSet[n] = true
@@ -146,7 +186,7 @@ func buildDepGraph(reg *registry, names []metric.Name) (map[metric.Name]int, map
 	}
 
 	for _, n := range names {
-		addEdges(reg, n, nameSet, inDegree, dependents)
+		addEdges(reg, target, n, nameSet, inDegree, dependents)
 	}
 
 	return inDegree, dependents
@@ -154,12 +194,13 @@ func buildDepGraph(reg *registry, names []metric.Name) (map[metric.Name]int, map
 
 func addEdges(
 	reg *registry,
+	target metric.Target,
 	n metric.Name,
 	nameSet map[metric.Name]bool,
 	inDegree map[metric.Name]int,
 	dependents map[metric.Name][]metric.Name,
 ) {
-	p, ok := reg.get(n)
+	p, ok := reg.get(n, target)
 	if !ok || p == nil {
 		return
 	}

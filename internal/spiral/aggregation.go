@@ -45,7 +45,7 @@ func aggregateColourMetric(files []*model.File, m metric.Name, numVal *float64, 
 		return
 	}
 
-	d, ok := provider.GetDescriptor(m)
+	d, ok := provider.GetDescriptor(m, metric.File)
 	if !ok {
 		return
 	}

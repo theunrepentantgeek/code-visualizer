@@ -50,7 +50,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 
 func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
-	descriptor, ok := provider.GetDescriptor(metricName)
+	descriptor, ok := provider.GetDescriptor(metricName, metric.File)
 
 	if !ok {
 		return AxisSpec{}, eris.Errorf("unknown axis metric %q", metricName)

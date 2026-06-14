@@ -23,6 +23,7 @@ type gitProvider struct {
 
 func (p *gitProvider) Name() metric.Name                   { return p.name }
 func (p *gitProvider) Kind() metric.Kind                   { return p.kind }
+func (*gitProvider) Target() metric.Target                 { return metric.File }
 func (p *gitProvider) Description() string                 { return p.description }
 func (*gitProvider) Dependencies() []metric.Name           { return nil }
 func (p *gitProvider) DefaultPalette() palette.PaletteName { return p.defaultPalette }

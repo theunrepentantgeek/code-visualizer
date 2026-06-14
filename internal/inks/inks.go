@@ -18,29 +18,28 @@ import (
 // fixed-colour ink when the metric is unknown or when no values are present.
 func BuildMetricInk(
 	root *model.Directory,
-	m metric.Name,
+	d provider.MetricDescriptor,
 	palName palette.PaletteName,
 	fallback color.RGBA,
 ) canvas.Ink {
-	d, ok := provider.GetDescriptor(m)
-	if !ok {
+	if d.Name == "" {
 		return canvas.FixedInk(fallback)
 	}
 
 	pal := palette.GetPalette(palName)
 
 	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
-		values := CollectNumericValues(root, m)
+		values := CollectNumericValues(root, d.Name)
 		if len(values) == 0 {
 			return canvas.FixedInk(fallback)
 		}
 
-		return canvas.NumericInk(m, values, pal)
+		return canvas.NumericInk(d.Name, values, pal)
 	}
 
-	types := CollectDistinctTypes(root, m)
+	types := CollectDistinctTypes(root, d.Name)
 
-	return canvas.CategoricalInk(m, types, pal)
+	return canvas.CategoricalInk(d.Name, types, pal)
 }
 
 // MetricValueForFile builds a MetricValue from a file's data for the given

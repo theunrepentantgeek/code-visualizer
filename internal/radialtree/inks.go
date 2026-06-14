@@ -8,6 +8,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
 var (
@@ -38,9 +39,12 @@ func BuildInks(
 		Border: canvas.FixedInk(defaultBorder),
 	}
 
-	inks.Fill = pkginks.BuildMetricInk(root, fillMetric, fillPaletteName, defaultFileFill)
+	fillDesc, _ := provider.GetDescriptor(fillMetric, metric.File)
+	inks.Fill = pkginks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFileFill)
+
 	if borderMetric != "" {
-		inks.Border = pkginks.BuildMetricInk(root, borderMetric, borderPaletteName, defaultBorder)
+		borderDesc, _ := provider.GetDescriptor(borderMetric, metric.File)
+		inks.Border = pkginks.BuildMetricInk(root, borderDesc, borderPaletteName, defaultBorder)
 	}
 
 	return inks

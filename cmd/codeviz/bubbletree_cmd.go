@@ -53,7 +53,7 @@ func (*BubbletreeCmd) Validate() error {
 func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {
 	size := ptrString(cfg.Size)
 
-	d, ok := provider.GetDescriptor(metric.Name(size))
+	d, ok := provider.GetDescriptor(metric.Name(size), metric.File)
 	if !ok {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}

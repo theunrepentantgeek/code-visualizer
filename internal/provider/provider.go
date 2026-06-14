@@ -13,6 +13,7 @@ import (
 type MetricDescriptor struct {
 	Name           metric.Name
 	Kind           metric.Kind
+	Target         metric.Target
 	Description    string
 	Dependencies   []metric.Name
 	DefaultPalette palette.PaletteName
@@ -31,6 +32,7 @@ type Loader interface {
 type Interface interface {
 	Name() metric.Name
 	Kind() metric.Kind
+	Target() metric.Target
 	Description() string
 	Dependencies() []metric.Name
 	DefaultPalette() palette.PaletteName
@@ -44,6 +46,7 @@ func Descriptor(p Interface) MetricDescriptor {
 	return MetricDescriptor{
 		Name:           p.Name(),
 		Kind:           p.Kind(),
+		Target:         p.Target(),
 		Description:    p.Description(),
 		Dependencies:   p.Dependencies(),
 		DefaultPalette: p.DefaultPalette(),
