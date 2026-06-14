@@ -39,6 +39,7 @@ func NewProvider(cfg config.SelectionMetric) *Provider {
 
 func (p *Provider) Name() metric.Name                   { return p.name }
 func (p *Provider) Kind() metric.Kind                   { return metric.Classification }
+func (p *Provider) Target() metric.Target               { return metric.File }
 func (p *Provider) Description() string                 { return "User-defined filename-based file classification." }
 func (p *Provider) Dependencies() []metric.Name         { return nil }
 func (p *Provider) DefaultPalette() palette.PaletteName { return palette.Categorization }
