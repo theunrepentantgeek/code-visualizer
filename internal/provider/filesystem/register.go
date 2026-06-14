@@ -7,4 +7,5 @@ func Register() {
 	provider.Register(FileSizeProvider{})
 	provider.Register(&FileLinesProvider{})
 	provider.Register(FileTypeProvider{})
+	RegisterBase()
 }
