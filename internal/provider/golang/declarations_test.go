@@ -132,6 +132,12 @@ func expectFunctionMetrics(
 	t.Helper()
 	g := NewGomegaWithT(t)
 
+	g.Expect(declaration).NotTo(BeNil())
+
+	if declaration == nil {
+		return
+	}
+
 	complexity, ok := declaration.Quantity(CyclomaticComplexity)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(complexity).To(Equal(wantComplexity))
