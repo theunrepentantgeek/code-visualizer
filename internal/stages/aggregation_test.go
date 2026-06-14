@@ -484,8 +484,10 @@ func TestComputeAggregations_CommitLevel_MeanLinesAdded(t *testing.T) {
 
 	c1 := &model.Commit{Hash: "a"}
 	c1.SetQuantity("lines-added", 10)
+
 	c2 := &model.Commit{Hash: "b"}
 	c2.SetQuantity("lines-added", 20)
+
 	c3 := &model.Commit{Hash: "c"}
 	c3.SetQuantity("lines-added", 30)
 

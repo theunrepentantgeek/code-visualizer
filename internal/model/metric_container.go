@@ -34,6 +34,10 @@ func (mc *MetricContainer) Measure(name metric.Name) (float64, bool) {
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
 
+	if mc.measures == nil {
+		return 0, false
+	}
+
 	v, ok := mc.measures[name]
 
 	return v, ok

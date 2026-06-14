@@ -177,9 +177,9 @@ func newFunctionDeclaration(
 	dec *decorator.Decorator,
 	fset *token.FileSet,
 ) declarationInfo {
-	kind := "function"
+	kind := model.DeclKindFunction
 	if decl.Recv != nil && len(decl.Recv.List) > 0 {
-		kind = "method"
+		kind = model.DeclKindMethod
 	}
 
 	return declarationInfo{
@@ -195,20 +195,20 @@ func newFunctionDeclaration(
 func declarationKindForType(expr dst.Expr) string {
 	switch expr.(type) {
 	case *dst.InterfaceType:
-		return "interface"
+		return model.DeclKindInterface
 	case *dst.StructType:
-		return "struct"
+		return model.DeclKindStruct
 	default:
-		return "type"
+		return model.DeclKindType
 	}
 }
 
 func declarationKindForToken(tok token.Token) string {
 	switch tok {
 	case token.CONST:
-		return "constant"
+		return model.DeclKindConstant
 	case token.VAR:
-		return "variable"
+		return model.DeclKindVariable
 	default:
 		return ""
 	}

@@ -1,6 +1,8 @@
 package stages
 
 import (
+	"slices"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -249,24 +251,33 @@ func collectDeclarationNumericValues(dir *model.Directory, resolved provider.Res
 			return
 		}
 
-		switch resolved.Descriptor.Kind {
-		case metric.Quantity:
-			if v, ok := d.Quantity(resolved.Expression.Base); ok {
-				values = append(values, float64(v))
-			} else if resolved.Expression.Aggregation == metric.AggCount {
-				// For count, the declaration itself is the unit being counted
-				values = append(values, 1)
-			}
-		case metric.Measure:
-			if v, ok := d.Measure(resolved.Expression.Base); ok {
-				values = append(values, v)
-			}
-		default:
-			// Classification metrics use collectDeclarationClassificationValues
+		if v, ok := declarationNumericValue(d, resolved); ok {
+			values = append(values, v)
 		}
 	})
 
 	return values
+}
+
+func declarationNumericValue(d *model.Declaration, resolved provider.ResolvedMetric) (float64, bool) {
+	switch resolved.Descriptor.Kind {
+	case metric.Quantity:
+		if v, ok := d.Quantity(resolved.Expression.Base); ok {
+			return float64(v), true
+		}
+
+		if resolved.Expression.Aggregation == metric.AggCount {
+			return 1, true
+		}
+	case metric.Measure:
+		if v, ok := d.Measure(resolved.Expression.Base); ok {
+			return v, true
+		}
+	default:
+		// Classification metrics use collectDeclarationClassificationValues
+	}
+
+	return 0, false
 }
 
 // declarationMatchesExpression returns true if the declaration passes the
@@ -300,15 +311,15 @@ func collectDeclarationClassificationValues(dir *model.Directory, resolved provi
 // declKindMap maps base metric names to acceptable declaration kinds.
 // Metrics not in this map accept any declaration kind.
 var declKindMap = map[metric.Name][]string{
-	"types":                 {"type", "struct", "interface"},
-	"interfaces":            {"interface"},
-	"structs":               {"struct"},
-	"functions":             {"function"},
-	"methods":               {"method"},
-	"constants":             {"constant"},
-	"variables":             {"variable"},
-	"cyclomatic-complexity": {"function", "method"},
-	"function-length":       {"function", "method"},
+	"types":                 {model.DeclKindType, model.DeclKindStruct, model.DeclKindInterface},
+	"interfaces":            {model.DeclKindInterface},
+	"structs":               {model.DeclKindStruct},
+	"functions":             {model.DeclKindFunction},
+	"methods":               {model.DeclKindMethod},
+	"constants":             {model.DeclKindConstant},
+	"variables":             {model.DeclKindVariable},
+	"cyclomatic-complexity": {model.DeclKindFunction, model.DeclKindMethod},
+	"function-length":       {model.DeclKindFunction, model.DeclKindMethod},
 }
 
 // matchesDeclKind checks whether a declaration matches the semantic category
@@ -319,13 +330,7 @@ func matchesDeclKind(d *model.Declaration, baseName metric.Name) bool {
 		return true
 	}
 
-	for _, k := range kinds {
-		if d.Kind == k {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(kinds, d.Kind)
 }
 
 // ---------------------------------------------------------------------------

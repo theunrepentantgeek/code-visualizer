@@ -115,6 +115,11 @@ func expectDeclaration(
 	declaration, ok := declarations[name]
 	g.Expect(ok).To(BeTrue(), "expected declaration %q", name)
 	g.Expect(declaration).NotTo(BeNil())
+
+	if declaration == nil {
+		return
+	}
+
 	g.Expect(declaration.Kind).To(Equal(kind))
 	g.Expect(declaration.Visibility).To(Equal(visibility))
 }

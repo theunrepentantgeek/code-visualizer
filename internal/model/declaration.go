@@ -2,6 +2,17 @@ package model
 
 import "github.com/theunrepentantgeek/code-visualizer/internal/metric"
 
+// Declaration kind constants.
+const (
+	DeclKindType      = "type"
+	DeclKindStruct    = "struct"
+	DeclKindInterface = "interface"
+	DeclKindFunction  = "function"
+	DeclKindMethod    = "method"
+	DeclKindConstant  = "constant"
+	DeclKindVariable  = "variable"
+)
+
 // Declaration represents a single named declaration within a source file.
 type Declaration struct {
 	MetricContainer
