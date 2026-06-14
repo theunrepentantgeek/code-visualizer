@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-13T14:55:44Z",
-  "run_id": "27470070820",
+  "last_run": "2026-06-14T05:22:34Z",
+  "run_id": "27489281081",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 405,
+  "backlog_cursor": 413,
   "comments_made": {
     "324": "2026-06-01",
     "325": "2026-06-01",
@@ -18,28 +18,24 @@
     "374": "2026-06-07",
     "385": "2026-06-11",
     "394": "2026-06-13",
-    "402": "2026-06-13"
+    "402": "2026-06-13",
+    "411": "2026-06-14",
+    "412": "2026-06-14"
   },
   "prs_created": {
-    "improve-progress-tests": {
+    "perf-svg-drawpath": {
       "issue": null,
-      "branch": "repo-assist/improve-progress-tests",
-      "date": "2026-06-11",
+      "branch": "repo-assist/perf-svg-drawpath-2026-06-14",
+      "date": "2026-06-14",
       "status": "open - pending PR number",
-      "description": "test(stages): add progress function tests; simplify RunProviders with defer"
-    },
-    "bundle-deps": {
-      "issue": null,
-      "branch": "repo-assist/eng-bundle-deps-2026-06-13",
-      "date": "2026-06-13",
-      "status": "open - protected files may have created patch",
-      "description": "chore(deps): bundle golang.org/x text 0.38 / image 0.42 / sync 0.21 — closes Dependabot #408 #409 #410"
+      "description": "perf(svg): eliminate intermediate strings.Builder in DrawPath"
     },
     "selection-metrics": {
       "issue": 402,
-      "branch": "repo-assist/feat-selection-metrics-402",
+      "branch": "repo-assist/feat-selection-metrics-402-d67c1e92dda719a7",
+      "pr_number": 412,
       "date": "2026-06-13",
-      "status": "open - pending confirmation",
+      "status": "open - needs rebase + Target() method after #406 merged",
       "description": "feat(config,provider): add selection-metrics config and classification provider (foundation for #402)"
     }
   },
@@ -58,5 +54,5 @@
     "Title feature: one --title TEXT flag only (not per-command separate flags)",
     "go.mod and go.sum are protected files — cannot be pushed by automation"
   ],
-  "notes": "All prior open repo-assist PRs (#379,#381,#383,#384) merged by maintainer. Two PRs from 2026-06-13 run pending confirmation: bundle-deps and feat-selection-metrics-402. Progress-tests branch (repo-assist/improve-progress-tests) created 2026-06-11 still pending. Issue #394 (radial dir metrics) on hold — depends on PR #406 (metric target types) by maintainer. Issue #402 (manual file classification) commented + labelled + foundation PR submitted. Dependabot PRs #408/#409/#410 bundled. #405 labelled enhancement (maintainer has PR #406 for it). Checked-off items by maintainer: #379,#381,#383,#384, fix-385 PR, #325 comment — all merged/addressed."
+  "notes": "Dependabot PRs #408/#409/#410 all merged individually by maintainer (2026-06-13). Issue #411 (bundle-deps) is now obsolete - commented to suggest close. PR #412 (selection-metrics) still open, needs rebase onto post-#406 main + add Target() metric.File method. Commented on PR #412 with exact code. New perf PR created: eliminate strings.Builder in SVG DrawPath. Maintainer opened PR #413 (metric expressions design). Issue #394 (radial dir metrics) still on hold - #406 merged, can revisit after #413 lands. improve-progress-tests branch exists but has zero useful commits - abandoned. Checked-off items by maintainer: #379,#381,#383,#384, fix-385 PR merged."
 }
