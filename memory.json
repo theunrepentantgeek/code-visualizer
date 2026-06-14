@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-06-14T05:22:34Z",
-  "run_id": "27489281081",
+  "last_run": "2026-06-14T15:01:56Z",
+  "run_id": "27502630470",
   "monthly_summary_issue": 353,
   "backlog_cursor": 413,
   "comments_made": {
@@ -25,18 +25,33 @@
   "prs_created": {
     "perf-svg-drawpath": {
       "issue": null,
-      "branch": "repo-assist/perf-svg-drawpath-2026-06-14",
+      "branch": "repo-assist/perf-svg-drawpath-2026-06-14-9e753ddbc53154e7",
+      "pr_number": 414,
       "date": "2026-06-14",
-      "status": "open - pending PR number",
+      "status": "open",
       "description": "perf(svg): eliminate intermediate strings.Builder in DrawPath"
     },
-    "selection-metrics": {
+    "perf-svg-grad-urlref": {
+      "issue": null,
+      "branch": "repo-assist/perf-svg-grad-urlref-2026-06-14",
+      "date": "2026-06-14",
+      "status": "open - pending PR number",
+      "description": "perf(svg): cache full url(#id) ref in gradient cache"
+    },
+    "selection-metrics-rebased": {
+      "issue": 402,
+      "branch": "repo-assist/fix-412-rebase-target",
+      "date": "2026-06-14",
+      "status": "open - pending PR number (supersedes #412)",
+      "description": "feat(config,provider): selection-metrics + classification provider, rebased onto post-#406 main + Target() method"
+    },
+    "selection-metrics-old": {
       "issue": 402,
       "branch": "repo-assist/feat-selection-metrics-402-d67c1e92dda719a7",
       "pr_number": 412,
       "date": "2026-06-13",
-      "status": "open - needs rebase + Target() method after #406 merged",
-      "description": "feat(config,provider): add selection-metrics config and classification provider (foundation for #402)"
+      "status": "open - superseded by fix-412-rebase-target, commented to close",
+      "description": "feat(config,provider): add selection-metrics (old, needs close)"
     }
   },
   "issues_labelled": {
@@ -54,5 +69,5 @@
     "Title feature: one --title TEXT flag only (not per-command separate flags)",
     "go.mod and go.sum are protected files — cannot be pushed by automation"
   ],
-  "notes": "Dependabot PRs #408/#409/#410 all merged individually by maintainer (2026-06-13). Issue #411 (bundle-deps) is now obsolete - commented to suggest close. PR #412 (selection-metrics) still open, needs rebase onto post-#406 main + add Target() metric.File method. Commented on PR #412 with exact code. New perf PR created: eliminate strings.Builder in SVG DrawPath. Maintainer opened PR #413 (metric expressions design). Issue #394 (radial dir metrics) still on hold - #406 merged, can revisit after #413 lands. improve-progress-tests branch exists but has zero useful commits - abandoned. Checked-off items by maintainer: #379,#381,#383,#384, fix-385 PR merged."
+  "notes": "PR #414 (DrawPath perf) open. PR #412 (selection-metrics) is stale/superseded - commented to close. New PR from branch repo-assist/fix-412-rebase-target supersedes #412 with rebase + Target() method. New PR from branch repo-assist/perf-svg-grad-urlref-2026-06-14 caches full url(#id) in gradient map. PR #413 (metric expressions design) is maintainer PR - large, 82 files. Issue #394 (radial dir metrics) still on hold pending #413 merge. Checked-off items by maintainer: #379,#381,#383,#384, fix-385 PR merged. Task 2 was N/A this run (all open code issues have recent Repo Assist comments, no new human activity). Task 4 used to rebase/fix PR #412."
 }
