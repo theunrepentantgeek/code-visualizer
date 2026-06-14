@@ -17,12 +17,12 @@ values end-to-end.
 
 ## Phasing
 
-| Phase | Scope | Model changes? |
-|-------|-------|----------------|
-| 1 | Pipeline integration + file→directory aggregation | No |
-| 2 | Declaration model + Go provider per-declaration data | Yes |
-| 3 | Commit model + git provider per-commit data | Yes |
-| 4 | Legacy flat provider removal | No (deletion) |
+| Phase | Scope                                                | Model changes? |
+| ----- | ---------------------------------------------------- | -------------- |
+| 1     | Pipeline integration + file→directory aggregation    | No             |
+| 2     | Declaration model + Go provider per-declaration data | Yes            |
+| 3     | Commit model + git provider per-commit data          | Yes            |
+| 4     | Legacy flat provider removal                         | No (deletion)  |
 
 Each phase is independently shippable. Legacy providers remain running in parallel
 until Phase 4 explicitly removes them.
@@ -171,13 +171,13 @@ per-declaration data after aggregating into `fileStats`. Changes:
 vocabulary is defined per provider in `ProviderDescriptor.Filters`. For the Go
 provider:
 
-| Filter | Matches |
-|--------|---------|
-| `public` | `decl.Visibility == "public"` |
-| `private` | `decl.Visibility == "private"` |
-| `stdlib` | declaration imports from stdlib (N/A for declarations — skip) |
-| `external` | N/A for declarations |
-| `internal` | N/A for declarations |
+| Filter     | Matches                                                       |
+| ---------- | ------------------------------------------------------------- |
+| `public`   | `decl.Visibility == "public"`                                 |
+| `private`  | `decl.Visibility == "private"`                                |
+| `stdlib`   | declaration imports from stdlib (N/A for declarations — skip) |
+| `external` | N/A for declarations                                          |
+| `internal` | N/A for declarations                                          |
 
 Implementation: each provider registers a `FilterFunc` that takes a filter name
 and a model node, returning whether the node passes:
@@ -277,13 +277,13 @@ expression system fully covers all use cases.
 
 Before removal, verify every legacy metric has an expression equivalent:
 
-| Legacy metric | Expression equivalent |
-|--------------|----------------------|
-| `file-bytes` | `file-bytes` (bare, unchanged) |
-| `total-type-count` | `types.count` |
-| `public-type-count` | `public.types.count` |
-| `max-cyclomatic-complexity` | `max.cyclomatic-complexity` |
-| ... | ... (full audit at implementation time) |
+| Legacy metric               | Expression equivalent                   |
+| --------------------------- | --------------------------------------- |
+| `file-bytes`                | `file-bytes` (bare, unchanged)          |
+| `total-type-count`          | `types.count`                           |
+| `public-type-count`         | `public.types.count`                    |
+| `max-cyclomatic-complexity` | `max.cyclomatic-complexity`             |
+| ...                         | ... (full audit at implementation time) |
 
 #### 4.2 Removal Steps
 
@@ -324,14 +324,14 @@ The rendering pipeline already handles missing metrics (leaves cells uncolored).
 
 Aggregation result kind follows the rules from the original design spec:
 
-| Aggregation | Input Kind | Result Kind |
-|-------------|-----------|-------------|
-| sum, min, max, range | Quantity | Quantity |
-| sum, min, max, range | Measure | Measure |
-| mean | Quantity | Measure |
-| mean | Measure | Measure |
-| count, distinct | any | Quantity |
-| mode | Classification | Classification |
+| Aggregation          | Input Kind     | Result Kind    |
+| -------------------- | -------------- | -------------- |
+| sum, min, max, range | Quantity       | Quantity       |
+| sum, min, max, range | Measure        | Measure        |
+| mean                 | Quantity       | Measure        |
+| mean                 | Measure        | Measure        |
+| count, distinct      | any            | Quantity       |
+| mode                 | Classification | Classification |
 
 ### Result Naming
 

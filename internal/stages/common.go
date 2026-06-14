@@ -7,7 +7,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
@@ -53,7 +52,7 @@ type CommonState struct {
 
 	// Populated by shared stages during the pipeline:
 	FilterRules   []filter.Rule    // BuildFilterRules
-	Requested     []metric.Name    // viz-specific ResolveMetrics
+	Requested     RequestedMetrics // viz-specific ResolveMetrics
 	Root          *model.Directory // ScanFilesystem
 	Width         int              // ResolveDimensions
 	Height        int              // ResolveDimensions

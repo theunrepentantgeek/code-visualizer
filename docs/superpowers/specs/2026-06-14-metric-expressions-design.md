@@ -36,14 +36,14 @@ The `.` character separates structural roles. Hyphens `-` separate words within 
 
 ### Examples
 
-| Expression | Filter | Base Metric | Aggregation |
-|---|---|---|---|
-| `file-size` | — | file-size | — |
-| `file-size.sum` | — | file-size | sum |
-| `public.types.count` | public | types | count |
-| `cyclomatic-complexity.max` | — | cyclomatic-complexity | max |
-| `public.function-length.mean` | public | function-length | mean |
-| `file-type.mode` | — | file-type | mode |
+| Expression                    | Filter | Base Metric           | Aggregation |
+| ----------------------------- | ------ | --------------------- | ----------- |
+| `file-size`                   | —      | file-size             | —           |
+| `file-size.sum`               | —      | file-size             | sum         |
+| `public.types.count`          | public | types                 | count       |
+| `cyclomatic-complexity.max`   | —      | cyclomatic-complexity | max         |
+| `public.function-length.mean` | public | function-length       | mean        |
+| `file-type.mode`              | —      | file-type             | mode        |
 
 ### Parsing Algorithm
 
@@ -141,34 +141,34 @@ ProviderDescriptor{
 
 Base metrics (11 replace the current 34):
 
-| Base Metric | Level | Kind | Filters | Aggregations |
-|---|---|---|---|---|
-| `types` | Declaration | Quantity | public, private | count, sum |
-| `interfaces` | Declaration | Quantity | public, private | count, sum |
-| `structs` | Declaration | Quantity | public, private | count, sum |
-| `functions` | Declaration | Quantity | public, private | count, sum |
-| `methods` | Declaration | Quantity | public, private | count, sum |
-| `constants` | Declaration | Quantity | public, private | count, sum |
-| `variables` | Declaration | Quantity | public, private | count, sum |
-| `imports` | File | Quantity | stdlib, external, internal | sum, min, max, mean |
-| `cyclomatic-complexity` | Declaration | Quantity | — | sum, min, max, mean |
-| `function-length` | Declaration | Quantity | — | sum, min, max, mean |
-| `comment-ratio` | File | Measure | — | min, max, mean |
+| Base Metric             | Level       | Kind     | Filters                    | Aggregations        |
+| ----------------------- | ----------- | -------- | -------------------------- | ------------------- |
+| `types`                 | Declaration | Quantity | public, private            | count, sum          |
+| `interfaces`            | Declaration | Quantity | public, private            | count, sum          |
+| `structs`               | Declaration | Quantity | public, private            | count, sum          |
+| `functions`             | Declaration | Quantity | public, private            | count, sum          |
+| `methods`               | Declaration | Quantity | public, private            | count, sum          |
+| `constants`             | Declaration | Quantity | public, private            | count, sum          |
+| `variables`             | Declaration | Quantity | public, private            | count, sum          |
+| `imports`               | File        | Quantity | stdlib, external, internal | sum, min, max, mean |
+| `cyclomatic-complexity` | Declaration | Quantity | —                          | sum, min, max, mean |
+| `function-length`       | Declaration | Quantity | —                          | sum, min, max, mean |
+| `comment-ratio`         | File        | Measure  | —                          | min, max, mean      |
 
 ## Aggregation Functions
 
 A finite set of verbs with generic implementations:
 
-| Verb | Applies to Kind | Result Kind | Semantics |
-|------|----------------|-------------|-----------|
-| `sum` | Quantity | Quantity | Sum of all values |
-| `min` | Quantity, Measure | same | Minimum value |
-| `max` | Quantity, Measure | same | Maximum value |
-| `mean` | Quantity, Measure | Measure | Arithmetic mean |
-| `count` | any | Quantity | Number of items (after filtering) |
-| `mode` | Classification | Classification | Most common category |
-| `distinct` | Classification | Quantity | Number of distinct categories |
-| `range` | Quantity, Measure | same | max − min |
+| Verb       | Applies to Kind   | Result Kind    | Semantics                         |
+| ---------- | ----------------- | -------------- | --------------------------------- |
+| `sum`      | Quantity          | Quantity       | Sum of all values                 |
+| `min`      | Quantity, Measure | same           | Minimum value                     |
+| `max`      | Quantity, Measure | same           | Maximum value                     |
+| `mean`     | Quantity, Measure | Measure        | Arithmetic mean                   |
+| `count`    | any               | Quantity       | Number of items (after filtering) |
+| `mode`     | Classification    | Classification | Most common category              |
+| `distinct` | Classification    | Quantity       | Number of distinct categories     |
+| `range`    | Quantity, Measure | same           | max − min                         |
 
 Each aggregation function is a single generic implementation (~10-20 lines). Adding a new verb works for all metrics automatically.
 

@@ -57,5 +57,5 @@ func findGitMetric(requested []metric.Name) (metric.Name, bool) {
 
 // CheckGitRequirement wraps CheckGitRequirementHelper.
 func CheckGitRequirement(c *CommonState) error {
-	return CheckGitRequirementHelper(c.TargetPath, c.Requested)
+	return CheckGitRequirementHelper(c.TargetPath, c.Requested.LegacyNames())
 }
