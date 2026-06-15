@@ -9,6 +9,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
 func TestFileSizeProvider(t *testing.T) {
@@ -16,12 +17,6 @@ func TestFileSizeProvider(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	p := FileSizeProvider{}
-	g.Expect(p.Name()).To(Equal(FileSize))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
-
 	root := &model.Directory{Path: "/root", Name: "root"}
 	g.Expect(p.Load(root)).NotTo(HaveOccurred()) // no-op
 }
@@ -31,12 +26,6 @@ func TestFileTypeProvider(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	p := FileTypeProvider{}
-	g.Expect(p.Name()).To(Equal(FileType))
-	g.Expect(p.Kind()).To(Equal(metric.Classification))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
-
 	root := &model.Directory{Path: "/root", Name: "root"}
 	g.Expect(p.Load(root)).NotTo(HaveOccurred()) // no-op
 }
@@ -121,12 +110,13 @@ func TestFileLinesProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := FileLinesProvider{}
-	g.Expect(p.Name()).To(Equal(FileLines))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	RegisterBase()
+
+	// Verify file-lines is registered as a base metric
+	desc, ok := provider.GetBase(FileLines)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(desc.Kind).To(Equal(metric.Quantity))
+	g.Expect(desc.Description).NotTo(BeEmpty())
 }
 
 func TestFileLinesProviderDetectsBinaryByNullByte(t *testing.T) {
