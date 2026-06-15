@@ -18,6 +18,7 @@ const (
 	Imports              metric.Name = "imports"
 	CyclomaticComplexity metric.Name = "cyclomatic-complexity"
 	FunctionLength       metric.Name = "function-length"
+	CommentRatio         metric.Name = "comment-ratio"
 	Declarations         metric.Name = "declarations"
 )
 
