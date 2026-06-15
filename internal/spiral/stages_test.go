@@ -5,8 +5,12 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -130,4 +134,62 @@ func TestResolveMetrics_LabelsAllCanBeSet(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Labels).To(Equal(spiral.LabelAll))
+}
+
+func TestAggregateBucketMetricsStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const expressionMetric = metric.Name("expression.metric.count")
+
+	first := &model.File{Name: "a.go"}
+	first.SetQuantity(expressionMetric, 2)
+
+	second := &model.File{Name: "b.go"}
+	second.SetQuantity(expressionMetric, 1)
+
+	common := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			Expressions: []provider.ResolvedMetric{{
+				ResultName: expressionMetric,
+				ResultKind: metric.Quantity,
+			}},
+		},
+	}
+	viz := &spiral.State{
+		FillMetric: expressionMetric,
+		Buckets: []spiral.TimeBucket{{
+			Files: []*model.File{first, second},
+		}},
+	}
+
+	g.Expect(spiral.AggregateBucketMetricsStage(common, viz)).To(Succeed())
+	g.Expect(viz.Buckets[0].FillValue).To(Equal(3.0))
+}
+
+func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const expressionMetric = metric.Name("expression.metric.mode")
+
+	common := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			Expressions: []provider.ResolvedMetric{{
+				ResultName: expressionMetric,
+				ResultKind: metric.Classification,
+			}},
+		},
+	}
+	viz := &spiral.State{
+		Buckets: []spiral.TimeBucket{
+			{FillLabel: "go"},
+			{FillLabel: "py"},
+		},
+		FillMetric:  expressionMetric,
+		FillPalette: palette.Categorization,
+	}
+
+	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
+	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
 }

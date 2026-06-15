@@ -6,7 +6,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 var (
@@ -23,6 +23,7 @@ type Inks struct {
 // BuildInks creates fill and border inks from aggregated time-bucket data.
 func BuildInks(
 	buckets []TimeBucket,
+	requested stages.RequestedMetrics,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
@@ -35,7 +36,7 @@ func BuildInks(
 
 	if fillMetric != "" {
 		inks.Fill = buildBucketInk(
-			buckets, fillMetric, fillPaletteName,
+			buckets, requested, fillMetric, fillPaletteName,
 			func(b *TimeBucket) float64 { return b.FillValue },
 			func(b *TimeBucket) string { return b.FillLabel },
 			defaultFill,
@@ -44,7 +45,7 @@ func BuildInks(
 
 	if borderMetric != "" {
 		inks.Border = buildBucketInk(
-			buckets, borderMetric, borderPaletteName,
+			buckets, requested, borderMetric, borderPaletteName,
 			func(b *TimeBucket) float64 { return b.BorderValue },
 			func(b *TimeBucket) string { return b.BorderLabel },
 			defaultBorder,
@@ -59,13 +60,14 @@ func BuildInks(
 // data, unlike treemap's per-file model.
 func buildBucketInk(
 	buckets []TimeBucket,
+	requested stages.RequestedMetrics,
 	m metric.Name,
 	palName palette.PaletteName,
 	numericFn func(*TimeBucket) float64,
 	categoryFn func(*TimeBucket) string,
 	fallback color.RGBA,
 ) canvas.Ink {
-	d, ok := provider.GetDescriptor(m, metric.File)
+	d, ok := requested.DescriptorFor(m)
 	if !ok {
 		return canvas.FixedInk(fallback)
 	}
