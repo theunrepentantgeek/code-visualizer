@@ -13,23 +13,3 @@ const (
 	Measure                    // float64 values (percentages, rates)
 	Classification             // string values (file type, category)
 )
-
-// Target classifies what a metric applies to.
-type Target int
-
-const (
-	File      Target = iota // metric applies to individual files
-	Directory               // metric applies to directories (aggregates)
-)
-
-// String returns the human-readable label for the target.
-func (t Target) String() string {
-	switch t {
-	case File:
-		return "file"
-	case Directory:
-		return "directory"
-	default:
-		return "unknown"
-	}
-}
