@@ -27,7 +27,7 @@ func TestCollectRequestedMetrics_SizeOnly(t *testing.T) {
 
 	got := stages.CollectRequestedMetrics("file-size", nil, nil)
 
-	g.Expect(got.LegacyNames()).To(ConsistOf(metric.Name("file-size")))
+	g.Expect(got.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
 func TestCollectRequestedMetrics_SizeAndFill(t *testing.T) {
@@ -37,7 +37,7 @@ func TestCollectRequestedMetrics_SizeAndFill(t *testing.T) {
 	fill := &config.MetricSpec{Metric: "file-lines"}
 	got := stages.CollectRequestedMetrics("file-size", fill, nil)
 
-	g.Expect(got.LegacyNames()).To(ContainElements(metric.Name("file-size"), metric.Name("file-lines")))
+	g.Expect(got.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-lines")))
 }
 
 func TestCollectRequestedMetrics_SizeAndBorder(t *testing.T) {
@@ -47,7 +47,7 @@ func TestCollectRequestedMetrics_SizeAndBorder(t *testing.T) {
 	border := &config.MetricSpec{Metric: "file-type"}
 	got := stages.CollectRequestedMetrics("file-size", nil, border)
 
-	g.Expect(got.LegacyNames()).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
+	g.Expect(got.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
 func TestCollectRequestedMetrics_DeduplicatesFillEqualsSize(t *testing.T) {
@@ -57,8 +57,8 @@ func TestCollectRequestedMetrics_DeduplicatesFillEqualsSize(t *testing.T) {
 	fill := &config.MetricSpec{Metric: "file-size"}
 	got := stages.CollectRequestedMetrics("file-size", fill, nil)
 
-	g.Expect(got.LegacyNames()).To(HaveLen(1))
-	g.Expect(got.LegacyNames()).To(ConsistOf(metric.Name("file-size")))
+	g.Expect(got.BaseMetrics).To(HaveLen(1))
+	g.Expect(got.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
 func TestCollectRequestedMetrics_AllThreeDistinct(t *testing.T) {
@@ -69,7 +69,7 @@ func TestCollectRequestedMetrics_AllThreeDistinct(t *testing.T) {
 	border := &config.MetricSpec{Metric: "file-type"}
 	got := stages.CollectRequestedMetrics("file-size", fill, border)
 
-	g.Expect(got.LegacyNames()).To(ContainElements(
+	g.Expect(got.BaseMetrics).To(ContainElements(
 		metric.Name("file-size"),
 		metric.Name("file-lines"),
 		metric.Name("file-type"),
