@@ -92,6 +92,23 @@ func addDiscs(
 	buckets []TimeBucket,
 	inks Inks,
 ) {
+	// Pre-allocate the two spec variants (borderWidth is either 2.0 or 3.0)
+	// so they are not re-created for every disc in the loop.
+	smallSpec := &canvas.DiscSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        inks.Fill,
+			Border:      inks.Border,
+			BorderWidth: 2.0,
+		},
+	}
+	largeSpec := &canvas.DiscSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        inks.Fill,
+			Border:      inks.Border,
+			BorderWidth: 3.0,
+		},
+	}
+
 	for i, n := range nodes {
 		if n.DiscRadius <= 0 {
 			continue
@@ -100,16 +117,13 @@ func addDiscs(
 		fillMV := metricValue(buckets[i].FillValue, buckets[i].FillLabel, inks.Fill)
 		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, inks.Border)
 
-		discSpec := &canvas.DiscSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        inks.Fill,
-				Border:      inks.Border,
-				BorderWidth: borderWidth(n.DiscRadius),
-			},
+		spec := smallSpec
+		if n.DiscRadius >= 8 {
+			spec = largeSpec
 		}
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   discSpec,
+			Spec:   spec,
 			X:      n.X,
 			Y:      n.Y,
 			Radius: n.DiscRadius,
