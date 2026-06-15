@@ -91,3 +91,35 @@ func TestRegister_RegistersGitBaseMetrics(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(baseProvider).To(Equal(GitProvider))
 }
+
+//nolint:paralleltest // mutates global base registry
+func TestRegister_RegistersConsolidatedGitLoader(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
+
+	Register()
+
+	loaders := provider.LoadersFor([]metric.Name{
+		FileAge,
+		FileFreshness,
+		AuthorCount,
+		CommitCount,
+		TotalLinesAdded,
+		TotalLinesRemoved,
+		CommitDensity,
+	})
+
+	g.Expect(loaders).To(HaveLen(1))
+	g.Expect(loaders[0].Metrics).To(ConsistOf(
+		FileAge,
+		FileFreshness,
+		AuthorCount,
+		CommitCount,
+		TotalLinesAdded,
+		TotalLinesRemoved,
+		CommitDensity,
+	))
+	g.Expect(loaders[0].Load).ToNot(BeNil())
+}
