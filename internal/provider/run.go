@@ -279,31 +279,44 @@ func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricP
 	}
 
 	for _, level := range levels {
-		g := new(errgroup.Group)
-		for _, loader := range level {
-			g.Go(func() error {
-				for _, m := range loader.Metrics {
-					if progress != nil {
-						progress.OnMetricStarted(m)
-					}
-				}
-
-				if err := loader.Load(root); err != nil {
-					return eris.Wrapf(err, "loader failed for metrics %v", loader.Metrics)
-				}
-
-				for _, m := range loader.Metrics {
-					if progress != nil {
-						progress.OnMetricFinished(m)
-					}
-				}
-
-				return nil
-			})
-		}
-
-		if err := g.Wait(); err != nil {
+		if err := runLoaderLevel(root, level, progress); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func runLoaderLevel(root *model.Directory, level []BaseMetricLoader, progress MetricProgress) error {
+	g := new(errgroup.Group)
+
+	for _, loader := range level {
+		g.Go(func() error {
+			return runSingleLoader(root, loader, progress)
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return eris.Wrap(err, "loader level failed")
+	}
+
+	return nil
+}
+
+func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress MetricProgress) error {
+	for _, m := range loader.Metrics {
+		if progress != nil {
+			progress.OnMetricStarted(m)
+		}
+	}
+
+	if err := loader.Load(root); err != nil {
+		return eris.Wrapf(err, "loader failed for metrics %v", loader.Metrics)
+	}
+
+	for _, m := range loader.Metrics {
+		if progress != nil {
+			progress.OnMetricFinished(m)
 		}
 	}
 
@@ -312,6 +325,7 @@ func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricP
 
 func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 	provides := make(map[metric.Name]int)
+
 	for i, l := range loaders {
 		for _, m := range l.Metrics {
 			provides[m] = i
@@ -320,6 +334,7 @@ func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 
 	inDegree := make([]int, len(loaders))
 	dependents := make(map[int][]int)
+
 	for i, l := range loaders {
 		for _, dep := range l.Dependencies {
 			if j, ok := provides[dep]; ok && j != i {
@@ -329,36 +344,57 @@ func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 		}
 	}
 
+	return computeLoaderLevels(loaders, inDegree, dependents)
+}
+
+func computeLoaderLevels(
+	loaders []BaseMetricLoader,
+	inDegree []int,
+	dependents map[int][]int,
+) ([][]BaseMetricLoader, error) {
 	var levels [][]BaseMetricLoader
+
 	processed := 0
 
 	for processed < len(loaders) {
-		var (
-			level        []BaseMetricLoader
-			levelIndices []int
-		)
-
-		for i, deg := range inDegree {
-			if deg == 0 {
-				level = append(level, loaders[i])
-				levelIndices = append(levelIndices, i)
-			}
-		}
+		level, levelIndices := findReadyLoaders(loaders, inDegree)
 
 		if len(level) == 0 {
 			return nil, eris.New("circular dependency detected among metric loaders")
 		}
 
-		for _, i := range levelIndices {
-			inDegree[i] = -1
-			processed++
-			for _, dep := range dependents[i] {
-				inDegree[dep]--
-			}
-		}
+		processed += advanceLoaderLevel(levelIndices, inDegree, dependents)
 
 		levels = append(levels, level)
 	}
 
 	return levels, nil
+}
+
+func findReadyLoaders(loaders []BaseMetricLoader, inDegree []int) ([]BaseMetricLoader, []int) {
+	var (
+		level   []BaseMetricLoader
+		indices []int
+	)
+
+	for i, deg := range inDegree {
+		if deg == 0 {
+			level = append(level, loaders[i])
+			indices = append(indices, i)
+		}
+	}
+
+	return level, indices
+}
+
+func advanceLoaderLevel(levelIndices []int, inDegree []int, dependents map[int][]int) int {
+	for _, i := range levelIndices {
+		inDegree[i] = -1
+
+		for _, dep := range dependents[i] {
+			inDegree[dep]--
+		}
+	}
+
+	return len(levelIndices)
 }
