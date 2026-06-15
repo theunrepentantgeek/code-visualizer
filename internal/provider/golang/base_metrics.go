@@ -22,19 +22,22 @@ const (
 )
 
 const (
-	filterPublic  metric.FilterName = "public"
-	filterPrivate metric.FilterName = "private"
+	filterPublic   metric.FilterName = "public"
+	filterPrivate  metric.FilterName = "private"
+	filterStdlib   metric.FilterName = "stdlib"
+	filterExternal metric.FilterName = "external"
+	filterInternal metric.FilterName = "internal"
 )
 
 // GoProvider is the provider descriptor for Go metrics.
 var GoProvider = provider.ProviderDescriptor{
 	Name: "go",
 	Filters: map[metric.FilterName]string{
-		filterPublic:  "Exported declarations only",
-		filterPrivate: "Unexported declarations only",
-		"stdlib":      "Standard library imports only",
-		"external":    "External (third-party) imports only",
-		"internal":    "Internal (same module) imports only",
+		filterPublic:   "Exported declarations only",
+		filterPrivate:  "Unexported declarations only",
+		filterStdlib:   "Standard library imports only",
+		filterExternal: "External (third-party) imports only",
+		filterInternal: "Internal (same module) imports only",
 	},
 }
 
@@ -43,7 +46,7 @@ var (
 	goNumericAggs     = []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean}
 	goSummaryAggs     = []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean}
 	goVisibilityNames = []metric.FilterName{filterPublic, filterPrivate}
-	goImportFilters   = []metric.FilterName{"stdlib", "external", "internal"}
+	goImportFilters   = []metric.FilterName{filterStdlib, filterExternal, filterInternal}
 
 	// goDeclarationFilter evaluates visibility filters against a Declaration node.
 	goDeclarationFilter = func(filter metric.FilterName, node any) bool {
