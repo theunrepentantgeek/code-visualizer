@@ -64,6 +64,24 @@ func (r RequestedMetrics) HasCommitExpressions() bool {
 	return false
 }
 
+// DescriptorFor returns a MetricDescriptor for the given metric name by
+// checking resolved expressions first, then falling back to the legacy
+// provider registry. This allows the Ink/rendering layer to understand
+// expression-computed metrics (e.g. "public.methods.count") that don't
+// exist in the legacy registry.
+func (r RequestedMetrics) DescriptorFor(name metric.Name) (provider.MetricDescriptor, bool) {
+	for i := range r.Expressions {
+		if r.Expressions[i].ResultName == name {
+			return provider.MetricDescriptor{
+				Name: name,
+				Kind: r.Expressions[i].ResultKind,
+			}, true
+		}
+	}
+
+	return provider.GetDescriptor(name, metric.File)
+}
+
 // ClassifyRequestedMetrics takes a flat list of metric name strings and
 // classifies each as either a resolvable expression or a legacy metric name.
 func ClassifyRequestedMetrics(names []metric.Name, targetLevel metric.MetricLevel) RequestedMetrics {

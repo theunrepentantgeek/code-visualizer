@@ -43,7 +43,7 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 	}
 
 	inks := BuildInks(
-		root, filesystem.FileSize, palette.Temperature, "", "",
+		root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "",
 	)
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
@@ -63,9 +63,8 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 	}
 
 	inks := BuildInks(
-		root, filesystem.FileType, palette.Categorization, "", "",
+		root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "",
 	)
-
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
 }
 
@@ -82,7 +81,7 @@ func TestBuildRadialInks_WithBorder(t *testing.T) {
 	}
 
 	inks := BuildInks(
-		root,
+		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
 	)
@@ -108,7 +107,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 
 	root := radialTestRoot()
 	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
-	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "radial.png")
@@ -131,7 +130,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 
 	root := radialTestRoot()
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
-	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "radial.svg")
@@ -182,7 +181,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 	}
 
 	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
-	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "nested.png")
@@ -204,7 +203,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 	root := &model.Directory{Name: "empty"}
 
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
-	inks := BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
 
 	out := filepath.Join(t.TempDir(), "empty.png")
@@ -324,7 +323,7 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 
 	// Build inks with a border metric configured.
 	inks := BuildInks(
-		root,
+		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
 	)

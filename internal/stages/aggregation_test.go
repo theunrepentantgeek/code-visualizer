@@ -323,9 +323,19 @@ func TestComputeAggregations_DeclarationLevel_CountPublicMethods(t *testing.T) {
 	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
 	g.Expect(err).NotTo(HaveOccurred())
 
+	// Directory should have the flat count across all files.
 	v, ok := root.Quantity("public.methods.count")
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(Equal(int64(2)))
+
+	// Per-file values should also be set.
+	fv, fok := root.Files[0].Quantity("public.methods.count")
+	g.Expect(fok).To(BeTrue())
+	g.Expect(fv).To(Equal(int64(1))) // a.go has 1 public method (Foo)
+
+	fv2, fok2 := root.Files[1].Quantity("public.methods.count")
+	g.Expect(fok2).To(BeTrue())
+	g.Expect(fv2).To(Equal(int64(1))) // b.go has 1 public method (Baz)
 }
 
 func TestComputeAggregations_DeclarationLevel_MeanCyclomaticComplexity(t *testing.T) {

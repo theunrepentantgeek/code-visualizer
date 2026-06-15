@@ -10,6 +10,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func TestMain(m *testing.M) {
@@ -34,7 +35,7 @@ func TestBuildInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeFile("a.go", "go", 100)},
 	}
 
-	inks := bubbletree.BuildInks(root, "", "", "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, "", "", "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkFixed))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -52,7 +53,7 @@ func TestBuildInks_NumericFill(t *testing.T) {
 		},
 	}
 
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -72,6 +73,7 @@ func TestBuildInks_BorderMetric(t *testing.T) {
 
 	inks := bubbletree.BuildInks(
 		root,
+		stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileType, palette.Categorization,
 	)

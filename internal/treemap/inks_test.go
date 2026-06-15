@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
@@ -21,7 +22,7 @@ func TestBuildTreemapInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeTestFile("a.go", "go", 100)},
 	}
 
-	inks := treemap.BuildInks(root, "", "", "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, "", "", "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkFixed))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -39,7 +40,7 @@ func TestBuildTreemapInks_NumericFill(t *testing.T) {
 		},
 	}
 
-	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -57,7 +58,7 @@ func TestBuildTreemapInks_CategoricalFill(t *testing.T) {
 		},
 	}
 
-	inks := treemap.BuildInks(root, filesystem.FileType, palette.Categorization, "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -76,7 +77,7 @@ func TestBuildTreemapInks_BorderMetric(t *testing.T) {
 	}
 
 	inks := treemap.BuildInks(
-		root,
+		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileType, palette.Categorization,
 	)
@@ -98,7 +99,7 @@ func TestBuildTreemapInks_NumericBorder(t *testing.T) {
 	}
 
 	inks := treemap.BuildInks(
-		root,
+		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
 	)

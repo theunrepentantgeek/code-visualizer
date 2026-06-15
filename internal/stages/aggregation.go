@@ -176,6 +176,9 @@ func applyNumericAggregation(agg metric.AggregationName, values []float64) (floa
 // Declaration-level aggregation
 // ---------------------------------------------------------------------------
 
+// aggregateDeclarations computes per-file aggregations from each file's
+// declarations (so per-file consumers like bubbletree borders can read them),
+// then computes directory values from all descendant declarations directly.
 func aggregateDeclarations(dir *model.Directory, resolved provider.ResolvedMetric) error {
 	for _, child := range dir.Dirs {
 		if err := aggregateDeclarations(child, resolved); err != nil {
@@ -183,67 +186,145 @@ func aggregateDeclarations(dir *model.Directory, resolved provider.ResolvedMetri
 		}
 	}
 
+	// Step 1: aggregate declarations within each file individually.
+	for _, f := range dir.Files {
+		aggregateFileDeclarations(f, resolved)
+	}
+
+	// Step 2: aggregate all descendant declarations (flat) for the directory.
+	return aggregateDirectoryDeclarations(dir, resolved)
+}
+
+// aggregateFileDeclarations computes the aggregation across a single file's
+// declarations and stores the result on that file.
+func aggregateFileDeclarations(f *model.File, resolved provider.ResolvedMetric) {
 	switch resolved.Descriptor.Kind {
 	case metric.Classification:
-		return aggregateDeclarationClassification(dir, resolved)
-	case metric.Quantity, metric.Measure:
-		return aggregateDeclarationNumeric(dir, resolved)
+		aggregateFileDeclarationClassification(f, resolved)
 	default:
-		return eris.Errorf(
-			"aggregation for declaration metric %q uses unsupported source kind %d",
-			resolved.Expression.Base, resolved.Descriptor.Kind,
-		)
+		aggregateFileDeclarationNumeric(f, resolved)
 	}
 }
 
-func aggregateDeclarationNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectDeclarationNumericValues(dir, resolved)
+func aggregateFileDeclarationNumeric(f *model.File, resolved provider.ResolvedMetric) {
+	values := collectFileDeclarationNumericValues(f, resolved)
 	if len(values) == 0 {
-		return nil
+		return
 	}
 
 	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
 	if err != nil {
-		return err
+		return
 	}
 
 	switch resolved.ResultKind {
 	case metric.Quantity:
-		dir.SetQuantity(resolved.ResultName, int64(result))
+		f.SetQuantity(resolved.ResultName, int64(result))
 	case metric.Measure:
-		dir.SetMeasure(resolved.ResultName, result)
+		f.SetMeasure(resolved.ResultName, result)
 	default:
-		return eris.Errorf(
-			"aggregation %q for declaration metric %q uses unsupported result kind %d",
-			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-		)
+		// unsupported result kind — skip
 	}
-
-	return nil
 }
 
-func aggregateDeclarationClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectDeclarationClassificationValues(dir, resolved)
+func aggregateFileDeclarationClassification(f *model.File, resolved provider.ResolvedMetric) {
+	values := collectFileDeclarationClassificationValues(f, resolved)
 	if len(values) == 0 {
-		return nil
+		return
 	}
 
 	switch resolved.Expression.Aggregation {
 	case metric.AggMode:
-		dir.SetClassification(resolved.ResultName, metric.AggregateMode(values))
+		f.SetClassification(resolved.ResultName, metric.AggregateMode(values))
 	case metric.AggDistinct:
-		dir.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
+		f.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
 	default:
-		return eris.Errorf(
-			"classification aggregation %q for declaration metric %q is unsupported",
-			resolved.Expression.Aggregation, resolved.Expression.Base,
-		)
+		// unsupported classification aggregation — skip
+	}
+}
+
+// aggregateDirectoryDeclarations computes the directory-level value from all
+// descendant declarations directly (flat aggregation preserving correct
+// semantics for mean/count/etc).
+func aggregateDirectoryDeclarations(dir *model.Directory, resolved provider.ResolvedMetric) error {
+	switch resolved.Descriptor.Kind {
+	case metric.Classification:
+		values := collectAllDeclarationClassificationValues(dir, resolved)
+		if len(values) == 0 {
+			return nil
+		}
+
+		switch resolved.Expression.Aggregation {
+		case metric.AggMode:
+			dir.SetClassification(resolved.ResultName, metric.AggregateMode(values))
+		case metric.AggDistinct:
+			dir.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
+		default:
+			return eris.Errorf(
+				"classification aggregation %q for declaration metric %q is unsupported",
+				resolved.Expression.Aggregation, resolved.Expression.Base,
+			)
+		}
+	default:
+		values := collectAllDeclarationNumericValues(dir, resolved)
+		if len(values) == 0 {
+			return nil
+		}
+
+		result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
+		if err != nil {
+			return err
+		}
+
+		switch resolved.ResultKind {
+		case metric.Quantity:
+			dir.SetQuantity(resolved.ResultName, int64(result))
+		case metric.Measure:
+			dir.SetMeasure(resolved.ResultName, result)
+		default:
+			return eris.Errorf(
+				"aggregation %q for declaration metric %q uses unsupported result kind %d",
+				resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
+			)
+		}
 	}
 
 	return nil
 }
 
-func collectDeclarationNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
+func collectFileDeclarationNumericValues(f *model.File, resolved provider.ResolvedMetric) []float64 {
+	var values []float64
+
+	for _, d := range f.Declarations {
+		if !declarationMatchesExpression(d, resolved) {
+			continue
+		}
+
+		if v, ok := declarationNumericValue(d, resolved); ok {
+			values = append(values, v)
+		}
+	}
+
+	return values
+}
+
+func collectFileDeclarationClassificationValues(f *model.File, resolved provider.ResolvedMetric) []string {
+	var values []string
+
+	for _, d := range f.Declarations {
+		if !declarationMatchesExpression(d, resolved) {
+			continue
+		}
+
+		if v, ok := d.Classification(resolved.Expression.Base); ok {
+			values = append(values, v)
+		}
+	}
+
+	return values
+}
+
+func collectAllDeclarationNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
 	var values []float64
 
 	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
@@ -252,6 +333,22 @@ func collectDeclarationNumericValues(dir *model.Directory, resolved provider.Res
 		}
 
 		if v, ok := declarationNumericValue(d, resolved); ok {
+			values = append(values, v)
+		}
+	})
+
+	return values
+}
+
+func collectAllDeclarationClassificationValues(dir *model.Directory, resolved provider.ResolvedMetric) []string {
+	var values []string
+
+	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
+		if !declarationMatchesExpression(d, resolved) {
+			return
+		}
+
+		if v, ok := d.Classification(resolved.Expression.Base); ok {
 			values = append(values, v)
 		}
 	})
@@ -274,7 +371,7 @@ func declarationNumericValue(d *model.Declaration, resolved provider.ResolvedMet
 			return v, true
 		}
 	default:
-		// Classification metrics use collectDeclarationClassificationValues
+		// Classification metrics use classification collectors
 	}
 
 	return 0, false
@@ -290,22 +387,6 @@ func declarationMatchesExpression(d *model.Declaration, resolved provider.Resolv
 	}
 
 	return matchesDeclKind(d, resolved.Expression.Base)
-}
-
-func collectDeclarationClassificationValues(dir *model.Directory, resolved provider.ResolvedMetric) []string {
-	var values []string
-
-	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
-		if !declarationMatchesExpression(d, resolved) {
-			return
-		}
-
-		if v, ok := d.Classification(resolved.Expression.Base); ok {
-			values = append(values, v)
-		}
-	})
-
-	return values
 }
 
 // declKindMap maps base metric names to acceptable declaration kinds.

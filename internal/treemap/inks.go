@@ -8,7 +8,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 const (
@@ -34,6 +34,7 @@ type Inks struct {
 // BuildInks creates fill and border inks from metric configuration.
 func BuildInks(
 	root *model.Directory,
+	requested stages.RequestedMetrics,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
@@ -43,11 +44,11 @@ func BuildInks(
 		Border: canvas.FixedInk(structuralBorder),
 	}
 
-	fillDesc, _ := provider.GetDescriptor(fillMetric, metric.File)
+	fillDesc, _ := requested.DescriptorFor(fillMetric)
 	inks.Fill = pkginks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFill)
 
 	if borderMetric != "" {
-		borderDesc, _ := provider.GetDescriptor(borderMetric, metric.File)
+		borderDesc, _ := requested.DescriptorFor(borderMetric)
 		inks.Border = pkginks.BuildMetricInk(root, borderDesc, borderPaletteName, structuralBorder)
 	}
 

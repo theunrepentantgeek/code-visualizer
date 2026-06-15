@@ -16,6 +16,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
@@ -54,7 +55,7 @@ func TestBuildTreemapInks_Numeric(t *testing.T) {
 		},
 	}
 
-	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -72,7 +73,7 @@ func TestBuildTreemapInks_Categorical(t *testing.T) {
 		},
 	}
 
-	inks := treemap.BuildInks(root, filesystem.FileType, palette.Categorization, "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
 }
@@ -91,7 +92,7 @@ func TestRenderTreemapToCanvas_PNG(t *testing.T) {
 	}
 
 	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
-	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := treemap.RenderToCanvas(rects, root, 800, 600, inks, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.png")
@@ -121,7 +122,7 @@ func TestRenderTreemapToCanvas_SVG(t *testing.T) {
 	}
 
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
-	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.svg")
@@ -163,7 +164,7 @@ func TestRenderTreemapToCanvas_JPG(t *testing.T) {
 	}
 
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
-	inks := treemap.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.jpg")
