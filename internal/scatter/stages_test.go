@@ -30,7 +30,7 @@ func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 	g.Expect(viz.YAxis).To(Equal(scatter.AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity}))
 	g.Expect(viz.Size).To(Equal(filesystem.FileSize))
 	g.Expect(viz.FillMetric).To(Equal(filesystem.FileSize))
-	g.Expect(common.Requested).To(Equal([]metric.Name{
+	g.Expect(common.Requested.LegacyNames()).To(Equal([]metric.Name{
 		filesystem.FileType,
 		filesystem.FileLines,
 		filesystem.FileSize,
@@ -77,7 +77,7 @@ func TestResolveMetrics_FillAndBorderOverrideDefaults(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(viz.FillMetric).To(Equal(filesystem.FileType))
 	g.Expect(viz.BorderMetric).To(Equal(filesystem.FileLines))
-	g.Expect(common.Requested).To(Equal([]metric.Name{
+	g.Expect(common.Requested.LegacyNames()).To(Equal([]metric.Name{
 		filesystem.FileLines,
 		filesystem.FileSize,
 		filesystem.FileType,

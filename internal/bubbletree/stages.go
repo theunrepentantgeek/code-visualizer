@@ -44,7 +44,7 @@ func resolveLabels(cfg *config.Bubbletree) LabelMode {
 func BuildInksStage(c *stages.CommonState, b *State) error {
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
-	b.Inks = BuildInks(c.Root, b.FillMetric, b.FillPalette, b.BorderMetric, b.BorderPalette)
+	b.Inks = BuildInks(c.Root, c.Requested, b.FillMetric, b.FillPalette, b.BorderMetric, b.BorderPalette)
 	if !b.Flat {
 		b.Inks.Fill = canvas.NewRadialGradientInk(b.Inks.Fill)
 	}

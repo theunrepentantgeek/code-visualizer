@@ -8,4 +8,6 @@ func Register() {
 		gp := newProvider(name)
 		provider.Register(gp)
 	}
+
+	RegisterBase()
 }

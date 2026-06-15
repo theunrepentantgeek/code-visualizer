@@ -36,7 +36,7 @@ func resolveFillMetric(cfg *config.Treemap) metric.Name {
 func BuildInksStage(c *stages.CommonState, t *State) error {
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
-	t.Inks = BuildInks(c.Root, t.FillMetric, t.FillPalette, t.BorderMetric, t.BorderPalette)
+	t.Inks = BuildInks(c.Root, c.Requested, t.FillMetric, t.FillPalette, t.BorderMetric, t.BorderPalette)
 	if !t.Flat {
 		t.Inks.Fill = canvas.NewRadialGradientInk(t.Inks.Fill)
 	}

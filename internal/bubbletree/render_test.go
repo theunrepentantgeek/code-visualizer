@@ -20,6 +20,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type capturedDisc struct {
@@ -129,13 +130,13 @@ func hasNonWhitePixelInRect(img image.Image, minX, minY, maxX, maxY int) bool {
 	return false
 }
 
-func TestRenderBubbleToCanvas_PNG(t *testing.T) {
+func TestRenderBubbleToCanvas_PNG(t *testing.T) { //nolint:dupl // similar to SVG/JPG variants
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := testRoot()
 	nodes := bubbletree.Layout(root, 1000, 800, filesystem.FileSize, bubbletree.LabelFoldersOnly)
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
 	out := filepath.Join(t.TempDir(), "bubble.png")
@@ -157,7 +158,7 @@ func TestRenderBubbleToCanvas_SVG(t *testing.T) {
 
 	root := testRoot()
 	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
 
 	out := filepath.Join(t.TempDir(), "bubble.svg")
@@ -186,13 +187,13 @@ func TestRenderBubbleToCanvas_SVG(t *testing.T) {
 	g.Expect(rootElement).To(Equal("svg"))
 }
 
-func TestRenderBubbleToCanvas_JPG(t *testing.T) {
+func TestRenderBubbleToCanvas_JPG(t *testing.T) { //nolint:dupl // similar to PNG/SVG variants
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	root := testRoot()
 	nodes := bubbletree.Layout(root, 400, 300, filesystem.FileSize, bubbletree.LabelFoldersOnly)
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := bubbletree.RenderToCanvas(&nodes, root, 400, 300, inks)
 
 	out := filepath.Join(t.TempDir(), "bubble.jpg")
@@ -214,7 +215,7 @@ func TestRenderBubbleToCanvas_EmptyDirectory(t *testing.T) {
 
 	root := &model.Directory{Path: "empty"}
 	nodes := bubbletree.Layout(root, 800, 800, filesystem.FileSize, bubbletree.LabelFoldersOnly)
-	inks := bubbletree.BuildInks(root, "", "", "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, "", "", "", "")
 
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 800, inks)
 
@@ -235,7 +236,7 @@ func TestRenderBubbleToCanvas_LabelsAll(t *testing.T) {
 
 	root := testRoot()
 	nodes := bubbletree.Layout(root, 1000, 800, filesystem.FileSize, bubbletree.LabelAll)
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
 	out := filepath.Join(t.TempDir(), "labels-all.svg")
@@ -255,7 +256,7 @@ func TestRenderBubbleToCanvas_LabelsNone(t *testing.T) {
 
 	root := testRoot()
 	nodes := bubbletree.Layout(root, 1000, 800, filesystem.FileSize, bubbletree.LabelNone)
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
 	out := filepath.Join(t.TempDir(), "labels-none.svg")
@@ -276,7 +277,7 @@ func TestRenderBubbleToCanvas_CategoricalFill(t *testing.T) {
 	root := testRoot()
 	nodes := bubbletree.Layout(root, 1000, 800, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	inks := bubbletree.BuildInks(
-		root,
+		root, stages.RequestedMetrics{},
 		filesystem.FileType, palette.Categorization,
 		filesystem.FileSize, palette.Temperature,
 	)
@@ -301,7 +302,7 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 
 	root := testRoot()
 	nodes := bubbletree.Layout(root, 1000, 800, filesystem.FileSize, bubbletree.LabelFoldersOnly)
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
 	backend := &captureBackend{}
@@ -366,7 +367,7 @@ func TestRenderBubbleToCanvas_EmptyLabelledDirectoryKeepsVisibleBubble(t *testin
 			Path: "root/a",
 		}},
 	}
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
 
@@ -411,7 +412,7 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 			Path: "root/pkg",
 		}},
 	}
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
 
@@ -458,7 +459,7 @@ func TestRenderBubbleToCanvas_SVGOmitsRootLabel(t *testing.T) {
 			makeFile("style.css", "css", 50),
 		},
 	}
-	inks := bubbletree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
 

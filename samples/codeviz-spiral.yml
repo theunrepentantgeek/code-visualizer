@@ -8,11 +8,12 @@ bubbletree:
     labels: folders
 spiral:
     resolution: daily
-    size: commit-count
+    size: commit.count
     fill:
-        metric: commit-count
+        metric: commit.count
         palette: foliage
     labels: laps
+    x-axis: log
 fileFilter:
     - pattern: .*
       mode: exclude

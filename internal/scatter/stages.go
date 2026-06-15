@@ -86,7 +86,7 @@ func resolveFillMetric(cfg *config.Scatter, size metric.Name) metric.Name {
 	return size
 }
 
-func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *config.MetricSpec) []metric.Name {
+func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *config.MetricSpec) stages.RequestedMetrics {
 	seen := map[metric.Name]bool{}
 	names := make([]metric.Name, 0, 5)
 
@@ -99,7 +99,7 @@ func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *confi
 		names = append(names, name)
 	}
 
-	return names
+	return stages.ClassifyRequestedMetrics(names, metric.LevelDirectory)
 }
 
 // BuildInksStage collects plottable files and creates point inks.

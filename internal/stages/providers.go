@@ -17,5 +17,5 @@ func RunProviders(c *CommonState) error {
 	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
 	defer stopMetricTicker()
 
-	return eris.Wrap(provider.Run(c.Root, c.Requested, metric.File, metricProg), "failed to load metrics")
+	return eris.Wrap(provider.Run(c.Root, c.Requested.LegacyNames(), metric.File, metricProg), "failed to load metrics")
 }

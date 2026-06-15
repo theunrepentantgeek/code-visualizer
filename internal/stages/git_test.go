@@ -23,7 +23,7 @@ func TestCheckGitRequirement_Stage_SkipsWhenNoGitMetricRequested(t *testing.T) {
 
 	s := &stages.CommonState{
 		TargetPath: "/no/such/dir",
-		Requested:  []metric.Name{"file-size"},
+		Requested:  stages.RequestedMetrics{Legacy: []metric.Name{"file-size"}},
 	}
 
 	g.Expect(stages.CheckGitRequirement(s)).To(Succeed())
@@ -37,7 +37,7 @@ func TestCheckGitRequirement_Stage_FailsWhenGitMetricRequestedAndNoRepo(t *testi
 
 	s := &stages.CommonState{
 		TargetPath: dir,
-		Requested:  []metric.Name{"file-age"},
+		Requested:  stages.RequestedMetrics{Legacy: []metric.Name{"file-age"}},
 	}
 	err := stages.CheckGitRequirement(s)
 

@@ -236,3 +236,98 @@ func TestCountDirs_Nested(t *testing.T) {
 
 	g.Expect(CountDirs(root)).To(Equal(2))
 }
+
+func TestWalkDeclarations_CollectsAllDescendants(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	decl1 := &Declaration{Name: "Foo", Kind: "function", Visibility: "public"}
+	decl2 := &Declaration{Name: "bar", Kind: "method", Visibility: "private"}
+	decl3 := &Declaration{Name: "Baz", Kind: "struct", Visibility: "public"}
+
+	root := &Directory{
+		Name: "root",
+		Files: []*File{
+			{Name: "a.go", Declarations: []*Declaration{decl1}},
+		},
+		Dirs: []*Directory{
+			{
+				Name: "sub",
+				Files: []*File{
+					{Name: "b.go", Declarations: []*Declaration{decl2, decl3}},
+				},
+			},
+		},
+	}
+
+	var names []string
+
+	WalkDeclarations(root, func(d *Declaration, _ *File) {
+		names = append(names, d.Name)
+	})
+
+	g.Expect(names).To(ConsistOf("Foo", "bar", "Baz"))
+}
+
+func TestWalkDeclarations_Empty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &Directory{
+		Name:  "root",
+		Files: []*File{{Name: "a.go"}},
+	}
+
+	var count int
+
+	WalkDeclarations(root, func(_ *Declaration, _ *File) { count++ })
+
+	g.Expect(count).To(Equal(0))
+}
+
+func TestWalkCommits_CollectsAllDescendants(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c1 := &Commit{Hash: "aaa"}
+	c2 := &Commit{Hash: "bbb"}
+
+	root := &Directory{
+		Name: "root",
+		Files: []*File{
+			{Name: "a.go", Commits: []*Commit{c1}},
+		},
+		Dirs: []*Directory{
+			{
+				Name: "sub",
+				Files: []*File{
+					{Name: "b.go", Commits: []*Commit{c2}},
+				},
+			},
+		},
+	}
+
+	var hashes []string
+
+	WalkCommits(root, func(c *Commit, _ *File) {
+		hashes = append(hashes, c.Hash)
+	})
+
+	g.Expect(hashes).To(ConsistOf("aaa", "bbb"))
+}
+
+func TestWalkCommits_Empty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &Directory{
+		Name:  "root",
+		Files: []*File{{Name: "a.go"}},
+	}
+
+	var count int
+
+	WalkCommits(root, func(_ *Commit, _ *File) { count++ })
+
+	g.Expect(count).To(Equal(0))
+}

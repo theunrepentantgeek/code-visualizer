@@ -7,9 +7,9 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
-// CollectRequestedMetrics returns the unique ordered list of metric names
+// CollectRequestedMetrics returns the classified set of metrics
 // implied by size + optional fill + optional border specs.
-func CollectRequestedMetrics(size metric.Name, fill *config.MetricSpec, border *config.MetricSpec) []metric.Name {
+func CollectRequestedMetrics(size metric.Name, fill *config.MetricSpec, border *config.MetricSpec) RequestedMetrics {
 	seen := map[metric.Name]bool{size: true}
 	names := []metric.Name{size}
 
@@ -20,7 +20,7 @@ func CollectRequestedMetrics(size metric.Name, fill *config.MetricSpec, border *
 		}
 	}
 
-	return names
+	return ClassifyRequestedMetrics(names, metric.LevelDirectory)
 }
 
 // ResolveFillPalette returns the fill palette to use, consulting (in order)

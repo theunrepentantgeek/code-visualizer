@@ -11,11 +11,13 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/golang"
 )
 
-// TestMain registers filesystem providers so Validate tests can look up known metrics.
+// TestMain registers providers so Validate tests can look up known metrics.
 func TestMain(m *testing.M) {
 	filesystem.Register()
+	golang.Register()
 	m.Run()
 }
 
@@ -360,6 +362,43 @@ func TestMetricSpec_Validate_KnownMetric_ReturnsNil(t *testing.T) {
 
 	ms := &MetricSpec{Metric: "file-size"}
 	g.Expect(ms.Validate("size")).To(Succeed())
+}
+
+func TestMetricSpec_Validate_ExpressionSyntax(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	spec := &MetricSpec{Metric: "file-size.sum"}
+	err := spec.Validate("size")
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestMetricSpec_Validate_InvalidAggregation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	spec := &MetricSpec{Metric: "file-size.mode"}
+	err := spec.Validate("fill")
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring("not a valid aggregation")))
+}
+
+func TestMetricSpec_Validate_BareMetricStillWorks(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	spec := &MetricSpec{Metric: "file-size"}
+	err := spec.Validate("size")
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestMetricSpec_Validate_LegacyFlatMetricStillWorks(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	spec := &MetricSpec{Metric: "type-count"}
+	err := spec.Validate("fill")
+	g.Expect(err).NotTo(HaveOccurred())
 }
 
 func TestMetricSpec_Validate_UnknownMetric_ReturnsError(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func makeRadialFile(name, ext string, size int64) *model.File {
@@ -29,7 +30,7 @@ func TestBuildRadialInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeRadialFile("a.go", "go", 100)},
 	}
 
-	inks := radialtree.BuildInks(root, "", "", "", "")
+	inks := radialtree.BuildInks(root, stages.RequestedMetrics{}, "", "", "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkFixed))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -47,7 +48,7 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 		},
 	}
 
-	inks := radialtree.BuildInks(root, filesystem.FileSize, palette.Temperature, "", "")
+	inks := radialtree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -65,7 +66,7 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 		},
 	}
 
-	inks := radialtree.BuildInks(root, filesystem.FileType, palette.Categorization, "", "")
+	inks := radialtree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
 
 	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
 	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
@@ -84,7 +85,7 @@ func TestBuildRadialInks_BorderMetric(t *testing.T) {
 	}
 
 	inks := radialtree.BuildInks(
-		root,
+		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileType, palette.Categorization,
 	)
@@ -106,7 +107,7 @@ func TestBuildRadialInks_NumericBorder(t *testing.T) {
 	}
 
 	inks := radialtree.BuildInks(
-		root,
+		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
 	)

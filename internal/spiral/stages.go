@@ -45,7 +45,7 @@ func resolveLabels(cfg *config.Spiral) LabelMode {
 // collectRequestedMetrics merges size + fill + border into a deduplicated
 // metric set. When size is empty (spiral defaults to commit count), only fill
 // and border contribute.
-func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) []metric.Name {
+func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) stages.RequestedMetrics {
 	if size != "" {
 		return stages.CollectRequestedMetrics(size, fill, border)
 	}
@@ -61,7 +61,7 @@ func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) 
 		}
 	}
 
-	return names
+	return stages.ClassifyRequestedMetrics(names, metric.LevelDirectory)
 }
 
 // BuildTimeBucketsStage builds time buckets from c.FileTimeRange and

@@ -18,6 +18,11 @@ const (
 	TotalLinesAdded   metric.Name = "total-lines-added"
 	TotalLinesRemoved metric.Name = "total-lines-removed"
 	CommitDensity     metric.Name = "commit-density"
+
+	// LinesAdded is a commit-level metric tracking lines added per commit.
+	LinesAdded   metric.Name = "lines-added"
+	LinesRemoved metric.Name = "lines-removed"
+	LinesChanged metric.Name = "lines-changed"
 )
 
 // IsGitMetric reports whether name is a metric that requires a git repository.
