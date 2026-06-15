@@ -50,20 +50,20 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 
 func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
-	descriptor, ok := provider.GetDescriptor(metricName, metric.File)
+	base, ok := provider.GetBase(metricName)
 
 	if !ok {
 		return AxisSpec{}, eris.Errorf("unknown axis metric %q", metricName)
 	}
 
-	spec := AxisSpec{Metric: metricName, Kind: descriptor.Kind}
+	spec := AxisSpec{Metric: metricName, Kind: base.Kind}
 
 	scaleStr := stages.PtrString(scale)
 	switch scaleStr {
 	case "", "linear":
 		spec.Scale = Linear
 	case "log":
-		if descriptor.Kind == metric.Classification {
+		if base.Kind == metric.Classification {
 			return AxisSpec{}, eris.Errorf(
 				"log scale is only valid for numeric metrics; %q is a classification metric",
 				metricName,
@@ -110,7 +110,7 @@ func BuildInksStage(c *stages.CommonState, x *State) error {
 		return err
 	}
 
-	x.Inks = BuildInks(x.Dataset, x.FillMetric, x.FillPalette, x.BorderMetric, x.BorderPalette)
+	x.Inks = BuildInks(x.Dataset, c.Requested, x.FillMetric, x.FillPalette, x.BorderMetric, x.BorderPalette)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
