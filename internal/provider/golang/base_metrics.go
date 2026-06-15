@@ -18,6 +18,7 @@ const (
 	Imports              metric.Name = "imports"
 	CyclomaticComplexity metric.Name = "cyclomatic-complexity"
 	FunctionLength       metric.Name = "function-length"
+	Declarations         metric.Name = "declarations"
 )
 
 const (
@@ -120,6 +121,16 @@ var (
 			Kind:           metric.Quantity,
 			Level:          metric.LevelDeclaration,
 			Description:    "Count of variable declarations.",
+			Filters:        goVisibilityNames,
+			Aggregations:   goDeclCountAggs,
+			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
+		},
+		{
+			Name:           Declarations,
+			Kind:           metric.Quantity,
+			Level:          metric.LevelDeclaration,
+			Description:    "Count of all declarations (types, functions, methods, constants, variables).",
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,

@@ -248,6 +248,8 @@ func buildDeclarations(declarations []declarationInfo) []*model.Declaration {
 			Visibility: declaration.visibility,
 		}
 
+		modelDeclaration.SetQuantity(Declarations, 1)
+
 		if declaration.hasFunctionMetrics {
 			modelDeclaration.SetQuantity(CyclomaticComplexity, declaration.cyclomatic)
 			modelDeclaration.SetQuantity(FunctionLength, declaration.functionLength)
