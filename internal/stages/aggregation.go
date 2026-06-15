@@ -249,44 +249,54 @@ func aggregateFileDeclarationClassification(f *model.File, resolved provider.Res
 func aggregateDirectoryDeclarations(dir *model.Directory, resolved provider.ResolvedMetric) error {
 	switch resolved.Descriptor.Kind {
 	case metric.Classification:
-		values := collectAllDeclarationClassificationValues(dir, resolved)
-		if len(values) == 0 {
-			return nil
-		}
-
-		switch resolved.Expression.Aggregation {
-		case metric.AggMode:
-			dir.SetClassification(resolved.ResultName, metric.AggregateMode(values))
-		case metric.AggDistinct:
-			dir.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
-		default:
-			return eris.Errorf(
-				"classification aggregation %q for declaration metric %q is unsupported",
-				resolved.Expression.Aggregation, resolved.Expression.Base,
-			)
-		}
+		return aggregateDirectoryDeclarationClassification(dir, resolved)
 	default:
-		values := collectAllDeclarationNumericValues(dir, resolved)
-		if len(values) == 0 {
-			return nil
-		}
+		return aggregateDirectoryDeclarationNumeric(dir, resolved)
+	}
+}
 
-		result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-		if err != nil {
-			return err
-		}
+func aggregateDirectoryDeclarationClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
+	values := collectAllDeclarationClassificationValues(dir, resolved)
+	if len(values) == 0 {
+		return nil
+	}
 
-		switch resolved.ResultKind {
-		case metric.Quantity:
-			dir.SetQuantity(resolved.ResultName, int64(result))
-		case metric.Measure:
-			dir.SetMeasure(resolved.ResultName, result)
-		default:
-			return eris.Errorf(
-				"aggregation %q for declaration metric %q uses unsupported result kind %d",
-				resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-			)
-		}
+	switch resolved.Expression.Aggregation {
+	case metric.AggMode:
+		dir.SetClassification(resolved.ResultName, metric.AggregateMode(values))
+	case metric.AggDistinct:
+		dir.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
+	default:
+		return eris.Errorf(
+			"classification aggregation %q for declaration metric %q is unsupported",
+			resolved.Expression.Aggregation, resolved.Expression.Base,
+		)
+	}
+
+	return nil
+}
+
+func aggregateDirectoryDeclarationNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
+	values := collectAllDeclarationNumericValues(dir, resolved)
+	if len(values) == 0 {
+		return nil
+	}
+
+	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
+	if err != nil {
+		return err
+	}
+
+	switch resolved.ResultKind {
+	case metric.Quantity:
+		dir.SetQuantity(resolved.ResultName, int64(result))
+	case metric.Measure:
+		dir.SetMeasure(resolved.ResultName, result)
+	default:
+		return eris.Errorf(
+			"aggregation %q for declaration metric %q uses unsupported result kind %d",
+			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
+		)
 	}
 
 	return nil

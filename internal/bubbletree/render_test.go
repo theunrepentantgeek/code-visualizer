@@ -130,7 +130,7 @@ func hasNonWhitePixelInRect(img image.Image, minX, minY, maxX, maxY int) bool {
 	return false
 }
 
-func TestRenderBubbleToCanvas_PNG(t *testing.T) {
+func TestRenderBubbleToCanvas_PNG(t *testing.T) { //nolint:dupl // similar to SVG/JPG variants
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -187,7 +187,7 @@ func TestRenderBubbleToCanvas_SVG(t *testing.T) {
 	g.Expect(rootElement).To(Equal("svg"))
 }
 
-func TestRenderBubbleToCanvas_JPG(t *testing.T) {
+func TestRenderBubbleToCanvas_JPG(t *testing.T) { //nolint:dupl // similar to PNG/SVG variants
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
