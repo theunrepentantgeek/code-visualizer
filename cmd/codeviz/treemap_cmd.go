@@ -56,6 +56,7 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 	if !ok {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
 	}
+
 	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
 		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, d.Kind)
 	}

@@ -33,6 +33,7 @@ func registerBaseMetricsOnly(t *testing.T) {
 }
 
 func TestTreemapCmd_ValidateConfig_UsesBaseRegistry(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	registerBaseMetricsOnly(t)
 
@@ -45,6 +46,7 @@ func TestTreemapCmd_ValidateConfig_UsesBaseRegistry(t *testing.T) {
 }
 
 func TestScatterCmd_ValidateConfig_UsesBaseRegistryForAxesAndSize(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	registerBaseMetricsOnly(t)
 

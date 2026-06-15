@@ -16,6 +16,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
+//nolint:dupl // Intentionally parallel structure testing different output formats
 func TestRenderToCanvas_PNG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -75,6 +76,7 @@ func TestRenderToCanvas_SVG(t *testing.T) {
 	g.Expect(rootElement).To(Equal("svg"))
 }
 
+//nolint:dupl // Intentionally parallel structure testing different output formats
 func TestRenderToCanvas_JPG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
