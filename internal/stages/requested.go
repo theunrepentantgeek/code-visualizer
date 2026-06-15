@@ -36,22 +36,22 @@ func (r RequestedMetrics) HasCommitExpressions() bool {
 	return false
 }
 
-// DescriptorFor returns a MetricDescriptor for the given metric name by
-// checking resolved expressions first, then falling back to the provider
+// DescriptorFor returns a BaseMetricDescriptor for the given metric name by
+// checking resolved expressions first, then falling back to the base metric
 // registry. This allows the Ink/rendering layer to understand
 // expression-computed metrics (e.g. "public.methods.count") that don't
-// exist in the provider registry.
-func (r RequestedMetrics) DescriptorFor(name metric.Name) (provider.MetricDescriptor, bool) {
+// exist in the base registry.
+func (r RequestedMetrics) DescriptorFor(name metric.Name) (provider.BaseMetricDescriptor, bool) {
 	for i := range r.Expressions {
 		if r.Expressions[i].ResultName == name {
-			return provider.MetricDescriptor{
+			return provider.BaseMetricDescriptor{
 				Name: name,
 				Kind: r.Expressions[i].ResultKind,
 			}, true
 		}
 	}
 
-	return provider.GetDescriptor(name, metric.File)
+	return provider.GetBase(name)
 }
 
 func appendBaseMetric(result *RequestedMetrics, baseSeen map[metric.Name]bool, name metric.Name) {

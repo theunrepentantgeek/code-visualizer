@@ -1,4 +1,4 @@
-package provider
+package provider_test
 
 import (
 	"errors"
@@ -11,226 +11,196 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
-// orderTracker records which providers ran and in what order.
-type orderTracker struct {
+type loaderOrderTracker struct {
 	mu    sync.Mutex
 	calls []metric.Name
 }
 
-func (o *orderTracker) record(name metric.Name) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
+func (t *loaderOrderTracker) record(name metric.Name) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
-	o.calls = append(o.calls, name)
+	t.calls = append(t.calls, name)
 }
 
-// mockProvider records load calls and optionally returns an error.
-type mockProvider struct {
-	name    metric.Name
-	kind    metric.Kind
-	deps    []metric.Name
-	loadErr error
-	tracker *orderTracker
+type progressTracker struct {
+	mu       sync.Mutex
+	started  []metric.Name
+	finished []metric.Name
 }
 
-func (m *mockProvider) Name() metric.Name                 { return m.name }
-func (m *mockProvider) Kind() metric.Kind                 { return m.kind }
-func (*mockProvider) Target() metric.Target               { return metric.File }
-func (*mockProvider) Description() string                 { return "" }
-func (m *mockProvider) Dependencies() []metric.Name       { return m.deps }
-func (*mockProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
+func (t *progressTracker) OnMetricStarted(name metric.Name) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
-func (m *mockProvider) Load(_ *model.Directory) error {
-	if m.tracker != nil {
-		m.tracker.record(m.name)
-	}
-
-	return m.loadErr
+	t.started = append(t.started, name)
 }
 
-func TestRunBasicExecution(t *testing.T) {
-	t.Parallel()
+func (t *progressTracker) OnMetricFinished(name metric.Name) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	t.finished = append(t.finished, name)
+}
+
+func (*progressTracker) OnFileProcessed(metric.Name) {}
+
+func resetBaseRegistry(t *testing.T) {
+	t.Helper()
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
+}
+
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersBasicExecution(t *testing.T) {
 	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
 
-	reg := newRegistry()
-	tracker := &orderTracker{}
-	reg.register(&mockProvider{name: "m1", kind: metric.Quantity, tracker: tracker})
+	tracker := &loaderOrderTracker{}
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{"m1"},
+		Load: func(_ *model.Directory) error {
+			tracker.record("m1")
+			return nil
+		},
+	})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"m1"}, metric.File, nil)
+	err := provider.RunLoaders(nil, []metric.Name{"m1"}, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(tracker.calls).To(Equal([]metric.Name{"m1"}))
 }
 
-func TestRunTransitiveDependencies(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersRespectsDependencies(t *testing.T) {
 	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
 
-	reg := newRegistry()
-	tracker := &orderTracker{}
-	reg.register(&mockProvider{name: "base", kind: metric.Quantity, tracker: tracker})
-	reg.register(&mockProvider{name: "derived", kind: metric.Quantity, deps: []metric.Name{"base"}, tracker: tracker})
+	tracker := &loaderOrderTracker{}
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{"base"},
+		Load: func(_ *model.Directory) error {
+			tracker.record("base")
+			return nil
+		},
+	})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:      []metric.Name{"derived"},
+		Dependencies: []metric.Name{"base"},
+		Load: func(_ *model.Directory) error {
+			tracker.record("derived")
+			return nil
+		},
+	})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"derived"}, metric.File, nil)
+	err := provider.RunLoaders(nil, []metric.Name{"base", "derived"}, nil)
 	g.Expect(err).NotTo(HaveOccurred())
-
-	// "base" must run before "derived"
-	g.Expect(tracker.calls).To(HaveLen(2))
-
-	baseIdx := -1
-	derivedIdx := -1
-
-	for i, n := range tracker.calls {
-		if n == "base" {
-			baseIdx = i
-		}
-
-		if n == "derived" {
-			derivedIdx = i
-		}
-	}
-
-	g.Expect(baseIdx).To(BeNumerically("<", derivedIdx))
+	g.Expect(tracker.calls).To(Equal([]metric.Name{"base", "derived"}))
 }
 
-func TestRunCycleDetection(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersCycleDetection(t *testing.T) {
 	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
 
-	reg := newRegistry()
-	reg.register(&mockProvider{name: "a", kind: metric.Quantity, deps: []metric.Name{"b"}})
-	reg.register(&mockProvider{name: "b", kind: metric.Quantity, deps: []metric.Name{"a"}})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:      []metric.Name{"a"},
+		Dependencies: []metric.Name{"b"},
+		Load:         func(_ *model.Directory) error { return nil },
+	})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:      []metric.Name{"b"},
+		Dependencies: []metric.Name{"a"},
+		Load:         func(_ *model.Directory) error { return nil },
+	})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"a"}, metric.File, nil)
+	err := provider.RunLoaders(nil, []metric.Name{"a", "b"}, nil)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring("circular dependency")))
+	g.Expect(err).To(MatchError(ContainSubstring("circular dependency detected among metric loaders")))
 }
 
-func TestRunUnknownDependency(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersErrorPropagation(t *testing.T) {
 	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
 
-	reg := newRegistry()
-	reg.register(&mockProvider{name: "a", kind: metric.Quantity, deps: []metric.Name{"missing"}})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{"fail"},
+		Load: func(_ *model.Directory) error {
+			return errors.New("load failed")
+		},
+	})
 
-	err := runWithRegistry(reg, nil, []metric.Name{"a"}, metric.File, nil)
+	err := provider.RunLoaders(nil, []metric.Name{"fail"}, nil)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring(`unknown file metric "missing"`)))
-}
-
-func TestRunUnknownRequestedMetric(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
-
-	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"}, metric.File, nil)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring(`unknown file metric "nonexistent"`)))
-}
-
-func TestRunUnknownMetricListsAvailable(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
-	reg.register(&mockProvider{name: "alpha", kind: metric.Quantity})
-	reg.register(&mockProvider{name: "beta", kind: metric.Quantity})
-
-	err := runWithRegistry(reg, nil, []metric.Name{"nonexistent"}, metric.File, nil)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(ContainSubstring("available metrics: alpha, beta")))
-}
-
-func TestRunErrorPropagation(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
-	reg.register(&mockProvider{name: "fail", kind: metric.Quantity, loadErr: errors.New("load failed")})
-
-	err := runWithRegistry(reg, nil, []metric.Name{"fail"}, metric.File, nil)
-	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring("loader level failed")))
 	g.Expect(err).To(MatchError(ContainSubstring("load failed")))
 }
 
-// concurrentProvider tracks concurrent Load calls via shared atomics.
-type concurrentProvider struct {
-	name          metric.Name
-	counter       *atomic.Int32
-	maxConcurrent *atomic.Int32
-}
-
-func (c *concurrentProvider) Name() metric.Name                 { return c.name }
-func (*concurrentProvider) Kind() metric.Kind                   { return metric.Quantity }
-func (*concurrentProvider) Target() metric.Target               { return metric.File }
-func (*concurrentProvider) Description() string                 { return "" }
-func (*concurrentProvider) Dependencies() []metric.Name         { return nil }
-func (*concurrentProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
-
-func (c *concurrentProvider) Load(_ *model.Directory) error {
-	cur := c.counter.Add(1)
-
-	for {
-		old := c.maxConcurrent.Load()
-		if cur <= old || c.maxConcurrent.CompareAndSwap(old, cur) {
-			break
-		}
-	}
-
-	// Small sleep to keep goroutines alive long enough to overlap
-	time.Sleep(10 * time.Millisecond)
-	c.counter.Add(-1)
-
-	return nil
-}
-
-func TestRunParallelExecution(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersParallelExecution(t *testing.T) {
 	g := NewGomegaWithT(t)
-
-	reg := newRegistry()
+	resetBaseRegistry(t)
 
 	var (
 		counter       atomic.Int32
 		maxConcurrent atomic.Int32
 	)
 
-	// Register 3 independent providers — they should run concurrently
+	registerConcurrentLoader := func(name metric.Name) {
+		provider.RegisterLoader(provider.BaseMetricLoader{
+			Metrics: []metric.Name{name},
+			Load: func(_ *model.Directory) error {
+				current := counter.Add(1)
+				for {
+					max := maxConcurrent.Load()
+					if current <= max || maxConcurrent.CompareAndSwap(max, current) {
+						break
+					}
+				}
 
-	reg.register(&concurrentProvider{name: "p1", counter: &counter, maxConcurrent: &maxConcurrent})
-	reg.register(&concurrentProvider{name: "p2", counter: &counter, maxConcurrent: &maxConcurrent})
-	reg.register(&concurrentProvider{name: "p3", counter: &counter, maxConcurrent: &maxConcurrent})
+				time.Sleep(10 * time.Millisecond)
+				counter.Add(-1)
 
-	err := runWithRegistry(reg, nil, []metric.Name{"p1", "p2", "p3"}, metric.File, nil)
+				return nil
+			},
+		})
+	}
+
+	registerConcurrentLoader("p1")
+	registerConcurrentLoader("p2")
+	registerConcurrentLoader("p3")
+
+	err := provider.RunLoaders(nil, []metric.Name{"p1", "p2", "p3"}, nil)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(maxConcurrent.Load()).To(BeNumerically(">", 1), "expected concurrent execution")
+	g.Expect(maxConcurrent.Load()).To(BeNumerically(">", 1))
 }
 
-func TestRunEmptyRequest(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersReportsProgress(t *testing.T) {
 	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
 
-	reg := newRegistry()
+	progress := &progressTracker{}
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{"m1", "m2"},
+		Load:    func(_ *model.Directory) error { return nil },
+	})
 
-	err := runWithRegistry(reg, nil, []metric.Name{}, metric.File, nil)
+	err := provider.RunLoaders(nil, []metric.Name{"m1"}, progress)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(progress.started).To(Equal([]metric.Name{"m1", "m2"}))
+	g.Expect(progress.finished).To(Equal([]metric.Name{"m1", "m2"}))
 }
 
-func TestRunAutoExpandsDependencies(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersEmptyRequest(t *testing.T) {
 	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
 
-	reg := newRegistry()
-	tracker := &orderTracker{}
-	reg.register(&mockProvider{name: "base", kind: metric.Quantity, tracker: tracker})
-	reg.register(&mockProvider{name: "mid", kind: metric.Quantity, deps: []metric.Name{"base"}, tracker: tracker})
-	reg.register(&mockProvider{name: "top", kind: metric.Quantity, deps: []metric.Name{"mid"}, tracker: tracker})
-
-	// Only request "top" — "mid" and "base" should be auto-included
-	err := runWithRegistry(reg, nil, []metric.Name{"top"}, metric.File, nil)
+	err := provider.RunLoaders(nil, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(tracker.calls).To(HaveLen(3))
 }

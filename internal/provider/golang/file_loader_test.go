@@ -105,13 +105,11 @@ func Hello() string {
 	g.Expect(commentRatio).To(Equal(float64(0)))
 }
 
-//nolint:paralleltest // mutates global provider and base registries
+//nolint:paralleltest // mutates global base registry
 func TestRegister_RegistersGoFileMetricsLoader(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	provider.ResetRegistryForTesting()
 	provider.ResetBaseRegistryForTesting()
-	t.Cleanup(provider.ResetRegistryForTesting)
 	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	Register()

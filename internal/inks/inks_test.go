@@ -32,10 +32,10 @@ func makeFile(name, ext string, size int64) *model.File {
 	return f
 }
 
-func descriptorFor(t *testing.T, name metric.Name) provider.MetricDescriptor {
+func descriptorFor(t *testing.T, name metric.Name) provider.BaseMetricDescriptor {
 	t.Helper()
 
-	d, ok := provider.GetDescriptor(name, metric.File)
+	d, ok := provider.GetBase(name)
 	if !ok {
 		t.Fatalf("descriptor not found for %q", name)
 	}
@@ -119,7 +119,7 @@ func TestBuildMetricInk_UnknownMetricFallsBackToFixed(t *testing.T) {
 
 	root := &model.Directory{Path: "/p"}
 
-	ink := inks.BuildMetricInk(root, provider.MetricDescriptor{}, palette.Temperature, fallbackColour())
+	ink := inks.BuildMetricInk(root, provider.BaseMetricDescriptor{}, palette.Temperature, fallbackColour())
 
 	g.Expect(ink.Info().Kind).To(Equal(canvas.InkFixed))
 }

@@ -18,7 +18,7 @@ import (
 // goExtractor extracts one metric value from fileStats and sets it on the model file.
 type goExtractor func(name metric.Name, stats *fileStats, f *model.File)
 
-// goProvider is a data-driven implementation of provider.Interface for Go metrics.
+// goProvider is a data-driven implementation of provider-backed Go metrics for Go metrics.
 type goProvider struct {
 	name           metric.Name
 	kind           metric.Kind

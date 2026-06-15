@@ -5,13 +5,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
-// Register adds all Go metric providers and loaders to the global registry.
+// Register adds all Go base metrics and loaders to the global registries.
 func Register() {
-	for name := range providerDefs {
-		gp := newProvider(name)
-		provider.Register(gp)
-	}
-
 	RegisterBase()
 
 	provider.RegisterLoader(provider.BaseMetricLoader{

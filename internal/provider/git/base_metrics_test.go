@@ -65,23 +65,14 @@ func TestRegisterBase_MatchesLegacyProviderMetadata(t *testing.T) {
 	}
 }
 
-//nolint:paralleltest // mutates global provider and base registries
+//nolint:paralleltest // mutates global base registry
 func TestRegister_RegistersGitBaseMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	provider.ResetRegistryForTesting()
 	provider.ResetBaseRegistryForTesting()
-	t.Cleanup(provider.ResetRegistryForTesting)
 	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	Register()
-
-	legacyProvider, ok := provider.Get(CommitCount, metric.File)
-	if !ok || legacyProvider == nil {
-		t.Fatalf("expected git provider %q to be registered", CommitCount)
-	}
-
-	g.Expect(legacyProvider.Name()).To(Equal(CommitCount))
 
 	baseMetric, ok := provider.GetBase(CommitCount)
 	g.Expect(ok).To(BeTrue())

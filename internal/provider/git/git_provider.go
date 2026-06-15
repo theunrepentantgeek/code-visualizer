@@ -9,7 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
-// gitProvider is a data-driven implementation of provider.Interface for all
+// gitProvider is a data-driven implementation of provider-backed git metrics for all
 // git-based metric providers. The seven individually identical provider files
 // are replaced by a single table in providerDefs.
 type gitProvider struct {
