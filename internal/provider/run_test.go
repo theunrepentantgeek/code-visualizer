@@ -61,10 +61,12 @@ func TestRunLoadersBasicExecution(t *testing.T) {
 	resetBaseRegistry(t)
 
 	tracker := &loaderOrderTracker{}
+
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"m1"},
 		Load: func(_ *model.Directory) error {
 			tracker.record("m1")
+
 			return nil
 		},
 	})
@@ -80,10 +82,12 @@ func TestRunLoadersRespectsDependencies(t *testing.T) {
 	resetBaseRegistry(t)
 
 	tracker := &loaderOrderTracker{}
+
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"base"},
 		Load: func(_ *model.Directory) error {
 			tracker.record("base")
+
 			return nil
 		},
 	})
@@ -92,6 +96,7 @@ func TestRunLoadersRespectsDependencies(t *testing.T) {
 		Dependencies: []metric.Name{"base"},
 		Load: func(_ *model.Directory) error {
 			tracker.record("derived")
+
 			return nil
 		},
 	})
@@ -155,9 +160,10 @@ func TestRunLoadersParallelExecution(t *testing.T) {
 			Metrics: []metric.Name{name},
 			Load: func(_ *model.Directory) error {
 				current := counter.Add(1)
+
 				for {
-					max := maxConcurrent.Load()
-					if current <= max || maxConcurrent.CompareAndSwap(max, current) {
+					peak := maxConcurrent.Load()
+					if current <= peak || maxConcurrent.CompareAndSwap(peak, current) {
 						break
 					}
 				}
@@ -185,6 +191,7 @@ func TestRunLoadersReportsProgress(t *testing.T) {
 	resetBaseRegistry(t)
 
 	progress := &progressTracker{}
+
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"m1", "m2"},
 		Load:    func(_ *model.Directory) error { return nil },
