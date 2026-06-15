@@ -264,3 +264,101 @@ func formatNames(names []metric.Name) string {
 
 	return strings.Join(strs, ", ")
 }
+
+// RunLoaders loads the requested base metrics using registered loaders.
+// Loaders run in parallel where dependency ordering allows.
+func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricProgress) error {
+	loaders := LoadersFor(requested)
+	if len(loaders) == 0 {
+		return nil
+	}
+
+	levels, err := topoSortLoaders(loaders)
+	if err != nil {
+		return err
+	}
+
+	for _, level := range levels {
+		g := new(errgroup.Group)
+		for _, loader := range level {
+			g.Go(func() error {
+				for _, m := range loader.Metrics {
+					if progress != nil {
+						progress.OnMetricStarted(m)
+					}
+				}
+
+				if err := loader.Load(root); err != nil {
+					return eris.Wrapf(err, "loader failed for metrics %v", loader.Metrics)
+				}
+
+				for _, m := range loader.Metrics {
+					if progress != nil {
+						progress.OnMetricFinished(m)
+					}
+				}
+
+				return nil
+			})
+		}
+
+		if err := g.Wait(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
+	provides := make(map[metric.Name]int)
+	for i, l := range loaders {
+		for _, m := range l.Metrics {
+			provides[m] = i
+		}
+	}
+
+	inDegree := make([]int, len(loaders))
+	dependents := make(map[int][]int)
+	for i, l := range loaders {
+		for _, dep := range l.Dependencies {
+			if j, ok := provides[dep]; ok && j != i {
+				inDegree[i]++
+				dependents[j] = append(dependents[j], i)
+			}
+		}
+	}
+
+	var levels [][]BaseMetricLoader
+	processed := 0
+
+	for processed < len(loaders) {
+		var (
+			level        []BaseMetricLoader
+			levelIndices []int
+		)
+
+		for i, deg := range inDegree {
+			if deg == 0 {
+				level = append(level, loaders[i])
+				levelIndices = append(levelIndices, i)
+			}
+		}
+
+		if len(level) == 0 {
+			return nil, eris.New("circular dependency detected among metric loaders")
+		}
+
+		for _, i := range levelIndices {
+			inDegree[i] = -1
+			processed++
+			for _, dep := range dependents[i] {
+				inDegree[dep]--
+			}
+		}
+
+		levels = append(levels, level)
+	}
+
+	return levels, nil
+}
