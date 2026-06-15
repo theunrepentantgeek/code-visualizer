@@ -113,13 +113,7 @@ func TestFileAgeProvider(t *testing.T) {
 	root := buildTree(dir, "old.go", "new.go")
 
 	resetService()
-
-	p := newProvider(FileAge)
-	g.Expect(p.Name()).To(Equal(FileAge))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// old.go has age > 0
 	ageOld, ok := root.Files[0].Quantity(FileAge)
@@ -143,10 +137,7 @@ func TestFileFreshnessProvider(t *testing.T) {
 	root := buildTree(dir, "old.go", "new.go")
 
 	resetService()
-
-	p := newProvider(FileFreshness)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// old.go was committed at 2024-01-01 and never modified — should have freshness > 0
 	freshOld, ok := root.Files[0].Quantity(FileFreshness)
@@ -170,10 +161,7 @@ func TestAuthorCountProvider(t *testing.T) {
 	root := buildTree(dir, "shared.go", "old.go")
 
 	resetService()
-
-	p := newProvider(AuthorCount)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// shared.go: 2 authors (Alice + Bob)
 	count, ok := root.Files[0].Quantity(AuthorCount)
@@ -194,10 +182,7 @@ func TestGitProviderNotAGitRepo(t *testing.T) {
 	root := buildTree(dir, "file.go")
 
 	resetService()
-
-	p := newProvider(FileAge)
-	err := p.Load(root)
-	g.Expect(err).To(MatchError(ContainSubstring("git")))
+	g.Expect(loadAllFileMetrics(root)).To(MatchError(ContainSubstring("git")))
 }
 
 // TestCommitDataCacheConsistency verifies that running all three git metrics on
@@ -210,19 +195,7 @@ func TestCommitDataCacheConsistency(t *testing.T) {
 	root := buildTree(dir, "shared.go")
 
 	resetService()
-
-	// Run all three git metric providers on the same file.
-	fileAgeP := newProvider(FileAge)
-	err := fileAgeP.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	fileFreshnessP := newProvider(FileFreshness)
-	err = fileFreshnessP.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	authorCountP := newProvider(AuthorCount)
-	err = authorCountP.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// All three metrics should be populated for shared.go.
 	_, ageOk := root.Files[0].Quantity(FileAge)
@@ -242,36 +215,33 @@ func TestFileAgeProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := newProvider(FileAge)
-	g.Expect(p.Name()).To(Equal(FileAge))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	def, ok := providerDefs[FileAge]
+	g.Expect(ok).To(BeTrue())
+	g.Expect(def.kind).To(Equal(metric.Quantity))
+	g.Expect(def.description).NotTo(BeEmpty())
+	g.Expect(def.defaultPalette).NotTo(BeEmpty())
 }
 
 func TestFileFreshnessProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := newProvider(FileFreshness)
-	g.Expect(p.Name()).To(Equal(FileFreshness))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	def, ok := providerDefs[FileFreshness]
+	g.Expect(ok).To(BeTrue())
+	g.Expect(def.kind).To(Equal(metric.Quantity))
+	g.Expect(def.description).NotTo(BeEmpty())
+	g.Expect(def.defaultPalette).NotTo(BeEmpty())
 }
 
 func TestAuthorCountProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := newProvider(AuthorCount)
-	g.Expect(p.Name()).To(Equal(AuthorCount))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	def, ok := providerDefs[AuthorCount]
+	g.Expect(ok).To(BeTrue())
+	g.Expect(def.kind).To(Equal(metric.Quantity))
+	g.Expect(def.description).NotTo(BeEmpty())
+	g.Expect(def.defaultPalette).NotTo(BeEmpty())
 }
 
 // setupSubdirRepo creates a git repo with a file inside a subdirectory,
@@ -325,10 +295,7 @@ func TestFileAgeProvider_SubdirectoryScanning(t *testing.T) {
 	root := buildTree(subdir, "code.go")
 
 	resetService()
-
-	p := newProvider(FileAge)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	age, ok := root.Files[0].Quantity(FileAge)
 	g.Expect(ok).To(BeTrue(), "file-age metric should be set for file in subdirectory")
@@ -343,10 +310,7 @@ func TestFileFreshnessProvider_SubdirectoryScanning(t *testing.T) {
 	root := buildTree(subdir, "code.go")
 
 	resetService()
-
-	p := newProvider(FileFreshness)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	freshness, ok := root.Files[0].Quantity(FileFreshness)
 	g.Expect(ok).To(BeTrue(), "file-freshness metric should be set for file in subdirectory")
@@ -361,10 +325,7 @@ func TestAuthorCountProvider_SubdirectoryScanning(t *testing.T) {
 	root := buildTree(subdir, "code.go")
 
 	resetService()
-
-	p := newProvider(AuthorCount)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	count, ok := root.Files[0].Quantity(AuthorCount)
 	g.Expect(ok).To(BeTrue(), "author-count metric should be set for file in subdirectory")
@@ -444,10 +405,7 @@ func TestFileFreshness_MergeCommitDoesNotPollute(t *testing.T) {
 	root := buildTree(dir, "stable.go", "active.go")
 
 	resetService()
-
-	p := newProvider(FileFreshness)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// stable.go was last truly modified at 2024-06-01. Its freshness (days
 	// since last real change) should be > 300. Without the fix, the merge
@@ -478,10 +436,7 @@ func TestFileAge_MergeCommitDoesNotPollute(t *testing.T) {
 	root := buildTree(dir, "stable.go", "active.go")
 
 	resetService()
-
-	p := newProvider(FileAge)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// Both files were created at 2024-01-01 — same age.
 	ageStable, ok := root.Files[0].Quantity(FileAge)
@@ -503,10 +458,7 @@ func TestAuthorCount_MergeCommitDoesNotPollute(t *testing.T) {
 	root := buildTree(dir, "stable.go", "active.go")
 
 	resetService()
-
-	p := newProvider(AuthorCount)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// stable.go was only committed by Alice — the merge didn't change it.
 	count, ok := root.Files[0].Quantity(AuthorCount)
@@ -531,12 +483,7 @@ func TestFileFreshnessEqualsAgeForSingleCommit(t *testing.T) {
 	root := buildTree(dir, "code.go")
 
 	resetService()
-
-	ageP := newProvider(FileAge)
-	g.Expect(ageP.Load(root)).To(Succeed())
-
-	freshP := newProvider(FileFreshness)
-	g.Expect(freshP.Load(root)).To(Succeed())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	age, ageOk := root.Files[0].Quantity(FileAge)
 	freshness, freshOk := root.Files[0].Quantity(FileFreshness)
@@ -551,12 +498,11 @@ func TestCommitCountProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := newProvider(CommitCount)
-	g.Expect(p.Name()).To(Equal(CommitCount))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	def, ok := providerDefs[CommitCount]
+	g.Expect(ok).To(BeTrue())
+	g.Expect(def.kind).To(Equal(metric.Quantity))
+	g.Expect(def.description).NotTo(BeEmpty())
+	g.Expect(def.defaultPalette).NotTo(BeEmpty())
 }
 
 func TestCommitCountProvider(t *testing.T) {
@@ -568,13 +514,7 @@ func TestCommitCountProvider(t *testing.T) {
 	root := buildTree(dir, "old.go", "shared.go")
 
 	resetService()
-
-	p := newProvider(CommitCount)
-	g.Expect(p.Name()).To(Equal(CommitCount))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	countOld, ok := root.Files[0].Quantity(CommitCount)
 	g.Expect(ok).To(BeTrue(), "commit-count should be set for old.go")
@@ -597,10 +537,7 @@ func TestCommitCount_MergeCommitDoesNotPollute(t *testing.T) {
 	root := buildTree(dir, "stable.go", "active.go")
 
 	resetService()
-
-	p := newProvider(CommitCount)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	countStable, ok := root.Files[0].Quantity(CommitCount)
 	g.Expect(ok).To(BeTrue(), "commit-count should be set for stable.go")
@@ -621,10 +558,7 @@ func TestCommitCountProvider_SubdirectoryScanning(t *testing.T) {
 	root := buildTree(subdir, "code.go")
 
 	resetService()
-
-	p := newProvider(CommitCount)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	count, ok := root.Files[0].Quantity(CommitCount)
 	g.Expect(ok).To(BeTrue(), "commit-count metric should be set for file in subdirectory")
@@ -644,36 +578,33 @@ func TestTotalLinesAddedProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := newProvider(TotalLinesAdded)
-	g.Expect(p.Name()).To(Equal(TotalLinesAdded))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	def, ok := providerDefs[TotalLinesAdded]
+	g.Expect(ok).To(BeTrue())
+	g.Expect(def.kind).To(Equal(metric.Quantity))
+	g.Expect(def.description).NotTo(BeEmpty())
+	g.Expect(def.defaultPalette).NotTo(BeEmpty())
 }
 
 func TestTotalLinesRemovedProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := newProvider(TotalLinesRemoved)
-	g.Expect(p.Name()).To(Equal(TotalLinesRemoved))
-	g.Expect(p.Kind()).To(Equal(metric.Quantity))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	def, ok := providerDefs[TotalLinesRemoved]
+	g.Expect(ok).To(BeTrue())
+	g.Expect(def.kind).To(Equal(metric.Quantity))
+	g.Expect(def.description).NotTo(BeEmpty())
+	g.Expect(def.defaultPalette).NotTo(BeEmpty())
 }
 
 func TestCommitDensityProviderMetadata(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := newProvider(CommitDensity)
-	g.Expect(p.Name()).To(Equal(CommitDensity))
-	g.Expect(p.Kind()).To(Equal(metric.Measure))
-	g.Expect(p.Description()).NotTo(BeEmpty())
-	g.Expect(p.DefaultPalette()).NotTo(BeEmpty())
-	g.Expect(p.Dependencies()).To(BeNil())
+	def, ok := providerDefs[CommitDensity]
+	g.Expect(ok).To(BeTrue())
+	g.Expect(def.kind).To(Equal(metric.Measure))
+	g.Expect(def.description).NotTo(BeEmpty())
+	g.Expect(def.defaultPalette).NotTo(BeEmpty())
 }
 
 // setupDiffRepo creates a git repo with a file that has measurable additions
@@ -745,10 +676,7 @@ func TestTotalLinesAddedProvider(t *testing.T) {
 	root := buildTree(dir, "churn.go", "stable.go")
 
 	resetService()
-
-	p := newProvider(TotalLinesAdded)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// churn.go: commit 2 adds 2 lines, commit 3 adds 1 line = 3 total
 	added, ok := root.Files[0].Quantity(TotalLinesAdded)
@@ -770,10 +698,7 @@ func TestTotalLinesRemovedProvider(t *testing.T) {
 	root := buildTree(dir, "churn.go", "stable.go")
 
 	resetService()
-
-	p := newProvider(TotalLinesRemoved)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// churn.go: commit 3 removes 1 line (line2 → lineX) = 1 total
 	removed, ok := root.Files[0].Quantity(TotalLinesRemoved)
@@ -794,10 +719,7 @@ func TestCommitDensityProvider(t *testing.T) {
 	root := buildTree(dir, "churn.go")
 
 	resetService()
-
-	p := newProvider(CommitDensity)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// churn.go: 3 commits, age > 1 month. Density = 3 / age_months.
 	density, ok := root.Files[0].Measure(CommitDensity)
@@ -815,10 +737,7 @@ func TestCommitDensityProvider_YoungFile(t *testing.T) {
 	root := buildTree(dir, "new.go")
 
 	resetService()
-
-	p := newProvider(CommitDensity)
-	err := p.Load(root)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(loadAllFileMetrics(root)).To(Succeed())
 
 	// new.go: 1 commit, age < 1 month → clamped to 1 month. Density = 1/1 = 1.0
 	density, ok := root.Files[0].Measure(CommitDensity)
@@ -835,8 +754,5 @@ func TestTotalLinesAdded_NotAGitRepo(t *testing.T) {
 	root := buildTree(dir, "file.go")
 
 	resetService()
-
-	p := newProvider(TotalLinesAdded)
-	err := p.Load(root)
-	g.Expect(err).To(MatchError(ContainSubstring("git")))
+	g.Expect(loadAllFileMetrics(root)).To(MatchError(ContainSubstring("git")))
 }

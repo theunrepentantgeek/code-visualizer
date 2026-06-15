@@ -38,7 +38,7 @@ func TestRegisterBase_GitMetrics(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates global base registry
-func TestRegisterBase_MatchesLegacyProviderMetadata(t *testing.T) {
+func TestRegisterBase_MatchesProviderDefsMetadata(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	provider.ResetBaseRegistryForTesting()
@@ -58,10 +58,11 @@ func TestRegisterBase_MatchesLegacyProviderMetadata(t *testing.T) {
 		baseMetric, ok := provider.GetBase(name)
 		g.Expect(ok).To(BeTrue(), string(name))
 
-		legacyProvider := newProvider(name)
-		g.Expect(baseMetric.Kind).To(Equal(legacyProvider.Kind()), string(name))
-		g.Expect(baseMetric.Description).To(Equal(legacyProvider.Description()), string(name))
-		g.Expect(baseMetric.DefaultPalette).To(Equal(legacyProvider.DefaultPalette()), string(name))
+		def, ok := providerDefs[name]
+		g.Expect(ok).To(BeTrue(), string(name))
+		g.Expect(baseMetric.Kind).To(Equal(def.kind), string(name))
+		g.Expect(baseMetric.Description).To(Equal(def.description), string(name))
+		g.Expect(baseMetric.DefaultPalette).To(Equal(def.defaultPalette), string(name))
 	}
 }
 
