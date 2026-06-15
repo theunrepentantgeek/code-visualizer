@@ -114,25 +114,29 @@ func (m *MetricSpec) Validate(label string) error {
 }
 
 func (m *MetricSpec) validateMetric(label string) error {
-	expr, parseErr := metric.ParseExpression(string(m.Metric))
+	name := string(m.Metric)
+
+	// Try expression parse + resolve
+	expr, parseErr := metric.ParseExpression(name)
 	if parseErr == nil {
 		_, resolveErr := provider.ResolveExpression(expr, metric.LevelFile)
 		if resolveErr == nil {
 			return nil
 		}
 
-		if _, legacyOK := provider.Get(m.Metric, metric.File); legacyOK {
-			return nil
-		}
-
 		return eris.Wrapf(resolveErr, "invalid %s metric", label)
 	}
 
-	if _, err := provider.FindWithHint(m.Metric, metric.File); err != nil {
-		return eris.Wrapf(err, "invalid %s metric", label)
+	// If it doesn't parse as an expression, check if it's a known base metric
+	if _, ok := provider.GetBase(m.Metric); ok {
+		return nil
 	}
 
-	return nil
+	// Not found — provide helpful error
+	return eris.Errorf(
+		"invalid %s metric %q; use expression syntax: [filter.]metric[.aggregation]",
+		label, m.Metric,
+	)
 }
 
 // MarshalText produces the canonical "metric,palette" or "metric" form.
