@@ -1,94 +1,80 @@
 {
-    "last_run": "2026-06-08T17:10:00Z",
-    "run_id": "27152438787",
-    "comments_made": {
-        "74": "2026-04-20T12:54:26Z",
-        "77": "2026-04-21T07:39:14Z",
-        "105": "2026-04-30T13:11:51Z",
-        "128": "2026-04-29T13:13:03Z",
-        "133": "2026-05-01T12:44:04Z",
-        "155": "2026-05-05T12:59:05Z",
-        "159": "2026-05-06T09:08:11Z",
-        "162": "2026-05-07T13:44:26Z",
-        "176": "2026-05-09T12:43:55Z",
-        "194": "2026-05-15T09:46:09Z",
-        "315": "2026-05-28T11:22:16Z",
-        "320": "2026-05-29T05:01:14Z",
-        "324": "2026-05-30T04:40:52Z",
-        "325": "2026-05-30T14:19:00Z",
-        "326": "2026-05-30T14:19:00Z",
-        "327": "2026-05-29T16:30:06Z",
-        "328": "2026-05-30T04:40:52Z",
-        "329": "2026-05-31T05:09:43Z",
-        "330": "2026-05-31T05:09:43Z",
-        "332": "2026-05-29T16:30:06Z",
-        "333": "2026-05-31T05:09:43Z",
-        "334": "2026-05-31T05:09:43Z",
-        "335": "2026-05-31T05:09:43Z",
-        "350": "2026-05-31T14:23:03Z",
-        "373": "2026-06-08T17:10:00Z",
-        "374": "2026-06-07T05:19:05Z"
+  "last_run": "2026-06-16T00:00:00Z",
+  "run_id": "27598120650",
+  "comments_made": {
+    "74": "2026-04-20T12:54:26Z",
+    "77": "2026-04-21T07:39:14Z",
+    "105": "2026-04-30T13:11:51Z",
+    "128": "2026-04-29T13:13:03Z",
+    "133": "2026-05-01T12:44:04Z",
+    "155": "2026-05-05T12:59:05Z",
+    "159": "2026-05-06T09:08:11Z",
+    "162": "2026-05-07T13:44:16Z",
+    "176": "2026-05-09T12:43:55Z",
+    "194": "2026-05-15T09:46:09Z",
+    "315": "2026-05-28T11:22:16Z",
+    "320": "2026-05-29T05:01:14Z",
+    "324": "2026-05-30T04:40:52Z",
+    "325": "2026-05-30T14:19:00Z",
+    "326": "2026-05-30T14:19:00Z",
+    "327": "2026-05-29T16:30:06Z",
+    "328": "2026-05-30T04:40:52Z",
+    "329": "2026-05-31T05:09:43Z",
+    "330": "2026-05-31T05:09:43Z",
+    "332": "2026-05-29T16:30:06Z",
+    "333": "2026-05-31T05:09:43Z",
+    "334": "2026-05-31T05:09:43Z",
+    "335": "2026-05-31T05:09:43Z",
+    "350": "2026-05-31T14:23:03Z",
+    "373": "2026-06-08T17:10:00Z",
+    "374": "2026-06-07T05:19:05Z",
+    "385": "2026-06-11T00:00:00Z",
+    "394": "2026-06-13T14:55:00Z",
+    "402": "2026-06-13T14:55:00Z",
+    "411": "2026-06-14T05:22:00Z",
+    "412_pr": "2026-06-14T05:22:00Z",
+    "412_pr_2": "2026-06-14T15:01:00Z",
+    "416_pr": "2026-06-16T00:00:00Z"
+  },
+  "prs_created": [
+    {
+      "branch": "repo-assist/perf-svg-drawpath-2026-06-14-9e753ddbc53154e7",
+      "pr_number": 414,
+      "title": "[repo-assist] perf(svg): eliminate intermediate strings.Builder in DrawPath",
+      "status": "open"
     },
-    "prs_created": [
-        {
-            "branch": "repo-assist/refactor-filter-kong-adapter-327-eb02338c50ecc65b",
-            "pr_number": 351,
-            "title": "[repo-assist] refactor(filter): move Kong adapter out of filter package (#327)",
-            "status": "open",
-            "closes": [327]
-        },
-        {
-            "branch": "repo-assist/feat-run-presets-374-2026-06-08-362e6cd0d0232c3b",
-            "pr_number": 379,
-            "title": "[repo-assist] feat(cmd): add 'run' command with named presets",
-            "status": "open",
-            "closes": [374]
-        },
-        {
-            "branch": "repo-assist/feat-drawing-bounds-373-2026-06-08-1792c59da521530c",
-            "pr_number": null,
-            "title": "[repo-assist] feat(stages): add DrawingBounds to CommonState and fix legend overlap (#373)",
-            "status": "open - pending PR number",
-            "closes": [373]
-        }
-    ],
-    "issues_actioned": {
-        "74-94": "various bugs/enhancements fixed via PRs (all merged Apr 2026)",
-        "105": "bug fixed via PR #135 (merged 2026-05-01)",
-        "126": "feat commit-count metric (merged 2026-04-30)",
-        "128": "fixed via PR #130 (merged 2026-04-30)",
-        "155": "refactor done via PR #170 (merged 2026-05-06, issue closed)",
-        "159": "refactor done via PR #171 (merged 2026-05-06, issue closed)",
-        "225": "gradient fills - closed as completed (PR #319 merged)",
-        "315": "legend title: PR #318 merged",
-        "320": "legend config: labelled enhancement+refactor; commented 2026-05-29",
-        "321": "noisy export: closed (PR #347 merged)",
-        "322": "image size config: closed (PR #348 merged)",
-        "324": "bubbletree/layout split: commented geometry-first approach 2026-05-30",
-        "325": "CommonState split: commented two-phase InputState/PipelineState approach 2026-05-30",
-        "326": "scanner decompose: commented; maintainer created PR #346 2026-05-31",
-        "327": "Kong filter adapter: commented; PR #351 created 2026-05-31",
-        "328": "git service split: commented; maintainer created PR #345 2026-05-31",
-        "329": "legend orientation cursor abstraction: commented 2026-05-31",
-        "330": "fill strategy extraction: commented 2026-05-31",
-        "332": "model/walk split: PR #337 closed by maintainer as known antipattern - do NOT attempt",
-        "333": "legend domain model decoupling: commented 2026-05-31",
-        "334": "export duplicate tree: commented marshaling adapter approach 2026-05-31",
-        "335": "radialtree render/layout unification: commented render command abstraction 2026-05-31",
-        "350": "attribution footer: labelled + commented 2026-05-31; PR #352 created 2026-06-01",
-        "373": "DrawingBounds: commented 2026-06-07 design suggestion; PR created 2026-06-08 (pending #)",
-        "374": "presets: commented 2026-06-07; PR #379 created 2026-06-08"
+    {
+      "branch": "repo-assist/perf-svg-grad-urlref-2026-06-14-2a2c3e5aae488a5e",
+      "pr_number": 415,
+      "title": "[repo-assist] perf(svg): cache full url(#id) ref in gradient cache",
+      "status": "open"
     },
-    "monthly_summary_issue": {
-        "number": 353,
-        "month": "2026-06",
-        "status": "open"
+    {
+      "branch": "repo-assist/fix-412-rebase-target-4cd403552e5ccd03",
+      "pr_number": 416,
+      "title": "[repo-assist] feat(config,provider): add selection-metrics config and classification provider",
+      "status": "open",
+      "closes": [402]
     },
-    "backlog_cursor": {
-        "issues": 374,
-        "prs": 0
+    {
+      "branch": "repo-assist/perf-render-shared-specs-2026-06-15-7045f1b9faf08570",
+      "pr_number": 417,
+      "title": "[repo-assist] perf(render): eliminate per-node spec allocations in radial and spiral renderers",
+      "status": "open"
     },
-    "checked_off_summary": "Apr-May 2026: All PRs from prior runs merged/closed by maintainer. Issues #58,80,112,116,124,133,134,136,155,159,173,175,176,198,194,225,256,257,261-263,282,284,321,322,331 closed. PRs #318,#319,#323,#338,#342,#344,#347,#348 merged. PRs #337 closed as known antipattern. Issue #252 (May summary) closed 2026-06-01.",
-    "maintainer_preferences": "Do NOT move helpers to new packages (e.g. model/walk helpers). PR #337 was closed as known antipattern. Keep refactors within-package only OR moving from domain packages to cmd layer (acceptable). Maintainer implementing refactors from #324-335 series himself (PRs #345, #346).",
-    "notes": "Open refactor issues #324-335 all commented. Maintainer PRs #345 (git service) and #346 (scanner) - check if still open. Our PR #351 (Kong adapter) and #364 (raster perf) and #377 (test canvas title) and #379 (run presets) all open. DrawingBounds PR pending # (branch repo-assist/feat-drawing-bounds-373-2026-06-08-1792c59da521530c). Issues #251, #349, #361 (old deps updates blocked by permissions) still open - suggest maintainer close. Issue #378 = release workflow fix blocked by protected files - suggest maintainer create PR manually."
+    {
+      "branch": "repo-assist/test-requested-metrics-methods-20260616",
+      "pr_number": null,
+      "title": "[repo-assist] test(stages): add tests for HasDeclarationExpressions, HasCommitExpressions, DescriptorFor",
+      "status": "open - pending PR number"
+    }
+  ],
+  "labels_applied": {
+    "402": ["enhancement"],
+    "405": ["enhancement"],
+    "385": ["bug"]
+  },
+  "issue_cursor": 402,
+  "monthly_summary_issue": 353,
+  "notes": "PR #412 superseded by #416 - maintainer should close. PR #418 (remove-legacy-metrics, 73 files) will remove provider.Interface/Loader/MetricDescriptor entirely - after it merges, PR #416's classification.Provider will need adapting to new BaseMetricLoader-based interface. PR #413 (metric expressions) merged at 399e4a6. Open refactor issues #324-335 all commented. Issues #411 (old dep bundle), #388 (protected files), #361, #251 may be stale - suggest maintainer close. Task: wire classification.Provider into pipeline commands after PR #418 lands. Test PR for requested.go methods created this run (branch repo-assist/test-requested-metrics-methods-20260616, pending PR number)."
 }
