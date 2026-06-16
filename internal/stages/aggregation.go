@@ -1,8 +1,6 @@
 package stages
 
 import (
-	"slices"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -73,6 +71,7 @@ func aggregateDirectory(dir *model.Directory, resolved provider.ResolvedMetric) 
 func aggregateNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
 	lookupKey := fileLevelLookupKey(resolved.Expression)
 	values := collectNumericValues(dir, lookupKey, resolved.Descriptor.Kind)
+
 	if len(values) == 0 {
 		return nil
 	}
@@ -83,6 +82,7 @@ func aggregateNumeric(dir *model.Directory, resolved provider.ResolvedMetric) er
 func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
 	lookupKey := fileLevelLookupKey(resolved.Expression)
 	values := collectClassificationValues(dir, lookupKey)
+
 	if len(values) == 0 {
 		return nil
 	}
@@ -393,32 +393,7 @@ func declarationMatchesExpression(d *model.Declaration, resolved provider.Resolv
 		}
 	}
 
-	return matchesDeclKind(d, resolved.Expression.Base)
-}
-
-// declKindMap maps base metric names to acceptable declaration kinds.
-// Metrics not in this map accept any declaration kind.
-var declKindMap = map[metric.Name][]string{
-	"types":                 {model.DeclKindType, model.DeclKindStruct, model.DeclKindInterface},
-	"interfaces":            {model.DeclKindInterface},
-	"structs":               {model.DeclKindStruct},
-	"functions":             {model.DeclKindFunction},
-	"methods":               {model.DeclKindMethod},
-	"constants":             {model.DeclKindConstant},
-	"variables":             {model.DeclKindVariable},
-	"cyclomatic-complexity": {model.DeclKindFunction, model.DeclKindMethod},
-	"function-length":       {model.DeclKindFunction, model.DeclKindMethod},
-}
-
-// matchesDeclKind checks whether a declaration matches the semantic category
-// implied by the base metric name.
-func matchesDeclKind(d *model.Declaration, baseName metric.Name) bool {
-	kinds, ok := declKindMap[baseName]
-	if !ok {
-		return true
-	}
-
-	return slices.Contains(kinds, d.Kind)
+	return resolved.Descriptor.MatchesDeclKind(d.Kind)
 }
 
 // ---------------------------------------------------------------------------

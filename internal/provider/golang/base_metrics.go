@@ -69,6 +69,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindType, model.DeclKindStruct, model.DeclKindInterface},
 		},
 		{
 			Name:           Interfaces,
@@ -79,6 +80,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindInterface},
 		},
 		{
 			Name:           Structs,
@@ -89,6 +91,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindStruct},
 		},
 		{
 			Name:           Functions,
@@ -99,6 +102,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindFunction},
 		},
 		{
 			Name:           Methods,
@@ -109,6 +113,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindMethod},
 		},
 		{
 			Name:           Constants,
@@ -119,6 +124,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindConstant},
 		},
 		{
 			Name:           Variables,
@@ -129,6 +135,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindVariable},
 		},
 		{
 			Name:           Declarations,
@@ -158,6 +165,7 @@ var (
 			Aggregations:   goNumericAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindFunction, model.DeclKindMethod},
 		},
 		{
 			Name:           FunctionLength,
@@ -168,6 +176,7 @@ var (
 			Aggregations:   goNumericAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindFunction, model.DeclKindMethod},
 		},
 		{
 			Name:           CommentRatio,
