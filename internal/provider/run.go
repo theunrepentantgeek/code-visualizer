@@ -106,7 +106,8 @@ func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 			if !ok {
 				return nil, eris.Errorf(
 					"loader for %v declares dependency on %q but no selected loader provides it",
-					l.Metrics, dep)
+					l.Metrics, dep,
+				)
 			}
 
 			if j != i {
