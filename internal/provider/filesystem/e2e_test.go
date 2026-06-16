@@ -44,6 +44,12 @@ func repoRoot(t *testing.T) string {
 
 // setupE2E registers the filesystem provider, scans the repo, loads metrics,
 // and returns the populated tree.
+//
+// Each test currently rescans the repo independently. A shared fixture
+// (TestMain + sync.Once) would eliminate the redundancy, but conflicts with
+// internal tests in this package that call ResetBaseRegistryForTesting().
+// Solving this requires either moving E2E tests to a separate package or
+// making RegisterBase() idempotent.
 func setupE2E(t *testing.T, rules []filter.Rule) *model.Directory {
 	t.Helper()
 
@@ -186,16 +192,18 @@ func TestE2E_FileSizeAggregations(t *testing.T) {
 		{"file-size.mean", metric.Measure, 1},
 	}
 
+	resolved := make(map[string]provider.ResolvedMetric, len(tests))
+
 	for _, tt := range tests {
-		resolved := resolveAndAggregate(t, root, tt.expression)
+		resolved[tt.expression] = resolveAndAggregate(t, root, tt.expression)
 
 		switch tt.checkKind {
 		case metric.Quantity:
-			v, ok := root.Quantity(resolved.ResultName)
+			v, ok := root.Quantity(resolved[tt.expression].ResultName)
 			g.Expect(ok).To(BeTrue(), "expected %s to be set on root", tt.expression)
 			g.Expect(v).To(BeNumerically(">=", tt.minVal), "%s should be >=%d", tt.expression, tt.minVal)
 		case metric.Measure:
-			v, ok := root.Measure(resolved.ResultName)
+			v, ok := root.Measure(resolved[tt.expression].ResultName)
 			g.Expect(ok).To(BeTrue(), "expected %s to be set on root", tt.expression)
 			g.Expect(v).To(BeNumerically(">=", float64(tt.minVal)), "%s should be >=%d", tt.expression, tt.minVal)
 		default:
@@ -204,13 +212,9 @@ func TestE2E_FileSizeAggregations(t *testing.T) {
 	}
 
 	// Verify logical consistency: sum >= max >= min >= 0
-	sumResolved := resolveAndAggregate(t, root, "file-size.sum")
-	maxResolved := resolveAndAggregate(t, root, "file-size.max")
-	minResolved := resolveAndAggregate(t, root, "file-size.min")
-
-	sumVal, _ := root.Quantity(sumResolved.ResultName)
-	maxVal, _ := root.Quantity(maxResolved.ResultName)
-	minVal, _ := root.Quantity(minResolved.ResultName)
+	sumVal, _ := root.Quantity(resolved["file-size.sum"].ResultName)
+	maxVal, _ := root.Quantity(resolved["file-size.max"].ResultName)
+	minVal, _ := root.Quantity(resolved["file-size.min"].ResultName)
 
 	g.Expect(sumVal).To(BeNumerically(">=", maxVal), "sum should be >= max")
 	g.Expect(maxVal).To(BeNumerically(">=", minVal), "max should be >= min")
