@@ -10,6 +10,17 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
+// fileLevelLookupKey returns the storage key for a file-level metric value.
+// For filtered expressions (e.g. "stdlib.imports.sum"), the value is stored
+// under the filter.base form ("stdlib.imports"), not the bare base name.
+func fileLevelLookupKey(expr metric.MetricExpression) metric.Name {
+	if expr.Filter.IsZero() {
+		return expr.Base
+	}
+
+	return metric.MetricExpression{Filter: expr.Filter, Base: expr.Base}.ResultName()
+}
+
 // ComputeAggregations walks the directory tree and computes aggregated metric
 // values for each resolved expression. Each directory gets its own aggregate
 // computed from all descendant source-level nodes.
@@ -60,7 +71,8 @@ func aggregateDirectory(dir *model.Directory, resolved provider.ResolvedMetric) 
 }
 
 func aggregateNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectNumericValues(dir, resolved.Expression.Base, resolved.Descriptor.Kind)
+	lookupKey := fileLevelLookupKey(resolved.Expression)
+	values := collectNumericValues(dir, lookupKey, resolved.Descriptor.Kind)
 	if len(values) == 0 {
 		return nil
 	}
@@ -86,7 +98,8 @@ func aggregateNumeric(dir *model.Directory, resolved provider.ResolvedMetric) er
 }
 
 func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectClassificationValues(dir, resolved.Expression.Base)
+	lookupKey := fileLevelLookupKey(resolved.Expression)
+	values := collectClassificationValues(dir, lookupKey)
 	if len(values) == 0 {
 		return nil
 	}
