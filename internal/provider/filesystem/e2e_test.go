@@ -397,12 +397,12 @@ func TestE2E_MeanAggregation_Consistency(t *testing.T) {
 	g := NewGomegaWithT(t)
 	root := setupE2E(t, nil)
 
-	resolveAndAggregate(t, root, "file-size.min")
-	resolveAndAggregate(t, root, "file-size.max")
+	minResolved := resolveAndAggregate(t, root, "file-size.min")
+	maxResolved := resolveAndAggregate(t, root, "file-size.max")
 	meanResolved := resolveAndAggregate(t, root, "file-size.mean")
 
-	minVal, _ := root.Quantity(metric.Name("file-size.min"))
-	maxVal, _ := root.Quantity(metric.Name("file-size.max"))
+	minVal, _ := root.Quantity(minResolved.ResultName)
+	maxVal, _ := root.Quantity(maxResolved.ResultName)
 	meanVal, ok := root.Measure(meanResolved.ResultName)
 
 	g.Expect(ok).To(BeTrue(), "mean should be set")
