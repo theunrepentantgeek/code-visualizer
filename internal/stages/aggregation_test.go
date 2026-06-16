@@ -241,6 +241,48 @@ func TestComputeAggregations_NoExpressionsReturnsNil(t *testing.T) {
 	g.Expect(err).To(Succeed())
 }
 
+func TestComputeAggregations_FilteredFileLevelMetricUsesFilteredKey(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Files store filtered values under the composite key "stdlib.imports"
+	f1 := &model.File{Name: "a.go"}
+	f1.SetQuantity("stdlib.imports", 3)
+
+	f2 := &model.File{Name: "b.go"}
+	f2.SetQuantity("stdlib.imports", 5)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{f1, f2},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Filter:      "stdlib",
+			Base:        "imports",
+			Aggregation: metric.AggSum,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "imports",
+			Kind:  metric.Quantity,
+			Level: metric.LevelFile,
+		},
+		SourceLevel:      metric.LevelFile,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "stdlib.imports.sum",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	val, ok := root.Quantity("stdlib.imports.sum")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(val).To(Equal(int64(8)))
+}
+
 func resolveMetricForTest(t *testing.T, raw string) provider.ResolvedMetric {
 	t.Helper()
 

@@ -15,12 +15,14 @@ type baseRegistry struct {
 	mu          sync.RWMutex
 	descriptors map[metric.Name]BaseMetricDescriptor
 	providers   map[metric.Name]ProviderDescriptor
+	loaders     []BaseMetricLoader
 }
 
 func newBaseRegistry() *baseRegistry {
 	return &baseRegistry{
 		descriptors: make(map[metric.Name]BaseMetricDescriptor),
 		providers:   make(map[metric.Name]ProviderDescriptor),
+		loaders:     nil,
 	}
 }
 
@@ -63,6 +65,37 @@ func (r *baseRegistry) providerFor(name metric.Name) (ProviderDescriptor, bool) 
 	pd, ok := r.providers[name]
 
 	return pd, ok
+}
+
+func (r *baseRegistry) registerLoader(loader BaseMetricLoader) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.loaders = append(r.loaders, loader)
+}
+
+func (r *baseRegistry) loadersFor(requested []metric.Name) []BaseMetricLoader {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	need := make(map[metric.Name]bool, len(requested))
+	for _, n := range requested {
+		need[n] = true
+	}
+
+	result := make([]BaseMetricLoader, 0)
+
+	for _, l := range r.loaders {
+		for _, m := range l.Metrics {
+			if need[m] {
+				result = append(result, l)
+
+				break
+			}
+		}
+	}
+
+	return result
 }
 
 func (r *baseRegistry) all() []BaseMetricDescriptor {
@@ -129,6 +162,18 @@ func GetBase(name metric.Name) (BaseMetricDescriptor, bool) {
 // GetBaseProvider retrieves the provider descriptor for a base metric.
 func GetBaseProvider(name metric.Name) (ProviderDescriptor, bool) {
 	return globalBaseRegistry.providerFor(name)
+}
+
+// RegisterLoader adds a metric loader to the global base registry.
+func RegisterLoader(loader BaseMetricLoader) {
+	globalBaseRegistry.registerLoader(loader)
+}
+
+// LoadersFor returns loaders needed to satisfy the requested base metrics.
+// The returned slice preserves registration order; callers are responsible for
+// dependency ordering.
+func LoadersFor(requested []metric.Name) []BaseMetricLoader {
+	return globalBaseRegistry.loadersFor(requested)
 }
 
 // AllBase returns all registered base metric descriptors, sorted by name.

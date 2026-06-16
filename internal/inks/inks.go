@@ -18,7 +18,7 @@ import (
 // fixed-colour ink when the metric is unknown or when no values are present.
 func BuildMetricInk(
 	root *model.Directory,
-	d provider.MetricDescriptor,
+	d provider.BaseMetricDescriptor,
 	palName palette.PaletteName,
 	fallback color.RGBA,
 ) canvas.Ink {

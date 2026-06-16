@@ -59,7 +59,7 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 	}
 
 	size := ptrString(cfg.Size)
-	d, ok := provider.GetDescriptor(metric.Name(size), metric.File)
+	d, ok := provider.GetBase(metric.Name(size))
 
 	if !ok {
 		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
@@ -82,7 +82,7 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 
 func validateScatterAxisMetric(label string, name *string) error {
 	axis := ptrString(name)
-	if _, ok := provider.GetDescriptor(metric.Name(axis), metric.File); !ok {
+	if _, ok := provider.GetBase(metric.Name(axis)); !ok {
 		return eris.Errorf("unknown %s metric %q; available metrics: %s", label, axis, formatMetricNames())
 	}
 

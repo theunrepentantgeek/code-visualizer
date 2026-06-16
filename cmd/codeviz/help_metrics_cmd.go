@@ -20,7 +20,6 @@ const (
 	filesystemMetricsSection = "Filesystem metrics"
 	gitMetricsSection        = "Git metrics"
 	goMetricsSection         = "Go metrics"
-	otherMetricsSection      = "Other metrics"
 )
 
 type providerSection struct {
@@ -52,7 +51,6 @@ func (HelpMetricsCmd) Run(_ *Flags) error {
 func renderHelpMetrics() string {
 	width := consoleWidth()
 	baseSections := buildBaseSections(provider.AllBase())
-	legacyMetrics := findLegacyMetrics(provider.AllDescriptors())
 
 	content := &strings.Builder{}
 	writeWrappedText(content, "Syntax: ", "[filter.]metric[.aggregation]", width)
@@ -72,12 +70,6 @@ func renderHelpMetrics() string {
 		writeBaseMetrics(content, metrics, width)
 	}
 
-	if len(legacyMetrics) > 0 {
-		content.WriteString("\n")
-		writeSectionHeader(content, otherMetricsSection)
-		writeLegacyMetrics(content, legacyMetrics, width)
-	}
-
 	return content.String()
 }
 
@@ -94,36 +86,6 @@ func buildBaseSections(descriptors []provider.BaseMetricDescriptor) map[string][
 	}
 
 	return sections
-}
-
-func findLegacyMetrics(descriptors []provider.MetricDescriptor) []provider.MetricDescriptor {
-	baseNames := make(map[metric.Name]struct{}, len(provider.AllBase()))
-
-	for _, desc := range provider.AllBase() {
-		baseNames[desc.Name] = struct{}{}
-	}
-
-	legacy := make([]provider.MetricDescriptor, 0, len(descriptors))
-	seen := make(map[metric.Name]struct{})
-
-	for _, desc := range descriptors {
-		if _, ok := baseNames[desc.Name]; ok {
-			continue
-		}
-
-		if _, ok := seen[desc.Name]; ok {
-			continue
-		}
-
-		legacy = append(legacy, desc)
-		seen[desc.Name] = struct{}{}
-	}
-
-	slices.SortFunc(legacy, func(left, right provider.MetricDescriptor) int {
-		return cmp.Compare(left.Name, right.Name)
-	})
-
-	return legacy
 }
 
 func writeSectionHeader(content *strings.Builder, title string) {
@@ -239,34 +201,7 @@ func writeBaseMetrics(content *strings.Builder, metrics []provider.BaseMetricDes
 	}
 }
 
-func writeLegacyMetrics(content *strings.Builder, metrics []provider.MetricDescriptor, width int) {
-	nameWidth, kindWidth := legacyMetricColumnWidths(metrics)
-
-	for _, desc := range metrics {
-		writeMetricBlock(
-			content,
-			nameWidth,
-			kindWidth,
-			metricHelpEntry{
-				Name:        string(desc.Name),
-				Kind:        kindLabel(desc.Kind),
-				Description: desc.Description,
-			},
-			width,
-		)
-	}
-}
-
 func metricColumnWidths(metrics []provider.BaseMetricDescriptor) (nameWidth int, kindWidth int) {
-	for _, desc := range metrics {
-		nameWidth = max(nameWidth, utf8.RuneCountInString(string(desc.Name)))
-		kindWidth = max(kindWidth, utf8.RuneCountInString(kindLabel(desc.Kind)))
-	}
-
-	return nameWidth, kindWidth
-}
-
-func legacyMetricColumnWidths(metrics []provider.MetricDescriptor) (nameWidth int, kindWidth int) {
 	for _, desc := range metrics {
 		nameWidth = max(nameWidth, utf8.RuneCountInString(string(desc.Name)))
 		kindWidth = max(kindWidth, utf8.RuneCountInString(kindLabel(desc.Kind)))

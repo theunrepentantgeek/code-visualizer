@@ -5,8 +5,12 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -25,7 +29,7 @@ func TestResolveMetrics_SizeOnly(t *testing.T) {
 	// Spiral does not fall back FillMetric to Size; without an explicit Fill
 	// the spiral renders without a fill metric.
 	g.Expect(viz.FillMetric).To(Equal(metric.Name("")))
-	g.Expect(common.Requested.LegacyNames()).To(ConsistOf(metric.Name("file-size")))
+	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
 func TestResolveMetrics_NilSizeExcludesSizeFromRequested(t *testing.T) {
@@ -42,7 +46,7 @@ func TestResolveMetrics_NilSizeExcludesSizeFromRequested(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Size).To(Equal(metric.Name("")))
-	g.Expect(common.Requested.LegacyNames()).To(ConsistOf(metric.Name("file-type")))
+	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-type")))
 }
 
 func TestResolveMetrics_FillMetricSetWhenFillConfigured(t *testing.T) {
@@ -75,7 +79,7 @@ func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-type")))
-	g.Expect(common.Requested.LegacyNames()).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
+	g.Expect(common.Requested.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
 func TestResolveMetrics_DefaultsResolutionToDaily(t *testing.T) {
@@ -130,4 +134,62 @@ func TestResolveMetrics_LabelsAllCanBeSet(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Labels).To(Equal(spiral.LabelAll))
+}
+
+func TestAggregateBucketMetricsStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const expressionMetric = metric.Name("expression.metric.count")
+
+	first := &model.File{Name: "a.go"}
+	first.SetQuantity(expressionMetric, 2)
+
+	second := &model.File{Name: "b.go"}
+	second.SetQuantity(expressionMetric, 1)
+
+	common := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			Expressions: []provider.ResolvedMetric{{
+				ResultName: expressionMetric,
+				ResultKind: metric.Quantity,
+			}},
+		},
+	}
+	viz := &spiral.State{
+		FillMetric: expressionMetric,
+		Buckets: []spiral.TimeBucket{{
+			Files: []*model.File{first, second},
+		}},
+	}
+
+	g.Expect(spiral.AggregateBucketMetricsStage(common, viz)).To(Succeed())
+	g.Expect(viz.Buckets[0].FillValue).To(Equal(3.0))
+}
+
+func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const expressionMetric = metric.Name("expression.metric.mode")
+
+	common := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			Expressions: []provider.ResolvedMetric{{
+				ResultName: expressionMetric,
+				ResultKind: metric.Classification,
+			}},
+		},
+	}
+	viz := &spiral.State{
+		Buckets: []spiral.TimeBucket{
+			{FillLabel: "go"},
+			{FillLabel: "py"},
+		},
+		FillMetric:  expressionMetric,
+		FillPalette: palette.Categorization,
+	}
+
+	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
+	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
 }

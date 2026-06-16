@@ -24,7 +24,7 @@ func ExportConfig(c *CommonState) error {
 // ExportData writes computed metric data to disk when Flags.ExportData is
 // non-empty.
 func ExportData(c *CommonState) error {
-	if err := export.Export(c.Root, c.Requested.LegacyNames(), c.Flags.ExportData); err != nil {
+	if err := export.Export(c.Root, c.Requested.BaseMetrics, c.Flags.ExportData); err != nil {
 		return eris.Wrap(err, "failed to export data")
 	}
 

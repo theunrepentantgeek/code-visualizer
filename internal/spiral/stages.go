@@ -86,16 +86,14 @@ func BuildTimeBucketsStage(c *stages.CommonState, p *State) error {
 
 // AggregateBucketMetricsStage fills in per-bucket aggregated metric values.
 func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
-	_ = c
-
-	AggregateBucketMetrics(p.Buckets, p.Size, p.FillMetric, p.BorderMetric)
+	AggregateBucketMetrics(p.Buckets, c.Requested, p.Size, p.FillMetric, p.BorderMetric)
 
 	return nil
 }
 
 // BuildInksStage builds spiral inks and emits the Rendering image log line.
 func BuildInksStage(c *stages.CommonState, p *State) error {
-	p.Inks = BuildInks(p.Buckets, p.FillMetric, p.FillPalette, p.BorderMetric, p.BorderPalette)
+	p.Inks = BuildInks(p.Buckets, c.Requested, p.FillMetric, p.FillPalette, p.BorderMetric, p.BorderPalette)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 

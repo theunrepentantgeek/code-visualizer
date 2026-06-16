@@ -25,7 +25,7 @@ func TestRegisterBase_GoMetrics(t *testing.T) {
 	g.Expect(types.SupportsFilter("public")).To(BeTrue())
 	g.Expect(types.SupportsFilter("private")).To(BeTrue())
 	g.Expect(types.SupportsAggregation(metric.AggCount)).To(BeTrue())
-	g.Expect(types.SupportsAggregation(metric.AggSum)).To(BeTrue())
+	g.Expect(types.SupportsAggregation(metric.AggSum)).To(BeFalse())
 
 	cc, ok := provider.GetBase(CyclomaticComplexity)
 	g.Expect(ok).To(BeTrue())
@@ -61,6 +61,34 @@ func TestRegisterBase_GoMetrics(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates global base registry
+func TestRegisterBase_RegistersAllGoMetricMetadata(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
+
+	RegisterBase()
+
+	g.Expect(provider.AllBase()).To(HaveLen(len(goBaseMetrics)))
+
+	for _, expected := range goBaseMetrics {
+		actual, ok := provider.GetBase(expected.Name)
+		g.Expect(ok).To(BeTrue(), string(expected.Name))
+		g.Expect(actual.Kind).To(Equal(expected.Kind), string(expected.Name))
+		g.Expect(actual.Level).To(Equal(expected.Level), string(expected.Name))
+		g.Expect(actual.Description).To(Equal(expected.Description), string(expected.Name))
+		g.Expect(actual.DefaultPalette).To(Equal(expected.DefaultPalette), string(expected.Name))
+		g.Expect(actual.Filters).To(Equal(expected.Filters), string(expected.Name))
+		g.Expect(actual.Aggregations).To(Equal(expected.Aggregations), string(expected.Name))
+		g.Expect(actual.FilterFunc == nil).To(Equal(expected.FilterFunc == nil), string(expected.Name))
+
+		providerDesc, ok := provider.GetBaseProvider(expected.Name)
+		g.Expect(ok).To(BeTrue(), string(expected.Name))
+		g.Expect(providerDesc).To(Equal(GoProvider), string(expected.Name))
+	}
+}
+
+//nolint:paralleltest // mutates global base registry
 func TestRegisterBase_GoProvider_HasFilters(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -76,23 +104,14 @@ func TestRegisterBase_GoProvider_HasFilters(t *testing.T) {
 	g.Expect(pd.HasFilter("private")).To(BeTrue())
 }
 
-//nolint:paralleltest // mutates global provider and base registries
+//nolint:paralleltest // mutates global base registry
 func TestRegister_RegistersGoBaseMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	provider.ResetRegistryForTesting()
 	provider.ResetBaseRegistryForTesting()
-	t.Cleanup(provider.ResetRegistryForTesting)
 	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	Register()
-
-	legacyProvider, ok := provider.Get(TypeCount, metric.File)
-	if !ok || legacyProvider == nil {
-		t.Fatalf("expected Go provider %q to be registered", TypeCount)
-	}
-
-	g.Expect(legacyProvider.Name()).To(Equal(TypeCount))
 
 	baseMetric, ok := provider.GetBase(Types)
 	g.Expect(ok).To(BeTrue())

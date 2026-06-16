@@ -5,41 +5,13 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
-// RequestedMetrics separates user-requested metric names into expressions
-// that need aggregation and legacy names that go directly to provider.Run.
+// RequestedMetrics separates user-requested metric names into base metrics
+// that load directly from providers and expressions that need aggregation.
 type RequestedMetrics struct {
-	// BaseMetrics are the base metric names extracted from resolved expressions.
-	// These must be run by provider.Run to populate source-level data.
+	// BaseMetrics are the base metric names that must be loaded from providers.
 	BaseMetrics []metric.Name
 	// Expressions are fully resolved metrics that need aggregation computation.
 	Expressions []provider.ResolvedMetric
-	// Legacy are metric names that couldn't be parsed/resolved as expressions
-	// and should be passed to provider.Run as-is (backward compatibility).
-	Legacy []metric.Name
-}
-
-// LegacyNames returns all metric names that should be passed to provider.Run:
-// both the base metrics needed by expressions AND the legacy unresolved names.
-func (r RequestedMetrics) LegacyNames() []metric.Name {
-	seen := make(map[metric.Name]bool, len(r.BaseMetrics)+len(r.Legacy))
-
-	var result []metric.Name
-
-	for _, n := range r.BaseMetrics {
-		if !seen[n] {
-			seen[n] = true
-			result = append(result, n)
-		}
-	}
-
-	for _, n := range r.Legacy {
-		if !seen[n] {
-			seen[n] = true
-			result = append(result, n)
-		}
-	}
-
-	return result
 }
 
 // HasDeclarationExpressions reports whether any expression needs declaration-level data.
@@ -64,26 +36,35 @@ func (r RequestedMetrics) HasCommitExpressions() bool {
 	return false
 }
 
-// DescriptorFor returns a MetricDescriptor for the given metric name by
-// checking resolved expressions first, then falling back to the legacy
-// provider registry. This allows the Ink/rendering layer to understand
+// DescriptorFor returns a BaseMetricDescriptor for the given metric name by
+// checking resolved expressions first, then falling back to the base metric
+// registry. This allows the Ink/rendering layer to understand
 // expression-computed metrics (e.g. "public.methods.count") that don't
-// exist in the legacy registry.
-func (r RequestedMetrics) DescriptorFor(name metric.Name) (provider.MetricDescriptor, bool) {
+// exist in the base registry.
+func (r RequestedMetrics) DescriptorFor(name metric.Name) (provider.BaseMetricDescriptor, bool) {
 	for i := range r.Expressions {
 		if r.Expressions[i].ResultName == name {
-			return provider.MetricDescriptor{
+			return provider.BaseMetricDescriptor{
 				Name: name,
 				Kind: r.Expressions[i].ResultKind,
 			}, true
 		}
 	}
 
-	return provider.GetDescriptor(name, metric.File)
+	return provider.GetBase(name)
 }
 
-// ClassifyRequestedMetrics takes a flat list of metric name strings and
-// classifies each as either a resolvable expression or a legacy metric name.
+func appendBaseMetric(result *RequestedMetrics, baseSeen map[metric.Name]bool, name metric.Name) {
+	if baseSeen[name] {
+		return
+	}
+
+	baseSeen[name] = true
+	result.BaseMetrics = append(result.BaseMetrics, name)
+}
+
+// ClassifyRequestedMetrics takes a flat list of metric names and classifies
+// each as either a resolvable expression or a base metric name.
 func ClassifyRequestedMetrics(names []metric.Name, targetLevel metric.MetricLevel) RequestedMetrics {
 	var result RequestedMetrics
 
@@ -92,31 +73,30 @@ func ClassifyRequestedMetrics(names []metric.Name, targetLevel metric.MetricLeve
 	for _, name := range names {
 		expr, parseErr := metric.ParseExpression(string(name))
 		if parseErr != nil {
-			result.Legacy = append(result.Legacy, name)
+			appendBaseMetric(&result, baseSeen, name)
 
 			continue
 		}
 
 		resolved, resolveErr := provider.ResolveExpression(expr, targetLevel)
 		if resolveErr != nil {
-			result.Legacy = append(result.Legacy, name)
+			appendBaseMetric(&result, baseSeen, name)
 
 			continue
 		}
 
 		if !resolved.NeedsAggregation {
-			result.Legacy = append(result.Legacy, name)
+			appendBaseMetric(&result, baseSeen, expr.Base)
 
 			continue
 		}
 
 		result.Expressions = append(result.Expressions, resolved)
 
-		// Only add to BaseMetrics if the source is file-level (needs provider.Run).
+		// Only add to BaseMetrics if the source is file-level (needs RunLoaders).
 		// Declaration and commit level metrics are populated by separate stages.
-		if resolved.SourceLevel == metric.LevelFile && !baseSeen[expr.Base] {
-			baseSeen[expr.Base] = true
-			result.BaseMetrics = append(result.BaseMetrics, expr.Base)
+		if resolved.SourceLevel == metric.LevelFile {
+			appendBaseMetric(&result, baseSeen, expr.Base)
 		}
 	}
 

@@ -38,7 +38,7 @@ func TestRegisterBase_GitMetrics(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates global base registry
-func TestRegisterBase_MatchesLegacyProviderMetadata(t *testing.T) {
+func TestRegisterBase_MatchesProviderDefsMetadata(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	provider.ResetBaseRegistryForTesting()
@@ -58,30 +58,22 @@ func TestRegisterBase_MatchesLegacyProviderMetadata(t *testing.T) {
 		baseMetric, ok := provider.GetBase(name)
 		g.Expect(ok).To(BeTrue(), string(name))
 
-		legacyProvider := newProvider(name)
-		g.Expect(baseMetric.Kind).To(Equal(legacyProvider.Kind()), string(name))
-		g.Expect(baseMetric.Description).To(Equal(legacyProvider.Description()), string(name))
-		g.Expect(baseMetric.DefaultPalette).To(Equal(legacyProvider.DefaultPalette()), string(name))
+		def, ok := providerDefs[name]
+		g.Expect(ok).To(BeTrue(), string(name))
+		g.Expect(baseMetric.Kind).To(Equal(def.kind), string(name))
+		g.Expect(baseMetric.Description).To(Equal(def.description), string(name))
+		g.Expect(baseMetric.DefaultPalette).To(Equal(def.defaultPalette), string(name))
 	}
 }
 
-//nolint:paralleltest // mutates global provider and base registries
+//nolint:paralleltest // mutates global base registry
 func TestRegister_RegistersGitBaseMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	provider.ResetRegistryForTesting()
 	provider.ResetBaseRegistryForTesting()
-	t.Cleanup(provider.ResetRegistryForTesting)
 	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	Register()
-
-	legacyProvider, ok := provider.Get(CommitCount, metric.File)
-	if !ok || legacyProvider == nil {
-		t.Fatalf("expected git provider %q to be registered", CommitCount)
-	}
-
-	g.Expect(legacyProvider.Name()).To(Equal(CommitCount))
 
 	baseMetric, ok := provider.GetBase(CommitCount)
 	g.Expect(ok).To(BeTrue())
@@ -90,4 +82,36 @@ func TestRegister_RegistersGitBaseMetrics(t *testing.T) {
 	baseProvider, ok := provider.GetBaseProvider(CommitCount)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(baseProvider).To(Equal(GitProvider))
+}
+
+//nolint:paralleltest // mutates global base registry
+func TestRegister_RegistersConsolidatedGitLoader(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
+
+	Register()
+
+	loaders := provider.LoadersFor([]metric.Name{
+		FileAge,
+		FileFreshness,
+		AuthorCount,
+		CommitCount,
+		TotalLinesAdded,
+		TotalLinesRemoved,
+		CommitDensity,
+	})
+
+	g.Expect(loaders).To(HaveLen(1))
+	g.Expect(loaders[0].Metrics).To(ConsistOf(
+		FileAge,
+		FileFreshness,
+		AuthorCount,
+		CommitCount,
+		TotalLinesAdded,
+		TotalLinesRemoved,
+		CommitDensity,
+	))
+	g.Expect(loaders[0].Load).ToNot(BeNil())
 }

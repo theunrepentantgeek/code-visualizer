@@ -8,7 +8,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 var (
@@ -30,18 +30,19 @@ type Inks struct {
 // BuildInks creates point inks from the plotted dataset.
 func BuildInks(
 	dataset Dataset,
+	requested stages.RequestedMetrics,
 	fillMetric metric.Name,
 	fillPaletteName palette.PaletteName,
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
 ) Inks {
 	inks := Inks{
-		Fill:   buildMetricInk(dataset.Files(), fillMetric, fillPaletteName, scatterDefaultFill),
+		Fill:   buildMetricInk(dataset.Files(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
 		Border: canvas.FixedInk(scatterDefaultBorder),
 	}
 
 	if borderMetric != "" {
-		inks.Border = buildMetricInk(dataset.Files(), borderMetric, borderPaletteName, scatterDefaultBorder)
+		inks.Border = buildMetricInk(dataset.Files(), requested, borderMetric, borderPaletteName, scatterDefaultBorder)
 		inks.HasBorderMetric = true
 	}
 
@@ -50,6 +51,7 @@ func BuildInks(
 
 func buildMetricInk(
 	files []*model.File,
+	requested stages.RequestedMetrics,
 	name metric.Name,
 	paletteName palette.PaletteName,
 	fallback color.RGBA,
@@ -58,7 +60,7 @@ func buildMetricInk(
 		return canvas.FixedInk(fallback)
 	}
 
-	descriptor, ok := provider.GetDescriptor(name, metric.File)
+	descriptor, ok := requested.DescriptorFor(name)
 	if !ok {
 		return canvas.FixedInk(fallback)
 	}

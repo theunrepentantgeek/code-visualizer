@@ -5,8 +5,12 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -30,7 +34,7 @@ func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 	g.Expect(viz.YAxis).To(Equal(scatter.AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity}))
 	g.Expect(viz.Size).To(Equal(filesystem.FileSize))
 	g.Expect(viz.FillMetric).To(Equal(filesystem.FileSize))
-	g.Expect(common.Requested.LegacyNames()).To(Equal([]metric.Name{
+	g.Expect(common.Requested.BaseMetrics).To(Equal([]metric.Name{
 		filesystem.FileType,
 		filesystem.FileLines,
 		filesystem.FileSize,
@@ -77,9 +81,48 @@ func TestResolveMetrics_FillAndBorderOverrideDefaults(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(viz.FillMetric).To(Equal(filesystem.FileType))
 	g.Expect(viz.BorderMetric).To(Equal(filesystem.FileLines))
-	g.Expect(common.Requested.LegacyNames()).To(Equal([]metric.Name{
+	g.Expect(common.Requested.BaseMetrics).To(Equal([]metric.Name{
 		filesystem.FileLines,
 		filesystem.FileSize,
 		filesystem.FileType,
 	}))
+}
+
+func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const expressionMetric = metric.Name("file-size.count")
+
+	first := &model.File{Name: "main.go", Path: "main.go"}
+	first.SetQuantity(filesystem.FileLines, 120)
+	first.SetQuantity(filesystem.FileSize, 100)
+	first.SetQuantity(expressionMetric, 2)
+
+	second := &model.File{Name: "readme.md", Path: "readme.md"}
+	second.SetQuantity(filesystem.FileLines, 40)
+	second.SetQuantity(filesystem.FileSize, 60)
+	second.SetQuantity(expressionMetric, 1)
+
+	common := &stages.CommonState{
+		Root: &model.Directory{Files: []*model.File{first, second}},
+		Requested: stages.RequestedMetrics{
+			Expressions: []provider.ResolvedMetric{{
+				ResultName: expressionMetric,
+				ResultKind: metric.Quantity,
+			}},
+		},
+	}
+	viz := &scatter.State{
+		XAxis:       scatter.AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: scatter.Linear},
+		YAxis:       scatter.AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: scatter.Linear},
+		Size:        filesystem.FileSize,
+		FillMetric:  expressionMetric,
+		FillPalette: palette.Temperature,
+	}
+
+	err := scatter.BuildInksStage(common, viz)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
+	g.Expect(viz.Inks.Fill.Info().MetricName).To(Equal(expressionMetric))
 }

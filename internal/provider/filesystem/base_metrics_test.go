@@ -45,25 +45,21 @@ func TestRegisterBase_FilesystemMetrics(t *testing.T) {
 	g.Expect(ft.SupportsAggregation(metric.AggSum)).To(BeFalse())
 }
 
-//nolint:paralleltest // mutates global provider and base registries
+//nolint:paralleltest // mutates global base registry
 func TestRegister_RegistersFilesystemBaseMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	provider.ResetRegistryForTesting()
 	provider.ResetBaseRegistryForTesting()
-	t.Cleanup(provider.ResetRegistryForTesting)
 	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	Register()
 
-	legacyProvider, ok := provider.Get(FileSize, metric.File)
-	if !ok || legacyProvider == nil {
-		t.Fatalf("expected filesystem provider %q to be registered", FileSize)
-	}
-
-	g.Expect(legacyProvider.Name()).To(Equal(FileSize))
-
 	baseMetric, ok := provider.GetBase(FileSize)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(baseMetric.Level).To(Equal(metric.LevelFile))
+
+	loaders := provider.LoadersFor([]metric.Name{FileSize})
+	g.Expect(loaders).To(HaveLen(1))
+	g.Expect(loaders[0].Metrics).To(ContainElement(FileSize))
+	g.Expect(loaders[0].Load).ToNot(BeNil())
 }

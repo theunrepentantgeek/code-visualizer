@@ -18,31 +18,36 @@ const (
 	Imports              metric.Name = "imports"
 	CyclomaticComplexity metric.Name = "cyclomatic-complexity"
 	FunctionLength       metric.Name = "function-length"
+	CommentRatio         metric.Name = "comment-ratio"
+	Declarations         metric.Name = "declarations"
 )
 
 const (
-	filterPublic  metric.FilterName = "public"
-	filterPrivate metric.FilterName = "private"
+	filterPublic   metric.FilterName = "public"
+	filterPrivate  metric.FilterName = "private"
+	filterStdlib   metric.FilterName = "stdlib"
+	filterExternal metric.FilterName = "external"
+	filterInternal metric.FilterName = "internal"
 )
 
 // GoProvider is the provider descriptor for Go metrics.
 var GoProvider = provider.ProviderDescriptor{
 	Name: "go",
 	Filters: map[metric.FilterName]string{
-		filterPublic:  "Exported declarations only",
-		filterPrivate: "Unexported declarations only",
-		"stdlib":      "Standard library imports only",
-		"external":    "External (third-party) imports only",
-		"internal":    "Internal (same module) imports only",
+		filterPublic:   "Exported declarations only",
+		filterPrivate:  "Unexported declarations only",
+		filterStdlib:   "Standard library imports only",
+		filterExternal: "External (third-party) imports only",
+		filterInternal: "Internal (same module) imports only",
 	},
 }
 
 var (
-	goDeclCountAggs   = []metric.AggregationName{metric.AggCount, metric.AggSum}
+	goDeclCountAggs   = []metric.AggregationName{metric.AggCount}
 	goNumericAggs     = []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean}
 	goSummaryAggs     = []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean}
 	goVisibilityNames = []metric.FilterName{filterPublic, filterPrivate}
-	goImportFilters   = []metric.FilterName{"stdlib", "external", "internal"}
+	goImportFilters   = []metric.FilterName{filterStdlib, filterExternal, filterInternal}
 
 	// goDeclarationFilter evaluates visibility filters against a Declaration node.
 	goDeclarationFilter = func(filter metric.FilterName, node any) bool {
@@ -64,6 +69,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindType, model.DeclKindStruct, model.DeclKindInterface},
 		},
 		{
 			Name:           Interfaces,
@@ -74,6 +80,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindInterface},
 		},
 		{
 			Name:           Structs,
@@ -84,6 +91,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindStruct},
 		},
 		{
 			Name:           Functions,
@@ -94,6 +102,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindFunction},
 		},
 		{
 			Name:           Methods,
@@ -104,6 +113,7 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindMethod},
 		},
 		{
 			Name:           Constants,
@@ -114,12 +124,24 @@ var (
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindConstant},
 		},
 		{
 			Name:           Variables,
 			Kind:           metric.Quantity,
 			Level:          metric.LevelDeclaration,
 			Description:    "Count of variable declarations.",
+			Filters:        goVisibilityNames,
+			Aggregations:   goDeclCountAggs,
+			DefaultPalette: palette.Neutral,
+			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindVariable},
+		},
+		{
+			Name:           Declarations,
+			Kind:           metric.Quantity,
+			Level:          metric.LevelDeclaration,
+			Description:    "Count of all declarations (types, functions, methods, constants, variables).",
 			Filters:        goVisibilityNames,
 			Aggregations:   goDeclCountAggs,
 			DefaultPalette: palette.Neutral,
@@ -143,6 +165,7 @@ var (
 			Aggregations:   goNumericAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindFunction, model.DeclKindMethod},
 		},
 		{
 			Name:           FunctionLength,
@@ -153,6 +176,7 @@ var (
 			Aggregations:   goNumericAggs,
 			DefaultPalette: palette.Neutral,
 			FilterFunc:     goDeclarationFilter,
+			DeclKinds:      []string{model.DeclKindFunction, model.DeclKindMethod},
 		},
 		{
 			Name:           CommentRatio,

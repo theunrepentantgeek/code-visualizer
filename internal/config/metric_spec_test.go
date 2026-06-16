@@ -392,11 +392,11 @@ func TestMetricSpec_Validate_BareMetricStillWorks(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
-func TestMetricSpec_Validate_LegacyFlatMetricStillWorks(t *testing.T) {
+func TestMetricSpec_Validate_ExpressionMetricWorks(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	spec := &MetricSpec{Metric: "type-count"}
+	spec := &MetricSpec{Metric: "types.count"}
 	err := spec.Validate("fill")
 	g.Expect(err).NotTo(HaveOccurred())
 }

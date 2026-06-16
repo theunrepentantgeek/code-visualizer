@@ -9,31 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
-// gitProvider is a data-driven implementation of provider.Interface for all
-// git-based metric providers. The seven individually identical provider files
-// are replaced by a single table in providerDefs.
-type gitProvider struct {
-	name           metric.Name
-	kind           metric.Kind
-	description    string
-	defaultPalette palette.PaletteName
-	process        func(*repoService, *model.File, string)
-	onFile         func()
-}
-
-func (p *gitProvider) Name() metric.Name                   { return p.name }
-func (p *gitProvider) Kind() metric.Kind                   { return p.kind }
-func (*gitProvider) Target() metric.Target                 { return metric.File }
-func (p *gitProvider) Description() string                 { return p.description }
-func (*gitProvider) Dependencies() []metric.Name           { return nil }
-func (p *gitProvider) DefaultPalette() palette.PaletteName { return p.defaultPalette }
-func (p *gitProvider) SetOnFileProcessed(fn func())        { p.onFile = fn }
-
-func (p *gitProvider) Load(root *model.Directory) error {
-	return walkGitFiles(root, string(p.name), p.onFile, p.process)
-}
-
-// providerDef holds the static fields for one gitProvider.
+// providerDef holds the static fields and processing callback for one git metric.
 type providerDef struct {
 	kind           metric.Kind
 	description    string
@@ -88,23 +64,7 @@ var providerDefs = map[metric.Name]providerDef{
 	},
 }
 
-// newProvider creates a fresh gitProvider instance for the given metric name.
-// Panics if name is not a recognised git metric (programmer error).
-func newProvider(name metric.Name) *gitProvider {
-	if def, ok := providerDefs[name]; ok {
-		return &gitProvider{
-			name:           name,
-			kind:           def.kind,
-			description:    def.description,
-			defaultPalette: def.defaultPalette,
-			process:        def.process,
-		}
-	}
-
-	panic("newProvider: unknown git metric name: " + string(name))
-}
-
-// quantityProcess returns a walkGitFiles callback that computes an int64
+// quantityProcess returns a providerDef process callback that computes an int64
 // metric and stores it via SetQuantity.
 func quantityProcess(
 	name metric.Name,
@@ -124,7 +84,7 @@ func quantityProcess(
 	}
 }
 
-// measureProcess returns a walkGitFiles callback that computes a float64
+// measureProcess returns a providerDef process callback that computes a float64
 // metric and stores it via SetMeasure.
 func measureProcess(
 	name metric.Name,

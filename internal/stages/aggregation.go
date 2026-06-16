@@ -1,14 +1,23 @@
 package stages
 
 import (
-	"slices"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
+
+// fileLevelLookupKey returns the storage key for a file-level metric value.
+// For filtered expressions (e.g. "stdlib.imports.sum"), the value is stored
+// under the filter.base form ("stdlib.imports"), not the bare base name.
+func fileLevelLookupKey(expr metric.MetricExpression) metric.Name {
+	if expr.Filter.IsZero() {
+		return expr.Base
+	}
+
+	return metric.MetricExpression{Filter: expr.Filter, Base: expr.Base}.ResultName()
+}
 
 // ComputeAggregations walks the directory tree and computes aggregated metric
 // values for each resolved expression. Each directory gets its own aggregate
@@ -60,33 +69,20 @@ func aggregateDirectory(dir *model.Directory, resolved provider.ResolvedMetric) 
 }
 
 func aggregateNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectNumericValues(dir, resolved.Expression.Base, resolved.Descriptor.Kind)
+	lookupKey := fileLevelLookupKey(resolved.Expression)
+	values := collectNumericValues(dir, lookupKey, resolved.Descriptor.Kind)
+
 	if len(values) == 0 {
 		return nil
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return err
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		dir.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		dir.SetMeasure(resolved.ResultName, result)
-	default:
-		return eris.Errorf(
-			"aggregation %q for metric %q uses unsupported result kind %d",
-			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-		)
-	}
-
-	return nil
+	return applyAndStoreNumeric(dir, resolved, values)
 }
 
 func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectClassificationValues(dir, resolved.Expression.Base)
+	lookupKey := fileLevelLookupKey(resolved.Expression)
+	values := collectClassificationValues(dir, lookupKey)
+
 	if len(values) == 0 {
 		return nil
 	}
@@ -153,6 +149,34 @@ func collectClassificationValues(dir *model.Directory, name metric.Name) []strin
 	return values
 }
 
+// metricStorer is the subset of MetricContainer needed by applyAndStoreNumeric.
+type metricStorer interface {
+	SetQuantity(name metric.Name, v int64)
+	SetMeasure(name metric.Name, v float64)
+}
+
+// applyAndStoreNumeric computes the aggregation and stores the result on the container.
+func applyAndStoreNumeric(container metricStorer, resolved provider.ResolvedMetric, values []float64) error {
+	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
+	if err != nil {
+		return err
+	}
+
+	switch resolved.ResultKind {
+	case metric.Quantity:
+		container.SetQuantity(resolved.ResultName, int64(result))
+	case metric.Measure:
+		container.SetMeasure(resolved.ResultName, result)
+	default:
+		return eris.Errorf(
+			"aggregation %q for metric %q uses unsupported result kind %d",
+			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
+		)
+	}
+
+	return nil
+}
+
 func applyNumericAggregation(agg metric.AggregationName, values []float64) (float64, error) {
 	switch agg {
 	case metric.AggSum:
@@ -212,19 +236,9 @@ func aggregateFileDeclarationNumeric(f *model.File, resolved provider.ResolvedMe
 		return
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		f.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		f.SetMeasure(resolved.ResultName, result)
-	default:
-		// unsupported result kind — skip
-	}
+	// Silently skip errors at file level since aggregateDirectoryDeclarationNumeric
+	// will report them for the directory.
+	_ = applyAndStoreNumeric(f, resolved, values)
 }
 
 func aggregateFileDeclarationClassification(f *model.File, resolved provider.ResolvedMetric) {
@@ -282,24 +296,7 @@ func aggregateDirectoryDeclarationNumeric(dir *model.Directory, resolved provide
 		return nil
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return err
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		dir.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		dir.SetMeasure(resolved.ResultName, result)
-	default:
-		return eris.Errorf(
-			"aggregation %q for declaration metric %q uses unsupported result kind %d",
-			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-		)
-	}
-
-	return nil
+	return applyAndStoreNumeric(dir, resolved, values)
 }
 
 func collectFileDeclarationNumericValues(f *model.File, resolved provider.ResolvedMetric) []float64 {
@@ -396,32 +393,7 @@ func declarationMatchesExpression(d *model.Declaration, resolved provider.Resolv
 		}
 	}
 
-	return matchesDeclKind(d, resolved.Expression.Base)
-}
-
-// declKindMap maps base metric names to acceptable declaration kinds.
-// Metrics not in this map accept any declaration kind.
-var declKindMap = map[metric.Name][]string{
-	"types":                 {model.DeclKindType, model.DeclKindStruct, model.DeclKindInterface},
-	"interfaces":            {model.DeclKindInterface},
-	"structs":               {model.DeclKindStruct},
-	"functions":             {model.DeclKindFunction},
-	"methods":               {model.DeclKindMethod},
-	"constants":             {model.DeclKindConstant},
-	"variables":             {model.DeclKindVariable},
-	"cyclomatic-complexity": {model.DeclKindFunction, model.DeclKindMethod},
-	"function-length":       {model.DeclKindFunction, model.DeclKindMethod},
-}
-
-// matchesDeclKind checks whether a declaration matches the semantic category
-// implied by the base metric name.
-func matchesDeclKind(d *model.Declaration, baseName metric.Name) bool {
-	kinds, ok := declKindMap[baseName]
-	if !ok {
-		return true
-	}
-
-	return slices.Contains(kinds, d.Kind)
+	return resolved.Descriptor.MatchesDeclKind(d.Kind)
 }
 
 // ---------------------------------------------------------------------------
@@ -452,24 +424,7 @@ func aggregateCommitNumeric(dir *model.Directory, resolved provider.ResolvedMetr
 		return nil
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return err
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		dir.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		dir.SetMeasure(resolved.ResultName, result)
-	default:
-		return eris.Errorf(
-			"aggregation %q for commit metric %q uses unsupported result kind %d",
-			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-		)
-	}
-
-	return nil
+	return applyAndStoreNumeric(dir, resolved, values)
 }
 
 func collectCommitNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
