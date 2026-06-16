@@ -307,16 +307,14 @@ func TestE2E_AggregationsOnSubdirectories(t *testing.T) {
 		"at least one immediate subdirectory should have file-size.sum populated")
 }
 
-// TestE2E_IncludeFilter verifies that include path filtering restricts the
-// scan to matching files only.
+// TestE2E_ExcludeFilterByExtension verifies that exclude path filtering
+// removes all files matching a given extension pattern.
 //
 //nolint:paralleltest // mutates global base registry
-func TestE2E_IncludeFilter(t *testing.T) {
+func TestE2E_ExcludeFilterByExtension(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	// Use unanchored pattern — the filter will auto-prepend **/ for matching at any depth.
-	// Exclude only files that don't match *.go (directories pass through since they
-	// don't have an extension that matches the exclude pattern).
+	// Exclude all .go files — verifies extension-based filtering at any depth.
 	rules := []filter.Rule{
 		{Pattern: "**/*.go", Mode: filter.Exclude},
 	}
