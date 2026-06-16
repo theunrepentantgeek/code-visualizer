@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-15T06:11:00Z",
-  "run_id": "27527346723",
+  "last_run": "2026-06-16T17:41:00Z",
+  "run_id": "27636361385",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 413,
+  "backlog_cursor": 423,
   "comments_made": {
     "324": "2026-06-01",
     "325": "2026-06-01",
@@ -20,16 +20,11 @@
     "394": "2026-06-13",
     "402": "2026-06-13",
     "411": "2026-06-14",
-    "412": "2026-06-14"
+    "412": "2026-06-14",
+    "421": "2026-06-16",
+    "422": "2026-06-16"
   },
   "prs_created": {
-    "perf-render-shared-specs": {
-      "issue": null,
-      "branch": "repo-assist/perf-render-shared-specs-2026-06-15",
-      "date": "2026-06-15",
-      "status": "open - pending PR number",
-      "description": "perf(render): eliminate per-node spec allocations in radial and spiral renderers"
-    },
     "perf-svg-drawpath": {
       "issue": null,
       "branch": "repo-assist/perf-svg-drawpath-2026-06-14-9e753ddbc53154e7",
@@ -51,7 +46,7 @@
       "branch": "repo-assist/fix-412-rebase-target-4cd403552e5ccd03",
       "pr_number": 416,
       "date": "2026-06-14",
-      "status": "open (supersedes #412)",
+      "status": "open - needs rebase after #418 merged",
       "description": "feat(config,provider): selection-metrics + classification provider, rebased onto post-#406 main + Target() method"
     },
     "selection-metrics-old": {
@@ -61,6 +56,38 @@
       "date": "2026-06-13",
       "status": "open - superseded by #416, commented twice to close",
       "description": "feat(config,provider): add selection-metrics (old, needs close)"
+    },
+    "perf-render-shared-specs": {
+      "issue": null,
+      "branch": "repo-assist/perf-render-shared-specs-2026-06-15-7045f1b9faf08570",
+      "pr_number": 417,
+      "date": "2026-06-15",
+      "status": "open",
+      "description": "perf(render): eliminate per-node spec allocations in radial and spiral renderers"
+    },
+    "test-stages-requested-1": {
+      "issue": null,
+      "branch": "repo-assist/test-requested-metrics-methods-20260616-2d7310142e582093",
+      "pr_number": 419,
+      "date": "2026-06-16",
+      "status": "open",
+      "description": "test(stages): add tests for HasDeclarationExpressions, HasCommitExpressions, DescriptorFor"
+    },
+    "test-stages-requested-2": {
+      "issue": null,
+      "branch": "repo-assist/test-requested-metrics-methods-20260616-6ace45a610549537",
+      "pr_number": 420,
+      "date": "2026-06-16",
+      "status": "open - DUPLICATE of #419, should close",
+      "description": "test(stages): DUPLICATE of #419"
+    },
+    "test-git-e2e-422": {
+      "issue": 422,
+      "branch": "repo-assist/test-git-e2e-422-20260616-d0cf51fd90c22669",
+      "pr_number": null,
+      "date": "2026-06-16",
+      "status": "open - pending PR number",
+      "description": "test(git): E2E test suite for git provider"
     }
   },
   "issues_labelled": {
@@ -70,7 +97,10 @@
     "374": ["enhancement"],
     "385": ["bug"],
     "402": ["enhancement"],
-    "405": ["enhancement"]
+    "405": ["enhancement"],
+    "421": ["enhancement"],
+    "422": ["enhancement"],
+    "423": ["enhancement"]
   },
   "maintainer_preferences": [
     "Do not move helpers to new packages — keep refactors within-package",
@@ -78,5 +108,5 @@
     "Title feature: one --title TEXT flag only (not per-command separate flags)",
     "go.mod and go.sum are protected files — cannot be pushed by automation"
   ],
-  "notes": "PRs #414 (DrawPath), #415 (grad urlref), #416 (selection-metrics rebased) all open and healthy. PR #412 superseded by #416 — commented twice to close, still open. New PR from branch repo-assist/perf-render-shared-specs-2026-06-15 eliminates per-node DiscSpec/Ink allocations in radialtree and spiral renderers (pending PR number). PR #413 (metric expressions) is maintainer PR — large, open for review. Issue #394 (radial dir metrics) on hold pending #413 merge. Task 2 N/A this run (all code issues have recent Repo Assist comments, no new activity). Task 6: all open Repo Assist PRs verified healthy."
+  "notes": "PR #418 (Complete migration of metricx) merged 2026-06-16T10:01Z. After #418, maintainer created issues #421/#422/#423 for E2E test suites. PR #424 (maintainer, filesystem E2E) addresses #423. This run: implemented git E2E tests for #422 (branch repo-assist/test-git-e2e-422-20260616-d0cf51fd90c22669, pending PR number). PR #420 is duplicate of #419 from previous run - needs closing. PR #416 needs rebasing after #418's large metricx migration. Task 10 next: rebase #416 then wire classification.Provider into pipeline. Issue #421 (golang E2E) is next testing priority."
 }
