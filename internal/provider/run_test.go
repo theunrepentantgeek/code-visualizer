@@ -128,6 +128,22 @@ func TestRunLoadersCycleDetection(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates global base registry
+func TestRunLoadersFailsOnMissingDependency(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
+
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:      []metric.Name{"derived"},
+		Dependencies: []metric.Name{"base"},
+		Load:         func(_ *model.Directory) error { return nil },
+	})
+
+	err := provider.RunLoaders(nil, []metric.Name{"derived"}, nil)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring("no selected loader provides it")))
+}
+
+//nolint:paralleltest // mutates global base registry
 func TestRunLoadersErrorPropagation(t *testing.T) {
 	g := NewGomegaWithT(t)
 	resetBaseRegistry(t)

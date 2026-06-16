@@ -102,7 +102,14 @@ func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 
 	for i, l := range loaders {
 		for _, dep := range l.Dependencies {
-			if j, ok := provides[dep]; ok && j != i {
+			j, ok := provides[dep]
+			if !ok {
+				return nil, eris.Errorf(
+					"loader for %v declares dependency on %q but no selected loader provides it",
+					l.Metrics, dep)
+			}
+
+			if j != i {
 				inDegree[i]++
 				dependents[j] = append(dependents[j], i)
 			}
