@@ -211,3 +211,49 @@ func TestRunLoadersEmptyRequest(t *testing.T) {
 	err := provider.RunLoaders(nil, nil, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 }
+
+type fileProgressLoader struct {
+	onFile func()
+}
+
+func (l *fileProgressLoader) SetOnFileProcessed(fn func()) { l.onFile = fn }
+
+func (l *fileProgressLoader) Load(_ *model.Directory) error {
+	if l.onFile != nil {
+		l.onFile()
+		l.onFile()
+	}
+
+	return nil
+}
+
+type fileProgressTracker struct {
+	progressTracker
+	fileProcessed []metric.Name
+}
+
+func (t *fileProgressTracker) OnFileProcessed(name metric.Name) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	t.fileProcessed = append(t.fileProcessed, name)
+}
+
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersWiresFileProgressReporter(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
+
+	progress := &fileProgressTracker{}
+	loader := &fileProgressLoader{}
+
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:  []metric.Name{"lines"},
+		Load:     loader.Load,
+		Reporter: loader,
+	})
+
+	err := provider.RunLoaders(nil, []metric.Name{"lines"}, progress)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(progress.fileProcessed).To(Equal([]metric.Name{"lines", "lines"}))
+}

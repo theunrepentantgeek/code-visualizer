@@ -14,6 +14,8 @@ type BaseMetricLoader struct {
 	Dependencies []metric.Name
 	// Load populates the directory tree with metric values.
 	Load LoadFunc
+	// Reporter optionally receives per-file progress callbacks during loading.
+	Reporter FileProgressReporter
 }
 
 // LoadFunc is the function signature for metric loading.

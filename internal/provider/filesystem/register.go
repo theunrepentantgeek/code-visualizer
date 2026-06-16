@@ -13,9 +13,12 @@ func Register() {
 		Metrics: []metric.Name{FileSize},
 		Load:    FileSizeProvider{}.Load,
 	})
+
+	fileLinesProvider := &FileLinesProvider{}
 	provider.RegisterLoader(provider.BaseMetricLoader{
-		Metrics: []metric.Name{FileLines},
-		Load:    (&FileLinesProvider{}).Load,
+		Metrics:  []metric.Name{FileLines},
+		Load:     fileLinesProvider.Load,
+		Reporter: fileLinesProvider,
 	})
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{FileType},

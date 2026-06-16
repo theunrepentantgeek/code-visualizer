@@ -67,6 +67,14 @@ func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress Me
 		}
 	}
 
+	if loader.Reporter != nil && progress != nil {
+		loader.Reporter.SetOnFileProcessed(func() {
+			for _, m := range loader.Metrics {
+				progress.OnFileProcessed(m)
+			}
+		})
+	}
+
 	if err := loader.Load(root); err != nil {
 		return eris.Wrapf(err, "loader failed for metrics %v", loader.Metrics)
 	}
