@@ -77,24 +77,7 @@ func aggregateNumeric(dir *model.Directory, resolved provider.ResolvedMetric) er
 		return nil
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return err
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		dir.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		dir.SetMeasure(resolved.ResultName, result)
-	default:
-		return eris.Errorf(
-			"aggregation %q for metric %q uses unsupported result kind %d",
-			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-		)
-	}
-
-	return nil
+	return applyAndStoreNumeric(dir, resolved, values)
 }
 
 func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
@@ -166,6 +149,34 @@ func collectClassificationValues(dir *model.Directory, name metric.Name) []strin
 	return values
 }
 
+// metricStorer is the subset of MetricContainer needed by applyAndStoreNumeric.
+type metricStorer interface {
+	SetQuantity(name metric.Name, v int64)
+	SetMeasure(name metric.Name, v float64)
+}
+
+// applyAndStoreNumeric computes the aggregation and stores the result on the container.
+func applyAndStoreNumeric(container metricStorer, resolved provider.ResolvedMetric, values []float64) error {
+	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
+	if err != nil {
+		return err
+	}
+
+	switch resolved.ResultKind {
+	case metric.Quantity:
+		container.SetQuantity(resolved.ResultName, int64(result))
+	case metric.Measure:
+		container.SetMeasure(resolved.ResultName, result)
+	default:
+		return eris.Errorf(
+			"aggregation %q for metric %q uses unsupported result kind %d",
+			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
+		)
+	}
+
+	return nil
+}
+
 func applyNumericAggregation(agg metric.AggregationName, values []float64) (float64, error) {
 	switch agg {
 	case metric.AggSum:
@@ -225,19 +236,9 @@ func aggregateFileDeclarationNumeric(f *model.File, resolved provider.ResolvedMe
 		return
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		f.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		f.SetMeasure(resolved.ResultName, result)
-	default:
-		// unsupported result kind — skip
-	}
+	// Silently skip errors at file level since aggregateDirectoryDeclarationNumeric
+	// will report them for the directory.
+	_ = applyAndStoreNumeric(f, resolved, values)
 }
 
 func aggregateFileDeclarationClassification(f *model.File, resolved provider.ResolvedMetric) {
@@ -295,24 +296,7 @@ func aggregateDirectoryDeclarationNumeric(dir *model.Directory, resolved provide
 		return nil
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return err
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		dir.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		dir.SetMeasure(resolved.ResultName, result)
-	default:
-		return eris.Errorf(
-			"aggregation %q for declaration metric %q uses unsupported result kind %d",
-			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-		)
-	}
-
-	return nil
+	return applyAndStoreNumeric(dir, resolved, values)
 }
 
 func collectFileDeclarationNumericValues(f *model.File, resolved provider.ResolvedMetric) []float64 {
@@ -465,24 +449,7 @@ func aggregateCommitNumeric(dir *model.Directory, resolved provider.ResolvedMetr
 		return nil
 	}
 
-	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
-	if err != nil {
-		return err
-	}
-
-	switch resolved.ResultKind {
-	case metric.Quantity:
-		dir.SetQuantity(resolved.ResultName, int64(result))
-	case metric.Measure:
-		dir.SetMeasure(resolved.ResultName, result)
-	default:
-		return eris.Errorf(
-			"aggregation %q for commit metric %q uses unsupported result kind %d",
-			resolved.Expression.Aggregation, resolved.Expression.Base, resolved.ResultKind,
-		)
-	}
-
-	return nil
+	return applyAndStoreNumeric(dir, resolved, values)
 }
 
 func collectCommitNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
