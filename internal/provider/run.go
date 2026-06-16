@@ -61,34 +61,62 @@ func runLoaderLevel(root *model.Directory, level []BaseMetricLoader, progress Me
 }
 
 func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress MetricProgress) error {
-	for _, m := range loader.Metrics {
-		if progress != nil {
-			progress.OnMetricStarted(m)
-		}
-	}
-
-	if loader.Reporter != nil && progress != nil {
-		loader.Reporter.SetOnFileProcessed(func() {
-			for _, m := range loader.Metrics {
-				progress.OnFileProcessed(m)
-			}
-		})
-	}
+	notifyStarted(loader, progress)
+	wireFileProgress(loader, progress)
 
 	if err := loader.Load(root); err != nil {
 		return eris.Wrapf(err, "loader failed for metrics %v", loader.Metrics)
 	}
 
-	for _, m := range loader.Metrics {
-		if progress != nil {
-			progress.OnMetricFinished(m)
-		}
-	}
+	notifyFinished(loader, progress)
 
 	return nil
 }
 
+func notifyStarted(loader BaseMetricLoader, progress MetricProgress) {
+	if progress == nil {
+		return
+	}
+
+	for _, m := range loader.Metrics {
+		progress.OnMetricStarted(m)
+	}
+}
+
+func notifyFinished(loader BaseMetricLoader, progress MetricProgress) {
+	if progress == nil {
+		return
+	}
+
+	for _, m := range loader.Metrics {
+		progress.OnMetricFinished(m)
+	}
+}
+
+func wireFileProgress(loader BaseMetricLoader, progress MetricProgress) {
+	if loader.Reporter == nil || progress == nil {
+		return
+	}
+
+	loader.Reporter.SetOnFileProcessed(func() {
+		for _, m := range loader.Metrics {
+			progress.OnFileProcessed(m)
+		}
+	})
+}
+
 func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
+	provides := buildProvidesMap(loaders)
+
+	inDegree, dependents, err := buildDependencyGraph(loaders, provides)
+	if err != nil {
+		return nil, err
+	}
+
+	return computeLoaderLevels(loaders, inDegree, dependents)
+}
+
+func buildProvidesMap(loaders []BaseMetricLoader) map[metric.Name]int {
 	provides := make(map[metric.Name]int)
 
 	for i, l := range loaders {
@@ -97,6 +125,13 @@ func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 		}
 	}
 
+	return provides
+}
+
+func buildDependencyGraph(
+	loaders []BaseMetricLoader,
+	provides map[metric.Name]int,
+) ([]int, map[int][]int, error) {
 	inDegree := make([]int, len(loaders))
 	dependents := make(map[int][]int)
 
@@ -104,7 +139,7 @@ func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 		for _, dep := range l.Dependencies {
 			j, ok := provides[dep]
 			if !ok {
-				return nil, eris.Errorf(
+				return nil, nil, eris.Errorf(
 					"loader for %v declares dependency on %q but no selected loader provides it",
 					l.Metrics, dep,
 				)
@@ -117,7 +152,7 @@ func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
 		}
 	}
 
-	return computeLoaderLevels(loaders, inDegree, dependents)
+	return inDegree, dependents, nil
 }
 
 func computeLoaderLevels(
