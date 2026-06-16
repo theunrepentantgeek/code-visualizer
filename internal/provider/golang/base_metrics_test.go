@@ -25,7 +25,7 @@ func TestRegisterBase_GoMetrics(t *testing.T) {
 	g.Expect(types.SupportsFilter("public")).To(BeTrue())
 	g.Expect(types.SupportsFilter("private")).To(BeTrue())
 	g.Expect(types.SupportsAggregation(metric.AggCount)).To(BeTrue())
-	g.Expect(types.SupportsAggregation(metric.AggSum)).To(BeTrue())
+	g.Expect(types.SupportsAggregation(metric.AggSum)).To(BeFalse())
 
 	cc, ok := provider.GetBase(CyclomaticComplexity)
 	g.Expect(ok).To(BeTrue())

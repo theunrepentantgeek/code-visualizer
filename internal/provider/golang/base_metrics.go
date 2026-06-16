@@ -43,7 +43,7 @@ var GoProvider = provider.ProviderDescriptor{
 }
 
 var (
-	goDeclCountAggs   = []metric.AggregationName{metric.AggCount, metric.AggSum}
+	goDeclCountAggs   = []metric.AggregationName{metric.AggCount}
 	goNumericAggs     = []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean}
 	goSummaryAggs     = []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean}
 	goVisibilityNames = []metric.FilterName{filterPublic, filterPrivate}
