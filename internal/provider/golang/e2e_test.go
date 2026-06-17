@@ -63,7 +63,8 @@ func setupE2E(
 		rules = make([]filter.Rule, 0)
 	}
 
-	rules = append(rules,
+	rules = append(
+		rules,
 		filter.Rule{Pattern: ".*", Mode: filter.Exclude},
 		filter.Rule{Pattern: "**/testdata/**", Mode: filter.Exclude},
 	)
@@ -111,6 +112,148 @@ func resolveAndAggregate(t *testing.T, root *model.Directory, expression string)
 	}
 
 	return resolved
+}
+
+// ---------------------------------------------------------------------------
+// Test helpers — reduce cognitive complexity & duplication in test functions
+// ---------------------------------------------------------------------------
+
+// countDeclsOfKind returns the count of declarations with the given kind.
+func countDeclsOfKind(f *model.File, kind string) int64 {
+	var count int64
+
+	for _, d := range f.Declarations {
+		if d.Kind == kind {
+			count++
+		}
+	}
+
+	return count
+}
+
+// sumDeclMetric sums a metric quantity across function/method declarations in
+// a file. Returns the sum and whether any function/method declarations exist.
+func sumDeclMetric(f *model.File, name metric.Name) (int64, bool) {
+	var sum int64
+
+	var found bool
+
+	for _, d := range f.Declarations {
+		if d.Kind != model.DeclKindFunction && d.Kind != model.DeclKindMethod {
+			continue
+		}
+
+		found = true
+
+		if v, ok := d.Quantity(name); ok {
+			sum += v
+		}
+	}
+
+	return sum, found
+}
+
+// collectDeclValues collects float64 values for a metric from all
+// function/method declarations in a file.
+func collectDeclValues(f *model.File, name metric.Name) []float64 {
+	var values []float64
+
+	for _, d := range f.Declarations {
+		if d.Kind != model.DeclKindFunction && d.Kind != model.DeclKindMethod {
+			continue
+		}
+
+		if v, ok := d.Quantity(name); ok {
+			values = append(values, float64(v))
+		}
+	}
+
+	return values
+}
+
+// collectFileMeanValues computes per-file means for a declaration-level metric
+// across function/method declarations, returning one mean per file that has at
+// least one such declaration.
+func collectFileMeanValues(root *model.Directory, name metric.Name) []float64 {
+	var means []float64
+
+	model.WalkFiles(root, func(f *model.File) {
+		if f.Extension != "go" {
+			return
+		}
+
+		values := collectDeclValues(f, name)
+		if len(values) > 0 {
+			means = append(means, metric.AggregateMean(values))
+		}
+	})
+
+	return means
+}
+
+// sumFileQuantities sums a metric quantity across a slice of files.
+func sumFileQuantities(files []*model.File, name metric.Name) int64 {
+	var sum int64
+
+	for _, f := range files {
+		if v, ok := f.Quantity(name); ok {
+			sum += v
+		}
+	}
+
+	return sum
+}
+
+// sumDirQuantities sums a metric quantity across a slice of directories.
+func sumDirQuantities(dirs []*model.Directory, name metric.Name) int64 {
+	var sum int64
+
+	for _, d := range dirs {
+		if v, ok := d.Quantity(name); ok {
+			sum += v
+		}
+	}
+
+	return sum
+}
+
+// assertDirectoryExtremum verifies that the root directory's aggregated
+// extremum (min or max) equals the value computed from all raw declarations.
+func assertDirectoryExtremum(
+	t *testing.T,
+	root *model.Directory,
+	expression string,
+	declMetric metric.Name,
+	aggregate func([]float64) float64,
+	label string,
+) {
+	t.Helper()
+
+	g := NewGomegaWithT(t)
+
+	resolved := resolveAndAggregate(t, root, expression)
+
+	var rawValues []float64
+
+	model.WalkDeclarations(root, func(d *model.Declaration, _ *model.File) {
+		if d.Kind != model.DeclKindFunction && d.Kind != model.DeclKindMethod {
+			return
+		}
+
+		if v, ok := d.Quantity(declMetric); ok {
+			rawValues = append(rawValues, float64(v))
+		}
+	})
+
+	g.Expect(rawValues).NotTo(BeEmpty())
+
+	expected := aggregate(rawValues)
+
+	rootVal, ok := root.Quantity(resolved.ResultName)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(float64(rootVal)).To(BeNumerically("~", expected, 0.0001),
+		"root %s (%d) should equal flat %s (%.0f)",
+		expression, rootVal, label, expected)
 }
 
 // ---------------------------------------------------------------------------
@@ -758,13 +901,7 @@ func TestE2E_FileLevel_FunctionCount_MatchesManualCount(t *testing.T) {
 			return
 		}
 
-		// Manual count: declarations with kind "function"
-		var manualCount int64
-		for _, d := range f.Declarations {
-			if d.Kind == model.DeclKindFunction {
-				manualCount++
-			}
-		}
+		manualCount := countDeclsOfKind(f, model.DeclKindFunction)
 
 		aggregatedCount, ok := f.Quantity(resolved.ResultName)
 		if manualCount == 0 {
@@ -869,22 +1006,7 @@ func TestE2E_CyclomaticComplexity_FileSum_MatchesDeclarations(t *testing.T) {
 			return
 		}
 
-		var manualSum int64
-
-		var hasFuncs bool
-
-		for _, d := range f.Declarations {
-			if d.Kind != model.DeclKindFunction && d.Kind != model.DeclKindMethod {
-				continue
-			}
-
-			hasFuncs = true
-
-			if v, ok := d.Quantity(golang.CyclomaticComplexity); ok {
-				manualSum += v
-			}
-		}
-
+		manualSum, hasFuncs := sumDeclMetric(f, golang.CyclomaticComplexity)
 		if !hasFuncs {
 			return
 		}
@@ -967,29 +1089,7 @@ func TestE2E_CyclomaticComplexity_DirectoryMean_FromRawValues(t *testing.T) {
 		rootMean, expectedMean)
 
 	// Compute mean-of-file-means to verify it differs (would catch the bug)
-	var fileMeans []float64
-
-	model.WalkFiles(root, func(f *model.File) {
-		if f.Extension != "go" {
-			return
-		}
-
-		var fileValues []float64
-
-		for _, d := range f.Declarations {
-			if d.Kind != model.DeclKindFunction && d.Kind != model.DeclKindMethod {
-				continue
-			}
-
-			if v, ok := d.Quantity(golang.CyclomaticComplexity); ok {
-				fileValues = append(fileValues, float64(v))
-			}
-		}
-
-		if len(fileValues) > 0 {
-			fileMeans = append(fileMeans, metric.AggregateMean(fileValues))
-		}
-	})
+	fileMeans := collectFileMeanValues(root, golang.CyclomaticComplexity)
 
 	if len(fileMeans) > 1 {
 		meanOfMeans := metric.AggregateMean(fileMeans)
@@ -1044,32 +1144,8 @@ func TestE2E_FunctionLength_DirectoryMean_FromRawValues(t *testing.T) {
 //
 //nolint:paralleltest // mutates global base registry
 func TestE2E_FunctionLength_DirectoryMin_MatchesFlatMin(t *testing.T) {
-	g := NewGomegaWithT(t)
 	root := setupE2E(t, nil)
-
-	resolved := resolveAndAggregate(t, root, "function-length.min")
-
-	var rawValues []float64
-
-	model.WalkDeclarations(root, func(d *model.Declaration, _ *model.File) {
-		if d.Kind != model.DeclKindFunction && d.Kind != model.DeclKindMethod {
-			return
-		}
-
-		if v, ok := d.Quantity(golang.FunctionLength); ok {
-			rawValues = append(rawValues, float64(v))
-		}
-	})
-
-	g.Expect(rawValues).NotTo(BeEmpty())
-
-	expectedMin := metric.AggregateMin(rawValues)
-
-	rootMin, ok := root.Quantity(resolved.ResultName)
-	g.Expect(ok).To(BeTrue())
-	g.Expect(float64(rootMin)).To(BeNumerically("~", expectedMin, 0.0001),
-		"root function-length.min (%d) should equal flat min (%.0f)",
-		rootMin, expectedMin)
+	assertDirectoryExtremum(t, root, "function-length.min", golang.FunctionLength, metric.AggregateMin, "min")
 }
 
 // TestE2E_FunctionLength_DirectoryMax_MatchesFlatMax verifies that the
@@ -1077,32 +1153,8 @@ func TestE2E_FunctionLength_DirectoryMin_MatchesFlatMin(t *testing.T) {
 //
 //nolint:paralleltest // mutates global base registry
 func TestE2E_FunctionLength_DirectoryMax_MatchesFlatMax(t *testing.T) {
-	g := NewGomegaWithT(t)
 	root := setupE2E(t, nil)
-
-	resolved := resolveAndAggregate(t, root, "function-length.max")
-
-	var rawValues []float64
-
-	model.WalkDeclarations(root, func(d *model.Declaration, _ *model.File) {
-		if d.Kind != model.DeclKindFunction && d.Kind != model.DeclKindMethod {
-			return
-		}
-
-		if v, ok := d.Quantity(golang.FunctionLength); ok {
-			rawValues = append(rawValues, float64(v))
-		}
-	})
-
-	g.Expect(rawValues).NotTo(BeEmpty())
-
-	expectedMax := metric.AggregateMax(rawValues)
-
-	rootMax, ok := root.Quantity(resolved.ResultName)
-	g.Expect(ok).To(BeTrue())
-	g.Expect(float64(rootMax)).To(BeNumerically("~", expectedMax, 0.0001),
-		"root function-length.max (%d) should equal flat max (%.0f)",
-		rootMax, expectedMax)
+	assertDirectoryExtremum(t, root, "function-length.max", golang.FunctionLength, metric.AggregateMax, "max")
 }
 
 // TestE2E_CommentRatio_DirectoryMean_FromRawValues verifies that the
@@ -1332,21 +1384,8 @@ func TestE2E_NestedDirectoryAggregation_IsAdditive(t *testing.T) {
 			return
 		}
 
-		var fileSum int64
-
-		for _, f := range dir.Files {
-			if v, ok := f.Quantity(resolved.ResultName); ok {
-				fileSum += v
-			}
-		}
-
-		var childSum int64
-
-		for _, child := range dir.Dirs {
-			if v, ok := child.Quantity(resolved.ResultName); ok {
-				childSum += v
-			}
-		}
+		fileSum := sumFileQuantities(dir.Files, resolved.ResultName)
+		childSum := sumDirQuantities(dir.Dirs, resolved.ResultName)
 
 		g.Expect(fileSum+childSum).To(Equal(dirCount),
 			"dir %s: functions.count (%d) should equal files (%d) + children (%d)",
@@ -1376,21 +1415,8 @@ func TestE2E_CyclomaticComplexity_NestedSum_IsAdditive(t *testing.T) {
 			return
 		}
 
-		var fileSum int64
-
-		for _, f := range dir.Files {
-			if v, ok := f.Quantity(resolved.ResultName); ok {
-				fileSum += v
-			}
-		}
-
-		var childSum int64
-
-		for _, child := range dir.Dirs {
-			if v, ok := child.Quantity(resolved.ResultName); ok {
-				childSum += v
-			}
-		}
+		fileSum := sumFileQuantities(dir.Files, resolved.ResultName)
+		childSum := sumDirQuantities(dir.Dirs, resolved.ResultName)
 
 		g.Expect(fileSum+childSum).To(Equal(dirSum),
 			"dir %s: cyclomatic-complexity.sum (%d) should equal files (%d) + children (%d)",
