@@ -131,7 +131,7 @@ func TestE2E_Git_FileAge_BaseMetric(t *testing.T) {
 			return // untracked file
 		}
 
-		g.Expect(v).To(BeNumerically(">", 0), "file-age should be >0 for %s", f.Path)
+		g.Expect(v).To(BeNumerically(">=", 0), "file-age should be >=0 for %s", f.Path)
 	})
 
 	// At least some files must have the metric
@@ -281,9 +281,11 @@ func TestE2E_Git_FileAgeAggregations(t *testing.T) {
 	g.Expect(ok).To(BeTrue(), "file-age.sum should be set")
 	g.Expect(sumVal).To(BeNumerically(">", 0))
 
+	// min can be 0 for files committed less than 24 hours ago (age truncates
+	// to whole days), so only assert the metric was set.
 	minVal, ok := root.Quantity(minR.ResultName)
 	g.Expect(ok).To(BeTrue(), "file-age.min should be set")
-	g.Expect(minVal).To(BeNumerically(">", 0))
+	g.Expect(minVal).To(BeNumerically(">=", 0))
 
 	maxVal, ok := root.Quantity(maxR.ResultName)
 	g.Expect(ok).To(BeTrue(), "file-age.max should be set")
@@ -298,6 +300,40 @@ func TestE2E_Git_FileAgeAggregations(t *testing.T) {
 	g.Expect(maxVal).To(BeNumerically(">=", minVal), "max >= min")
 	g.Expect(meanVal).To(BeNumerically(">=", float64(minVal)), "mean >= min")
 	g.Expect(meanVal).To(BeNumerically("<=", float64(maxVal)), "mean <= max")
+
+	// Aggregation must propagate to every directory in the tree, not just the
+	// root. For each non-root directory that has files with file-age, verify
+	// all four aggregates are populated and respect the same invariants.
+	var subdirsChecked int
+
+	model.WalkDirectories(root, func(d *model.Directory) {
+		if d == root {
+			return
+		}
+
+		dSum, hasSum := d.Quantity(sumR.ResultName)
+		if !hasSum {
+			return // directory has no tracked files
+		}
+
+		dMin, hasMin := d.Quantity(minR.ResultName)
+		dMax, hasMax := d.Quantity(maxR.ResultName)
+		dMean, hasMean := d.Measure(meanR.ResultName)
+
+		g.Expect(hasMin).To(BeTrue(), "file-age.min should be set on %s", d.Path)
+		g.Expect(hasMax).To(BeTrue(), "file-age.max should be set on %s", d.Path)
+		g.Expect(hasMean).To(BeTrue(), "file-age.mean should be set on %s", d.Path)
+
+		g.Expect(dSum).To(BeNumerically(">=", dMax), "sum >= max for %s", d.Path)
+		g.Expect(dMax).To(BeNumerically(">=", dMin), "max >= min for %s", d.Path)
+		g.Expect(dMean).To(BeNumerically(">=", float64(dMin)), "mean >= min for %s", d.Path)
+		g.Expect(dMean).To(BeNumerically("<=", float64(dMax)), "mean <= max for %s", d.Path)
+
+		subdirsChecked++
+	})
+
+	g.Expect(subdirsChecked).To(BeNumerically(">", 5),
+		"expected file-age aggregates to propagate to multiple subdirectories")
 }
 
 // TestE2E_Git_FileFreshnessAggregations verifies aggregations for
