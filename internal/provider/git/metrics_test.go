@@ -185,6 +185,45 @@ func TestGitProviderNotAGitRepo(t *testing.T) {
 	g.Expect(loadAllFileMetrics(root)).To(MatchError(ContainSubstring("git")))
 }
 
+// TestGitProviderEmptyRepoNoHistory verifies the loader returns a clear error
+// when the repository exists but has no commits — the cache cannot be primed,
+// so silently producing zero metrics would cascade into confusing downstream
+// failures.
+func TestGitProviderEmptyRepoNoHistory(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	g.Expect(err).NotTo(HaveOccurred(), "git init failed: %s", out)
+
+	_ = os.WriteFile(filepath.Join(dir, "file.go"), []byte("package main\n"), 0o600)
+	root := buildTree(dir, "file.go")
+
+	resetService()
+	g.Expect(loadAllFileMetrics(root)).To(MatchError(ContainSubstring("git history")))
+}
+
+// TestGitProviderNoTrackedFiles verifies the loader returns a clear error when
+// the repository has history but none of the scanned files are tracked — the
+// per-file metrics would all be silently absent without this guard.
+func TestGitProviderNoTrackedFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+
+	// File exists in the working tree but was never committed.
+	_ = os.WriteFile(filepath.Join(dir, "ephemeral.go"), []byte("package main\n"), 0o600)
+	root := buildTree(dir, "ephemeral.go")
+
+	resetService()
+	g.Expect(loadAllFileMetrics(root)).To(MatchError(ContainSubstring("no metrics")))
+}
+
 // TestCommitDataCacheConsistency verifies that running all three git metrics on
 // the same file produces consistent results, confirming they share cached data.
 func TestCommitDataCacheConsistency(t *testing.T) {
