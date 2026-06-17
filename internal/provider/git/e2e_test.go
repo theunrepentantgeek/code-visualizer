@@ -257,6 +257,7 @@ func TestE2E_Git_CommitDensity_BaseMetric(t *testing.T) {
 		}
 
 		g.Expect(v).To(BeNumerically(">", 0), "commit-density should be >0 for %s", f.Path)
+
 		tracked++
 	})
 
@@ -438,59 +439,38 @@ func TestE2E_Git_CommitCountAggregations(t *testing.T) {
 //
 //nolint:paralleltest // mutates global base registry
 func TestE2E_Git_TotalLinesAddedAggregations(t *testing.T) {
-	g := NewGomegaWithT(t)
-	root := setupE2E(t, nil)
+	cases := []string{
+		"total-lines-added",
+		"total-lines-removed",
+	}
 
-	sumR := resolveAndAggregate(t, root, "total-lines-added.sum")
-	minR := resolveAndAggregate(t, root, "total-lines-added.min")
-	maxR := resolveAndAggregate(t, root, "total-lines-added.max")
-	meanR := resolveAndAggregate(t, root, "total-lines-added.mean")
+	for _, base := range cases {
+		t.Run(base, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+			root := setupE2E(t, nil)
 
-	sumVal, ok := root.Quantity(sumR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-added.sum should be set")
-	g.Expect(sumVal).To(BeNumerically(">", 0))
+			sumR := resolveAndAggregate(t, root, base+".sum")
+			minR := resolveAndAggregate(t, root, base+".min")
+			maxR := resolveAndAggregate(t, root, base+".max")
+			meanR := resolveAndAggregate(t, root, base+".mean")
 
-	_, ok = root.Quantity(minR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-added.min should be set")
+			sumVal, ok := root.Quantity(sumR.ResultName)
+			g.Expect(ok).To(BeTrue(), base+".sum should be set")
+			g.Expect(sumVal).To(BeNumerically(">", 0))
 
-	maxVal, ok := root.Quantity(maxR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-added.max should be set")
-	g.Expect(maxVal).To(BeNumerically(">", 0))
+			_, ok = root.Quantity(minR.ResultName)
+			g.Expect(ok).To(BeTrue(), base+".min should be set")
 
-	_, ok = root.Measure(meanR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-added.mean should be set")
+			maxVal, ok := root.Quantity(maxR.ResultName)
+			g.Expect(ok).To(BeTrue(), base+".max should be set")
+			g.Expect(maxVal).To(BeNumerically(">", 0))
 
-	g.Expect(sumVal).To(BeNumerically(">=", maxVal), "sum >= max")
-}
+			_, ok = root.Measure(meanR.ResultName)
+			g.Expect(ok).To(BeTrue(), base+".mean should be set")
 
-// TestE2E_Git_TotalLinesRemovedAggregations verifies aggregations for
-// total-lines-removed (sum, min, max, mean) at directory level.
-//
-//nolint:paralleltest // mutates global base registry
-func TestE2E_Git_TotalLinesRemovedAggregations(t *testing.T) {
-	g := NewGomegaWithT(t)
-	root := setupE2E(t, nil)
-
-	sumR := resolveAndAggregate(t, root, "total-lines-removed.sum")
-	minR := resolveAndAggregate(t, root, "total-lines-removed.min")
-	maxR := resolveAndAggregate(t, root, "total-lines-removed.max")
-	meanR := resolveAndAggregate(t, root, "total-lines-removed.mean")
-
-	sumVal, ok := root.Quantity(sumR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-removed.sum should be set")
-	g.Expect(sumVal).To(BeNumerically(">", 0))
-
-	_, ok = root.Quantity(minR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-removed.min should be set")
-
-	maxVal, ok := root.Quantity(maxR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-removed.max should be set")
-	g.Expect(maxVal).To(BeNumerically(">", 0))
-
-	_, ok = root.Measure(meanR.ResultName)
-	g.Expect(ok).To(BeTrue(), "total-lines-removed.mean should be set")
-
-	g.Expect(sumVal).To(BeNumerically(">=", maxVal), "sum >= max")
+			g.Expect(sumVal).To(BeNumerically(">=", maxVal), "sum >= max")
+		})
+	}
 }
 
 // TestE2E_Git_CommitDensityAggregations verifies the supported aggregations
@@ -536,6 +516,7 @@ func TestE2E_Git_TemporalConsistency(t *testing.T) {
 
 		g.Expect(age).To(BeNumerically(">=", freshness),
 			"file-age (%d) should be >= file-freshness (%d) for %s", age, freshness, f.Path)
+
 		checked++
 	})
 
