@@ -50,13 +50,23 @@ func repoRoot(t *testing.T) string {
 // internal tests in this package that call ResetBaseRegistryForTesting().
 // Solving this requires either moving E2E tests to a separate package or
 // making RegisterBase() idempotent.
-func setupE2E(t *testing.T, rules []filter.Rule) *model.Directory {
+func setupE2E(
+	t *testing.T,
+	rules []filter.Rule,
+) *model.Directory {
 	t.Helper()
 
 	provider.ResetBaseRegistryForTesting()
 	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	filesystem.Register()
+
+	// Mirror default config behavior: exclude dotfiles (e.g. .git) to keep the E2E scan bounded.
+	if rules == nil {
+		rules = make([]filter.Rule, 0)
+	}
+
+	rules = append(rules, filter.Rule{Pattern: ".*", Mode: filter.Exclude})
 
 	root, err := scan.Scan(repoRoot(t), rules, nil)
 	if err != nil {
