@@ -121,18 +121,21 @@ func addDiscs(
 }
 
 // addLabels adds rotated text labels tangent to the spiral.
+// Pre-allocates a shared labelInk to avoid recreating it for every label.
 func addLabels(cv *canvas.Canvas, nodes []SpiralNode) {
+	labelInk := canvas.FixedInk(labelColour)
+
 	for _, n := range nodes {
 		if !n.ShowLabel || n.Label == "" {
 			continue
 		}
 
-		addLabel(cv, n)
+		addLabel(cv, n, labelInk)
 	}
 }
 
 // addLabel adds a single rotated label for a spiral node.
-func addLabel(cv *canvas.Canvas, n SpiralNode) {
+func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk canvas.Ink) {
 	labelR := n.DiscRadius + labelGap
 	lx := n.X + labelR*math.Sin(n.Angle)
 	ly := n.Y - labelR*math.Cos(n.Angle)
@@ -155,7 +158,7 @@ func addLabel(cv *canvas.Canvas, n SpiralNode) {
 	}
 
 	labelSpec := &canvas.TextSpec{
-		Ink:      canvas.FixedInk(labelColour),
+		Ink:      labelInk,
 		FontSize: 0,
 		Anchor:   anchor,
 		Rotation: rotation,
