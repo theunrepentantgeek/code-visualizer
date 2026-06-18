@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-06-17T16:31:18Z",
-  "run_id": "27703897302",
+  "last_run": "2026-06-18T05:28:09Z",
+  "run_id": "27738591162",
   "monthly_summary_issue": 353,
   "backlog_cursor": 423,
   "comments_made": {
@@ -90,12 +90,20 @@
       "description": "test(git): E2E test suite for git provider"
     },
     "fix-release-build": {
-      "issue": null,
+      "issue": 427,
       "branch": "repo-assist/fix-release-build-20260617",
       "pr_number": null,
       "date": "2026-06-17",
-      "status": "open - pending PR number (may be blocked by protected file)",
+      "status": "BLOCKED - protected file; issue #427 has manual PR creation instructions",
       "description": "fix(ci): add build:release step before uploading release artifacts"
+    },
+    "perf-bubbletree-spiral-label-specs": {
+      "issue": null,
+      "branch": "repo-assist/perf-bubbletree-label-specs-20260618",
+      "pr_number": null,
+      "date": "2026-06-18",
+      "status": "open - pending PR number (submitted this run)",
+      "description": "perf(bubbletree,spiral): pre-allocate shared label ink and file text spec"
     }
   },
   "issues_labelled": {
@@ -118,5 +126,5 @@
     ".github/workflows/release.yml is a protected file (see issue #388) — may need manual PR apply"
   ],
   "closed_issues": [422, 423, 424],
-  "notes": "PRs #424 (filesystem E2E) and #425 (git E2E) merged 2026-06-17. Issues #422 and #423 closed. Maintainer has PR #426 open for golang E2E tests (issue #421). PR #416 needs FULL REWORK (not just rebase): provider.Interface removed in #418, new pattern is RegisterBase(BaseMetricDescriptor) + RegisterLoader(BaseMetricLoader). See internal/provider/base_registry.go. PR #420 is duplicate of #419 - needs closing. fix-release-build PR created this run (may be blocked by protected file like issue #388 was). Issue #388 still open - tracks attempt to update release.yml blocked by protected files - may be resolved by this run's PR. Next priority: Rewrite classification provider for #402 using new architecture; consider whether #416 should be closed and a new PR created."
+  "notes": "Run 27738591162 (2026-06-18): Task 3 (no open bugs) → fallback Task 2; Task 2 all issues current (no new human activity); Task 8 created perf(bubbletree,spiral) PR (branch perf-bubbletree-label-specs-20260618, number pending). fix-release-build now tracked as blocked issue #427. PR #416 still needs FULL REWORK: provider.Interface removed in #418, new pattern is RegisterBase(BaseMetricDescriptor) + RegisterLoader(BaseMetricLoader). PR #420 is duplicate of #419 - needs closing. Next priority: Rewrite classification provider for #402 using new architecture; consider closing #416 and opening new PR."
 }
