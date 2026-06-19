@@ -704,15 +704,24 @@ func TestE2E_IncludeOnlyInternal(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	rules := []filter.Rule{
-		{Pattern: "internal/**", Mode: filter.Include},
-		{Pattern: "**", Mode: filter.Exclude},
+		{
+			Pattern: "internal/**",
+			Mode:    filter.Include,
+		},
+		{
+			Pattern: "**",
+			Mode:    filter.Exclude,
+		},
 	}
 
 	root := setupE2E(t, rules)
 
 	// All files should be under internal/
 	model.WalkFiles(root, func(f *model.File) {
-		g.Expect(f.Path).To(ContainSubstring("internal"),
+		rel, err := filepath.Rel(root.Path, f.Path)
+		g.Expect(err).To(BeNil())
+
+		g.Expect(rel).To(ContainSubstring("internal"),
 			"include filter should restrict to internal/, found: %s", f.Path)
 	})
 
@@ -1339,17 +1348,13 @@ func TestE2E_Declarations_IncludesAllKinds(t *testing.T) {
 
 	// Also verify: sum of per-kind counts should equal declarations.count
 	kinds := []string{
-		"types", "interfaces", "structs", "functions",
-		"methods", "constants", "variables",
-	}
-
-	var kindSum int64
-
-	for _, k := range kinds {
-		resolved := resolveAndAggregate(t, root, k+".count")
-		if v, ok := root.Quantity(resolved.ResultName); ok {
-			kindSum += v
-		}
+		"types",
+		"interfaces",
+		"structs",
+		"functions",
+		"methods",
+		"constants",
+		"variables",
 	}
 
 	// Note: types.count includes structs and interfaces, so the per-kind sum
