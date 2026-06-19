@@ -48,7 +48,7 @@ type Config struct {
 	// SelectionMetrics holds user-defined, filename-glob-based classification metrics.
 	// The map key is the metric name; the value is an ordered list of match rules.
 	// See SelectionMetric for the full type, and SelectionMetricsList for an ordered slice view.
-	SelectionMetrics selectionMetricsRaw `yaml:"selection-metrics,omitempty" json:"selectionMetrics,omitempty"`
+	SelectionMetrics selectionMetricsRaw `yaml:"selectionMetrics,omitempty" json:"selectionMetrics,omitempty"`
 
 	// Source is the path of the config file from which this Config was loaded, or nil if it was not loaded from a file.
 	Source *string `yaml:"-" json:"-"`

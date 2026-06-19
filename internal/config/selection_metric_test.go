@@ -16,7 +16,7 @@ func TestSelectionMetricsRoundTrip(t *testing.T) {
 	g := NewWithT(t)
 
 	input := `
-selection-metrics:
+selectionMetrics:
   code-purpose:
     - category: test
       filename: "*_test.go"
@@ -34,7 +34,12 @@ selection-metrics:
 	g.Expect(err).NotTo(HaveOccurred())
 
 	metrics := cfg.SelectionMetricsList()
+	g.Expect(metrics).NotTo(BeNil())
 	g.Expect(metrics).To(HaveLen(2))
+
+	if len(metrics) < 2 {
+		return // unreachable; satisfies nilaway
+	}
 
 	// Sorted by name: code-purpose < code-source
 	purpose := metrics[0]
@@ -74,7 +79,7 @@ func TestSelectionMetricsList_StableSortOrder(t *testing.T) {
 	g := NewWithT(t)
 
 	input := `
-selection-metrics:
+selectionMetrics:
   zzz:
     - category: z
       filename: "*"
@@ -91,11 +96,17 @@ selection-metrics:
 	g.Expect(err).NotTo(HaveOccurred())
 
 	metrics := cfg.SelectionMetricsList()
+	g.Expect(metrics).NotTo(BeNil())
 	g.Expect(metrics).To(HaveLen(3))
+
+	if len(metrics) < 3 {
+		return // unreachable; satisfies nilaway
+	}
 
 	first := metrics[0]
 	second := metrics[1]
 	third := metrics[2]
+
 	g.Expect(first.Name).To(Equal("aaa"))
 	g.Expect(second.Name).To(Equal("mmm"))
 	g.Expect(third.Name).To(Equal("zzz"))

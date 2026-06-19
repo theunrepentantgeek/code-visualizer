@@ -34,7 +34,7 @@ var ruleCounter atomic.Int64
 // Default (no match) is include.
 func IsIncluded(relativePath string, rules []Rule) bool {
 	for _, r := range rules {
-		matched, err := matchPattern(r.Pattern, relativePath)
+		matched, err := MatchPattern(r.Pattern, relativePath)
 		if err != nil {
 			// Invalid pattern → skip this rule
 			continue
@@ -46,10 +46,6 @@ func IsIncluded(relativePath string, rules []Rule) bool {
 	}
 
 	return true
-}
-
-func matchPattern(pattern, relativePath string) (bool, error) {
-	return MatchPattern(pattern, relativePath)
 }
 
 // MatchPattern tests whether relativePath matches a glob pattern using

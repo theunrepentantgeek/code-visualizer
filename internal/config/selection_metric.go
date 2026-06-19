@@ -19,7 +19,7 @@ type SelectionMetricRule struct {
 //
 // Example (from config YAML):
 //
-//	selection-metrics:
+//	selectionMetrics:
 //	  code-purpose:
 //	    - category: test
 //	      filename: "*_test.go"
