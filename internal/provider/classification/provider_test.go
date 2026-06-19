@@ -1,4 +1,4 @@
-package classification_test
+package classification
 
 import (
 	"testing"
@@ -8,51 +8,47 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/classification"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
-func TestProvider_Name(t *testing.T) {
+func TestRegister_CreatesDescriptorAndLoader(t *testing.T) {
 	t.Parallel()
 
 	g := NewWithT(t)
 
-	cfg := config.SelectionMetric{Name: "code-purpose"}
-	p := classification.NewProvider(cfg)
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
-	g.Expect(p.Name()).To(Equal(metric.Name("code-purpose")))
+	cfg := config.SelectionMetric{Name: "test-metric"}
+	Register(cfg)
+
+	desc, ok := provider.GetBase("test-metric")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(desc.Kind).To(Equal(metric.Classification))
+	g.Expect(desc.Level).To(Equal(metric.LevelFile))
+
+	loaders := provider.LoadersFor([]metric.Name{"test-metric"})
+	g.Expect(loaders).To(HaveLen(1))
 }
 
-func TestProvider_Kind(t *testing.T) {
+func TestLoad_MatchesFirstRule(t *testing.T) {
 	t.Parallel()
 
 	g := NewWithT(t)
 
-	cfg := config.SelectionMetric{Name: "code-purpose"}
-	p := classification.NewProvider(cfg)
-
-	g.Expect(p.Kind()).To(Equal(metric.Classification))
-}
-
-func TestProvider_Load_MatchesFirstRule(t *testing.T) {
-	t.Parallel()
-
-	g := NewWithT(t)
-
-	cfg := config.SelectionMetric{
-		Name: "code-purpose",
-		Rules: []config.SelectionMetricRule{
+	l := &loader{
+		name: "code-purpose",
+		rules: []config.SelectionMetricRule{
 			{Category: "test", Filename: "*_test.go"},
 			{Category: "source", Filename: "*"},
 		},
 	}
-	p := classification.NewProvider(cfg)
 
 	root := &model.Directory{Name: "root", Path: "/root"}
 	testFile := &model.File{Path: "/root/foo_test.go"}
 	srcFile := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{testFile, srcFile}
 
-	err := p.Load(root)
+	err := l.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	testCat, ok := testFile.Classification(metric.Name("code-purpose"))
@@ -64,44 +60,42 @@ func TestProvider_Load_MatchesFirstRule(t *testing.T) {
 	g.Expect(srcCat).To(Equal("source"))
 }
 
-func TestProvider_Load_UnmatchedFileGetsNoValue(t *testing.T) {
+func TestLoad_UnmatchedFileGetsNoValue(t *testing.T) {
 	t.Parallel()
 
 	g := NewWithT(t)
 
-	cfg := config.SelectionMetric{
-		Name: "code-purpose",
-		Rules: []config.SelectionMetricRule{
+	l := &loader{
+		name: "code-purpose",
+		rules: []config.SelectionMetricRule{
 			{Category: "test", Filename: "*_test.go"},
 		},
 	}
-	p := classification.NewProvider(cfg)
 
 	root := &model.Directory{Name: "root", Path: "/root"}
 	file := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{file}
 
-	err := p.Load(root)
+	err := l.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, ok := file.Classification(metric.Name("code-purpose"))
 	g.Expect(ok).To(BeFalse(), "file not matching any rule should have no metric value")
 }
 
-func TestProvider_Load_GeneratedFilePattern(t *testing.T) {
+func TestLoad_GeneratedFilePattern(t *testing.T) {
 	t.Parallel()
 
 	g := NewWithT(t)
 
-	cfg := config.SelectionMetric{
-		Name: "code-source",
-		Rules: []config.SelectionMetricRule{
+	l := &loader{
+		name: "code-source",
+		rules: []config.SelectionMetricRule{
 			{Category: "gen", Filename: "*_gen.go"},
 			{Category: "gen", Filename: "*_gen_test.go"},
 			{Category: "authored", Filename: "*"},
 		},
 	}
-	p := classification.NewProvider(cfg)
 
 	root := &model.Directory{Name: "root", Path: "/root"}
 	genFile := &model.File{Path: "/root/schema_gen.go"}
@@ -109,7 +103,7 @@ func TestProvider_Load_GeneratedFilePattern(t *testing.T) {
 	authoredFile := &model.File{Path: "/root/service.go"}
 	root.Files = []*model.File{genFile, genTestFile, authoredFile}
 
-	err := p.Load(root)
+	err := l.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	cat, _ := genFile.Classification(metric.Name("code-source"))
@@ -122,20 +116,19 @@ func TestProvider_Load_GeneratedFilePattern(t *testing.T) {
 	g.Expect(cat).To(Equal("authored"))
 }
 
-func TestProvider_Load_MatchesRelativePath(t *testing.T) {
+func TestLoad_MatchesRelativePath(t *testing.T) {
 	t.Parallel()
 
 	g := NewWithT(t)
 
-	cfg := config.SelectionMetric{
-		Name: "file-role",
-		Rules: []config.SelectionMetricRule{
+	l := &loader{
+		name: "file-role",
+		rules: []config.SelectionMetricRule{
 			{Category: "testdata", Filename: "testdata/**"},
 			{Category: "customized", Filename: "*customizations*/*.go"},
 			{Category: "other", Filename: "*"},
 		},
 	}
-	p := classification.NewProvider(cfg)
 
 	root := &model.Directory{
 		Name: "project",
@@ -161,7 +154,7 @@ func TestProvider_Load_MatchesRelativePath(t *testing.T) {
 		},
 	}
 
-	err := p.Load(root)
+	err := l.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	cat, ok := root.Dirs[0].Files[0].Classification(metric.Name("file-role"))
@@ -177,18 +170,17 @@ func TestProvider_Load_MatchesRelativePath(t *testing.T) {
 	g.Expect(cat).To(Equal("other"))
 }
 
-func TestProvider_Load_EmptyRules(t *testing.T) {
+func TestLoad_EmptyRules(t *testing.T) {
 	t.Parallel()
 
 	g := NewWithT(t)
 
-	cfg := config.SelectionMetric{Name: "code-purpose", Rules: nil}
-	p := classification.NewProvider(cfg)
+	l := &loader{name: "code-purpose"}
 
 	root := &model.Directory{Name: "root", Path: "/root"}
 	file := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{file}
 
-	err := p.Load(root)
+	err := l.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 }
