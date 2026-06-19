@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	"go.yaml.in/yaml/v3"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"

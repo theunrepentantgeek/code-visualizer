@@ -1,6 +1,6 @@
 package config
 
-import "sort"
+import "slices"
 
 // SelectionMetricRule maps files matching a glob pattern to a category string.
 // Rules within a SelectionMetric are evaluated in order; the first match wins.
@@ -48,7 +48,7 @@ func (raw selectionMetricsRaw) toSlice() []SelectionMetric {
 		keys = append(keys, k)
 	}
 
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	out := make([]SelectionMetric, len(keys))
 	for i, k := range keys {
