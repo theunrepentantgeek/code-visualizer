@@ -23,14 +23,14 @@ func TestComputeCommentRatio(t *testing.T) {
 		},
 		"all comments": {
 			src:  "package p\n// comment only\n// another comment\n",
-			want: 2.0,
+			want: 2.0 / 3.0,
 		},
 		"mixed code and comments": {
 			src: `package p
 // a comment
 func f() {}
 `,
-			want: 0.5,
+			want: 1.0 / 3.0,
 		},
 		"inline comment counts both": {
 			src: `package p
@@ -43,7 +43,7 @@ func f() {} // inline
 /* block comment */
 func f() {}
 `,
-			want: 0.5,
+			want: 1.0 / 3.0,
 		},
 		"multi-line block comment": {
 			src: `package p
@@ -53,7 +53,7 @@ block
 */
 func f() {}
 `,
-			want: 2.0,
+			want: 4.0 / 6.0,
 		},
 		"blank lines ignored": {
 			src: `package p
@@ -63,7 +63,7 @@ func f() {}
 func f() {}
 
 `,
-			want: 0.5,
+			want: 1.0 / 3.0,
 		},
 		"code only": {
 			src: `package p
