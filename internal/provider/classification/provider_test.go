@@ -47,7 +47,7 @@ func TestProvider_Load_MatchesFirstRule(t *testing.T) {
 	}
 	p := classification.NewProvider(cfg)
 
-	root := &model.Directory{Name: "root"}
+	root := &model.Directory{Name: "root", Path: "/root"}
 	testFile := &model.File{Path: "/root/foo_test.go"}
 	srcFile := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{testFile, srcFile}
@@ -77,7 +77,7 @@ func TestProvider_Load_UnmatchedFileGetsNoValue(t *testing.T) {
 	}
 	p := classification.NewProvider(cfg)
 
-	root := &model.Directory{Name: "root"}
+	root := &model.Directory{Name: "root", Path: "/root"}
 	file := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{file}
 
@@ -103,7 +103,7 @@ func TestProvider_Load_GeneratedFilePattern(t *testing.T) {
 	}
 	p := classification.NewProvider(cfg)
 
-	root := &model.Directory{Name: "root"}
+	root := &model.Directory{Name: "root", Path: "/root"}
 	genFile := &model.File{Path: "/root/schema_gen.go"}
 	genTestFile := &model.File{Path: "/root/schema_gen_test.go"}
 	authoredFile := &model.File{Path: "/root/service.go"}
@@ -122,6 +122,61 @@ func TestProvider_Load_GeneratedFilePattern(t *testing.T) {
 	g.Expect(cat).To(Equal("authored"))
 }
 
+func TestProvider_Load_MatchesRelativePath(t *testing.T) {
+	t.Parallel()
+
+	g := NewWithT(t)
+
+	cfg := config.SelectionMetric{
+		Name: "file-role",
+		Rules: []config.SelectionMetricRule{
+			{Category: "testdata", Filename: "testdata/**"},
+			{Category: "customized", Filename: "*customizations*/*.go"},
+			{Category: "other", Filename: "*"},
+		},
+	}
+	p := classification.NewProvider(cfg)
+
+	root := &model.Directory{
+		Name: "project",
+		Path: "/project",
+		Dirs: []*model.Directory{
+			{
+				Name: "testdata",
+				Path: "/project/testdata",
+				Files: []*model.File{
+					{Path: "/project/testdata/fixture.json"},
+				},
+			},
+			{
+				Name: "customizations",
+				Path: "/project/customizations",
+				Files: []*model.File{
+					{Path: "/project/customizations/theme.go"},
+				},
+			},
+		},
+		Files: []*model.File{
+			{Path: "/project/main.go"},
+		},
+	}
+
+	err := p.Load(root)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	cat, ok := root.Dirs[0].Files[0].Classification(metric.Name("file-role"))
+	g.Expect(ok).To(BeTrue())
+	g.Expect(cat).To(Equal("testdata"))
+
+	cat, ok = root.Dirs[1].Files[0].Classification(metric.Name("file-role"))
+	g.Expect(ok).To(BeTrue())
+	g.Expect(cat).To(Equal("customized"))
+
+	cat, ok = root.Files[0].Classification(metric.Name("file-role"))
+	g.Expect(ok).To(BeTrue())
+	g.Expect(cat).To(Equal("other"))
+}
+
 func TestProvider_Load_EmptyRules(t *testing.T) {
 	t.Parallel()
 
@@ -130,7 +185,7 @@ func TestProvider_Load_EmptyRules(t *testing.T) {
 	cfg := config.SelectionMetric{Name: "code-purpose", Rules: nil}
 	p := classification.NewProvider(cfg)
 
-	root := &model.Directory{Name: "root"}
+	root := &model.Directory{Name: "root", Path: "/root"}
 	file := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{file}
 

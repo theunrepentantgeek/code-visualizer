@@ -8,13 +8,13 @@ import "slices"
 // a default category.
 type SelectionMetricRule struct {
 	Category string `yaml:"category" json:"category"`
-	Filename string `yaml:"filename" json:"filename"` // doublestar glob against file base name
+	Filename string `yaml:"filename" json:"filename"` // doublestar glob matched against the file's relative path
 }
 
 // SelectionMetric defines a user-configured, filename-based classification metric.
 //
 // Each file is assigned the category of the first rule whose Filename glob pattern
-// matches the file's base name.  Files not matched by any rule have no value for
+// matches the file's relative path.  Files not matched by any rule have no value for
 // this metric.
 //
 // Example (from config YAML):

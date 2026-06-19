@@ -49,6 +49,13 @@ func IsIncluded(relativePath string, rules []Rule) bool {
 }
 
 func matchPattern(pattern, relativePath string) (bool, error) {
+	return MatchPattern(pattern, relativePath)
+}
+
+// MatchPattern tests whether relativePath matches a glob pattern using
+// gitignore-like semantics: patterns without a leading "/" or "**/" prefix
+// are also tried at any depth (i.e. with an implicit "**/" prefix).
+func MatchPattern(pattern, relativePath string) (bool, error) {
 	matched, err := doublestar.Match(pattern, relativePath)
 	if err != nil {
 		return false, eris.Wrap(err, "Failed to match pattern")
