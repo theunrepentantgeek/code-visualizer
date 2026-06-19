@@ -37,15 +37,17 @@ selection-metrics:
 	g.Expect(metrics).To(HaveLen(2))
 
 	// Sorted by name: code-purpose < code-source
-	g.Expect(metrics[0].Name).To(Equal("code-purpose"))
-	g.Expect(metrics[0].Rules).To(HaveLen(2))
-	g.Expect(metrics[0].Rules[0].Category).To(Equal("test"))
-	g.Expect(metrics[0].Rules[0].Filename).To(Equal("*_test.go"))
-	g.Expect(metrics[0].Rules[1].Category).To(Equal("source"))
+	purpose := metrics[0]
+	g.Expect(purpose.Name).To(Equal("code-purpose"))
+	g.Expect(purpose.Rules).To(HaveLen(2))
+	g.Expect(purpose.Rules[0].Category).To(Equal("test"))
+	g.Expect(purpose.Rules[0].Filename).To(Equal("*_test.go"))
+	g.Expect(purpose.Rules[1].Category).To(Equal("source"))
 
-	g.Expect(metrics[1].Name).To(Equal("code-source"))
-	g.Expect(metrics[1].Rules).To(HaveLen(2))
-	g.Expect(metrics[1].Rules[0].Category).To(Equal("gen"))
+	source := metrics[1]
+	g.Expect(source.Name).To(Equal("code-source"))
+	g.Expect(source.Rules).To(HaveLen(2))
+	g.Expect(source.Rules[0].Category).To(Equal("gen"))
 }
 
 func TestSelectionMetricsList_NilConfig(t *testing.T) {
@@ -90,7 +92,11 @@ selection-metrics:
 
 	metrics := cfg.SelectionMetricsList()
 	g.Expect(metrics).To(HaveLen(3))
-	g.Expect(metrics[0].Name).To(Equal("aaa"))
-	g.Expect(metrics[1].Name).To(Equal("mmm"))
-	g.Expect(metrics[2].Name).To(Equal("zzz"))
+
+	first := metrics[0]
+	second := metrics[1]
+	third := metrics[2]
+	g.Expect(first.Name).To(Equal("aaa"))
+	g.Expect(second.Name).To(Equal("mmm"))
+	g.Expect(third.Name).To(Equal("zzz"))
 }
