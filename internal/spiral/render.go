@@ -118,7 +118,7 @@ func addDiscs(
 		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, inks.Border)
 
 		spec := smallSpec
-		if n.DiscRadius >= 8 {
+		if borderWidth(n.DiscRadius) == 3.0 {
 			spec = largeSpec
 		}
 
