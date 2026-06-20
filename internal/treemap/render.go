@@ -24,8 +24,8 @@ func RenderToCanvas(
 	// Background
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(bgColour),
-			Border:      canvas.FixedInk(bgColour),
+			Fill:        pkginks.FixedInk(bgColour),
+			Border:      pkginks.FixedInk(bgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -83,8 +83,8 @@ func addDirectoryShapes(
 	// Header bar fill
 	headerSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(headerFill),
-			Border:      canvas.FixedInk(headerFill),
+			Fill:        pkginks.FixedInk(headerFill),
+			Border:      pkginks.FixedInk(headerFill),
 			BorderWidth: 0,
 		},
 	}
@@ -100,7 +100,7 @@ func addDirectoryShapes(
 	// Header label
 	if rect.Label != "" {
 		labelSpec := &canvas.TextSpec{
-			Ink:      canvas.FixedInk(whiteText),
+			Ink:      pkginks.FixedInk(whiteText),
 			FontSize: 0,
 			Anchor:   canvas.AnchorStart,
 		}
@@ -115,9 +115,9 @@ func addDirectoryShapes(
 	// Directory border
 	borderSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(color.RGBA{A: 0}),
-			Border:      canvas.FixedInk(structuralBorder),
-			BorderWidth: DynBorderWidth(rect.W, rect.H, canvas.InkNumeric),
+			Fill:        pkginks.FixedInk(color.RGBA{A: 0}),
+			Border:      pkginks.FixedInk(structuralBorder),
+			BorderWidth: DynBorderWidth(rect.W, rect.H, pkginks.KindNumeric),
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
@@ -216,8 +216,8 @@ func fileMetricWeight(file *model.File, sizeMetric metric.Name) float64 {
 
 // DynBorderWidth returns a dynamic border width based on rectangle
 // size and the kind of border ink configured.
-func DynBorderWidth(w, h float64, borderKind canvas.InkKind) float64 {
-	if borderKind == canvas.InkFixed {
+func DynBorderWidth(w, h float64, borderKind pkginks.Kind) float64 {
+	if borderKind == pkginks.KindFixed {
 		return 0.5
 	}
 

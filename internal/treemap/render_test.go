@@ -12,7 +12,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -37,10 +37,10 @@ func TestTreemapDynBorderWidth(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(treemap.DynBorderWidth(10, 10, canvas.InkFixed)).To(Equal(0.5))
-	g.Expect(treemap.DynBorderWidth(10, 10, canvas.InkNumeric)).To(Equal(1.0))
-	g.Expect(treemap.DynBorderWidth(50, 50, canvas.InkNumeric)).To(Equal(2.0))
-	g.Expect(treemap.DynBorderWidth(200, 200, canvas.InkNumeric)).To(Equal(3.0))
+	g.Expect(treemap.DynBorderWidth(10, 10, pkginks.KindFixed)).To(Equal(0.5))
+	g.Expect(treemap.DynBorderWidth(10, 10, pkginks.KindNumeric)).To(Equal(1.0))
+	g.Expect(treemap.DynBorderWidth(50, 50, pkginks.KindNumeric)).To(Equal(2.0))
+	g.Expect(treemap.DynBorderWidth(200, 200, pkginks.KindNumeric)).To(Equal(3.0))
 }
 
 func TestBuildTreemapInks_Numeric(t *testing.T) {
@@ -57,8 +57,8 @@ func TestBuildTreemapInks_Numeric(t *testing.T) {
 
 	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
 }
 
 func TestBuildTreemapInks_Categorical(t *testing.T) {
@@ -75,7 +75,7 @@ func TestBuildTreemapInks_Categorical(t *testing.T) {
 
 	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindCategorical))
 }
 
 func TestRenderTreemapToCanvas_PNG(t *testing.T) {

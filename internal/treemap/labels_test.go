@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
@@ -33,7 +33,7 @@ func TestBuildBlockLabels_IncludesOnlyConfiguredMetricLines(t *testing.T) {
 		}},
 	}
 
-	labels := buildBlockLabels(rects, root, canvas.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}), LabelMetrics{
+	labels := buildBlockLabels(rects, root, pkginks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}), LabelMetrics{
 		Size:   filesystem.FileSize,
 		Fill:   filesystem.FileType,
 		Border: filesystem.FileLines,
@@ -71,7 +71,7 @@ func TestBuildBlockLabels_OmitsUnconfiguredMetrics(t *testing.T) {
 	labels := buildBlockLabels(
 		rects,
 		root,
-		canvas.FixedInk(color.RGBA{A: 255}),
+		pkginks.FixedInk(color.RGBA{A: 255}),
 		LabelMetrics{Size: filesystem.FileSize},
 	)
 	g.Expect(labels).To(HaveLen(1))

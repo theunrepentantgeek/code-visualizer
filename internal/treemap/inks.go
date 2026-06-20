@@ -3,7 +3,6 @@ package treemap
 import (
 	"image/color"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -27,8 +26,8 @@ var (
 
 // Inks holds the fill and border Ink instances for a treemap render pass.
 type Inks struct {
-	Fill   canvas.Ink
-	Border canvas.Ink
+	Fill   pkginks.Ink
+	Border pkginks.Ink
 }
 
 // BuildInks creates fill and border inks from metric configuration.
@@ -41,7 +40,7 @@ func BuildInks(
 	borderPaletteName palette.PaletteName,
 ) Inks {
 	inks := Inks{
-		Border: canvas.FixedInk(structuralBorder),
+		Border: pkginks.FixedInk(structuralBorder),
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fillMetric)
