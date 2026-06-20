@@ -20,6 +20,7 @@ linters:
     - exptostd
     - fatcontext
     - funlen
+    - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
     - gocognit
@@ -76,6 +77,8 @@ linters:
   disable:
     - musttag # Extremely slow, at least on CI machines
   settings:
+    ginkgolinter:
+      suppress-len-assertion: true
     goconst:
       ignore-tests: true
     nestif:
