@@ -19,7 +19,7 @@ const (
 type LegendEntry struct {
 	Role       LegendRole
 	MetricName string
-	Ink        Ink
+	Ink        inks.Ink
 }
 
 // LegendConfig holds everything needed to render a legend.

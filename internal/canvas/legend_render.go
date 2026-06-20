@@ -5,6 +5,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
 // legendBuilder collects legend primitives (rectangles, text) for
@@ -349,8 +350,8 @@ func (lb *legendBuilder) addRect(
 ) {
 	spec := &RectangleSpec{
 		ShapeStyle: ShapeStyle{
-			Fill:        FixedInk(fill),
-			Border:      FixedInk(border),
+			Fill:        inks.FixedInk(fill),
+			Border:      inks.FixedInk(border),
 			BorderWidth: borderWidth,
 		},
 	}
@@ -369,7 +370,7 @@ func (lb *legendBuilder) addTextShape(
 	fontSize float64, anchor TextAnchor,
 ) {
 	spec := &TextSpec{
-		Ink:      FixedInk(ink),
+		Ink:      inks.FixedInk(ink),
 		FontSize: fontSize,
 		Anchor:   anchor,
 	}

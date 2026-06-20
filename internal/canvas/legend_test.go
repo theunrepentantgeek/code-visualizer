@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -53,7 +54,7 @@ func TestToLegendData_NumericEntry_ProducesSwatches(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pal := palette.GetPalette(palette.Temperature)
-	fillInk := NumericInk("file-size", []float64{10, 50, 100, 500, 1000}, pal)
+	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100, 500, 1000}, pal)
 
 	lc := &LegendConfig{
 		Position:    model.LegendPositionBottomRight,
@@ -84,7 +85,7 @@ func TestToLegendData_CategoricalEntry_ProducesSwatches(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pal := palette.GetPalette(palette.Categorization)
-	borderInk := CategoricalInk("file-type", []string{"go", "py", "rs"}, pal)
+	borderInk := inks.CategoricalInk("file-type", []string{"go", "py", "rs"}, pal)
 
 	lc := &LegendConfig{
 		Position:    model.LegendPositionTopLeft,
@@ -113,7 +114,7 @@ func TestToLegendData_FixedInkEntry_EmptySwatches(t *testing.T) {
 		Position:    model.LegendPositionBottomRight,
 		Orientation: model.LegendOrientationVertical,
 		Entries: []LegendEntry{
-			{Role: LegendRoleSize, MetricName: "file-lines", Ink: FixedInk(white)},
+			{Role: LegendRoleSize, MetricName: "file-lines", Ink: inks.FixedInk(white)},
 		},
 	}
 
@@ -133,7 +134,7 @@ func TestToLegendData_RoundTrip_PositionConstants(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pal := palette.GetPalette(palette.Temperature)
-	fillInk := NumericInk("file-size", []float64{10, 100}, pal)
+	fillInk := inks.NumericInk("file-size", []float64{10, 100}, pal)
 
 	positions := []model.LegendPosition{
 		model.LegendPositionTopLeft, model.LegendPositionTopCenter, model.LegendPositionTopRight,
@@ -161,7 +162,7 @@ func TestToLegendData_RoundTrip_OrientationConstants(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pal := palette.GetPalette(palette.Temperature)
-	fillInk := NumericInk("file-size", []float64{10, 100}, pal)
+	fillInk := inks.NumericInk("file-size", []float64{10, 100}, pal)
 
 	orientations := []model.LegendOrientation{
 		model.LegendOrientationVertical,
@@ -199,7 +200,7 @@ func TestReserveSpace_WithEntries_NonZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	pal := palette.GetPalette(palette.Temperature)
-	fillInk := NumericInk("file-size", []float64{10, 50, 100}, pal)
+	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, pal)
 
 	lc := &LegendConfig{
 		Position:    model.LegendPositionCenterRight,
