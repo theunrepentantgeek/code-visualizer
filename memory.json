@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-19T00:00:00Z",
-  "run_id": "27835662454",
+  "last_run": "2026-06-20T00:00:00Z",
+  "run_id": "27860861067",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 429,
+  "backlog_cursor": 431,
   "comments_made": {
     "324": "2026-06-01",
     "325": "2026-06-01",
@@ -18,12 +18,12 @@
     "374": "2026-06-07",
     "385": "2026-06-11",
     "394": "2026-06-13",
-    "402": "2026-06-19",
+    "402": "2026-06-20",
     "411": "2026-06-14",
     "412": "2026-06-14",
     "416": "2026-06-19",
     "419": "2026-06-19",
-    "421": "2026-06-16",
+    "421": "2026-06-20",
     "422": "2026-06-16",
     "429": "2026-06-19"
   },
@@ -115,28 +115,67 @@
       "date": "2026-06-19",
       "status": "open - submitted this run, pending PR number",
       "description": "feat(config,provider): manual file classification via selection metrics (new architecture, closes #402, supersedes #416)"
+    },
+    "perf-aggregation-prealloc-20260620": {
+      "branch": "repo-assist/perf-aggregation-prealloc-20260620",
+      "title": "perf(stages,model): pre-size aggregation collector slices",
+      "status": "open",
+      "created": "2026-06-20"
+    },
+    "eng-devmd-fix-bench-20260620": {
+      "branch": "repo-assist/eng-devmd-fix-bench-20260620",
+      "title": "docs(dev): fix task ci description; add aggregation benchmark",
+      "status": "open",
+      "created": "2026-06-20"
     }
   },
   "issues_labelled": {
-    "354": ["enhancement"],
-    "355": ["bug"],
-    "373": ["enhancement", "refactor"],
-    "374": ["enhancement"],
-    "385": ["bug"],
-    "402": ["enhancement"],
-    "405": ["enhancement"],
-    "421": ["enhancement"],
-    "422": ["enhancement"],
-    "423": ["enhancement"],
-    "429": ["enhancement"]
+    "354": [
+      "enhancement"
+    ],
+    "355": [
+      "bug"
+    ],
+    "373": [
+      "enhancement",
+      "refactor"
+    ],
+    "374": [
+      "enhancement"
+    ],
+    "385": [
+      "bug"
+    ],
+    "402": [
+      "enhancement"
+    ],
+    "405": [
+      "enhancement"
+    ],
+    "421": [
+      "enhancement"
+    ],
+    "422": [
+      "enhancement"
+    ],
+    "423": [
+      "enhancement"
+    ],
+    "429": [
+      "enhancement"
+    ]
   },
   "maintainer_preferences": [
-    "Do not move helpers to new packages — keep refactors within-package",
+    "Do not move helpers to new packages \u2014 keep refactors within-package",
     "No migration shims needed (alpha tool)",
     "Title feature: one --title TEXT flag only (not per-command separate flags)",
-    "go.mod and go.sum are protected files — cannot be pushed by automation",
-    ".github/workflows/release.yml is a protected file (see issue #388) — may need manual PR apply"
+    "go.mod and go.sum are protected files \u2014 cannot be pushed by automation",
+    ".github/workflows/release.yml is a protected file (see issue #388) \u2014 may need manual PR apply"
   ],
-  "closed_issues": [422, 423, 424],
+  "closed_issues": [
+    422,
+    423,
+    424
+  ],
   "notes": "Run 27835662454 (2026-06-19): Task 10 completed - new classification PR created (feat-selection-metrics-402-20260619, PR number pending) using RegisterBase+RegisterLoader architecture. Supersedes #416. Task 2 fallback - commented on #429 (ginkgolinter investigation). Task 6 - commented on #416 (superseded) and #419 (duplicate of merged #420). Issue #429 labelled enhancement. Next priority: Verify classification PR gets reviewed and merged; investigate issue #394 (radial dir metrics, unblocked since #418)."
 }
