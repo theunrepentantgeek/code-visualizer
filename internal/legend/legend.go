@@ -1,13 +1,10 @@
-// Package legend constructs canvas.LegendConfig values from resolved
-// visualization options and reserves canvas space for legend rendering.
-// It is reusable across all visualization types.
 package legend
 
 import (
 	"image/color"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
@@ -25,55 +22,55 @@ func ResolveOptions(posStr, orientStr string) (model.LegendPosition, model.Legen
 
 	orient := model.LegendOrientation(orientStr)
 	if orient == "" {
-		orient = canvas.DefaultOrientation(pos)
+		orient = DefaultOrientation(pos)
 	}
 
 	return pos, orient
 }
 
-// Build constructs a LegendConfig from resolved options and the pre-built
-// Ink objects used for rendering. Returns nil if the legend is disabled
+// Build constructs a Config from resolved options and the pre-built Ink
+// objects used for rendering. Returns nil if the legend is disabled
 // ("none") or no entries would be produced.
 func Build(
 	position model.LegendPosition,
 	orientation model.LegendOrientation,
-	fillInk canvas.Ink,
+	fillInk inks.Ink,
 	fillMetric metric.Name,
-	borderInk canvas.Ink,
+	borderInk inks.Ink,
 	borderMetric metric.Name,
 	sizeMetric metric.Name,
-) *canvas.LegendConfig {
+) *Config {
 	if position == model.LegendPositionNone {
 		return nil
 	}
 
 	if orientation == "" {
-		orientation = canvas.DefaultOrientation(position)
+		orientation = DefaultOrientation(position)
 	}
 
-	var entries []canvas.LegendEntry
+	var entries []Entry
 
 	if fillMetric != "" {
-		entries = append(entries, canvas.LegendEntry{
-			Role:       canvas.LegendRoleFill,
+		entries = append(entries, Entry{
+			Role:       RoleFill,
 			MetricName: string(fillMetric),
 			Ink:        fillInk,
 		})
 	}
 
 	if borderMetric != "" {
-		entries = append(entries, canvas.LegendEntry{
-			Role:       canvas.LegendRoleBorder,
+		entries = append(entries, Entry{
+			Role:       RoleBorder,
 			MetricName: string(borderMetric),
 			Ink:        borderInk,
 		})
 	}
 
 	if sizeMetric != "" && sizeMetric != fillMetric {
-		entries = append(entries, canvas.LegendEntry{
-			Role:       canvas.LegendRoleSize,
+		entries = append(entries, Entry{
+			Role:       RoleSize,
 			MetricName: string(sizeMetric),
-			Ink:        canvas.FixedInk(white),
+			Ink:        inks.FixedInk(white),
 		})
 	}
 
@@ -81,7 +78,7 @@ func Build(
 		return nil
 	}
 
-	return &canvas.LegendConfig{
+	return &Config{
 		Position:    position,
 		Orientation: orientation,
 		Entries:     entries,

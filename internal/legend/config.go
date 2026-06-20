@@ -1,4 +1,7 @@
-package canvas
+// Package legend constructs and renders legend overlays for visualizations.
+// It holds the legend configuration types, computes reservation/layout
+// geometry, and decomposes the legend into canvas primitives.
+package legend
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
@@ -6,28 +9,28 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
-// LegendRole identifies what visual property a legend entry describes.
-type LegendRole string
+// Role identifies what visual property a legend entry describes.
+type Role string
 
 const (
-	LegendRoleFill   LegendRole = "Fill"
-	LegendRoleBorder LegendRole = "Border"
-	LegendRoleSize   LegendRole = "Size"
+	RoleFill   Role = "Fill"
+	RoleBorder Role = "Border"
+	RoleSize   Role = "Size"
 )
 
-// LegendEntry describes one metric shown in the legend.
-type LegendEntry struct {
-	Role       LegendRole
+// Entry describes one metric shown in the legend.
+type Entry struct {
+	Role       Role
 	MetricName string
 	Ink        inks.Ink
 }
 
-// LegendConfig holds everything needed to render a legend.
-type LegendConfig struct {
+// Config holds everything needed to render a legend.
+type Config struct {
 	Position    model.LegendPosition
 	Orientation model.LegendOrientation
 	LabelSample []string
-	Entries     []LegendEntry
+	Entries     []Entry
 }
 
 // DefaultOrientation returns the default orientation for a given position.
@@ -44,41 +47,41 @@ func DefaultOrientation(pos model.LegendPosition) model.LegendOrientation {
 // ReserveSpace computes the width and height reductions needed to reserve
 // space for the legend within the canvas. Returns zeros if the legend is
 // disabled or has no entries.
-func (lc *LegendConfig) ReserveSpace() (widthReduction, heightReduction float64) {
-	data := lc.toLegendData()
+func (cfg *Config) ReserveSpace() (widthReduction, heightReduction float64) {
+	data := cfg.toLegendData()
 
 	return legendlayout.ReserveSpace(data, legendlayout.NewBasicMeasurer())
 }
 
-// toLegendData converts the canvas-facing LegendConfig to the backend-facing
-// LegendData. Returns nil if the legend is disabled or has no entries.
-func (lc *LegendConfig) toLegendData() *model.LegendData {
-	if lc == nil || lc.Position == model.LegendPositionNone || len(lc.Entries) == 0 {
+// toLegendData converts the legend Config to the backend-facing LegendData.
+// Returns nil if the legend is disabled or has no entries.
+func (cfg *Config) toLegendData() *model.LegendData {
+	if cfg == nil || cfg.Position == model.LegendPositionNone || len(cfg.Entries) == 0 {
 		return nil
 	}
 
-	entries := make([]model.LegendEntryData, len(lc.Entries))
+	entries := make([]model.LegendEntryData, len(cfg.Entries))
 
-	for i, e := range lc.Entries {
+	for i, e := range cfg.Entries {
 		kind, swatches := inks.LegendData(e.Ink)
 		entries[i] = model.LegendEntryData{
 			Label:    string(e.Role),
 			Metric:   e.MetricName,
 			Kind:     kind,
 			Swatches: swatches,
-			IsBorder: e.Role == LegendRoleBorder,
+			IsBorder: e.Role == RoleBorder,
 		}
 	}
 
-	orient := lc.Orientation
+	orient := cfg.Orientation
 	if orient == "" {
-		orient = DefaultOrientation(lc.Position)
+		orient = DefaultOrientation(cfg.Position)
 	}
 
 	return &model.LegendData{
-		Position:    lc.Position,
+		Position:    cfg.Position,
 		Orientation: orient,
-		LabelSample: labelSampleData(lc.LabelSample),
+		LabelSample: labelSampleData(cfg.LabelSample),
 		Entries:     entries,
 	}
 }

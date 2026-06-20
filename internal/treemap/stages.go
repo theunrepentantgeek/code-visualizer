@@ -93,9 +93,7 @@ func LayoutStage(c *stages.CommonState, t *State) error {
 // RenderStage renders the treemap to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, t *State) error {
 	cv := RenderToCanvas(t.Root, c.Root, c.Width, c.Height, t.Inks, t.Size)
-	if t.LegendConfig != nil {
-		cv.SetLegend(*t.LegendConfig)
-	}
+	legend.RenderInto(cv, t.LegendConfig)
 
 	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
 

@@ -145,9 +145,7 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 func RenderStage(c *stages.CommonState, p *State) error {
 	cv := RenderToCanvas(p.Layout, p.Buckets, c.Width, c.Height, p.Inks)
 
-	if p.LegendConfig != nil {
-		cv.SetLegend(*p.LegendConfig)
-	}
+	legend.RenderInto(cv, p.LegendConfig)
 
 	c.Canvas = cv
 

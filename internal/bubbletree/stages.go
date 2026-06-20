@@ -96,9 +96,7 @@ func LayoutStage(c *stages.CommonState, b *State) error {
 // RenderStage renders the bubble tree to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, b *State) error {
 	cv := RenderToCanvas(&b.Nodes, c.Root, c.Width, c.Height, b.Inks)
-	if b.LegendConfig != nil {
-		cv.SetLegend(*b.LegendConfig)
-	}
+	legend.RenderInto(cv, b.LegendConfig)
 
 	c.Canvas = cv
 

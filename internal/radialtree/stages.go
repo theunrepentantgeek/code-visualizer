@@ -82,9 +82,7 @@ func RenderStage(c *stages.CommonState, r *State) error {
 	canvasSize := min(c.Width, c.Height)
 
 	cv := RenderToCanvas(&r.Nodes, c.Root, canvasSize, c.DrawingBounds.MinY, r.Inks)
-	if r.LegendConfig != nil {
-		cv.SetLegend(*r.LegendConfig)
-	}
+	legend.RenderInto(cv, r.LegendConfig)
 
 	c.Canvas = cv
 

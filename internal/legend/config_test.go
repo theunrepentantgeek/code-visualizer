@@ -1,4 +1,4 @@
-package canvas
+package legend
 
 import (
 	"testing"
@@ -41,12 +41,12 @@ func TestToLegendData_NilEntries_ReturnsNil(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	lc := &LegendConfig{
+	cfg := &Config{
 		Position:    model.LegendPositionNone,
 		Orientation: model.LegendOrientationVertical,
 	}
 
-	g.Expect(lc.toLegendData()).To(BeNil())
+	g.Expect(cfg.toLegendData()).To(BeNil())
 }
 
 func TestToLegendData_NumericEntry_ProducesSwatches(t *testing.T) {
@@ -56,15 +56,15 @@ func TestToLegendData_NumericEntry_ProducesSwatches(t *testing.T) {
 	pal := palette.GetPalette(palette.Temperature)
 	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100, 500, 1000}, pal)
 
-	lc := &LegendConfig{
+	cfg := &Config{
 		Position:    model.LegendPositionBottomRight,
 		Orientation: model.LegendOrientationVertical,
-		Entries: []LegendEntry{
-			{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk},
+		Entries: []Entry{
+			{Role: RoleFill, MetricName: "file-size", Ink: fillInk},
 		},
 	}
 
-	data := lc.toLegendData()
+	data := cfg.toLegendData()
 	g.Expect(data).NotTo(BeNil())
 
 	if data == nil {
@@ -87,15 +87,15 @@ func TestToLegendData_CategoricalEntry_ProducesSwatches(t *testing.T) {
 	pal := palette.GetPalette(palette.Categorization)
 	borderInk := inks.CategoricalInk("file-type", []string{"go", "py", "rs"}, pal)
 
-	lc := &LegendConfig{
+	cfg := &Config{
 		Position:    model.LegendPositionTopLeft,
 		Orientation: model.LegendOrientationHorizontal,
-		Entries: []LegendEntry{
-			{Role: LegendRoleBorder, MetricName: "file-type", Ink: borderInk},
+		Entries: []Entry{
+			{Role: RoleBorder, MetricName: "file-type", Ink: borderInk},
 		},
 	}
 
-	data := lc.toLegendData()
+	data := cfg.toLegendData()
 	g.Expect(data).NotTo(BeNil())
 
 	if data == nil {
@@ -110,15 +110,15 @@ func TestToLegendData_FixedInkEntry_EmptySwatches(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	lc := &LegendConfig{
+	cfg := &Config{
 		Position:    model.LegendPositionBottomRight,
 		Orientation: model.LegendOrientationVertical,
-		Entries: []LegendEntry{
-			{Role: LegendRoleSize, MetricName: "file-lines", Ink: inks.FixedInk(white)},
+		Entries: []Entry{
+			{Role: RoleSize, MetricName: "file-lines", Ink: inks.FixedInk(white)},
 		},
 	}
 
-	data := lc.toLegendData()
+	data := cfg.toLegendData()
 	g.Expect(data).NotTo(BeNil())
 
 	if data == nil {
@@ -143,11 +143,11 @@ func TestToLegendData_RoundTrip_PositionConstants(t *testing.T) {
 	}
 
 	for _, pos := range positions {
-		lc := &LegendConfig{
+		cfg := &Config{
 			Position: pos,
-			Entries:  []LegendEntry{{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk}},
+			Entries:  []Entry{{Role: RoleFill, MetricName: "file-size", Ink: fillInk}},
 		}
-		data := lc.toLegendData()
+		data := cfg.toLegendData()
 		g.Expect(data).NotTo(BeNil(), "position %q produced nil data", pos)
 
 		if data != nil {
@@ -170,12 +170,12 @@ func TestToLegendData_RoundTrip_OrientationConstants(t *testing.T) {
 	}
 
 	for _, orient := range orientations {
-		lc := &LegendConfig{
+		cfg := &Config{
 			Position:    model.LegendPositionBottomRight,
 			Orientation: orient,
-			Entries:     []LegendEntry{{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk}},
+			Entries:     []Entry{{Role: RoleFill, MetricName: "file-size", Ink: fillInk}},
 		}
-		data := lc.toLegendData()
+		data := cfg.toLegendData()
 		g.Expect(data).NotTo(BeNil(), "orientation %q produced nil data", orient)
 
 		if data != nil {
@@ -189,8 +189,8 @@ func TestReserveSpace_NonePosition_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	lc := &LegendConfig{Position: model.LegendPositionNone}
-	wReduce, hReduce := lc.ReserveSpace()
+	cfg := &Config{Position: model.LegendPositionNone}
+	wReduce, hReduce := cfg.ReserveSpace()
 	g.Expect(wReduce).To(BeZero())
 	g.Expect(hReduce).To(BeZero())
 }
@@ -202,15 +202,15 @@ func TestReserveSpace_WithEntries_NonZero(t *testing.T) {
 	pal := palette.GetPalette(palette.Temperature)
 	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, pal)
 
-	lc := &LegendConfig{
+	cfg := &Config{
 		Position:    model.LegendPositionCenterRight,
 		Orientation: model.LegendOrientationVertical,
-		Entries: []LegendEntry{
-			{Role: LegendRoleFill, MetricName: "file-size", Ink: fillInk},
+		Entries: []Entry{
+			{Role: RoleFill, MetricName: "file-size", Ink: fillInk},
 		},
 	}
 
-	wReduce, hReduce := lc.ReserveSpace()
+	wReduce, hReduce := cfg.ReserveSpace()
 	g.Expect(wReduce).To(BeNumerically(">", 0))
 	g.Expect(hReduce).To(BeZero())
 }
