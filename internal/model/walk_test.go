@@ -237,6 +237,98 @@ func TestCountDirs_Nested(t *testing.T) {
 	g.Expect(CountDirs(root)).To(Equal(2))
 }
 
+func TestCountDeclarations_Empty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &Directory{Path: "/root", Name: "root"}
+
+	g.Expect(CountDeclarations(root)).To(Equal(0))
+}
+
+func TestCountDeclarations_FlatDir(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	decl1 := &Declaration{Name: "Foo", Kind: "function"}
+	decl2 := &Declaration{Name: "Bar", Kind: "function"}
+	root := &Directory{
+		Path:  "/root",
+		Name:  "root",
+		Files: []*File{{Name: "a.go", Declarations: []*Declaration{decl1, decl2}}},
+	}
+
+	g.Expect(CountDeclarations(root)).To(Equal(2))
+}
+
+func TestCountDeclarations_Nested(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	decl1 := &Declaration{Name: "Foo", Kind: "function"}
+	decl2 := &Declaration{Name: "Bar", Kind: "struct"}
+	decl3 := &Declaration{Name: "Baz", Kind: "method"}
+	child := &Directory{
+		Path:  "/root/sub",
+		Name:  "sub",
+		Files: []*File{{Name: "b.go", Declarations: []*Declaration{decl2, decl3}}},
+	}
+	root := &Directory{
+		Path:  "/root",
+		Name:  "root",
+		Files: []*File{{Name: "a.go", Declarations: []*Declaration{decl1}}},
+		Dirs:  []*Directory{child},
+	}
+
+	g.Expect(CountDeclarations(root)).To(Equal(3))
+}
+
+func TestCountCommits_Empty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &Directory{Path: "/root", Name: "root"}
+
+	g.Expect(CountCommits(root)).To(Equal(0))
+}
+
+func TestCountCommits_FlatDir(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c1 := &Commit{Hash: "aaa"}
+	c2 := &Commit{Hash: "bbb"}
+	root := &Directory{
+		Path:  "/root",
+		Name:  "root",
+		Files: []*File{{Name: "a.go", Commits: []*Commit{c1, c2}}},
+	}
+
+	g.Expect(CountCommits(root)).To(Equal(2))
+}
+
+func TestCountCommits_Nested(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c1 := &Commit{Hash: "aaa"}
+	c2 := &Commit{Hash: "bbb"}
+	c3 := &Commit{Hash: "ccc"}
+	child := &Directory{
+		Path:  "/root/sub",
+		Name:  "sub",
+		Files: []*File{{Name: "b.go", Commits: []*Commit{c2, c3}}},
+	}
+	root := &Directory{
+		Path:  "/root",
+		Name:  "root",
+		Files: []*File{{Name: "a.go", Commits: []*Commit{c1}}},
+		Dirs:  []*Directory{child},
+	}
+
+	g.Expect(CountCommits(root)).To(Equal(3))
+}
+
 func TestWalkDeclarations_CollectsAllDescendants(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
