@@ -195,7 +195,7 @@ func (c *Canvas) DrawingMaxY() int { return c.drawingMaxY }
 | `canvas.LegendRoleBorder` | `legend.RoleBorder` |
 | `canvas.LegendRoleSize` | `legend.RoleSize` |
 | `canvas.DefaultOrientation(pos)` | `legend.DefaultOrientation(pos)` |
-| `(*canvas.LegendConfig).ReserveSpace()` | `legend.ReserveSpace(cfg)` *(method form removed; package-level function already exists)* |
+| `(*canvas.LegendConfig).ReserveSpace()` | `(*legend.Config).ReserveSpace()` *(method preserved; thin delegate to `legendlayout.ReserveSpace`)* |
 | `(*canvas.Canvas).SetLegend(LegendConfig)` | **Removed.** Use `legend.RenderInto(cv, cfg)` after data shapes are added. |
 
 ### Factory names retain `Ink`
