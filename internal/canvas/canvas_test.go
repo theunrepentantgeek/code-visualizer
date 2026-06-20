@@ -826,3 +826,22 @@ func TestCanvas_TitleText_ReturnsSetValue(t *testing.T) {
 	c.SetTitle("")
 	g.Expect(c.TitleText()).To(BeEmpty())
 }
+
+func TestCanvas_DrawingBounds_Getters_ReturnZerosByDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+	g.Expect(c.DrawingMinY()).To(Equal(0))
+	g.Expect(c.DrawingMaxY()).To(Equal(600))
+}
+
+func TestCanvas_DrawingBounds_Getters_ReturnSetValues(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := NewCanvas(800, 600)
+	c.SetDrawingBounds(40, 560)
+	g.Expect(c.DrawingMinY()).To(Equal(40))
+	g.Expect(c.DrawingMaxY()).To(Equal(560))
+}

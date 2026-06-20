@@ -79,6 +79,13 @@ func (c *Canvas) SetDrawingBounds(topY, bottomY int) {
 	c.drawingMaxY = bottomY
 }
 
+// DrawingMinY returns the topmost Y pixel available for non-title content.
+func (c *Canvas) DrawingMinY() int { return c.drawingMinY }
+
+// DrawingMaxY returns the bottommost Y pixel (exclusive) available for
+// non-footer content.
+func (c *Canvas) DrawingMaxY() int { return c.drawingMaxY }
+
 // AddRectangle records a rectangle on the given layer.
 func (c *Canvas) AddRectangle(layer Layer, r Rectangle) {
 	c.shapes = append(c.shapes, layeredShape{
