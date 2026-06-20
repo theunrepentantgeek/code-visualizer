@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -32,8 +32,8 @@ func TestBuildRadialInks_DefaultColours(t *testing.T) {
 
 	inks := radialtree.BuildInks(root, stages.RequestedMetrics{}, "", "", "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkFixed))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindFixed))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
 }
 
 func TestBuildRadialInks_NumericFill(t *testing.T) {
@@ -50,8 +50,8 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 
 	inks := radialtree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
 }
 
 func TestBuildRadialInks_CategoricalFill(t *testing.T) {
@@ -68,8 +68,8 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 
 	inks := radialtree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindCategorical))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
 }
 
 func TestBuildRadialInks_BorderMetric(t *testing.T) {
@@ -90,8 +90,8 @@ func TestBuildRadialInks_BorderMetric(t *testing.T) {
 		filesystem.FileType, palette.Categorization,
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkCategorical))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindCategorical))
 }
 
 func TestBuildRadialInks_NumericBorder(t *testing.T) {
@@ -112,6 +112,6 @@ func TestBuildRadialInks_NumericBorder(t *testing.T) {
 		filesystem.FileSize, palette.Temperature,
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkNumeric))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindNumeric))
 }

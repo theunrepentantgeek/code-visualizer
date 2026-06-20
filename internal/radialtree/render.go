@@ -46,8 +46,8 @@ func RenderToCanvas(
 func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(bgColour),
-			Border:      canvas.FixedInk(bgColour),
+			Fill:        pkginks.FixedInk(bgColour),
+			Border:      pkginks.FixedInk(bgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -63,7 +63,7 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 // addEdges recursively adds edge lines from each node to its children.
 func addEdges(cv *canvas.Canvas, node RadialNode, cx, cy float64) {
 	edgeSpec := &canvas.LineSpec{
-		Stroke:      canvas.FixedInk(edgeColour),
+		Stroke:      pkginks.FixedInk(edgeColour),
 		StrokeWidth: edgeWidth,
 	}
 	addEdgesInner(cv, node, cx, cy, edgeSpec)
@@ -177,8 +177,8 @@ func addDiscs(
 	}
 	dirSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(defaultDirFill),
-			Border:      canvas.FixedInk(defaultBorder),
+			Fill:        pkginks.FixedInk(defaultDirFill),
+			Border:      pkginks.FixedInk(defaultBorder),
 			BorderWidth: 1.0,
 		},
 	}
@@ -216,7 +216,7 @@ func addLabels(
 	cx, cy float64,
 	inks Inks,
 ) {
-	labelInk := canvas.FixedInk(labelColour)
+	labelInk := pkginks.FixedInk(labelColour)
 	// The root sits at dist==0 and has no meaningful angle; pass NaN so its
 	// direct file children each use their own angle for orientation.
 	addLabelsInner(cv, node, cx, cy, inks, math.NaN(), labelInk)
@@ -235,7 +235,7 @@ func addLabelsInner(
 	cx, cy float64,
 	inks Inks,
 	parentDirAngle float64,
-	labelInk canvas.Ink,
+	labelInk pkginks.Ink,
 ) {
 	renderNodeLabel(cv, node, cx, cy, inks, parentDirAngle, labelInk)
 
@@ -252,7 +252,7 @@ func renderNodeLabel(
 	cx, cy float64,
 	inks Inks,
 	parentDirAngle float64,
-	labelInk canvas.Ink,
+	labelInk pkginks.Ink,
 ) {
 	if !node.ShowLabel || node.Label == "" {
 		return
@@ -300,7 +300,7 @@ func addRootLabel(
 	node RadialNode,
 	cx, cy float64,
 	_ Inks,
-	labelInk canvas.Ink,
+	labelInk pkginks.Ink,
 ) {
 	labelSpec := &canvas.TextSpec{
 		Ink:      labelInk,
@@ -326,7 +326,7 @@ func addExternalLabel(
 	node RadialNode,
 	cx, cy float64,
 	orientAngle float64,
-	labelInk canvas.Ink,
+	labelInk pkginks.Ink,
 ) {
 	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
 	labelRadius := dist + node.DiscRadius + labelGap

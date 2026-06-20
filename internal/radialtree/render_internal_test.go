@@ -13,7 +13,6 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -46,8 +45,8 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 		root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "",
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
 }
 
 func TestBuildRadialInks_CategoricalFill(t *testing.T) {
@@ -65,7 +64,7 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 	inks := BuildInks(
 		root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "",
 	)
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindCategorical))
 }
 
 func TestBuildRadialInks_WithBorder(t *testing.T) {
@@ -86,8 +85,8 @@ func TestBuildRadialInks_WithBorder(t *testing.T) {
 		filesystem.FileSize, palette.Temperature,
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).NotTo(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
+	g.Expect(inks.Border.Info().Kind).NotTo(Equal(pkginks.KindFixed))
 }
 
 func radialTestRoot() *model.Directory {
@@ -329,7 +328,7 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 	)
 
 	// Precondition: the border ink must be metric-driven, not fixed.
-	g.Expect(inks.Border.Info().Kind).NotTo(Equal(canvas.InkFixed),
+	g.Expect(inks.Border.Info().Kind).NotTo(Equal(pkginks.KindFixed),
 		"precondition: border ink should be metric-driven when a border metric is configured")
 
 	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
@@ -358,8 +357,8 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 
 	// Directory border must resolve to defaultBorder (fixed ink),
 	// not the metric ink's lowest bucket.
-	dirBorderInk := canvas.FixedInk(defaultBorder)
-	g.Expect(dirBorderInk.Dip(canvas.MetricValue{})).To(Equal(defaultBorder),
+	dirBorderInk := pkginks.FixedInk(defaultBorder)
+	g.Expect(dirBorderInk.Dip(pkginks.MetricValue{})).To(Equal(defaultBorder),
 		"directory disc border should resolve to defaultBorder")
 
 	// File border should follow the metric ink.
