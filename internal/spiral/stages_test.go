@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -191,5 +191,5 @@ func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
 	}
 
 	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
-	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
+	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(pkginks.KindCategorical))
 }

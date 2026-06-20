@@ -6,6 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
 var (
@@ -41,8 +42,8 @@ func RenderToCanvas(
 func addBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(bgColour),
-			Border:      canvas.FixedInk(bgColour),
+			Fill:        pkginks.FixedInk(bgColour),
+			Border:      pkginks.FixedInk(bgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -75,7 +76,7 @@ func addTrack(cv *canvas.Canvas, layout SpiralLayout) {
 	}
 
 	trackSpec := &canvas.LineSpec{
-		Stroke:      canvas.FixedInk(trackColour),
+		Stroke:      pkginks.FixedInk(trackColour),
 		StrokeWidth: trackWidth,
 	}
 
@@ -137,7 +138,7 @@ func addDiscs(
 // addLabels adds rotated text labels tangent to the spiral.
 // Pre-allocates a shared labelInk to avoid recreating it for every label.
 func addLabels(cv *canvas.Canvas, nodes []SpiralNode) {
-	labelInk := canvas.FixedInk(labelColour)
+	labelInk := pkginks.FixedInk(labelColour)
 
 	for _, n := range nodes {
 		if !n.ShowLabel || n.Label == "" {
@@ -149,7 +150,7 @@ func addLabels(cv *canvas.Canvas, nodes []SpiralNode) {
 }
 
 // addLabel adds a single rotated label for a spiral node.
-func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk canvas.Ink) {
+func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk pkginks.Ink) {
 	labelR := n.DiscRadius + labelGap
 	lx := n.X + labelR*math.Sin(n.Angle)
 	ly := n.Y - labelR*math.Cos(n.Angle)
@@ -187,16 +188,16 @@ func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk canvas.Ink) {
 }
 
 // metricValue builds a MetricValue from time-bucket data for the given ink.
-func metricValue(numericVal float64, categoryVal string, ink canvas.Ink) canvas.MetricValue {
+func metricValue(numericVal float64, categoryVal string, ink pkginks.Ink) pkginks.MetricValue {
 	info := ink.Info()
 
 	switch info.Kind {
-	case canvas.InkNumeric:
-		return canvas.MeasureValue(numericVal)
-	case canvas.InkCategorical:
-		return canvas.CategoryValue(categoryVal)
+	case pkginks.KindNumeric:
+		return pkginks.MeasureValue(numericVal)
+	case pkginks.KindCategorical:
+		return pkginks.CategoryValue(categoryVal)
 	default:
-		return canvas.MetricValue{}
+		return pkginks.MetricValue{}
 	}
 }
 

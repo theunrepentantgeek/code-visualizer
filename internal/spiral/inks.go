@@ -3,7 +3,7 @@ package spiral
 import (
 	"image/color"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -16,8 +16,8 @@ var (
 
 // Inks holds the Ink instances for a spiral render pass.
 type Inks struct {
-	Fill   canvas.Ink
-	Border canvas.Ink
+	Fill   pkginks.Ink
+	Border pkginks.Ink
 }
 
 // BuildInks creates fill and border inks from aggregated time-bucket data.
@@ -30,8 +30,8 @@ func BuildInks(
 	borderPaletteName palette.PaletteName,
 ) Inks {
 	inks := Inks{
-		Fill:   canvas.FixedInk(defaultFill),
-		Border: canvas.FixedInk(defaultBorder),
+		Fill:   pkginks.FixedInk(defaultFill),
+		Border: pkginks.FixedInk(defaultBorder),
 	}
 
 	if fillMetric != "" {
@@ -66,10 +66,10 @@ func buildBucketInk(
 	numericFn func(*TimeBucket) float64,
 	categoryFn func(*TimeBucket) string,
 	fallback color.RGBA,
-) canvas.Ink {
+) pkginks.Ink {
 	d, ok := requested.DescriptorFor(m)
 	if !ok {
-		return canvas.FixedInk(fallback)
+		return pkginks.FixedInk(fallback)
 	}
 
 	pal := palette.GetPalette(palName)
@@ -80,7 +80,7 @@ func buildBucketInk(
 			values[i] = numericFn(&buckets[i])
 		}
 
-		return canvas.NumericInk(m, values, pal)
+		return pkginks.NumericInk(m, values, pal)
 	}
 
 	seen := map[string]bool{}
@@ -95,5 +95,5 @@ func buildBucketInk(
 		}
 	}
 
-	return canvas.CategoricalInk(m, categories, pal)
+	return pkginks.CategoricalInk(m, categories, pal)
 }

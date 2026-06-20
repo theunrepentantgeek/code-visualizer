@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -68,8 +68,8 @@ func TestBuildInks_Numeric(t *testing.T) {
 		"",
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
 }
 
 func TestBuildInks_Categorical(t *testing.T) {
@@ -86,7 +86,7 @@ func TestBuildInks_Categorical(t *testing.T) {
 		"",
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindCategorical))
 }
 
 func TestBuildInks_NoMetrics(t *testing.T) {
@@ -96,6 +96,6 @@ func TestBuildInks_NoMetrics(t *testing.T) {
 	buckets := sampleTimeBuckets()
 	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkFixed))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindFixed))
+	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
 }
