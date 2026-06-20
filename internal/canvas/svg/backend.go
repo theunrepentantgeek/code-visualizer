@@ -56,7 +56,7 @@ func (s *svgBackend) DrawRectangle(
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
-		fillAttr = fmt.Sprintf("url(#%s)", s.emitRadialGradient(f))
+		fillAttr = s.emitRadialGradient(f)
 	default:
 	}
 
@@ -70,19 +70,27 @@ func (s *svgBackend) DrawRectangle(
 	)
 }
 
+// emitRadialGradient emits the gradient <defs> block on its first call for a
+// given gradient specification, and returns a "url(#id)" fill-attribute string
+// on every call (including cache hits).  Callers can use the returned string
+// directly as the fill attribute without additional formatting.
 func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
+	centerCSS := s.colourCSS(grad.Center)
+	edgeCSS := s.colourCSS(grad.Edge)
+
 	key := fmt.Sprintf(
 		"%s|%s|%.1f|%.1f",
-		rgbaToCSS(grad.Center), rgbaToCSS(grad.Edge),
+		centerCSS, edgeCSS,
 		grad.Focus.X*100, grad.Focus.Y*100,
 	)
 
-	if id, ok := s.gradCache[key]; ok {
-		return id
+	if urlRef, ok := s.gradCache[key]; ok {
+		return urlRef
 	}
 
 	s.gradID++
 	id := fmt.Sprintf("rg%d", s.gradID)
+	urlRef := "url(#" + id + ")"
 
 	// A 70% radius reaches the rectangle edges while avoiding corner emphasis.
 	fmt.Fprintf(
@@ -93,12 +101,12 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 			`</radialGradient></defs>`+"\n",
 		id,
 		grad.Focus.X*100, grad.Focus.Y*100,
-		s.colourCSS(grad.Center), s.colourCSS(grad.Edge),
+		centerCSS, edgeCSS,
 	)
 
-	s.gradCache[key] = id
+	s.gradCache[key] = urlRef
 
-	return id
+	return urlRef
 }
 
 func (s *svgBackend) DrawDisc(
@@ -108,7 +116,7 @@ func (s *svgBackend) DrawDisc(
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
-		fillAttr = fmt.Sprintf("url(#%s)", s.emitRadialGradient(f))
+		fillAttr = s.emitRadialGradient(f)
 	default:
 	}
 
