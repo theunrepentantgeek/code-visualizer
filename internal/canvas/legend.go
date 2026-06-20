@@ -3,6 +3,7 @@ package canvas
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
 // LegendRole identifies what visual property a legend entry describes.
@@ -59,11 +60,12 @@ func (lc *LegendConfig) toLegendData() *model.LegendData {
 	entries := make([]model.LegendEntryData, len(lc.Entries))
 
 	for i, e := range lc.Entries {
+		kind, swatches := inks.LegendData(e.Ink)
 		entries[i] = model.LegendEntryData{
 			Label:    string(e.Role),
 			Metric:   e.MetricName,
-			Kind:     e.Ink.legendEntryKind(),
-			Swatches: e.Ink.legendSwatches(),
+			Kind:     kind,
+			Swatches: swatches,
 			IsBorder: e.Role == LegendRoleBorder,
 		}
 	}

@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -93,7 +92,7 @@ func TestBuildMetricInk_NumericKind(t *testing.T) {
 
 	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileSize), palette.Temperature, fallbackColour())
 
-	g.Expect(ink.Info().Kind).To(Equal(canvas.InkNumeric))
+	g.Expect(ink.Info().Kind).To(Equal(inks.KindNumeric))
 }
 
 func TestBuildMetricInk_CategoricalKind(t *testing.T) {
@@ -110,7 +109,7 @@ func TestBuildMetricInk_CategoricalKind(t *testing.T) {
 
 	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileType), palette.Categorization, fallbackColour())
 
-	g.Expect(ink.Info().Kind).To(Equal(canvas.InkCategorical))
+	g.Expect(ink.Info().Kind).To(Equal(inks.KindCategorical))
 }
 
 func TestBuildMetricInk_UnknownMetricFallsBackToFixed(t *testing.T) {
@@ -121,7 +120,7 @@ func TestBuildMetricInk_UnknownMetricFallsBackToFixed(t *testing.T) {
 
 	ink := inks.BuildMetricInk(root, provider.BaseMetricDescriptor{}, palette.Temperature, fallbackColour())
 
-	g.Expect(ink.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(ink.Info().Kind).To(Equal(inks.KindFixed))
 }
 
 func TestBuildMetricInk_EmptyNumericFallsBackToFixed(t *testing.T) {
@@ -133,7 +132,7 @@ func TestBuildMetricInk_EmptyNumericFallsBackToFixed(t *testing.T) {
 
 	ink := inks.BuildMetricInk(root, descriptorFor(t, filesystem.FileSize), palette.Temperature, fallbackColour())
 
-	g.Expect(ink.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(ink.Info().Kind).To(Equal(inks.KindFixed))
 }
 
 func TestMetricValueForFile_NumericInk(t *testing.T) {
@@ -168,8 +167,8 @@ func TestMetricValueForFile_NilFile(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(inks.MetricValueForFile(nil, canvas.FixedInk(fallbackColour()))).
-		To(Equal(canvas.MetricValue{}))
+	g.Expect(inks.MetricValueForFile(nil, inks.FixedInk(fallbackColour()))).
+		To(Equal(inks.MetricValue{}))
 }
 
 func TestMetricValueForFile_FixedInk(t *testing.T) {
@@ -178,6 +177,6 @@ func TestMetricValueForFile_FixedInk(t *testing.T) {
 
 	file := makeFile("a.go", "go", 1)
 
-	g.Expect(inks.MetricValueForFile(file, canvas.FixedInk(fallbackColour()))).
-		To(Equal(canvas.MetricValue{}))
+	g.Expect(inks.MetricValueForFile(file, inks.FixedInk(fallbackColour()))).
+		To(Equal(inks.MetricValue{}))
 }

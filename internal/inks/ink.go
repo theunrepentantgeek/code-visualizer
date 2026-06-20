@@ -1,34 +1,43 @@
-package canvas
+// Package inks owns the Ink interface and concrete ink implementations.
+// Inks resolve metric values to colours and fill specifications; they are
+// consumed by canvas shape specs (canvas.RectangleSpec, canvas.TextSpec, ...).
+package inks
 
 import (
 	"image/color"
-	"slices"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
-type inkKind int
+// Kind identifies the type of an Ink for introspection purposes.
+type Kind int
 
 const (
-	inkFixed inkKind = iota
-	inkNumeric
-	inkCategorical
+	// KindFixed is a fixed-colour ink that ignores its input.
+	KindFixed Kind = iota
+	// KindNumeric is a numeric-bucket ink mapping float values to palette colours.
+	KindNumeric
+	// KindCategorical is a categorical ink mapping strings to palette colours.
+	KindCategorical
 )
 
 // Ink resolves metric values to colours and fill specifications.
 type Ink interface {
 	Dip(value MetricValue) color.RGBA
 	Fill(value MetricValue, focus model.Point) model.Fill
-	Info() InkInfo
-	legendEntryKind() model.LegendEntryKind
-	legendSwatches() []model.LegendSwatch
+	Info() Info
+
+	// Introspection accessors used by legend extraction and tests.
+	// FixedInk values return nil/empty for all three.
+	Boundaries() []float64
+	Palette() palette.ColourPalette
+	Categories() []string
 }
 
 type baseInk struct {
-	kind       inkKind
+	kind       Kind
 	metricName metric.Name
 	color      color.RGBA
 	boundaries *metric.BucketBoundaries
@@ -39,14 +48,14 @@ type baseInk struct {
 }
 
 // FixedInk always produces the same colour regardless of input.
-func FixedInk(c color.RGBA, opts ...InkOption) Ink {
-	cfg := defaultInkConfig()
+func FixedInk(c color.RGBA, opts ...Option) Ink {
+	cfg := defaultConfig()
 	for _, o := range opts {
 		o(&cfg)
 	}
 
 	return &baseInk{
-		kind:    inkFixed,
+		kind:    KindFixed,
 		color:   c,
 		opacity: cfg.opacity,
 	}
@@ -55,8 +64,8 @@ func FixedInk(c color.RGBA, opts ...InkOption) Ink {
 // NumericInk maps numeric metric values to palette colours.
 // Takes the full dataset of values (for bucketing), the palette,
 // and optional configuration options.
-func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, opts ...InkOption) Ink {
-	cfg := defaultInkConfig()
+func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, opts ...Option) Ink {
+	cfg := defaultConfig()
 	for _, o := range opts {
 		o(&cfg)
 	}
@@ -64,7 +73,7 @@ func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, o
 	buckets := metric.ComputeBuckets(values, len(pal.Colours))
 
 	return &baseInk{
-		kind:       inkNumeric,
+		kind:       KindNumeric,
 		metricName: name,
 		boundaries: &buckets,
 		pal:        pal,
@@ -73,14 +82,14 @@ func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, o
 }
 
 // CategoricalInk maps string categories to palette colours.
-func CategoricalInk(name metric.Name, categories []string, pal palette.ColourPalette, opts ...InkOption) Ink {
-	cfg := defaultInkConfig()
+func CategoricalInk(name metric.Name, categories []string, pal palette.ColourPalette, opts ...Option) Ink {
+	cfg := defaultConfig()
 	for _, o := range opts {
 		o(&cfg)
 	}
 
 	return &baseInk{
-		kind:       inkCategorical,
+		kind:       KindCategorical,
 		metricName: name,
 		catMapper:  palette.NewCategoricalMapper(categories, pal),
 		pal:        pal,
@@ -94,14 +103,14 @@ func (ink *baseInk) Dip(value MetricValue) color.RGBA {
 	var c color.RGBA
 
 	switch ink.kind {
-	case inkFixed:
+	case KindFixed:
 		c = ink.color
-	case inkNumeric:
+	case KindNumeric:
 		c = ink.dipNumeric(value)
-	case inkCategorical:
+	case KindCategorical:
 		c = ink.catMapper.Map(value.Category)
 	default:
-		c = color.RGBA{A: 255} // fallback to opaque black
+		c = color.RGBA{A: 255}
 	}
 
 	return applyOpacity(c, ink.opacity)
@@ -146,76 +155,4 @@ func clamp01(v float64) float64 {
 	}
 
 	return v
-}
-
-// legendEntryKind returns the LegendEntryKind for this ink.
-func (ink *baseInk) legendEntryKind() model.LegendEntryKind {
-	if ink.kind == inkCategorical {
-		return model.LegendEntryCategorical
-	}
-
-	return model.LegendEntryNumeric
-}
-
-// legendSwatches extracts resolved swatch data for legend rendering.
-// Returns nil for fixed inks (no meaningful swatch data).
-func (ink *baseInk) legendSwatches() []model.LegendSwatch {
-	switch ink.kind {
-	case inkNumeric:
-		return ink.numericLegendSwatches()
-	case inkCategorical:
-		return ink.categoricalLegendSwatches()
-	default:
-		return nil
-	}
-}
-
-func (ink *baseInk) numericLegendSwatches() []model.LegendSwatch {
-	if ink.boundaries == nil {
-		return nil
-	}
-
-	n := ink.boundaries.NumBuckets()
-	if n <= 0 || len(ink.pal.Colours) == 0 {
-		return nil
-	}
-
-	swatches := make([]model.LegendSwatch, n)
-
-	for i := range n {
-		colour := palette.MapNumericToColour(i, n, ink.pal)
-
-		var label string
-		if i < len(ink.boundaries.Boundaries) {
-			label = legendlayout.FormatBreakpoint(ink.boundaries.Boundaries[i])
-		}
-
-		swatches[i] = model.LegendSwatch{
-			Colour: colour,
-			Label:  label,
-		}
-	}
-
-	return swatches
-}
-
-func (ink *baseInk) categoricalLegendSwatches() []model.LegendSwatch {
-	if ink.catMapper == nil || len(ink.categories) == 0 {
-		return nil
-	}
-
-	sorted := make([]string, len(ink.categories))
-	copy(sorted, ink.categories)
-	slices.Sort(sorted)
-
-	swatches := make([]model.LegendSwatch, len(sorted))
-
-	for i, cat := range sorted {
-		swatches[i] = model.LegendSwatch{
-			Colour: ink.catMapper.Map(cat),
-			Label:  cat,
-		}
-	}
-
-	return swatches
 }
