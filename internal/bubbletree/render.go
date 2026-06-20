@@ -46,8 +46,8 @@ func RenderToCanvas(
 func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(bubbleBgColour),
-			Border:      canvas.FixedInk(bubbleBgColour),
+			Fill:        pkginks.FixedInk(bubbleBgColour),
+			Border:      pkginks.FixedInk(bubbleBgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -107,8 +107,8 @@ func addBubbleDirDiscs(
 		return cmp.Compare(b.node.Radius, a.node.Radius)
 	})
 
-	dirFill := canvas.FixedInk(bubbleDefaultDirFill, canvas.WithOpacity(bubbleDirOpacity))
-	dirBorder := canvas.FixedInk(bubbleDefaultBorder)
+	dirFill := pkginks.FixedInk(bubbleDefaultDirFill, pkginks.WithOpacity(bubbleDirOpacity))
+	dirBorder := pkginks.FixedInk(bubbleDefaultBorder)
 
 	dirSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
@@ -205,7 +205,7 @@ func addBubbleFileDiscsWalk(
 // Pre-allocates a shared labelInk and fileTextSpec so they are not re-created
 // for every labelled node in the tree.
 func addBubbleLabels(cv *canvas.Canvas, node BubbleNode) {
-	labelInk := canvas.FixedInk(bubbleLabelColour)
+	labelInk := pkginks.FixedInk(bubbleLabelColour)
 	fileTextSpec := &canvas.TextSpec{
 		Ink:      labelInk,
 		FontSize: 0,
@@ -217,7 +217,7 @@ func addBubbleLabels(cv *canvas.Canvas, node BubbleNode) {
 
 // addBubbleLabelsInner is the recursive worker for addBubbleLabels.
 // It accepts pre-allocated specs to avoid repeated allocations per node.
-func addBubbleLabelsInner(cv *canvas.Canvas, node BubbleNode, labelInk canvas.Ink, fileTextSpec *canvas.TextSpec) {
+func addBubbleLabelsInner(cv *canvas.Canvas, node BubbleNode, labelInk pkginks.Ink, fileTextSpec *canvas.TextSpec) {
 	if node.ShowLabel && node.Label != "" {
 		if node.IsDirectory {
 			addBubbleDirLabel(cv, node, labelInk)
@@ -253,7 +253,7 @@ func bubbleDirLabelFontSize(node BubbleNode) float64 {
 }
 
 // addBubbleDirLabel adds an arc text label curved just above the top of a directory circle.
-func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk canvas.Ink) {
+func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk pkginks.Ink) {
 	fontSize := bubbleDirLabelFontSize(node)
 	if fontSize == 0 {
 		return

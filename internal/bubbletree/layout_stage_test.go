@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -79,7 +79,7 @@ func TestLayoutStage_ReservesLegendSpace(t *testing.T) {
 }
 
 func testLegendConfig(pos canvasmodel.LegendPosition, orient canvasmodel.LegendOrientation) *legend.Config {
-	fill := canvas.NumericInk("file-size", []float64{100, 200, 400}, palette.GetPalette(palette.Temperature))
+	fill := pkginks.NumericInk("file-size", []float64{100, 200, 400}, palette.GetPalette(palette.Temperature))
 
 	return &legend.Config{
 		Position:    pos,

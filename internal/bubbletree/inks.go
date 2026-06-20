@@ -3,7 +3,6 @@ package bubbletree
 import (
 	"image/color"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -21,8 +20,8 @@ var (
 
 // Inks holds the fill and border Ink instances for a bubble render pass.
 type Inks struct {
-	Fill            canvas.Ink
-	Border          canvas.Ink
+	Fill            pkginks.Ink
+	Border          pkginks.Ink
 	HasBorderMetric bool // true when the border ink encodes a metric (use thicker stroke)
 }
 
@@ -37,7 +36,7 @@ func BuildInks(
 	borderPaletteName palette.PaletteName,
 ) Inks {
 	inks := Inks{
-		Border: canvas.FixedInk(bubbleDefaultBorder),
+		Border: pkginks.FixedInk(bubbleDefaultBorder),
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fillMetric)
