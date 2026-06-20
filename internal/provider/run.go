@@ -1,8 +1,6 @@
 package provider
 
 import (
-	"strings"
-
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 
@@ -11,124 +9,34 @@ import (
 )
 
 // MetricProgress receives notifications as metrics are calculated.
-// Callbacks may be called concurrently when providers run in parallel.
+// Callbacks may be called concurrently when loaders run in parallel.
 type MetricProgress interface {
 	OnMetricStarted(name metric.Name)
 	OnMetricFinished(name metric.Name)
 	OnFileProcessed(name metric.Name)
 }
 
-// FileProgressReporter is optionally implemented by providers that report
-// per-file progress during Load. runProvider sets the callback before Load.
+// FileProgressReporter is retained for loader adapters that can surface
+// per-file progress while a loader runs.
 type FileProgressReporter interface {
 	SetOnFileProcessed(fn func())
 }
 
-// Run loads the requested metrics (plus transitive dependencies) onto the tree.
-// Providers run in parallel where dependency ordering allows.
-func Run(root *model.Directory, requested []metric.Name, target metric.Target, progress MetricProgress) error {
-	return runWithRegistry(globalRegistry, root, requested, target, progress)
-}
-
-func runWithRegistry(
-	reg *registry,
-	root *model.Directory,
-	requested []metric.Name,
-	target metric.Target,
-	progress MetricProgress,
-) error {
-	if len(requested) == 0 {
+// RunLoaders loads the requested base metrics using registered loaders.
+// Loaders run in parallel where dependency ordering allows.
+func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricProgress) error {
+	loaders := LoadersFor(requested)
+	if len(loaders) == 0 {
 		return nil
 	}
 
-	expanded, err := expandDeps(reg, requested, target)
-	if err != nil {
-		return err
-	}
-
-	levels, err := topoSort(reg, expanded, target)
+	levels, err := topoSortLoaders(loaders)
 	if err != nil {
 		return err
 	}
 
 	for _, level := range levels {
-		g := new(errgroup.Group)
-
-		for _, name := range level {
-			p, _ := reg.get(name, target)
-
-			g.Go(func() error {
-				return runProvider(p, root, name, progress)
-			})
-		}
-
-		if err := g.Wait(); err != nil {
-			return err //nolint:wrapcheck // error is wrapped inside runProvider
-		}
-	}
-
-	return nil
-}
-
-// runProvider executes a single provider, notifying progress before and after.
-func runProvider(p Interface, root *model.Directory, name metric.Name, progress MetricProgress) error {
-	if progress != nil {
-		progress.OnMetricStarted(name)
-	}
-
-	if reporter, ok := p.(FileProgressReporter); ok && progress != nil {
-		reporter.SetOnFileProcessed(func() {
-			progress.OnFileProcessed(name)
-		})
-	}
-
-	if err := p.Load(root); err != nil {
-		return eris.Wrapf(err, "provider load failed for metric %q", name)
-	}
-
-	if progress != nil {
-		progress.OnMetricFinished(name)
-	}
-
-	return nil
-}
-
-// expandDeps returns the transitive closure of requested metric names.
-func expandDeps(reg *registry, requested []metric.Name, target metric.Target) ([]metric.Name, error) {
-	seen := make(map[metric.Name]bool)
-
-	var result []metric.Name
-
-	for _, name := range requested {
-		if err := visitDep(reg, name, seen, &result, target); err != nil {
-			return nil, err
-		}
-	}
-
-	return result, nil
-}
-
-func visitDep(
-	reg *registry,
-	name metric.Name,
-	seen map[metric.Name]bool,
-	result *[]metric.Name,
-	target metric.Target,
-) error {
-	if seen[name] {
-		return nil
-	}
-
-	p, ok := reg.get(name, target)
-	if !ok || p == nil {
-		return metricNotFoundError(reg, name, target)
-	}
-
-	seen[name] = true
-	*result = append(*result, name)
-
-	for _, dep := range p.Dependencies() {
-		if err := visitDep(reg, dep, seen, result, target); err != nil {
+		if err := runLoaderLevel(root, level, progress); err != nil {
 			return err
 		}
 	}
@@ -136,107 +44,134 @@ func visitDep(
 	return nil
 }
 
-// metricNotFoundError builds an error for a missing metric, including a hint
-// if the metric exists for a different target.
-func metricNotFoundError(reg *registry, name metric.Name, target metric.Target) error {
-	targets := reg.targetsForName(name)
-	if len(targets) > 0 {
-		targetStrs := make([]string, len(targets))
-		for i, t := range targets {
-			targetStrs[i] = t.String()
-		}
+func runLoaderLevel(root *model.Directory, level []BaseMetricLoader, progress MetricProgress) error {
+	g := new(errgroup.Group)
 
-		return eris.Errorf(
-			"unknown %s metric %q; metric %q exists for target(s): %s",
-			target, name, name, strings.Join(targetStrs, ", "),
-		)
+	for _, loader := range level {
+		g.Go(func() error {
+			return runSingleLoader(root, loader, progress)
+		})
 	}
 
-	return eris.Errorf(
-		"unknown %s metric %q; available metrics: %s",
-		target,
-		name,
-		formatNames(reg.namesFor(target)),
-	)
+	if err := g.Wait(); err != nil {
+		return eris.Wrap(err, "loader level failed")
+	}
+
+	return nil
 }
 
-// topoSort groups metrics into execution levels. Each level's metrics have
-// all dependencies satisfied by previous levels.
-func topoSort(reg *registry, names []metric.Name, target metric.Target) ([][]metric.Name, error) {
-	inDegree, dependents := buildDepGraph(reg, names, target)
+func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress MetricProgress) error {
+	notifyStarted(loader, progress)
+	wireFileProgress(loader, progress)
 
-	return computeLevels(names, inDegree, dependents)
+	if err := loader.Load(root); err != nil {
+		return eris.Wrapf(err, "loader failed for metrics %v", loader.Metrics)
+	}
+
+	notifyFinished(loader, progress)
+
+	return nil
 }
 
-func buildDepGraph(
-	reg *registry,
-	names []metric.Name,
-	target metric.Target,
-) (map[metric.Name]int, map[metric.Name][]metric.Name) {
-	nameSet := make(map[metric.Name]bool, len(names))
-	for _, n := range names {
-		nameSet[n] = true
-	}
-
-	inDegree := make(map[metric.Name]int, len(names))
-	dependents := make(map[metric.Name][]metric.Name)
-
-	for _, n := range names {
-		inDegree[n] = 0
-	}
-
-	for _, n := range names {
-		addEdges(reg, target, n, nameSet, inDegree, dependents)
-	}
-
-	return inDegree, dependents
-}
-
-func addEdges(
-	reg *registry,
-	target metric.Target,
-	n metric.Name,
-	nameSet map[metric.Name]bool,
-	inDegree map[metric.Name]int,
-	dependents map[metric.Name][]metric.Name,
-) {
-	p, ok := reg.get(n, target)
-	if !ok || p == nil {
+func notifyStarted(loader BaseMetricLoader, progress MetricProgress) {
+	if progress == nil {
 		return
 	}
 
-	for _, dep := range p.Dependencies() {
-		if nameSet[dep] {
-			inDegree[n]++
-			dependents[dep] = append(dependents[dep], n)
-		}
+	for _, m := range loader.Metrics {
+		progress.OnMetricStarted(m)
 	}
 }
 
-func computeLevels(
-	names []metric.Name,
-	inDegree map[metric.Name]int,
-	dependents map[metric.Name][]metric.Name,
-) ([][]metric.Name, error) {
-	var levels [][]metric.Name
+func notifyFinished(loader BaseMetricLoader, progress MetricProgress) {
+	if progress == nil {
+		return
+	}
+
+	for _, m := range loader.Metrics {
+		progress.OnMetricFinished(m)
+	}
+}
+
+func wireFileProgress(loader BaseMetricLoader, progress MetricProgress) {
+	if loader.Reporter == nil || progress == nil {
+		return
+	}
+
+	loader.Reporter.SetOnFileProcessed(func() {
+		for _, m := range loader.Metrics {
+			progress.OnFileProcessed(m)
+		}
+	})
+}
+
+func topoSortLoaders(loaders []BaseMetricLoader) ([][]BaseMetricLoader, error) {
+	provides := buildProvidesMap(loaders)
+
+	inDegree, dependents, err := buildDependencyGraph(loaders, provides)
+	if err != nil {
+		return nil, err
+	}
+
+	return computeLoaderLevels(loaders, inDegree, dependents)
+}
+
+func buildProvidesMap(loaders []BaseMetricLoader) map[metric.Name]int {
+	provides := make(map[metric.Name]int)
+
+	for i, l := range loaders {
+		for _, m := range l.Metrics {
+			provides[m] = i
+		}
+	}
+
+	return provides
+}
+
+func buildDependencyGraph(
+	loaders []BaseMetricLoader,
+	provides map[metric.Name]int,
+) ([]int, map[int][]int, error) {
+	inDegree := make([]int, len(loaders))
+	dependents := make(map[int][]int)
+
+	for i, l := range loaders {
+		for _, dep := range l.Dependencies {
+			j, ok := provides[dep]
+			if !ok {
+				return nil, nil, eris.Errorf(
+					"loader for %v declares dependency on %q but no selected loader provides it",
+					l.Metrics, dep,
+				)
+			}
+
+			if j != i {
+				inDegree[i]++
+				dependents[j] = append(dependents[j], i)
+			}
+		}
+	}
+
+	return inDegree, dependents, nil
+}
+
+func computeLoaderLevels(
+	loaders []BaseMetricLoader,
+	inDegree []int,
+	dependents map[int][]int,
+) ([][]BaseMetricLoader, error) {
+	var levels [][]BaseMetricLoader
 
 	processed := 0
 
-	for processed < len(names) {
-		level := findReady(names, inDegree)
+	for processed < len(loaders) {
+		level, levelIndices := findReadyLoaders(loaders, inDegree)
 
 		if len(level) == 0 {
-			return nil, eris.New("circular dependency detected among metric providers")
+			return nil, eris.New("circular dependency detected among metric loaders")
 		}
 
-		for _, n := range level {
-			inDegree[n] = -1
-			processed++
-
-			for _, dep := range dependents[n] {
-				inDegree[dep]--
-			}
-		}
+		processed += advanceLoaderLevel(levelIndices, inDegree, dependents)
 
 		levels = append(levels, level)
 	}
@@ -244,23 +179,30 @@ func computeLevels(
 	return levels, nil
 }
 
-func findReady(names []metric.Name, inDegree map[metric.Name]int) []metric.Name {
-	var level []metric.Name
+func findReadyLoaders(loaders []BaseMetricLoader, inDegree []int) ([]BaseMetricLoader, []int) {
+	var (
+		level   []BaseMetricLoader
+		indices []int
+	)
 
-	for _, n := range names {
-		if inDegree[n] == 0 {
-			level = append(level, n)
+	for i, deg := range inDegree {
+		if deg == 0 {
+			level = append(level, loaders[i])
+			indices = append(indices, i)
 		}
 	}
 
-	return level
+	return level, indices
 }
 
-func formatNames(names []metric.Name) string {
-	strs := make([]string, len(names))
-	for i, n := range names {
-		strs[i] = string(n)
+func advanceLoaderLevel(levelIndices []int, inDegree []int, dependents map[int][]int) int {
+	for _, i := range levelIndices {
+		inDegree[i] = -1
+
+		for _, dep := range dependents[i] {
+			inDegree[dep]--
+		}
 	}
 
-	return strings.Join(strs, ", ")
+	return len(levelIndices)
 }

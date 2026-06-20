@@ -202,17 +202,32 @@ func addBubbleFileDiscsWalk(
 
 // addBubbleLabels recursively adds labels for all nodes with ShowLabel set.
 // Directory labels use arc text; file labels use centred text.
+// Pre-allocates a shared labelInk and fileTextSpec so they are not re-created
+// for every labelled node in the tree.
 func addBubbleLabels(cv *canvas.Canvas, node BubbleNode) {
+	labelInk := canvas.FixedInk(bubbleLabelColour)
+	fileTextSpec := &canvas.TextSpec{
+		Ink:      labelInk,
+		FontSize: 0,
+		Anchor:   canvas.AnchorMiddle,
+	}
+
+	addBubbleLabelsInner(cv, node, labelInk, fileTextSpec)
+}
+
+// addBubbleLabelsInner is the recursive worker for addBubbleLabels.
+// It accepts pre-allocated specs to avoid repeated allocations per node.
+func addBubbleLabelsInner(cv *canvas.Canvas, node BubbleNode, labelInk canvas.Ink, fileTextSpec *canvas.TextSpec) {
 	if node.ShowLabel && node.Label != "" {
 		if node.IsDirectory {
-			addBubbleDirLabel(cv, node)
+			addBubbleDirLabel(cv, node, labelInk)
 		} else {
-			addBubbleFileLabel(cv, node)
+			addBubbleFileLabel(cv, node, fileTextSpec)
 		}
 	}
 
 	for _, child := range node.Children {
-		addBubbleLabels(cv, child)
+		addBubbleLabelsInner(cv, child, labelInk, fileTextSpec)
 	}
 }
 
@@ -238,14 +253,14 @@ func bubbleDirLabelFontSize(node BubbleNode) float64 {
 }
 
 // addBubbleDirLabel adds an arc text label curved just above the top of a directory circle.
-func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode) {
+func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk canvas.Ink) {
 	fontSize := bubbleDirLabelFontSize(node)
 	if fontSize == 0 {
 		return
 	}
 
 	arcSpec := &canvas.ArcTextSpec{
-		Ink:      canvas.FixedInk(bubbleLabelColour),
+		Ink:      labelInk,
 		FontSize: fontSize,
 	}
 
@@ -259,15 +274,9 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode) {
 }
 
 // addBubbleFileLabel adds a centred text label on a file circle.
-func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode) {
-	labelSpec := &canvas.TextSpec{
-		Ink:      canvas.FixedInk(bubbleLabelColour),
-		FontSize: 0,
-		Anchor:   canvas.AnchorMiddle,
-	}
-
+func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode, spec *canvas.TextSpec) {
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    labelSpec,
+		Spec:    spec,
 		X:       node.X,
 		Y:       node.Y,
 		Content: node.Label,

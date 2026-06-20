@@ -9,7 +9,6 @@ import (
 	"image/color"
 	"math"
 	"os"
-	"strings"
 
 	"github.com/rotisserie/eris"
 
@@ -57,7 +56,7 @@ func (s *svgBackend) DrawRectangle(
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
-		fillAttr = fmt.Sprintf("url(#%s)", s.emitRadialGradient(f))
+		fillAttr = s.emitRadialGradient(f)
 	default:
 	}
 
@@ -71,19 +70,27 @@ func (s *svgBackend) DrawRectangle(
 	)
 }
 
+// emitRadialGradient emits the gradient <defs> block on its first call for a
+// given gradient specification, and returns a "url(#id)" fill-attribute string
+// on every call (including cache hits).  Callers can use the returned string
+// directly as the fill attribute without additional formatting.
 func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
+	centerCSS := s.colourCSS(grad.Center)
+	edgeCSS := s.colourCSS(grad.Edge)
+
 	key := fmt.Sprintf(
 		"%s|%s|%.1f|%.1f",
-		rgbaToCSS(grad.Center), rgbaToCSS(grad.Edge),
+		centerCSS, edgeCSS,
 		grad.Focus.X*100, grad.Focus.Y*100,
 	)
 
-	if id, ok := s.gradCache[key]; ok {
-		return id
+	if urlRef, ok := s.gradCache[key]; ok {
+		return urlRef
 	}
 
 	s.gradID++
 	id := fmt.Sprintf("rg%d", s.gradID)
+	urlRef := "url(#" + id + ")"
 
 	// A 70% radius reaches the rectangle edges while avoiding corner emphasis.
 	fmt.Fprintf(
@@ -94,12 +101,12 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 			`</radialGradient></defs>`+"\n",
 		id,
 		grad.Focus.X*100, grad.Focus.Y*100,
-		s.colourCSS(grad.Center), s.colourCSS(grad.Edge),
+		centerCSS, edgeCSS,
 	)
 
-	s.gradCache[key] = id
+	s.gradCache[key] = urlRef
 
-	return id
+	return urlRef
 }
 
 func (s *svgBackend) DrawDisc(
@@ -109,7 +116,7 @@ func (s *svgBackend) DrawDisc(
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
-		fillAttr = fmt.Sprintf("url(#%s)", s.emitRadialGradient(f))
+		fillAttr = s.emitRadialGradient(f)
 	default:
 	}
 
@@ -148,18 +155,17 @@ func (s *svgBackend) DrawPath(points []model.Position, stroke color.RGBA, stroke
 		return
 	}
 
-	var b strings.Builder
-	fmt.Fprintf(&b, "M %.1f %.1f", points[0].X, points[0].Y)
+	// Write the path data directly into s.buf to avoid an intermediate
+	// strings.Builder allocation and the subsequent copy into s.buf.
+	// For spiral tracks (500–1500+ points) this saves ~6–22 KB of allocation.
+	fmt.Fprintf(&s.buf, `<path d="M %.1f %.1f`, points[0].X, points[0].Y)
 
 	for _, p := range points[1:] {
-		fmt.Fprintf(&b, " L %.1f %.1f", p.X, p.Y)
+		fmt.Fprintf(&s.buf, ` L %.1f %.1f`, p.X, p.Y)
 	}
 
-	fmt.Fprintf(
-		&s.buf,
-		`<path d="%s" fill="none" stroke="%s" stroke-width="%.1f"/>`+"\n",
-		b.String(), s.colourCSS(stroke), strokeWidth,
-	)
+	fmt.Fprintf(&s.buf, `" fill="none" stroke="%s" stroke-width="%.1f"/>`+"\n",
+		s.colourCSS(stroke), strokeWidth)
 }
 
 func (s *svgBackend) DrawText(

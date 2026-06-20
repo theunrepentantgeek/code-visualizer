@@ -14,7 +14,6 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // Metric name constants for filesystem metrics.
@@ -37,36 +36,17 @@ func IsFilesystemMetric(name metric.Name) bool {
 // FileSizeProvider reports file size in bytes. Value is set during scan; Load is a no-op.
 type FileSizeProvider struct{}
 
-func (FileSizeProvider) Name() metric.Name                   { return FileSize }
-func (FileSizeProvider) Kind() metric.Kind                   { return metric.Quantity }
-func (FileSizeProvider) Target() metric.Target               { return metric.File }
-func (FileSizeProvider) Description() string                 { return "Size of each file in bytes." }
-func (FileSizeProvider) Dependencies() []metric.Name         { return nil }
-func (FileSizeProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
-func (FileSizeProvider) Load(_ *model.Directory) error       { return nil }
+func (FileSizeProvider) Load(_ *model.Directory) error { return nil }
 
 // FileTypeProvider reports the file type classification. Value is set during scan; Load is a no-op.
 type FileTypeProvider struct{}
 
-func (FileTypeProvider) Name() metric.Name                   { return FileType }
-func (FileTypeProvider) Kind() metric.Kind                   { return metric.Classification }
-func (FileTypeProvider) Target() metric.Target               { return metric.File }
-func (FileTypeProvider) Description() string                 { return "File extension category (e.g. go, md, png)." }
-func (FileTypeProvider) Dependencies() []metric.Name         { return nil }
-func (FileTypeProvider) DefaultPalette() palette.PaletteName { return palette.Categorization }
-func (FileTypeProvider) Load(_ *model.Directory) error       { return nil }
+func (FileTypeProvider) Load(_ *model.Directory) error { return nil }
 
 // FileLinesProvider counts lines in each text file.
 type FileLinesProvider struct {
 	onFile func()
 }
-
-func (*FileLinesProvider) Name() metric.Name                   { return FileLines }
-func (*FileLinesProvider) Kind() metric.Kind                   { return metric.Quantity }
-func (*FileLinesProvider) Target() metric.Target               { return metric.File }
-func (*FileLinesProvider) Description() string                 { return "Number of lines in each text file." }
-func (*FileLinesProvider) Dependencies() []metric.Name         { return nil }
-func (*FileLinesProvider) DefaultPalette() palette.PaletteName { return palette.Neutral }
 
 func (p *FileLinesProvider) SetOnFileProcessed(fn func()) { p.onFile = fn }
 

@@ -23,24 +23,22 @@ func TestHelpMetricsCmdRun_GroupsMetricsByProvider(t *testing.T) {
 	filesystemIndex := strings.Index(output, "Filesystem metrics")
 	gitIndex := strings.Index(output, "Git metrics")
 	goIndex := strings.Index(output, "Go metrics")
-	otherIndex := strings.Index(output, "Other metrics")
 
 	g.Expect(syntaxIndex).To(BeNumerically(">=", 0))
 	g.Expect(filesystemIndex).To(BeNumerically(">=", 0))
 	g.Expect(gitIndex).To(BeNumerically(">", filesystemIndex))
 	g.Expect(goIndex).To(BeNumerically(">", gitIndex))
-	g.Expect(otherIndex).To(BeNumerically(">", goIndex))
 
 	filesystemSection := output[filesystemIndex:gitIndex]
-	goSection := output[goIndex:otherIndex]
+	goSection := output[goIndex:]
 
 	g.Expect(filesystemSection).To(ContainSubstring("file-size"))
 	g.Expect(filesystemSection).To(ContainSubstring("sum"))
 	g.Expect(filesystemSection).To(ContainSubstring("min"))
 	g.Expect(goSection).To(MatchRegexp(`public \(Exported\s+declarations only\)`))
 	g.Expect(goSection).To(MatchRegexp(`Filters:\s+public,\s+private`))
-	g.Expect(output).To(ContainSubstring("Other metrics"))
-	g.Expect(output).To(ContainSubstring("type-count"))
+	// Legacy "Other metrics" section no longer exists
+	g.Expect(output).NotTo(ContainSubstring("Other metrics"))
 }
 
 func TestHelpMetricsCmdRun_WrapsOutputToConsoleWidth(t *testing.T) {

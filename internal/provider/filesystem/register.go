@@ -1,11 +1,27 @@
 package filesystem
 
-import "github.com/theunrepentantgeek/code-visualizer/internal/provider"
+import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+)
 
-// Register adds all filesystem metric providers to the global registry.
+// Register adds all filesystem base metrics and loaders to the global registries.
 func Register() {
-	provider.Register(FileSizeProvider{})
-	provider.Register(&FileLinesProvider{})
-	provider.Register(FileTypeProvider{})
 	RegisterBase()
+
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{FileSize},
+		Load:    FileSizeProvider{}.Load,
+	})
+
+	fileLinesProvider := &FileLinesProvider{}
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:  []metric.Name{FileLines},
+		Load:     fileLinesProvider.Load,
+		Reporter: fileLinesProvider,
+	})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{FileType},
+		Load:    FileTypeProvider{}.Load,
+	})
 }

@@ -13,15 +13,17 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
+//nolint:dupl // Intentionally parallel structure testing different output formats
 func TestRenderToCanvas_PNG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 800, 600, spiral.Hourly, spiral.LabelNone)
-	inks := spiral.BuildInks(buckets, "", "", "", "")
+	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
 	cv := spiral.RenderToCanvas(layout, buckets, 800, 600, inks)
 
 	out := filepath.Join(t.TempDir(), "spiral.png")
@@ -44,7 +46,7 @@ func TestRenderToCanvas_SVG(t *testing.T) {
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
-	inks := spiral.BuildInks(buckets, "", "", "", "")
+	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
 	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks)
 
 	out := filepath.Join(t.TempDir(), "spiral.svg")
@@ -74,13 +76,14 @@ func TestRenderToCanvas_SVG(t *testing.T) {
 	g.Expect(rootElement).To(Equal("svg"))
 }
 
+//nolint:dupl // Intentionally parallel structure testing different output formats
 func TestRenderToCanvas_JPG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
-	inks := spiral.BuildInks(buckets, "", "", "", "")
+	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
 	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks)
 
 	out := filepath.Join(t.TempDir(), "spiral.jpg")

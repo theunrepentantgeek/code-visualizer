@@ -24,7 +24,7 @@ func TestResolveRadialMetrics_DiscSizeOnly(t *testing.T) {
 	g.Expect(viz.DiscSize).To(Equal(metric.Name("file-size")))
 	// Without an explicit Fill, fill metric defaults to disc size.
 	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-size")))
-	g.Expect(common.Requested.LegacyNames()).To(ConsistOf(metric.Name("file-size")))
+	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
 func TestResolveRadialMetrics_FillOverridesDiscSizeAsFillMetric(t *testing.T) {
@@ -41,7 +41,7 @@ func TestResolveRadialMetrics_FillOverridesDiscSizeAsFillMetric(t *testing.T) {
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-type")))
-	g.Expect(common.Requested.LegacyNames()).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
+	g.Expect(common.Requested.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
 func TestResolveRadialMetrics_LabelsDefaultToFolders(t *testing.T) {

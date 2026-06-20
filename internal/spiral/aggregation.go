@@ -6,7 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 // commitCountMetric is the metric name for commit-count. In a spiral time bucket,
@@ -19,15 +19,17 @@ const commitCountMetric metric.Name = "commit-count"
 // sizeMetric is empty, SizeValue defaults to len(b.Files).
 func AggregateBucketMetrics(
 	buckets []TimeBucket,
+	requested stages.RequestedMetrics,
 	sizeMetric, fillMetric, borderMetric metric.Name,
 ) {
 	for i := range buckets {
-		aggregateBucket(&buckets[i], sizeMetric, fillMetric, borderMetric)
+		aggregateBucket(&buckets[i], requested, sizeMetric, fillMetric, borderMetric)
 	}
 }
 
 func aggregateBucket(
 	b *TimeBucket,
+	requested stages.RequestedMetrics,
 	sizeMetric, fillMetric, borderMetric metric.Name,
 ) {
 	if sizeMetric != "" {
@@ -36,16 +38,22 @@ func aggregateBucket(
 		b.SizeValue = float64(len(b.Files))
 	}
 
-	aggregateColourMetric(b.Files, fillMetric, &b.FillValue, &b.FillLabel)
-	aggregateColourMetric(b.Files, borderMetric, &b.BorderValue, &b.BorderLabel)
+	aggregateColourMetric(b.Files, fillMetric, requested, &b.FillValue, &b.FillLabel)
+	aggregateColourMetric(b.Files, borderMetric, requested, &b.BorderValue, &b.BorderLabel)
 }
 
-func aggregateColourMetric(files []*model.File, m metric.Name, numVal *float64, catLabel *string) {
+func aggregateColourMetric(
+	files []*model.File,
+	m metric.Name,
+	requested stages.RequestedMetrics,
+	numVal *float64,
+	catLabel *string,
+) {
 	if m == "" {
 		return
 	}
 
-	d, ok := provider.GetDescriptor(m, metric.File)
+	d, ok := requested.DescriptorFor(m)
 	if !ok {
 		return
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 const sizeMetric metric.Name = "file-size"
@@ -91,7 +92,7 @@ func TestAggregateBucketMetrics_CommitCountSize(t *testing.T) {
 		{Files: []*model.File{}},        // empty bucket
 	}
 
-	AggregateBucketMetrics(buckets, commitCountMetric, "", "")
+	AggregateBucketMetrics(buckets, stages.RequestedMetrics{}, commitCountMetric, "", "")
 
 	g.Expect(buckets[0].SizeValue).To(Equal(3.0))
 	g.Expect(buckets[1].SizeValue).To(Equal(1.0))

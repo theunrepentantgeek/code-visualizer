@@ -15,6 +15,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func renderScatterFile(name, category string, lines, size int64) *model.File {
@@ -47,7 +48,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 	)
-	inks := BuildInks(dataset, filesystem.FileSize, palette.Temperature, "", "")
+	inks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(layout, 800, 600, inks)
 
 	out := filepath.Join(t.TempDir(), "scatter.png")
@@ -84,7 +85,7 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 	)
-	inks := BuildInks(dataset, filesystem.FileSize, palette.Temperature, "", "")
+	inks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(layout, 800, 600, inks)
 
 	out := filepath.Join(t.TempDir(), "scatter.svg")

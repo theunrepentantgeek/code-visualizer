@@ -32,6 +32,19 @@ type BaseMetricDescriptor struct {
 	Dependencies   []metric.Name
 	DefaultPalette palette.PaletteName
 	FilterFunc     func(filter metric.FilterName, node any) bool
+	// DeclKinds lists the declaration kinds this metric applies to.
+	// If nil, the metric applies to all declaration kinds.
+	DeclKinds []string
+}
+
+// MatchesDeclKind reports whether the given declaration kind is relevant
+// to this metric. Returns true if DeclKinds is nil (no restriction).
+func (d BaseMetricDescriptor) MatchesDeclKind(kind string) bool {
+	if d.DeclKinds == nil {
+		return true
+	}
+
+	return slices.Contains(d.DeclKinds, kind)
 }
 
 // PassesFilter evaluates the FilterFunc for the given filter and node.

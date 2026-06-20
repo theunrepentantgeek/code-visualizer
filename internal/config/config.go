@@ -45,6 +45,11 @@ type Config struct {
 	Footer     *Footer       `yaml:"footer,omitempty"     json:"footer,omitempty"`
 	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
 
+	// SelectionMetrics holds user-defined, filename-glob-based classification metrics.
+	// The map key is the metric name; the value is an ordered list of match rules.
+	// See SelectionMetric for the full type, and SelectionMetricsList for an ordered slice view.
+	SelectionMetrics selectionMetricsRaw `yaml:"selectionMetrics,omitempty" json:"selectionMetrics,omitempty"`
+
 	// Source is the path of the config file from which this Config was loaded, or nil if it was not loaded from a file.
 	Source *string `yaml:"-" json:"-"`
 }
@@ -244,6 +249,16 @@ func (c *Config) LegendPositionStr() string {
 	}
 
 	return c.Legend.PositionStr()
+}
+
+// SelectionMetricsList returns all user-defined selection metrics as an
+// ordered slice (sorted by metric name for deterministic registration).
+func (c *Config) SelectionMetricsList() []SelectionMetric {
+	if c == nil {
+		return nil
+	}
+
+	return c.SelectionMetrics.toSlice()
 }
 
 // LegendOrientationStr returns the legend orientation string, or empty string

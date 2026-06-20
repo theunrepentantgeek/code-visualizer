@@ -92,6 +92,23 @@ func addDiscs(
 	buckets []TimeBucket,
 	inks Inks,
 ) {
+	// Pre-allocate the two spec variants (borderWidth is either 2.0 or 3.0)
+	// so they are not re-created for every disc in the loop.
+	smallSpec := &canvas.DiscSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        inks.Fill,
+			Border:      inks.Border,
+			BorderWidth: 2.0,
+		},
+	}
+	largeSpec := &canvas.DiscSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        inks.Fill,
+			Border:      inks.Border,
+			BorderWidth: 3.0,
+		},
+	}
+
 	for i, n := range nodes {
 		if n.DiscRadius <= 0 {
 			continue
@@ -100,16 +117,13 @@ func addDiscs(
 		fillMV := metricValue(buckets[i].FillValue, buckets[i].FillLabel, inks.Fill)
 		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, inks.Border)
 
-		discSpec := &canvas.DiscSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        inks.Fill,
-				Border:      inks.Border,
-				BorderWidth: borderWidth(n.DiscRadius),
-			},
+		spec := smallSpec
+		if borderWidth(n.DiscRadius) == 3.0 {
+			spec = largeSpec
 		}
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   discSpec,
+			Spec:   spec,
 			X:      n.X,
 			Y:      n.Y,
 			Radius: n.DiscRadius,
@@ -121,18 +135,21 @@ func addDiscs(
 }
 
 // addLabels adds rotated text labels tangent to the spiral.
+// Pre-allocates a shared labelInk to avoid recreating it for every label.
 func addLabels(cv *canvas.Canvas, nodes []SpiralNode) {
+	labelInk := canvas.FixedInk(labelColour)
+
 	for _, n := range nodes {
 		if !n.ShowLabel || n.Label == "" {
 			continue
 		}
 
-		addLabel(cv, n)
+		addLabel(cv, n, labelInk)
 	}
 }
 
 // addLabel adds a single rotated label for a spiral node.
-func addLabel(cv *canvas.Canvas, n SpiralNode) {
+func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk canvas.Ink) {
 	labelR := n.DiscRadius + labelGap
 	lx := n.X + labelR*math.Sin(n.Angle)
 	ly := n.Y - labelR*math.Cos(n.Angle)
@@ -155,7 +172,7 @@ func addLabel(cv *canvas.Canvas, n SpiralNode) {
 	}
 
 	labelSpec := &canvas.TextSpec{
-		Ink:      canvas.FixedInk(labelColour),
+		Ink:      labelInk,
 		FontSize: 0,
 		Anchor:   anchor,
 		Rotation: rotation,
