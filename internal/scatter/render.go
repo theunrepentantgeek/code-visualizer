@@ -31,8 +31,8 @@ func RenderToCanvas(layout ScatterLayout, width, height int, inks Inks) *canvas.
 func addScatterBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(scatterBgColour),
-			Border:      canvas.FixedInk(scatterBgColour),
+			Fill:        pkginks.FixedInk(scatterBgColour),
+			Border:      pkginks.FixedInk(scatterBgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -54,8 +54,8 @@ func addScatterStructure(cv *canvas.Canvas, layout ScatterLayout) {
 func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
 	plotSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(scatterBgColour),
-			Border:      canvas.FixedInk(scatterAxisColour),
+			Fill:        pkginks.FixedInk(scatterBgColour),
+			Border:      pkginks.FixedInk(scatterAxisColour),
 			BorderWidth: scatterAxisStrokeWidth,
 		},
 	}
@@ -71,7 +71,7 @@ func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
 }
 
 func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
-	lineSpec := &canvas.LineSpec{Stroke: canvas.FixedInk(scatterGridColour), StrokeWidth: scatterGridStrokeWidth}
+	lineSpec := &canvas.LineSpec{Stroke: pkginks.FixedInk(scatterGridColour), StrokeWidth: scatterGridStrokeWidth}
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
@@ -136,7 +136,7 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 }
 
 func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
-	titleSpec := &canvas.TextSpec{Ink: canvas.FixedInk(scatterLabelColour), FontSize: 12, Anchor: canvas.AnchorMiddle}
+	titleSpec := &canvas.TextSpec{Ink: pkginks.FixedInk(scatterLabelColour), FontSize: 12, Anchor: canvas.AnchorMiddle}
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:    titleSpec,
 		X:       layout.Plot.X + layout.Plot.W/2,
@@ -145,7 +145,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 	})
 
 	yTitleSpec := &canvas.TextSpec{
-		Ink:      canvas.FixedInk(scatterLabelColour),
+		Ink:      pkginks.FixedInk(scatterLabelColour),
 		FontSize: 12,
 		Anchor:   canvas.AnchorMiddle,
 		Rotation: -math.Pi / 2,
@@ -157,7 +157,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 		Content: layout.YAxis.Title,
 	})
 
-	tickSpec := &canvas.TextSpec{Ink: canvas.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorMiddle}
+	tickSpec := &canvas.TextSpec{Ink: pkginks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorMiddle}
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    tickSpec,
@@ -176,7 +176,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 		})
 	}
 
-	yTickSpec := &canvas.TextSpec{Ink: canvas.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorEnd}
+	yTickSpec := &canvas.TextSpec{Ink: pkginks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorEnd}
 	for _, tick := range layout.YAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    yTickSpec,
@@ -220,7 +220,7 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, inks Inks) {
 		label, fontSize := scatterLabel(point.Label, point.Radius)
 		labelColour := canvas.TextColourFor(inks.Fill.Dip(fillValue))
 		labelSpec := &canvas.TextSpec{
-			Ink:      canvas.FixedInk(labelColour),
+			Ink:      pkginks.FixedInk(labelColour),
 			FontSize: fontSize,
 			Anchor:   canvas.AnchorMiddle,
 		}

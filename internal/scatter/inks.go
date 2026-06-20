@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"slices"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -22,8 +22,8 @@ var (
 
 // Inks holds the fill and border inks for scatter points.
 type Inks struct {
-	Fill            canvas.Ink
-	Border          canvas.Ink
+	Fill            pkginks.Ink
+	Border          pkginks.Ink
 	HasBorderMetric bool
 }
 
@@ -38,7 +38,7 @@ func BuildInks(
 ) Inks {
 	inks := Inks{
 		Fill:   buildMetricInk(dataset.Files(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
-		Border: canvas.FixedInk(scatterDefaultBorder),
+		Border: pkginks.FixedInk(scatterDefaultBorder),
 	}
 
 	if borderMetric != "" {
@@ -55,14 +55,14 @@ func buildMetricInk(
 	name metric.Name,
 	paletteName palette.PaletteName,
 	fallback color.RGBA,
-) canvas.Ink {
+) pkginks.Ink {
 	if name == "" {
-		return canvas.FixedInk(fallback)
+		return pkginks.FixedInk(fallback)
 	}
 
 	descriptor, ok := requested.DescriptorFor(name)
 	if !ok {
-		return canvas.FixedInk(fallback)
+		return pkginks.FixedInk(fallback)
 	}
 
 	pal := palette.GetPalette(paletteName)
@@ -79,7 +79,7 @@ func buildNumericInk(
 	name metric.Name,
 	pal palette.ColourPalette,
 	fallback color.RGBA,
-) canvas.Ink {
+) pkginks.Ink {
 	values := make([]float64, 0, len(files))
 	for _, file := range files {
 		if value, ok := numericValueForFile(file, name); ok {
@@ -88,10 +88,10 @@ func buildNumericInk(
 	}
 
 	if len(values) == 0 {
-		return canvas.FixedInk(fallback)
+		return pkginks.FixedInk(fallback)
 	}
 
-	return canvas.NumericInk(name, values, pal)
+	return pkginks.NumericInk(name, values, pal)
 }
 
 func buildCategoricalInk(
@@ -99,15 +99,15 @@ func buildCategoricalInk(
 	name metric.Name,
 	pal palette.ColourPalette,
 	fallback color.RGBA,
-) canvas.Ink {
+) pkginks.Ink {
 	categories := uniqueCategories(files, name)
 	if len(categories) == 0 {
-		return canvas.FixedInk(fallback)
+		return pkginks.FixedInk(fallback)
 	}
 
 	slices.Sort(categories)
 
-	return canvas.CategoricalInk(name, categories, pal)
+	return pkginks.CategoricalInk(name, categories, pal)
 }
 
 func uniqueCategories(files []*model.File, name metric.Name) []string {
