@@ -3,7 +3,7 @@ package bubbletree
 import (
 	"image/color"
 
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -18,10 +18,11 @@ var (
 	bubbleBgColour        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
-// Inks holds the fill and border Ink instances for a bubble render pass.
+// Inks pairs the fill and border Ink instances for a bubble render pass
+// (via embedded inks.ShapeInks) and records whether the border encodes a
+// metric so the renderer can choose a thicker stroke.
 type Inks struct {
-	Fill            pkginks.Ink
-	Border          pkginks.Ink
+	inks.ShapeInks
 	HasBorderMetric bool // true when the border ink encodes a metric (use thicker stroke)
 }
 
@@ -35,18 +36,18 @@ func BuildInks(
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
 ) Inks {
-	inks := Inks{
-		Border: pkginks.FixedInk(bubbleDefaultBorder),
+	is := Inks{
+		ShapeInks: inks.ShapeInks{Border: inks.FixedInk(bubbleDefaultBorder)},
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	inks.Fill = pkginks.BuildMetricInk(root, fillDesc, fillPaletteName, bubbleDefaultFileFill)
+	is.Fill = inks.BuildMetricInk(root, fillDesc, fillPaletteName, bubbleDefaultFileFill)
 
 	if borderMetric != "" {
 		borderDesc, _ := requested.DescriptorFor(borderMetric)
-		inks.Border = pkginks.BuildMetricInk(root, borderDesc, borderPaletteName, bubbleDefaultBorder)
-		inks.HasBorderMetric = true
+		is.Border = inks.BuildMetricInk(root, borderDesc, borderPaletteName, bubbleDefaultBorder)
+		is.HasBorderMetric = true
 	}
 
-	return inks
+	return is
 }

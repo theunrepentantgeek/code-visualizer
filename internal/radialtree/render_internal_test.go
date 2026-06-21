@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -41,12 +41,12 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 		},
 	}
 
-	inks := BuildInks(
+	is := BuildInks(
 		root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "",
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(pkginks.KindFixed))
+	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
+	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
 }
 
 func TestBuildRadialInks_CategoricalFill(t *testing.T) {
@@ -61,10 +61,10 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 		},
 	}
 
-	inks := BuildInks(
+	is := BuildInks(
 		root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "",
 	)
-	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindCategorical))
+	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
 }
 
 func TestBuildRadialInks_WithBorder(t *testing.T) {
@@ -79,14 +79,14 @@ func TestBuildRadialInks_WithBorder(t *testing.T) {
 		},
 	}
 
-	inks := BuildInks(
+	is := BuildInks(
 		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
 	)
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(pkginks.KindNumeric))
-	g.Expect(inks.Border.Info().Kind).NotTo(Equal(pkginks.KindFixed))
+	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
+	g.Expect(is.Border.Info().Kind).NotTo(Equal(inks.KindFixed))
 }
 
 func radialTestRoot() *model.Directory {
@@ -106,8 +106,8 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 
 	root := radialTestRoot()
 	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
-	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
+	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := RenderToCanvas(&nodes, root, 800, 0, is)
 
 	out := filepath.Join(t.TempDir(), "radial.png")
 	err := cv.Render(out)
@@ -129,8 +129,8 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 
 	root := radialTestRoot()
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
-	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
+	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := RenderToCanvas(&nodes, root, 400, 0, is)
 
 	out := filepath.Join(t.TempDir(), "radial.svg")
 	err := cv.Render(out)
@@ -180,8 +180,8 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 	}
 
 	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
-	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, 0, inks)
+	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := RenderToCanvas(&nodes, root, 800, 0, is)
 
 	out := filepath.Join(t.TempDir(), "nested.png")
 	err := cv.Render(out)
@@ -202,8 +202,8 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 	root := &model.Directory{Name: "empty"}
 
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
-	inks := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, 0, inks)
+	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := RenderToCanvas(&nodes, root, 400, 0, is)
 
 	out := filepath.Join(t.TempDir(), "empty.png")
 	err := cv.Render(out)
@@ -321,14 +321,14 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 	}
 
 	// Build inks with a border metric configured.
-	inks := BuildInks(
+	is := BuildInks(
 		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
 	)
 
 	// Precondition: the border ink must be metric-driven, not fixed.
-	g.Expect(inks.Border.Info().Kind).NotTo(Equal(pkginks.KindFixed),
+	g.Expect(is.Border.Info().Kind).NotTo(Equal(inks.KindFixed),
 		"precondition: border ink should be metric-driven when a border metric is configured")
 
 	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
@@ -357,14 +357,14 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 
 	// Directory border must resolve to defaultBorder (fixed ink),
 	// not the metric ink's lowest bucket.
-	dirBorderInk := pkginks.FixedInk(defaultBorder)
-	g.Expect(dirBorderInk.Dip(pkginks.MetricValue{})).To(Equal(defaultBorder),
+	dirBorderInk := inks.FixedInk(defaultBorder)
+	g.Expect(dirBorderInk.Dip(inks.MetricValue{})).To(Equal(defaultBorder),
 		"directory disc border should resolve to defaultBorder")
 
 	// File border should follow the metric ink.
 	if fileEntry != nil && fileEntry.file != nil {
-		fileMV := pkginks.MetricValueForFile(fileEntry.file, inks.Border)
-		fileBorderColour := inks.Border.Dip(fileMV)
+		fileMV := inks.MetricValueForFile(fileEntry.file, is.Border)
+		fileBorderColour := is.Border.Dip(fileMV)
 		g.Expect(fileBorderColour).NotTo(Equal(defaultBorder),
 			"file disc border should follow the metric ink, not the fixed default")
 	}

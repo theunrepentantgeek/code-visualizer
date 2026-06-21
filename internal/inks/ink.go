@@ -159,3 +159,10 @@ func clamp01(v float64) float64 {
 
 	return v
 }
+
+// ShapeInks pairs a fill ink with a border ink. Visualisation packages embed
+// or alias this struct to avoid restating the same two-field record.
+type ShapeInks struct {
+	Fill   Ink
+	Border Ink
+}

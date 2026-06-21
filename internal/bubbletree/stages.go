@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -46,7 +46,7 @@ func BuildInksStage(c *stages.CommonState, b *State) error {
 
 	b.Inks = BuildInks(c.Root, c.Requested, b.FillMetric, b.FillPalette, b.BorderMetric, b.BorderPalette)
 	if !b.Flat {
-		b.Inks.Fill = pkginks.NewRadialGradientInk(b.Inks.Fill)
+		b.Inks.Fill = inks.NewRadialGradientInk(b.Inks.Fill)
 	}
 
 	return nil

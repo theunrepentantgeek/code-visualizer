@@ -8,7 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -28,7 +28,7 @@ func RenderToCanvas(
 	nodes *BubbleNode,
 	root *model.Directory,
 	width, height int,
-	inks Inks,
+	is Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -36,7 +36,7 @@ func RenderToCanvas(
 
 	dirs, files := indexBubbleNodes(nodes)
 	addBubbleDirDiscs(cv, dirs, root)
-	addBubbleFileDiscs(cv, files, root, inks)
+	addBubbleFileDiscs(cv, files, root, is)
 	addBubbleLabels(cv, *nodes)
 
 	return cv
@@ -46,8 +46,8 @@ func RenderToCanvas(
 func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        pkginks.FixedInk(bubbleBgColour),
-			Border:      pkginks.FixedInk(bubbleBgColour),
+			Fill:        inks.FixedInk(bubbleBgColour),
+			Border:      inks.FixedInk(bubbleBgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -107,8 +107,8 @@ func addBubbleDirDiscs(
 		return cmp.Compare(b.node.Radius, a.node.Radius)
 	})
 
-	dirFill := pkginks.FixedInk(bubbleDefaultDirFill, pkginks.WithOpacity(bubbleDirOpacity))
-	dirBorder := pkginks.FixedInk(bubbleDefaultBorder)
+	dirFill := inks.FixedInk(bubbleDefaultDirFill, inks.WithOpacity(bubbleDirOpacity))
+	dirBorder := inks.FixedInk(bubbleDefaultBorder)
 
 	dirSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
@@ -152,26 +152,26 @@ func addBubbleFileDiscs(
 	cv *canvas.Canvas,
 	fileIndex map[string]*BubbleNode,
 	root *model.Directory,
-	inks Inks,
+	is Inks,
 ) {
-	addBubbleFileDiscsWalk(cv, fileIndex, root, inks)
+	addBubbleFileDiscsWalk(cv, fileIndex, root, is)
 }
 
 func addBubbleFileDiscsWalk(
 	cv *canvas.Canvas,
 	fileIndex map[string]*BubbleNode,
 	dir *model.Directory,
-	inks Inks,
+	is Inks,
 ) {
 	borderWidth := bubbleBorderWidth
-	if inks.HasBorderMetric {
+	if is.HasBorderMetric {
 		borderWidth = bubbleMetricBorderWidth
 	}
 
 	fileSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.Fill,
-			Border:      inks.Border,
+			Fill:        is.Fill,
+			Border:      is.Border,
 			BorderWidth: borderWidth,
 		},
 	}
@@ -182,8 +182,8 @@ func addBubbleFileDiscsWalk(
 			continue
 		}
 
-		fillMV := pkginks.MetricValueForFile(f, inks.Fill)
-		borderMV := pkginks.MetricValueForFile(f, inks.Border)
+		fillMV := inks.MetricValueForFile(f, is.Fill)
+		borderMV := inks.MetricValueForFile(f, is.Border)
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   fileSpec,
@@ -196,7 +196,7 @@ func addBubbleFileDiscsWalk(
 	}
 
 	for _, d := range dir.Dirs {
-		addBubbleFileDiscsWalk(cv, fileIndex, d, inks)
+		addBubbleFileDiscsWalk(cv, fileIndex, d, is)
 	}
 }
 
@@ -205,7 +205,7 @@ func addBubbleFileDiscsWalk(
 // Pre-allocates a shared labelInk and fileTextSpec so they are not re-created
 // for every labelled node in the tree.
 func addBubbleLabels(cv *canvas.Canvas, node BubbleNode) {
-	labelInk := pkginks.FixedInk(bubbleLabelColour)
+	labelInk := inks.FixedInk(bubbleLabelColour)
 	fileTextSpec := &canvas.TextSpec{
 		Ink:      labelInk,
 		FontSize: 0,
@@ -217,7 +217,7 @@ func addBubbleLabels(cv *canvas.Canvas, node BubbleNode) {
 
 // addBubbleLabelsInner is the recursive worker for addBubbleLabels.
 // It accepts pre-allocated specs to avoid repeated allocations per node.
-func addBubbleLabelsInner(cv *canvas.Canvas, node BubbleNode, labelInk pkginks.Ink, fileTextSpec *canvas.TextSpec) {
+func addBubbleLabelsInner(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink, fileTextSpec *canvas.TextSpec) {
 	if node.ShowLabel && node.Label != "" {
 		if node.IsDirectory {
 			addBubbleDirLabel(cv, node, labelInk)
@@ -253,7 +253,7 @@ func bubbleDirLabelFontSize(node BubbleNode) float64 {
 }
 
 // addBubbleDirLabel adds an arc text label curved just above the top of a directory circle.
-func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk pkginks.Ink) {
+func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 	fontSize := bubbleDirLabelFontSize(node)
 	if fontSize == 0 {
 		return

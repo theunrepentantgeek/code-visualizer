@@ -3,7 +3,7 @@ package treemap
 import (
 	"image/color"
 
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -22,11 +22,9 @@ var (
 	defaultFill      = color.RGBA{R: 0xCC, G: 0xCC, B: 0xCC, A: 0xFF}
 )
 
-// Inks holds the fill and border Ink instances for a treemap render pass.
-type Inks struct {
-	Fill   pkginks.Ink
-	Border pkginks.Ink
-}
+// Inks pairs the fill and border Ink instances for a treemap render pass.
+// Alias for inks.ShapeInks so other viz packages share the same struct.
+type Inks = inks.ShapeInks
 
 // BuildInks creates fill and border inks from metric configuration.
 func BuildInks(
@@ -37,17 +35,17 @@ func BuildInks(
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
 ) Inks {
-	inks := Inks{
-		Border: pkginks.FixedInk(structuralBorder),
+	is := Inks{
+		Border: inks.FixedInk(structuralBorder),
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	inks.Fill = pkginks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFill)
+	is.Fill = inks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFill)
 
 	if borderMetric != "" {
 		borderDesc, _ := requested.DescriptorFor(borderMetric)
-		inks.Border = pkginks.BuildMetricInk(root, borderDesc, borderPaletteName, structuralBorder)
+		is.Border = inks.BuildMetricInk(root, borderDesc, borderPaletteName, structuralBorder)
 	}
 
-	return inks
+	return is
 }

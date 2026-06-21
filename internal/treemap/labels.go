@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -21,7 +21,7 @@ type LabelMetrics struct {
 func buildBlockLabels(
 	rect TreemapRectangle,
 	dir *model.Directory,
-	fillInk pkginks.Ink,
+	fillInk inks.Ink,
 	metrics LabelMetrics,
 ) []canvas.BlockLabel {
 	labels := make([]canvas.BlockLabel, 0)
@@ -51,7 +51,7 @@ func appendDirectoryLabels(
 	child TreemapRectangle,
 	dir *model.Directory,
 	dirIdx int,
-	fillInk pkginks.Ink,
+	fillInk inks.Ink,
 	metrics LabelMetrics,
 ) ([]canvas.BlockLabel, int) {
 	if dirIdx >= len(dir.Dirs) {
@@ -68,7 +68,7 @@ func appendFileLabels(
 	child TreemapRectangle,
 	dir *model.Directory,
 	fileIdx int,
-	fillInk pkginks.Ink,
+	fillInk inks.Ink,
 	metrics LabelMetrics,
 ) ([]canvas.BlockLabel, int) {
 	if fileIdx >= len(dir.Files) {
@@ -86,7 +86,7 @@ func appendFileLabels(
 func buildFileLabel(
 	rect TreemapRectangle,
 	file *model.File,
-	fillInk pkginks.Ink,
+	fillInk inks.Ink,
 	metrics LabelMetrics,
 ) (canvas.BlockLabel, bool) {
 	if file == nil {
@@ -103,7 +103,7 @@ func buildFileLabel(
 	lines = appendMetricLine(lines, file, metrics.Fill)
 	lines = appendMetricLine(lines, file, metrics.Border)
 
-	fillColour := fillInk.Dip(pkginks.MetricValueForFile(file, fillInk))
+	fillColour := fillInk.Dip(inks.MetricValueForFile(file, fillInk))
 
 	return canvas.BlockLabel{
 		X:     bounds.x,

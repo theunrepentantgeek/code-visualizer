@@ -8,7 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -78,7 +78,7 @@ func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
 
 			g.Expect(treemap.BuildInksStage(common, viz)).To(Succeed())
 
-			_, isWrapped := viz.Inks.Fill.(*pkginks.RadialGradientInk)
+			_, isWrapped := viz.Inks.Fill.(*inks.RadialGradientInk)
 			g.Expect(isWrapped).To(Equal(tc.wantWrapped))
 		})
 	}
@@ -94,8 +94,8 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 		BorderMetric: metric.Name("file-lines"),
 		Size:         metric.Name("file-size"),
 		Inks: treemap.Inks{
-			Fill:   pkginks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
-			Border: pkginks.FixedInk(color.RGBA{R: 0, G: 0, B: 0, A: 255}),
+			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
+			Border: inks.FixedInk(color.RGBA{R: 0, G: 0, B: 0, A: 255}),
 		},
 	}
 	cfg := &config.Treemap{

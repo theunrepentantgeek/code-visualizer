@@ -6,7 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
 const (
@@ -19,11 +19,11 @@ const (
 )
 
 // RenderToCanvas converts a scatter layout into a populated canvas.
-func RenderToCanvas(layout ScatterLayout, width, height int, inks Inks) *canvas.Canvas {
+func RenderToCanvas(layout ScatterLayout, width, height int, is Inks) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 	addScatterBackground(cv, width, height)
 	addScatterStructure(cv, layout)
-	addScatterPoints(cv, layout.Points, inks)
+	addScatterPoints(cv, layout.Points, is)
 
 	return cv
 }
@@ -31,8 +31,8 @@ func RenderToCanvas(layout ScatterLayout, width, height int, inks Inks) *canvas.
 func addScatterBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        pkginks.FixedInk(scatterBgColour),
-			Border:      pkginks.FixedInk(scatterBgColour),
+			Fill:        inks.FixedInk(scatterBgColour),
+			Border:      inks.FixedInk(scatterBgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -54,8 +54,8 @@ func addScatterStructure(cv *canvas.Canvas, layout ScatterLayout) {
 func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
 	plotSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        pkginks.FixedInk(scatterBgColour),
-			Border:      pkginks.FixedInk(scatterAxisColour),
+			Fill:        inks.FixedInk(scatterBgColour),
+			Border:      inks.FixedInk(scatterAxisColour),
 			BorderWidth: scatterAxisStrokeWidth,
 		},
 	}
@@ -71,7 +71,7 @@ func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
 }
 
 func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
-	lineSpec := &canvas.LineSpec{Stroke: pkginks.FixedInk(scatterGridColour), StrokeWidth: scatterGridStrokeWidth}
+	lineSpec := &canvas.LineSpec{Stroke: inks.FixedInk(scatterGridColour), StrokeWidth: scatterGridStrokeWidth}
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
@@ -136,7 +136,7 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 }
 
 func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
-	titleSpec := &canvas.TextSpec{Ink: pkginks.FixedInk(scatterLabelColour), FontSize: 12, Anchor: canvas.AnchorMiddle}
+	titleSpec := &canvas.TextSpec{Ink: inks.FixedInk(scatterLabelColour), FontSize: 12, Anchor: canvas.AnchorMiddle}
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:    titleSpec,
 		X:       layout.Plot.X + layout.Plot.W/2,
@@ -145,7 +145,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 	})
 
 	yTitleSpec := &canvas.TextSpec{
-		Ink:      pkginks.FixedInk(scatterLabelColour),
+		Ink:      inks.FixedInk(scatterLabelColour),
 		FontSize: 12,
 		Anchor:   canvas.AnchorMiddle,
 		Rotation: -math.Pi / 2,
@@ -157,7 +157,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 		Content: layout.YAxis.Title,
 	})
 
-	tickSpec := &canvas.TextSpec{Ink: pkginks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorMiddle}
+	tickSpec := &canvas.TextSpec{Ink: inks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorMiddle}
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    tickSpec,
@@ -176,7 +176,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 		})
 	}
 
-	yTickSpec := &canvas.TextSpec{Ink: pkginks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorEnd}
+	yTickSpec := &canvas.TextSpec{Ink: inks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorEnd}
 	for _, tick := range layout.YAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    yTickSpec,
@@ -196,18 +196,18 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 	}
 }
 
-func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, inks Inks) {
+func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 	borderWidth := scatterBorderWidth
-	if inks.HasBorderMetric {
+	if is.HasBorderMetric {
 		borderWidth = scatterMetricBorder
 	}
 
 	discSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{Fill: inks.Fill, Border: inks.Border, BorderWidth: borderWidth},
+		ShapeStyle: canvas.ShapeStyle{Fill: is.Fill, Border: is.Border, BorderWidth: borderWidth},
 	}
 	for _, point := range points {
-		fillValue := pkginks.MetricValueForFile(point.File, inks.Fill)
-		borderValue := pkginks.MetricValueForFile(point.File, inks.Border)
+		fillValue := inks.MetricValueForFile(point.File, is.Fill)
+		borderValue := inks.MetricValueForFile(point.File, is.Border)
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   discSpec,
 			X:      point.X,
@@ -218,9 +218,9 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, inks Inks) {
 		})
 
 		label, fontSize := scatterLabel(point.Label, point.Radius)
-		labelColour := canvas.TextColourFor(inks.Fill.Dip(fillValue))
+		labelColour := canvas.TextColourFor(is.Fill.Dip(fillValue))
 		labelSpec := &canvas.TextSpec{
-			Ink:      pkginks.FixedInk(labelColour),
+			Ink:      inks.FixedInk(labelColour),
 			FontSize: fontSize,
 			Anchor:   canvas.AnchorMiddle,
 		}
