@@ -9,36 +9,33 @@ import (
 )
 
 // LegendData extracts the legend entry kind and swatch list from an Ink.
-// Returns LegendEntryNumeric / nil for fixed inks (no meaningful swatch data).
+// Thin shim over the polymorphic Ink.LegendData method, retained so callers
+// can keep the free-function form.
 func LegendData(ink Ink) (model.LegendEntryKind, []model.LegendSwatch) {
-	switch ink.Info().Kind {
-	case KindNumeric:
-		return model.LegendEntryNumeric, numericSwatches(ink)
-	case KindCategorical:
-		return model.LegendEntryCategorical, categoricalSwatches(ink)
-	default:
-		return model.LegendEntryNumeric, nil
-	}
+	return ink.LegendData()
 }
 
-func numericSwatches(ink Ink) []model.LegendSwatch {
-	boundaries := ink.Boundaries()
-	pal := ink.Palette()
+// LegendData reports that fixed inks contribute no legend swatches.
+func (*fixedInk) LegendData() (model.LegendEntryKind, []model.LegendSwatch) {
+	return model.LegendEntryNumeric, nil
+}
 
-	if len(pal.Colours) == 0 {
-		return nil
+// LegendData produces the N+1 bucket swatches for a numeric ink.
+// N boundaries separate two buckets each, so N boundaries produce N+1 buckets.
+// Zero boundaries (e.g. empty dataset) still yields a single labelless swatch
+// drawn in the first palette colour.
+func (ink *numericInk) LegendData() (model.LegendEntryKind, []model.LegendSwatch) {
+	if len(ink.pal.Colours) == 0 {
+		return model.LegendEntryNumeric, nil
 	}
 
-	// NumBuckets is one more than the number of boundaries: each boundary
-	// separates two buckets, so N boundaries produce N+1 buckets. Zero
-	// boundaries (e.g. empty dataset) still yields a single labelless swatch
-	// drawn in the first palette colour.
+	boundaries := ink.boundaries.Boundaries
 	n := len(boundaries) + 1
 
 	swatches := make([]model.LegendSwatch, n)
 
 	for i := range n {
-		colour := palette.MapNumericToColour(i, n, pal)
+		colour := palette.MapNumericToColour(i, n, ink.pal)
 
 		var label string
 		if i < len(boundaries) {
@@ -51,31 +48,27 @@ func numericSwatches(ink Ink) []model.LegendSwatch {
 		}
 	}
 
-	return swatches
+	return model.LegendEntryNumeric, swatches
 }
 
-func categoricalSwatches(ink Ink) []model.LegendSwatch {
-	categories := ink.Categories()
-	pal := ink.Palette()
-
-	if len(categories) == 0 || len(pal.Colours) == 0 {
-		return nil
+// LegendData produces one swatch per distinct category, sorted alphabetically.
+func (ink *categoricalInk) LegendData() (model.LegendEntryKind, []model.LegendSwatch) {
+	if len(ink.categories) == 0 || len(ink.pal.Colours) == 0 {
+		return model.LegendEntryCategorical, nil
 	}
 
-	mapper := palette.NewCategoricalMapper(categories, pal)
-
-	sorted := make([]string, len(categories))
-	copy(sorted, categories)
+	sorted := make([]string, len(ink.categories))
+	copy(sorted, ink.categories)
 	slices.Sort(sorted)
 
 	swatches := make([]model.LegendSwatch, len(sorted))
 
 	for i, cat := range sorted {
 		swatches[i] = model.LegendSwatch{
-			Colour: mapper.Map(cat),
+			Colour: ink.catMapper.Map(cat),
 			Label:  cat,
 		}
 	}
 
-	return swatches
+	return model.LegendEntryCategorical, swatches
 }

@@ -38,9 +38,9 @@ func (*fillAwareInk) Info() inks.Info {
 	return inks.Info{Kind: inks.KindFixed}
 }
 
-func (*fillAwareInk) Boundaries() []float64          { return nil }
-func (*fillAwareInk) Palette() palette.ColourPalette { return palette.ColourPalette{} }
-func (*fillAwareInk) Categories() []string           { return nil }
+func (*fillAwareInk) LegendData() (model.LegendEntryKind, []model.LegendSwatch) {
+	return model.LegendEntryNumeric, nil
+}
 
 func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
 	t.Parallel()

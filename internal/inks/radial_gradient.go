@@ -4,7 +4,6 @@ import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 const defaultDarken = 0.4
@@ -40,16 +39,8 @@ func (g *RadialGradientInk) Info() Info {
 	return g.inner.Info()
 }
 
-func (g *RadialGradientInk) Boundaries() []float64 {
-	return g.inner.Boundaries()
-}
-
-func (g *RadialGradientInk) Palette() palette.ColourPalette {
-	return g.inner.Palette()
-}
-
-func (g *RadialGradientInk) Categories() []string {
-	return g.inner.Categories()
+func (g *RadialGradientInk) LegendData() (model.LegendEntryKind, []model.LegendSwatch) {
+	return g.inner.LegendData()
 }
 
 // darken reduces each RGB channel by the given fraction (0.4 = 40% darker).

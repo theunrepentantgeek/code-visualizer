@@ -28,19 +28,26 @@ type Ink interface {
 	Dip(value MetricValue) color.RGBA
 	Fill(value MetricValue, focus model.Point) model.Fill
 	Info() Info
-
-	// Introspection accessors used by legend extraction and tests.
-	// FixedInk values return nil/empty for all three.
-	Boundaries() []float64
-	Palette() palette.ColourPalette
-	Categories() []string
+	LegendData() (model.LegendEntryKind, []model.LegendSwatch)
 }
 
-type baseInk struct {
-	kind       Kind
+// fixedInk always produces the same colour regardless of input.
+type fixedInk struct {
+	color   color.RGBA
+	opacity float64
+}
+
+// numericInk maps numeric metric values to palette colours via bucketing.
+type numericInk struct {
 	metricName metric.Name
-	color      color.RGBA
-	boundaries *metric.BucketBoundaries
+	boundaries metric.BucketBoundaries
+	pal        palette.ColourPalette
+	opacity    float64
+}
+
+// categoricalInk maps string categories to palette colours.
+type categoricalInk struct {
+	metricName metric.Name
 	catMapper  *palette.CategoricalMapper
 	pal        palette.ColourPalette
 	categories []string
@@ -54,8 +61,7 @@ func FixedInk(c color.RGBA, opts ...Option) Ink {
 		o(&cfg)
 	}
 
-	return &baseInk{
-		kind:    KindFixed,
+	return &fixedInk{
 		color:   c,
 		opacity: cfg.opacity,
 	}
@@ -70,12 +76,9 @@ func NumericInk(name metric.Name, values []float64, pal palette.ColourPalette, o
 		o(&cfg)
 	}
 
-	buckets := metric.ComputeBuckets(values, len(pal.Colours))
-
-	return &baseInk{
-		kind:       KindNumeric,
+	return &numericInk{
 		metricName: name,
-		boundaries: &buckets,
+		boundaries: metric.ComputeBuckets(values, len(pal.Colours)),
 		pal:        pal,
 		opacity:    cfg.opacity,
 	}
@@ -88,8 +91,7 @@ func CategoricalInk(name metric.Name, categories []string, pal palette.ColourPal
 		o(&cfg)
 	}
 
-	return &baseInk{
-		kind:       KindCategorical,
+	return &categoricalInk{
 		metricName: name,
 		catMapper:  palette.NewCategoricalMapper(categories, pal),
 		pal:        pal,
@@ -98,29 +100,15 @@ func CategoricalInk(name metric.Name, categories []string, pal palette.ColourPal
 	}
 }
 
-// Dip resolves a MetricValue to an RGBA colour.
-func (ink *baseInk) Dip(value MetricValue) color.RGBA {
-	var c color.RGBA
-
-	switch ink.kind {
-	case KindFixed:
-		c = ink.color
-	case KindNumeric:
-		c = ink.dipNumeric(value)
-	case KindCategorical:
-		c = ink.catMapper.Map(value.Category)
-	default:
-		c = color.RGBA{A: 255}
-	}
-
-	return applyOpacity(c, ink.opacity)
+func (ink *fixedInk) Dip(MetricValue) color.RGBA {
+	return applyOpacity(ink.color, ink.opacity)
 }
 
-func (ink *baseInk) Fill(value MetricValue, _ model.Point) model.Fill {
+func (ink *fixedInk) Fill(value MetricValue, _ model.Point) model.Fill {
 	return model.SolidFill{Color: ink.Dip(value)}
 }
 
-func (ink *baseInk) dipNumeric(value MetricValue) color.RGBA {
+func (ink *numericInk) Dip(value MetricValue) color.RGBA {
 	var numericVal float64
 
 	switch value.Kind {
@@ -131,8 +119,23 @@ func (ink *baseInk) dipNumeric(value MetricValue) color.RGBA {
 	}
 
 	idx := ink.boundaries.BucketIndex(numericVal)
+	c := palette.MapNumericToColour(idx, ink.boundaries.NumBuckets(), ink.pal)
 
-	return palette.MapNumericToColour(idx, ink.boundaries.NumBuckets(), ink.pal)
+	return applyOpacity(c, ink.opacity)
+}
+
+func (ink *numericInk) Fill(value MetricValue, _ model.Point) model.Fill {
+	return model.SolidFill{Color: ink.Dip(value)}
+}
+
+func (ink *categoricalInk) Dip(value MetricValue) color.RGBA {
+	c := ink.catMapper.Map(value.Category)
+
+	return applyOpacity(c, ink.opacity)
+}
+
+func (ink *categoricalInk) Fill(value MetricValue, _ model.Point) model.Fill {
+	return model.SolidFill{Color: ink.Dip(value)}
 }
 
 func applyOpacity(c color.RGBA, opacity float64) color.RGBA {
