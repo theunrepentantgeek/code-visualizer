@@ -50,15 +50,8 @@ func (*TreemapCmd) Validate() error {
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
-	size := ptrString(cfg.Size)
-
-	d, ok := provider.GetBase(metric.Name(size))
-	if !ok {
-		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
-	}
-
-	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, d.Kind)
+	if err := validateNumericMetric("size", metric.Name(ptrString(cfg.Size))); err != nil {
+		return err
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {

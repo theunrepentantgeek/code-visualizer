@@ -7,7 +7,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -58,15 +57,8 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 		return err
 	}
 
-	size := ptrString(cfg.Size)
-	d, ok := provider.GetBase(metric.Name(size))
-
-	if !ok {
-		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
-	}
-
-	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, d.Kind)
+	if err := validateNumericMetric("size", metric.Name(ptrString(cfg.Size))); err != nil {
+		return err
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {
@@ -81,12 +73,7 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 }
 
 func validateScatterAxisMetric(label string, name *string) error {
-	axis := ptrString(name)
-	if _, ok := provider.GetBase(metric.Name(axis)); !ok {
-		return eris.Errorf("unknown %s metric %q; available metrics: %s", label, axis, formatMetricNames())
-	}
-
-	return nil
+	return validateMetricExists(label, metric.Name(ptrString(name)))
 }
 
 func (c *ScatterCmd) mergeConfigAndValidate(flags *Flags) error {
