@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/testsupport"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -32,7 +32,7 @@ func TestRenderInto_DecomposesToPrimitives(t *testing.T) {
 
 	legend.RenderInto(cv, cfg)
 
-	mb := testsupport.NewMockBackend()
+	mb := mock.NewBackend()
 	err := cv.RenderTo(mb)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).NotTo(BeEmpty())
@@ -74,7 +74,7 @@ func TestRenderInto_LabelSample_RendersSampleBeforeEntries(t *testing.T) {
 
 	legend.RenderInto(cv, cfg)
 
-	mb := testsupport.NewMockBackend()
+	mb := mock.NewBackend()
 	err := cv.RenderTo(mb)
 	g.Expect(err).NotTo(HaveOccurred())
 

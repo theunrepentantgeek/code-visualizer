@@ -1,44 +1,43 @@
-// Package testsupport provides canvas-related test doubles for use by
-// other packages' tests. It is intentionally separated from the canvas
-// package so that production code cannot import the mock by mistake.
-package testsupport
+// Package mock provides a recording canvas Backend for use in tests.
+// It implements model.Backend by appending each drawing call to a slice
+// that tests can inspect.
+package mock
 
 import (
 	"image/color"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
-// Call records a single drawing operation dispatched to a MockBackend.
+// Call records a single drawing operation dispatched to a Backend.
 type Call struct {
 	Method      string
-	Pos         canvas.Position
-	Size        canvas.Size
+	Pos         model.Position
+	Size        model.Size
 	Fill        color.RGBA
 	Border      color.RGBA
 	RawFill     model.Fill
 	RawBorder   model.Fill
 	Text        string
 	FontSize    float64
-	Anchor      canvas.TextAnchor
+	Anchor      model.TextAnchor
 	Rotation    float64
 	StrokeWidth float64
 }
 
-// MockBackend records all drawing calls for test assertions.
-type MockBackend struct {
+// Backend records all drawing calls for test assertions.
+type Backend struct {
 	Calls      []Call
 	FinishPath string
 	FinishErr  error
 }
 
-// NewMockBackend constructs an empty MockBackend.
-func NewMockBackend() *MockBackend {
-	return &MockBackend{}
+// NewBackend constructs an empty recording Backend.
+func NewBackend() *Backend {
+	return &Backend{}
 }
 
-func (m *MockBackend) DrawRectangle(pos canvas.Position, size canvas.Size, fill, border model.Fill, _ float64) {
+func (m *Backend) DrawRectangle(pos model.Position, size model.Size, fill, border model.Fill, _ float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:    "DrawRectangle",
 		Pos:       pos,
@@ -50,7 +49,7 @@ func (m *MockBackend) DrawRectangle(pos canvas.Position, size canvas.Size, fill,
 	})
 }
 
-func (m *MockBackend) DrawDisc(center canvas.Position, _ float64, fill, border model.Fill, _ float64) {
+func (m *Backend) DrawDisc(center model.Position, _ float64, fill, border model.Fill, _ float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:    "DrawDisc",
 		Pos:       center,
@@ -61,7 +60,7 @@ func (m *MockBackend) DrawDisc(center canvas.Position, _ float64, fill, border m
 	})
 }
 
-func (m *MockBackend) DrawLine(from, _ canvas.Position, stroke color.RGBA, strokeWidth float64) {
+func (m *Backend) DrawLine(from, _ model.Position, stroke color.RGBA, strokeWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawLine",
 		Pos:         from,
@@ -70,14 +69,14 @@ func (m *MockBackend) DrawLine(from, _ canvas.Position, stroke color.RGBA, strok
 	})
 }
 
-func (m *MockBackend) DrawPath(_ []canvas.Position, _ color.RGBA, _ float64) {
+func (m *Backend) DrawPath(_ []model.Position, _ color.RGBA, _ float64) {
 	m.Calls = append(m.Calls, Call{
 		Method: "DrawPath",
 	})
 }
 
-func (m *MockBackend) DrawText(
-	pos canvas.Position, text string, ink color.RGBA, fontSize float64, anchor canvas.TextAnchor, rotation float64,
+func (m *Backend) DrawText(
+	pos model.Position, text string, ink color.RGBA, fontSize float64, anchor model.TextAnchor, rotation float64,
 ) {
 	m.Calls = append(m.Calls, Call{
 		Method:   "DrawText",
@@ -90,7 +89,7 @@ func (m *MockBackend) DrawText(
 	})
 }
 
-func (m *MockBackend) DrawArcText(center canvas.Position, _ float64, text string, ink color.RGBA, _ float64) {
+func (m *Backend) DrawArcText(center model.Position, _ float64, text string, ink color.RGBA, _ float64) {
 	m.Calls = append(m.Calls, Call{
 		Method: "DrawArcText",
 		Pos:    center,
@@ -99,7 +98,7 @@ func (m *MockBackend) DrawArcText(center canvas.Position, _ float64, text string
 	})
 }
 
-func (m *MockBackend) Finish(outputPath string) error {
+func (m *Backend) Finish(outputPath string) error {
 	m.FinishPath = outputPath
 
 	return m.FinishErr
