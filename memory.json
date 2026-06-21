@@ -1,115 +1,151 @@
 {
-  "last_run": "2026-06-20T14:58:09Z",
-  "run_id": "27874694589",
-  "monthly_summary_issue": 353,
-  "backlog_cursor": 429,
-  "comments_made": {
-    "324": "2026-06-01",
-    "325": "2026-06-01",
-    "329": "2026-06-01",
-    "330": "2026-06-01",
-    "333": "2026-06-01",
-    "334": "2026-06-03",
-    "335": "2026-06-01",
-    "354": "2026-06-02",
-    "355": "2026-06-02",
-    "320": "2026-06-04",
-    "373": "2026-06-08",
-    "374": "2026-06-07",
-    "385": "2026-06-11",
-    "394": "2026-06-13",
-    "402": "2026-06-20",
-    "411": "2026-06-14",
-    "412": "2026-06-14",
-    "416": "2026-06-19",
-    "419": "2026-06-19",
-    "421": "2026-06-20",
-    "422": "2026-06-16",
-    "429": "2026-06-20"
-  },
-  "prs_created": {
-    "perf-svg-drawpath": {
-      "pr_number": 414,
-      "status": "MERGED",
-      "description": "perf(svg): eliminate intermediate strings.Builder in DrawPath"
+    "last_run": "2026-06-20T16:15:00Z",
+    "run_id": "27894723931",
+    "monthly_summary_issue": 353,
+    "backlog_cursor": 333,
+    "comments_made": {
+        "324": "2026-06-01",
+        "325": "2026-06-01",
+        "329": "2026-06-01",
+        "330": "2026-06-01",
+        "333": "2026-06-20",
+        "334": "2026-06-03",
+        "335": "2026-06-01",
+        "354": "2026-06-02",
+        "355": "2026-06-02",
+        "320": "2026-06-04",
+        "373": "2026-06-08",
+        "374": "2026-06-07",
+        "385": "2026-06-11",
+        "394": "2026-06-13",
+        "402": "2026-06-20",
+        "411": "2026-06-14",
+        "412": "2026-06-14",
+        "416": "2026-06-19",
+        "419": "2026-06-19",
+        "421": "2026-06-20",
+        "422": "2026-06-16",
+        "429": "2026-06-20"
     },
-    "perf-svg-grad-urlref": {
-      "pr_number": 415,
-      "status": "MERGED",
-      "description": "perf(svg): cache full url(#id) ref in gradient cache"
+    "prs_created": {
+        "perf-svg-drawpath": {
+            "pr_number": 414,
+            "status": "MERGED",
+            "description": "perf(svg): eliminate intermediate strings.Builder in DrawPath"
+        },
+        "perf-svg-grad-urlref": {
+            "pr_number": 415,
+            "status": "MERGED",
+            "description": "perf(svg): cache full url(#id) ref in gradient cache"
+        },
+        "selection-metrics-rebased": {
+            "issue": 402,
+            "branch": "repo-assist/fix-412-rebase-target-4cd403552e5ccd03",
+            "pr_number": 416,
+            "date": "2026-06-14",
+            "status": "MERGED 2026-06-20 by maintainer after adaptation",
+            "description": "feat(config,provider): add selection-metrics config and classification provider"
+        },
+        "perf-render-shared-specs": {
+            "pr_number": 417,
+            "status": "MERGED",
+            "description": "perf(render): eliminate per-node spec allocations in radial and spiral renderers"
+        },
+        "test-stages-requested": {
+            "pr_number": 419,
+            "status": "MERGED",
+            "description": "test(stages): add tests for HasDeclarationExpressions, HasCommitExpressions, DescriptorFor"
+        },
+        "test-git-e2e-422": {
+            "issue": 422,
+            "pr_number": 425,
+            "status": "MERGED",
+            "description": "test(git): E2E test suite for git provider"
+        },
+        "perf-bubbletree-spiral": {
+            "pr_number": 428,
+            "status": "MERGED",
+            "description": "perf(bubbletree,spiral): pre-allocate shared label ink and file text spec"
+        },
+        "perf-aggregation-prealloc-20260620": {
+            "branch": "repo-assist/perf-aggregation-prealloc-20260620",
+            "pr_number": 431,
+            "date": "2026-06-20",
+            "status": "open",
+            "description": "perf(stages,model): pre-size aggregation collector slices"
+        },
+        "eng-devmd-fix-bench-20260620": {
+            "branch": "repo-assist/eng-devmd-fix-bench-20260620",
+            "pr_number": 432,
+            "date": "2026-06-20",
+            "status": "open",
+            "description": "docs(dev): fix task ci description; add aggregation benchmark"
+        },
+        "eng-ginkgolinter-20260620": {
+            "issue": 429,
+            "branch": "repo-assist/eng-ginkgolinter-20260620",
+            "pr_number": 437,
+            "date": "2026-06-20",
+            "status": "open",
+            "description": "eng: add ginkgolinter to golangci-lint config, closes #429"
+        },
+        "fix-classification-wiring-402": {
+            "issue": 402,
+            "branch": "repo-assist/fix-classification-wiring-402",
+            "pr_number": null,
+            "date": "2026-06-20",
+            "status": "open - pending PR number",
+            "description": "fix(stages): wire selection-metrics providers into visualization pipeline, closes #402"
+        }
     },
-    "selection-metrics-rebased": {
-      "issue": 402,
-      "branch": "repo-assist/fix-412-rebase-target-4cd403552e5ccd03",
-      "pr_number": 416,
-      "date": "2026-06-14",
-      "status": "MERGED 2026-06-20 by maintainer after adaptation",
-      "description": "feat(config,provider): add selection-metrics config and classification provider"
+    "issues_labelled": {
+        "354": [
+            "enhancement"
+        ],
+        "355": [
+            "bug"
+        ],
+        "373": [
+            "enhancement",
+            "refactor"
+        ],
+        "374": [
+            "enhancement"
+        ],
+        "385": [
+            "bug"
+        ],
+        "402": [
+            "enhancement"
+        ],
+        "405": [
+            "enhancement"
+        ],
+        "421": [
+            "enhancement"
+        ],
+        "422": [
+            "enhancement"
+        ],
+        "423": [
+            "enhancement"
+        ],
+        "429": [
+            "enhancement"
+        ]
     },
-    "perf-render-shared-specs": {
-      "pr_number": 417,
-      "status": "MERGED",
-      "description": "perf(render): eliminate per-node spec allocations in radial and spiral renderers"
-    },
-    "test-stages-requested": {
-      "pr_number": 419,
-      "status": "MERGED",
-      "description": "test(stages): add tests for HasDeclarationExpressions, HasCommitExpressions, DescriptorFor"
-    },
-    "test-git-e2e-422": {
-      "issue": 422,
-      "pr_number": 425,
-      "status": "MERGED",
-      "description": "test(git): E2E test suite for git provider"
-    },
-    "perf-bubbletree-spiral": {
-      "pr_number": 428,
-      "status": "MERGED",
-      "description": "perf(bubbletree,spiral): pre-allocate shared label ink and file text spec"
-    },
-    "perf-aggregation-prealloc-20260620": {
-      "branch": "repo-assist/perf-aggregation-prealloc-20260620",
-      "pr_number": 431,
-      "date": "2026-06-20",
-      "status": "open",
-      "description": "perf(stages,model): pre-size aggregation collector slices"
-    },
-    "eng-devmd-fix-bench-20260620": {
-      "branch": "repo-assist/eng-devmd-fix-bench-20260620",
-      "pr_number": 432,
-      "date": "2026-06-20",
-      "status": "open",
-      "description": "docs(dev): fix task ci description; add aggregation benchmark"
-    },
-    "eng-ginkgolinter-20260620": {
-      "issue": 429,
-      "branch": "repo-assist/eng-ginkgolinter-20260620",
-      "pr_number": null,
-      "date": "2026-06-20",
-      "status": "open - pending PR number",
-      "description": "eng: add ginkgolinter to golangci-lint config, closes #429"
-    }
-  },
-  "issues_labelled": {
-    "354": ["enhancement"],
-    "355": ["bug"],
-    "373": ["enhancement", "refactor"],
-    "374": ["enhancement"],
-    "385": ["bug"],
-    "402": ["enhancement"],
-    "405": ["enhancement"],
-    "421": ["enhancement"],
-    "422": ["enhancement"],
-    "423": ["enhancement"],
-    "429": ["enhancement"]
-  },
-  "maintainer_preferences": [
-    "Do not move helpers to new packages — keep refactors within-package",
-    "No migration shims needed (alpha tool)",
-    "Title feature: one --title TEXT flag only (not per-command separate flags)",
-    "go.mod and go.sum are protected files — cannot be pushed by automation",
-    ".github/workflows/release.yml is a protected file (see issue #388) — may need manual PR apply"
-  ],
-  "closed_issues": [421, 422, 423, 424],
-  "notes": "Run 27874694589 (2026-06-20): Task 4 - added ginkgolinter to .golangci.yml (branch: eng-ginkgolinter-20260620, PR pending). suppress-len-assertion:true to avoid false positives for BeNumerically patterns. Task 2 - commented on #429 with PR link. Task 3 fallback - no bug/help-wanted issues. PR #416 was MERGED by maintainer on 2026-06-20; issue #402 still open (needs closing). Issue #421 closed by maintainer on 2026-06-20. Dependabot PRs #433-436 open but protected files prevent bundling. Next: verify ginkgolinter PR (#eng-ginkgolinter-20260620) gets reviewed; investigate #394 (radial dir metrics, still on hold)."
+    "maintainer_preferences": [
+        "Do not move helpers to new packages \u2014 keep refactors within-package",
+        "No migration shims needed (alpha tool)",
+        "Title feature: one --title TEXT flag only (not per-command separate flags)",
+        "go.mod and go.sum are protected files \u2014 cannot be pushed by automation",
+        ".github/workflows/release.yml is a protected file (see issue #388) \u2014 may need manual PR apply"
+    ],
+    "closed_issues": [
+        421,
+        422,
+        423,
+        424
+    ],
+    "notes": "Run 27894723931 (2026-06-20): Task 2 - commented on #333 noting PR #438 by maintainer resolves legend decoupling. Task 5 - found selectionMetrics was silently non-functional (classification.Register never called); created fix branch fix-classification-wiring-402 with RegisterSelectionMetrics pipeline stage; wired into all 5 viz commands; build/test/lint all pass; PR pending. Task 3 fallback - no bug/help-wanted issues. PR #437 is the ginkgolinter PR (was pending). Issue #402 still open - new PR (fix-classification-wiring-402) closes it. PR #438 by maintainer (legend/inks refactor) is open. Dependabot PRs #433-436 open but protected files prevent bundling."
 }
