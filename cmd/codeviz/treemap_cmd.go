@@ -1,15 +1,12 @@
 package main
 
 import (
-	"strings"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -63,17 +60,6 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 	}
 
 	return nil
-}
-
-func formatMetricNames() string {
-	names := provider.BaseNames()
-	strs := make([]string, len(names))
-
-	for i, n := range names {
-		strs[i] = string(n)
-	}
-
-	return strings.Join(strs, ", ")
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,

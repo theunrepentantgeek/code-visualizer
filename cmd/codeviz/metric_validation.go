@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -10,31 +12,33 @@ import (
 // resolveMetricKind validates that name refers to a known metric and returns
 // the kind of the resulting value. The name may be a bare base metric
 // (e.g. "file-size") or an aggregation expression (e.g. "declarations.count",
-// "public.declarations.count"); expressions are resolved against the metric
-// registry so aggregated metrics are accepted wherever a metric is expected.
-// The label describes the field being validated (e.g. "size") for error messages.
+// "public.declarations.count"). Resolution is delegated to provider.ResolveName
+// — the single canonical resolver shared with config and the pipeline — at the
+// file level, since these metrics are consumed per file. The label describes
+// the field being validated (e.g. "size") for error messages.
 func resolveMetricKind(label string, name metric.Name) (metric.Kind, error) {
-	expr, parseErr := metric.ParseExpression(string(name))
+	resolved, err := provider.ResolveName(name, metric.LevelFile)
+	if err != nil {
+		return 0, friendlyMetricError(label, name, err)
+	}
 
-	// Names carrying a filter or aggregation are expressions; resolve them to
-	// obtain the kind of the computed value.
-	if parseErr == nil && (!expr.Filter.IsZero() || !expr.Aggregation.IsZero()) {
-		resolved, resolveErr := provider.ResolveExpression(expr, metric.LevelFile)
-		if resolveErr != nil {
-			return 0, eris.Wrapf(resolveErr, "invalid %s metric %q", label, name)
+	return resolved.ResultKind, nil
+}
+
+// friendlyMetricError turns a provider.ResolveName error into a CLI-friendly
+// message. When the base metric is simply unknown, it lists the available
+// metrics; otherwise (a bad filter, aggregation, or a metric that needs an
+// aggregation) it surfaces the specific resolution failure.
+func friendlyMetricError(label string, name metric.Name, err error) error {
+	if expr, parseErr := metric.ParseExpression(string(name)); parseErr == nil {
+		if _, ok := provider.GetBase(expr.Base); ok {
+			return eris.Wrapf(err, "invalid %s metric %q", label, name)
 		}
-
-		return resolved.ResultKind, nil
 	}
 
-	d, ok := provider.GetBase(name)
-	if !ok {
-		return 0, eris.Errorf(
-			"unknown %s metric %q; available metrics: %s", label, name, formatMetricNames(),
-		)
-	}
-
-	return d.Kind, nil
+	return eris.Errorf(
+		"unknown %s metric %q; available metrics: %s", label, name, formatMetricNames(),
+	)
 }
 
 // validateNumericMetric validates that name refers to a numeric metric, or an
@@ -59,4 +63,17 @@ func validateMetricExists(label string, name metric.Name) error {
 	_, err := resolveMetricKind(label, name)
 
 	return err
+}
+
+// formatMetricNames returns a comma-separated list of all registered base
+// metric names, used in "available metrics" error messages.
+func formatMetricNames() string {
+	names := provider.BaseNames()
+	strs := make([]string, len(names))
+
+	for i, n := range names {
+		strs[i] = string(n)
+	}
+
+	return strings.Join(strs, ", ")
 }
