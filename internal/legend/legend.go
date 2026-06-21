@@ -1,15 +1,11 @@
 package legend
 
 import (
-	"image/color"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
-
-// white is the colour used for FixedInk in size-only entries.
-var white = color.RGBA{R: 255, G: 255, B: 255, A: 255} //nolint:gochecknoglobals // shared colour constant
 
 // ResolveOptions resolves legend position and orientation from raw strings.
 // Empty position defaults to "bottom-right"; empty orientation is derived
@@ -70,7 +66,7 @@ func Build(
 		entries = append(entries, Entry{
 			Role:       RoleSize,
 			MetricName: string(sizeMetric),
-			Ink:        inks.FixedInk(white),
+			Ink:        inks.FixedInk(palette.White),
 		})
 	}
 

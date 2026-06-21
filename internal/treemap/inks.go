@@ -20,8 +20,6 @@ var (
 	structuralBorder = color.RGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xFF}
 	headerFill       = color.RGBA{R: 0x44, G: 0x44, B: 0x44, A: 0xFF}
 	defaultFill      = color.RGBA{R: 0xCC, G: 0xCC, B: 0xCC, A: 0xFF}
-	bgColour         = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
-	whiteText        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
 // Inks holds the fill and border Ink instances for a treemap render pass.

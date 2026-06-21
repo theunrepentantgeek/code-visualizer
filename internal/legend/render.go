@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // RenderInto adds the legend overlay shapes to cv at LayerOverlay.
@@ -58,6 +59,19 @@ func legendOrigin(
 	}
 }
 
+// Default colours used by legendBuilder. They are copied into each
+// builder instance so that a future PR can introduce per-render overrides
+// without touching the call sites.
+//
+//nolint:gochecknoglobals // package-level colour defaults
+var (
+	defaultBgFill   = color.RGBA{R: 255, G: 255, B: 255, A: 230}
+	defaultBgBorder = color.RGBA{R: 153, G: 153, B: 153, A: 204}
+	defaultSwBorder = color.RGBA{R: 102, G: 102, B: 102, A: 255}
+	defaultTitleInk = color.RGBA{R: 38, G: 38, B: 38, A: 255}
+	defaultLabelInk = color.RGBA{R: 51, G: 51, B: 51, A: 255}
+)
+
 // legendBuilder writes legend primitives (rectangles, text) directly to
 // the canvas at LayerOverlay.
 type legendBuilder struct {
@@ -72,11 +86,11 @@ type legendBuilder struct {
 func newLegendBuilder(cv *canvas.Canvas) *legendBuilder {
 	return &legendBuilder{
 		cv:       cv,
-		bgFill:   color.RGBA{R: 255, G: 255, B: 255, A: 230},
-		bgBorder: color.RGBA{R: 153, G: 153, B: 153, A: 204},
-		swBorder: color.RGBA{R: 102, G: 102, B: 102, A: 255},
-		titleInk: color.RGBA{R: 38, G: 38, B: 38, A: 255},
-		labelInk: color.RGBA{R: 51, G: 51, B: 51, A: 255},
+		bgFill:   defaultBgFill,
+		bgBorder: defaultBgBorder,
+		swBorder: defaultSwBorder,
+		titleInk: defaultTitleInk,
+		labelInk: defaultLabelInk,
 	}
 }
 
@@ -309,7 +323,7 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 		return y
 	}
 
-	lb.addRect(x, y, w, h, white, lb.swBorder, 0.5)
+	lb.addRect(x, y, w, h, palette.White, lb.swBorder, 0.5)
 
 	centerX := x + w/2
 	totalH := float64(len(sample.Lines)) * model.LegendLineHeight
@@ -336,8 +350,7 @@ func (lb *legendBuilder) addSwatch(x, y float64, fill color.RGBA) {
 // addOutlineSwatch renders a swatch as a coloured outline with a white interior,
 // to represent a border metric rather than a fill metric.
 func (lb *legendBuilder) addOutlineSwatch(x, y float64, borderColour color.RGBA) {
-	transparent := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-	lb.addRect(x, y, model.SwatchSize, model.SwatchSize, transparent, borderColour, model.BorderSwatchOutlineWidth)
+	lb.addRect(x, y, model.SwatchSize, model.SwatchSize, palette.White, borderColour, model.BorderSwatchOutlineWidth)
 }
 
 func (lb *legendBuilder) addRect(

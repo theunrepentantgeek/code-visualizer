@@ -8,6 +8,7 @@ import (
 	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // RenderToCanvas walks the layout tree and model tree in parallel,
@@ -24,8 +25,8 @@ func RenderToCanvas(
 	// Background
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        pkginks.FixedInk(bgColour),
-			Border:      pkginks.FixedInk(bgColour),
+			Fill:        pkginks.FixedInk(palette.White),
+			Border:      pkginks.FixedInk(palette.White),
 			BorderWidth: 0,
 		},
 	}
@@ -100,7 +101,7 @@ func addDirectoryShapes(
 	// Header label
 	if rect.Label != "" {
 		labelSpec := &canvas.TextSpec{
-			Ink:      pkginks.FixedInk(whiteText),
+			Ink:      pkginks.FixedInk(palette.White),
 			FontSize: 0,
 			Anchor:   canvas.AnchorStart,
 		}

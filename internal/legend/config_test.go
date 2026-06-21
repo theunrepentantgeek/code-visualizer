@@ -114,7 +114,7 @@ func TestToLegendData_FixedInkEntry_EmptySwatches(t *testing.T) {
 		Position:    model.LegendPositionBottomRight,
 		Orientation: model.LegendOrientationVertical,
 		Entries: []Entry{
-			{Role: RoleSize, MetricName: "file-lines", Ink: inks.FixedInk(white)},
+			{Role: RoleSize, MetricName: "file-lines", Ink: inks.FixedInk(palette.White)},
 		},
 	}
 
