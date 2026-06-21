@@ -70,11 +70,12 @@ func NewCanvas(width, height int) *Canvas {
 	}
 }
 
-// SetDrawingBounds stores the vertical drawing bounds for legend placement.
+// SetDrawingBounds stores the vertical drawing bounds available for content.
 // topY is the first pixel available for content (0 unless there's a title).
 // bottomY is the last+1 pixel available (height unless there's a footer).
-// Call this before Render so top-center / bottom-center legends are placed
-// below the title and above the footer respectively.
+// Set this before Render so external consumers (e.g. the legend package)
+// can place top-center / bottom-center overlays below the title and above
+// the footer respectively.
 func (c *Canvas) SetDrawingBounds(topY, bottomY int) {
 	c.drawingMinY = topY
 	c.drawingMaxY = bottomY

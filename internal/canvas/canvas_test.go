@@ -561,7 +561,7 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 }
 
-func TestCanvas_NoLegend_NoPrimitives(t *testing.T) {
+func TestCanvas_EmptyCanvas_NoPrimitives(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
