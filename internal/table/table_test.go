@@ -112,8 +112,8 @@ func TestWriteTo_ColumnsAlignedByMaxWidth(t *testing.T) {
 
 	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
 	// All data lines should be the same length (consistent column alignment)
-	g.Expect(len(lines[0])).To(Equal(len(lines[2]))) // header == first data row width
-	g.Expect(len(lines[2])).To(Equal(len(lines[3]))) // first data row == second data row
+	g.Expect(lines[0]).To(HaveLen(len(lines[2]))) // header == first data row width
+	g.Expect(lines[2]).To(HaveLen(len(lines[3]))) // first data row == second data row
 }
 
 func TestWriteTo_EmptyTable(t *testing.T) {
@@ -178,7 +178,7 @@ func TestSetMaxWidth_NoWrapNeeded(t *testing.T) {
 	// Content fits; no wrapping should occur — all lines have the same length.
 	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
 	g.Expect(lines).To(HaveLen(3))
-	g.Expect(len(lines[0])).To(Equal(len(lines[2])))
+	g.Expect(lines[0]).To(HaveLen(len(lines[2])))
 }
 
 func TestSetMaxWidth_WrapsLastColumn(t *testing.T) {

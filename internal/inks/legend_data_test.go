@@ -31,7 +31,7 @@ func TestLegendData_NumericInk_ReturnsBucketColours(t *testing.T) {
 	kind, swatches := inks.LegendData(ink)
 	g.Expect(kind).To(Equal(model.LegendEntryNumeric))
 	g.Expect(swatches).NotTo(BeNil())
-	g.Expect(len(swatches)).To(BeNumerically(">", 0))
+	g.Expect(swatches).NotTo(BeEmpty())
 
 	if len(swatches) == 0 {
 		return // unreachable; satisfies nilaway
