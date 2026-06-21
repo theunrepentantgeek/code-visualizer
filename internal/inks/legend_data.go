@@ -25,13 +25,14 @@ func numericSwatches(ink Ink) []model.LegendSwatch {
 	boundaries := ink.Boundaries()
 	pal := ink.Palette()
 
-	if len(boundaries) == 0 || len(pal.Colours) == 0 {
+	if len(pal.Colours) == 0 {
 		return nil
 	}
 
 	// NumBuckets is one more than the number of boundaries: each boundary
-	// separates two buckets, so N boundaries produce N+1 buckets. The final
-	// (above-last-boundary) bucket has no boundary label.
+	// separates two buckets, so N boundaries produce N+1 buckets. Zero
+	// boundaries (e.g. empty dataset) still yields a single labelless swatch
+	// drawn in the first palette colour.
 	n := len(boundaries) + 1
 
 	swatches := make([]model.LegendSwatch, n)

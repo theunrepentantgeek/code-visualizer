@@ -64,3 +64,22 @@ func TestLegendData_CategoricalInk_ReturnsCategoryLabels(t *testing.T) {
 	g.Expect(swatches[1].Label).To(Equal("py"))
 	g.Expect(swatches[2].Label).To(Equal("rs"))
 }
+
+func TestLegendData_NumericInk_EmptyDataset_StillProducesOneSwatch(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	pal := palette.GetPalette(palette.Temperature)
+	ink := inks.NumericInk("file-size", nil, pal)
+
+	kind, swatches := inks.LegendData(ink)
+	g.Expect(kind).To(Equal(model.LegendEntryNumeric))
+	g.Expect(swatches).To(HaveLen(1))
+
+	if len(swatches) < 1 {
+		return // unreachable; satisfies nilaway
+	}
+
+	g.Expect(swatches[0].Label).To(BeEmpty())
+	g.Expect(swatches[0].Colour.A).To(Equal(uint8(255)))
+}
