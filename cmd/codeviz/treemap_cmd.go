@@ -119,6 +119,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ValidatePaths)
 	pipeline.ApplyFuncX(s, stages.ExportConfig)
 	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)

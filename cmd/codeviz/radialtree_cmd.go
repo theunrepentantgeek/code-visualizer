@@ -106,6 +106,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ValidatePaths)
 	pipeline.ApplyFuncX(s, stages.ExportConfig)
 	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
