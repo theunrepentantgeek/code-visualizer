@@ -1,9 +1,13 @@
 package canvas
 
+import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+)
+
 // ShapeStyle bundles the visual properties shared by all closed-shape specs.
 type ShapeStyle struct {
-	Fill        Ink
-	Border      Ink
+	Fill        inks.Ink
+	Border      inks.Ink
 	BorderWidth float64
 }
 
@@ -19,6 +23,6 @@ type DiscSpec struct {
 
 // LineSpec defines the visual template for lines.
 type LineSpec struct {
-	Stroke      Ink
+	Stroke      inks.Ink
 	StrokeWidth float64
 }

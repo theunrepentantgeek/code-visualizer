@@ -1,3 +1,5 @@
+// Package canvas provides a retained-then-render drawing surface with
+// layered z-ordering and pluggable backend implementations.
 package canvas
 
 import (
@@ -53,7 +55,6 @@ type Canvas struct {
 	width       int
 	height      int
 	shapes      []layeredShape
-	legend      *LegendConfig
 	title       *string
 	footer      *string
 	drawingMinY int // top of content area (pixels below title)
@@ -69,15 +70,29 @@ func NewCanvas(width, height int) *Canvas {
 	}
 }
 
-// SetDrawingBounds stores the vertical drawing bounds for legend placement.
+// SetDrawingBounds stores the vertical drawing bounds available for content.
 // topY is the first pixel available for content (0 unless there's a title).
 // bottomY is the last+1 pixel available (height unless there's a footer).
-// Call this before Render so top-center / bottom-center legends are placed
-// below the title and above the footer respectively.
+// Set this before Render so external consumers (e.g. the legend package)
+// can place top-center / bottom-center overlays below the title and above
+// the footer respectively.
 func (c *Canvas) SetDrawingBounds(topY, bottomY int) {
 	c.drawingMinY = topY
 	c.drawingMaxY = bottomY
 }
+
+// DrawingMinY returns the topmost Y pixel available for non-title content.
+func (c *Canvas) DrawingMinY() int { return c.drawingMinY }
+
+// DrawingMaxY returns the bottommost Y pixel (exclusive) available for
+// non-footer content.
+func (c *Canvas) DrawingMaxY() int { return c.drawingMaxY }
+
+// Width returns the canvas width in pixels.
+func (c *Canvas) Width() int { return c.width }
+
+// Height returns the canvas height in pixels.
+func (c *Canvas) Height() int { return c.height }
 
 // AddRectangle records a rectangle on the given layer.
 func (c *Canvas) AddRectangle(layer Layer, r Rectangle) {
@@ -131,11 +146,6 @@ func (c *Canvas) AddArcText(layer Layer, a ArcText) {
 		order: len(c.shapes),
 		shape: &a,
 	})
-}
-
-// SetLegend configures the legend overlay for this canvas.
-func (c *Canvas) SetLegend(config LegendConfig) {
-	c.legend = &config
 }
 
 // FooterText returns the current footer text, or an empty string if no footer
@@ -207,16 +217,10 @@ func (c *Canvas) Render(outputPath string) error {
 }
 
 // RenderTo dispatches all shapes to the given backend, sorted by layer.
-// Legend shapes are decomposed into primitives and merged into the shape
-// list before dispatch.
 // This method is the primary test seam — tests inject a mock backend.
 func (c *Canvas) RenderTo(backend Backend) error {
 	allShapes := make([]layeredShape, 0, len(c.shapes))
 	allShapes = append(allShapes, c.shapes...)
-
-	if c.legend != nil {
-		allShapes = append(allShapes, c.decomposeLegend()...)
-	}
 
 	slices.SortStableFunc(allShapes, func(a, b layeredShape) int {
 		if a.layer != b.layer {

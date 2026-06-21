@@ -3,8 +3,8 @@ package treemap
 import (
 	"log/slog"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -38,7 +38,7 @@ func BuildInksStage(c *stages.CommonState, t *State) error {
 
 	t.Inks = BuildInks(c.Root, c.Requested, t.FillMetric, t.FillPalette, t.BorderMetric, t.BorderPalette)
 	if !t.Flat {
-		t.Inks.Fill = canvas.NewRadialGradientInk(t.Inks.Fill)
+		t.Inks.Fill = inks.NewRadialGradientInk(t.Inks.Fill)
 	}
 
 	return nil
@@ -93,9 +93,7 @@ func LayoutStage(c *stages.CommonState, t *State) error {
 // RenderStage renders the treemap to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, t *State) error {
 	cv := RenderToCanvas(t.Root, c.Root, c.Width, c.Height, t.Inks, t.Size)
-	if t.LegendConfig != nil {
-		cv.SetLegend(*t.LegendConfig)
-	}
+	legend.RenderInto(cv, t.LegendConfig)
 
 	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
 

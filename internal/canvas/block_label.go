@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
 const (
@@ -124,7 +125,7 @@ func (c *Canvas) addTextBlockLabel(
 	fontSize, lineHeight, totalHeight float64,
 ) {
 	spec := &TextSpec{
-		Ink:      FixedInk(label.Ink),
+		Ink:      inks.FixedInk(label.Ink),
 		FontSize: fontSize,
 		Anchor:   AnchorMiddle,
 	}
@@ -148,7 +149,7 @@ func (c *Canvas) addGreekedBlockLabel(
 	lineHeight, totalHeight float64,
 ) {
 	spec := &LineSpec{
-		Stroke:      FixedInk(label.Ink),
+		Stroke:      inks.FixedInk(label.Ink),
 		StrokeWidth: max(1.0, lineHeight/2.0),
 	}
 	centerX := label.X + label.W/2.0

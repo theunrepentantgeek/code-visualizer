@@ -1,7 +1,7 @@
 package radialtree
 
 import (
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
@@ -17,5 +17,5 @@ type State struct {
 	Labels        LabelMode
 	Inks          Inks
 	Nodes         RadialNode
-	LegendConfig  *canvas.LegendConfig
+	LegendConfig  *legend.Config
 }

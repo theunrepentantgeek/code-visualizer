@@ -3,8 +3,7 @@ package radialtree
 import (
 	"image/color"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -20,11 +19,9 @@ var (
 	bgColour        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
-// Inks holds the fill and border Ink instances for a radial tree render pass.
-type Inks struct {
-	Fill   canvas.Ink
-	Border canvas.Ink
-}
+// Inks pairs the fill and border Ink instances for a radial tree render pass.
+// Alias for inks.ShapeInks so other viz packages share the same struct.
+type Inks = inks.ShapeInks
 
 // BuildInks creates fill and border inks from metric configuration.
 // A zero borderMetric yields a fixed default border ink.
@@ -36,17 +33,17 @@ func BuildInks(
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
 ) Inks {
-	inks := Inks{
-		Border: canvas.FixedInk(defaultBorder),
+	is := Inks{
+		Border: inks.FixedInk(defaultBorder),
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	inks.Fill = pkginks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFileFill)
+	is.Fill = inks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFileFill)
 
 	if borderMetric != "" {
 		borderDesc, _ := requested.DescriptorFor(borderMetric)
-		inks.Border = pkginks.BuildMetricInk(root, borderDesc, borderPaletteName, defaultBorder)
+		is.Border = inks.BuildMetricInk(root, borderDesc, borderPaletteName, defaultBorder)
 	}
 
-	return inks
+	return is
 }

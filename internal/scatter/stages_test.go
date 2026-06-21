@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -123,6 +123,6 @@ func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
 
 	err := scatter.BuildInksStage(common, viz)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
+	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(inks.KindNumeric))
 	g.Expect(viz.Inks.Fill.Info().MetricName).To(Equal(expressionMetric))
 }

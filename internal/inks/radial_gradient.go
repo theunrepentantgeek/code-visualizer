@@ -1,4 +1,4 @@
-package canvas
+package inks
 
 import (
 	"image/color"
@@ -35,16 +35,12 @@ func (g *RadialGradientInk) Fill(value MetricValue, focus model.Point) model.Fil
 	}
 }
 
-func (g *RadialGradientInk) Info() InkInfo {
+func (g *RadialGradientInk) Info() Info {
 	return g.inner.Info()
 }
 
-func (g *RadialGradientInk) legendEntryKind() model.LegendEntryKind {
-	return g.inner.legendEntryKind()
-}
-
-func (g *RadialGradientInk) legendSwatches() []model.LegendSwatch {
-	return g.inner.legendSwatches()
+func (g *RadialGradientInk) LegendData() (model.LegendEntryKind, []model.LegendSwatch) {
+	return g.inner.LegendData()
 }
 
 // darken reduces each RGB channel by the given fraction (0.4 = 40% darker).

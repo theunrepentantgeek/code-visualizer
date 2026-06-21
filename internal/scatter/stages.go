@@ -194,9 +194,7 @@ func LayoutStage(c *stages.CommonState, x *State) error {
 // RenderStage renders the scatter plot to a canvas.
 func RenderStage(c *stages.CommonState, x *State) error {
 	cv := RenderToCanvas(x.Layout, c.Width, c.Height, x.Inks)
-	if x.LegendConfig != nil {
-		cv.SetLegend(*x.LegendConfig)
-	}
+	legend.RenderInto(cv, x.LegendConfig)
 
 	c.Canvas = cv
 

@@ -12,7 +12,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -37,10 +37,10 @@ func TestTreemapDynBorderWidth(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(treemap.DynBorderWidth(10, 10, canvas.InkFixed)).To(Equal(0.5))
-	g.Expect(treemap.DynBorderWidth(10, 10, canvas.InkNumeric)).To(Equal(1.0))
-	g.Expect(treemap.DynBorderWidth(50, 50, canvas.InkNumeric)).To(Equal(2.0))
-	g.Expect(treemap.DynBorderWidth(200, 200, canvas.InkNumeric)).To(Equal(3.0))
+	g.Expect(treemap.DynBorderWidth(10, 10, inks.KindFixed)).To(Equal(0.5))
+	g.Expect(treemap.DynBorderWidth(10, 10, inks.KindNumeric)).To(Equal(1.0))
+	g.Expect(treemap.DynBorderWidth(50, 50, inks.KindNumeric)).To(Equal(2.0))
+	g.Expect(treemap.DynBorderWidth(200, 200, inks.KindNumeric)).To(Equal(3.0))
 }
 
 func TestBuildTreemapInks_Numeric(t *testing.T) {
@@ -55,10 +55,10 @@ func TestBuildTreemapInks_Numeric(t *testing.T) {
 		},
 	}
 
-	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	is := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
-	g.Expect(inks.Border.Info().Kind).To(Equal(canvas.InkFixed))
+	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
+	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
 }
 
 func TestBuildTreemapInks_Categorical(t *testing.T) {
@@ -73,9 +73,9 @@ func TestBuildTreemapInks_Categorical(t *testing.T) {
 		},
 	}
 
-	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
+	is := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
 
-	g.Expect(inks.Fill.Info().Kind).To(Equal(canvas.InkCategorical))
+	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
 }
 
 func TestRenderTreemapToCanvas_PNG(t *testing.T) {
@@ -92,8 +92,8 @@ func TestRenderTreemapToCanvas_PNG(t *testing.T) {
 	}
 
 	rects := treemap.Layout(root, 800, 600, filesystem.FileSize)
-	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := treemap.RenderToCanvas(rects, root, 800, 600, inks, "")
+	is := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := treemap.RenderToCanvas(rects, root, 800, 600, is, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.png")
 	err := cv.Render(out)
@@ -122,8 +122,8 @@ func TestRenderTreemapToCanvas_SVG(t *testing.T) {
 	}
 
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
-	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks, "")
+	is := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := treemap.RenderToCanvas(rects, root, 400, 300, is, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.svg")
 	err := cv.Render(out)
@@ -164,8 +164,8 @@ func TestRenderTreemapToCanvas_JPG(t *testing.T) {
 	}
 
 	rects := treemap.Layout(root, 400, 300, filesystem.FileSize)
-	inks := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := treemap.RenderToCanvas(rects, root, 400, 300, inks, "")
+	is := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := treemap.RenderToCanvas(rects, root, 400, 300, is, "")
 
 	out := filepath.Join(t.TempDir(), "treemap.jpg")
 	err := cv.Render(out)
