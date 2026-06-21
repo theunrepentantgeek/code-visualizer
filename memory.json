@@ -1,8 +1,8 @@
 {
-    "last_run": "2026-06-20T16:15:00Z",
-    "run_id": "27894723931",
+    "last_run": "2026-06-21T15:04:15Z",
+    "run_id": "27908234668",
     "monthly_summary_issue": 353,
-    "backlog_cursor": 333,
+    "backlog_cursor": 442,
     "comments_made": {
         "324": "2026-06-01",
         "325": "2026-06-01",
@@ -25,7 +25,9 @@
         "419": "2026-06-19",
         "421": "2026-06-20",
         "422": "2026-06-16",
-        "429": "2026-06-20"
+        "429": "2026-06-20",
+        "440": "2026-06-21",
+        "442": "2026-06-21"
     },
     "prs_created": {
         "perf-svg-drawpath": {
@@ -39,11 +41,8 @@
             "description": "perf(svg): cache full url(#id) ref in gradient cache"
         },
         "selection-metrics-rebased": {
-            "issue": 402,
-            "branch": "repo-assist/fix-412-rebase-target-4cd403552e5ccd03",
             "pr_number": 416,
-            "date": "2026-06-14",
-            "status": "MERGED 2026-06-20 by maintainer after adaptation",
+            "status": "MERGED",
             "description": "feat(config,provider): add selection-metrics config and classification provider"
         },
         "perf-render-shared-specs": {
@@ -68,14 +67,14 @@
             "description": "perf(bubbletree,spiral): pre-allocate shared label ink and file text spec"
         },
         "perf-aggregation-prealloc-20260620": {
-            "branch": "repo-assist/perf-aggregation-prealloc-20260620",
+            "branch": "repo-assist/perf-aggregation-prealloc-20260620-66fad8160d2b4cb6",
             "pr_number": 431,
             "date": "2026-06-20",
             "status": "open",
             "description": "perf(stages,model): pre-size aggregation collector slices"
         },
         "eng-devmd-fix-bench-20260620": {
-            "branch": "repo-assist/eng-devmd-fix-bench-20260620",
+            "branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c",
             "pr_number": 432,
             "date": "2026-06-20",
             "status": "open",
@@ -83,69 +82,49 @@
         },
         "eng-ginkgolinter-20260620": {
             "issue": 429,
-            "branch": "repo-assist/eng-ginkgolinter-20260620",
             "pr_number": 437,
             "date": "2026-06-20",
-            "status": "open",
-            "description": "eng: add ginkgolinter to golangci-lint config, closes #429"
+            "status": "open - SUPERSEDED by ginkgolinter-rebase-20260621",
+            "description": "eng: add ginkgolinter (old, conflicted)"
         },
         "fix-classification-wiring-402": {
             "issue": 402,
-            "branch": "repo-assist/fix-classification-wiring-402",
-            "pr_number": null,
+            "pr_number": 439,
             "date": "2026-06-20",
-            "status": "open - pending PR number",
+            "status": "MERGED 2026-06-21",
             "description": "fix(stages): wire selection-metrics providers into visualization pipeline, closes #402"
+        },
+        "eng-ginkgolinter-rebase-20260621": {
+            "issue": 429,
+            "branch": "repo-assist/eng-ginkgolinter-rebase-20260621",
+            "pr_number": null,
+            "date": "2026-06-21",
+            "status": "open - pending PR number",
+            "description": "eng: add ginkgolinter (rebased), replaces #437, closes #429"
         }
     },
     "issues_labelled": {
-        "354": [
-            "enhancement"
-        ],
-        "355": [
-            "bug"
-        ],
-        "373": [
-            "enhancement",
-            "refactor"
-        ],
-        "374": [
-            "enhancement"
-        ],
-        "385": [
-            "bug"
-        ],
-        "402": [
-            "enhancement"
-        ],
-        "405": [
-            "enhancement"
-        ],
-        "421": [
-            "enhancement"
-        ],
-        "422": [
-            "enhancement"
-        ],
-        "423": [
-            "enhancement"
-        ],
-        "429": [
-            "enhancement"
-        ]
+        "354": ["enhancement"],
+        "355": ["bug"],
+        "373": ["enhancement", "refactor"],
+        "374": ["enhancement"],
+        "385": ["bug"],
+        "402": ["enhancement"],
+        "405": ["enhancement"],
+        "421": ["enhancement"],
+        "422": ["enhancement"],
+        "423": ["enhancement"],
+        "429": ["enhancement"],
+        "440": ["bug"],
+        "442": ["enhancement"]
     },
     "maintainer_preferences": [
-        "Do not move helpers to new packages \u2014 keep refactors within-package",
+        "Do not move helpers to new packages - keep refactors within-package",
         "No migration shims needed (alpha tool)",
         "Title feature: one --title TEXT flag only (not per-command separate flags)",
-        "go.mod and go.sum are protected files \u2014 cannot be pushed by automation",
-        ".github/workflows/release.yml is a protected file (see issue #388) \u2014 may need manual PR apply"
+        "go.mod and go.sum are protected files - cannot be pushed by automation",
+        ".github/workflows/release.yml is a protected file (see issue #388) - may need manual PR apply"
     ],
-    "closed_issues": [
-        421,
-        422,
-        423,
-        424
-    ],
-    "notes": "Run 27894723931 (2026-06-20): Task 2 - commented on #333 noting PR #438 by maintainer resolves legend decoupling. Task 5 - found selectionMetrics was silently non-functional (classification.Register never called); created fix branch fix-classification-wiring-402 with RegisterSelectionMetrics pipeline stage; wired into all 5 viz commands; build/test/lint all pass; PR pending. Task 3 fallback - no bug/help-wanted issues. PR #437 is the ginkgolinter PR (was pending). Issue #402 still open - new PR (fix-classification-wiring-402) closes it. PR #438 by maintainer (legend/inks refactor) is open. Dependabot PRs #433-436 open but protected files prevent bundling."
+    "closed_issues": [421, 422, 423, 424, 402],
+    "notes": "Run 27908234668 (2026-06-21): Task 3 fallback to Task 2 (no open bugs without fix PRs). Task 2 - labelled #440 bug, #442 enhancement; commented on #440 (PR #441 fixes it) and #442 (E2E test implementation approach). Task 4 - rebased ginkgolinter PR #437 onto main (canvas/ink_legend_test.go was deleted, ported fix to inks/legend_data_test.go instead); new branch repo-assist/eng-ginkgolinter-rebase-20260621, PR pending. Old PR #437 superseded. Issue #402 closed 2026-06-21 by maintainer (PR #439 merged). Issue #440 new bug (metric aggregations), PR #441 by maintainer fixes it. Issue #442 new testing improvement request. PR #441 is by maintainer and clean/mergeable. Next: could implement validation-layer matrix tests for #442."
 }
