@@ -1,8 +1,8 @@
 {
-    "last_run": "2026-06-21T15:04:15Z",
-    "run_id": "27908234668",
+    "last_run": "2026-06-22T00:00:00Z",
+    "run_id": "27933214260",
     "monthly_summary_issue": 353,
-    "backlog_cursor": 442,
+    "backlog_cursor": 445,
     "comments_made": {
         "324": "2026-06-01",
         "325": "2026-06-01",
@@ -27,7 +27,9 @@
         "422": "2026-06-16",
         "429": "2026-06-20",
         "440": "2026-06-21",
-        "442": "2026-06-21"
+        "442": "2026-06-21",
+        "444": "2026-06-22",
+        "445": "2026-06-22"
     },
     "prs_created": {
         "perf-svg-drawpath": {
@@ -97,10 +99,25 @@
         "eng-ginkgolinter-rebase-20260621": {
             "issue": 429,
             "branch": "repo-assist/eng-ginkgolinter-rebase-20260621",
-            "pr_number": null,
+            "pr_number": 443,
             "date": "2026-06-21",
-            "status": "open - pending PR number",
+            "status": "open",
             "description": "eng: add ginkgolinter (rebased), replaces #437, closes #429"
+        },
+        "fix-same-level-aggregation-444": {
+            "issue": 444,
+            "branch": "repo-assist/fix-same-level-aggregation-444",
+            "pr_number": "expected-446",
+            "date": "2026-06-22",
+            "status": "open - pending PR number",
+            "description": "fix(provider/config): reject same-level aggregation expressions, closes #444"
+        },
+        "improve-expr-palette-lookup": {
+            "branch": "repo-assist/improve-expr-palette-lookup",
+            "pr_number": "expected-447",
+            "date": "2026-06-22",
+            "status": "open - pending PR number",
+            "description": "improve(stages): inherit base metric palette for expression metrics (Task 5)"
         }
     },
     "issues_labelled": {
@@ -115,8 +132,8 @@
         "422": ["enhancement"],
         "423": ["enhancement"],
         "429": ["enhancement"],
-        "440": ["bug"],
-        "442": ["enhancement"]
+        "444": ["bug"],
+        "445": ["enhancement"]
     },
     "maintainer_preferences": [
         "Do not move helpers to new packages - keep refactors within-package",
@@ -126,5 +143,5 @@
         ".github/workflows/release.yml is a protected file (see issue #388) - may need manual PR apply"
     ],
     "closed_issues": [421, 422, 423, 424, 402],
-    "notes": "Run 27908234668 (2026-06-21): Task 3 fallback to Task 2 (no open bugs without fix PRs). Task 2 - labelled #440 bug, #442 enhancement; commented on #440 (PR #441 fixes it) and #442 (E2E test implementation approach). Task 4 - rebased ginkgolinter PR #437 onto main (canvas/ink_legend_test.go was deleted, ported fix to inks/legend_data_test.go instead); new branch repo-assist/eng-ginkgolinter-rebase-20260621, PR pending. Old PR #437 superseded. Issue #402 closed 2026-06-21 by maintainer (PR #439 merged). Issue #440 new bug (metric aggregations), PR #441 by maintainer fixes it. Issue #442 new testing improvement request. PR #441 is by maintainer and clean/mergeable. Next: could implement validation-layer matrix tests for #442."
+    "notes": "Run 27933214260 (2026-06-22): Tasks 5, 2, 3. Confirmed ginkgolinter rebase PR is #443. Labelled #444 (bug: same-level aggregation), #445 (enhancement: kebab-case naming). Fixed #444: validateAggregation in resolution.go now rejects same-level aggregation; metric_spec.go now validates agg expressions at LevelDirectory. Task 5: expression metrics now inherit base metric DefaultPalette in stages/metrics.go. Both PRs pending number resolution (expected #446 fix, #447 improve). PR #431 no longer in open PR list - likely merged. Commented on #444 (fix announced) and #445 (backwards-compat analysis). Next: verify PR #446 and #447 numbers; check if #431 was merged; continue Task 10 for issue #442 E2E tests."
 }
