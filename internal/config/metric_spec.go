@@ -119,7 +119,16 @@ func (m *MetricSpec) validateMetric(label string) error {
 	// Try expression parse + resolve
 	expr, parseErr := metric.ParseExpression(name)
 	if parseErr == nil {
-		_, resolveErr := provider.ResolveExpression(expr, metric.LevelFile)
+		// Aggregation expressions (e.g. "file-size.sum") are resolved at directory
+		// level in the pipeline. Validate there so the same-level aggregation check
+		// in ResolveExpression does not falsely reject them.
+		// Bare metrics (no aggregation) are validated at their native file level.
+		targetLevel := metric.LevelFile
+		if !expr.Aggregation.IsZero() {
+			targetLevel = metric.LevelDirectory
+		}
+
+		_, resolveErr := provider.ResolveExpression(expr, targetLevel)
 		if resolveErr == nil {
 			return nil
 		}
