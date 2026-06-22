@@ -1,6 +1,6 @@
 {
-    "last_run": "2026-06-22T00:00:00Z",
-    "run_id": "27933214260",
+    "last_run": "2026-06-23T00:00:00Z",
+    "run_id": "27970809459",
     "monthly_summary_issue": 353,
     "backlog_cursor": 445,
     "comments_made": {
@@ -29,72 +29,41 @@
         "440": "2026-06-21",
         "442": "2026-06-21",
         "444": "2026-06-22",
-        "445": "2026-06-22"
+        "445": "2026-06-22",
+        "pr_437": "2026-06-23"
     },
     "prs_created": {
-        "perf-svg-drawpath": {
-            "pr_number": 414,
-            "status": "MERGED",
-            "description": "perf(svg): eliminate intermediate strings.Builder in DrawPath"
-        },
-        "perf-svg-grad-urlref": {
-            "pr_number": 415,
-            "status": "MERGED",
-            "description": "perf(svg): cache full url(#id) ref in gradient cache"
-        },
-        "selection-metrics-rebased": {
-            "pr_number": 416,
-            "status": "MERGED",
-            "description": "feat(config,provider): add selection-metrics config and classification provider"
-        },
-        "perf-render-shared-specs": {
-            "pr_number": 417,
-            "status": "MERGED",
-            "description": "perf(render): eliminate per-node spec allocations in radial and spiral renderers"
-        },
-        "test-stages-requested": {
-            "pr_number": 419,
-            "status": "MERGED",
-            "description": "test(stages): add tests for HasDeclarationExpressions, HasCommitExpressions, DescriptorFor"
-        },
-        "test-git-e2e-422": {
-            "issue": 422,
-            "pr_number": 425,
-            "status": "MERGED",
-            "description": "test(git): E2E test suite for git provider"
-        },
-        "perf-bubbletree-spiral": {
-            "pr_number": 428,
-            "status": "MERGED",
-            "description": "perf(bubbletree,spiral): pre-allocate shared label ink and file text spec"
-        },
+        "perf-svg-drawpath": {"pr_number": 414, "status": "MERGED"},
+        "perf-svg-grad-urlref": {"pr_number": 415, "status": "MERGED"},
+        "selection-metrics-rebased": {"pr_number": 416, "status": "MERGED"},
+        "perf-render-shared-specs": {"pr_number": 417, "status": "MERGED"},
+        "test-stages-requested": {"pr_number": 419, "status": "MERGED"},
+        "test-git-e2e-422": {"pr_number": 425, "status": "MERGED"},
+        "perf-bubbletree-spiral": {"pr_number": 428, "status": "MERGED"},
         "perf-aggregation-prealloc-20260620": {
             "branch": "repo-assist/perf-aggregation-prealloc-20260620-66fad8160d2b4cb6",
             "pr_number": 431,
             "date": "2026-06-20",
-            "status": "open",
+            "status": "open - rebased 2026-06-23",
             "description": "perf(stages,model): pre-size aggregation collector slices"
         },
         "eng-devmd-fix-bench-20260620": {
             "branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c",
             "pr_number": 432,
             "date": "2026-06-20",
-            "status": "open",
+            "status": "open - rebased 2026-06-23",
             "description": "docs(dev): fix task ci description; add aggregation benchmark"
         },
         "eng-ginkgolinter-20260620": {
-            "issue": 429,
             "pr_number": 437,
             "date": "2026-06-20",
-            "status": "open - SUPERSEDED by ginkgolinter-rebase-20260621",
+            "status": "open - SUPERSEDED by #443 - closure requested 2026-06-23",
             "description": "eng: add ginkgolinter (old, conflicted)"
         },
         "fix-classification-wiring-402": {
-            "issue": 402,
             "pr_number": 439,
             "date": "2026-06-20",
-            "status": "MERGED 2026-06-21",
-            "description": "fix(stages): wire selection-metrics providers into visualization pipeline, closes #402"
+            "status": "MERGED 2026-06-21"
         },
         "eng-ginkgolinter-rebase-20260621": {
             "issue": 429,
@@ -107,17 +76,32 @@
         "fix-same-level-aggregation-444": {
             "issue": 444,
             "branch": "repo-assist/fix-same-level-aggregation-444",
-            "pr_number": "expected-446",
+            "pr_number": 446,
             "date": "2026-06-22",
-            "status": "open - pending PR number",
+            "status": "open",
             "description": "fix(provider/config): reject same-level aggregation expressions, closes #444"
         },
         "improve-expr-palette-lookup": {
             "branch": "repo-assist/improve-expr-palette-lookup",
-            "pr_number": "expected-447",
+            "pr_number": 447,
             "date": "2026-06-22",
+            "status": "open",
+            "description": "improve(stages): inherit base metric palette for expression metrics"
+        },
+        "test-validation-matrix-442": {
+            "issue": 442,
+            "branch": "repo-assist/test-validation-matrix-442",
+            "pr_number": "pending",
+            "date": "2026-06-23",
             "status": "open - pending PR number",
-            "description": "improve(stages): inherit base metric palette for expression metrics (Task 5)"
+            "description": "test(cmd): validation matrix for all viz types x metric kinds x fields, closes #442"
+        },
+        "perf-canvas-inks-20260622": {
+            "branch": "repo-assist/perf-canvas-inks-20260622",
+            "pr_number": "pending",
+            "date": "2026-06-23",
+            "status": "open - pending PR number",
+            "description": "perf: sort canvas shapes in-place; pre-size inks.CollectNumericValues"
         }
     },
     "issues_labelled": {
@@ -132,6 +116,8 @@
         "422": ["enhancement"],
         "423": ["enhancement"],
         "429": ["enhancement"],
+        "440": ["bug"],
+        "442": ["enhancement"],
         "444": ["bug"],
         "445": ["enhancement"]
     },
@@ -143,5 +129,5 @@
         ".github/workflows/release.yml is a protected file (see issue #388) - may need manual PR apply"
     ],
     "closed_issues": [421, 422, 423, 424, 402],
-    "notes": "Run 27933214260 (2026-06-22): Tasks 5, 2, 3. Confirmed ginkgolinter rebase PR is #443. Labelled #444 (bug: same-level aggregation), #445 (enhancement: kebab-case naming). Fixed #444: validateAggregation in resolution.go now rejects same-level aggregation; metric_spec.go now validates agg expressions at LevelDirectory. Task 5: expression metrics now inherit base metric DefaultPalette in stages/metrics.go. Both PRs pending number resolution (expected #446 fix, #447 improve). PR #431 no longer in open PR list - likely merged. Commented on #444 (fix announced) and #445 (backwards-compat analysis). Next: verify PR #446 and #447 numbers; check if #431 was merged; continue Task 10 for issue #442 E2E tests."
+    "notes": "Run 27970809459 (2026-06-23): Tasks 6, 3, 8, 11. Task 6: rebased PR #431 and #432 onto main (00f15ec); commented on PR #437 requesting closure (superseded by #443). Task 3: created validation matrix test file (cmd/codeviz/validation_matrix_test.go) covering BubbletreeCmd/RadialCmd/SpiralCmd/TreemapCmd/ScatterCmd x all metric kinds; all 363 test cases pass; PR pending number on branch repo-assist/test-validation-matrix-442. Task 8: implemented canvas.RenderTo sort-in-place + inks.CollectNumericValues pre-size; PR pending number on branch repo-assist/perf-canvas-inks-20260622. PRs #446 and #447 now have confirmed numbers. Next: verify pending PR numbers for test-validation-matrix and perf-canvas-inks; check if PR #441 (maintainer) has merged; monitor for PR #446/#447 conflicts after #441 merges."
 }
