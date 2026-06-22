@@ -93,6 +93,17 @@ func validateAggregation(
 		)
 	}
 
+	// Aggregation is only meaningful when rolling up from a finer level (e.g. file → directory).
+	// Applying an aggregation to a metric that is already at the target level is meaningless
+	// and produces silent missing values in the pipeline because no per-file aggregated storage
+	// path exists for same-level aggregations.
+	if !expr.Aggregation.IsZero() && desc.Level == targetLevel {
+		return false, eris.Errorf(
+			"%q is already a per-%s metric; aggregation (.%s) is only meaningful for cross-level metrics such as declarations.count",
+			desc.Name, desc.Level.String(), expr.Aggregation,
+		)
+	}
+
 	if needsAgg && expr.Aggregation.IsZero() {
 		return false, eris.Errorf(
 			"metric %q requires aggregation at %s level (native level: %s); try: %s",
