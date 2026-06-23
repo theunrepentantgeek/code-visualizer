@@ -219,10 +219,7 @@ func (c *Canvas) Render(outputPath string) error {
 // RenderTo dispatches all shapes to the given backend, sorted by layer.
 // This method is the primary test seam — tests inject a mock backend.
 func (c *Canvas) RenderTo(backend Backend) error {
-	allShapes := make([]layeredShape, 0, len(c.shapes))
-	allShapes = append(allShapes, c.shapes...)
-
-	slices.SortStableFunc(allShapes, func(a, b layeredShape) int {
+	slices.SortStableFunc(c.shapes, func(a, b layeredShape) int {
 		if a.layer != b.layer {
 			return int(a.layer - b.layer)
 		}
@@ -230,7 +227,7 @@ func (c *Canvas) RenderTo(backend Backend) error {
 		return a.order - b.order
 	})
 
-	for _, s := range allShapes {
+	for _, s := range c.shapes {
 		s.shape.drawTo(backend)
 	}
 
