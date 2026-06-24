@@ -40,6 +40,28 @@ func ResolveName(name metric.Name, targetLevel metric.MetricLevel) (ResolvedMetr
 	return ResolveExpression(expr, targetLevel)
 }
 
+// ResolveForValidation resolves a user-supplied metric name the way config and
+// CLI validation need it. Bare base metrics are resolved at their native file
+// level; aggregation expressions are resolved at directory level, where the
+// pipeline rolls them up (see stages.ClassifyRequestedMetrics, which resolves
+// at LevelDirectory). Selecting the level this way keeps validation aligned with
+// runtime resolution and avoids falsely rejecting either form — in particular,
+// the same-level aggregation guard would otherwise reject valid expressions such
+// as "file-size.sum" if they were validated at file level.
+func ResolveForValidation(name metric.Name) (ResolvedMetric, error) {
+	expr, err := metric.ParseExpression(string(name))
+	if err != nil {
+		return ResolvedMetric{}, eris.Wrapf(err, "invalid metric name %q", name)
+	}
+
+	targetLevel := metric.LevelFile
+	if !expr.Aggregation.IsZero() {
+		targetLevel = metric.LevelDirectory
+	}
+
+	return ResolveExpression(expr, targetLevel)
+}
+
 func resolveExpressionWith(
 	reg *baseRegistry,
 	expr metric.MetricExpression,
@@ -105,6 +127,18 @@ func validateAggregation(
 		return false, eris.Errorf(
 			"%q is not a valid aggregation for %q; valid aggregations: %s",
 			expr.Aggregation, desc.Name, formatAggregationNames(desc.Aggregations),
+		)
+	}
+
+	// Aggregation is only meaningful when rolling up from a finer level (e.g. file → directory).
+	// Applying an aggregation to a metric that is already at the target level is meaningless
+	// and produces silent missing values in the pipeline because no aggregated storage path
+	// exists when the source and target levels are the same.
+	if !expr.Aggregation.IsZero() && desc.Level == targetLevel {
+		return false, eris.Errorf(
+			"%q is already a per-%s metric; aggregation (.%s) is only meaningful for "+
+				"cross-level metrics such as declarations.count",
+			desc.Name, desc.Level.String(), expr.Aggregation,
 		)
 	}
 

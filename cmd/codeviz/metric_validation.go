@@ -12,12 +12,13 @@ import (
 // resolveMetricKind validates that name refers to a known metric and returns
 // the kind of the resulting value. The name may be a bare base metric
 // (e.g. "file-size") or an aggregation expression (e.g. "declarations.count",
-// "public.declarations.count"). Resolution is delegated to provider.ResolveName
-// — the single canonical resolver shared with config and the pipeline — at the
-// file level, since these metrics are consumed per file. The label describes
-// the field being validated (e.g. "size") for error messages.
+// "public.declarations.count"). Resolution is delegated to
+// provider.ResolveForValidation — the canonical validation resolver shared with
+// config — which validates bare metrics at file level and aggregation
+// expressions at directory level, matching how the pipeline consumes them. The
+// label describes the field being validated (e.g. "size") for error messages.
 func resolveMetricKind(label string, name metric.Name) (metric.Kind, error) {
-	resolved, err := provider.ResolveName(name, metric.LevelFile)
+	resolved, err := provider.ResolveForValidation(name)
 	if err != nil {
 		return 0, friendlyMetricError(label, name, err)
 	}
@@ -25,10 +26,10 @@ func resolveMetricKind(label string, name metric.Name) (metric.Kind, error) {
 	return resolved.ResultKind, nil
 }
 
-// friendlyMetricError turns a provider.ResolveName error into a CLI-friendly
-// message. When the base metric is simply unknown, it lists the available
-// metrics; otherwise (a bad filter, aggregation, or a metric that needs an
-// aggregation) it surfaces the specific resolution failure.
+// friendlyMetricError turns a provider.ResolveForValidation error into a
+// CLI-friendly message. When the base metric is simply unknown, it lists the
+// available metrics; otherwise (a bad filter, aggregation, or a metric that
+// needs an aggregation) it surfaces the specific resolution failure.
 func friendlyMetricError(label string, name metric.Name, err error) error {
 	if expr, parseErr := metric.ParseExpression(string(name)); parseErr == nil {
 		if _, ok := provider.GetBase(expr.Base); ok {

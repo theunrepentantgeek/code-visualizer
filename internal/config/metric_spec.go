@@ -114,7 +114,7 @@ func (m *MetricSpec) Validate(label string) error {
 }
 
 func (m *MetricSpec) validateMetric(label string) error {
-	if _, err := provider.ResolveName(m.Metric, metric.LevelFile); err != nil {
+	if _, err := provider.ResolveForValidation(m.Metric); err != nil {
 		return eris.Wrapf(err, "invalid %s metric", label)
 	}
 

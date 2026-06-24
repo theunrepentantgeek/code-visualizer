@@ -96,3 +96,14 @@ func TestValidateNumericMetric_RejectsClassificationAggregation(t *testing.T) {
 	err := validateNumericMetric("size", "file-type.mode")
 	g.Expect(err).To(MatchError(ContainSubstring("size metric must be numeric")))
 }
+
+func TestValidateNumericMetric_AcceptsFileAggregationAtDirectoryLevel(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// file-size.sum is a file-level metric aggregated to directory level. It must
+	// be accepted even though the same-level aggregation guard would reject it at
+	// file level.
+	err := validateNumericMetric("size", "file-size.sum")
+	g.Expect(err).NotTo(HaveOccurred())
+}
