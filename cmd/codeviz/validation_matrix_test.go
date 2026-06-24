@@ -28,9 +28,9 @@ type sizeCase struct {
 }
 
 var sizeCases = []sizeCase{
-	{metric: "file-size",      wantOK: true,  comment: "quantity metric"},
-	{metric: "comment-ratio",  wantOK: true,  comment: "measure metric"},
-	{metric: "file-type",      wantOK: false, comment: "classification metric"},
+	{metric: "file-size", wantOK: true, comment: "quantity metric"},
+	{metric: "comment-ratio", wantOK: true, comment: "measure metric"},
+	{metric: "file-type", wantOK: false, comment: "classification metric"},
 	{metric: "no-such-metric", wantOK: false, comment: "unknown metric"},
 }
 
@@ -45,13 +45,13 @@ type fillBorderCase struct {
 }
 
 var fillBorderCases = []fillBorderCase{
-	{metric: "file-size",          wantOK: true,  comment: "quantity, no palette"},
-	{metric: "comment-ratio",      wantOK: true,  comment: "measure, no palette"},
-	{metric: "file-type",          wantOK: true,  comment: "classification, no palette"},
-	{metric: "declarations.count", wantOK: true,  comment: "aggregation expression"},
-	{metric: "file-size", palette: "temperature", wantOK: true,  comment: "quantity + valid palette"},
+	{metric: "file-size", wantOK: true, comment: "quantity, no palette"},
+	{metric: "comment-ratio", wantOK: true, comment: "measure, no palette"},
+	{metric: "file-type", wantOK: true, comment: "classification, no palette"},
+	{metric: "declarations.count", wantOK: true, comment: "aggregation expression"},
+	{metric: "file-size", palette: "temperature", wantOK: true, comment: "quantity + valid palette"},
 	{metric: "file-size", palette: "not-a-palette", wantOK: false, comment: "invalid palette"},
-	{metric: "no-such-metric",     wantOK: false, comment: "unknown metric"},
+	{metric: "no-such-metric", wantOK: false, comment: "unknown metric"},
 }
 
 // axisCase is one row of the scatter-axis validation matrix.
@@ -64,9 +64,9 @@ type axisCase struct {
 }
 
 var axisCases = []axisCase{
-	{metric: "file-size",      wantOK: true,  comment: "quantity metric"},
-	{metric: "comment-ratio",  wantOK: true,  comment: "measure metric"},
-	{metric: "file-type",      wantOK: true,  comment: "classification metric"},
+	{metric: "file-size", wantOK: true, comment: "quantity metric"},
+	{metric: "comment-ratio", wantOK: true, comment: "measure metric"},
+	{metric: "file-type", wantOK: true, comment: "classification metric"},
 	{metric: "no-such-metric", wantOK: false, comment: "unknown metric"},
 }
 
@@ -76,7 +76,6 @@ func TestBubbletreeCmd_ValidateConfig_SizeMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range sizeCases {
-		tc := tc
 		t.Run(tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -98,14 +97,16 @@ func TestBubbletreeCmd_ValidateConfig_FillMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("fill/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 
 			cfg := config.New()
 			cfg.Bubbletree.Size = new("file-size")
-			cfg.Bubbletree.Fill = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Bubbletree.Fill = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&BubbletreeCmd{}).validateConfig(cfg.Bubbletree)
 			if tc.wantOK {
@@ -121,14 +122,16 @@ func TestBubbletreeCmd_ValidateConfig_BorderMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("border/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 
 			cfg := config.New()
 			cfg.Bubbletree.Size = new("file-size")
-			cfg.Bubbletree.Border = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Bubbletree.Border = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&BubbletreeCmd{}).validateConfig(cfg.Bubbletree)
 			if tc.wantOK {
@@ -146,7 +149,6 @@ func TestRadialCmd_ValidateConfig_DiscSizeMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range sizeCases {
-		tc := tc
 		t.Run(tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -168,14 +170,16 @@ func TestRadialCmd_ValidateConfig_FillMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("fill/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 
 			cfg := config.New()
 			cfg.Radial.DiscSize = new("file-size")
-			cfg.Radial.Fill = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Radial.Fill = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&RadialCmd{}).validateConfig(cfg.Radial)
 			if tc.wantOK {
@@ -191,14 +195,16 @@ func TestRadialCmd_ValidateConfig_BorderMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("border/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 
 			cfg := config.New()
 			cfg.Radial.DiscSize = new("file-size")
-			cfg.Radial.Border = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Radial.Border = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&RadialCmd{}).validateConfig(cfg.Radial)
 			if tc.wantOK {
@@ -216,14 +222,16 @@ func TestSpiralCmd_ValidateConfig_BorderMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("border/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 
 			cfg := config.New()
 			cfg.Spiral.Size = new("file-size")
-			cfg.Spiral.Border = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Spiral.Border = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
 			if tc.wantOK {
@@ -241,14 +249,16 @@ func TestTreemapCmd_ValidateConfig_BorderMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("border/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 
 			cfg := config.New()
 			cfg.Treemap.Size = new("file-size")
-			cfg.Treemap.Border = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Treemap.Border = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&TreemapCmd{}).validateConfig(cfg.Treemap)
 			if tc.wantOK {
@@ -266,7 +276,6 @@ func TestScatterCmd_ValidateConfig_FillMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("fill/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -275,7 +284,10 @@ func TestScatterCmd_ValidateConfig_FillMatrix(t *testing.T) {
 			cfg.Scatter.XAxis = new("file-size")
 			cfg.Scatter.YAxis = new("file-lines")
 			cfg.Scatter.Size = new("file-size")
-			cfg.Scatter.Fill = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Scatter.Fill = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
 			if tc.wantOK {
@@ -291,7 +303,6 @@ func TestScatterCmd_ValidateConfig_BorderMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range fillBorderCases {
-		tc := tc
 		t.Run("border/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -300,7 +311,10 @@ func TestScatterCmd_ValidateConfig_BorderMatrix(t *testing.T) {
 			cfg.Scatter.XAxis = new("file-size")
 			cfg.Scatter.YAxis = new("file-lines")
 			cfg.Scatter.Size = new("file-size")
-			cfg.Scatter.Border = &config.MetricSpec{Metric: metric.Name(tc.metric), Palette: palette.PaletteName(tc.palette)}
+			cfg.Scatter.Border = &config.MetricSpec{
+				Metric:  metric.Name(tc.metric),
+				Palette: palette.PaletteName(tc.palette),
+			}
 
 			err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
 			if tc.wantOK {
@@ -318,7 +332,6 @@ func TestScatterCmd_ValidateConfig_XAxisMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range axisCases {
-		tc := tc
 		t.Run("x-axis/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -342,7 +355,6 @@ func TestScatterCmd_ValidateConfig_YAxisMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range axisCases {
-		tc := tc
 		t.Run("y-axis/"+tc.comment, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
