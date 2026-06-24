@@ -45,6 +45,30 @@ func WalkDirectories(dir *Directory, fn func(*Directory)) {
 	fn(dir)
 }
 
+// CountDeclarations returns the total number of declarations across all files
+// in the tree. It is the declaration-level counterpart to CountFiles.
+func CountDeclarations(dir *Directory) int {
+	count := 0
+
+	WalkFiles(dir, func(f *File) {
+		count += len(f.Declarations)
+	})
+
+	return count
+}
+
+// CountCommits returns the total number of commit records across all files in
+// the tree. It is the commit-level counterpart to CountFiles.
+func CountCommits(dir *Directory) int {
+	count := 0
+
+	WalkFiles(dir, func(f *File) {
+		count += len(f.Commits)
+	})
+
+	return count
+}
+
 // WalkDeclarations calls fn for every declaration in every file in the tree.
 func WalkDeclarations(dir *Directory, fn func(*Declaration, *File)) {
 	WalkFiles(dir, func(f *File) {
