@@ -1,26 +1,27 @@
 package main
 
-// End-to-end render-matrix tests: drive each visualization command's full Run()
-// pipeline against a deterministic on-disk fixture, asserting that every metric
-// role accepts every metric kind it should and produces non-empty output.
+// End-to-end metric-render matrix: confirm that *every* metric the registry
+// knows actually computes and renders through the real CLI pipeline.
 //
-// Unlike validation_matrix_test.go (which only exercises validateConfig in
-// isolation), these tests run the real pipeline — providers, declaration
-// parsing, aggregations, layout and rendering — for every matrix row. That is
-// the wiring bug #440 slipped through: declarations.count validated fine as a
-// fill/border metric but was rejected as a size/axis metric, because nothing
-// drove the full render path per role.
+// Metrics and visualizations are orthogonal concerns: whether a metric resolves,
+// computes a value and feeds a render is independent of which visualization
+// consumes it. So rather than cross every metric with every viz, this suite
+// enumerates the full set of valid metric expressions straight from the metric
+// registry — each base metric, each base × aggregation, and each filter × base
+// (× aggregation) — and drives each one end-to-end through a single
+// representative visualization (treemap). Because the set is derived from
+// provider.AllBase() and provider.ResolveForValidation, newly added metrics and
+// aggregations are covered automatically without editing this test (see #442).
 //
-// Coverage: {viz command} × {metric role} × {metric kind}, where:
-//   - viz commands: treemap, bubbletree, radialtree, spiral, scatter
-//   - roles: size/disc-size, x-axis, y-axis, fill, border
-//   - kinds: base quantity/measure/classification, declaration-count
-//     aggregation, filtered aggregation, numeric aggregation.
+// This exercises the real pipeline — providers, declaration parsing,
+// aggregations, layout and rendering — not just config validation, which is the
+// wiring bug #440 slipped through: declarations.count validated fine as a
+// fill/border metric but was rejected as a size metric because nothing drove the
+// full render path per role. Each numeric metric here is placed in the size role
+// (the role that regressed), so this matrix would have failed on the pre-#441
+// code.
 //
-// Git-derived metrics are deliberately excluded: they need a fixed commit
-// history to be deterministic (see #442), which is out of scope here. Every
-// metric kind below is computed purely from the filesystem and Go providers,
-// which are registered in TestMain (main_test.go).
+// Providers (filesystem, git, golang) are registered in TestMain (main_test.go).
 
 import (
 	"os"
@@ -32,14 +33,26 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
-// fixtureAlphaGo is a Go file with a known mix of exported/unexported
-// declarations (types, constants, variables, functions, methods) and comments,
-// so declaration counts, comment ratios and cyclomatic complexity are all
-// non-trivial and stable.
-const fixtureAlphaGo = `// Package sample is a deterministic fixture for render-matrix tests.
+const (
+	matrixWidth  = 240
+	matrixHeight = 180
+)
+
+// fixtureAlphaGo is a Go file with a deterministic mix of exported/unexported
+// declarations (types, interfaces, structs, methods, functions, constants,
+// variables), imports and comments, so the Go metrics (and their filtered and
+// aggregated forms) all compute non-trivial values.
+const fixtureAlphaGo = `// Package sample is a deterministic fixture for the metric-render matrix.
 package sample
+
+import (
+	"fmt"
+	"strings"
+)
 
 // ExportedConst is an exported constant.
 const ExportedConst = 1
@@ -50,36 +63,48 @@ const unexportedConst = 2
 // ExportedVar is an exported variable.
 var ExportedVar = 10
 
+// Shape is an exported interface.
+type Shape interface {
+	Area() float64
+}
+
 // ExportedType is an exported struct type.
 type ExportedType struct {
 	Field int
 }
 
-// Classify returns a label based on the sign of x; the branches give it
-// non-trivial cyclomatic complexity.
-func (e ExportedType) Classify(x int) string {
-	if x > 0 {
-		return "positive"
+// Area implements Shape; its branches give it non-trivial complexity.
+func (e ExportedType) Area() float64 {
+	if e.Field > 0 {
+		return float64(e.Field)
 	}
 
-	if x < 0 {
-		return "negative"
-	}
-
-	return "zero"
+	return 0
 }
 
-// Exported is an exported function.
-func Exported(x int) int {
-	return x + 1
+// Classify returns a label based on the sign of x.
+func (e ExportedType) Classify(x int) string {
+	switch {
+	case x > 0:
+		return strings.ToUpper("positive")
+	case x < 0:
+		return "negative"
+	default:
+		return "zero"
+	}
+}
+
+// Exported formats and returns x.
+func Exported(x int) string {
+	return fmt.Sprintf("%d", x)
 }
 
 // unexported is an unexported helper.
 func unexported() {}
 `
 
-// fixtureBetaGo is a second Go file to give the tree more than one declaration
-// site and exercise directory-level aggregation across files.
+// fixtureBetaGo is a second Go file so directory-level aggregation spans more
+// than one file.
 const fixtureBetaGo = `// Package sample (beta) adds a second file to the fixture.
 package sample
 
@@ -97,12 +122,13 @@ func Total(a, b int) int {
 
 // writeRenderMatrixFixture builds a small deterministic source tree under a git
 // repository and returns the path to scan. The mix of Go and non-Go files
-// exercises file-type classification as well as the Go-specific metrics.
+// exercises file-type classification alongside the Go-specific metrics, and the
+// git repository lets the git metrics compute.
 //
 // The scanned tree lives in a "src" subdirectory while the .git directory sits
 // in its parent, so the filesystem scan of the target stays clean (no git
-// internals leak into the visualization) while git-history-dependent
-// visualizations (spiral) can still resolve the repository.
+// internals leak into the visualization) while git-derived metrics can still
+// resolve the repository.
 func writeRenderMatrixFixture(t *testing.T) string {
 	t.Helper()
 	g := NewGomegaWithT(t)
@@ -128,14 +154,12 @@ func writeRenderMatrixFixture(t *testing.T) string {
 	return target
 }
 
-// initFixtureGitRepo turns root into a git repository with two commits at
-// fixed, distinct timestamps and returns. The spiral visualization always loads
-// git history (it lays files out over time) and needs a non-zero commit time
-// range to build its time buckets, so a single commit is not enough — even when
-// no git-derived metric is selected. Pinning both the author and committer
-// dates (via GIT_AUTHOR_DATE / GIT_COMMITTER_DATE) keeps the history
-// deterministic across machines and CI — the determinism #442 calls out for git
-// fixtures.
+// initFixtureGitRepo turns root into a git repository with two commits at fixed,
+// distinct timestamps. The git metrics need a commit history to compute, and a
+// non-zero time span keeps file-age / commit-density meaningful. Pinning both
+// the author and committer dates (via GIT_AUTHOR_DATE / GIT_COMMITTER_DATE)
+// keeps the history deterministic across machines and CI — the determinism #442
+// calls out for git fixtures.
 func initFixtureGitRepo(t *testing.T, root string) {
 	t.Helper()
 	g := NewGomegaWithT(t)
@@ -145,6 +169,7 @@ func initFixtureGitRepo(t *testing.T, root string) {
 
 		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper, fixed args
 		cmd.Dir = root
+
 		cmd.Env = append(
 			os.Environ(),
 			"GIT_AUTHOR_NAME=Fixture Author",
@@ -155,9 +180,8 @@ func initFixtureGitRepo(t *testing.T, root string) {
 			"GIT_COMMITTER_DATE="+date,
 		)
 
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("command %v failed: %s\n%s", args, err, out)
-		}
+		out, err := cmd.CombinedOutput()
+		g.Expect(err).NotTo(HaveOccurred(), "command %v failed: %s", args, out)
 	}
 
 	const (
@@ -171,8 +195,8 @@ func initFixtureGitRepo(t *testing.T, root string) {
 	runAt(firstDate, "git", "add", ".")
 	runAt(firstDate, "git", "commit", "-m", "fixture commit")
 
-	// A second commit at a later date gives the spiral a non-zero commit time
-	// range. Touching only the non-Go notes file keeps the Go metrics stable.
+	// A second commit at a later date gives the git metrics a non-zero time
+	// span. Touching only the non-Go notes file keeps the Go metrics stable.
 	notes := filepath.Join(root, "src", "notes.txt")
 	g.Expect(os.WriteFile(notes, []byte("Project notes.\nSecond line of notes.\nThird line.\n"), 0o600)).
 		To(Succeed())
@@ -181,205 +205,119 @@ func initFixtureGitRepo(t *testing.T, root string) {
 	runAt(secondDate, "git", "commit", "-m", "update notes")
 }
 
-// Deterministic metric kinds, one representative per kind the issue calls out.
-// All are computed from the filesystem and Go providers (no git history).
-const (
-	kindQuantity       = "file-size"                  // base quantity
-	kindMeasure        = "comment-ratio"              // base measure
-	kindClassification = "file-type"                  // base classification
-	kindCountAgg       = "declarations.count"         // declaration-count aggregation (the #440 case)
-	kindFilteredAgg    = "public.declarations.count"  // filtered aggregation
-	kindNumericAgg     = "cyclomatic-complexity.mean" // numeric aggregation
-)
-
-// numericKinds resolve to a numeric value and are valid for numeric roles
-// (size, disc-size). classification is intentionally absent.
-var numericKinds = []string{
-	kindQuantity,
-	kindMeasure,
-	kindCountAgg,
-	kindFilteredAgg,
-	kindNumericAgg,
+// metricExpr is a valid metric expression together with the kind of value it
+// resolves to, which determines the role it is rendered in.
+type metricExpr struct {
+	name string
+	kind metric.Kind
 }
 
-// allKinds add classification, valid for axis and colour roles.
-var allKinds = append(append([]string{}, numericKinds...), kindClassification)
+// allValidMetricExpressions enumerates every metric expression the registry
+// accepts. Candidate expressions come from candidateMetricExpressions; validity
+// is decided by provider.ResolveForValidation — the same resolver config and CLI
+// validation use — so the set automatically tracks the registry as metrics,
+// aggregations and filters are added or removed.
+func allValidMetricExpressions(t *testing.T) []metricExpr {
+	t.Helper()
 
-// allVizCommands is every visualization command that participates in the matrix.
-var allVizCommands = []string{"treemap", "bubbletree", "radialtree", "spiral", "scatter"}
+	seen := make(map[string]bool)
+	candidates := candidateMetricExpressions()
+	exprs := make([]metricExpr, 0, len(candidates))
 
-const (
-	matrixWidth  = 240
-	matrixHeight = 180
-)
+	for _, name := range candidates {
+		if seen[name] {
+			continue
+		}
 
-// roles describes the metric assigned to each rendering role. Empty fields are
-// left unset on the command (the role is not exercised for that row).
-type roles struct {
-	size   string // size / disc-size
-	xAxis  string
-	yAxis  string
-	fill   string
-	border string
-}
+		seen[name] = true
 
-// baselineRoles returns a set of valid role assignments sufficient for every
-// viz command to render. Individual tests override exactly one role with the
-// kind under test.
-func baselineRoles() roles {
-	return roles{
-		size:  kindQuantity,
-		xAxis: kindQuantity,
-		yAxis: kindMeasure,
-	}
-}
+		resolved, err := provider.ResolveForValidation(metric.Name(name))
+		if err != nil {
+			continue
+		}
 
-// spec builds a fill/border MetricSpec, or the zero (unset) value when name is
-// empty so the role passes through unexercised.
-func spec(name string) config.MetricSpec {
-	if name == "" {
-		return config.MetricSpec{}
+		exprs = append(exprs, metricExpr{name: name, kind: resolved.ResultKind})
 	}
 
-	return config.MetricSpec{Metric: metric.Name(name)}
+	return exprs
 }
 
-// newVizCmd constructs the named visualization command wired to render the
-// given fixture to out, with the supplied role assignments. The returned value
-// satisfies presetRunner (Run(flags) error).
-func newVizCmd(viz, target, out string, r roles) presetRunner {
-	switch viz {
-	case "treemap":
-		return &TreemapCmd{
-			TargetPath: target, Output: out,
-			Size:   metric.Name(r.size),
-			Fill:   spec(r.fill),
-			Border: spec(r.border),
-			Width:  matrixWidth, Height: matrixHeight,
+// candidateMetricExpressions builds every expression worth probing for each
+// registered base metric: the bare metric, each base × aggregation, and each
+// filter × base (× aggregation). Invalid combinations are filtered out later by
+// allValidMetricExpressions.
+func candidateMetricExpressions() []string {
+	names := make([]string, 0)
+
+	for _, desc := range provider.AllBase() {
+		base := string(desc.Name)
+
+		names = append(names, base)
+
+		for _, agg := range desc.Aggregations {
+			names = append(names, base+"."+string(agg))
 		}
-	case "bubbletree":
-		return &BubbletreeCmd{
-			TargetPath: target, Output: out,
-			Size:   metric.Name(r.size),
-			Fill:   spec(r.fill),
-			Border: spec(r.border),
-			Width:  matrixWidth, Height: matrixHeight,
+
+		for _, filterName := range desc.Filters {
+			filtered := string(filterName) + "." + base
+			names = append(names, filtered)
+
+			for _, agg := range desc.Aggregations {
+				names = append(names, filtered+"."+string(agg))
+			}
 		}
-	case "radialtree":
-		return &RadialCmd{
-			TargetPath: target, Output: out,
-			DiscSize: metric.Name(r.size),
-			Fill:     spec(r.fill),
-			Border:   spec(r.border),
-			Width:    matrixWidth, Height: matrixHeight,
-		}
-	case "spiral":
-		return &SpiralCmd{
-			TargetPath: target, Output: out,
-			Size:   metric.Name(r.size),
-			Fill:   spec(r.fill),
-			Border: spec(r.border),
-			Width:  matrixWidth, Height: matrixHeight,
-		}
-	case "scatter":
-		return &ScatterCmd{
-			TargetPath: target, Output: out,
-			XAxis:  metric.Name(r.xAxis),
-			YAxis:  metric.Name(r.yAxis),
-			Size:   metric.Name(r.size),
-			Fill:   spec(r.fill),
-			Border: spec(r.border),
-			Width:  matrixWidth, Height: matrixHeight,
-		}
-	default:
-		return nil
 	}
+
+	return names
 }
 
-// runRenderMatrixCase drives a command's full pipeline and asserts it produced
-// non-empty output.
-func runRenderMatrixCase(t *testing.T, viz string, r roles) {
+// renderMetricEndToEnd drives the full treemap pipeline with expr placed in a
+// role appropriate to its kind (numeric → size, classification → fill) and
+// asserts the pipeline succeeds and writes non-empty output. Numeric metrics go
+// in the size role specifically because that is the role bug #440 regressed.
+func renderMetricEndToEnd(t *testing.T, target string, expr metricExpr) {
 	t.Helper()
 	g := NewGomegaWithT(t)
 
-	dir := writeRenderMatrixFixture(t)
-	out := filepath.Join(dir, "out.svg")
+	out := filepath.Join(t.TempDir(), "out.svg")
 
-	cmd := newVizCmd(viz, dir, out, r)
-	g.Expect(cmd).NotTo(BeNil(), "unknown viz command %q", viz)
+	cmd := &TreemapCmd{
+		TargetPath: target,
+		Output:     out,
+		Size:       filesystem.FileLines, // baseline numeric size; overridden below for numeric metrics
+		Width:      matrixWidth,
+		Height:     matrixHeight,
+	}
+
+	if expr.kind == metric.Classification {
+		cmd.Fill = config.MetricSpec{Metric: metric.Name(expr.name)}
+	} else {
+		cmd.Size = metric.Name(expr.name)
+	}
 
 	flags := &Flags{Config: config.New()}
-	g.Expect(cmd.Run(flags)).To(Succeed())
+	g.Expect(cmd.Run(flags)).To(Succeed(), "rendering metric %q", expr.name)
 
-	info, err := os.Stat(out)
-	g.Expect(err).NotTo(HaveOccurred(), "output file should exist")
-	g.Expect(info.Size()).To(BeNumerically(">", 0), "output file should be non-empty")
+	data, err := os.ReadFile(out)
+	g.Expect(err).NotTo(HaveOccurred(), "output file for %q should exist", expr.name)
+	g.Expect(data).NotTo(BeEmpty(), "output for %q should be non-empty", expr.name)
 }
 
-// TestRenderMatrix_SizeRole renders every viz command with each numeric metric
-// kind in its size/disc-size role. This is the regression net for #440: a
-// declaration-count aggregation (declarations.count) must render end-to-end as
-// a size metric, not just validate.
-func TestRenderMatrix_SizeRole(t *testing.T) {
+// TestAllMetrics_RenderEndToEnd renders every metric expression the registry
+// accepts through the real treemap pipeline and asserts it produces output.
+func TestAllMetrics_RenderEndToEnd(t *testing.T) {
 	t.Parallel()
+	g := NewGomegaWithT(t)
 
-	for _, viz := range allVizCommands {
-		for _, kind := range numericKinds {
-			t.Run(viz+"/size/"+kind, func(t *testing.T) {
-				t.Parallel()
+	target := writeRenderMatrixFixture(t)
 
-				r := baselineRoles()
-				r.size = kind
-				runRenderMatrixCase(t, viz, r)
-			})
-		}
-	}
-}
+	exprs := allValidMetricExpressions(t)
+	g.Expect(exprs).NotTo(BeEmpty(), "registry should yield at least one valid metric expression")
 
-// TestRenderMatrix_ScatterAxes renders the scatter command with each metric
-// kind (including classification) in each axis role.
-func TestRenderMatrix_ScatterAxes(t *testing.T) {
-	t.Parallel()
-
-	for _, axis := range []string{"x-axis", "y-axis"} {
-		for _, kind := range allKinds {
-			t.Run(axis+"/"+kind, func(t *testing.T) {
-				t.Parallel()
-
-				r := baselineRoles()
-				if axis == "x-axis" {
-					r.xAxis = kind
-				} else {
-					r.yAxis = kind
-				}
-
-				runRenderMatrixCase(t, "scatter", r)
-			})
-		}
-	}
-}
-
-// TestRenderMatrix_ColourRoles renders every viz command with each metric kind
-// (including classification) in its fill and border roles.
-func TestRenderMatrix_ColourRoles(t *testing.T) {
-	t.Parallel()
-
-	for _, viz := range allVizCommands {
-		for _, role := range []string{"fill", "border"} {
-			for _, kind := range allKinds {
-				t.Run(viz+"/"+role+"/"+kind, func(t *testing.T) {
-					t.Parallel()
-
-					r := baselineRoles()
-					if role == "fill" {
-						r.fill = kind
-					} else {
-						r.border = kind
-					}
-
-					runRenderMatrixCase(t, viz, r)
-				})
-			}
-		}
+	for _, expr := range exprs {
+		t.Run(expr.name, func(t *testing.T) {
+			t.Parallel()
+			renderMetricEndToEnd(t, target, expr)
+		})
 	}
 }
