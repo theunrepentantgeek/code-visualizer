@@ -1,6 +1,6 @@
 {
-    "last_run": "2026-06-23T00:00:00Z",
-    "run_id": "27970809459",
+    "last_run": "2026-06-24T15:26:00Z",
+    "run_id": "28109418893",
     "monthly_summary_issue": 353,
     "backlog_cursor": 445,
     "comments_made": {
@@ -25,11 +25,11 @@
         "419": "2026-06-19",
         "421": "2026-06-20",
         "422": "2026-06-16",
-        "429": "2026-06-20",
+        "429": "2026-06-24",
         "440": "2026-06-21",
         "442": "2026-06-21",
         "444": "2026-06-22",
-        "445": "2026-06-22",
+        "445": "2026-06-24",
         "pr_437": "2026-06-23"
     },
     "prs_created": {
@@ -44,21 +44,20 @@
             "branch": "repo-assist/perf-aggregation-prealloc-20260620-66fad8160d2b4cb6",
             "pr_number": 431,
             "date": "2026-06-20",
-            "status": "open - rebased 2026-06-23",
+            "status": "MERGED 2026-06-24",
             "description": "perf(stages,model): pre-size aggregation collector slices"
         },
         "eng-devmd-fix-bench-20260620": {
             "branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c",
             "pr_number": 432,
             "date": "2026-06-20",
-            "status": "open - rebased 2026-06-23",
+            "status": "open",
             "description": "docs(dev): fix task ci description; add aggregation benchmark"
         },
         "eng-ginkgolinter-20260620": {
             "pr_number": 437,
             "date": "2026-06-20",
-            "status": "open - SUPERSEDED by #443 - closure requested 2026-06-23",
-            "description": "eng: add ginkgolinter (old, conflicted)"
+            "status": "CLOSED by maintainer 2026-06-24 (too many unrelated changes)"
         },
         "fix-classification-wiring-402": {
             "pr_number": 439,
@@ -66,42 +65,50 @@
             "status": "MERGED 2026-06-21"
         },
         "eng-ginkgolinter-rebase-20260621": {
-            "issue": 429,
-            "branch": "repo-assist/eng-ginkgolinter-rebase-20260621",
             "pr_number": 443,
             "date": "2026-06-21",
-            "status": "open",
-            "description": "eng: add ginkgolinter (rebased), replaces #437, closes #429"
+            "status": "CLOSED by maintainer 2026-06-24 (too many unrelated changes - separate run pushed refactor commit)"
         },
         "fix-same-level-aggregation-444": {
             "issue": 444,
-            "branch": "repo-assist/fix-same-level-aggregation-444",
             "pr_number": 446,
             "date": "2026-06-22",
-            "status": "open",
-            "description": "fix(provider/config): reject same-level aggregation expressions, closes #444"
+            "status": "MERGED 2026-06-24"
         },
         "improve-expr-palette-lookup": {
-            "branch": "repo-assist/improve-expr-palette-lookup",
             "pr_number": 447,
             "date": "2026-06-22",
-            "status": "open",
-            "description": "improve(stages): inherit base metric palette for expression metrics"
+            "status": "MERGED 2026-06-24"
         },
         "test-validation-matrix-442": {
             "issue": 442,
-            "branch": "repo-assist/test-validation-matrix-442",
-            "pr_number": "pending",
-            "date": "2026-06-23",
-            "status": "open - pending PR number",
+            "branch": "repo-assist/test-validation-matrix-442-c3e12005a6e59f03",
+            "pr_number": 450,
+            "date": "2026-06-22",
+            "status": "open",
             "description": "test(cmd): validation matrix for all viz types x metric kinds x fields, closes #442"
         },
         "perf-canvas-inks-20260622": {
-            "branch": "repo-assist/perf-canvas-inks-20260622",
-            "pr_number": "pending",
+            "branch": "repo-assist/perf-canvas-inks-20260622-cafe4381087de020",
+            "pr_number": 451,
             "date": "2026-06-23",
+            "status": "MERGED 2026-06-23",
+            "description": "perf: sort canvas shapes in-place; pre-size inks numeric values"
+        },
+        "eng-ginkgolinter-minimal-20260624": {
+            "issue": 429,
+            "branch": "repo-assist/eng-ginkgolinter-minimal-20260624",
+            "pr_number": "pending",
+            "date": "2026-06-24",
             "status": "open - pending PR number",
-            "description": "perf: sort canvas shapes in-place; pre-size inks.CollectNumericValues"
+            "description": "eng: add ginkgolinter (2-file change only), closes #429"
+        },
+        "perf-presize-slices-20260624": {
+            "branch": "repo-assist/perf-presize-slices-20260624",
+            "pr_number": "pending",
+            "date": "2026-06-24",
+            "status": "open - pending PR number",
+            "description": "perf(provider): pre-size result slices (bulk_history, base_registry, comments)"
         }
     },
     "issues_labelled": {
@@ -126,8 +133,10 @@
         "No migration shims needed (alpha tool)",
         "Title feature: one --title TEXT flag only (not per-command separate flags)",
         "go.mod and go.sum are protected files - cannot be pushed by automation",
-        ".github/workflows/release.yml is a protected file (see issue #388) - may need manual PR apply"
+        ".github/workflows/release.yml is a protected file (see issue #388) - may need manual PR apply",
+        "Keep PRs strictly scoped to description - do not allow other runs to push commits to open PR branches",
+        "Kebab-case rename: no backwards compatibility needed (pre-alpha tool)"
     ],
-    "closed_issues": [421, 422, 423, 424, 402],
-    "notes": "Run 27970809459 (2026-06-23): Tasks 6, 3, 8, 11. Task 6: rebased PR #431 and #432 onto main (00f15ec); commented on PR #437 requesting closure (superseded by #443). Task 3: created validation matrix test file (cmd/codeviz/validation_matrix_test.go) covering BubbletreeCmd/RadialCmd/SpiralCmd/TreemapCmd/ScatterCmd x all metric kinds; all 363 test cases pass; PR pending number on branch repo-assist/test-validation-matrix-442. Task 8: implemented canvas.RenderTo sort-in-place + inks.CollectNumericValues pre-size; PR pending number on branch repo-assist/perf-canvas-inks-20260622. PRs #446 and #447 now have confirmed numbers. Next: verify pending PR numbers for test-validation-matrix and perf-canvas-inks; check if PR #441 (maintainer) has merged; monitor for PR #446/#447 conflicts after #441 merges."
+    "closed_issues": [421, 422, 423, 424, 402, 440, 444],
+    "notes": "Run 28109418893 (2026-06-24): Tasks 2, 8, 4, 11. Merged since last run: PR #431 (aggregation prealloc), #446 (same-level aggregation fix), #447 (expr palette), #451 (canvas inks). PR #443 (ginkgolinter) was CLOSED by maintainer - unrelated refactor commit was pushed onto the branch by a separate run. New PRs: eng-ginkgolinter-minimal (pending #, 2 files only), perf-presize-slices (pending #, 3 files). Commented on #429 (new PR), #445 (implementation plan for kebab-case rename - maintainer confirmed no backwards compat). Next: verify pending PR numbers; consider implementing kebab-case rename (#445) as Task 10; monitor PR #432 and #450."
 }
