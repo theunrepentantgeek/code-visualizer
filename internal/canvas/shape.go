@@ -1,13 +1,16 @@
 package canvas
 
-import "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+)
 
 // Rectangle carries geometry and metric values for rectangular shapes.
 type Rectangle struct {
 	Spec       *RectangleSpec
 	X, Y, W, H float64
-	Fill       MetricValue
-	Border     MetricValue
+	Fill       inks.MetricValue
+	Border     inks.MetricValue
 	Focus      model.Point
 }
 
@@ -29,8 +32,8 @@ type Disc struct {
 	X, Y   float64
 	Radius float64
 	Angle  float64 // angular position; used for radial/external label orientation
-	Fill   MetricValue
-	Border MetricValue
+	Fill   inks.MetricValue
+	Border inks.MetricValue
 }
 
 func (d *Disc) drawTo(b Backend) {
@@ -53,7 +56,7 @@ type Text struct {
 }
 
 func (t *Text) drawTo(b Backend) {
-	ink := t.Spec.Ink.Dip(MetricValue{})
+	ink := t.Spec.Ink.Dip(inks.MetricValue{})
 
 	b.DrawText(
 		Position{X: t.X, Y: t.Y},
@@ -72,7 +75,7 @@ type Line struct {
 }
 
 func (l *Line) drawTo(b Backend) {
-	stroke := l.Spec.Stroke.Dip(MetricValue{})
+	stroke := l.Spec.Stroke.Dip(inks.MetricValue{})
 
 	b.DrawLine(
 		Position{X: l.X1, Y: l.Y1},
@@ -89,7 +92,7 @@ type Path struct {
 }
 
 func (p *Path) drawTo(b Backend) {
-	stroke := p.Spec.Stroke.Dip(MetricValue{})
+	stroke := p.Spec.Stroke.Dip(inks.MetricValue{})
 
 	b.DrawPath(p.Points, stroke, p.Spec.StrokeWidth)
 }

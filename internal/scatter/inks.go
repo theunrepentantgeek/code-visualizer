@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"slices"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -20,10 +20,10 @@ var (
 	scatterBgColour      = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
-// Inks holds the fill and border inks for scatter points.
+// Inks pairs the fill and border inks for scatter points (via embedded
+// inks.ShapeInks) plus a flag recording whether the border encodes a metric.
 type Inks struct {
-	Fill            canvas.Ink
-	Border          canvas.Ink
+	inks.ShapeInks
 	HasBorderMetric bool
 }
 
@@ -36,17 +36,19 @@ func BuildInks(
 	borderMetric metric.Name,
 	borderPaletteName palette.PaletteName,
 ) Inks {
-	inks := Inks{
-		Fill:   buildMetricInk(dataset.Files(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
-		Border: canvas.FixedInk(scatterDefaultBorder),
+	is := Inks{
+		ShapeInks: inks.ShapeInks{
+			Fill:   buildMetricInk(dataset.Files(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
+			Border: inks.FixedInk(scatterDefaultBorder),
+		},
 	}
 
 	if borderMetric != "" {
-		inks.Border = buildMetricInk(dataset.Files(), requested, borderMetric, borderPaletteName, scatterDefaultBorder)
-		inks.HasBorderMetric = true
+		is.Border = buildMetricInk(dataset.Files(), requested, borderMetric, borderPaletteName, scatterDefaultBorder)
+		is.HasBorderMetric = true
 	}
 
-	return inks
+	return is
 }
 
 func buildMetricInk(
@@ -55,14 +57,14 @@ func buildMetricInk(
 	name metric.Name,
 	paletteName palette.PaletteName,
 	fallback color.RGBA,
-) canvas.Ink {
+) inks.Ink {
 	if name == "" {
-		return canvas.FixedInk(fallback)
+		return inks.FixedInk(fallback)
 	}
 
 	descriptor, ok := requested.DescriptorFor(name)
 	if !ok {
-		return canvas.FixedInk(fallback)
+		return inks.FixedInk(fallback)
 	}
 
 	pal := palette.GetPalette(paletteName)
@@ -79,7 +81,7 @@ func buildNumericInk(
 	name metric.Name,
 	pal palette.ColourPalette,
 	fallback color.RGBA,
-) canvas.Ink {
+) inks.Ink {
 	values := make([]float64, 0, len(files))
 	for _, file := range files {
 		if value, ok := numericValueForFile(file, name); ok {
@@ -88,10 +90,10 @@ func buildNumericInk(
 	}
 
 	if len(values) == 0 {
-		return canvas.FixedInk(fallback)
+		return inks.FixedInk(fallback)
 	}
 
-	return canvas.NumericInk(name, values, pal)
+	return inks.NumericInk(name, values, pal)
 }
 
 func buildCategoricalInk(
@@ -99,15 +101,15 @@ func buildCategoricalInk(
 	name metric.Name,
 	pal palette.ColourPalette,
 	fallback color.RGBA,
-) canvas.Ink {
+) inks.Ink {
 	categories := uniqueCategories(files, name)
 	if len(categories) == 0 {
-		return canvas.FixedInk(fallback)
+		return inks.FixedInk(fallback)
 	}
 
 	slices.Sort(categories)
 
-	return canvas.CategoricalInk(name, categories, pal)
+	return inks.CategoricalInk(name, categories, pal)
 }
 
 func uniqueCategories(files []*model.File, name metric.Name) []string {

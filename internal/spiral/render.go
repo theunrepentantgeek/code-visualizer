@@ -6,6 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
 var (
@@ -25,13 +26,13 @@ func RenderToCanvas(
 	layout SpiralLayout,
 	buckets []TimeBucket,
 	width, height int,
-	inks Inks,
+	is Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
 	addBackground(cv, width, height)
 	addTrack(cv, layout)
-	addDiscs(cv, layout.Nodes, buckets, inks)
+	addDiscs(cv, layout.Nodes, buckets, is)
 	addLabels(cv, layout.Nodes)
 
 	return cv
@@ -41,8 +42,8 @@ func RenderToCanvas(
 func addBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(bgColour),
-			Border:      canvas.FixedInk(bgColour),
+			Fill:        inks.FixedInk(bgColour),
+			Border:      inks.FixedInk(bgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -75,7 +76,7 @@ func addTrack(cv *canvas.Canvas, layout SpiralLayout) {
 	}
 
 	trackSpec := &canvas.LineSpec{
-		Stroke:      canvas.FixedInk(trackColour),
+		Stroke:      inks.FixedInk(trackColour),
 		StrokeWidth: trackWidth,
 	}
 
@@ -90,21 +91,21 @@ func addDiscs(
 	cv *canvas.Canvas,
 	nodes []SpiralNode,
 	buckets []TimeBucket,
-	inks Inks,
+	is Inks,
 ) {
 	// Pre-allocate the two spec variants (borderWidth is either 2.0 or 3.0)
 	// so they are not re-created for every disc in the loop.
 	smallSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.Fill,
-			Border:      inks.Border,
+			Fill:        is.Fill,
+			Border:      is.Border,
 			BorderWidth: 2.0,
 		},
 	}
 	largeSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.Fill,
-			Border:      inks.Border,
+			Fill:        is.Fill,
+			Border:      is.Border,
 			BorderWidth: 3.0,
 		},
 	}
@@ -114,8 +115,8 @@ func addDiscs(
 			continue
 		}
 
-		fillMV := metricValue(buckets[i].FillValue, buckets[i].FillLabel, inks.Fill)
-		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, inks.Border)
+		fillMV := metricValue(buckets[i].FillValue, buckets[i].FillLabel, is.Fill)
+		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, is.Border)
 
 		spec := smallSpec
 		if borderWidth(n.DiscRadius) == 3.0 {
@@ -137,7 +138,7 @@ func addDiscs(
 // addLabels adds rotated text labels tangent to the spiral.
 // Pre-allocates a shared labelInk to avoid recreating it for every label.
 func addLabels(cv *canvas.Canvas, nodes []SpiralNode) {
-	labelInk := canvas.FixedInk(labelColour)
+	labelInk := inks.FixedInk(labelColour)
 
 	for _, n := range nodes {
 		if !n.ShowLabel || n.Label == "" {
@@ -149,7 +150,7 @@ func addLabels(cv *canvas.Canvas, nodes []SpiralNode) {
 }
 
 // addLabel adds a single rotated label for a spiral node.
-func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk canvas.Ink) {
+func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk inks.Ink) {
 	labelR := n.DiscRadius + labelGap
 	lx := n.X + labelR*math.Sin(n.Angle)
 	ly := n.Y - labelR*math.Cos(n.Angle)
@@ -187,16 +188,16 @@ func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk canvas.Ink) {
 }
 
 // metricValue builds a MetricValue from time-bucket data for the given ink.
-func metricValue(numericVal float64, categoryVal string, ink canvas.Ink) canvas.MetricValue {
+func metricValue(numericVal float64, categoryVal string, ink inks.Ink) inks.MetricValue {
 	info := ink.Info()
 
 	switch info.Kind {
-	case canvas.InkNumeric:
-		return canvas.MeasureValue(numericVal)
-	case canvas.InkCategorical:
-		return canvas.CategoryValue(categoryVal)
+	case inks.KindNumeric:
+		return inks.MeasureValue(numericVal)
+	case inks.KindCategorical:
+		return inks.CategoryValue(categoryVal)
 	default:
-		return canvas.MetricValue{}
+		return inks.MetricValue{}
 	}
 }
 

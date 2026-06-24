@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -59,6 +59,26 @@ func TestResolveMetrics_ParsesLogScale(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(viz.XAxis.Scale).To(Equal(scatter.Log))
 	g.Expect(viz.YAxis.Scale).To(Equal(scatter.Linear))
+}
+
+func TestResolveMetrics_AggregationAxisResolvesResultKind(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{}
+	viz := &scatter.State{}
+	cfg := &config.Scatter{
+		XAxis: new("declarations.count"),
+		YAxis: new("file-lines"),
+		Size:  new("file-size"),
+	}
+
+	err := scatter.ResolveMetrics(common, viz, cfg)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(viz.XAxis).To(Equal(scatter.AxisSpec{
+		Metric: "declarations.count",
+		Kind:   metric.Quantity,
+	}))
 }
 
 func TestResolveMetrics_FillAndBorderOverrideDefaults(t *testing.T) {
@@ -123,6 +143,6 @@ func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
 
 	err := scatter.BuildInksStage(common, viz)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(canvas.InkNumeric))
+	g.Expect(viz.Inks.Fill.Info().Kind).To(Equal(inks.KindNumeric))
 	g.Expect(viz.Inks.Fill.Info().MetricName).To(Equal(expressionMetric))
 }

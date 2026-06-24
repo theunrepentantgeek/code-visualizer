@@ -11,10 +11,10 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/lmittmann/tint v1.1.3
 	github.com/nikolaydubina/treemap v1.2.5
-	github.com/onsi/gomega v1.41.0
+	github.com/onsi/gomega v1.42.0
 	github.com/rotisserie/eris v0.5.4
 	go.yaml.in/yaml/v3 v3.0.4
-	golang.org/x/image v0.42.0
+	golang.org/x/image v0.43.0
 	golang.org/x/sync v0.21.0
 	golang.org/x/text v0.38.0
 )

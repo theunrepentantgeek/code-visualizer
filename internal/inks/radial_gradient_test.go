@@ -1,4 +1,4 @@
-package canvas
+package inks_test
 
 import (
 	"image/color"
@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -15,10 +16,10 @@ func TestRadialGradientInk_Dip_DelegatesToInner(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	red := color.RGBA{R: 255, A: 255}
-	inner := FixedInk(red)
-	gradient := NewRadialGradientInk(inner)
+	inner := inks.FixedInk(red)
+	gradient := inks.NewRadialGradientInk(inner)
 
-	result := gradient.Dip(MetricValue{})
+	result := gradient.Dip(inks.MetricValue{})
 	g.Expect(result).To(Equal(red))
 }
 
@@ -27,11 +28,11 @@ func TestRadialGradientInk_Fill_ReturnsRadialGradientFill(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-	inner := FixedInk(white)
-	gradient := NewRadialGradientInk(inner)
+	inner := inks.FixedInk(white)
+	gradient := inks.NewRadialGradientInk(inner)
 
 	focus := model.Point{X: 0.35, Y: 0.35}
-	fill := gradient.Fill(MetricValue{}, focus)
+	fill := gradient.Fill(inks.MetricValue{}, focus)
 
 	rgf, ok := fill.(model.RadialGradientFill)
 	g.Expect(ok).To(BeTrue())
@@ -49,10 +50,10 @@ func TestRadialGradientInk_Fill_DarkensBy40Percent(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	base := color.RGBA{R: 200, G: 100, B: 50, A: 255}
-	inner := FixedInk(base)
-	gradient := NewRadialGradientInk(inner)
+	inner := inks.FixedInk(base)
+	gradient := inks.NewRadialGradientInk(inner)
 
-	fill := gradient.Fill(MetricValue{}, model.Point{X: 0.5, Y: 0.5})
+	fill := gradient.Fill(inks.MetricValue{}, model.Point{X: 0.5, Y: 0.5})
 	rgf, ok := fill.(model.RadialGradientFill)
 	g.Expect(ok).To(BeTrue())
 
@@ -67,10 +68,10 @@ func TestRadialGradientInk_Fill_PreservesAlpha(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	base := color.RGBA{R: 200, G: 100, B: 50, A: 128}
-	inner := FixedInk(base)
-	gradient := NewRadialGradientInk(inner)
+	inner := inks.FixedInk(base)
+	gradient := inks.NewRadialGradientInk(inner)
 
-	fill := gradient.Fill(MetricValue{}, model.Point{X: 0.5, Y: 0.5})
+	fill := gradient.Fill(inks.MetricValue{}, model.Point{X: 0.5, Y: 0.5})
 	rgf, ok := fill.(model.RadialGradientFill)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(rgf.Center.A).To(Equal(base.A))
@@ -81,23 +82,26 @@ func TestRadialGradientInk_Info_DelegatesToInner(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	inner := NumericInk("test-metric", []float64{1, 2}, palette.GetPalette(palette.Neutral))
-	gradient := NewRadialGradientInk(inner)
+	inner := inks.NumericInk("test-metric", []float64{1, 2}, palette.GetPalette(palette.Neutral))
+	gradient := inks.NewRadialGradientInk(inner)
 
 	g.Expect(gradient.Info()).To(Equal(inner.Info()))
 }
 
-func TestRadialGradientInk_LegendMethods_DelegateToInner(t *testing.T) {
+func TestRadialGradientInk_LegendData_DelegatesToInner(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	inner := CategoricalInk(
+	inner := inks.CategoricalInk(
 		"language",
 		[]string{"go", "rs"},
 		palette.GetPalette(palette.Categorization),
 	)
-	gradient := NewRadialGradientInk(inner)
+	gradient := inks.NewRadialGradientInk(inner)
 
-	g.Expect(gradient.legendEntryKind()).To(Equal(inner.legendEntryKind()))
-	g.Expect(gradient.legendSwatches()).To(Equal(inner.legendSwatches()))
+	innerKind, innerSwatches := inks.LegendData(inner)
+	gradientKind, gradientSwatches := inks.LegendData(gradient)
+
+	g.Expect(gradientKind).To(Equal(innerKind))
+	g.Expect(gradientSwatches).To(Equal(innerSwatches))
 }

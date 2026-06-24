@@ -25,6 +25,21 @@ func ResolveExpression(expr metric.MetricExpression, targetLevel metric.MetricLe
 	return resolveExpressionWith(globalBaseRegistry, expr, targetLevel)
 }
 
+// ResolveName is the canonical entry point for turning a user-supplied metric
+// name into a validated, kind-bearing ResolvedMetric. The name may be a bare
+// base metric (e.g. "file-size") or a full "[filter.]base[.aggregation]"
+// expression (e.g. "public.declarations.count"). It is shared by config
+// validation, CLI validation, and pipeline metric resolution so they all agree
+// on what a metric name means and which kind it produces.
+func ResolveName(name metric.Name, targetLevel metric.MetricLevel) (ResolvedMetric, error) {
+	expr, err := metric.ParseExpression(string(name))
+	if err != nil {
+		return ResolvedMetric{}, eris.Wrapf(err, "invalid metric name %q", name)
+	}
+
+	return ResolveExpression(expr, targetLevel)
+}
+
 func resolveExpressionWith(
 	reg *baseRegistry,
 	expr metric.MetricExpression,

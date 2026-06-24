@@ -7,7 +7,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -49,15 +48,8 @@ func (*RadialCmd) Validate() error {
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*RadialCmd) validateConfig(cfg *config.Radial) error {
-	discSize := ptrString(cfg.DiscSize)
-
-	d, ok := provider.GetBase(metric.Name(discSize))
-	if !ok {
-		return eris.Errorf("unknown disc-size metric %q; available metrics: %s", discSize, formatMetricNames())
-	}
-
-	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
-		return eris.Errorf("disc-size metric must be numeric, got %q (kind: %d)", discSize, d.Kind)
+	if err := validateNumericMetric("disc-size", metric.Name(ptrString(cfg.DiscSize))); err != nil {
+		return err
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {
@@ -106,6 +98,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ValidatePaths)
 	pipeline.ApplyFuncX(s, stages.ExportConfig)
 	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)

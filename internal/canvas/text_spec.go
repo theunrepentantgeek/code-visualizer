@@ -2,6 +2,7 @@ package canvas
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
 // TextAnchor is re-exported from model for backward compatibility.
@@ -20,7 +21,7 @@ const (
 // Font family is intentionally fixed (sans-serif for SVG, goregular for raster)
 // and is not exposed as a configurable field.
 type TextSpec struct {
-	Ink      Ink
+	Ink      inks.Ink
 	FontSize float64
 	Anchor   TextAnchor
 	Rotation float64 // radians
@@ -28,7 +29,7 @@ type TextSpec struct {
 
 // ArcTextSpec defines the visual template for text curved along a circle arc.
 type ArcTextSpec struct {
-	Ink      Ink
+	Ink      inks.Ink
 	FontSize float64
 }
 
@@ -41,7 +42,7 @@ type ArcText struct {
 }
 
 func (a *ArcText) drawTo(b Backend) {
-	ink := a.Spec.Ink.Dip(MetricValue{})
+	ink := a.Spec.Ink.Dip(inks.MetricValue{})
 
 	b.DrawArcText(
 		Position{X: a.X, Y: a.Y},

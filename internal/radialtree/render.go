@@ -7,7 +7,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -26,7 +26,7 @@ func RenderToCanvas(
 	root *model.Directory,
 	canvasSize int,
 	topOffset int,
-	inks Inks,
+	is Inks,
 ) *canvas.Canvas {
 	canvasHeight := canvasSize + topOffset
 	cv := canvas.NewCanvas(canvasSize, canvasHeight)
@@ -36,8 +36,8 @@ func RenderToCanvas(
 
 	addBackground(cv, canvasSize, canvasHeight)
 	addEdges(cv, *nodes, cx, cy)
-	addDiscs(cv, nodes, root, cx, cy, inks)
-	addLabels(cv, *nodes, cx, cy, inks)
+	addDiscs(cv, nodes, root, cx, cy, is)
+	addLabels(cv, *nodes, cx, cy, is)
 
 	return cv
 }
@@ -46,8 +46,8 @@ func RenderToCanvas(
 func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(bgColour),
-			Border:      canvas.FixedInk(bgColour),
+			Fill:        inks.FixedInk(bgColour),
+			Border:      inks.FixedInk(bgColour),
 			BorderWidth: 0,
 		},
 	}
@@ -63,7 +63,7 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 // addEdges recursively adds edge lines from each node to its children.
 func addEdges(cv *canvas.Canvas, node RadialNode, cx, cy float64) {
 	edgeSpec := &canvas.LineSpec{
-		Stroke:      canvas.FixedInk(edgeColour),
+		Stroke:      inks.FixedInk(edgeColour),
 		StrokeWidth: edgeWidth,
 	}
 	addEdgesInner(cv, node, cx, cy, edgeSpec)
@@ -159,7 +159,7 @@ func addDiscs(
 	nodes *RadialNode,
 	root *model.Directory,
 	cx, cy float64,
-	inks Inks,
+	is Inks,
 ) {
 	entries := collectDiscs(nodes, root, cx, cy)
 
@@ -170,28 +170,28 @@ func addDiscs(
 	// Pre-allocate the two spec variants so they are not re-created per disc.
 	fileSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.Fill,
-			Border:      inks.Border,
+			Fill:        is.Fill,
+			Border:      is.Border,
 			BorderWidth: 1.0,
 		},
 	}
 	dirSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(defaultDirFill),
-			Border:      canvas.FixedInk(defaultBorder),
+			Fill:        inks.FixedInk(defaultDirFill),
+			Border:      inks.FixedInk(defaultBorder),
 			BorderWidth: 1.0,
 		},
 	}
 
 	for _, e := range entries {
-		addDisc(cv, e, inks, fileSpec, dirSpec)
+		addDisc(cv, e, is, fileSpec, dirSpec)
 	}
 }
 
 // addDisc adds a single disc shape to the canvas.
-func addDisc(cv *canvas.Canvas, e discEntry, inks Inks, fileSpec, dirSpec *canvas.DiscSpec) {
-	fillMV := pkginks.MetricValueForFile(e.file, inks.Fill)
-	borderMV := pkginks.MetricValueForFile(e.file, inks.Border)
+func addDisc(cv *canvas.Canvas, e discEntry, is Inks, fileSpec, dirSpec *canvas.DiscSpec) {
+	fillMV := inks.MetricValueForFile(e.file, is.Fill)
+	borderMV := inks.MetricValueForFile(e.file, is.Border)
 
 	spec := fileSpec
 	if e.isDir {
@@ -214,12 +214,12 @@ func addLabels(
 	cv *canvas.Canvas,
 	node RadialNode,
 	cx, cy float64,
-	inks Inks,
+	is Inks,
 ) {
-	labelInk := canvas.FixedInk(labelColour)
+	labelInk := inks.FixedInk(labelColour)
 	// The root sits at dist==0 and has no meaningful angle; pass NaN so its
 	// direct file children each use their own angle for orientation.
-	addLabelsInner(cv, node, cx, cy, inks, math.NaN(), labelInk)
+	addLabelsInner(cv, node, cx, cy, is, math.NaN(), labelInk)
 }
 
 // addLabelsInner recurses the node tree, rendering labels.
@@ -233,15 +233,15 @@ func addLabelsInner(
 	cv *canvas.Canvas,
 	node RadialNode,
 	cx, cy float64,
-	inks Inks,
+	is Inks,
 	parentDirAngle float64,
-	labelInk canvas.Ink,
+	labelInk inks.Ink,
 ) {
-	renderNodeLabel(cv, node, cx, cy, inks, parentDirAngle, labelInk)
+	renderNodeLabel(cv, node, cx, cy, is, parentDirAngle, labelInk)
 
 	childParentAngle := childParentAngleFor(node)
 	for _, child := range node.Children {
-		addLabelsInner(cv, child, cx, cy, inks, childParentAngle, labelInk)
+		addLabelsInner(cv, child, cx, cy, is, childParentAngle, labelInk)
 	}
 }
 
@@ -250,16 +250,16 @@ func renderNodeLabel(
 	cv *canvas.Canvas,
 	node RadialNode,
 	cx, cy float64,
-	inks Inks,
+	is Inks,
 	parentDirAngle float64,
-	labelInk canvas.Ink,
+	labelInk inks.Ink,
 ) {
 	if !node.ShowLabel || node.Label == "" {
 		return
 	}
 
 	if nodeDistance(node) == 0 {
-		addRootLabel(cv, node, cx, cy, inks, labelInk)
+		addRootLabel(cv, node, cx, cy, is, labelInk)
 	} else {
 		addExternalLabel(cv, node, cx, cy, labelOrientAngle(node, parentDirAngle), labelInk)
 	}
@@ -300,7 +300,7 @@ func addRootLabel(
 	node RadialNode,
 	cx, cy float64,
 	_ Inks,
-	labelInk canvas.Ink,
+	labelInk inks.Ink,
 ) {
 	labelSpec := &canvas.TextSpec{
 		Ink:      labelInk,
@@ -326,7 +326,7 @@ func addExternalLabel(
 	node RadialNode,
 	cx, cy float64,
 	orientAngle float64,
-	labelInk canvas.Ink,
+	labelInk inks.Ink,
 ) {
 	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
 	labelRadius := dist + node.DiscRadius + labelGap

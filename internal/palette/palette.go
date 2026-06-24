@@ -8,6 +8,10 @@ import (
 	"slices"
 )
 
+// White is the canonical opaque-white colour shared across packages
+// (legend backgrounds, swatch interiors, default text fills, etc.).
+var White = color.RGBA{R: 255, G: 255, B: 255, A: 255} //nolint:gochecknoglobals // shared colour constant
+
 // PaletteName identifies a colour palette.
 type PaletteName string
 
