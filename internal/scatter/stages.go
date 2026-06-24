@@ -50,20 +50,20 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 
 func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
-	base, ok := provider.GetBase(metricName)
 
-	if !ok {
-		return AxisSpec{}, eris.Errorf("unknown axis metric %q", metricName)
+	resolved, err := provider.ResolveName(metricName, metric.LevelFile)
+	if err != nil {
+		return AxisSpec{}, eris.Wrapf(err, "invalid axis metric %q", metricName)
 	}
 
-	spec := AxisSpec{Metric: metricName, Kind: base.Kind}
+	spec := AxisSpec{Metric: metricName, Kind: resolved.ResultKind}
 
 	scaleStr := stages.PtrString(scale)
 	switch scaleStr {
 	case "", "linear":
 		spec.Scale = Linear
 	case "log":
-		if base.Kind == metric.Classification {
+		if resolved.ResultKind == metric.Classification {
 			return AxisSpec{}, eris.Errorf(
 				"log scale is only valid for numeric metrics; %q is a classification metric",
 				metricName,

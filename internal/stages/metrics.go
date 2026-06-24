@@ -57,24 +57,5 @@ func ResolveBorderMetricAndPalette(border *config.MetricSpec) (metric.Name, pale
 		return "", ""
 	}
 
-	borderPaletteName := border.PaletteName()
-	if borderPaletteName == "" {
-		if d, ok := provider.GetBase(borderMetric); ok {
-			borderPaletteName = d.DefaultPalette
-		} else {
-			// For expression metrics like "commit-count.mean", inherit the base
-			// metric's default palette so aggregations get meaningful colour schemes.
-			if expr, err := metric.ParseExpression(string(borderMetric)); err == nil {
-				if d, ok := provider.GetBase(expr.Base); ok {
-					borderPaletteName = d.DefaultPalette
-				} else {
-					borderPaletteName = palette.Neutral
-				}
-			} else {
-				borderPaletteName = palette.Neutral
-			}
-		}
-	}
-
-	return borderMetric, borderPaletteName
+	return borderMetric, ResolveFillPalette(border, borderMetric)
 }
