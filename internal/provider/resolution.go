@@ -25,6 +25,43 @@ func ResolveExpression(expr metric.MetricExpression, targetLevel metric.MetricLe
 	return resolveExpressionWith(globalBaseRegistry, expr, targetLevel)
 }
 
+// ResolveName is the canonical entry point for turning a user-supplied metric
+// name into a validated, kind-bearing ResolvedMetric. The name may be a bare
+// base metric (e.g. "file-size") or a full "[filter.]base[.aggregation]"
+// expression (e.g. "public.declarations.count"). It is shared by config
+// validation, CLI validation, and pipeline metric resolution so they all agree
+// on what a metric name means and which kind it produces.
+func ResolveName(name metric.Name, targetLevel metric.MetricLevel) (ResolvedMetric, error) {
+	expr, err := metric.ParseExpression(string(name))
+	if err != nil {
+		return ResolvedMetric{}, eris.Wrapf(err, "invalid metric name %q", name)
+	}
+
+	return ResolveExpression(expr, targetLevel)
+}
+
+// ResolveForValidation resolves a user-supplied metric name the way config and
+// CLI validation need it. Bare base metrics are resolved at their native file
+// level; aggregation expressions are resolved at directory level, where the
+// pipeline rolls them up (see stages.ClassifyRequestedMetrics, which resolves
+// at LevelDirectory). Selecting the level this way keeps validation aligned with
+// runtime resolution and avoids falsely rejecting either form — in particular,
+// the same-level aggregation guard would otherwise reject valid expressions such
+// as "file-size.sum" if they were validated at file level.
+func ResolveForValidation(name metric.Name) (ResolvedMetric, error) {
+	expr, err := metric.ParseExpression(string(name))
+	if err != nil {
+		return ResolvedMetric{}, eris.Wrapf(err, "invalid metric name %q", name)
+	}
+
+	targetLevel := metric.LevelFile
+	if !expr.Aggregation.IsZero() {
+		targetLevel = metric.LevelDirectory
+	}
+
+	return ResolveExpression(expr, targetLevel)
+}
+
 func resolveExpressionWith(
 	reg *baseRegistry,
 	expr metric.MetricExpression,
@@ -95,11 +132,12 @@ func validateAggregation(
 
 	// Aggregation is only meaningful when rolling up from a finer level (e.g. file → directory).
 	// Applying an aggregation to a metric that is already at the target level is meaningless
-	// and produces silent missing values in the pipeline because no per-file aggregated storage
-	// path exists for same-level aggregations.
+	// and produces silent missing values in the pipeline because no aggregated storage path
+	// exists when the source and target levels are the same.
 	if !expr.Aggregation.IsZero() && desc.Level == targetLevel {
 		return false, eris.Errorf(
-			"%q is already a per-%s metric; aggregation (.%s) is only meaningful for cross-level metrics such as declarations.count",
+			"%q is already a per-%s metric; aggregation (.%s) is only meaningful for "+
+				"cross-level metrics such as declarations.count",
 			desc.Name, desc.Level.String(), expr.Aggregation,
 		)
 	}

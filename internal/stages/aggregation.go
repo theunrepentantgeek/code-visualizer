@@ -117,7 +117,7 @@ func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMet
 }
 
 func collectNumericValues(dir *model.Directory, name metric.Name, kind metric.Kind) []float64 {
-	var values []float64
+	values := make([]float64, 0, model.CountFiles(dir))
 
 	model.WalkFiles(dir, func(f *model.File) {
 		switch kind {
@@ -138,7 +138,7 @@ func collectNumericValues(dir *model.Directory, name metric.Name, kind metric.Ki
 }
 
 func collectClassificationValues(dir *model.Directory, name metric.Name) []string {
-	var values []string
+	values := make([]string, 0, model.CountFiles(dir))
 
 	model.WalkFiles(dir, func(f *model.File) {
 		if v, ok := f.Classification(name); ok {
@@ -300,7 +300,7 @@ func aggregateDirectoryDeclarationNumeric(dir *model.Directory, resolved provide
 }
 
 func collectFileDeclarationNumericValues(f *model.File, resolved provider.ResolvedMetric) []float64 {
-	var values []float64
+	values := make([]float64, 0, len(f.Declarations))
 
 	for _, d := range f.Declarations {
 		if !declarationMatchesExpression(d, resolved) {
@@ -316,7 +316,7 @@ func collectFileDeclarationNumericValues(f *model.File, resolved provider.Resolv
 }
 
 func collectFileDeclarationClassificationValues(f *model.File, resolved provider.ResolvedMetric) []string {
-	var values []string
+	values := make([]string, 0, len(f.Declarations))
 
 	for _, d := range f.Declarations {
 		if !declarationMatchesExpression(d, resolved) {
@@ -332,7 +332,7 @@ func collectFileDeclarationClassificationValues(f *model.File, resolved provider
 }
 
 func collectAllDeclarationNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
-	var values []float64
+	values := make([]float64, 0, model.CountDeclarations(dir))
 
 	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
 		if !declarationMatchesExpression(d, resolved) {
@@ -348,7 +348,7 @@ func collectAllDeclarationNumericValues(dir *model.Directory, resolved provider.
 }
 
 func collectAllDeclarationClassificationValues(dir *model.Directory, resolved provider.ResolvedMetric) []string {
-	var values []string
+	values := make([]string, 0, model.CountDeclarations(dir))
 
 	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
 		if !declarationMatchesExpression(d, resolved) {
@@ -428,7 +428,7 @@ func aggregateCommitNumeric(dir *model.Directory, resolved provider.ResolvedMetr
 }
 
 func collectCommitNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
-	var values []float64
+	values := make([]float64, 0, model.CountCommits(dir))
 
 	model.WalkCommits(dir, func(c *model.Commit, _ *model.File) {
 		switch resolved.Descriptor.Kind {

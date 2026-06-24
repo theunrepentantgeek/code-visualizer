@@ -25,6 +25,8 @@ func CollectRequestedMetrics(size metric.Name, fill *config.MetricSpec, border *
 
 // ResolveFillPalette returns the fill palette to use, consulting (in order)
 // the explicit fill spec, the provider's default palette, and palette.Neutral.
+// For expression metrics (e.g. "commit-count.mean"), the base metric's default
+// palette is used so aggregations inherit meaningful colour schemes.
 func ResolveFillPalette(fill *config.MetricSpec, fillMetric metric.Name) palette.PaletteName {
 	if fp := fill.PaletteName(); fp != "" {
 		return fp
@@ -34,25 +36,26 @@ func ResolveFillPalette(fill *config.MetricSpec, fillMetric metric.Name) palette
 		return d.DefaultPalette
 	}
 
+	// For expression metrics like "commit-count.mean", inherit the base metric's
+	// default palette so aggregations get meaningful colour schemes automatically.
+	if expr, err := metric.ParseExpression(string(fillMetric)); err == nil {
+		if d, ok := provider.GetBase(expr.Base); ok {
+			return d.DefaultPalette
+		}
+	}
+
 	return palette.Neutral
 }
 
 // ResolveBorderMetricAndPalette returns the effective border metric and
-// palette name, or ("", "") when no border is configured.
+// palette name, or ("", "") when no border is configured. For expression
+// metrics (e.g. "commit-count.mean"), the base metric's default palette is
+// used so aggregations inherit meaningful colour schemes.
 func ResolveBorderMetricAndPalette(border *config.MetricSpec) (metric.Name, palette.PaletteName) {
 	borderMetric := border.MetricName()
 	if borderMetric == "" {
 		return "", ""
 	}
 
-	borderPaletteName := border.PaletteName()
-	if borderPaletteName == "" {
-		if d, ok := provider.GetBase(borderMetric); ok {
-			borderPaletteName = d.DefaultPalette
-		} else {
-			borderPaletteName = palette.Neutral
-		}
-	}
-
-	return borderMetric, borderPaletteName
+	return borderMetric, ResolveFillPalette(border, borderMetric)
 }

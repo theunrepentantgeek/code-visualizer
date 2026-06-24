@@ -33,3 +33,77 @@ func TestScatterCmd_ValidateConfig_UsesBaseRegistryForAxesAndSize(t *testing.T) 
 	err := cmd.validateConfig(cfg.Scatter)
 	g.Expect(err).NotTo(HaveOccurred())
 }
+
+func TestScatterCmd_ValidateConfig_AggregationSizeMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Scatter.XAxis = new("file-size")
+	cfg.Scatter.YAxis = new("comment-ratio")
+	cfg.Scatter.Size = new("declarations.count")
+
+	cmd := &ScatterCmd{}
+	err := cmd.validateConfig(cfg.Scatter)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestScatterCmd_ValidateConfig_FilteredAggregationSizeMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Scatter.XAxis = new("file-size")
+	cfg.Scatter.YAxis = new("comment-ratio")
+	cfg.Scatter.Size = new("public.declarations.count")
+
+	cmd := &ScatterCmd{}
+	err := cmd.validateConfig(cfg.Scatter)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestScatterCmd_ValidateConfig_AggregationAxisMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Scatter.XAxis = new("declarations.count")
+	cfg.Scatter.YAxis = new("comment-ratio")
+	cfg.Scatter.Size = new("file-size")
+
+	cmd := &ScatterCmd{}
+	err := cmd.validateConfig(cfg.Scatter)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestTreemapCmd_ValidateConfig_AggregationSizeMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Treemap.Size = new("declarations.count")
+
+	cmd := &TreemapCmd{}
+	err := cmd.validateConfig(cfg.Treemap)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestValidateNumericMetric_RejectsClassificationAggregation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// file-type.mode resolves to a classification, which is not numeric.
+	err := validateNumericMetric("size", "file-type.mode")
+	g.Expect(err).To(MatchError(ContainSubstring("size metric must be numeric")))
+}
+
+func TestValidateNumericMetric_AcceptsFileAggregationAtDirectoryLevel(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// file-size.sum is a file-level metric aggregated to directory level. It must
+	// be accepted even though the same-level aggregation guard would reject it at
+	// file level.
+	err := validateNumericMetric("size", "file-size.sum")
+	g.Expect(err).NotTo(HaveOccurred())
+}

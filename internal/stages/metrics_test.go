@@ -9,11 +9,13 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func TestMain(m *testing.M) {
 	filesystem.Register()
+	git.Register()
 	m.Run()
 }
 
@@ -166,4 +168,32 @@ func TestResolveBorderMetricAndPalette_UnknownMetricFallsBackToNeutral(t *testin
 
 	g.Expect(m).To(Equal(metric.Name("not-registered")))
 	g.Expect(p).To(Equal(palette.Neutral))
+}
+
+// ---------------------------------------------------------------------------
+// Expression metric palette inheritance
+// ---------------------------------------------------------------------------
+
+func TestResolveFillPalette_ExpressionMetricInheritsBasePalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// commit-count is a git metric with DefaultPalette: palette.Temperature.
+	// commit-count.sum is an aggregation expression; it should inherit Temperature.
+	got := stages.ResolveFillPalette(nil, "commit-count.sum")
+
+	g.Expect(got).NotTo(Equal(palette.Neutral))
+	g.Expect(got).To(Equal(palette.Temperature))
+}
+
+func TestResolveBorderMetricAndPalette_ExpressionMetricInheritsBasePalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// commit-count.mean should inherit the Temperature palette from commit-count.
+	border := &config.MetricSpec{Metric: "commit-count.mean"}
+	m, p := stages.ResolveBorderMetricAndPalette(border)
+
+	g.Expect(m).To(Equal(metric.Name("commit-count.mean")))
+	g.Expect(p).To(Equal(palette.Temperature))
 }

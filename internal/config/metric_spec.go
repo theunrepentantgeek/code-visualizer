@@ -114,38 +114,11 @@ func (m *MetricSpec) Validate(label string) error {
 }
 
 func (m *MetricSpec) validateMetric(label string) error {
-	name := string(m.Metric)
-
-	// Try expression parse + resolve
-	expr, parseErr := metric.ParseExpression(name)
-	if parseErr == nil {
-		// Aggregation expressions (e.g. "file-size.sum") are resolved at directory
-		// level in the pipeline. Validate there so the same-level aggregation check
-		// in ResolveExpression does not falsely reject them.
-		// Bare metrics (no aggregation) are validated at their native file level.
-		targetLevel := metric.LevelFile
-		if !expr.Aggregation.IsZero() {
-			targetLevel = metric.LevelDirectory
-		}
-
-		_, resolveErr := provider.ResolveExpression(expr, targetLevel)
-		if resolveErr == nil {
-			return nil
-		}
-
-		return eris.Wrapf(resolveErr, "invalid %s metric", label)
+	if _, err := provider.ResolveForValidation(m.Metric); err != nil {
+		return eris.Wrapf(err, "invalid %s metric", label)
 	}
 
-	// If it doesn't parse as an expression, check if it's a known base metric
-	if _, ok := provider.GetBase(m.Metric); ok {
-		return nil
-	}
-
-	// Not found — provide helpful error
-	return eris.Errorf(
-		"invalid %s metric %q; use expression syntax: [filter.]metric[.aggregation]",
-		label, m.Metric,
-	)
+	return nil
 }
 
 // MarshalText produces the canonical "metric,palette" or "metric" form.
