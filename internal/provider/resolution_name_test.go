@@ -11,9 +11,12 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/golang"
 )
 
+//nolint:paralleltest // mutates global base registry
 func TestResolveName_BareFileMetric(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	filesystem.Register()
 
@@ -22,9 +25,12 @@ func TestResolveName_BareFileMetric(t *testing.T) {
 	g.Expect(resolved.ResultKind).To(Equal(metric.Quantity))
 }
 
+//nolint:paralleltest // mutates global base registry
 func TestResolveName_AggregationExpression(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	golang.Register()
 
@@ -33,9 +39,12 @@ func TestResolveName_AggregationExpression(t *testing.T) {
 	g.Expect(resolved.ResultKind).To(Equal(metric.Quantity))
 }
 
+//nolint:paralleltest // reads global base registry; serialized with registry mutators
 func TestResolveName_UnknownMetric(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(provider.ResetBaseRegistryForTesting)
 
 	_, err := provider.ResolveName("not-a-real-metric", metric.LevelFile)
 	g.Expect(err).To(MatchError(ContainSubstring("unknown base metric")))

@@ -30,8 +30,8 @@ func TestResolveExpression_BareMetricAtNativeLevel(t *testing.T) {
 	g.Expect(resolved.NeedsAggregation).To(BeFalse())
 }
 
+//nolint:paralleltest // mutates global base registry
 func TestResolveExpression_UsesGlobalRegistry(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	ResetBaseRegistryForTesting()
