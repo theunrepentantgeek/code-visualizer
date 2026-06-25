@@ -5,6 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
@@ -24,6 +25,7 @@ func ScanFilesystem(c *CommonState) error {
 	}
 
 	c.Root = root
+	c.FileCount = model.CountFiles(root)
 
 	return nil
 }
