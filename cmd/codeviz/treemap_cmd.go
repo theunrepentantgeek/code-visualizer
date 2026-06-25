@@ -84,7 +84,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		Output:             c.Output,
 		Flags:              toStagesFlags(flags),
 		RootConfig:         flags.Config,
-		VizName:            "treemap",
+		VizName:            "tree-map",
 		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
@@ -122,7 +122,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 	pipeline.ApplyFuncXY(s, treemap.LogResult)
 
-	return eris.Wrap(s.Err(), "treemap pipeline failed")
+	return eris.Wrap(s.Err(), "tree-map pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

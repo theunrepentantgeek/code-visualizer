@@ -34,16 +34,18 @@ type ImageSize struct {
 // non-nil or non-empty means it was explicitly set (by a config file or
 // by a CLI flag override).
 type Config struct {
-	ImageSize  *ImageSize    `yaml:"imageSize,omitempty"  json:"imageSize,omitempty"`
-	Legend     *Legend       `yaml:"legend,omitempty"     json:"legend,omitempty"`
-	Treemap    *Treemap      `yaml:"treemap,omitempty"    json:"treemap,omitempty"`
-	Radial     *Radial       `yaml:"radial,omitempty"     json:"radial,omitempty"`
-	Bubbletree *Bubbletree   `yaml:"bubbletree,omitempty" json:"bubbletree,omitempty"`
-	Spiral     *Spiral       `yaml:"spiral,omitempty"     json:"spiral,omitempty"`
-	Scatter    *Scatter      `yaml:"scatter,omitempty"    json:"scatter,omitempty"`
-	Title      *Title        `yaml:"title,omitempty"      json:"title,omitempty"`
-	Footer     *Footer       `yaml:"footer,omitempty"     json:"footer,omitempty"`
-	FileFilter []filter.Rule `yaml:"fileFilter,omitempty" json:"fileFilter,omitempty"`
+	ImageSize  *ImageSize `yaml:"imageSize,omitempty"  json:"imageSize,omitempty"`
+	Legend     *Legend    `yaml:"legend,omitempty"     json:"legend,omitempty"`
+	//nolint:tagliatelle // kebab-case names are intentional for user-facing YAML/JSON keys, see issue #445
+	Treemap *Treemap `yaml:"tree-map,omitempty" json:"tree-map,omitempty"`
+	Radial  *Radial  `yaml:"radial,omitempty"   json:"radial,omitempty"`
+	//nolint:tagliatelle // kebab-case names are intentional for user-facing YAML/JSON keys, see issue #445
+	Bubbletree *Bubbletree   `yaml:"bubble-tree,omitempty" json:"bubble-tree,omitempty"`
+	Spiral     *Spiral       `yaml:"spiral,omitempty"      json:"spiral,omitempty"`
+	Scatter    *Scatter      `yaml:"scatter,omitempty"     json:"scatter,omitempty"`
+	Title      *Title        `yaml:"title,omitempty"       json:"title,omitempty"`
+	Footer     *Footer       `yaml:"footer,omitempty"      json:"footer,omitempty"`
+	FileFilter []filter.Rule `yaml:"fileFilter,omitempty"  json:"fileFilter,omitempty"`
 
 	// SelectionMetrics holds user-defined, filename-glob-based classification metrics.
 	// The map key is the metric name; the value is an ordered list of match rules.
@@ -168,11 +170,11 @@ func (c *Config) ForExport(vizName string) *Config {
 	}
 
 	switch vizName {
-	case "treemap":
+	case "tree-map":
 		exported.Treemap = c.Treemap
 	case "radial":
 		exported.Radial = c.Radial
-	case "bubbletree":
+	case "bubble-tree":
 		exported.Bubbletree = c.Bubbletree
 	case "spiral":
 		exported.Spiral = c.Spiral

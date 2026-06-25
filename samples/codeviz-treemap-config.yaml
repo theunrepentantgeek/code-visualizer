@@ -3,14 +3,14 @@ imageSize:
     height: 2048
 legend:
     position: bottom-center
-treemap:
+tree-map:
     fill: file-type
     fillPalette: categorization
     border: file-age
     borderPalette: foliage
 radial:
     labels: all
-bubbletree:
+bubble-tree:
     labels: folders
 fileFilter:
     - pattern: .*

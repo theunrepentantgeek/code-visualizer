@@ -1,10 +1,10 @@
 imageSize:
     width: 1920
     height: 1080
-treemap: {}
+tree-map: {}
 radial:
     labels: all
-bubbletree:
+bubble-tree:
     labels: folders
 spiral:
     resolution: daily
