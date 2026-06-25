@@ -60,13 +60,13 @@ func BuildTimeBuckets(
 	endTime time.Time,
 ) []TimeBucket {
 	if !endTime.After(startTime) {
-		return []TimeBucket{}
+		return nil
 	}
 
 	dur := resolution.bucketDuration()
 	start := truncateToResolution(startTime, resolution)
 
-	buckets := make([]TimeBucket, 0)
+	buckets := make([]TimeBucket, 0, int(endTime.Sub(start)/dur)+1)
 
 	for t := start; t.Before(endTime); t = t.Add(dur) {
 		buckets = append(buckets, TimeBucket{

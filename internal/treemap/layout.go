@@ -46,6 +46,7 @@ func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name) Tre
 
 	boxes := layout.Squarify(contentBox, areas)
 
+	rect.Children = make([]TreemapRectangle, 0, len(children))
 	for i, c := range children {
 		b := insetBox(boxes[i], siblingGap/2)
 		rect.Children = append(rect.Children, layoutChild(dir, c, b, sizeMetric))
