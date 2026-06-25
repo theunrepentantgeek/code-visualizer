@@ -1,142 +1,202 @@
 {
-    "last_run": "2026-06-24T15:26:00Z",
-    "run_id": "28109418893",
-    "monthly_summary_issue": 353,
-    "backlog_cursor": 445,
-    "comments_made": {
-        "324": "2026-06-01",
-        "325": "2026-06-01",
-        "329": "2026-06-01",
-        "330": "2026-06-01",
-        "333": "2026-06-20",
-        "334": "2026-06-03",
-        "335": "2026-06-01",
-        "354": "2026-06-02",
-        "355": "2026-06-02",
-        "320": "2026-06-04",
-        "373": "2026-06-08",
-        "374": "2026-06-07",
-        "385": "2026-06-11",
-        "394": "2026-06-13",
-        "402": "2026-06-20",
-        "411": "2026-06-14",
-        "412": "2026-06-14",
-        "416": "2026-06-19",
-        "419": "2026-06-19",
-        "421": "2026-06-20",
-        "422": "2026-06-16",
-        "429": "2026-06-24",
-        "440": "2026-06-21",
-        "442": "2026-06-21",
-        "444": "2026-06-22",
-        "445": "2026-06-24",
-        "pr_437": "2026-06-23"
+  "last_run": "2026-06-24T15:26:00Z",
+  "run_id": "28109418893",
+  "monthly_summary_issue": 353,
+  "backlog_cursor": 445,
+  "comments_made": {
+    "324": "2026-06-01",
+    "325": "2026-06-01",
+    "329": "2026-06-01",
+    "330": "2026-06-01",
+    "333": "2026-06-20",
+    "334": "2026-06-03",
+    "335": "2026-06-01",
+    "354": "2026-06-02",
+    "355": "2026-06-02",
+    "320": "2026-06-04",
+    "373": "2026-06-08",
+    "374": "2026-06-07",
+    "385": "2026-06-11",
+    "394": "2026-06-13",
+    "402": "2026-06-20",
+    "411": "2026-06-14",
+    "412": "2026-06-14",
+    "416": "2026-06-19",
+    "419": "2026-06-19",
+    "421": "2026-06-20",
+    "422": "2026-06-16",
+    "429": "2026-06-24",
+    "440": "2026-06-21",
+    "442": "2026-06-21",
+    "444": "2026-06-22",
+    "445": "2026-06-24",
+    "pr_437": "2026-06-23"
+  },
+  "prs_created": {
+    "perf-svg-drawpath": {
+      "pr_number": 414,
+      "status": "MERGED"
     },
-    "prs_created": {
-        "perf-svg-drawpath": {"pr_number": 414, "status": "MERGED"},
-        "perf-svg-grad-urlref": {"pr_number": 415, "status": "MERGED"},
-        "selection-metrics-rebased": {"pr_number": 416, "status": "MERGED"},
-        "perf-render-shared-specs": {"pr_number": 417, "status": "MERGED"},
-        "test-stages-requested": {"pr_number": 419, "status": "MERGED"},
-        "test-git-e2e-422": {"pr_number": 425, "status": "MERGED"},
-        "perf-bubbletree-spiral": {"pr_number": 428, "status": "MERGED"},
-        "perf-aggregation-prealloc-20260620": {
-            "branch": "repo-assist/perf-aggregation-prealloc-20260620-66fad8160d2b4cb6",
-            "pr_number": 431,
-            "date": "2026-06-20",
-            "status": "MERGED 2026-06-24",
-            "description": "perf(stages,model): pre-size aggregation collector slices"
-        },
-        "eng-devmd-fix-bench-20260620": {
-            "branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c",
-            "pr_number": 432,
-            "date": "2026-06-20",
-            "status": "open",
-            "description": "docs(dev): fix task ci description; add aggregation benchmark"
-        },
-        "eng-ginkgolinter-20260620": {
-            "pr_number": 437,
-            "date": "2026-06-20",
-            "status": "CLOSED by maintainer 2026-06-24 (too many unrelated changes)"
-        },
-        "fix-classification-wiring-402": {
-            "pr_number": 439,
-            "date": "2026-06-20",
-            "status": "MERGED 2026-06-21"
-        },
-        "eng-ginkgolinter-rebase-20260621": {
-            "pr_number": 443,
-            "date": "2026-06-21",
-            "status": "CLOSED by maintainer 2026-06-24 (too many unrelated changes - separate run pushed refactor commit)"
-        },
-        "fix-same-level-aggregation-444": {
-            "issue": 444,
-            "pr_number": 446,
-            "date": "2026-06-22",
-            "status": "MERGED 2026-06-24"
-        },
-        "improve-expr-palette-lookup": {
-            "pr_number": 447,
-            "date": "2026-06-22",
-            "status": "MERGED 2026-06-24"
-        },
-        "test-validation-matrix-442": {
-            "issue": 442,
-            "branch": "repo-assist/test-validation-matrix-442-c3e12005a6e59f03",
-            "pr_number": 450,
-            "date": "2026-06-22",
-            "status": "open",
-            "description": "test(cmd): validation matrix for all viz types x metric kinds x fields, closes #442"
-        },
-        "perf-canvas-inks-20260622": {
-            "branch": "repo-assist/perf-canvas-inks-20260622-cafe4381087de020",
-            "pr_number": 451,
-            "date": "2026-06-23",
-            "status": "MERGED 2026-06-23",
-            "description": "perf: sort canvas shapes in-place; pre-size inks numeric values"
-        },
-        "eng-ginkgolinter-minimal-20260624": {
-            "issue": 429,
-            "branch": "repo-assist/eng-ginkgolinter-minimal-20260624",
-            "pr_number": "pending",
-            "date": "2026-06-24",
-            "status": "open - pending PR number",
-            "description": "eng: add ginkgolinter (2-file change only), closes #429"
-        },
-        "perf-presize-slices-20260624": {
-            "branch": "repo-assist/perf-presize-slices-20260624",
-            "pr_number": "pending",
-            "date": "2026-06-24",
-            "status": "open - pending PR number",
-            "description": "perf(provider): pre-size result slices (bulk_history, base_registry, comments)"
-        }
+    "perf-svg-grad-urlref": {
+      "pr_number": 415,
+      "status": "MERGED"
     },
-    "issues_labelled": {
-        "354": ["enhancement"],
-        "355": ["bug"],
-        "373": ["enhancement", "refactor"],
-        "374": ["enhancement"],
-        "385": ["bug"],
-        "402": ["enhancement"],
-        "405": ["enhancement"],
-        "421": ["enhancement"],
-        "422": ["enhancement"],
-        "423": ["enhancement"],
-        "429": ["enhancement"],
-        "440": ["bug"],
-        "442": ["enhancement"],
-        "444": ["bug"],
-        "445": ["enhancement"]
+    "selection-metrics-rebased": {
+      "pr_number": 416,
+      "status": "MERGED"
     },
-    "maintainer_preferences": [
-        "Do not move helpers to new packages - keep refactors within-package",
-        "No migration shims needed (alpha tool)",
-        "Title feature: one --title TEXT flag only (not per-command separate flags)",
-        "go.mod and go.sum are protected files - cannot be pushed by automation",
-        ".github/workflows/release.yml is a protected file (see issue #388) - may need manual PR apply",
-        "Keep PRs strictly scoped to description - do not allow other runs to push commits to open PR branches",
-        "Kebab-case rename: no backwards compatibility needed (pre-alpha tool)"
+    "perf-render-shared-specs": {
+      "pr_number": 417,
+      "status": "MERGED"
+    },
+    "test-stages-requested": {
+      "pr_number": 419,
+      "status": "MERGED"
+    },
+    "test-git-e2e-422": {
+      "pr_number": 425,
+      "status": "MERGED"
+    },
+    "perf-bubbletree-spiral": {
+      "pr_number": 428,
+      "status": "MERGED"
+    },
+    "perf-aggregation-prealloc-20260620": {
+      "branch": "repo-assist/perf-aggregation-prealloc-20260620-66fad8160d2b4cb6",
+      "pr_number": 431,
+      "date": "2026-06-20",
+      "status": "MERGED 2026-06-24",
+      "description": "perf(stages,model): pre-size aggregation collector slices"
+    },
+    "eng-devmd-fix-bench-20260620": {
+      "branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c",
+      "pr_number": 432,
+      "date": "2026-06-20",
+      "status": "open",
+      "description": "docs(dev): fix task ci description; add aggregation benchmark"
+    },
+    "eng-ginkgolinter-20260620": {
+      "pr_number": 437,
+      "date": "2026-06-20",
+      "status": "CLOSED by maintainer 2026-06-24 (too many unrelated changes)"
+    },
+    "fix-classification-wiring-402": {
+      "pr_number": 439,
+      "date": "2026-06-20",
+      "status": "MERGED 2026-06-21"
+    },
+    "eng-ginkgolinter-rebase-20260621": {
+      "pr_number": 443,
+      "date": "2026-06-21",
+      "status": "CLOSED by maintainer 2026-06-24 (too many unrelated changes - separate run pushed refactor commit)"
+    },
+    "fix-same-level-aggregation-444": {
+      "issue": 444,
+      "pr_number": 446,
+      "date": "2026-06-22",
+      "status": "MERGED 2026-06-24"
+    },
+    "improve-expr-palette-lookup": {
+      "pr_number": 447,
+      "date": "2026-06-22",
+      "status": "MERGED 2026-06-24"
+    },
+    "test-validation-matrix-442": {
+      "issue": 442,
+      "branch": "repo-assist/test-validation-matrix-442-c3e12005a6e59f03",
+      "pr_number": 450,
+      "date": "2026-06-22",
+      "status": "open",
+      "description": "test(cmd): validation matrix for all viz types x metric kinds x fields, closes #442"
+    },
+    "perf-canvas-inks-20260622": {
+      "branch": "repo-assist/perf-canvas-inks-20260622-cafe4381087de020",
+      "pr_number": 451,
+      "date": "2026-06-23",
+      "status": "MERGED 2026-06-23",
+      "description": "perf: sort canvas shapes in-place; pre-size inks numeric values"
+    },
+    "eng-ginkgolinter-minimal-20260624": {
+      "issue": 429,
+      "branch": "repo-assist/eng-ginkgolinter-minimal-20260624",
+      "pr_number": "pending",
+      "date": "2026-06-24",
+      "status": "open - pending PR number",
+      "description": "eng: add ginkgolinter (2-file change only), closes #429"
+    },
+    "perf-presize-slices-20260624": {
+      "branch": "repo-assist/perf-presize-slices-20260624",
+      "pr_number": "pending",
+      "date": "2026-06-24",
+      "status": "open - pending PR number",
+      "description": "perf(provider): pre-size result slices (bulk_history, base_registry, comments)"
+    }
+  },
+  "issues_labelled": {
+    "354": [
+      "enhancement"
     ],
-    "closed_issues": [421, 422, 423, 424, 402, 440, 444],
-    "notes": "Run 28109418893 (2026-06-24): Tasks 2, 8, 4, 11. Merged since last run: PR #431 (aggregation prealloc), #446 (same-level aggregation fix), #447 (expr palette), #451 (canvas inks). PR #443 (ginkgolinter) was CLOSED by maintainer - unrelated refactor commit was pushed onto the branch by a separate run. New PRs: eng-ginkgolinter-minimal (pending #, 2 files only), perf-presize-slices (pending #, 3 files). Commented on #429 (new PR), #445 (implementation plan for kebab-case rename - maintainer confirmed no backwards compat). Next: verify pending PR numbers; consider implementing kebab-case rename (#445) as Task 10; monitor PR #432 and #450."
+    "355": [
+      "bug"
+    ],
+    "373": [
+      "enhancement",
+      "refactor"
+    ],
+    "374": [
+      "enhancement"
+    ],
+    "385": [
+      "bug"
+    ],
+    "402": [
+      "enhancement"
+    ],
+    "405": [
+      "enhancement"
+    ],
+    "421": [
+      "enhancement"
+    ],
+    "422": [
+      "enhancement"
+    ],
+    "423": [
+      "enhancement"
+    ],
+    "429": [
+      "enhancement"
+    ],
+    "440": [
+      "bug"
+    ],
+    "442": [
+      "enhancement"
+    ],
+    "444": [
+      "bug"
+    ],
+    "445": [
+      "enhancement"
+    ]
+  },
+  "maintainer_preferences": [
+    "Do not move helpers to new packages - keep refactors within-package",
+    "No migration shims needed (alpha tool)",
+    "Title feature: one --title TEXT flag only (not per-command separate flags)",
+    "go.mod and go.sum are protected files - cannot be pushed by automation",
+    ".github/workflows/release.yml is a protected file (see issue #388) - may need manual PR apply",
+    "Keep PRs strictly scoped to description - do not allow other runs to push commits to open PR branches",
+    "Kebab-case rename: no backwards compatibility needed (pre-alpha tool)"
+  ],
+  "closed_issues": [
+    421,
+    422,
+    423,
+    424,
+    402,
+    440,
+    444
+  ],
+  "notes": "Run 28147588535 (2026-06-25): Tasks 8 (fallback to 9), 10, 9, 11. Task 10: implemented kebab-case rename (#445) - all config YAML/JSON tags, CLI names, VizName strings, preset names, samples, docs updated; 30 pkgs pass; PR pending (branch: repo-assist/improve-kebab-case-445). Task 9: added missing ForExport(radial/bubbletree/spiral) tests + adjustedDiscFactor edge cases; PR pending (branch: repo-assist/test-coverage-gaps-445). PR #454 (ginkgolinter) and #455 (presize) now confirmed open. Next: verify pending PR numbers; monitor PRs #450, #454, #455, #432 for review; RunCmd preset builder tests still unimplemented (good future Task 9)."
 }

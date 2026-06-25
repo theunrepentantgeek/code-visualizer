@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-06-16T00:00:00Z",
-  "run_id": "27598120650",
+  "last_run": "2026-06-25T00:00:00Z",
+  "run_id": "28147588535",
   "comments_made": {
     "74": "2026-04-20T12:54:26Z",
     "77": "2026-04-21T07:39:14Z",
@@ -34,7 +34,8 @@
     "411": "2026-06-14T05:22:00Z",
     "412_pr": "2026-06-14T05:22:00Z",
     "412_pr_2": "2026-06-14T15:01:00Z",
-    "416_pr": "2026-06-16T00:00:00Z"
+    "416_pr": "2026-06-16T00:00:00Z",
+    "445": "2026-06-25T00:00:00Z"
   },
   "prs_created": [
     {
@@ -54,7 +55,9 @@
       "pr_number": 416,
       "title": "[repo-assist] feat(config,provider): add selection-metrics config and classification provider",
       "status": "open",
-      "closes": [402]
+      "closes": [
+        402
+      ]
     },
     {
       "branch": "repo-assist/perf-render-shared-specs-2026-06-15-7045f1b9faf08570",
@@ -67,12 +70,31 @@
       "pr_number": null,
       "title": "[repo-assist] test(stages): add tests for HasDeclarationExpressions, HasCommitExpressions, DescriptorFor",
       "status": "open - pending PR number"
+    },
+    {
+      "branch": "repo-assist/improve-kebab-case-445",
+      "title": "[repo-assist] Rename viz types to kebab-case (tree-map, bubble-tree)",
+      "status": "pending",
+      "closes": [
+        445
+      ]
+    },
+    {
+      "branch": "repo-assist/test-coverage-gaps-445",
+      "title": "[repo-assist] test: add missing ForExport branches and adjustedDiscFactor edge cases",
+      "status": "pending"
     }
   ],
   "labels_applied": {
-    "402": ["enhancement"],
-    "405": ["enhancement"],
-    "385": ["bug"]
+    "402": [
+      "enhancement"
+    ],
+    "405": [
+      "enhancement"
+    ],
+    "385": [
+      "bug"
+    ]
   },
   "issue_cursor": 402,
   "monthly_summary_issue": 353,
