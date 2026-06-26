@@ -90,11 +90,6 @@ tasks:
       - task: test
       - task: lint
 
-  update-golden-files:
-    desc: Regenerate golden file snapshots
-    cmds:
-      - GOLDIE_UPDATE=1 go test ./... -count=1
-
   update-superpowers:
     desc: Update superpower snapshots
     cmds:
