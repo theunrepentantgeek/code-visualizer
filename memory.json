@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-25T00:00:00Z",
-  "run_id": "28181635094",
+  "last_run": "2026-06-26T00:00:00Z",
+  "run_id": "28218062503",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 445,
+  "backlog_cursor": 453,
   "comments_made": {
     "324": "2026-06-01",
     "325": "2026-06-01",
@@ -29,7 +29,7 @@
     "440": "2026-06-21",
     "442": "2026-06-21",
     "444": "2026-06-22",
-    "445": "2026-06-24",
+    "445": "2026-06-26",
     "pr_437": "2026-06-23"
   },
   "prs_created": {
@@ -142,17 +142,31 @@
     },
     "perf-presize-hot-paths-20260625": {
       "branch": "repo-assist/perf-presize-hot-paths-20260625",
-      "pr_number": "pending",
+      "pr_number": 458,
       "date": "2026-06-25",
-      "status": "open - pending PR number",
+      "status": "open",
       "description": "perf: pre-size slices and maps in hot-path allocations (scan/spiral/scatter/treemap)"
     },
     "improve-cache-filecount-20260625": {
       "branch": "repo-assist/improve-cache-filecount-20260625",
-      "pr_number": "pending",
+      "pr_number": 459,
       "date": "2026-06-25",
-      "status": "open - pending PR number",
+      "status": "open",
       "description": "refactor: cache file count in CommonState after scan"
+    },
+    "chore-remove-ci-output-20260626": {
+      "branch": "repo-assist/chore-remove-ci-output-20260626",
+      "pr_number": "pending",
+      "date": "2026-06-26",
+      "status": "open - pending PR number",
+      "description": "chore: remove stale ci-output.txt and add to .gitignore"
+    },
+    "docs-remove-stale-goldie-20260626": {
+      "branch": "repo-assist/docs-remove-stale-goldie-20260626",
+      "pr_number": "pending",
+      "date": "2026-06-26",
+      "status": "open - pending PR number",
+      "description": "docs: remove stale goldie references from DEVELOPMENT.md and Taskfile.yml"
     }
   },
   "issues_labelled": {
@@ -182,5 +196,5 @@
     "Kebab-case rename: no backwards compatibility needed (pre-alpha tool)"
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444],
-  "notes": "Run 28181635094 (2026-06-25): Tasks 5, 6, 8, 11. Task 8: pre-size slices/maps in scan/walker, scan/node_builder, scatter/axis_resolve, spiral/timebucket, treemap/layout - PR pending (branch: repo-assist/perf-presize-hot-paths-20260625). Task 5: cache file count in CommonState to avoid double CountFiles traversal - PR pending (branch: repo-assist/improve-cache-filecount-20260625). Task 6: PRs #454-#457 in good shape; PR #432 is behind main but force-push is not supported by automation (maintainer can click Update Branch). PR #450 merged by maintainer. Next: confirm pending PR numbers for perf-hot-paths and cache-filecount; RunCmd preset builder tests still unimplemented (good future Task 9)."
+  "notes": "Run 28218062503 (2026-06-26): Tasks 2, 4, 5, 11. Task 2: Commented on #445 linking to PR #456, noting Taskfile samples task needs follow-up after merge. Task 4: Removed stale ci-output.txt (committed since 6e0f3d8 with obsolete module path), added to .gitignore - PR pending. Task 5: Removed all goldie references from DEVELOPMENT.md and Taskfile.yml (goldie not in go.mod, GOLDIE_UPDATE=1 env var never read by tests) - PR pending. Backlog cursor advanced to 453. PRs #458, #459 confirmed open with correct numbers. PR #432 still behind main and stuck. Next: confirm PR numbers for chore-remove-ci-output and docs-remove-stale-goldie once published; Taskfile samples task follow-up still needed after PR #456 merges; RunCmd preset builder tests still unimplemented (good future Task 9 candidate)."
 }
