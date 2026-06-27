@@ -164,10 +164,12 @@ costs nothing extra at snapshot time, and auto-tracks future registry additions.
 
 **Snapshot.** All valid expressions are resolved and `stages.ComputeAggregations`
 is run once to populate file- and directory-level results across the whole tree.
-The tree is then serialized to JSON via `export` (passing every resolved
-`ResultName` as the requested set) and compared with `goldie`. The JSON captures
-every node's file-level base values and directory-level aggregates, so all
-cross-level aggregation results are verified in one snapshot.
+Every `Measure` value in the tree is then rounded to 6 decimal places (test-side,
+leaving `export` unchanged; see Determinism). The tree is serialized to JSON via
+`export` (passing every resolved `ResultName` as the requested set) and compared
+with `goldie`. The JSON captures every node's file-level base values and
+directory-level aggregates, so all cross-level aggregation results are verified
+in one snapshot.
 
 ### Part 3 — Shared infrastructure
 
@@ -185,15 +187,57 @@ cross-level aggregation results are verified in one snapshot.
 
 ## Determinism
 
+The golden outputs must be reproducible across runs and across trivial commits.
+The relevant sources of non-determinism were reviewed:
+
+### Randomness
+
+There is **no** use of `math/rand` (or any other randomness) in production
+code. The layout algorithms are pure functions of their input. The bubble-tree
+layout — the most likely candidate — uses deterministic front-chain circle
+packing plus Welzl's minimum-enclosing-circle algorithm; its only ordering
+input is `dir.Dirs` followed by `dir.Files`, then a `slices.SortFunc` by radius
+descending. Because the synthetic builders fix node order, output is fully
+reproducible.
+
+`slices.SortFunc` is not a *stable* sort, so circles of exactly equal radius
+could in principle reorder if Go's sort implementation changes across a Go
+upgrade. To remove even this theoretical risk, the synthetic fixtures are
+constructed so that sibling size metrics are distinct (no exact ties).
+
+### Floating point
+
+The three output formats are affected differently:
+
+- **SVG — already safe.** The SVG backend formats every coordinate with fixed
+  precision (`%.2f` for positions/radii, `%.1f` for stroke widths and
+  font sizes, `%.3f` for alpha). Sub-hundredth floating-point noise is quantized
+  away by `fmt`, so SVG output is robust to last-bit differences without any
+  change. Fixtures are chosen to avoid values sitting exactly on a rounding
+  boundary.
+- **PNG — accepted single-platform risk.** Raster output cannot be rounded.
+  It is deterministic on a fixed platform (fixed-point rasterizer + embedded
+  font) but is not guaranteed byte-identical across CPU architectures. Goldens
+  are authored and verified in the single CI/devcontainer environment, matching
+  the prior project precedent for PNG golden comparison.
+- **JSON (Suite 2) — round measures.** `Measure` values are `float64` at full
+  precision. The arithmetic is deterministic, but aggregations such as `mean`
+  and `range` produce long trailing decimals whose final bit can shift if
+  summation order changes — and this repository actively performs
+  summation-reordering performance refactors. To keep the goldens clean and
+  robust to such trivial changes, Suite 2 **rounds every `Measure` value to 6
+  decimal places before serialization**. This is done test-side (walking the
+  tree after `ComputeAggregations`, before calling `export`), so the production
+  `export` package is left unchanged. `Quantity` (`int64`) and `Classification`
+  (string) values are already exact and need no rounding.
+
+### Other
+
 - Embedded `goregular.TTF` font → stable text rasterization.
 - Fixed canvas dimensions and fixed synthetic inputs.
 - Pinned commit dates for git-derived data (spiral + commit-level metrics).
-- Map serialization is key-sorted by `json.MarshalIndent`.
-
-**Risk:** PNG bytes can in principle differ across architectures due to
-anti-aliasing floating-point differences. This is accepted: goldens are
-authored and checked in the single CI/devcontainer environment, matching the
-prior project precedent for PNG golden comparison.
+- Map serialization is key-sorted by `json.MarshalIndent`; model traversal is
+  slice-ordered, so no map-iteration ordering leaks into output.
 
 ## Testing strategy
 
