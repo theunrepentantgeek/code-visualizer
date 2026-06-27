@@ -87,7 +87,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 		Output:             c.Output,
 		Flags:              toStagesFlags(flags),
 		RootConfig:         flags.Config,
-		VizName:            "bubbletree",
+		VizName:            "bubble-tree",
 		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
@@ -123,7 +123,7 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 	pipeline.ApplyFuncXY(s, bubbletree.LogResult)
 
-	return eris.Wrap(s.Err(), "bubbletree pipeline failed")
+	return eris.Wrap(s.Err(), "bubble-tree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

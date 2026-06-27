@@ -173,7 +173,7 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"treemap":{"fill":"file-type,categorization"}}`
+	content := `{"tree-map":{"fill":"file-type,categorization"}}`
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
@@ -390,7 +390,7 @@ func TestForExport_OnlyIncludesRelevantViz(t *testing.T) {
 
 	cfg := New()
 
-	exported := cfg.ForExport("treemap")
+	exported := cfg.ForExport("tree-map")
 
 	g.Expect(exported.Treemap).To(BeIdenticalTo(cfg.Treemap))
 	g.Expect(exported.Radial).To(BeNil())
@@ -428,6 +428,51 @@ func TestForExport_UnknownViz_ExportsNoVizSection(t *testing.T) {
 	g.Expect(exported.Radial).To(BeNil())
 	g.Expect(exported.Bubbletree).To(BeNil())
 	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_Radial_OnlyIncludesRadialSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("radial")
+
+	g.Expect(exported.Radial).To(BeIdenticalTo(cfg.Radial))
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_BubbleTree_OnlyIncludesBubbletreeSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("bubble-tree")
+
+	g.Expect(exported.Bubbletree).To(BeIdenticalTo(cfg.Bubbletree))
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_Spiral_OnlyIncludesSpiralSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("spiral")
+
+	g.Expect(exported.Spiral).To(BeIdenticalTo(cfg.Spiral))
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
 	g.Expect(exported.Scatter).To(BeNil())
 }
 

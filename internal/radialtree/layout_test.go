@@ -420,6 +420,46 @@ func TestClamp_AtBoundaries(t *testing.T) {
 	g.Expect(clamp(10.0, 0.0, 10.0)).To(BeNumerically("==", 10.0))
 }
 
+func TestAdjustedDiscFactor_ZeroNodes_ReturnsBase(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// n <= 0: no scaling needed, return base unchanged
+	g.Expect(adjustedDiscFactor(0, 100.0, 0.4)).To(BeNumerically("==", 0.4))
+	g.Expect(adjustedDiscFactor(-5, 100.0, 0.4)).To(BeNumerically("==", 0.4))
+}
+
+func TestAdjustedDiscFactor_CrowdedRing_ReturnsTenPercentFloor(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// With n=1000 nodes on a ring of radius 100, each node's arc is tiny:
+	// maxR = (π*100/1000) - 2 ≈ 0.314 - 2 = -1.686 < 0 → hard floor: base * 0.1
+	result := adjustedDiscFactor(1000, 100.0, 0.4)
+	g.Expect(result).To(BeNumerically("~", 0.04, 1e-9))
+}
+
+func TestAdjustedDiscFactor_SparseFactor_Constrained(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// n=10, ringSpacing=100: maxR = (π*100/10) - 2 ≈ 29.42, factor ≈ 0.294 < 0.4
+	// → returns the geometric factor, not the base
+	result := adjustedDiscFactor(10, 100.0, 0.4)
+	expected := (math.Pi*100.0/10.0 - 2.0) / 100.0
+	g.Expect(result).To(BeNumerically("~", expected, 1e-9))
+	g.Expect(result).To(BeNumerically("<", 0.4))
+}
+
+func TestAdjustedDiscFactor_SparseRing_ReturnsBase(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// n=1, ringSpacing=1000: the geometric factor (≈3.14) exceeds base (0.4) → return base
+	result := adjustedDiscFactor(1, 1000.0, 0.4)
+	g.Expect(result).To(BeNumerically("==", 0.4))
+}
+
 func clockwiseGap(from, to float64) float64 {
 	return math.Mod(normalizeAngle(to)-normalizeAngle(from)+2*math.Pi, 2*math.Pi)
 }
