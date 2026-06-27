@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-06-26T00:00:00Z",
-  "run_id": "28218062503",
+  "last_run": "2026-06-27T04:42:37Z",
+  "run_id": "28278823362",
   "monthly_summary_issue": 353,
   "backlog_cursor": 453,
   "comments_made": {
@@ -33,89 +33,30 @@
     "pr_437": "2026-06-23"
   },
   "prs_created": {
-    "perf-svg-drawpath": {
-      "pr_number": 414,
-      "status": "MERGED"
-    },
-    "perf-svg-grad-urlref": {
-      "pr_number": 415,
-      "status": "MERGED"
-    },
-    "selection-metrics-rebased": {
-      "pr_number": 416,
-      "status": "MERGED"
-    },
-    "perf-render-shared-specs": {
-      "pr_number": 417,
-      "status": "MERGED"
-    },
-    "test-stages-requested": {
-      "pr_number": 419,
-      "status": "MERGED"
-    },
-    "test-git-e2e-422": {
-      "pr_number": 425,
-      "status": "MERGED"
-    },
-    "perf-bubbletree-spiral": {
-      "pr_number": 428,
-      "status": "MERGED"
-    },
-    "perf-aggregation-prealloc-20260620": {
-      "pr_number": 431,
-      "date": "2026-06-20",
-      "status": "MERGED 2026-06-24"
-    },
+    "perf-svg-drawpath": {"pr_number": 414, "status": "MERGED"},
+    "perf-svg-grad-urlref": {"pr_number": 415, "status": "MERGED"},
+    "selection-metrics-rebased": {"pr_number": 416, "status": "MERGED"},
+    "perf-render-shared-specs": {"pr_number": 417, "status": "MERGED"},
+    "test-stages-requested": {"pr_number": 419, "status": "MERGED"},
+    "test-git-e2e-422": {"pr_number": 425, "status": "MERGED"},
+    "perf-bubbletree-spiral": {"pr_number": 428, "status": "MERGED"},
+    "perf-aggregation-prealloc-20260620": {"pr_number": 431, "status": "MERGED"},
     "eng-devmd-fix-bench-20260620": {
       "branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c",
       "pr_number": 432,
       "date": "2026-06-20",
-      "status": "open - behind main, cannot rebase via automation",
-      "description": "docs(dev): fix task ci description; add aggregation benchmark"
+      "status": "open - rebased 2026-06-27",
+      "description": "docs(dev): fix task ci description (remove SBOM); add aggregation benchmark"
     },
-    "eng-ginkgolinter-20260620": {
-      "pr_number": 437,
-      "date": "2026-06-20",
-      "status": "CLOSED by maintainer 2026-06-24"
-    },
-    "fix-classification-wiring-402": {
-      "pr_number": 439,
-      "date": "2026-06-20",
-      "status": "MERGED 2026-06-21"
-    },
-    "eng-ginkgolinter-rebase-20260621": {
-      "pr_number": 443,
-      "date": "2026-06-21",
-      "status": "CLOSED by maintainer 2026-06-24"
-    },
-    "fix-same-level-aggregation-444": {
-      "pr_number": 446,
-      "date": "2026-06-22",
-      "status": "MERGED 2026-06-24"
-    },
-    "improve-expr-palette-lookup": {
-      "pr_number": 447,
-      "date": "2026-06-22",
-      "status": "MERGED 2026-06-24"
-    },
-    "test-validation-matrix-442": {
-      "issue": 442,
-      "pr_number": 450,
-      "date": "2026-06-22",
-      "status": "MERGED 2026-06-25 by maintainer",
-      "description": "test(cmd): validation matrix for all viz types x metric kinds x fields"
-    },
-    "perf-canvas-inks-20260622": {
-      "pr_number": 451,
-      "date": "2026-06-23",
-      "status": "MERGED 2026-06-23"
-    },
+    "fix-classification-wiring-402": {"pr_number": 439, "status": "MERGED"},
+    "fix-same-level-aggregation-444": {"pr_number": 446, "status": "MERGED"},
+    "improve-expr-palette-lookup": {"pr_number": 447, "status": "MERGED"},
+    "test-validation-matrix-442": {"pr_number": 450, "status": "MERGED"},
+    "perf-canvas-inks-20260622": {"pr_number": 451, "status": "MERGED"},
     "eng-ginkgolinter-minimal-20260624": {
-      "issue": 429,
-      "branch": "repo-assist/eng-ginkgolinter-minimal-20260624-8f1491d4f186f776",
       "pr_number": 454,
       "date": "2026-06-24",
-      "status": "open",
+      "status": "MERGED 2026-06-27",
       "description": "eng: add ginkgolinter (2-file change only), closes #429"
     },
     "perf-presize-slices-20260624": {
@@ -123,14 +64,12 @@
       "pr_number": 455,
       "date": "2026-06-24",
       "status": "open",
-      "description": "perf(provider): pre-size result slices (bulk_history, base_registry, comments)"
+      "description": "perf(provider): pre-size result slices to reduce heap allocations"
     },
     "improve-kebab-case-445": {
-      "issue": 445,
-      "branch": "repo-assist/improve-kebab-case-445-2164bfdbb2ae227f",
       "pr_number": 456,
       "date": "2026-06-25",
-      "status": "open",
+      "status": "MERGED 2026-06-27",
       "description": "refactor: rename viz types to kebab-case (tree-map, bubble-tree), closes #445"
     },
     "test-coverage-gaps-445": {
@@ -141,32 +80,39 @@
       "description": "test: add missing ForExport branches and adjustedDiscFactor edge cases"
     },
     "perf-presize-hot-paths-20260625": {
-      "branch": "repo-assist/perf-presize-hot-paths-20260625",
+      "branch": "repo-assist/perf-presize-hot-paths-20260625-49f815defdf5386a",
       "pr_number": 458,
       "date": "2026-06-25",
       "status": "open",
       "description": "perf: pre-size slices and maps in hot-path allocations (scan/spiral/scatter/treemap)"
     },
     "improve-cache-filecount-20260625": {
-      "branch": "repo-assist/improve-cache-filecount-20260625",
+      "branch": "repo-assist/improve-cache-filecount-20260625-ad892f62369a7b4b",
       "pr_number": 459,
       "date": "2026-06-25",
       "status": "open",
       "description": "refactor: cache file count in CommonState after scan"
     },
     "chore-remove-ci-output-20260626": {
-      "branch": "repo-assist/chore-remove-ci-output-20260626",
-      "pr_number": "pending",
+      "branch": "repo-assist/chore-remove-ci-output-20260626-a12e5a8a336ebeec",
+      "pr_number": 460,
       "date": "2026-06-26",
-      "status": "open - pending PR number",
+      "status": "open",
       "description": "chore: remove stale ci-output.txt and add to .gitignore"
     },
     "docs-remove-stale-goldie-20260626": {
-      "branch": "repo-assist/docs-remove-stale-goldie-20260626",
-      "pr_number": "pending",
+      "branch": "repo-assist/docs-remove-stale-goldie-20260626-16a808ed61fac759",
+      "pr_number": 461,
       "date": "2026-06-26",
-      "status": "open - pending PR number",
+      "status": "open",
       "description": "docs: remove stale goldie references from DEVELOPMENT.md and Taskfile.yml"
+    },
+    "test-preset-builders-20260627": {
+      "branch": "repo-assist/test-preset-builders-20260627",
+      "pr_number": "pending",
+      "date": "2026-06-27",
+      "status": "open",
+      "description": "test(cmd): add preset builder and registry unit tests (10 new tests)"
     }
   },
   "issues_labelled": {
@@ -195,6 +141,6 @@
     "Keep PRs strictly scoped to description - do not allow other runs to push commits to open PR branches",
     "Kebab-case rename: no backwards compatibility needed (pre-alpha tool)"
   ],
-  "closed_issues": [421, 422, 423, 424, 402, 440, 444],
-  "notes": "Run 28218062503 (2026-06-26): Tasks 2, 4, 5, 11. Task 2: Commented on #445 linking to PR #456, noting Taskfile samples task needs follow-up after merge. Task 4: Removed stale ci-output.txt (committed since 6e0f3d8 with obsolete module path), added to .gitignore - PR pending. Task 5: Removed all goldie references from DEVELOPMENT.md and Taskfile.yml (goldie not in go.mod, GOLDIE_UPDATE=1 env var never read by tests) - PR pending. Backlog cursor advanced to 453. PRs #458, #459 confirmed open with correct numbers. PR #432 still behind main and stuck. Next: confirm PR numbers for chore-remove-ci-output and docs-remove-stale-goldie once published; Taskfile samples task follow-up still needed after PR #456 merges; RunCmd preset builder tests still unimplemented (good future Task 9 candidate)."
+  "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445],
+  "notes": "Run 28278823362 (2026-06-27): Tasks 3 (fallback Task 2, no fixable bugs), 2, 9, 11. Task 9: Created PR (pending #462) test(cmd): add preset builder and registry unit tests - 10 tests covering findPreset, presetNames, all 5 builder functions. Lint passed (77 linters). Task 2/3: no open issues with new human activity - no comment posted. PR #432 rebased cleanly onto main (65 commits). PRs #454 (ginkgolinter) and #456 (kebab-case) confirmed merged by maintainer; issues #429 and #445 auto-closed. Issue #333 still open even though PR #438 merged 2026-06-21 - added to suggested actions to close. PR #461 and PR #432 touch adjacent DEVELOPMENT.md sections - may need rebase if they conflict on merge. Next: confirm PR number for test-preset-builders; consider #329 orientation abstraction implementation if Task 10 selected."
 }
