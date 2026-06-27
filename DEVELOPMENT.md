@@ -163,8 +163,7 @@ and CI alike — runs exactly the same commands with exactly the same flags.
   incorrect results.
 - **Tidy**: `task tidy` runs `gofumpt`, `go mod tidy`, and `golangci-lint --fix` in one step.
   Run this before committing to catch formatting and import issues early.
-- **CI**: `task ci` runs build, tests, lint, and SBOM generation. If CI passes, you are good to
-  merge.
+- **CI**: `task ci` runs build, tests, and lint. If CI passes, you are good to merge.
 - **Golden files**: Refresh with `task update-golden-files`. Always
   review the resulting diffs before committing — golden file changes should be intentional, not
   accidental.
