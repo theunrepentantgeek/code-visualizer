@@ -15,6 +15,7 @@ vendor/
 
 # Generated output
 out.png
+ci-output.txt
 
 # OS
 .DS_Store
