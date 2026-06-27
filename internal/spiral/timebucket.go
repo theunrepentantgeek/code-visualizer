@@ -60,7 +60,7 @@ func BuildTimeBuckets(
 	endTime time.Time,
 ) []TimeBucket {
 	if !endTime.After(startTime) {
-		return nil
+		return []TimeBucket{}
 	}
 
 	dur := resolution.bucketDuration()
