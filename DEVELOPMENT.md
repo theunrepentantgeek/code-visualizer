@@ -38,7 +38,6 @@ Each library earns its place by solving a specific problem well.
 | kong          | Struct-tag driven CLI parsing with minimal boilerplate        |
 | eris          | Error wrapping with stack traces; preferred over `fmt.Errorf` |
 | gomega        | Fluent test assertions; preferred over testify                |
-| goldie        | Golden file testing for output verification                   |
 | gofumpt       | Stricter `gofmt` for consistent formatting                    |
 | golangci-lint | Broad linter set with custom build (includes nilaway)         |
 | Task          | Build automation via `Taskfile.yml`                           |
@@ -91,8 +90,6 @@ We take testing seriously, not because we enjoy writing tests, but because well-
 are the fastest way to build confidence in a change.
 
 - **Assertion library**: Use gomega (`Expect`, fluent matchers). Never use testify.
-- **Golden file tests**: Use goldie for verifying file or output content. Refresh fixtures with
-  `task update-golden-files` and review the resulting diffs before committing.
 - **Test naming**: Follow Roy Osherove style — `Test<Subject>_<Scenario>_<Expectation>`. The
   name should read like a sentence describing what is being verified.
 - **Parallelism**: Mark all tests with `t.Parallel()` unless the test genuinely cannot run
@@ -165,9 +162,6 @@ and CI alike — runs exactly the same commands with exactly the same flags.
   Run this before committing to catch formatting and import issues early.
 - **CI**: `task ci` runs build, tests, lint, and SBOM generation. If CI passes, you are good to
   merge.
-- **Golden files**: Refresh with `task update-golden-files`. Always
-  review the resulting diffs before committing — golden file changes should be intentional, not
-  accidental.
 
 ## Staying Focused and Disciplined
 
