@@ -34,8 +34,8 @@ type ImageSize struct {
 // non-nil or non-empty means it was explicitly set (by a config file or
 // by a CLI flag override).
 type Config struct {
-	ImageSize  *ImageSize `yaml:"imageSize,omitempty"  json:"imageSize,omitempty"`
-	Legend     *Legend    `yaml:"legend,omitempty"     json:"legend,omitempty"`
+	ImageSize *ImageSize `yaml:"imageSize,omitempty"  json:"imageSize,omitempty"`
+	Legend    *Legend    `yaml:"legend,omitempty"     json:"legend,omitempty"`
 	//nolint:tagliatelle // kebab-case names are intentional for user-facing YAML/JSON keys, see issue #445
 	Treemap *Treemap `yaml:"tree-map,omitempty" json:"tree-map,omitempty"`
 	Radial  *Radial  `yaml:"radial,omitempty"   json:"radial,omitempty"`
