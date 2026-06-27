@@ -420,7 +420,6 @@ func TestClamp_AtBoundaries(t *testing.T) {
 	g.Expect(clamp(10.0, 0.0, 10.0)).To(BeNumerically("==", 10.0))
 }
 
-
 func TestAdjustedDiscFactor_ZeroNodes_ReturnsBase(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
