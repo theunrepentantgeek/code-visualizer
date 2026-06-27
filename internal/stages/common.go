@@ -54,6 +54,7 @@ type CommonState struct {
 	FilterRules   []filter.Rule    // BuildFilterRules
 	Requested     RequestedMetrics // viz-specific ResolveMetrics
 	Root          *model.Directory // ScanFilesystem
+	FileCount     int              // ScanFilesystem — total file count in Root
 	Width         int              // ResolveDimensions
 	Height        int              // ResolveDimensions
 	DrawingBounds DrawingBounds    // InitDrawingBounds + Reserve*Bounds
