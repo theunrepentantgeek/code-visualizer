@@ -61,6 +61,15 @@ tasks:
     cmds:
       - test -z "$(gofumpt -l .)"
 
+  verify-no-changes:
+    desc: Checks that there are no uncommitted modifications to files
+    cmds:
+      - cmd: 'if [ -n "{{.CHANGED}}" ]; then echo "Error: files were reformatted during the build (run ''task tidy'' then commit):"; echo "{{.CHANGED}}"; git diff; exit 1; fi'
+        silent: true
+    vars:
+      CHANGED:
+        sh: git status --porcelain
+
   mod:check:
     desc: Check that go.mod and go.sum are tidy (no untracked changes)
     cmds:
@@ -84,8 +93,8 @@ tasks:
   ci:
     desc: Build, test, and lint
     cmds:
-      - task: fmt:check
-      - task: mod:check
+      - task: tidy
+      - task: verify-no-changes
       - task: build
       - task: test
       - task: lint
