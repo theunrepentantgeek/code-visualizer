@@ -62,9 +62,20 @@ tasks:
       - test -z "$(gofumpt -l .)"
 
   verify-no-changes:
-    desc: Checks that there are no uncommitted modifications to files
+    desc: Reports uncommitted modifications to files (fails the build only when running in CI)
     cmds:
-      - cmd: 'if [ -n "{{.CHANGED}}" ]; then echo "Error: files were reformatted during the build (run ''task tidy'' then commit):"; echo "{{.CHANGED}}"; git diff; exit 1; fi'
+      - cmd: |
+          if [ -z "{{.CHANGED}}" ]; then
+            exit 0
+          fi
+          if [ -n "$CI" ]; then
+            echo "Error: files were reformatted during the build (run 'task tidy' then commit):"
+          else
+            echo "Warning: files were reformatted (run 'task tidy' then commit) - not failing because not in CI:"
+          fi
+          echo "{{.CHANGED}}"
+          git diff
+          [ -z "$CI" ] || exit 1
         silent: true
     vars:
       CHANGED:
@@ -94,10 +105,10 @@ tasks:
     desc: Build, test, and lint
     cmds:
       - task: tidy
-      - task: verify-no-changes
       - task: build
       - task: test
       - task: lint
+      - task: verify-no-changes
 
   update-golden-files:
     desc: Regenerate golden file snapshots
