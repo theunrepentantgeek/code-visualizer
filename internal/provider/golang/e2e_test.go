@@ -719,7 +719,7 @@ func TestE2E_IncludeOnlyInternal(t *testing.T) {
 	// All files should be under internal/
 	model.WalkFiles(root, func(f *model.File) {
 		rel, err := filepath.Rel(root.Path, f.Path)
-		g.Expect(err).To(BeNil())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(rel).To(ContainSubstring("internal"),
 			"include filter should restrict to internal/, found: %s", f.Path)

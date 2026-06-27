@@ -173,7 +173,7 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"treemap":{"fill":"file-type,categorization"}}`
+	content := `{"tree-map":{"fill":"file-type,categorization"}}`
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
@@ -390,7 +390,7 @@ func TestForExport_OnlyIncludesRelevantViz(t *testing.T) {
 
 	cfg := New()
 
-	exported := cfg.ForExport("treemap")
+	exported := cfg.ForExport("tree-map")
 
 	g.Expect(exported.Treemap).To(BeIdenticalTo(cfg.Treemap))
 	g.Expect(exported.Radial).To(BeNil())
