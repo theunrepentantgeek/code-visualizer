@@ -61,8 +61,10 @@ func hasFiles(node *model.Directory) bool {
 
 func FilterBinaryFiles(node *model.Directory) *model.Directory {
 	result := &model.Directory{
-		Path: node.Path,
-		Name: node.Name,
+		Path:  node.Path,
+		Name:  node.Name,
+		Files: make([]*model.File, 0, len(node.Files)),
+		Dirs:  make([]*model.Directory, 0, len(node.Dirs)),
 	}
 
 	for _, file := range node.Files {

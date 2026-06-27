@@ -34,8 +34,10 @@ func (w walker) scanDir(dirPath string) (*model.Directory, error) {
 	}
 
 	node := &model.Directory{
-		Path: dirPath,
-		Name: filepath.Base(dirPath),
+		Path:  dirPath,
+		Name:  filepath.Base(dirPath),
+		Files: make([]*model.File, 0, len(entries)),
+		Dirs:  make([]*model.Directory, 0, len(entries)),
 	}
 
 	for _, entry := range entries {
