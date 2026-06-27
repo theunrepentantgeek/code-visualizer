@@ -452,7 +452,7 @@ func TestForExport_BubbleTree_OnlyIncludesBubbletreeSection(t *testing.T) {
 
 	cfg := New()
 
-	exported := cfg.ForExport("bubbletree")
+	exported := cfg.ForExport("bubble-tree")
 
 	g.Expect(exported.Bubbletree).To(BeIdenticalTo(cfg.Bubbletree))
 	g.Expect(exported.Treemap).To(BeNil())
