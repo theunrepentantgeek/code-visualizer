@@ -431,6 +431,51 @@ func TestForExport_UnknownViz_ExportsNoVizSection(t *testing.T) {
 	g.Expect(exported.Scatter).To(BeNil())
 }
 
+func TestForExport_Radial_OnlyIncludesRadialSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("radial")
+
+	g.Expect(exported.Radial).To(BeIdenticalTo(cfg.Radial))
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_BubbleTree_OnlyIncludesBubbletreeSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("bubble-tree")
+
+	g.Expect(exported.Bubbletree).To(BeIdenticalTo(cfg.Bubbletree))
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_Spiral_OnlyIncludesSpiralSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("spiral")
+
+	g.Expect(exported.Spiral).To(BeIdenticalTo(cfg.Spiral))
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
 func TestNew_DefaultFileFilter(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

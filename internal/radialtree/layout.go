@@ -268,7 +268,12 @@ func collectFileMetricValues(root *model.Directory, discMetric metric.Name) []fl
 // adjustedDiscFactor returns a maxDiscFactor scaled down so that n nodes
 // fit on a ring of radius ringSpacing without their full-size discs overlapping.
 // This ensures readable layout even when directories have many children.
-func adjustedDiscFactor(n int, ringSpacing, baseMaxDiscFactor float64) float64 {
+func adjustedDiscFactor(
+	n int,
+	ringSpacing float64,
+	//nolint:unparam // Constant used elsewhere for flexibility
+	baseMaxDiscFactor float64,
+) float64 {
 	if n <= 0 {
 		return baseMaxDiscFactor
 	}
