@@ -6,7 +6,7 @@
 codeviz [global flags] render <subcommand> [flags] <target-path>
 ```
 
-Subcommands: `treemap`, `radial`, `bubbletree`, `spiral`
+Subcommands: `tree-map`, `radial`, `bubble-tree`, `spiral`
 
 ## Global Flags
 
@@ -21,14 +21,14 @@ These flags apply to all subcommands.
 | `--export-config` |       | Write effective configuration to file (`.yaml`, `.yml`, or `.json`) |
 | `--export-data`   |       | Write computed metrics to file (`.json` or `.yaml`/`.yml`) |
 
-## `render treemap`
+## `render tree-map`
 
-Generate a treemap visualization where each file is a rectangle sized by a metric.
+Generate a tree-map visualization where each file is a rectangle sized by a metric.
 
 ### Synopsis
 
 ```
-codeviz render treemap [flags] <target-path>
+codeviz render tree-map [flags] <target-path>
 ```
 
 ### Required Flags
@@ -80,14 +80,14 @@ codeviz render radial [flags] <target-path>
 | `--height`         |       | `1920`         | Image height in pixels                                        |
 | `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
-## `render bubbletree`
+## `render bubble-tree`
 
-Generate a bubble tree visualization where each file is a circle sized by a metric.
+Generate a bubble-tree visualization where each file is a circle sized by a metric.
 
 ### Synopsis
 
 ```
-codeviz render bubbletree [flags] <target-path>
+codeviz render bubble-tree [flags] <target-path>
 ```
 
 ### Required Flags
@@ -175,36 +175,36 @@ Multiple `--filter` flags are evaluated in order, like a `.gitignore`.
 
 ```sh
 # Include only Go files
-codeviz render treemap ./src -o out.png -s file-size --filter '*.go' --filter '!*'
+codeviz render tree-map ./src -o out.png -s file-size --filter '*.go' --filter '!*'
 
 # Exclude generated Go files
-codeviz render treemap ./src -o out.png -s file-size --filter '!*_gen.go' --filter '!*_gen_test.go'
+codeviz render tree-map ./src -o out.png -s file-size --filter '!*_gen.go' --filter '!*_gen_test.go'
 ```
 
 ## Examples
 
-### Treemap by file size
+### Tree-map by file size
 
 ```sh
-codeviz render treemap ./src -o treemap.png -s file-size
+codeviz render tree-map ./src -o treemap.png -s file-size
 ```
 
-### Treemap coloured by file type
+### Tree-map coloured by file type
 
 ```sh
-codeviz render treemap ./src -o treemap.png -s file-size -f file-type
+codeviz render tree-map ./src -o treemap.png -s file-size -f file-type
 ```
 
-### Treemap with git freshness and temperature palette
+### Tree-map with git freshness and temperature palette
 
 ```sh
-codeviz render treemap ./src -o treemap.png -s file-lines -f file-freshness --fill-palette temperature
+codeviz render tree-map ./src -o treemap.png -s file-lines -f file-freshness --fill-palette temperature
 ```
 
-### Treemap with border showing author count
+### Tree-map with border showing author count
 
 ```sh
-codeviz render treemap ./src -o treemap.png -s file-lines -f file-freshness -b author-count
+codeviz render tree-map ./src -o treemap.png -s file-lines -f file-freshness -b author-count
 ```
 
 ### Radial tree by file size
@@ -222,25 +222,25 @@ codeviz render radial ./src -o radial.png -d file-lines -f file-type --labels fo
 ### Bubble tree by file lines
 
 ```sh
-codeviz render bubbletree ./src -o bubbles.png -s file-lines
+codeviz render bubble-tree ./src -o bubbles.png -s file-lines
 ```
 
 ### Bubble tree with all labels and SVG output
 
 ```sh
-codeviz render bubbletree ./src -o bubbles.svg -s file-size -f file-type --labels all
+codeviz render bubble-tree ./src -o bubbles.svg -s file-size -f file-type --labels all
 ```
 
-### 4K treemap with verbose logging
+### 4K tree-map with verbose logging
 
 ```sh
-codeviz -v render treemap ./src -o treemap.png -s file-size --width 3840 --height 2160
+codeviz -v render tree-map ./src -o treemap.png -s file-size --width 3840 --height 2160
 ```
 
 ### Export effective configuration
 
 ```sh
-codeviz --export-config config.yaml render treemap ./src -o treemap.png -s file-size
+codeviz --export-config config.yaml render tree-map ./src -o treemap.png -s file-size
 ```
 
 ### Export computed metrics to JSON
@@ -249,13 +249,13 @@ Writes a JSON file containing the full file tree and all computed metric values.
 Useful for downstream analysis or building custom visualizations.
 
 ```sh
-codeviz --export-data metrics.json render treemap ./src -o treemap.png -s file-size -f file-type
+codeviz --export-data metrics.json render tree-map ./src -o treemap.png -s file-size -f file-type
 ```
 
 ### Export computed metrics to YAML
 
 ```sh
-codeviz --export-data metrics.yaml render treemap ./src -o treemap.png -s file-lines
+codeviz --export-data metrics.yaml render tree-map ./src -o treemap.png -s file-lines
 ```
 
 ## Exit Codes

@@ -32,7 +32,7 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cmd := []string{"render", "treemap", ".", "-o", "out.png", "-s", "file-size"}
+	cmd := []string{"render", "tree-map", ".", "-o", "out.png", "-s", "file-size"}
 
 	cases := []struct {
 		args      []string
@@ -82,7 +82,7 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	_, err = parser.Parse([]string{"render", "treemap", ".", "-o", "out.png", "-s", "file-size", "--flat"})
+	_, err = parser.Parse([]string{"render", "tree-map", ".", "-o", "out.png", "-s", "file-size", "--flat"})
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cli.Render.Treemap.Flat).To(BeTrue())
 }
@@ -98,12 +98,12 @@ func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 	}{
 		{
 			name:    "legend",
-			args:    []string{"render", "bubbletree", ".", "-o", "out.png", "--legend", "sideways"},
+			args:    []string{"render", "bubble-tree", ".", "-o", "out.png", "--legend", "sideways"},
 			wantErr: "--legend must be one of",
 		},
 		{
 			name:    "legend-orientation",
-			args:    []string{"render", "bubbletree", ".", "-o", "out.png", "--legend-orientation", "diagonal"},
+			args:    []string{"render", "bubble-tree", ".", "-o", "out.png", "--legend-orientation", "diagonal"},
 			wantErr: "--legend-orientation must be one of",
 		},
 	}
@@ -232,7 +232,7 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
-		"render", "treemap", ".",
+		"render", "tree-map", ".",
 		"-o", "out.png",
 		"-s", "file-size",
 		"--exclude", "[invalid",
@@ -271,7 +271,7 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
-		"render", "treemap", ".",
+		"render", "tree-map", ".",
 		"-o", "out.png",
 		"-s", "file-size",
 		"--exclude", ".*",
@@ -366,7 +366,7 @@ func TestTreemapCmd_ConfigSuppliesSize(t *testing.T) {
 
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
-	g.Expect(os.WriteFile(cfgPath, []byte("treemap:\n  size: file-size\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(cfgPath, []byte("tree-map:\n  size: file-size\n"), 0o600)).To(Succeed())
 
 	cfg := config.New()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
@@ -391,7 +391,7 @@ func TestTreemapCmd_CLISizeOverridesConfig(t *testing.T) {
 
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
-	g.Expect(os.WriteFile(cfgPath, []byte("treemap:\n  size: file-size\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(cfgPath, []byte("tree-map:\n  size: file-size\n"), 0o600)).To(Succeed())
 
 	cfg := config.New()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
@@ -413,7 +413,7 @@ func TestTreemapCmd_MissingSizeEverywhere_NilAfterMerge(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New() // default config does not set treemap.size
+	cfg := config.New() // default config does not set tree-map.size
 
 	cmd := &TreemapCmd{
 		TargetPath: ".",
@@ -463,7 +463,7 @@ func TestTreemapCmd_ValidateConfig_ConfigSuppliesFillAndPalette(t *testing.T) {
 	cfgPath := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(
 		cfgPath,
-		[]byte("treemap:\n  size: file-size\n  fill: file-lines,temperature\n"),
+		[]byte("tree-map:\n  size: file-size\n  fill: file-lines,temperature\n"),
 		0o600,
 	)).To(Succeed())
 

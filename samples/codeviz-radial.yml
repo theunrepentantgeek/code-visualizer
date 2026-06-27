@@ -4,7 +4,7 @@ imageSize:
 legend:
     position: bottom-center
     orientation: horizontal
-treemap: {}
+tree-map: {}
 radial:
     discSize: file-lines
     fill:
@@ -14,7 +14,7 @@ radial:
         metric: file-freshness
         palette: good-bad
     labels: folders
-bubbletree:
+bubble-tree:
     labels: folders
 spiral:
     resolution: daily

@@ -33,7 +33,7 @@ func TestExportConfig_OnlyWritesSelectedVizSection(t *testing.T) {
 	s := &stages.CommonState{
 		Flags:      &stages.Flags{ExportConfig: path},
 		RootConfig: rootCfg,
-		VizName:    "treemap",
+		VizName:    "tree-map",
 	}
 
 	g.Expect(stages.ExportConfig(s)).To(Succeed())

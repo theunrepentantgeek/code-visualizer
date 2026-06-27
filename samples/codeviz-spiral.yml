@@ -1,16 +1,16 @@
 imageSize:
     width: 1920
     height: 1920
-treemap: {}
+tree-map: {}
 radial:
     labels: all
-bubbletree:
+bubble-tree:
     labels: folders
 spiral:
     resolution: daily
-    size: commit.count
+    size: commit-count
     fill:
-        metric: commit.count
+        metric: commit-count
         palette: foliage
     labels: laps
     x-axis: log
