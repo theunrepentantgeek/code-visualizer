@@ -20,6 +20,7 @@ linters:
     - exptostd
     - fatcontext
     - funlen
+    - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
     - gocognit
@@ -89,6 +90,8 @@ linters:
     funlen:
       lines: 65
       ignore-comments: true
+    ginkgolinter:
+      suppress-len-assertion: true
     govet:
       disable:
         - fieldalignment

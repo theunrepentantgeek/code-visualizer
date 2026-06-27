@@ -162,7 +162,7 @@ func TestFilterNotCalledForFileAgeMetric(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Verify that file-age metric does not trigger filtering
-	g.Expect(filesystem.FileLines).NotTo(Equal("file-age"))
+	g.Expect(filesystem.FileLines).NotTo(BeEquivalentTo("file-age"))
 }
 
 func TestFilterAppliedRegardlessOfFillMetric(t *testing.T) {
