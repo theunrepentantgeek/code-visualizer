@@ -26,6 +26,7 @@ func AcquireData(s *pipeline.State) {
 func RenderPipeline(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.RunAggregations)
 	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
+	pipeline.ApplyFuncX(s, stages.PruneFileHistoryToTree)
 	pipeline.ApplyFuncX(s, stages.ExportData)
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncX(s, stages.InitDrawingBounds)
