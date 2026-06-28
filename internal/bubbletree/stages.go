@@ -3,8 +3,8 @@ package bubbletree
 import (
 	"log/slog"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -46,7 +46,7 @@ func BuildInksStage(c *stages.CommonState, b *State) error {
 
 	b.Inks = BuildInks(c.Root, c.Requested, b.FillMetric, b.FillPalette, b.BorderMetric, b.BorderPalette)
 	if !b.Flat {
-		b.Inks.Fill = canvas.NewRadialGradientInk(b.Inks.Fill)
+		b.Inks.Fill = inks.NewRadialGradientInk(b.Inks.Fill)
 	}
 
 	return nil
@@ -96,9 +96,7 @@ func LayoutStage(c *stages.CommonState, b *State) error {
 // RenderStage renders the bubble tree to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, b *State) error {
 	cv := RenderToCanvas(&b.Nodes, c.Root, c.Width, c.Height, b.Inks)
-	if b.LegendConfig != nil {
-		cv.SetLegend(*b.LegendConfig)
-	}
+	legend.RenderInto(cv, b.LegendConfig)
 
 	c.Canvas = cv
 

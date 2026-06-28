@@ -7,8 +7,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	model0 "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -57,8 +57,8 @@ func TestBuildLegendConfig_NonePosition_ReturnsNil(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionNone, model0.LegendOrientationVertical,
-		canvas.FixedInk(color.RGBA{A: 255}), "file-size",
-		canvas.FixedInk(color.RGBA{A: 255}), "",
+		inks.FixedInk(color.RGBA{A: 255}), "file-size",
+		inks.FixedInk(color.RGBA{A: 255}), "",
 		"file-lines",
 	)
 
@@ -72,12 +72,12 @@ func TestBuildLegendConfig_FillOnly_SingleEntry(t *testing.T) {
 	root := makeLegendTestRoot()
 	pal := palette.GetPalette(palette.Temperature)
 	values := collectNumericValues(root, "file-size")
-	fillInk := canvas.NumericInk("file-size", values, pal)
+	fillInk := inks.NumericInk("file-size", values, pal)
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		fillInk, "file-size",
-		canvas.FixedInk(color.RGBA{A: 255}), "",
+		inks.FixedInk(color.RGBA{A: 255}), "",
 		"file-size",
 	)
 
@@ -85,7 +85,7 @@ func TestBuildLegendConfig_FillOnly_SingleEntry(t *testing.T) {
 		t.Fatal("expected non-nil LegendConfig")
 	} else {
 		g.Expect(cfg.Entries).To(HaveLen(1))
-		g.Expect(cfg.Entries[0].Role).To(Equal(canvas.LegendRoleFill))
+		g.Expect(cfg.Entries[0].Role).To(Equal(legend.RoleFill))
 		g.Expect(cfg.Entries[0].MetricName).To(Equal("file-size"))
 	}
 }
@@ -97,11 +97,11 @@ func TestBuildLegendConfig_FillAndBorder_TwoEntries(t *testing.T) {
 	root := makeLegendTestRoot()
 	pal := palette.GetPalette(palette.Temperature)
 	values := collectNumericValues(root, "file-size")
-	fillInk := canvas.NumericInk("file-size", values, pal)
+	fillInk := inks.NumericInk("file-size", values, pal)
 
 	types := collectDistinctTypes(root, "file-type")
 	catPal := palette.GetPalette(palette.Categorization)
-	borderInk := canvas.CategoricalInk("file-type", types, catPal)
+	borderInk := inks.CategoricalInk("file-type", types, catPal)
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
@@ -114,8 +114,8 @@ func TestBuildLegendConfig_FillAndBorder_TwoEntries(t *testing.T) {
 		t.Fatal("expected non-nil LegendConfig")
 	} else {
 		g.Expect(cfg.Entries).To(HaveLen(2))
-		g.Expect(cfg.Entries[0].Role).To(Equal(canvas.LegendRoleFill))
-		g.Expect(cfg.Entries[1].Role).To(Equal(canvas.LegendRoleBorder))
+		g.Expect(cfg.Entries[0].Role).To(Equal(legend.RoleFill))
+		g.Expect(cfg.Entries[1].Role).To(Equal(legend.RoleBorder))
 	}
 }
 
@@ -126,12 +126,12 @@ func TestBuildLegendConfig_DifferentSizeMetric_AddsEntry(t *testing.T) {
 	root := makeLegendTestRoot()
 	pal := palette.GetPalette(palette.Temperature)
 	values := collectNumericValues(root, "file-size")
-	fillInk := canvas.NumericInk("file-size", values, pal)
+	fillInk := inks.NumericInk("file-size", values, pal)
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		fillInk, "file-size",
-		canvas.FixedInk(color.RGBA{A: 255}), "",
+		inks.FixedInk(color.RGBA{A: 255}), "",
 		"file-lines",
 	)
 
@@ -139,7 +139,7 @@ func TestBuildLegendConfig_DifferentSizeMetric_AddsEntry(t *testing.T) {
 		t.Fatal("expected non-nil LegendConfig")
 	} else {
 		g.Expect(cfg.Entries).To(HaveLen(2))
-		g.Expect(cfg.Entries[1].Role).To(Equal(canvas.LegendRoleSize))
+		g.Expect(cfg.Entries[1].Role).To(Equal(legend.RoleSize))
 		g.Expect(cfg.Entries[1].MetricName).To(Equal("file-lines"))
 	}
 }
@@ -151,12 +151,12 @@ func TestBuildLegendConfig_SameSizeAsFill_NoSizeEntry(t *testing.T) {
 	root := makeLegendTestRoot()
 	pal := palette.GetPalette(palette.Temperature)
 	values := collectNumericValues(root, "file-size")
-	fillInk := canvas.NumericInk("file-size", values, pal)
+	fillInk := inks.NumericInk("file-size", values, pal)
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
 		fillInk, "file-size",
-		canvas.FixedInk(color.RGBA{A: 255}), "",
+		inks.FixedInk(color.RGBA{A: 255}), "",
 		"file-size",
 	)
 
@@ -173,8 +173,8 @@ func TestBuildLegendConfig_NoMetrics_ReturnsNil(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
-		canvas.FixedInk(color.RGBA{A: 255}), "",
-		canvas.FixedInk(color.RGBA{A: 255}), "",
+		inks.FixedInk(color.RGBA{A: 255}), "",
+		inks.FixedInk(color.RGBA{A: 255}), "",
 		"",
 	)
 

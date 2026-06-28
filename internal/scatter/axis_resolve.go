@@ -77,7 +77,7 @@ func numericExtent(points []PointDatum, direction axisDirection) (minValue, maxV
 
 func categoricalBands(points []PointDatum, plot PlotRect, direction axisDirection) []AxisBand {
 	labels := make([]string, 0, len(points))
-	seen := map[string]bool{}
+	seen := make(map[string]bool, len(points))
 
 	for _, point := range points {
 		label := direction.categoryValue(point)

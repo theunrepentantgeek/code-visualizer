@@ -123,7 +123,7 @@ func changedVsParent(c *object.Commit, commitTree *object.Tree, filePaths map[st
 		return nil
 	}
 
-	var result []string
+	result := make([]string, 0, len(changes))
 
 	for _, change := range changes {
 		name := changeName(change)
@@ -202,7 +202,7 @@ func diffTrackedFiles(parent *object.Commit, commitTree *object.Tree, filePaths 
 
 // filesChangedVsAllParents returns files that differ from every parent.
 func filesChangedVsAllParents(filePaths map[string]bool, diffFromParent []map[string]bool) []string {
-	var result []string
+	result := make([]string, 0, len(filePaths))
 
 	for path := range filePaths {
 		if differsFromAllParents(path, diffFromParent) {

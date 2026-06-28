@@ -1,14 +1,14 @@
-package canvas
+package inks
 
-// InkOption configures ink behaviour.
-type InkOption func(*inkConfig)
+// Option configures ink behaviour.
+type Option func(*config)
 
-type inkConfig struct {
+type config struct {
 	opacity float64
 }
 
-func defaultInkConfig() inkConfig {
-	return inkConfig{
+func defaultConfig() config {
+	return config{
 		opacity: 1.0,
 	}
 }
@@ -16,8 +16,8 @@ func defaultInkConfig() inkConfig {
 // WithOpacity sets the opacity applied when Dip() resolves a colour.
 // Default is 1.0 (fully opaque). The opacity is applied to the alpha channel
 // of the resolved colour.
-func WithOpacity(opacity float64) InkOption {
-	return func(c *inkConfig) {
+func WithOpacity(opacity float64) Option {
+	return func(c *config) {
 		c.opacity = opacity
 	}
 }

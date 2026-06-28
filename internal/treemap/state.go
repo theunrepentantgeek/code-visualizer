@@ -2,6 +2,7 @@ package treemap
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
@@ -19,6 +20,6 @@ type State struct {
 	BorderPalette palette.PaletteName
 	Inks          Inks
 	Root          TreemapRectangle
-	LegendConfig  *canvas.LegendConfig
+	LegendConfig  *legend.Config
 	BlockLabels   []canvas.BlockLabel
 }

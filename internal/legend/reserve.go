@@ -1,7 +1,6 @@
 package legend
 
 import (
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
 
@@ -14,7 +13,7 @@ const MinReservableSize = 100
 // ReserveAndLayout returns the layout dimensions after reserving space
 // for the legend. Falls back to (width, height) when reservation would
 // shrink either dimension below MinReservableSize.
-func ReserveAndLayout(cfg *canvas.LegendConfig, width, height int) (layoutW, layoutH int) {
+func ReserveAndLayout(cfg *Config, width, height int) (layoutW, layoutH int) {
 	if cfg == nil {
 		return width, height
 	}
@@ -33,7 +32,7 @@ func ReserveAndLayout(cfg *canvas.LegendConfig, width, height int) (layoutW, lay
 
 // LayoutOffset returns the (dx, dy) offset to apply to layout output
 // when space has been reserved for the legend.
-func LayoutOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy float64) {
+func LayoutOffset(cfg *Config, wReduce, hReduce float64) (dx, dy float64) {
 	if cfg == nil {
 		return 0, 0
 	}
@@ -48,7 +47,7 @@ func LayoutOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy fl
 	}
 }
 
-func cornerOffset(cfg *canvas.LegendConfig, wReduce, hReduce float64) (dx, dy float64) {
+func cornerOffset(cfg *Config, wReduce, hReduce float64) (dx, dy float64) {
 	isTop := cfg.Position == model.LegendPositionTopLeft || cfg.Position == model.LegendPositionTopRight
 	isLeft := cfg.Position == model.LegendPositionTopLeft || cfg.Position == model.LegendPositionBottomLeft
 

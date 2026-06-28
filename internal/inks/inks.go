@@ -1,12 +1,9 @@
-// Package inks provides shared Ink construction helpers used by every
-// visualization that derives colours from per-file model data.
 package inks
 
 import (
 	"image/color"
 	"slices"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -21,9 +18,9 @@ func BuildMetricInk(
 	d provider.BaseMetricDescriptor,
 	palName palette.PaletteName,
 	fallback color.RGBA,
-) canvas.Ink {
+) Ink {
 	if d.Name == "" {
-		return canvas.FixedInk(fallback)
+		return FixedInk(fallback)
 	}
 
 	pal := palette.GetPalette(palName)
@@ -31,55 +28,55 @@ func BuildMetricInk(
 	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
 		values := CollectNumericValues(root, d.Name)
 		if len(values) == 0 {
-			return canvas.FixedInk(fallback)
+			return FixedInk(fallback)
 		}
 
-		return canvas.NumericInk(d.Name, values, pal)
+		return NumericInk(d.Name, values, pal)
 	}
 
 	types := CollectDistinctTypes(root, d.Name)
 
-	return canvas.CategoricalInk(d.Name, types, pal)
+	return CategoricalInk(d.Name, types, pal)
 }
 
 // MetricValueForFile builds a MetricValue from a file's data for the given
 // ink. Returns the zero MetricValue when file is nil, when the ink is fixed,
 // or when the file has no value for the ink's metric.
-func MetricValueForFile(file *model.File, ink canvas.Ink) canvas.MetricValue {
+func MetricValueForFile(file *model.File, ink Ink) MetricValue {
 	if file == nil {
-		return canvas.MetricValue{}
+		return MetricValue{}
 	}
 
 	info := ink.Info()
 
 	switch info.Kind {
-	case canvas.InkNumeric:
+	case KindNumeric:
 		m := info.MetricName
 		if v, ok := file.Quantity(m); ok {
-			return canvas.MetricValue{Kind: metric.Quantity, Quantity: int(v)}
+			return MetricValue{Kind: metric.Quantity, Quantity: int(v)}
 		}
 
 		if v, ok := file.Measure(m); ok {
-			return canvas.MetricValue{Kind: metric.Measure, Measure: v}
+			return MetricValue{Kind: metric.Measure, Measure: v}
 		}
 
-		return canvas.MetricValue{}
-	case canvas.InkCategorical:
+		return MetricValue{}
+	case KindCategorical:
 		m := info.MetricName
 		if v, ok := file.Classification(m); ok {
-			return canvas.MetricValue{Kind: metric.Classification, Category: v}
+			return MetricValue{Kind: metric.Classification, Category: v}
 		}
 
-		return canvas.MetricValue{}
+		return MetricValue{}
 	default:
-		return canvas.MetricValue{}
+		return MetricValue{}
 	}
 }
 
 // CollectNumericValues walks the directory tree and returns every file's
 // numeric value for metric m (quantity preferred, then measure).
 func CollectNumericValues(root *model.Directory, m metric.Name) []float64 {
-	var values []float64
+	values := make([]float64, 0, model.CountFiles(root))
 
 	model.WalkFiles(root, func(f *model.File) {
 		values = append(values, extractNumeric(f, m))

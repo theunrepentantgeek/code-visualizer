@@ -46,7 +46,7 @@ func computeCommentRatio(
 
 // buildCommentLineSet returns the set of line numbers that contain comment text.
 func buildCommentLineSet(comments []*ast.CommentGroup, fset *token.FileSet) map[int]bool {
-	set := make(map[int]bool)
+	set := make(map[int]bool, len(comments))
 
 	for _, cg := range comments {
 		for _, c := range cg.List {

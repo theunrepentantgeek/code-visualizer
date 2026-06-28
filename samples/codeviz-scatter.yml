@@ -1,10 +1,10 @@
 imageSize:
     width: 1920
     height: 1080
-treemap: {}
+tree-map: {}
 radial:
     labels: all
-bubbletree:
+bubble-tree:
     labels: folders
 spiral:
     resolution: daily
@@ -12,12 +12,12 @@ spiral:
 scatter:
     xAxis: file-size
     yAxis: comment-ratio
-    size: declaration-count
+    size: declarations.count
     fill:
-        metric: declaration.count
+        metric: declarations.count
         palette: foliage
     border:
-        metric: public.declaration.count
+        metric: public.declarations.count
         palette: foliage
 fileFilter:
     - pattern: .*

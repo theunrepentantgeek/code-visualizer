@@ -1,6 +1,4 @@
-// Package canvas provides a retained-then-render drawing surface with
-// layered z-ordering and pluggable backend implementations.
-package canvas
+package inks
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"

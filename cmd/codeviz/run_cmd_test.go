@@ -21,7 +21,7 @@ func TestRunCmd_Validate_KnownPreset_Valid(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	r := &RunCmd{
-		Preset:     "structure-treemap",
+		Preset:     "structure-tree-map",
 		TargetPath: ".",
 		Output:     "out.png",
 	}
@@ -40,7 +40,7 @@ func TestRunCmd_Validate_MissingTarget_ReturnsError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	r := &RunCmd{Preset: "structure-treemap", Output: "out.png"}
+	r := &RunCmd{Preset: "structure-tree-map", Output: "out.png"}
 	g.Expect(r.Validate()).To(MatchError(ContainSubstring("target path is required")))
 }
 
@@ -48,7 +48,7 @@ func TestRunCmd_Validate_MissingOutput_ReturnsError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	r := &RunCmd{Preset: "structure-treemap", TargetPath: "."}
+	r := &RunCmd{Preset: "structure-tree-map", TargetPath: "."}
 	g.Expect(r.Validate()).To(MatchError(ContainSubstring("output path")))
 }
 
@@ -56,7 +56,7 @@ func TestRunCmd_EffectiveTitle_UsesTitleWhenSet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	preset := findPreset("structure-treemap")
+	preset := findPreset("structure-tree-map")
 	g.Expect(preset).NotTo(BeNil(), "preset should exist")
 
 	if preset != nil {
@@ -69,7 +69,7 @@ func TestRunCmd_EffectiveTitle_UsesPresetDefaultWhenTitleEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	preset := findPreset("structure-treemap")
+	preset := findPreset("structure-tree-map")
 	g.Expect(preset).NotTo(BeNil(), "preset should exist")
 
 	if preset != nil {

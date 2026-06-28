@@ -83,7 +83,7 @@ func (r *baseRegistry) loadersFor(requested []metric.Name) []BaseMetricLoader {
 		need[n] = true
 	}
 
-	result := make([]BaseMetricLoader, 0)
+	result := make([]BaseMetricLoader, 0, len(r.loaders))
 
 	for _, l := range r.loaders {
 		for _, m := range l.Metrics {
@@ -114,7 +114,7 @@ func (r *baseRegistry) allForLevel(level metric.MetricLevel) []BaseMetricDescrip
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	result := make([]BaseMetricDescriptor, 0)
+	result := make([]BaseMetricDescriptor, 0, len(r.descriptors))
 
 	for _, d := range r.descriptors {
 		if d.Level == level {

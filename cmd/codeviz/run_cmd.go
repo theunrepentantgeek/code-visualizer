@@ -41,33 +41,33 @@ type presetDef struct {
 // presets is the registry of all available presets.
 var presets = []presetDef{
 	{
-		Name: "structure-treemap",
+		Name: "structure-tree-map",
 		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
-		Description:  "Treemap sized by file lines; colour shows file type. Quick overview of code structure.",
+		Description:  "Tree-map sized by file lines; colour shows file type. Quick overview of code structure.",
 		DefaultTitle: "Code Structure",
 	},
 	{
-		Name: "structure-bubbletree",
+		Name: "structure-bubble-tree",
 		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
 		Description:  "Bubble tree sized by file lines; colour shows file type. Alternative overview of code structure.",
 		DefaultTitle: "Code Structure",
 	},
 	{
-		Name: "history-treemap",
+		Name: "history-tree-map",
 		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
-		Description:  "Treemap sized by file lines; colour shows commit count. Highlights frequently-changed hotspots.",
+		Description:  "Tree-map sized by file lines; colour shows commit count. Highlights frequently-changed hotspots.",
 		DefaultTitle: "Commit Hotspots",
 	},
 	{
-		Name: "age-treemap",
+		Name: "age-tree-map",
 		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
-		Description:  "Treemap sized by file lines; colour shows file age. Reveals stale and actively-maintained areas.",
+		Description:  "Tree-map sized by file lines; colour shows file age. Reveals stale and actively-maintained areas.",
 		DefaultTitle: "File Age",
 	},
 	{
-		Name: "contributors-treemap",
+		Name: "contributors-tree-map",
 		//nolint:revive,nolintlint // Long description is more important than minimizing line length, and annotations can't be wrapped
-		Description:  "Treemap sized by file lines; colour shows distinct author count. Useful for bus-factor analysis.",
+		Description:  "Tree-map sized by file lines; colour shows distinct author count. Useful for bus-factor analysis.",
 		DefaultTitle: "Author Coverage",
 	},
 }
@@ -167,15 +167,15 @@ func (r *RunCmd) runPreset(preset *presetDef, flags *Flags) error {
 	var cmd presetRunner
 
 	switch preset.Name {
-	case "structure-treemap":
+	case "structure-tree-map":
 		cmd = r.structureTreemap(title)
-	case "structure-bubbletree":
+	case "structure-bubble-tree":
 		cmd = r.structureBubbletree(title)
-	case "history-treemap":
+	case "history-tree-map":
 		cmd = r.historyTreemap(title)
-	case "age-treemap":
+	case "age-tree-map":
 		cmd = r.ageTreemap(title)
-	case "contributors-treemap":
+	case "contributors-tree-map":
 		cmd = r.contributorsTreemap(title)
 	default:
 		return eris.Errorf("unhandled preset %q", preset.Name)

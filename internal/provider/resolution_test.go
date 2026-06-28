@@ -30,8 +30,8 @@ func TestResolveExpression_BareMetricAtNativeLevel(t *testing.T) {
 	g.Expect(resolved.NeedsAggregation).To(BeFalse())
 }
 
+//nolint:paralleltest // mutates global base registry
 func TestResolveExpression_UsesGlobalRegistry(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	ResetBaseRegistryForTesting()
@@ -85,6 +85,26 @@ func TestResolveExpression_MeanChangesKindToMeasure(t *testing.T) {
 	resolved, err := resolveExpressionWith(reg, expr, metric.LevelDirectory)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(resolved.ResultKind).To(Equal(metric.Measure))
+}
+
+func TestResolveExpression_SameLevelAggregationRejected(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newBaseRegistry()
+	reg.register(BaseMetricDescriptor{
+		Name:         "file-size",
+		Kind:         metric.Quantity,
+		Level:        metric.LevelFile,
+		Aggregations: []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean},
+	})
+
+	// file-size.sum at LevelFile is meaningless — "file-size" is already per-file.
+	expr := metric.MetricExpression{Base: "file-size", Aggregation: metric.AggSum}
+	_, err := resolveExpressionWith(reg, expr, metric.LevelFile)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("already a per-file metric"))
+	g.Expect(err.Error()).To(ContainSubstring("cross-level"))
 }
 
 func TestResolveExpression_InvalidAggregationError(t *testing.T) {

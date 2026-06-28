@@ -1,7 +1,7 @@
 package spiral
 
 import (
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
@@ -20,5 +20,5 @@ type State struct {
 	Buckets      []TimeBucket
 	Inks         Inks
 	Layout       SpiralLayout
-	LegendConfig *canvas.LegendConfig
+	LegendConfig *legend.Config
 }

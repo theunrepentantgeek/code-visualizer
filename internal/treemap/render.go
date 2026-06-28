@@ -5,9 +5,10 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	pkginks "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // RenderToCanvas walks the layout tree and model tree in parallel,
@@ -16,7 +17,7 @@ func RenderToCanvas(
 	rects TreemapRectangle,
 	root *model.Directory,
 	width, height int,
-	inks Inks,
+	is Inks,
 	sizeMetric metric.Name,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
@@ -24,8 +25,8 @@ func RenderToCanvas(
 	// Background
 	bgSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(bgColour),
-			Border:      canvas.FixedInk(bgColour),
+			Fill:        inks.FixedInk(palette.White),
+			Border:      inks.FixedInk(palette.White),
 			BorderWidth: 0,
 		},
 	}
@@ -38,7 +39,7 @@ func RenderToCanvas(
 		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
-	addRect(cv, rects, root, inks, sizeMetric)
+	addRect(cv, rects, root, is, sizeMetric)
 
 	return cv
 }
@@ -48,11 +49,11 @@ func addRect(
 	cv *canvas.Canvas,
 	rect TreemapRectangle,
 	node *model.Directory,
-	inks Inks,
+	is Inks,
 	sizeMetric metric.Name,
 ) {
 	if !rect.IsDirectory {
-		addFileRectForFile(cv, rect, nil, inks, rect, 0)
+		addFileRectForFile(cv, rect, nil, is, rect, 0)
 
 		return
 	}
@@ -66,11 +67,11 @@ func addRect(
 	for i := range rect.Children {
 		child := rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			addRect(cv, child, node.Dirs[dirIdx], inks, sizeMetric)
+			addRect(cv, child, node.Dirs[dirIdx], is, sizeMetric)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			fileWeight := fileMetricWeight(node.Files[fileIdx], sizeMetric)
-			addFileRectForFile(cv, child, node.Files[fileIdx], inks, rect, fileWeight/dirTotal)
+			addFileRectForFile(cv, child, node.Files[fileIdx], is, rect, fileWeight/dirTotal)
 			fileIdx++
 		}
 	}
@@ -83,8 +84,8 @@ func addDirectoryShapes(
 	// Header bar fill
 	headerSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(headerFill),
-			Border:      canvas.FixedInk(headerFill),
+			Fill:        inks.FixedInk(headerFill),
+			Border:      inks.FixedInk(headerFill),
 			BorderWidth: 0,
 		},
 	}
@@ -100,7 +101,7 @@ func addDirectoryShapes(
 	// Header label
 	if rect.Label != "" {
 		labelSpec := &canvas.TextSpec{
-			Ink:      canvas.FixedInk(whiteText),
+			Ink:      inks.FixedInk(palette.White),
 			FontSize: 0,
 			Anchor:   canvas.AnchorStart,
 		}
@@ -115,9 +116,9 @@ func addDirectoryShapes(
 	// Directory border
 	borderSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        canvas.FixedInk(color.RGBA{A: 0}),
-			Border:      canvas.FixedInk(structuralBorder),
-			BorderWidth: DynBorderWidth(rect.W, rect.H, canvas.InkNumeric),
+			Fill:        inks.FixedInk(color.RGBA{A: 0}),
+			Border:      inks.FixedInk(structuralBorder),
+			BorderWidth: DynBorderWidth(rect.W, rect.H, inks.KindNumeric),
 		},
 	}
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
@@ -134,7 +135,7 @@ func addFileRectForFile(
 	cv *canvas.Canvas,
 	rect TreemapRectangle,
 	file *model.File,
-	inks Inks,
+	is Inks,
 	parentDir TreemapRectangle,
 	weightFraction float64,
 ) {
@@ -143,14 +144,14 @@ func addFileRectForFile(
 	}
 
 	focus := computeFocus(rect, parentDir, weightFraction)
-	hasBorder := inks.Border.Info().Kind
-	fillMV := pkginks.MetricValueForFile(file, inks.Fill)
-	borderMV := pkginks.MetricValueForFile(file, inks.Border)
+	hasBorder := is.Border.Info().Kind
+	fillMV := inks.MetricValueForFile(file, is.Fill)
+	borderMV := inks.MetricValueForFile(file, is.Border)
 
 	spec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.Fill,
-			Border:      inks.Border,
+			Fill:        is.Fill,
+			Border:      is.Border,
 			BorderWidth: DynBorderWidth(rect.W, rect.H, hasBorder),
 		},
 	}
@@ -216,8 +217,8 @@ func fileMetricWeight(file *model.File, sizeMetric metric.Name) float64 {
 
 // DynBorderWidth returns a dynamic border width based on rectangle
 // size and the kind of border ink configured.
-func DynBorderWidth(w, h float64, borderKind canvas.InkKind) float64 {
-	if borderKind == canvas.InkFixed {
+func DynBorderWidth(w, h float64, borderKind inks.Kind) float64 {
+	if borderKind == inks.KindFixed {
 		return 0.5
 	}
 

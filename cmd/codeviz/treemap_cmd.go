@@ -1,15 +1,12 @@
 package main
 
 import (
-	"strings"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -50,15 +47,8 @@ func (*TreemapCmd) Validate() error {
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
-	size := ptrString(cfg.Size)
-
-	d, ok := provider.GetBase(metric.Name(size))
-	if !ok {
-		return eris.Errorf("unknown size metric %q; available metrics: %s", size, formatMetricNames())
-	}
-
-	if d.Kind != metric.Quantity && d.Kind != metric.Measure {
-		return eris.Errorf("size metric must be numeric, got %q (kind: %d)", size, d.Kind)
+	if err := validateNumericMetric("size", metric.Name(ptrString(cfg.Size))); err != nil {
+		return err
 	}
 
 	if err := cfg.Fill.Validate("fill"); err != nil {
@@ -70,17 +60,6 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 	}
 
 	return nil
-}
-
-func formatMetricNames() string {
-	names := provider.BaseNames()
-	strs := make([]string, len(names))
-
-	for i, n := range names {
-		strs[i] = string(n)
-	}
-
-	return strings.Join(strs, ", ")
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
@@ -105,7 +84,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		Output:             c.Output,
 		Flags:              toStagesFlags(flags),
 		RootConfig:         flags.Config,
-		VizName:            "treemap",
+		VizName:            "tree-map",
 		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
@@ -119,6 +98,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.ValidatePaths)
 	pipeline.ApplyFuncX(s, stages.ExportConfig)
 	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
@@ -142,7 +122,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 	pipeline.ApplyFuncXY(s, treemap.LogResult)
 
-	return eris.Wrap(s.Err(), "treemap pipeline failed")
+	return eris.Wrap(s.Err(), "tree-map pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

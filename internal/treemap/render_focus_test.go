@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
@@ -64,12 +65,12 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 			{X: 50, Y: 20, W: 50, H: 80},
 		},
 	}
-	inks := treemap.Inks{
-		Fill:   canvas.NewRadialGradientInk(canvas.FixedInk(color.RGBA{R: 200, A: 255})),
-		Border: canvas.FixedInk(color.RGBA{A: 255}),
+	is := treemap.Inks{
+		Fill:   inks.NewRadialGradientInk(inks.FixedInk(color.RGBA{R: 200, A: 255})),
+		Border: inks.FixedInk(color.RGBA{A: 255}),
 	}
 
-	cv := treemap.RenderToCanvas(rects, root, 100, 100, inks, filesystem.FileSize)
+	cv := treemap.RenderToCanvas(rects, root, 100, 100, is, filesystem.FileSize)
 	backend := &captureBackend{}
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
