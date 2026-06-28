@@ -77,6 +77,7 @@ func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Bubbletree)
 }
 
+//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
 func (c *BubbletreeCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err

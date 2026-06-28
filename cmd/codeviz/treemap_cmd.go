@@ -74,6 +74,7 @@ func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Treemap)
 }
 
+//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
 func (c *TreemapCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err

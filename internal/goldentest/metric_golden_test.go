@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	"github.com/sebdah/goldie/v2"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/export"
@@ -22,14 +23,18 @@ import (
 // tracks the registry automatically.
 func candidateExpressions() []string {
 	names := make([]string, 0)
+
 	for _, desc := range provider.AllBase() {
 		base := string(desc.Name)
+
 		names = append(names, base)
 		for _, agg := range desc.Aggregations {
 			names = append(names, base+"."+string(agg))
 		}
+
 		for _, fn := range desc.Filters {
 			filtered := string(fn) + "." + base
+
 			names = append(names, filtered)
 			for _, agg := range desc.Aggregations {
 				names = append(names, filtered+"."+string(agg))
@@ -46,17 +51,21 @@ func validExpressions(t *testing.T) []provider.ResolvedMetric {
 	t.Helper()
 
 	seen := make(map[string]bool)
-	resolved := make([]provider.ResolvedMetric, 0)
-	for _, name := range candidateExpressions() {
+	candidates := candidateExpressions()
+	resolved := make([]provider.ResolvedMetric, 0, len(candidates))
+
+	for _, name := range candidates {
 		if seen[name] {
 			continue
 		}
+
 		seen[name] = true
 
 		r, err := provider.ResolveForValidation(metric.Name(name))
 		if err != nil {
 			continue
 		}
+
 		resolved = append(resolved, r)
 	}
 
@@ -69,6 +78,7 @@ func validExpressions(t *testing.T) []provider.ResolvedMetric {
 func requestedNames(resolved []provider.ResolvedMetric) []metric.Name {
 	seen := make(map[metric.Name]bool)
 	names := make([]metric.Name, 0)
+
 	add := func(n metric.Name) {
 		if !seen[n] {
 			seen[n] = true
@@ -78,6 +88,7 @@ func requestedNames(resolved []provider.ResolvedMetric) []metric.Name {
 	for _, desc := range provider.AllBase() {
 		add(desc.Name)
 	}
+
 	for _, r := range resolved {
 		add(r.ResultName)
 	}
@@ -90,8 +101,8 @@ func requestedNames(resolved []provider.ResolvedMetric) []metric.Name {
 // aggregation-order changes. Quantities and classifications are exact already.
 func roundMeasures(root *model.Directory, names []metric.Name) {
 	round := func(mc interface {
-		Measure(metric.Name) (float64, bool)
-		SetMeasure(metric.Name, float64)
+		Measure(name metric.Name) (float64, bool)
+		SetMeasure(name metric.Name, value float64)
 	},
 	) {
 		for _, n := range names {
@@ -102,11 +113,14 @@ func roundMeasures(root *model.Directory, names []metric.Name) {
 	}
 
 	var walkDir func(d *model.Directory)
+
 	walkDir = func(d *model.Directory) {
 		round(&d.MetricContainer)
+
 		for _, f := range d.Files {
 			round(&f.MetricContainer)
 		}
+
 		for _, sub := range d.Dirs {
 			walkDir(sub)
 		}
@@ -114,6 +128,7 @@ func roundMeasures(root *model.Directory, names []metric.Name) {
 	walkDir(root)
 }
 
+//nolint:paralleltest // mutates the global metric registry
 func TestGolden_MetricExpressions(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -131,6 +146,7 @@ func TestGolden_MetricExpressions(t *testing.T) {
 			aggregatable = append(aggregatable, r)
 		}
 	}
+
 	g.Expect(aggregatable).NotTo(BeEmpty(), "registry should yield aggregatable expressions")
 
 	g.Expect(stages.ComputeAggregations(root, aggregatable)).To(Succeed())

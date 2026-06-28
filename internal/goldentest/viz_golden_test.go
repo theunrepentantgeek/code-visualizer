@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/rotisserie/eris"
 	"github.com/sebdah/goldie/v2"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
@@ -82,9 +84,10 @@ func renderTreemap(common *stages.CommonState) error {
 	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
 	treemap.RenderPipeline(s)
 
-	return s.Err()
+	return eris.Wrap(s.Err(), "treemap render failed")
 }
 
+//nolint:paralleltest // mutates the global metric registry
 func TestGolden_Treemap(t *testing.T) {
 	runVizGolden(t, "treemap", renderTreemap)
 }
@@ -93,9 +96,11 @@ func TestGolden_Treemap(t *testing.T) {
 func renderRadial(common *stages.CommonState) error {
 	cfg := common.RootConfig
 	discSize := "file-lines"
+
 	if cfg.Radial == nil {
 		cfg.Radial = &config.Radial{}
 	}
+
 	cfg.Radial.DiscSize = &discSize
 	cfg.Radial.Fill = &config.MetricSpec{Metric: "file-type"}
 
@@ -107,16 +112,18 @@ func renderRadial(common *stages.CommonState) error {
 	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
 	radialtree.RenderPipeline(s)
 
-	return s.Err()
+	return eris.Wrap(s.Err(), "radial render failed")
 }
 
 // renderBubbletree: size=file-lines, fill=file-type.
 func renderBubbletree(common *stages.CommonState) error {
 	cfg := common.RootConfig
 	size := "file-lines"
+
 	if cfg.Bubbletree == nil {
 		cfg.Bubbletree = &config.Bubbletree{}
 	}
+
 	cfg.Bubbletree.Size = &size
 	cfg.Bubbletree.Fill = &config.MetricSpec{Metric: "file-type"}
 
@@ -128,7 +135,7 @@ func renderBubbletree(common *stages.CommonState) error {
 	pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
 	bubbletree.RenderPipeline(s)
 
-	return s.Err()
+	return eris.Wrap(s.Err(), "bubbletree render failed")
 }
 
 // renderScatter: x-axis=file-size, y-axis=file-lines, size=file-lines, fill=file-type.
@@ -137,9 +144,11 @@ func renderScatter(common *stages.CommonState) error {
 	x := "file-size"
 	y := "file-lines"
 	size := "file-lines"
+
 	if cfg.Scatter == nil {
 		cfg.Scatter = &config.Scatter{}
 	}
+
 	cfg.Scatter.XAxis = &x
 	cfg.Scatter.YAxis = &y
 	cfg.Scatter.Size = &size
@@ -153,21 +162,28 @@ func renderScatter(common *stages.CommonState) error {
 	pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
 	scatterviz.RenderPipeline(s)
 
-	return s.Err()
+	return eris.Wrap(s.Err(), "scatter render failed")
 }
 
-func TestGolden_Radial(t *testing.T)     { runVizGolden(t, "radial", renderRadial) }
+//nolint:paralleltest // mutates the global metric registry
+func TestGolden_Radial(t *testing.T) { runVizGolden(t, "radial", renderRadial) }
+
+//nolint:paralleltest // mutates the global metric registry
 func TestGolden_Bubbletree(t *testing.T) { runVizGolden(t, "bubbletree", renderBubbletree) }
-func TestGolden_Scatter(t *testing.T)    { runVizGolden(t, "scatter", renderScatter) }
+
+//nolint:paralleltest // mutates the global metric registry
+func TestGolden_Scatter(t *testing.T) { runVizGolden(t, "scatter", renderScatter) }
 
 // renderSpiral: size=file-lines, fill=file-type, with synthetic git history
 // injected so the time-bucket stages have data.
 func renderSpiral(common *stages.CommonState) error {
 	cfg := common.RootConfig
 	size := "file-lines"
+
 	if cfg.Spiral == nil {
 		cfg.Spiral = &config.Spiral{}
 	}
+
 	cfg.Spiral.Size = &size
 	cfg.Spiral.Fill = &config.MetricSpec{Metric: "file-type"}
 
@@ -181,13 +197,16 @@ func renderSpiral(common *stages.CommonState) error {
 	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
 	spiral.RenderPipeline(s)
 
-	return s.Err()
+	return eris.Wrap(s.Err(), "spiral render failed")
 }
 
+//nolint:paralleltest // mutates the global metric registry
 func TestGolden_Spiral(t *testing.T) { runVizGolden(t, "spiral", renderSpiral) }
 
 // runVizGolden renders the named viz to PNG and SVG and golden-compares both.
 func runVizGolden(t *testing.T, name string, render func(*stages.CommonState) error) {
+	t.Helper()
+
 	for _, ext := range []string{"png", "svg"} {
 		t.Run(name+"-"+ext, func(t *testing.T) {
 			out := filepath.Join(t.TempDir(), "out."+ext)

@@ -10,6 +10,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
+//nolint:paralleltest // mutates the global metric registry
 func TestBuildMetricTree_PopulatesEveryFileBaseMetric(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -18,6 +19,7 @@ func TestBuildMetricTree_PopulatesEveryFileBaseMetric(t *testing.T) {
 
 	// Every file-level base metric must have a value on the first file.
 	f := root.Files[0]
+
 	for _, desc := range provider.AllBaseForLevel(metric.LevelFile) {
 		switch desc.Kind {
 		case metric.Quantity:
@@ -29,6 +31,7 @@ func TestBuildMetricTree_PopulatesEveryFileBaseMetric(t *testing.T) {
 		case metric.Classification:
 			_, ok := f.Classification(desc.Name)
 			g.Expect(ok).To(BeTrue(), "file metric %q (classification) must be set", desc.Name)
+		default:
 		}
 	}
 

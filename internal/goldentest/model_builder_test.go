@@ -8,6 +8,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
+//nolint:paralleltest // mutates the global metric registry
 func TestBuildVizModel_IsDeterministicAndPopulated(t *testing.T) {
 	g := NewGomegaWithT(t)
 

@@ -22,6 +22,7 @@ func buildSpiralHistory(root *model.Directory) (
 	base := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	var idx int
+
 	model.WalkFiles(root, func(f *model.File) {
 		// Two commits per file at deterministic offsets.
 		first := base.AddDate(0, idx%6, 0)      // months 0..5

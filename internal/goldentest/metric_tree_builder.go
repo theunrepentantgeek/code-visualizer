@@ -12,6 +12,13 @@ import (
 // classification base values, chosen deterministically by hash.
 var classificationValues = []string{"alpha", "beta", "gamma", "delta"}
 
+const (
+	rootDirName = "root"
+	visPublic   = "public"
+	visPrivate  = "private"
+	goExtension = "go"
+)
+
 // synthInt returns a deterministic int64 in [1, 1000] derived from a seed.
 func synthInt(seed string) int64 {
 	return int64(hashOf(seed)%1000) + 1
@@ -38,9 +45,9 @@ func hashOf(seed string) uint64 {
 // synthetic base values. *model.File, *model.Declaration and *model.Commit all
 // embed model.MetricContainer, so they satisfy this interface.
 type baseMetricSetter interface {
-	SetQuantity(metric.Name, int64)
-	SetMeasure(metric.Name, float64)
-	SetClassification(metric.Name, string)
+	SetQuantity(name metric.Name, value int64)
+	SetMeasure(name metric.Name, value float64)
+	SetClassification(name metric.Name, value string)
 }
 
 // setBaseMetric writes a deterministic synthetic value for desc onto the
@@ -55,6 +62,7 @@ func setBaseMetric(mc baseMetricSetter, desc provider.BaseMetricDescriptor, node
 		mc.SetMeasure(desc.Name, synthFloat(seed))
 	case metric.Classification:
 		mc.SetClassification(desc.Name, synthClass(seed))
+	default:
 	}
 
 	// Metrics that declare filters also need filter.base values so filtered
@@ -68,6 +76,7 @@ func setBaseMetric(mc baseMetricSetter, desc provider.BaseMetricDescriptor, node
 			mc.SetMeasure(filtered, synthFloat(seed+"|"+string(fn)))
 		case metric.Classification:
 			mc.SetClassification(filtered, synthClass(seed+"|"+string(fn)))
+		default:
 		}
 	}
 }
@@ -79,12 +88,12 @@ var declarationSpecs = []struct {
 	kind       string
 	visibility string
 }{
-	{"PublicType", model.DeclKindType, "public"},
-	{"privateType", model.DeclKindType, "private"},
-	{"PublicFunc", model.DeclKindFunction, "public"},
-	{"privateFunc", model.DeclKindFunction, "private"},
-	{"PublicMethod", model.DeclKindMethod, "public"},
-	{"privateConst", model.DeclKindConstant, "private"},
+	{"PublicType", model.DeclKindType, visPublic},
+	{"privateType", model.DeclKindType, visPrivate},
+	{"PublicFunc", model.DeclKindFunction, visPublic},
+	{"privateFunc", model.DeclKindFunction, visPrivate},
+	{"PublicMethod", model.DeclKindMethod, visPublic},
+	{"privateConst", model.DeclKindConstant, visPrivate},
 }
 
 // newDeclarations builds a fixed set of declarations for a file, each carrying
@@ -96,6 +105,7 @@ func newDeclarations(fileID string, declLevel []provider.BaseMetricDescriptor) [
 		for _, desc := range declLevel {
 			setBaseMetric(d, desc, fileID+"/"+ds.name)
 		}
+
 		decls = append(decls, d)
 	}
 
@@ -106,11 +116,13 @@ func newDeclarations(fileID string, declLevel []provider.BaseMetricDescriptor) [
 // commit-level base metric.
 func newCommits(fileID string, commitLevel []provider.BaseMetricDescriptor) []*model.Commit {
 	commits := make([]*model.Commit, 0, 2)
-	for i := 0; i < 2; i++ {
+
+	for range 2 {
 		c := &model.Commit{Hash: fileID + "-commit"}
 		for _, desc := range commitLevel {
 			setBaseMetric(c, desc, fileID+"/commit")
 		}
+
 		commits = append(commits, c)
 	}
 
@@ -126,6 +138,7 @@ func newMetricFile(path, name, ext string,
 	for _, desc := range fileLevel {
 		setBaseMetric(f, desc, path)
 	}
+
 	f.Declarations = newDeclarations(path, declLevel)
 	f.Commits = newCommits(path, commitLevel)
 
@@ -139,27 +152,27 @@ func buildMetricTree() *model.Directory {
 	declLevel := provider.AllBaseForLevel(metric.LevelDeclaration)
 	commitLevel := provider.AllBaseForLevel(metric.LevelCommit)
 
-	mk := func(path, name, ext string) *model.File {
-		return newMetricFile(path, name, ext, fileLevel, declLevel, commitLevel)
+	mk := func(path, name string) *model.File {
+		return newMetricFile(path, name, goExtension, fileLevel, declLevel, commitLevel)
 	}
 
 	return &model.Directory{
-		Path: "root",
-		Name: "root",
+		Path: rootDirName,
+		Name: rootDirName,
 		Files: []*model.File{
-			mk("root/a.go", "a.go", "go"),
-			mk("root/b.go", "b.go", "go"),
+			mk("root/a.go", "a.go"),
+			mk("root/b.go", "b.go"),
 		},
 		Dirs: []*model.Directory{
 			{
 				Path:  "root/sub",
 				Name:  "sub",
-				Files: []*model.File{mk("root/sub/c.go", "c.go", "go")},
+				Files: []*model.File{mk("root/sub/c.go", "c.go")},
 				Dirs: []*model.Directory{
 					{
 						Path:  "root/sub/deep",
 						Name:  "deep",
-						Files: []*model.File{mk("root/sub/deep/d.go", "d.go", "go")},
+						Files: []*model.File{mk("root/sub/deep/d.go", "d.go")},
 					},
 				},
 			},

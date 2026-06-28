@@ -26,8 +26,8 @@ func synthFile(path, name, ext, fileType string, lines, size int64) *model.File 
 // distinct sizes so layouts and colour scales are non-trivial.
 func buildVizModel() *model.Directory {
 	return &model.Directory{
-		Path: "root",
-		Name: "root",
+		Path: rootDirName,
+		Name: rootDirName,
 		Files: []*model.File{
 			synthFile("root/readme.md", "readme.md", "md", "Markdown", 40, 800),
 			synthFile("root/main.go", "main.go", "go", "Go", 120, 2400),
