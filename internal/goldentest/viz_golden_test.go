@@ -8,8 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/sebdah/goldie/v2"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
+	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -82,21 +85,89 @@ func renderTreemap(common *stages.CommonState) error {
 }
 
 func TestGolden_Treemap(t *testing.T) {
-	cases := []struct {
-		name string
-		ext  string
-	}{
-		{"treemap-png", "png"},
-		{"treemap-svg", "svg"},
-	}
+	runVizGolden(t, "treemap", renderTreemap)
+}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			out := filepath.Join(t.TempDir(), "out."+tc.ext)
-			data := runViz(t, out, renderTreemap)
+// renderRadial: discSize=file-lines, fill=file-type.
+func renderRadial(common *stages.CommonState) error {
+	cfg := common.RootConfig
+	discSize := "file-lines"
+	if cfg.Radial == nil {
+		cfg.Radial = &config.Radial{}
+	}
+	cfg.Radial.DiscSize = &discSize
+	cfg.Radial.Fill = &config.MetricSpec{Metric: "file-type"}
+
+	viz := &radialtree.State{}
+	s := pipeline.NewState(common, cfg.Radial, viz)
+
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+	radialtree.RenderPipeline(s)
+
+	return s.Err()
+}
+
+// renderBubbletree: size=file-lines, fill=file-type.
+func renderBubbletree(common *stages.CommonState) error {
+	cfg := common.RootConfig
+	size := "file-lines"
+	if cfg.Bubbletree == nil {
+		cfg.Bubbletree = &config.Bubbletree{}
+	}
+	cfg.Bubbletree.Size = &size
+	cfg.Bubbletree.Fill = &config.MetricSpec{Metric: "file-type"}
+
+	viz := &bubbletree.State{}
+	s := pipeline.NewState(common, cfg.Bubbletree, viz)
+
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
+	bubbletree.RenderPipeline(s)
+
+	return s.Err()
+}
+
+// renderScatter: x-axis=file-size, y-axis=file-lines, size=file-lines, fill=file-type.
+func renderScatter(common *stages.CommonState) error {
+	cfg := common.RootConfig
+	x := "file-size"
+	y := "file-lines"
+	size := "file-lines"
+	if cfg.Scatter == nil {
+		cfg.Scatter = &config.Scatter{}
+	}
+	cfg.Scatter.XAxis = &x
+	cfg.Scatter.YAxis = &y
+	cfg.Scatter.Size = &size
+	cfg.Scatter.Fill = &config.MetricSpec{Metric: "file-type"}
+
+	viz := &scatterviz.State{}
+	s := pipeline.NewState(common, cfg.Scatter, viz)
+
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
+	scatterviz.RenderPipeline(s)
+
+	return s.Err()
+}
+
+func TestGolden_Radial(t *testing.T)     { runVizGolden(t, "radial", renderRadial) }
+func TestGolden_Bubbletree(t *testing.T) { runVizGolden(t, "bubbletree", renderBubbletree) }
+func TestGolden_Scatter(t *testing.T)    { runVizGolden(t, "scatter", renderScatter) }
+
+// runVizGolden renders the named viz to PNG and SVG and golden-compares both.
+func runVizGolden(t *testing.T, name string, render func(*stages.CommonState) error) {
+	for _, ext := range []string{"png", "svg"} {
+		t.Run(name+"-"+ext, func(t *testing.T) {
+			out := filepath.Join(t.TempDir(), "out."+ext)
+			data := runViz(t, out, render)
 
 			g := goldie.New(t)
-			g.Assert(t, tc.name, data)
+			g.Assert(t, name+"-"+ext, data)
 		})
 	}
 }
