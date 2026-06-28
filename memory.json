@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-27T14:18:56Z",
-  "run_id": "28291741498",
+  "last_run": "2026-06-28T05:10:31Z",
+  "run_id": "28312116004",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 464,
+  "backlog_cursor": 471,
   "comments_made": {
     "324": "2026-06-01", "329": "2026-06-01", "330": "2026-06-01",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
@@ -12,16 +12,13 @@
     "416": "2026-06-19", "419": "2026-06-19", "421": "2026-06-20",
     "422": "2026-06-16", "429": "2026-06-24", "440": "2026-06-21",
     "442": "2026-06-21", "444": "2026-06-22", "445": "2026-06-26",
-    "464": "2026-06-27"
+    "464": "2026-06-27", "471": "2026-06-28"
   },
   "open_prs": {
     "432": {"branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c", "desc": "docs(dev): fix task ci description; add aggregation benchmark"},
-    "459": {"branch": "repo-assist/improve-cache-filecount-20260625-ad892f62369a7b4b", "desc": "refactor: cache file count in CommonState after scan"},
-    "460": {"branch": "repo-assist/chore-remove-ci-output-20260626-a12e5a8a336ebeec", "desc": "chore: remove stale ci-output.txt and add to .gitignore"},
-    "461": {"branch": "repo-assist/docs-remove-stale-goldie-20260626-16a808ed61fac759", "desc": "docs: remove stale goldie references from DEVELOPMENT.md and Taskfile.yml"},
     "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests"},
-    "pending-eng-ci": {"branch": "repo-assist/eng-ci-fmt-check-20260627", "desc": "eng(ci): add verify-no-changes + update ci, closes #464"},
-    "pending-test-bucketing": {"branch": "repo-assist/test-bucketing-20260627", "desc": "test(spiral): 9 unit tests for AssignFilesToBuckets"}
+    "470": {"branch": "repo-assist/test-bucketing-20260627-68ace32826eeb225", "desc": "test(spiral): add unit tests for AssignFilesToBuckets"},
+    "473": {"branch": "repo-assist/fix-471-dir-file-counts-20260628", "desc": "feat(model): add DirectFileCount and AllFileCount to Directory", "closes": 471}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -29,7 +26,7 @@
     "405": ["enhancement"], "421": ["enhancement"], "422": ["enhancement"],
     "423": ["enhancement"], "429": ["enhancement"], "440": ["bug"],
     "442": ["enhancement"], "444": ["bug"], "445": ["enhancement"],
-    "464": ["enhancement"]
+    "464": ["enhancement"], "471": ["enhancement"]
   },
   "maintainer_preferences": [
     "Do not move helpers to new packages",
@@ -38,6 +35,7 @@
     "Keep PRs strictly scoped to description",
     "No backwards compatibility needed (pre-alpha tool)"
   ],
-  "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445],
-  "notes": "Run 28291741498 (2026-06-27T14): Tasks 9,2,4,11. Task 4: PR (eng-ci-fmt-check-20260627, pending#) implementing verify-no-changes task + ci update from #464. Task 9: PR (test-bucketing-20260627, pending#) 9 tests for AssignFilesToBuckets. Task 2: labelled #464 enhancement, commented. PRs #455,#457,#458 merged since last run. Dependabot PRs #465-#468 open; #468 touches go.mod (protected). Next: confirm PR numbers for new PRs; consider rebase check on PR #432 and #461 if they conflict."
+  "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
+  "closed_prs": [459, 460, 461, 469],
+  "notes": "Run 28312116004 (2026-06-28T05): Tasks 2,3,5,11. Task 3: PR #473 (feat(model): add DirectFileCount+AllFileCount to Directory) implements #471. Task 2: labelled #471 enhancement, commented. Task 11: updated monthly summary. Merged since last run: PR #469 (eng-ci-fmt-check closes #464), PR #460 (remove-ci-output). Closed without merge: PR #459 (cache-filecount - superseded by #471), PR #461 (remove-goldie - superseded by PR #472). New from maintainer: PR #472 (restore golden-file testing, 35 files, open clean). Issue #471 (better file count caching). PR #432 still very diverged from main - may conflict with #472 on DEVELOPMENT.md."
 }
