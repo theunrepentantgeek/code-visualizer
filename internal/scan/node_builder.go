@@ -84,5 +84,14 @@ func FilterBinaryFiles(node *model.Directory) *model.Directory {
 		}
 	}
 
+	result.DirectFileCount = len(result.Files)
+	allCount := result.DirectFileCount
+
+	for _, d := range result.Dirs {
+		allCount += d.AllFileCount
+	}
+
+	result.AllFileCount = allCount
+
 	return result
 }

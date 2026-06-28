@@ -429,3 +429,83 @@ func collectDirNames(dir *model.Directory) []string {
 
 	return names
 }
+
+func TestScanFlat_FileCountsPopulated(t *testing.T) {
+t.Parallel()
+g := NewGomegaWithT(t)
+dir := filepath.Join("testdata", "flat")
+
+root, err := Scan(dir, nil, nil)
+g.Expect(err).NotTo(HaveOccurred())
+g.Expect(root).ToNot(BeNil())
+
+if root == nil {
+return
+}
+
+// Flat directory: DirectFileCount == AllFileCount == number of files
+g.Expect(root.DirectFileCount).To(Equal(3), "DirectFileCount should match len(Files)")
+g.Expect(root.AllFileCount).To(Equal(3), "AllFileCount should equal DirectFileCount for a flat tree")
+}
+
+func TestScanNested_FileCountsPopulated(t *testing.T) {
+t.Parallel()
+g := NewGomegaWithT(t)
+dir := filepath.Join("testdata", "nested")
+
+root, err := Scan(dir, nil, nil)
+g.Expect(err).NotTo(HaveOccurred())
+g.Expect(root).ToNot(BeNil())
+
+if root == nil {
+return
+}
+
+// Tree: root(1 file) → sub(1 file) → deep(1 file)
+// root: DirectFileCount=1, AllFileCount=3
+g.Expect(root.DirectFileCount).To(Equal(1), "root DirectFileCount should be 1")
+g.Expect(root.AllFileCount).To(Equal(3), "root AllFileCount should include all descendants")
+
+sub := root.Dirs[0]
+g.Expect(sub.DirectFileCount).To(Equal(1), "sub DirectFileCount should be 1")
+g.Expect(sub.AllFileCount).To(Equal(2), "sub AllFileCount should include self and deep")
+
+deep := sub.Dirs[0]
+g.Expect(deep.DirectFileCount).To(Equal(1), "deep DirectFileCount should be 1")
+g.Expect(deep.AllFileCount).To(Equal(1), "deep AllFileCount should equal DirectFileCount for a leaf directory")
+}
+
+func TestFilterBinaryFiles_UpdatesFileCounts(t *testing.T) {
+t.Parallel()
+g := NewGomegaWithT(t)
+
+child := &model.Directory{
+Path: "/project/sub",
+Name: "sub",
+Files: []*model.File{
+{Path: "/project/sub/util.go", Name: "util.go", IsBinary: false},
+{Path: "/project/sub/data.bin", Name: "data.bin", IsBinary: true},
+},
+}
+root := &model.Directory{
+Path: "/project",
+Name: "project",
+Files: []*model.File{
+{Path: "/project/main.go", Name: "main.go", IsBinary: false},
+{Path: "/project/image.png", Name: "image.png", IsBinary: true},
+},
+Dirs: []*model.Directory{child},
+}
+
+filtered := FilterBinaryFiles(root)
+
+// After filtering: root has 1 text file, sub has 1 text file
+g.Expect(filtered.DirectFileCount).To(Equal(1), "filtered root DirectFileCount should be 1")
+g.Expect(filtered.AllFileCount).To(Equal(2), "filtered root AllFileCount should include sub")
+
+g.Expect(filtered.Dirs).To(HaveLen(1))
+
+filteredSub := filtered.Dirs[0]
+g.Expect(filteredSub.DirectFileCount).To(Equal(1), "filtered sub DirectFileCount should be 1")
+g.Expect(filteredSub.AllFileCount).To(Equal(1), "filtered sub AllFileCount should equal DirectFileCount")
+}

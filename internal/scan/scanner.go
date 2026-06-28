@@ -38,7 +38,7 @@ func Scan(path string, rules []filter.Rule, progress Progress) (*model.Directory
 		return nil, errors.New("no files found in directory")
 	}
 
-	slog.Info("Scan complete", "files", model.CountFiles(root), "directories", model.CountDirs(root))
+	slog.Info("Scan complete", "files", root.AllFileCount, "directories", model.CountDirs(root))
 
 	return root, nil
 }

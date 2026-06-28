@@ -117,7 +117,7 @@ func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMet
 }
 
 func collectNumericValues(dir *model.Directory, name metric.Name, kind metric.Kind) []float64 {
-	values := make([]float64, 0, model.CountFiles(dir))
+	values := make([]float64, 0, dir.AllFileCount)
 
 	model.WalkFiles(dir, func(f *model.File) {
 		switch kind {
@@ -138,7 +138,7 @@ func collectNumericValues(dir *model.Directory, name metric.Name, kind metric.Ki
 }
 
 func collectClassificationValues(dir *model.Directory, name metric.Name) []string {
-	values := make([]string, 0, model.CountFiles(dir))
+	values := make([]string, 0, dir.AllFileCount)
 
 	model.WalkFiles(dir, func(f *model.File) {
 		if v, ok := f.Classification(name); ok {
