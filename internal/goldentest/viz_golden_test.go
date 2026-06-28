@@ -13,6 +13,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -158,6 +159,32 @@ func renderScatter(common *stages.CommonState) error {
 func TestGolden_Radial(t *testing.T)     { runVizGolden(t, "radial", renderRadial) }
 func TestGolden_Bubbletree(t *testing.T) { runVizGolden(t, "bubbletree", renderBubbletree) }
 func TestGolden_Scatter(t *testing.T)    { runVizGolden(t, "scatter", renderScatter) }
+
+// renderSpiral: size=file-lines, fill=file-type, with synthetic git history
+// injected so the time-bucket stages have data.
+func renderSpiral(common *stages.CommonState) error {
+	cfg := common.RootConfig
+	size := "file-lines"
+	if cfg.Spiral == nil {
+		cfg.Spiral = &config.Spiral{}
+	}
+	cfg.Spiral.Size = &size
+	cfg.Spiral.Fill = &config.MetricSpec{Metric: "file-type"}
+
+	common.FileHistory, common.FileTimeRange = buildSpiralHistory(common.Root)
+
+	viz := &spiral.State{}
+	s := pipeline.NewState(common, cfg.Spiral, viz)
+
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
+	spiral.RenderPipeline(s)
+
+	return s.Err()
+}
+
+func TestGolden_Spiral(t *testing.T) { runVizGolden(t, "spiral", renderSpiral) }
 
 // runVizGolden renders the named viz to PNG and SVG and golden-compares both.
 func runVizGolden(t *testing.T, name string, render func(*stages.CommonState) error) {
