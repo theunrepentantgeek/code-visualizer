@@ -22,14 +22,16 @@ type Progress interface {
 // Scan recursively scans the directory at path and returns a model.Directory tree.
 // File symlinks are followed; directory symlinks are skipped.
 // Permission-denied errors are logged and scanning continues.
+// When includeBinary is false, binary files are excluded during the scan rather
+// than being added to the tree and filtered later.
 // Returns an error if the directory contains no files.
-func Scan(path string, rules []filter.Rule, progress Progress) (*model.Directory, error) {
+func Scan(path string, rules []filter.Rule, progress Progress, includeBinary bool) (*model.Directory, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to resolve absolute path")
 	}
 
-	root, err := newWalker(absPath, rules, progress).scanDir(absPath)
+	root, err := newWalker(absPath, rules, progress, includeBinary).scanDir(absPath)
 	if err != nil {
 		return nil, err
 	}

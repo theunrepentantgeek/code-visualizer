@@ -14,16 +14,18 @@ import (
 )
 
 type walker struct {
-	policy   filterPolicy
-	builder  nodeBuilder
-	progress Progress
+	policy        filterPolicy
+	builder       nodeBuilder
+	progress      Progress
+	includeBinary bool
 }
 
-func newWalker(rootPath string, rules []filter.Rule, progress Progress) walker {
+func newWalker(rootPath string, rules []filter.Rule, progress Progress, includeBinary bool) walker {
 	return walker{
-		policy:   newFilterPolicy(rootPath, rules),
-		builder:  newNodeBuilder(IsBinaryFile),
-		progress: progress,
+		policy:        newFilterPolicy(rootPath, rules),
+		builder:       newNodeBuilder(IsBinaryFile, includeBinary),
+		progress:      progress,
+		includeBinary: includeBinary,
 	}
 }
 

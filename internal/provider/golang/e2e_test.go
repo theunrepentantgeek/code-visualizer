@@ -69,7 +69,7 @@ func setupE2E(
 		filter.Rule{Pattern: "**/testdata/**", Mode: filter.Exclude},
 	)
 
-	root, err := scan.Scan(repoRoot(t), rules, nil)
+	root, err := scan.Scan(repoRoot(t), rules, nil, true)
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}

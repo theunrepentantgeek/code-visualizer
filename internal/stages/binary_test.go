@@ -24,16 +24,13 @@ func TestFilterBinaryFiles_IncludeFlagSet_NoOp(t *testing.T) {
 	g.Expect(root.Files).To(HaveLen(2))
 }
 
-func TestFilterBinaryFiles_AllBinary_ReturnsNoFilesError(t *testing.T) {
+func TestFilterBinaryFiles_NoFilesInRoot_ReturnsNoFilesError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	root := &model.Directory{
-		Files: []*model.File{
-			{Name: "a.bin", IsBinary: true},
-			{Name: "b.bin", IsBinary: true},
-		},
-	}
+	// Binary files are excluded during scanning; an empty root means all files
+	// were binary.
+	root := &model.Directory{}
 
 	c := &stages.CommonState{Root: root}
 	err := stages.FilterBinaryFiles(c)
@@ -42,19 +39,20 @@ func TestFilterBinaryFiles_AllBinary_ReturnsNoFilesError(t *testing.T) {
 	g.Expect(errors.As(err, &nfe)).To(BeTrue())
 }
 
-func TestFilterBinaryFiles_DefaultStripsBinary(t *testing.T) {
+func TestFilterBinaryFiles_TextFilesPresent_Succeeds(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
+	// Binary files have already been excluded during scanning; the root only
+	// contains text files.
 	root := &model.Directory{
-		Files: []*model.File{{Name: "a.bin", IsBinary: true}, {Name: "b.go"}},
+		Files: []*model.File{{Name: "b.go"}},
 	}
 
 	c := &stages.CommonState{Root: root}
 
 	g.Expect(stages.FilterBinaryFiles(c)).To(Succeed())
 	g.Expect(root.Files).To(HaveLen(1))
-	g.Expect(root.Files[0].Name).To(Equal("b.go"))
 }
 
 func TestCountAll_NestedDirs(t *testing.T) {
