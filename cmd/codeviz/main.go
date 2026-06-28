@@ -25,9 +25,13 @@ type CLI struct {
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
 	ExportData   string `help:"Write computed metrics to file (.json or .yaml/.yml)." name:"export-data" optional:""`
 
-	Render RenderCmd `cmd:"" help:"Render a visualization."`
-	Run    RunCmd    `cmd:"" help:"Run a preset visualization."`
-	Help   HelpCmd   `cmd:"" help:"Show this help message."`
+	TreeMap    TreemapCmd    `cmd:"" name:"tree-map"    help:"Generate a tree-map visualization."`
+	RadialTree RadialCmd     `cmd:"" name:"radial-tree" help:"Generate a radial tree visualization."`
+	BubbleTree BubbletreeCmd `cmd:"" name:"bubble-tree" help:"Generate a bubble tree visualization."`
+	Spiral     SpiralCmd     `cmd:""                    help:"Generate a spiral timeline visualization."`
+	Scatter    ScatterCmd    `cmd:""                    help:"Generate a scatter plot visualization."`
+	Run        RunCmd        `cmd:""                    help:"Run a preset visualization."`
+	Help       HelpCmd       `cmd:""                    help:"Show this help message."`
 }
 
 // Flags bundles cross-cutting concerns that are passed to every command's Run method.
