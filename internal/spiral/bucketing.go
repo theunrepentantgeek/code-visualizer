@@ -19,10 +19,11 @@ func AssignFilesToBuckets(
 	for file, refs := range fileHistory {
 		for _, ref := range refs {
 			i := bucketIndexFor(buckets, ref.When)
-			if i < 0 {
+			if i < 0 || i >= len(buckets) {
 				continue
 			}
 
+			//nolint:gosec // Known safe index guarded by above bounds check
 			buckets[i].Files = append(buckets[i].Files, file)
 		}
 	}

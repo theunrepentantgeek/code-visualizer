@@ -14,6 +14,8 @@ import (
 var baseHour = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // hourlyBuckets builds n consecutive hourly buckets starting at baseHour.
+//
+//nolint:unparam // Future variance of bucket count
 func hourlyBuckets(n int) []TimeBucket {
 	return BuildTimeBuckets(Hourly, baseHour, baseHour.Add(time.Duration(n)*time.Hour))
 }
