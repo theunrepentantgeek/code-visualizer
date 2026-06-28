@@ -86,7 +86,7 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		Output:             c.Output,
 		Flags:              toStagesFlags(flags),
 		RootConfig:         flags.Config,
-		VizName:            "radial",
+		VizName:            "radial-tree",
 		CLIFilters:         c.Filters(),
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}

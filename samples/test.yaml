@@ -9,7 +9,7 @@ tree-map:
     fillPalette: foliage
     border: file-type
     borderPalette: categorization
-radial:
+radial-tree:
     labels: all
 bubble-tree:
     labels: folders

@@ -2,7 +2,7 @@ imageSize:
     width: 1920
     height: 1080
 tree-map: {}
-radial:
+radial-tree:
     labels: all
 bubble-tree:
     size: file-lines
