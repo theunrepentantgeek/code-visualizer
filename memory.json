@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-06-28T05:10:31Z",
-  "run_id": "28312116004",
+  "last_run": "2026-06-28T14:28:52Z",
+  "run_id": "28325296928",
   "monthly_summary_issue": 353,
-  "backlog_cursor": 471,
+  "backlog_cursor": 474,
   "comments_made": {
     "324": "2026-06-01", "329": "2026-06-01", "330": "2026-06-01",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
@@ -12,13 +12,12 @@
     "416": "2026-06-19", "419": "2026-06-19", "421": "2026-06-20",
     "422": "2026-06-16", "429": "2026-06-24", "440": "2026-06-21",
     "442": "2026-06-21", "444": "2026-06-22", "445": "2026-06-26",
-    "464": "2026-06-27", "471": "2026-06-28"
+    "464": "2026-06-27", "471": "2026-06-28", "474": "2026-06-28"
   },
   "open_prs": {
-    "432": {"branch": "repo-assist/eng-devmd-fix-bench-20260620-47efc4c9bcaf5c5c", "desc": "docs(dev): fix task ci description; add aggregation benchmark"},
     "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests"},
-    "470": {"branch": "repo-assist/test-bucketing-20260627-68ace32826eeb225", "desc": "test(spiral): add unit tests for AssignFilesToBuckets"},
-    "473": {"branch": "repo-assist/fix-471-dir-file-counts-20260628", "desc": "feat(model): add DirectFileCount and AllFileCount to Directory", "closes": 471}
+    "473": {"branch": "repo-assist/fix-471-dir-file-counts-20260628-83af18550cc15587", "desc": "feat(model): add DirectFileCount and AllFileCount to Directory", "closes": 471},
+    "474_pr": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -26,7 +25,8 @@
     "405": ["enhancement"], "421": ["enhancement"], "422": ["enhancement"],
     "423": ["enhancement"], "429": ["enhancement"], "440": ["bug"],
     "442": ["enhancement"], "444": ["bug"], "445": ["enhancement"],
-    "464": ["enhancement"], "471": ["enhancement"]
+    "464": ["enhancement"], "471": ["enhancement"],
+    "474": ["enhancement","performance"]
   },
   "maintainer_preferences": [
     "Do not move helpers to new packages",
@@ -36,6 +36,6 @@
     "No backwards compatibility needed (pre-alpha tool)"
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [459, 460, 461, 469],
-  "notes": "Run 28312116004 (2026-06-28T05): Tasks 2,3,5,11. Task 3: PR #473 (feat(model): add DirectFileCount+AllFileCount to Directory) implements #471. Task 2: labelled #471 enhancement, commented. Task 11: updated monthly summary. Merged since last run: PR #469 (eng-ci-fmt-check closes #464), PR #460 (remove-ci-output). Closed without merge: PR #459 (cache-filecount - superseded by #471), PR #461 (remove-goldie - superseded by PR #472). New from maintainer: PR #472 (restore golden-file testing, 35 files, open clean). Issue #471 (better file count caching). PR #432 still very diverged from main - may conflict with #472 on DEVELOPMENT.md."
+  "closed_prs": [459, 460, 461, 469, 432, 470],
+  "notes": "Run 28325296928 (2026-06-28T14): Tasks 5,3,2,11. Labelled #474 enhancement+performance. Commented on #474. Created PR 'feat(scan): exclude binary files inline during filesystem scan' (branch repo-assist/fix-474-inline-binary-filter-20260628, closes #474). Build and all 30 tests pass, lint clean. PRs #432 and #470 confirmed merged (in main git log). Open repo-assist PRs: #462 (preset-builder tests), #473 (DirectFileCount). PR #472 (restore golden-file testing) is a human PR - open, not Repo Assist."
 }
