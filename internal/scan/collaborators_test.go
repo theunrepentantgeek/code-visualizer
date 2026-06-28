@@ -90,7 +90,7 @@ func TestNodeBuilderProcessFileAddsMetadata(t *testing.T) {
 		g.Expect(path).To(Equal(entryPath))
 
 		return true, nil
-	})
+	}, true)
 
 	builder.processFile(node, entry, info, entryPath)
 
@@ -118,7 +118,7 @@ func TestWalkerScanDirReportsProgressPerDirectory(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	progress := &recordingProgress{}
-	walker := newWalker(root, nil, progress)
+	walker := newWalker(root, nil, progress, true)
 
 	_, err = walker.scanDir(root)
 	g.Expect(err).NotTo(HaveOccurred())

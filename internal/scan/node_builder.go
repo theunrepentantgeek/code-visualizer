@@ -14,15 +14,16 @@ import (
 type binaryProbe func(path string) (bool, error)
 
 type nodeBuilder struct {
-	probe binaryProbe
+	probe         binaryProbe
+	includeBinary bool
 }
 
-func newNodeBuilder(probe binaryProbe) nodeBuilder {
+func newNodeBuilder(probe binaryProbe, includeBinary bool) nodeBuilder {
 	if probe == nil {
 		probe = IsBinaryFile
 	}
 
-	return nodeBuilder{probe: probe}
+	return nodeBuilder{probe: probe, includeBinary: includeBinary}
 }
 
 func (b nodeBuilder) processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, entryPath string) {
@@ -36,6 +37,12 @@ func (b nodeBuilder) processFile(node *model.Directory, entry os.DirEntry, info 
 	binary, err := b.probe(entryPath)
 	if err != nil {
 		slog.Warn("binary probe failed, assuming text", "path", entryPath, "error", err)
+	}
+
+	if binary && !b.includeBinary {
+		slog.Debug("excluding binary file", "path", entryPath)
+
+		return
 	}
 
 	file := &model.File{
