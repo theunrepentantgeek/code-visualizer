@@ -15,10 +15,10 @@ import (
 // 10 subdirectories, each with 20 files, each file with 5 declarations and 10 commits.
 func BenchmarkComputeAggregations(b *testing.B) {
 	const (
-		numDirs         = 10
-		filesPerDir     = 20
-		declsPerFile    = 5
-		commitsPerFile  = 10
+		numDirs        = 10
+		filesPerDir    = 20
+		declsPerFile   = 5
+		commitsPerFile = 10
 	)
 
 	root := buildBenchTree(numDirs, filesPerDir, declsPerFile, commitsPerFile)
