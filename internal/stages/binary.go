@@ -1,10 +1,7 @@
 package stages
 
 import (
-	"log/slog"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 )
 
 // CountAll returns the cumulative file and directory counts under root.
@@ -20,27 +17,21 @@ func CountAll(node *model.Directory) (files int, dirs int) {
 	return files, dirs
 }
 
-// FilterBinaryFiles removes binary files from c.Root in place unless
-// c.IncludeBinaryFiles is true. Returns *NoFilesAfterFilterError if nothing
-// remains.
+// FilterBinaryFiles verifies that some files remain after the scan-time binary
+// filter. Binary files are excluded during the filesystem scan when
+// c.IncludeBinaryFiles is false; this stage exists only to surface a clear error
+// when every file in the tree turned out to be binary.
+//
+// Returns *NoFilesAfterFilterError if c.Root contains no files.
 func FilterBinaryFiles(c *CommonState) error {
 	if c.IncludeBinaryFiles {
 		return nil
 	}
 
-	beforeCount, _ := CountAll(c.Root)
-	filtered := scan.FilterBinaryFiles(c.Root)
-	afterCount, _ := CountAll(filtered)
-	excluded := beforeCount - afterCount
-	slog.Debug("binary file filter", "excluded", excluded, "remaining", afterCount)
-
-	if afterCount == 0 {
+	count, _ := CountAll(c.Root)
+	if count == 0 {
 		return &NoFilesAfterFilterError{Msg: NoFilesAfterFilterMsg}
 	}
-
-	// Update root in place — avoid struct copy which would copy the mutex.
-	c.Root.Files = filtered.Files
-	c.Root.Dirs = filtered.Dirs
 
 	return nil
 }

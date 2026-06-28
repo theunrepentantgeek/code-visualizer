@@ -56,7 +56,7 @@ func setupE2E(t *testing.T, rules []filter.Rule) *model.Directory {
 
 	git.Register()
 
-	root, err := scan.Scan(repoRoot(t), rules, nil)
+	root, err := scan.Scan(repoRoot(t), rules, nil, true)
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
