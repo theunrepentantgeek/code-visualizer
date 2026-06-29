@@ -29,12 +29,31 @@ func AssignFilesToBuckets(
 	}
 }
 
+// bucketIndexFor returns the index of the bucket whose [Start, End) interval
+// contains t. Returns -1 when t is out of range or the slice is empty.
+//
+// Buckets are uniform equal-duration intervals so the index is computed in
+// O(1) by dividing the elapsed time from the first bucket's start by the
+// bucket duration, instead of scanning the slice linearly.
 func bucketIndexFor(buckets []TimeBucket, t time.Time) int {
-	for i := range buckets {
-		if !t.Before(buckets[i].Start) && t.Before(buckets[i].End) {
-			return i
-		}
+	if len(buckets) == 0 {
+		return -1
 	}
 
-	return -1
+	dur := buckets[0].End.Sub(buckets[0].Start)
+	if dur <= 0 {
+		return -1
+	}
+
+	delta := t.Sub(buckets[0].Start)
+	if delta < 0 {
+		return -1
+	}
+
+	i := int(delta / dur)
+	if i >= len(buckets) {
+		return -1
+	}
+
+	return i
 }
