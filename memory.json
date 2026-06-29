@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-06-28T14:28:52Z",
-  "run_id": "28325296928",
+  "last_run": "2026-06-29T00:00:00Z",
+  "run_id": "28350310567",
   "monthly_summary_issue": 353,
   "backlog_cursor": 474,
   "comments_made": {
@@ -17,7 +17,9 @@
   "open_prs": {
     "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests"},
     "473": {"branch": "repo-assist/fix-471-dir-file-counts-20260628-83af18550cc15587", "desc": "feat(model): add DirectFileCount and AllFileCount to Directory", "closes": 471},
-    "474_pr": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474}
+    "475": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628-4338ce2ba604f122", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474},
+    "TBD_perf_bucketing": {"branch": "repo-assist/perf-spiral-bucketing-20260629", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation + benchmark"},
+    "TBD_refactor_aggregation": {"branch": "repo-assist/improve-aggregation-single-pass-20260629", "desc": "refactor(metric): compute AggregateRange in a single pass"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -37,5 +39,5 @@
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
   "closed_prs": [459, 460, 461, 469, 432, 470],
-  "notes": "Run 28325296928 (2026-06-28T14): Tasks 5,3,2,11. Labelled #474 enhancement+performance. Commented on #474. Created PR 'feat(scan): exclude binary files inline during filesystem scan' (branch repo-assist/fix-474-inline-binary-filter-20260628, closes #474). Build and all 30 tests pass, lint clean. PRs #432 and #470 confirmed merged (in main git log). Open repo-assist PRs: #462 (preset-builder tests), #473 (DirectFileCount). PR #472 (restore golden-file testing) is a human PR - open, not Repo Assist."
+  "notes": "Run 28350310567 (2026-06-29): Tasks 8,4(->5),3(->2->1),11. Task 3->2->1 chain not applicable (no eligible issues). Task 4 blocked (protected workflow files for Dependabot PRs #465/#467). Created PR 'perf(spiral): replace O(N) bucket scan with O(1) index calculation' (branch repo-assist/perf-spiral-bucketing-20260629) - Task 8. Created PR 'refactor(metric): compute AggregateRange in a single pass' (branch repo-assist/improve-aggregation-single-pass-20260629) - Task 5 fallback. Both PRs: build and all 30 tests pass, lint clean. PR numbers for new PRs not yet available (assigned after workflow completes) - update in next run. Previous run PRs: #462 (preset tests), #473 (DirectFileCount), #475 (inline binary filter) still open."
 }
