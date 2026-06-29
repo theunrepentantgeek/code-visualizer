@@ -17,8 +17,12 @@ type NumericAxis struct {
 }
 
 // CategoricalAxis holds the categorical swimlanes for one axis.
+// Centers maps each label to its band centre position for O(1) lookup.
+// Centers is nil for manually-constructed axes (e.g. in tests); positionForValue
+// falls back to a linear scan over Bands in that case.
 type CategoricalAxis struct {
-	Bands []AxisBand
+	Bands   []AxisBand
+	Centers map[string]float64
 }
 
 // ResolvedAxis is the layout-ready representation of a scatter axis.
@@ -58,5 +62,11 @@ func (a *ResolvedAxis) Offset(delta float64) {
 		a.Categorical.Bands[i].Start += delta
 		a.Categorical.Bands[i].End += delta
 		a.Categorical.Bands[i].Center += delta
+	}
+
+	if a.Categorical != nil {
+		for label := range a.Categorical.Centers {
+			a.Categorical.Centers[label] += delta
+		}
 	}
 }
