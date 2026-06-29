@@ -30,7 +30,7 @@ type CLI struct {
 	BubbleTree BubbletreeCmd `cmd:"" name:"bubble-tree" help:"Generate a bubble tree visualization."`
 	Spiral     SpiralCmd     `cmd:""                    help:"Generate a spiral timeline visualization."`
 	Scatter    ScatterCmd    `cmd:""                    help:"Generate a scatter plot visualization."`
-	Run        RunCmd        `cmd:""                    help:"Run a preset visualization."`
+	Render     RenderCmd     `cmd:""                    help:"Render a preset visualization."`
 	Help       HelpCmd       `cmd:""                    help:"Show this help message."`
 }
 

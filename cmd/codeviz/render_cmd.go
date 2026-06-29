@@ -11,17 +11,18 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/table"
 )
 
-// RunCmd runs a named preset — a predefined combination of visualization,
-// metrics, and palette that generates a useful image without requiring the
-// caller to know which metrics and palettes to combine.
+// RenderCmd renders a named preset — a predefined combination of
+// visualization, metrics, and palette that generates a useful image
+// without requiring the caller to know which metrics and palettes to
+// combine.
 //
 // Usage:
 //
-//	codeviz run                                  # list available presets
-//	codeviz run <preset> <target> -o <output>    # run a preset
-type RunCmd struct {
+//	codeviz render                                  # list available presets
+//	codeviz render <preset> <target> -o <output>    # render a preset
+type RenderCmd struct {
 	//nolint:revive,nolintlint // Long help text is more important than minimizing line length, and annotations can't be wrapped
-	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to run; omit to list available presets."`
+	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to render; omit to list available presets."`
 	TargetPath string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
 
@@ -94,7 +95,7 @@ func presetNames() string {
 }
 
 // Validate is called by Kong before Run; it enforces argument consistency.
-func (r *RunCmd) Validate() error {
+func (r *RenderCmd) Validate() error {
 	if r.Preset == "" {
 		// list mode: no further arguments required
 		return nil
@@ -117,7 +118,7 @@ func (r *RunCmd) Validate() error {
 
 // Run either lists available presets (when no preset name is given) or
 // executes the named preset.
-func (r *RunCmd) Run(flags *Flags) error {
+func (r *RenderCmd) Run(flags *Flags) error {
 	if r.Preset == "" {
 		return r.listPresets()
 	}
@@ -131,7 +132,7 @@ func (r *RunCmd) Run(flags *Flags) error {
 	return r.runPreset(preset, flags)
 }
 
-func (*RunCmd) listPresets() error {
+func (*RenderCmd) listPresets() error {
 	tbl := table.New("Preset", "Description")
 	tbl.SetMaxWidth(consoleWidth())
 
@@ -147,7 +148,7 @@ func (*RunCmd) listPresets() error {
 }
 
 // effectiveTitle returns the user-supplied title if set, otherwise the preset's default.
-func (r *RunCmd) effectiveTitle(preset *presetDef) string {
+func (r *RenderCmd) effectiveTitle(preset *presetDef) string {
 	if r.Title != "" {
 		return r.Title
 	}
@@ -161,7 +162,7 @@ type presetRunner interface {
 }
 
 // runPreset dispatches execution to the appropriate viz command.
-func (r *RunCmd) runPreset(preset *presetDef, flags *Flags) error {
+func (r *RenderCmd) runPreset(preset *presetDef, flags *Flags) error {
 	title := r.effectiveTitle(preset)
 
 	var cmd presetRunner
@@ -189,7 +190,7 @@ func (r *RunCmd) runPreset(preset *presetDef, flags *Flags) error {
 	return nil
 }
 
-func (r *RunCmd) structureTreemap(title string) *TreemapCmd {
+func (r *RenderCmd) structureTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
 		TargetPath: r.TargetPath,
 		Output:     r.Output,
@@ -202,7 +203,7 @@ func (r *RunCmd) structureTreemap(title string) *TreemapCmd {
 	}
 }
 
-func (r *RunCmd) structureBubbletree(title string) *BubbletreeCmd {
+func (r *RenderCmd) structureBubbletree(title string) *BubbletreeCmd {
 	return &BubbletreeCmd{
 		TargetPath: r.TargetPath,
 		Output:     r.Output,
@@ -215,7 +216,7 @@ func (r *RunCmd) structureBubbletree(title string) *BubbletreeCmd {
 	}
 }
 
-func (r *RunCmd) historyTreemap(title string) *TreemapCmd {
+func (r *RenderCmd) historyTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
 		TargetPath: r.TargetPath,
 		Output:     r.Output,
@@ -228,7 +229,7 @@ func (r *RunCmd) historyTreemap(title string) *TreemapCmd {
 	}
 }
 
-func (r *RunCmd) ageTreemap(title string) *TreemapCmd {
+func (r *RenderCmd) ageTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
 		TargetPath: r.TargetPath,
 		Output:     r.Output,
@@ -241,7 +242,7 @@ func (r *RunCmd) ageTreemap(title string) *TreemapCmd {
 	}
 }
 
-func (r *RunCmd) contributorsTreemap(title string) *TreemapCmd {
+func (r *RenderCmd) contributorsTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
 		TargetPath: r.TargetPath,
 		Output:     r.Output,
