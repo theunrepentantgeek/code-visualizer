@@ -117,10 +117,11 @@ func newDeclarations(fileID string, declLevel []provider.BaseMetricDescriptor) [
 func newCommits(fileID string, commitLevel []provider.BaseMetricDescriptor) []*model.Commit {
 	commits := make([]*model.Commit, 0, 2)
 
-	for range 2 {
-		c := &model.Commit{Hash: fileID + "-commit"}
+	for i := 0; i < 2; i++ {
+		suffix := string(rune('0' + i))
+		c := &model.Commit{Hash: fileID + "-commit-" + suffix}
 		for _, desc := range commitLevel {
-			setBaseMetric(c, desc, fileID+"/commit")
+			setBaseMetric(c, desc, fileID+"/commit/"+suffix)
 		}
 
 		commits = append(commits, c)
