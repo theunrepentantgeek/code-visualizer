@@ -63,12 +63,24 @@ func AggregateCount(values []float64) float64 {
 }
 
 // AggregateRange returns max − min, or 0 if fewer than 2 values.
+// The result is computed in a single pass rather than calling AggregateMax
+// and AggregateMin separately.
 func AggregateRange(values []float64) float64 {
 	if len(values) < 2 {
 		return 0
 	}
 
-	return AggregateMax(values) - AggregateMin(values)
+	lo, hi := values[0], values[0]
+	for _, v := range values[1:] {
+		if v < lo {
+			lo = v
+		}
+		if v > hi {
+			hi = v
+		}
+	}
+
+	return hi - lo
 }
 
 // AggregateMode returns the most common string value.
