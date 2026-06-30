@@ -2,6 +2,7 @@ package inks
 
 import (
 	"image/color"
+	"maps"
 	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -88,22 +89,15 @@ func CollectNumericValues(root *model.Directory, m metric.Name) []float64 {
 // CollectDistinctTypes returns the sorted distinct classification values
 // observed for metric m across all files under root.
 func CollectDistinctTypes(root *model.Directory, m metric.Name) []string {
-	seen := map[string]bool{}
+	seen := map[string]struct{}{}
 
 	model.WalkFiles(root, func(f *model.File) {
 		if v, ok := f.Classification(m); ok {
-			seen[v] = true
+			seen[v] = struct{}{}
 		}
 	})
 
-	types := make([]string, 0, len(seen))
-	for t := range seen {
-		types = append(types, t)
-	}
-
-	slices.Sort(types)
-
-	return types
+	return slices.Sorted(maps.Keys(seen))
 }
 
 func extractNumeric(f *model.File, m metric.Name) float64 {

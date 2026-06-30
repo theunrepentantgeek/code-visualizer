@@ -2,6 +2,7 @@ package scatter
 
 import (
 	"image/color"
+	"maps"
 	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
@@ -107,21 +108,17 @@ func buildCategoricalInk(
 		return inks.FixedInk(fallback)
 	}
 
-	slices.Sort(categories)
-
 	return inks.CategoricalInk(name, categories, pal)
 }
 
 func uniqueCategories(files []*model.File, name metric.Name) []string {
-	seen := map[string]bool{}
-	categories := make([]string, 0, len(files))
+	seen := map[string]struct{}{}
 
 	for _, file := range files {
-		if value, ok := file.Classification(name); ok && !seen[value] {
-			seen[value] = true
-			categories = append(categories, value)
+		if value, ok := file.Classification(name); ok {
+			seen[value] = struct{}{}
 		}
 	}
 
-	return categories
+	return slices.Sorted(maps.Keys(seen))
 }
