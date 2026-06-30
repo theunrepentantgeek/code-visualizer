@@ -488,7 +488,7 @@ func TestScanFlat_FileCountsPopulated(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil, nil)
+	root, err := Scan(dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -506,7 +506,7 @@ func TestScanNested_FileCountsPopulated(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "nested")
 
-	root, err := Scan(dir, nil, nil)
+	root, err := Scan(dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
