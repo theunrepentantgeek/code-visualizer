@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-06-30T04:52:00Z",
-  "run_id": "28421044007",
+  "last_run": "2026-06-30T15:21:00Z",
+  "run_id": "28455310370",
   "monthly_summary_issue": 353,
   "backlog_cursor": 474,
   "comments_made": {
@@ -16,8 +16,7 @@
   },
   "open_prs": {
     "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests"},
-    "473": {"branch": "repo-assist/fix-471-dir-file-counts-20260628-83af18550cc15587", "desc": "feat(model): add DirectFileCount and AllFileCount to Directory", "closes": 471},
-    "475": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628-4338ce2ba604f122", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474},
+    "475": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628-4338ce2ba604f122", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474, "note": "merge conflict with main resolved 2026-06-30 (PR #473 tests merged in, 3-arg Scan calls updated to 4-arg)"},
     "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation + benchmark"},
     "477": {"branch": "repo-assist/improve-aggregation-single-pass-20260629-18250511ddce8ed7", "desc": "refactor(metric): compute AggregateRange in a single pass"},
     "478": {"branch": "repo-assist/perf-scatter-categorical-lookup-20260629-6cbc1f1-9defeae7f1494b65", "desc": "perf(scatter): use map for O(1) categorical axis position lookup"},
@@ -40,6 +39,6 @@
     "No backwards compatibility needed (pre-alpha tool)"
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [459, 460, 461, 469, 432, 438, 470],
-  "notes": "Run 28421044007 (2026-06-30): Tasks 4,2,6,11. Task 6: all 7 Repo Assist PRs clean, no CI failures, no merge conflicts. PRs #462/#473 based on older main but no conflicts (mergeable_state: blocked = draft, not dirty). PR #472 (maintainer golden tests, 30 files) has no file overlap with any Repo Assist PR. Task 4: Dependabot PRs #465/#467 clean+ready but cannot bundle (protected workflow files). Lint infra note corrected: golangci-lint-custom works correctly inside devcontainer/CI; not in PATH outside devcontainer but that is by design. Task 2: no new human activity on any open issue. Monthly summary updated: resolved TBD entries to #478/#479, added #472 to suggested actions, added Dependabot PRs, removed stale lint-infra item. PR #438 confirmed closed/merged - issue #333 should be closed."
+  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473],
+  "notes": "Run 28455310370 (2026-06-30): Tasks 6,3,2,11. Task 6: PR #473 merged by maintainer (removed from open_prs). PR #475 had merge conflict (dirty) — both PRs added tests at EOF of scanner_test.go; fixed with merge commit containing all 5 new test functions + 3-arg Scan calls updated to 4-arg. push_to_pull_request_branch is append-only so rebase was not feasible; merge commit approach worked. PRs #462/#476/#477/#478/#479 clean (blocked=draft). Task 3 fallback to Task 2: no fixable bug issues; no new human activity on open issues. Monthly summary updated."
 }
