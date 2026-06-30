@@ -26,7 +26,7 @@ const (
 func resolveAxis(points []PointDatum, plot PlotRect, spec AxisSpec, direction axisDirection) ResolvedAxis {
 	axis := ResolvedAxis{Spec: spec, Title: string(spec.Metric)}
 	if spec.Kind == metric.Classification {
-		axis.Categorical = &CategoricalAxis{Bands: categoricalBands(points, plot, direction)}
+		axis.Categorical = categoricalBands(points, plot, direction)
 
 		return axis
 	}
@@ -75,7 +75,7 @@ func numericExtent(points []PointDatum, direction axisDirection) (minValue, maxV
 	return minValue, maxValue
 }
 
-func categoricalBands(points []PointDatum, plot PlotRect, direction axisDirection) []AxisBand {
+func categoricalBands(points []PointDatum, plot PlotRect, direction axisDirection) *CategoricalAxis {
 	labels := make([]string, 0, len(points))
 	seen := make(map[string]bool, len(points))
 
@@ -95,19 +95,22 @@ func categoricalBands(points []PointDatum, plot PlotRect, direction axisDirectio
 
 	origin, span := direction.span(plot)
 	bands := make([]AxisBand, len(labels))
+	centers := make(map[string]float64, len(labels))
 	bandSize := span / float64(len(labels))
 
 	for i, label := range labels {
 		start := origin + float64(i)*bandSize
+		center := start + bandSize/2
 		bands[i] = AxisBand{
 			Label:  label,
 			Start:  start,
 			End:    start + bandSize,
-			Center: start + bandSize/2,
+			Center: center,
 		}
+		centers[label] = center
 	}
 
-	return bands
+	return &CategoricalAxis{Bands: bands, Centers: centers}
 }
 
 func numericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirection) []AxisTick {
@@ -279,6 +282,16 @@ func formatTick(value, step float64) string {
 
 func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, direction axisDirection) float64 {
 	if axis.Categorical != nil {
+		// Use the Centers map for O(1) lookup when available (axes built via categoricalBands).
+		// Fall back to a linear scan for manually-constructed CategoricalAxis values (e.g. tests).
+		if axis.Categorical.Centers != nil {
+			if center, ok := axis.Categorical.Centers[value.Category]; ok {
+				return center
+			}
+
+			return direction.center(plot)
+		}
+
 		for _, band := range axis.Categorical.Bands {
 			if band.Label == value.Category {
 				return band.Center
