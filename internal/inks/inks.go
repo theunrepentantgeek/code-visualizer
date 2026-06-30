@@ -76,7 +76,7 @@ func MetricValueForFile(file *model.File, ink Ink) MetricValue {
 // CollectNumericValues walks the directory tree and returns every file's
 // numeric value for metric m (quantity preferred, then measure).
 func CollectNumericValues(root *model.Directory, m metric.Name) []float64 {
-	values := make([]float64, 0, model.CountFiles(root))
+	values := make([]float64, 0, root.AllFileCount)
 
 	model.WalkFiles(root, func(f *model.File) {
 		values = append(values, extractNumeric(f, m))
