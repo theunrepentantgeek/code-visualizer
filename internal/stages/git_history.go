@@ -105,6 +105,38 @@ func ExtractFileHistory(c *CommonState) error {
 	return nil
 }
 
+// PruneFileHistoryToTree drops FileHistory / FileTimeRange entries whose file is
+// no longer present in c.Root. Git history is loaded against the unfiltered
+// scan, so once a tree-pruning stage (e.g. FilterBinaryFiles) removes files,
+// their history must be dropped too — otherwise excluded files would still
+// influence the global time range, time-bucket membership, and per-bucket
+// aggregations.
+func PruneFileHistoryToTree(c *CommonState) error {
+	if len(c.FileHistory) == 0 && len(c.FileTimeRange) == 0 {
+		return nil
+	}
+
+	surviving := make(map[*model.File]struct{})
+
+	model.WalkFiles(c.Root, func(f *model.File) {
+		surviving[f] = struct{}{}
+	})
+
+	for file := range c.FileHistory {
+		if _, ok := surviving[file]; !ok {
+			delete(c.FileHistory, file)
+		}
+	}
+
+	for file := range c.FileTimeRange {
+		if _, ok := surviving[file]; !ok {
+			delete(c.FileTimeRange, file)
+		}
+	}
+
+	return nil
+}
+
 func foldCommitRefs(refs []CommitRef) TimeRange {
 	earliest := refs[0].When
 	latest := refs[0].When

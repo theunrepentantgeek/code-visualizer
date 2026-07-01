@@ -75,7 +75,7 @@ func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Radial)
 }
 
-//nolint:dupl // pipeline wiring is structurally similar across commands but not refactorable
+//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
 func (c *RadialCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -100,25 +100,9 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
 	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
-	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
-	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
-	pipeline.ApplyFuncX(s, stages.RunProviders)
-	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
-	pipeline.ApplyFuncX(s, stages.RunAggregations)
-	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
-	pipeline.ApplyFuncX(s, stages.ExportData)
-	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
-	pipeline.ApplyFuncX(s, stages.InitDrawingBounds)
-	pipeline.ApplyFuncX(s, stages.ReserveTitleBounds)
-	pipeline.ApplyFuncX(s, stages.ReserveFooterBounds)
-	pipeline.ApplyFuncXY(s, radialtree.BuildInksStage)
-	pipeline.ApplyFuncXY(s, radialtree.BuildLegendStage)
-	pipeline.ApplyFuncXY(s, radialtree.LayoutStage)
-	pipeline.ApplyFuncXY(s, radialtree.RenderStage)
-	pipeline.ApplyFuncX(s, stages.ApplyTitle)
-	pipeline.ApplyFuncX(s, stages.ApplyFooter)
-	pipeline.ApplyFuncX(s, stages.WriteCanvas)
-	pipeline.ApplyFuncXY(s, radialtree.LogResult)
+
+	radialtree.AcquireData(s)
+	radialtree.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "radialtree pipeline failed")
 }

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">
+<rect x="0.00" y="0.00" width="240.00" height="240.00" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="0.0"/>
+<line x1="120.00" y1="120.00" x2="126.36" y2="104.64" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="120.00" y1="120.00" x2="135.36" y2="113.64" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="120.00" y1="120.00" x2="113.64" y2="135.36" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="113.64" y1="135.36" x2="142.16" y2="144.79" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="113.64" y1="135.36" x2="125.57" y2="152.78" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="113.64" y1="135.36" x2="107.28" y2="150.72" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="113.64" y1="135.36" x2="88.62" y2="130.98" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="88.62" y1="130.98" x2="75.69" y2="142.89" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="88.62" y1="130.98" x2="71.08" y2="129.73" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="120.00" y1="120.00" x2="113.64" y2="104.64" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<line x1="113.64" y1="104.64" x2="107.28" y2="89.28" stroke="rgb(153,153,153)" stroke-width="0.5"/>
+<circle cx="75.69" cy="142.89" r="6.65" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="142.16" cy="144.79" r="5.47" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="135.36" cy="113.64" r="4.35" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="120.00" cy="120.00" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="113.64" cy="135.36" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="88.62" cy="130.98" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="113.64" cy="104.64" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="107.28" cy="89.28" r="3.95" fill="rgb(178,223,138)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="125.57" cy="152.78" r="3.78" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="126.36" cy="104.64" r="3.35" fill="rgb(178,223,138)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="107.28" cy="150.72" r="3.26" fill="rgb(166,206,227)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="71.08" cy="129.73" r="3.00" fill="rgb(51,160,44)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<text x="120.00" y="120.00" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">root</text>
+<text x="129.17" y="97.85" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central" transform="rotate(-67.50 129.17 97.85)">readme.md</text>
+<text x="143.07" y="110.44" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central" transform="rotate(-22.50 143.07 110.44)">main.go</text>
+<text x="110.58" y="142.75" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(292.50 110.58 142.75)">src</text>
+<text x="148.46" y="151.85" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(228.21 148.46 151.85)">app.go</text>
+<text x="126.87" y="160.46" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(260.36 126.87 160.46)">util.go</text>
+<text x="104.50" y="157.43" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(292.50 104.50 157.43)">styles.css</text>
+<text x="81.06" y="133.62" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(340.71 81.06 133.62)">deep</text>
+<text x="66.23" y="147.78" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(332.68 66.23 147.78)">big.go</text>
+<text x="64.22" y="131.10" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(348.75 64.22 131.10)">note.txt</text>
+<text x="110.58" y="97.25" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(427.50 110.58 97.25)">docs</text>
+<text x="104.23" y="81.94" fill="rgb(34,34,34)" font-size="12.0" font-family="sans-serif" text-anchor="end" dominant-baseline="central" transform="rotate(427.50 104.23 81.94)">guide.md</text>
+<rect x="110.00" y="-18.00" width="114.00" height="242.00" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.0"/>
+<text x="177.50" y="2.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Fill</text>
+<text x="177.50" y="18.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
+<rect x="132.50" y="32.00" width="28.00" height="28.00" fill="rgb(166,206,227)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="166.50" y="46.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">CSS</text>
+<rect x="132.50" y="64.00" width="28.00" height="28.00" fill="rgb(31,120,180)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="166.50" y="78.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Go</text>
+<rect x="132.50" y="96.00" width="28.00" height="28.00" fill="rgb(178,223,138)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="166.50" y="110.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Markdown</text>
+<rect x="132.50" y="128.00" width="28.00" height="28.00" fill="rgb(51,160,44)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<text x="166.50" y="142.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Text</text>
+<text x="146.50" y="182.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Size</text>
+<text x="146.50" y="198.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
+<text x="120.00" y="226.00" fill="rgba(128,128,128,0.784)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">code-visualizer golden</text>
+</svg>
