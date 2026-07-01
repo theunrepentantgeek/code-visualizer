@@ -437,7 +437,7 @@ func TestForExport_Radial_OnlyIncludesRadialSection(t *testing.T) {
 
 	cfg := New()
 
-	exported := cfg.ForExport("radial")
+	exported := cfg.ForExport("radial-tree")
 
 	g.Expect(exported.Radial).To(BeIdenticalTo(cfg.Radial))
 	g.Expect(exported.Treemap).To(BeNil())

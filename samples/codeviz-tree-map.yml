@@ -12,7 +12,7 @@ tree-map:
     border:
         metric: file-freshness
         palette: good-bad
-radial:
+radial-tree:
     labels: all
 bubble-tree:
     labels: folders

@@ -38,7 +38,8 @@ type Config struct {
 	Legend    *Legend    `yaml:"legend,omitempty"     json:"legend,omitempty"`
 	//nolint:tagliatelle // kebab-case names are intentional for user-facing YAML/JSON keys, see issue #445
 	Treemap *Treemap `yaml:"tree-map,omitempty" json:"tree-map,omitempty"`
-	Radial  *Radial  `yaml:"radial,omitempty"   json:"radial,omitempty"`
+	//nolint:tagliatelle // kebab-case names are intentional for user-facing YAML/JSON keys, see issue #445
+	Radial *Radial `yaml:"radial-tree,omitempty" json:"radial-tree,omitempty"`
 	//nolint:tagliatelle // kebab-case names are intentional for user-facing YAML/JSON keys, see issue #445
 	Bubbletree *Bubbletree   `yaml:"bubble-tree,omitempty" json:"bubble-tree,omitempty"`
 	Spiral     *Spiral       `yaml:"spiral,omitempty"      json:"spiral,omitempty"`
@@ -172,7 +173,7 @@ func (c *Config) ForExport(vizName string) *Config {
 	switch vizName {
 	case "tree-map":
 		exported.Treemap = c.Treemap
-	case "radial":
+	case "radial-tree":
 		exported.Radial = c.Radial
 	case "bubble-tree":
 		exported.Bubbletree = c.Bubbletree

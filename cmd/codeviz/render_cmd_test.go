@@ -8,19 +8,19 @@ import (
 	"github.com/alecthomas/kong"
 )
 
-func TestRunCmd_Validate_NoArgs_ListMode(t *testing.T) {
+func TestRenderCmd_Validate_NoArgs_ListMode(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	r := &RunCmd{}
+	r := &RenderCmd{}
 	g.Expect(r.Validate()).To(Succeed())
 }
 
-func TestRunCmd_Validate_KnownPreset_Valid(t *testing.T) {
+func TestRenderCmd_Validate_KnownPreset_Valid(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	r := &RunCmd{
+	r := &RenderCmd{
 		Preset:     "structure-tree-map",
 		TargetPath: ".",
 		Output:     "out.png",
@@ -28,31 +28,31 @@ func TestRunCmd_Validate_KnownPreset_Valid(t *testing.T) {
 	g.Expect(r.Validate()).To(Succeed())
 }
 
-func TestRunCmd_Validate_UnknownPreset_ReturnsError(t *testing.T) {
+func TestRenderCmd_Validate_UnknownPreset_ReturnsError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	r := &RunCmd{Preset: "does-not-exist", TargetPath: ".", Output: "out.png"}
+	r := &RenderCmd{Preset: "does-not-exist", TargetPath: ".", Output: "out.png"}
 	g.Expect(r.Validate()).To(MatchError(ContainSubstring("unknown preset")))
 }
 
-func TestRunCmd_Validate_MissingTarget_ReturnsError(t *testing.T) {
+func TestRenderCmd_Validate_MissingTarget_ReturnsError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	r := &RunCmd{Preset: "structure-tree-map", Output: "out.png"}
+	r := &RenderCmd{Preset: "structure-tree-map", Output: "out.png"}
 	g.Expect(r.Validate()).To(MatchError(ContainSubstring("target path is required")))
 }
 
-func TestRunCmd_Validate_MissingOutput_ReturnsError(t *testing.T) {
+func TestRenderCmd_Validate_MissingOutput_ReturnsError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	r := &RunCmd{Preset: "structure-tree-map", TargetPath: "."}
+	r := &RenderCmd{Preset: "structure-tree-map", TargetPath: "."}
 	g.Expect(r.Validate()).To(MatchError(ContainSubstring("output path")))
 }
 
-func TestRunCmd_EffectiveTitle_UsesTitleWhenSet(t *testing.T) {
+func TestRenderCmd_EffectiveTitle_UsesTitleWhenSet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -60,12 +60,12 @@ func TestRunCmd_EffectiveTitle_UsesTitleWhenSet(t *testing.T) {
 	g.Expect(preset).NotTo(BeNil(), "preset should exist")
 
 	if preset != nil {
-		r := &RunCmd{Title: "Custom Title"}
+		r := &RenderCmd{Title: "Custom Title"}
 		g.Expect(r.effectiveTitle(preset)).To(Equal("Custom Title"))
 	}
 }
 
-func TestRunCmd_EffectiveTitle_UsesPresetDefaultWhenTitleEmpty(t *testing.T) {
+func TestRenderCmd_EffectiveTitle_UsesPresetDefaultWhenTitleEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -73,12 +73,12 @@ func TestRunCmd_EffectiveTitle_UsesPresetDefaultWhenTitleEmpty(t *testing.T) {
 	g.Expect(preset).NotTo(BeNil(), "preset should exist")
 
 	if preset != nil {
-		r := &RunCmd{}
+		r := &RenderCmd{}
 		g.Expect(r.effectiveTitle(preset)).To(Equal("Code Structure"))
 	}
 }
 
-func TestRunCmd_AllPresets_RegisteredAndUnique(t *testing.T) {
+func TestRenderCmd_AllPresets_RegisteredAndUnique(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -93,7 +93,7 @@ func TestRunCmd_AllPresets_RegisteredAndUnique(t *testing.T) {
 	}
 }
 
-func TestRunCmd_ParsedFromCLI_NoArgs(t *testing.T) {
+func TestRenderCmd_ParsedFromCLI_NoArgs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -107,7 +107,7 @@ func TestRunCmd_ParsedFromCLI_NoArgs(t *testing.T) {
 	)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	ctx, parseErr := parser.Parse([]string{"run"})
+	ctx, parseErr := parser.Parse([]string{"render"})
 	g.Expect(parseErr).NotTo(HaveOccurred())
 	g.Expect(ctx).NotTo(BeNil())
 }

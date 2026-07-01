@@ -5,7 +5,7 @@ legend:
     position: bottom-center
     orientation: horizontal
 tree-map: {}
-radial:
+radial-tree:
     discSize: file-lines
     fill:
         metric: file-type
