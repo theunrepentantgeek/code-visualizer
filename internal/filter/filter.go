@@ -142,6 +142,20 @@ func NewRule(pattern string, mode Mode) (Rule, error) {
 	}, nil
 }
 
+// ValidatePattern reports whether pattern is a valid doublestar glob.
+// Returns a descriptive error if the pattern is empty or syntactically invalid.
+func ValidatePattern(pattern string) error {
+	if pattern == "" {
+		return eris.New("empty glob pattern")
+	}
+
+	if _, err := doublestar.Match(pattern, ""); err != nil {
+		return eris.Wrapf(err, "invalid glob pattern %q", pattern)
+	}
+
+	return nil
+}
+
 // CompareByIndex compares two rules by their internal construction index.
 // For use with slices.SortFunc to recover original command-line order.
 func CompareByIndex(a, b Rule) int {

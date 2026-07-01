@@ -98,3 +98,24 @@ func TestRegisterSelectionMetrics_NoopWhenNilFlags(t *testing.T) {
 
 	g.Expect(stages.RegisterSelectionMetrics(s)).To(Succeed())
 }
+
+func TestRegisterSelectionMetrics_InvalidPattern_ReturnsError(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+
+	cfg := configWithSelectionMetrics(t, `
+selectionMetrics:
+  bad-metric:
+    - category: broken
+      filename: ""
+`)
+
+	s := &stages.CommonState{
+		Flags: &stages.Flags{Config: cfg},
+	}
+
+	err := stages.RegisterSelectionMetrics(s)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("invalid selection metric configuration"))
+}
