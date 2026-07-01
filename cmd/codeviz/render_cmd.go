@@ -184,7 +184,7 @@ func (r *RenderCmd) runPreset(preset *presetDef, flags *Flags) error {
 
 	err := cmd.Run(flags)
 	if err != nil {
-		return eris.Wrapf(err, "failed to run preset %q", preset.Name)
+		return eris.Wrapf(err, "failed to render preset %q", preset.Name)
 	}
 
 	return nil
