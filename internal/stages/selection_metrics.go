@@ -1,6 +1,8 @@
 package stages
 
 import (
+	"github.com/rotisserie/eris"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/classification"
@@ -19,6 +21,10 @@ func RegisterSelectionMetrics(c *CommonState) error {
 	}
 
 	for _, m := range c.Flags.Config.SelectionMetricsList() {
+		if err := m.Validate(); err != nil {
+			return eris.Wrap(err, "invalid selection metric configuration")
+		}
+
 		if _, already := provider.GetBase(metric.Name(m.Name)); already {
 			continue
 		}
