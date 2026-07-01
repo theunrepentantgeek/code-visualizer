@@ -53,7 +53,7 @@ func (r *rasterBackend) DrawRectangle(
 	}
 
 	if borderWidth > 0 {
-		borderColour := solidColor(border)
+		borderColour := model.SolidColor(border)
 		r.dc.SetColor(nrgba(borderColour))
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
@@ -155,7 +155,7 @@ func (r *rasterBackend) DrawDisc(
 	}
 
 	if borderWidth > 0 {
-		borderColour := solidColor(border)
+		borderColour := model.SolidColor(border)
 		r.dc.SetColor(nrgba(borderColour))
 		r.dc.SetLineWidth(borderWidth)
 		r.dc.DrawCircle(center.X, center.Y, radius)
@@ -223,18 +223,6 @@ func (r *rasterBackend) drawRadialGradientDisc(
 				A: uint8(ca + da*t),
 			})
 		}
-	}
-}
-
-// solidColor extracts the colour from a Fill, falling back to opaque black.
-func solidColor(f model.Fill) color.RGBA {
-	switch v := f.(type) {
-	case model.SolidFill:
-		return v.Color
-	case model.RadialGradientFill:
-		return v.Center
-	default:
-		return color.RGBA{A: 255}
 	}
 }
 
