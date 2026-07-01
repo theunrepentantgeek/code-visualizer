@@ -1,7 +1,8 @@
 {
-  "last_run": "2026-06-30T15:21:00Z",
-  "run_id": "28455310370",
-  "monthly_summary_issue": 353,
+  "last_run": "2026-07-01T00:00:00Z",
+  "run_id": "28495034536",
+  "monthly_summary_issue": 0,
+  "monthly_summary_note": "July 2026 issue created this run (2026-07-01) as temporary_id #aw_jul2026; search for open '[repo-assist] Monthly Activity 2026-07' issue to find actual number",
   "backlog_cursor": 474,
   "comments_made": {
     "324": "2026-06-01", "329": "2026-06-01", "330": "2026-06-01",
@@ -16,11 +17,12 @@
   },
   "open_prs": {
     "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests"},
-    "475": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628-4338ce2ba604f122", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474, "note": "merge conflict with main resolved 2026-06-30 (PR #473 tests merged in, 3-arg Scan calls updated to 4-arg)"},
+    "475": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628-4338ce2ba604f122", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474, "note": "merge conflict with main resolved 2026-06-30"},
     "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation + benchmark"},
     "477": {"branch": "repo-assist/improve-aggregation-single-pass-20260629-18250511ddce8ed7", "desc": "refactor(metric): compute AggregateRange in a single pass"},
     "478": {"branch": "repo-assist/perf-scatter-categorical-lookup-20260629-6cbc1f1-9defeae7f1494b65", "desc": "perf(scatter): use map for O(1) categorical axis position lookup"},
-    "479": {"branch": "repo-assist/improve-distinct-types-idiomatic-20260629-6cbc1f1-29e4ea315b1d73a6", "desc": "refactor(inks,scatter): simplify distinct-type collection with maps.Keys"}
+    "479": {"branch": "repo-assist/improve-distinct-types-idiomatic-20260629-6cbc1f1-29e4ea315b1d73a6", "desc": "refactor(inks,scatter): simplify distinct-type collection with maps.Keys"},
+    "TBD-20260701": {"branch": "repo-assist/improve-selection-metric-validation-20260701", "desc": "feat(config,filter,stages): validate selection metric glob patterns at registration + docs(usage): document selectionMetrics config", "note": "submitted run 28495034536; PR number assigned post-workflow (expected ~#480)"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -40,5 +42,5 @@
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
   "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473],
-  "notes": "Run 28455310370 (2026-06-30): Tasks 6,3,2,11. Task 6: PR #473 merged by maintainer (removed from open_prs). PR #475 had merge conflict (dirty) — both PRs added tests at EOF of scanner_test.go; fixed with merge commit containing all 5 new test functions + 3-arg Scan calls updated to 4-arg. push_to_pull_request_branch is append-only so rebase was not feasible; merge commit approach worked. PRs #462/#476/#477/#478/#479 clean (blocked=draft). Task 3 fallback to Task 2: no fixable bug issues; no new human activity on open issues. Monthly summary updated."
+  "notes": "Run 28495034536 (2026-07-01): Tasks 5,3(->2),10,11. Task 5: added ValidatePattern to filter, Validate() methods to SelectionMetricRule+SelectionMetric, wired m.Validate() in stages/selection_metrics.go. 7 new test functions. Task 3 fallback Task 2: no bug issues; no new human activity on open issues. Task 10: added selectionMetrics section to docs/usage.md (~30 lines). Both changes in one branch+PR. Monthly summary: closed June #353, created July 2026 issue. PR TBD-20260701: next run should resolve to actual number."
 }
