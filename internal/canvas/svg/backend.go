@@ -52,7 +52,7 @@ func (s *svgBackend) writeHeader() {
 func (s *svgBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
-	fillAttr := s.colourCSS(solidColor(fill))
+	fillAttr := s.colourCSS(model.SolidColor(fill))
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
@@ -60,7 +60,7 @@ func (s *svgBackend) DrawRectangle(
 	default:
 	}
 
-	borderColour := solidColor(border)
+	borderColour := model.SolidColor(border)
 
 	fmt.Fprintf(
 		&s.buf,
@@ -112,7 +112,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 func (s *svgBackend) DrawDisc(
 	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
-	fillAttr := s.colourCSS(solidColor(fill))
+	fillAttr := s.colourCSS(model.SolidColor(fill))
 
 	switch f := fill.(type) {
 	case model.RadialGradientFill:
@@ -120,7 +120,7 @@ func (s *svgBackend) DrawDisc(
 	default:
 	}
 
-	borderColour := solidColor(border)
+	borderColour := model.SolidColor(border)
 
 	fmt.Fprintf(
 		&s.buf,
@@ -128,17 +128,6 @@ func (s *svgBackend) DrawDisc(
 		center.X, center.Y, radius,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
-}
-
-func solidColor(f model.Fill) color.RGBA {
-	switch v := f.(type) {
-	case model.SolidFill:
-		return v.Color
-	case model.RadialGradientFill:
-		return v.Center
-	default:
-		return color.RGBA{A: 255}
-	}
 }
 
 func (s *svgBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
