@@ -3,10 +3,10 @@
 ## Synopsis
 
 ```
-codeviz [global flags] render <subcommand> [flags] <target-path>
+codeviz [global flags] <visualization> [flags] <target-path>
 ```
 
-Subcommands: `tree-map`, `radial`, `bubble-tree`, `spiral`
+Visualizations: `tree-map`, `radial-tree`, `bubble-tree`, `spiral`, `scatter`
 
 ## Global Flags
 
@@ -21,14 +21,14 @@ These flags apply to all subcommands.
 | `--export-config` |       | Write effective configuration to file (`.yaml`, `.yml`, or `.json`) |
 | `--export-data`   |       | Write computed metrics to file (`.json` or `.yaml`/`.yml`) |
 
-## `render tree-map`
+## `tree-map`
 
 Generate a tree-map visualization where each file is a rectangle sized by a metric.
 
 ### Synopsis
 
 ```
-codeviz render tree-map [flags] <target-path>
+codeviz tree-map [flags] <target-path>
 ```
 
 ### Required Flags
@@ -50,14 +50,14 @@ codeviz render tree-map [flags] <target-path>
 | `--height`         |       | `1080`           | Image height in pixels                                        |
 | `--filter`         |       | none             | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
-## `render radial`
+## `radial-tree`
 
 Generate a radial tree visualization with the repository root at the centre.
 
 ### Synopsis
 
 ```
-codeviz render radial [flags] <target-path>
+codeviz radial-tree [flags] <target-path>
 ```
 
 ### Required Flags
@@ -80,14 +80,14 @@ codeviz render radial [flags] <target-path>
 | `--height`         |       | `1920`         | Image height in pixels                                        |
 | `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
-## `render bubble-tree`
+## `bubble-tree`
 
 Generate a bubble-tree visualization where each file is a circle sized by a metric.
 
 ### Synopsis
 
 ```
-codeviz render bubble-tree [flags] <target-path>
+codeviz bubble-tree [flags] <target-path>
 ```
 
 ### Required Flags
@@ -110,7 +110,7 @@ codeviz render bubble-tree [flags] <target-path>
 | `--height`         |       | `1080`         | Image height in pixels                                        |
 | `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
 
-## `render spiral`
+## `spiral`
 
 Generate a spiral visualization showing git commit history over time.
 Each lap of the spiral represents one time period (day or hour); each file is a disc sized by an optional metric.
@@ -119,7 +119,7 @@ Requires the target directory to be inside a git repository.
 ### Synopsis
 
 ```
-codeviz render spiral [flags] <target-path>
+codeviz spiral [flags] <target-path>
 ```
 
 ### Required Flags
@@ -175,10 +175,10 @@ Multiple `--filter` flags are evaluated in order, like a `.gitignore`.
 
 ```sh
 # Include only Go files
-codeviz render tree-map ./src -o out.png -s file-size --filter '*.go' --filter '!*'
+codeviz tree-map ./src -o out.png -s file-size --filter '*.go' --filter '!*'
 
 # Exclude generated Go files
-codeviz render tree-map ./src -o out.png -s file-size --filter '!*_gen.go' --filter '!*_gen_test.go'
+codeviz tree-map ./src -o out.png -s file-size --filter '!*_gen.go' --filter '!*_gen_test.go'
 ```
 
 ## Examples
@@ -186,61 +186,61 @@ codeviz render tree-map ./src -o out.png -s file-size --filter '!*_gen.go' --fil
 ### Tree-map by file size
 
 ```sh
-codeviz render tree-map ./src -o treemap.png -s file-size
+codeviz tree-map ./src -o treemap.png -s file-size
 ```
 
 ### Tree-map coloured by file type
 
 ```sh
-codeviz render tree-map ./src -o treemap.png -s file-size -f file-type
+codeviz tree-map ./src -o treemap.png -s file-size -f file-type
 ```
 
 ### Tree-map with git freshness and temperature palette
 
 ```sh
-codeviz render tree-map ./src -o treemap.png -s file-lines -f file-freshness --fill-palette temperature
+codeviz tree-map ./src -o treemap.png -s file-lines -f file-freshness --fill-palette temperature
 ```
 
 ### Tree-map with border showing author count
 
 ```sh
-codeviz render tree-map ./src -o treemap.png -s file-lines -f file-freshness -b author-count
+codeviz tree-map ./src -o treemap.png -s file-lines -f file-freshness -b author-count
 ```
 
 ### Radial tree by file size
 
 ```sh
-codeviz render radial ./src -o radial.png -d file-size
+codeviz radial-tree ./src -o radial.png -d file-size
 ```
 
 ### Radial tree with folder labels
 
 ```sh
-codeviz render radial ./src -o radial.png -d file-lines -f file-type --labels folders
+codeviz radial-tree ./src -o radial.png -d file-lines -f file-type --labels folders
 ```
 
 ### Bubble tree by file lines
 
 ```sh
-codeviz render bubble-tree ./src -o bubbles.png -s file-lines
+codeviz bubble-tree ./src -o bubbles.png -s file-lines
 ```
 
 ### Bubble tree with all labels and SVG output
 
 ```sh
-codeviz render bubble-tree ./src -o bubbles.svg -s file-size -f file-type --labels all
+codeviz bubble-tree ./src -o bubbles.svg -s file-size -f file-type --labels all
 ```
 
 ### 4K tree-map with verbose logging
 
 ```sh
-codeviz -v render tree-map ./src -o treemap.png -s file-size --width 3840 --height 2160
+codeviz -v tree-map ./src -o treemap.png -s file-size --width 3840 --height 2160
 ```
 
 ### Export effective configuration
 
 ```sh
-codeviz --export-config config.yaml render tree-map ./src -o treemap.png -s file-size
+codeviz --export-config config.yaml tree-map ./src -o treemap.png -s file-size
 ```
 
 ### Export computed metrics to JSON
@@ -249,13 +249,13 @@ Writes a JSON file containing the full file tree and all computed metric values.
 Useful for downstream analysis or building custom visualizations.
 
 ```sh
-codeviz --export-data metrics.json render tree-map ./src -o treemap.png -s file-size -f file-type
+codeviz --export-data metrics.json tree-map ./src -o treemap.png -s file-size -f file-type
 ```
 
 ### Export computed metrics to YAML
 
 ```sh
-codeviz --export-data metrics.yaml render tree-map ./src -o treemap.png -s file-lines
+codeviz --export-data metrics.yaml tree-map ./src -o treemap.png -s file-lines
 ```
 
 ## Exit Codes

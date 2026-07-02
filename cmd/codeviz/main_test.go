@@ -32,7 +32,7 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cmd := []string{"render", "tree-map", ".", "-o", "out.png", "-s", "file-size"}
+	cmd := []string{"tree-map", ".", "-o", "out.png", "-s", "file-size"}
 
 	cases := []struct {
 		args      []string
@@ -82,9 +82,9 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	_, err = parser.Parse([]string{"render", "tree-map", ".", "-o", "out.png", "-s", "file-size", "--flat"})
+	_, err = parser.Parse([]string{"tree-map", ".", "-o", "out.png", "-s", "file-size", "--flat"})
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cli.Render.Treemap.Flat).To(BeTrue())
+	g.Expect(cli.TreeMap.Flat).To(BeTrue())
 }
 
 func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
@@ -98,12 +98,12 @@ func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 	}{
 		{
 			name:    "legend",
-			args:    []string{"render", "bubble-tree", ".", "-o", "out.png", "--legend", "sideways"},
+			args:    []string{"bubble-tree", ".", "-o", "out.png", "--legend", "sideways"},
 			wantErr: "--legend must be one of",
 		},
 		{
 			name:    "legend-orientation",
-			args:    []string{"render", "bubble-tree", ".", "-o", "out.png", "--legend-orientation", "diagonal"},
+			args:    []string{"bubble-tree", ".", "-o", "out.png", "--legend-orientation", "diagonal"},
 			wantErr: "--legend-orientation must be one of",
 		},
 	}
@@ -232,7 +232,7 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
-		"render", "tree-map", ".",
+		"tree-map", ".",
 		"-o", "out.png",
 		"-s", "file-size",
 		"--exclude", "[invalid",
@@ -271,7 +271,7 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
-		"render", "tree-map", ".",
+		"tree-map", ".",
 		"-o", "out.png",
 		"-s", "file-size",
 		"--exclude", ".*",
@@ -279,14 +279,14 @@ func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 		"--exclude", "**/*.log",
 	})
 	g.Expect(err).NotTo(HaveOccurred())
-	expectRuleSliceField(g, cli.Render.Treemap, "Include", []filter.Rule{
+	expectRuleSliceField(g, cli.TreeMap, "Include", []filter.Rule{
 		{Pattern: ".github/**", Mode: filter.Include},
 	})
-	expectRuleSliceField(g, cli.Render.Treemap, "Exclude", []filter.Rule{
+	expectRuleSliceField(g, cli.TreeMap, "Exclude", []filter.Rule{
 		{Pattern: ".*", Mode: filter.Exclude},
 		{Pattern: "**/*.log", Mode: filter.Exclude},
 	})
-	expectRuleSlice(g, cli.Render.Treemap.Filters(), []filter.Rule{
+	expectRuleSlice(g, cli.TreeMap.Filters(), []filter.Rule{
 		{Pattern: ".*", Mode: filter.Exclude},
 		{Pattern: ".github/**", Mode: filter.Include},
 		{Pattern: "**/*.log", Mode: filter.Exclude},
@@ -639,16 +639,16 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, err = parser.Parse([]string{
-		"render", "scatter", ".",
+		"scatter", ".",
 		"-o", "out.png",
 		"--x-axis", "file-type",
 		"--y-axis", "file-lines",
 		"-s", "file-size",
 	})
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cli.Render.Scatter.XAxis).To(Equal(metric.Name("file-type")))
-	g.Expect(cli.Render.Scatter.YAxis).To(Equal(metric.Name("file-lines")))
-	g.Expect(cli.Render.Scatter.Size).To(Equal(metric.Name("file-size")))
+	g.Expect(cli.Scatter.XAxis).To(Equal(metric.Name("file-type")))
+	g.Expect(cli.Scatter.YAxis).To(Equal(metric.Name("file-lines")))
+	g.Expect(cli.Scatter.Size).To(Equal(metric.Name("file-size")))
 }
 
 func TestScatterCmd_Validate_EmptyAxesPass(t *testing.T) {
