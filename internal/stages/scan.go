@@ -15,7 +15,7 @@ func ScanFilesystem(c *CommonState) error {
 
 	scanProg, stopScanTicker := BuildScanProgress(c.Flags)
 
-	root, err := scan.Scan(c.TargetPath, c.FilterRules, scanProg)
+	root, err := scan.Scan(c.TargetPath, c.FilterRules, scanProg, c.IncludeBinaryFiles)
 
 	stopScanTicker()
 
