@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-07-01T15:26:00Z",
-  "run_id": "28528452840",
+  "last_run": "2026-07-02T00:00:00Z",
+  "run_id": "28599780209",
   "monthly_summary_issue": 481,
   "backlog_cursor": 481,
   "comments_made": {
@@ -15,14 +15,12 @@
     "464": "2026-06-27", "471": "2026-06-28", "474": "2026-06-28"
   },
   "open_prs": {
-    "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests"},
-    "475": {"branch": "repo-assist/fix-474-inline-binary-filter-20260628-4338ce2ba604f122", "desc": "feat(scan): exclude binary files inline during filesystem scan", "closes": 474},
+    "TBD-20260702a": {"branch": "repo-assist/test-render-preset-builders-20260702", "desc": "test(cmd): add preset builder and registry unit tests (rewrite of #462 against new main)", "note": "submitted run 28599780209; PR number assigned post-workflow; supersedes #462"},
+    "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests (SUPERSEDED by TBD-20260702a)", "note": "Commented 2026-07-02: unresolvable conflict after #482 CLI restructure; suggested closing in favour of new PR. Recommend closing."},
     "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation + benchmark"},
-    "477": {"branch": "repo-assist/improve-aggregation-single-pass-20260629-18250511ddce8ed7", "desc": "refactor(metric): compute AggregateRange in a single pass"},
     "478": {"branch": "repo-assist/perf-scatter-categorical-lookup-20260629-6cbc1f1-9defeae7f1494b65", "desc": "perf(scatter): use map for O(1) categorical axis position lookup"},
-    "479": {"branch": "repo-assist/improve-distinct-types-idiomatic-20260629-6cbc1f1-29e4ea315b1d73a6", "desc": "refactor(inks,scatter): simplify distinct-type collection with maps.Keys"},
-    "480": {"branch": "repo-assist/improve-selection-metric-validation-20260701-9bde42fd4d6dbbb4", "desc": "feat(config,filter,stages): validate selection metric glob patterns at registration + docs(usage): document selectionMetrics config", "note": "conflicts with #482 on docs/usage.md after #482 merges; needs rebase"},
-    "TBD-20260701b": {"branch": "repo-assist/refactor-solid-color-helper-20260701", "desc": "refactor(canvas): centralise solidColor helper in model.SolidColor", "note": "submitted run 28528452840; PR number assigned post-workflow; partially addresses #330"}
+    "480": {"branch": "repo-assist/improve-selection-metric-validation-20260701-9bde42fd4d6dbbb4", "desc": "feat(config,filter,stages): validate selection metric glob patterns at registration + docs(usage): document selectionMetrics config", "note": "needs rebase onto main after #482 merged; docs/usage.md command syntax changed"},
+    "483": {"branch": "repo-assist/refactor-solid-color-helper-20260701", "desc": "refactor(canvas): centralise solidColor helper in model.SolidColor", "note": "partially addresses #330"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -41,6 +39,6 @@
     "No backwards compatibility needed (pre-alpha tool)"
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472],
-  "notes": "Run 28528452840 (2026-07-01 15:26): Tasks 3(->2),10,2,11. Task 3 fallback Task 2: no bug issues open. Task 10: centralised solidColor in model.SolidColor (3 backends → 0 duplicates), PR submitted. Task 2: no new human activity on open issues. PR #482 (maintainer CLI restructure, 32 files, kebab-case rename) is open and mergeable; will conflict with PR #480 on docs/usage.md after merging. PR #472 (golden-file testing restore) was merged (in git log). Monthly summary issue #481 updated."
+  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482],
+  "notes": "Run 28599780209 (2026-07-02): Tasks 9,6,2,11. Maintainer merged #475,#477,#479,#482 on 2026-07-02. PR #482 was major CLI restructure (32 files, run_cmd->render_cmd, RunCmd->RenderCmd preset runner). PR #462 now has unresolvable conflict (branch has old dispatcher API, main has new preset-runner API). Created new branch from main with rewritten tests (TBD-20260702a). Commented on #462 suggesting close. PR #480 needs rebase (docs/usage.md changed in #482). Task 2: no new human activity on any open issues. Pre-existing wsl_v5 lint warning in internal/metric/aggregation.go:78."
 }
