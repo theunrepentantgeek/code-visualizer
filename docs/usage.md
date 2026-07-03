@@ -205,7 +205,7 @@ Use the metric name (e.g. `code-purpose`) anywhere a classification metric is ac
 
 ```sh
 # Colour tree-map cells by whether each file is a test or source file
-codeviz --config codeviz.yaml render tree-map ./src -o out.png -s file-size -f code-purpose
+codeviz --config codeviz.yaml tree-map ./src -o out.png -s file-size -f code-purpose
 ```
 
 Selection metrics use the `categorization` palette by default, showing each distinct category in a unique colour.
