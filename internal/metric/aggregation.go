@@ -75,6 +75,7 @@ func AggregateRange(values []float64) float64 {
 		if v < lo {
 			lo = v
 		}
+
 		if v > hi {
 			hi = v
 		}
