@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-07-02T00:00:00Z",
-  "run_id": "28599780209",
+  "last_run": "2026-07-03T04:32:42Z",
+  "run_id": "28638463737",
   "monthly_summary_issue": 481,
-  "backlog_cursor": 481,
+  "backlog_cursor": 324,
   "comments_made": {
     "324": "2026-06-01", "329": "2026-06-01", "330": "2026-06-01",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
@@ -15,11 +15,11 @@
     "464": "2026-06-27", "471": "2026-06-28", "474": "2026-06-28"
   },
   "open_prs": {
-    "TBD-20260702a": {"branch": "repo-assist/test-render-preset-builders-20260702", "desc": "test(cmd): add preset builder and registry unit tests (rewrite of #462 against new main)", "note": "submitted run 28599780209; PR number assigned post-workflow; supersedes #462"},
-    "462": {"branch": "repo-assist/test-preset-builders-20260627-e37337109a69d535", "desc": "test(cmd): add preset builder and registry unit tests (SUPERSEDED by TBD-20260702a)", "note": "Commented 2026-07-02: unresolvable conflict after #482 CLI restructure; suggested closing in favour of new PR. Recommend closing."},
+    "484": {"branch": "repo-assist/test-render-preset-builders-20260702-e87a6b95708ae059", "desc": "test(cmd): add preset builder and registry unit tests (supersedes #462)"},
+    "TBD-wsl-fix": {"branch": "repo-assist/fix-wsl-aggregation-range-20260703", "desc": "fix(metric): resolve wsl_v5 lint warning in AggregateRange (created run 28638463737; PR# TBD)"},
     "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation + benchmark"},
     "478": {"branch": "repo-assist/perf-scatter-categorical-lookup-20260629-6cbc1f1-9defeae7f1494b65", "desc": "perf(scatter): use map for O(1) categorical axis position lookup"},
-    "480": {"branch": "repo-assist/improve-selection-metric-validation-20260701-9bde42fd4d6dbbb4", "desc": "feat(config,filter,stages): validate selection metric glob patterns at registration + docs(usage): document selectionMetrics config", "note": "needs rebase onto main after #482 merged; docs/usage.md command syntax changed"},
+    "480": {"branch": "repo-assist/improve-selection-metric-validation-20260701-9bde42fd4d6dbbb4", "desc": "feat(config,filter,stages): validate selection metric glob patterns at registration + docs(usage): document selectionMetrics config", "note": "docs fix pushed 2026-07-03: corrected CLI example from 'render tree-map' to 'tree-map' (post-#482 syntax)"},
     "483": {"branch": "repo-assist/refactor-solid-color-helper-20260701", "desc": "refactor(canvas): centralise solidColor helper in model.SolidColor", "note": "partially addresses #330"}
   },
   "issues_labelled": {
@@ -39,6 +39,6 @@
     "No backwards compatibility needed (pre-alpha tool)"
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482],
-  "notes": "Run 28599780209 (2026-07-02): Tasks 9,6,2,11. Maintainer merged #475,#477,#479,#482 on 2026-07-02. PR #482 was major CLI restructure (32 files, run_cmd->render_cmd, RunCmd->RenderCmd preset runner). PR #462 now has unresolvable conflict (branch has old dispatcher API, main has new preset-runner API). Created new branch from main with rewritten tests (TBD-20260702a). Commented on #462 suggesting close. PR #480 needs rebase (docs/usage.md changed in #482). Task 2: no new human activity on any open issues. Pre-existing wsl_v5 lint warning in internal/metric/aggregation.go:78."
+  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462],
+  "notes": "Run 28638463737 (2026-07-03): Tasks 1(->2),4,2,11. Task 4: (1) pushed docs fix to PR #480 (corrected 'render tree-map' to 'tree-map' in selection metrics example, post-#482 CLI restructure); (2) created new PR fix-wsl-aggregation-range-20260703 to fix pre-existing wsl_v5 lint warning in internal/metric/aggregation.go:78 (missing blank line between consecutive if blocks in AggregateRange). PR #462 was closed by maintainer on 2026-07-02 (confirmed). Task 2: no new human activity on any open issues. Monthly summary #481 updated with run history. Next run: check wsl fix PR got a number (should be ~#485), update suggested actions entry in monthly summary."
 }
