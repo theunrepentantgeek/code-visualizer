@@ -58,3 +58,10 @@ func TestSolidColor_RadialGradientFill_ReturnsCenterColor(t *testing.T) {
 	}
 	g.Expect(model.SolidColor(fill)).To(Equal(center))
 }
+
+func TestSolidColor_NilFill_ReturnsOpaqueBlack(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(model.SolidColor(nil)).To(Equal(color.RGBA{A: 255}))
+}
