@@ -252,3 +252,19 @@ func TestMerge_EmptySlices_ReturnsEmpty(t *testing.T) {
 
 	g.Expect(Merge([]Rule{}, []Rule{})).To(BeEmpty())
 }
+
+func TestValidatePattern_ValidPatterns(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	for _, pattern := range []string{"*", "**", "*.go", "*_test.go", "testdata/**", "**/*.go"} {
+		g.Expect(ValidatePattern(pattern)).To(Succeed(), "expected pattern %q to be valid", pattern)
+	}
+}
+
+func TestValidatePattern_EmptyPattern_ReturnsError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(ValidatePattern("")).To(MatchError(ContainSubstring("empty glob pattern")))
+}

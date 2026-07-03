@@ -1,6 +1,12 @@
 package config
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/rotisserie/eris"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+)
 
 // SelectionMetricRule maps files matching a glob pattern to a category string.
 // Rules within a SelectionMetric are evaluated in order; the first match wins.
@@ -9,6 +15,15 @@ import "slices"
 type SelectionMetricRule struct {
 	Category string `yaml:"category" json:"category"`
 	Filename string `yaml:"filename" json:"filename"` // doublestar glob matched against the file's relative path
+}
+
+// Validate checks that the Filename field is a valid doublestar glob pattern.
+func (r SelectionMetricRule) Validate() error {
+	if err := filter.ValidatePattern(r.Filename); err != nil {
+		return eris.Wrapf(err, "rule for category %q", r.Category)
+	}
+
+	return nil
 }
 
 // SelectionMetric defines a user-configured, filename-based classification metric.
@@ -28,6 +43,18 @@ type SelectionMetricRule struct {
 type SelectionMetric struct {
 	Name  string                `json:"name"          yaml:"name"`
 	Rules []SelectionMetricRule `json:"rules"         yaml:"rules"`
+}
+
+// Validate checks that all rules contain valid glob patterns.
+// Returns the first validation error encountered.
+func (m SelectionMetric) Validate() error {
+	for _, rule := range m.Rules {
+		if err := rule.Validate(); err != nil {
+			return eris.Wrapf(err, "selection metric %q", m.Name)
+		}
+	}
+
+	return nil
 }
 
 // selectionMetricsRaw is the YAML/JSON on-disk format:

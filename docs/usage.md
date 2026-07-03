@@ -181,6 +181,36 @@ codeviz tree-map ./src -o out.png -s file-size --filter '*.go' --filter '!*'
 codeviz tree-map ./src -o out.png -s file-size --filter '!*_gen.go' --filter '!*_gen_test.go'
 ```
 
+### Selection metrics (user-defined classification)
+
+You can define your own **classification metrics** in the config file.
+Each metric assigns a category string to files by matching their relative path against an ordered list of glob rules — the first match wins.
+
+```yaml
+# codeviz.yaml
+selectionMetrics:
+  code-purpose:
+    - category: test
+      filename: "*_test.go"
+    - category: source
+      filename: "*"
+  code-source:
+    - category: generated
+      filename: "*_gen.go"
+    - category: authored
+      filename: "*"
+```
+
+Use the metric name (e.g. `code-purpose`) anywhere a classification metric is accepted:
+
+```sh
+# Colour tree-map cells by whether each file is a test or source file
+codeviz --config codeviz.yaml tree-map ./src -o out.png -s file-size -f code-purpose
+```
+
+Selection metrics use the `categorization` palette by default, showing each distinct category in a unique colour.
+Files that match no rule receive no colour (rendered in the palette's neutral/fallback colour).
+
 ## Examples
 
 ### Tree-map by file size

@@ -111,3 +111,62 @@ selectionMetrics:
 	g.Expect(second.Name).To(Equal("mmm"))
 	g.Expect(third.Name).To(Equal("zzz"))
 }
+
+func TestSelectionMetricRule_Validate_ValidPattern(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	rule := config.SelectionMetricRule{Category: "test", Filename: "*_test.go"}
+	g.Expect(rule.Validate()).To(Succeed())
+}
+
+func TestSelectionMetricRule_Validate_EmptyPattern_ReturnsError(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	rule := config.SelectionMetricRule{Category: "test", Filename: ""}
+	err := rule.Validate()
+	g.Expect(err).To(HaveOccurred())
+	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
+	g.Expect(err.Error()).To(ContainSubstring("empty glob pattern"))
+}
+
+func TestSelectionMetric_Validate_AllValidRules(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	m := config.SelectionMetric{
+		Name: "code-purpose",
+		Rules: []config.SelectionMetricRule{
+			{Category: "test", Filename: "*_test.go"},
+			{Category: "source", Filename: "*"},
+		},
+	}
+	g.Expect(m.Validate()).To(Succeed())
+}
+
+func TestSelectionMetric_Validate_InvalidRule_ReturnsError(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	m := config.SelectionMetric{
+		Name: "bad-metric",
+		Rules: []config.SelectionMetricRule{
+			{Category: "ok", Filename: "*.go"},
+			{Category: "broken", Filename: ""},
+		},
+	}
+	err := m.Validate()
+	g.Expect(err).To(HaveOccurred())
+	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
+	g.Expect(err.Error()).To(ContainSubstring(`"bad-metric"`))
+	g.Expect(err.Error()).To(ContainSubstring(`"broken"`))
+}
+
+func TestSelectionMetric_Validate_EmptyRules_Succeeds(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	m := config.SelectionMetric{Name: "empty-metric"}
+	g.Expect(m.Validate()).To(Succeed())
+}
