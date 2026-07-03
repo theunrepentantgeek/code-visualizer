@@ -282,23 +282,7 @@ func formatTick(value, step float64) string {
 
 func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, direction axisDirection) float64 {
 	if axis.Categorical != nil {
-		// Use the Centers map for O(1) lookup when available (axes built via categoricalBands).
-		// Fall back to a linear scan for manually-constructed CategoricalAxis values (e.g. tests).
-		if axis.Categorical.Centers != nil {
-			if center, ok := axis.Categorical.Centers[value.Category]; ok {
-				return center
-			}
-
-			return direction.center(plot)
-		}
-
-		for _, band := range axis.Categorical.Bands {
-			if band.Label == value.Category {
-				return band.Center
-			}
-		}
-
-		return direction.center(plot)
+		return categoricalPosition(value, axis.Categorical, plot, direction)
 	}
 
 	minValue := axis.Numeric.Min
@@ -316,6 +300,26 @@ func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, directi
 	}
 
 	return direction.position(plot, norm)
+}
+
+func categoricalPosition(value AxisValue, axis *CategoricalAxis, plot PlotRect, direction axisDirection) float64 {
+	// Use the Centers map for O(1) lookup when available (axes built via categoricalBands).
+	// Fall back to a linear scan for manually-constructed CategoricalAxis values (e.g. tests).
+	if axis.Centers != nil {
+		if center, ok := axis.Centers[value.Category]; ok {
+			return center
+		}
+
+		return direction.center(plot)
+	}
+
+	for _, band := range axis.Bands {
+		if band.Label == value.Category {
+			return band.Center
+		}
+	}
+
+	return direction.center(plot)
 }
 
 func axisSlotSize(axis ResolvedAxis, span float64, pointCount int) float64 {
