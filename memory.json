@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-07-03T04:32:42Z",
-  "run_id": "28638463737",
+  "last_run": "2026-07-03T14:58:21Z",
+  "run_id": "28668252488",
   "monthly_summary_issue": 481,
   "backlog_cursor": 324,
   "comments_made": {
@@ -15,12 +15,8 @@
     "464": "2026-06-27", "471": "2026-06-28", "474": "2026-06-28"
   },
   "open_prs": {
-    "484": {"branch": "repo-assist/test-render-preset-builders-20260702-e87a6b95708ae059", "desc": "test(cmd): add preset builder and registry unit tests (supersedes #462)"},
-    "TBD-wsl-fix": {"branch": "repo-assist/fix-wsl-aggregation-range-20260703", "desc": "fix(metric): resolve wsl_v5 lint warning in AggregateRange (created run 28638463737; PR# TBD)"},
-    "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation + benchmark"},
-    "478": {"branch": "repo-assist/perf-scatter-categorical-lookup-20260629-6cbc1f1-9defeae7f1494b65", "desc": "perf(scatter): use map for O(1) categorical axis position lookup"},
-    "480": {"branch": "repo-assist/improve-selection-metric-validation-20260701-9bde42fd4d6dbbb4", "desc": "feat(config,filter,stages): validate selection metric glob patterns at registration + docs(usage): document selectionMetrics config", "note": "docs fix pushed 2026-07-03: corrected CLI example from 'render tree-map' to 'tree-map' (post-#482 syntax)"},
-    "483": {"branch": "repo-assist/refactor-solid-color-helper-20260701", "desc": "refactor(canvas): centralise solidColor helper in model.SolidColor", "note": "partially addresses #330"}
+    "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation"},
+    "TBD-gradlerp": {"branch": "repo-assist/refactor-gradient-lerp-helper-20260703", "desc": "refactor(raster): extract gradientLerp to eliminate pixel-loop duplication (created run 28668252488; PR# TBD)"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -39,6 +35,6 @@
     "No backwards compatibility needed (pre-alpha tool)"
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462],
-  "notes": "Run 28638463737 (2026-07-03): Tasks 1(->2),4,2,11. Task 4: (1) pushed docs fix to PR #480 (corrected 'render tree-map' to 'tree-map' in selection metrics example, post-#482 CLI restructure); (2) created new PR fix-wsl-aggregation-range-20260703 to fix pre-existing wsl_v5 lint warning in internal/metric/aggregation.go:78 (missing blank line between consecutive if blocks in AggregateRange). PR #462 was closed by maintainer on 2026-07-02 (confirmed). Task 2: no new human activity on any open issues. Monthly summary #481 updated with run history. Next run: check wsl fix PR got a number (should be ~#485), update suggested actions entry in monthly summary."
+  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467],
+  "notes": "Run 28668252488 (2026-07-03): Tasks 3(->2),6,4,11. PRs merged since last run: #478 (perf/scatter), #480 (selection metric validation), #483 (solidColor), #484 (preset tests), #485 (wsl fix). PRs #465/#467 (dependabot) closed. Task 3->Task 2 substitution: no bug/help-wanted issues; no new human activity. Task 6: PR #476 is clean (no CI failures, no conflicts, tests pass on current main). Task 4: created PR refactor-gradient-lerp-helper-20260703 extracting gradientLerp from drawRadialGradientRect/Disc in raster backend (PR# TBD, ~#486). Monthly summary #481 updated. Next run: confirm gradlerp PR number, update suggested actions in monthly summary."
 }
