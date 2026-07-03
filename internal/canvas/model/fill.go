@@ -27,3 +27,17 @@ type RadialGradientFill struct {
 
 func (SolidFill) isFill()          {}
 func (RadialGradientFill) isFill() {}
+
+// SolidColor extracts the primary colour from any Fill, falling back to opaque black.
+// For SolidFill it returns the fill colour; for RadialGradientFill it returns
+// the centre colour; for any unknown fill type it returns opaque black.
+func SolidColor(f Fill) color.RGBA {
+	switch v := f.(type) {
+	case SolidFill:
+		return v.Color
+	case RadialGradientFill:
+		return v.Center
+	default:
+		return color.RGBA{A: 255}
+	}
+}

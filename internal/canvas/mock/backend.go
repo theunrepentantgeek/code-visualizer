@@ -42,8 +42,8 @@ func (m *Backend) DrawRectangle(pos model.Position, size model.Size, fill, borde
 		Method:    "DrawRectangle",
 		Pos:       pos,
 		Size:      size,
-		Fill:      solidColor(fill),
-		Border:    solidColor(border),
+		Fill:      model.SolidColor(fill),
+		Border:    model.SolidColor(border),
 		RawFill:   fill,
 		RawBorder: border,
 	})
@@ -53,8 +53,8 @@ func (m *Backend) DrawDisc(center model.Position, _ float64, fill, border model.
 	m.Calls = append(m.Calls, Call{
 		Method:    "DrawDisc",
 		Pos:       center,
-		Fill:      solidColor(fill),
-		Border:    solidColor(border),
+		Fill:      model.SolidColor(fill),
+		Border:    model.SolidColor(border),
 		RawFill:   fill,
 		RawBorder: border,
 	})
@@ -102,15 +102,4 @@ func (m *Backend) Finish(outputPath string) error {
 	m.FinishPath = outputPath
 
 	return m.FinishErr
-}
-
-func solidColor(f model.Fill) color.RGBA {
-	switch v := f.(type) {
-	case model.SolidFill:
-		return v.Color
-	case model.RadialGradientFill:
-		return v.Center
-	default:
-		return color.RGBA{A: 255}
-	}
 }

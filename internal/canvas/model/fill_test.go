@@ -37,3 +37,31 @@ func TestPoint_Zero(t *testing.T) {
 	g.Expect(p.X).To(Equal(0.0))
 	g.Expect(p.Y).To(Equal(0.0))
 }
+
+func TestSolidColor_SolidFill_ReturnsColor(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	red := color.RGBA{R: 200, G: 0, B: 0, A: 255}
+	g.Expect(model.SolidColor(model.SolidFill{Color: red})).To(Equal(red))
+}
+
+func TestSolidColor_RadialGradientFill_ReturnsCenterColor(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	center := color.RGBA{R: 100, G: 150, B: 200, A: 255}
+	fill := model.RadialGradientFill{
+		Center: center,
+		Edge:   color.RGBA{R: 10, G: 20, B: 30, A: 255},
+		Focus:  model.Point{X: 0.5, Y: 0.5},
+	}
+	g.Expect(model.SolidColor(fill)).To(Equal(center))
+}
+
+func TestSolidColor_NilFill_ReturnsOpaqueBlack(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(model.SolidColor(nil)).To(Equal(color.RGBA{A: 255}))
+}
