@@ -93,17 +93,7 @@ func (r *rasterBackend) drawRadialGradientRect(
 	y1 = min(y1, bounds.Max.Y)
 
 	invMax := 1.0 / maxDist
-
-	// Precompute float64 colour channels and deltas once outside both loops
-	// to avoid repeated uint8→float64 conversions on every pixel.
-	cr := float64(grad.Center.R)
-	cg := float64(grad.Center.G)
-	cb := float64(grad.Center.B)
-	ca := float64(grad.Center.A)
-	dr := float64(grad.Edge.R) - cr
-	dg := float64(grad.Edge.G) - cg
-	db := float64(grad.Edge.B) - cb
-	da := float64(grad.Edge.A) - ca
+	lerp := newGradientLerp(grad.Center, grad.Edge)
 
 	for py := y0; py < y1; py++ {
 		dy := float64(py) + 0.5 - fy
@@ -112,13 +102,7 @@ func (r *rasterBackend) drawRadialGradientRect(
 		for px := x0; px < x1; px++ {
 			dx := float64(px) + 0.5 - fx
 			dist := math.Sqrt(dx*dx + dy2)
-			t := min(dist*invMax, 1.0)
-			img.SetRGBA(px, py, color.RGBA{
-				R: uint8(cr + dr*t),
-				G: uint8(cg + dg*t),
-				B: uint8(cb + db*t),
-				A: uint8(ca + da*t),
-			})
+			img.SetRGBA(px, py, lerp.at(min(dist*invMax, 1.0)))
 		}
 	}
 }
@@ -190,17 +174,7 @@ func (r *rasterBackend) drawRadialGradientDisc(
 
 	r2 := radius * radius
 	invRadius := 1.0 / radius
-
-	// Precompute float64 colour channels and deltas once outside both loops
-	// to avoid repeated uint8→float64 conversions on every pixel.
-	cr := float64(grad.Center.R)
-	cg := float64(grad.Center.G)
-	cb := float64(grad.Center.B)
-	ca := float64(grad.Center.A)
-	dr := float64(grad.Edge.R) - cr
-	dg := float64(grad.Edge.G) - cg
-	db := float64(grad.Edge.B) - cb
-	da := float64(grad.Edge.A) - ca
+	lerp := newGradientLerp(grad.Center, grad.Edge)
 
 	for py := y0; py < y1; py++ {
 		dy := float64(py) + 0.5 - center.Y
@@ -215,13 +189,7 @@ func (r *rasterBackend) drawRadialGradientDisc(
 			gdx := float64(px) + 0.5 - fx
 			gdy := float64(py) + 0.5 - fy
 			dist := math.Sqrt(gdx*gdx + gdy*gdy)
-			t := min(dist*invRadius, 1.0)
-			img.SetRGBA(px, py, color.RGBA{
-				R: uint8(cr + dr*t),
-				G: uint8(cg + dg*t),
-				B: uint8(cb + db*t),
-				A: uint8(ca + da*t),
-			})
+			img.SetRGBA(px, py, lerp.at(min(dist*invRadius, 1.0)))
 		}
 	}
 }
