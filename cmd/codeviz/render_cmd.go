@@ -8,7 +8,6 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/table"
 )
 
 // RenderCmd renders a named preset — a predefined combination of
@@ -133,16 +132,15 @@ func (r *RenderCmd) Run(flags *Flags) error {
 }
 
 func (*RenderCmd) listPresets() error {
-	tbl := table.New("Preset", "Description")
-	tbl.SetMaxWidth(consoleWidth())
-
+	entries := make([]nameDescription, 0, len(presets))
 	for _, p := range presets {
-		tbl.AddRow(p.Name, p.Description)
+		entries = append(entries, nameDescription{
+			Name:        p.Name,
+			Description: p.Description,
+		})
 	}
 
-	sb := &strings.Builder{}
-	tbl.WriteTo(sb)
-	fmt.Print(sb.String())
+	fmt.Print(renderNameDescriptionList("Presets", entries, consoleWidth()))
 
 	return nil
 }
