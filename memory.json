@@ -1,10 +1,10 @@
 {
-  "last_run": "2026-07-04T00:00:00Z",
-  "run_id": "28694791743",
+  "last_run": "2026-07-04T14:14:12Z",
+  "run_id": "28708843167",
   "monthly_summary_issue": 481,
   "backlog_cursor": 330,
   "comments_made": {
-    "324": "2026-06-01", "329": "2026-06-01", "330": "2026-07-04",
+    "324": "2026-07-04", "329": "2026-07-04", "330": "2026-07-04",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
     "354": "2026-06-02", "355": "2026-06-02", "320": "2026-06-04",
     "373": "2026-06-08", "374": "2026-06-07", "385": "2026-06-11",
@@ -17,8 +17,10 @@
   "open_prs": {
     "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation"},
     "487": {"branch": "repo-assist/refactor-gradient-lerp-helper-20260703", "desc": "refactor(raster): extract gradientLerp to eliminate pixel-loop duplication"},
-    "TBD-perf488": {"branch": "repo-assist/perf-disc-accumulator-20260704", "desc": "perf(render): eliminate O(N) intermediate slice copies in disc collection"},
-    "TBD-treemap489": {"branch": "repo-assist/improve-treemap-labels-accumulator-20260704", "desc": "refactor(treemap): simplify buildBlockLabels using shared accumulator"}
+    "488": {"branch": "repo-assist/perf-disc-accumulator-20260704", "desc": "perf(render): eliminate O(N) intermediate slice copies in disc collection"},
+    "489": {"branch": "repo-assist/improve-treemap-labels-accumulator-20260704", "desc": "refactor(treemap): simplify buildBlockLabels using shared accumulator"},
+    "TBD-pr329": {"branch": "repo-assist/refactor-legend-orientation-cursor-329", "desc": "refactor(legend): unify V/H swatch rendering via orientation cursor, closes #329"},
+    "TBD-pr330": {"branch": "repo-assist/refactor-raster-gradient-fill-330", "desc": "refactor(raster): extract shared renderRadialGradientPixels helper, addresses #330"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -38,5 +40,5 @@
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
   "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467],
-  "notes": "Run 28694791743 (2026-07-04): Tasks 2,8,5(sub for 4),11. Task 8: created PR (TBD-perf488) for accumulator pattern in collectDiscs/collectBubbleDirEntries — 1 alloc/op. Task 5 (sub for 4): created PR (TBD-treemap489) for buildBlockLabels accumulator refactor in treemap/labels.go. Task 2: commented on #330 with progress update (PR #483 merged, #487 open; suggested raster gradient fill extraction as next step). Monthly summary #481 updated. Next run: confirm PR numbers for TBD-perf488/TBD-treemap489, update suggested actions. Issue #330 is natural candidate for continued task 2/10 follow-up."
+  "notes": "Run 28708843167 (2026-07-04): Tasks 10,2,5,11. Maintainer approved: #330 (proceed), #329 (draft PR), #324 (do it). Task 10: created PR (TBD-pr330) for renderRadialGradientPixels extraction from drawRadialGradientRect and drawRadialGradientDisc. Task 5: created PR (TBD-pr329) for swatchCursor orientation abstraction in legend/render.go, closes #329. Task 2: commented on #330, #329, #324. Next run: confirm PR numbers for TBD-pr329/TBD-pr330, start bubbletree geometry extraction (#324) - move enclosing/welzl functions to geometry.go. Note: 'Do not move helpers to new packages' preference means geometry should stay in bubbletree package (not sub-package)."
 }
