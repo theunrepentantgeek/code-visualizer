@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/table"
 )
 
-// HelpPalettesCmd prints a table of all available colour palettes.
+// HelpPalettesCmd prints a list of all available colour palettes.
 type HelpPalettesCmd struct{}
 
 const palettesDocURL = "https://github.com/theunrepentantgeek/code-visualizer/blob/main/docs/palettes.md"
@@ -17,19 +15,17 @@ const palettesDocURL = "https://github.com/theunrepentantgeek/code-visualizer/bl
 func (HelpPalettesCmd) Run(_ *Flags) error {
 	infos := palette.Infos()
 
-	tbl := table.New("Palette", "Description")
-
+	entries := make([]nameDescription, 0, len(infos))
 	for _, info := range infos {
-		tbl.AddRow(string(info.Name), info.Description)
+		entries = append(entries, nameDescription{
+			Name:        string(info.Name),
+			Description: info.Description,
+		})
 	}
 
-	content := &strings.Builder{}
+	fmt.Print(renderNameDescriptionList("Palettes", entries, consoleWidth()))
 
-	tbl.WriteTo(content)
-
-	fmt.Print(content.String())
-
-	fmt.Printf("\nFor colour swatches, see: %s\n", palettesDocURL)
+	fmt.Printf("For colour swatches, see: %s\n", palettesDocURL)
 
 	return nil
 }
