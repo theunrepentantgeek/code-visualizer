@@ -1,10 +1,10 @@
 {
-  "last_run": "2026-07-03T14:58:21Z",
-  "run_id": "28668252488",
+  "last_run": "2026-07-04T00:00:00Z",
+  "run_id": "28694791743",
   "monthly_summary_issue": 481,
-  "backlog_cursor": 324,
+  "backlog_cursor": 330,
   "comments_made": {
-    "324": "2026-06-01", "329": "2026-06-01", "330": "2026-06-01",
+    "324": "2026-06-01", "329": "2026-06-01", "330": "2026-07-04",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
     "354": "2026-06-02", "355": "2026-06-02", "320": "2026-06-04",
     "373": "2026-06-08", "374": "2026-06-07", "385": "2026-06-11",
@@ -16,7 +16,9 @@
   },
   "open_prs": {
     "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation"},
-    "TBD-gradlerp": {"branch": "repo-assist/refactor-gradient-lerp-helper-20260703", "desc": "refactor(raster): extract gradientLerp to eliminate pixel-loop duplication (created run 28668252488; PR# TBD)"}
+    "487": {"branch": "repo-assist/refactor-gradient-lerp-helper-20260703", "desc": "refactor(raster): extract gradientLerp to eliminate pixel-loop duplication"},
+    "TBD-perf488": {"branch": "repo-assist/perf-disc-accumulator-20260704", "desc": "perf(render): eliminate O(N) intermediate slice copies in disc collection"},
+    "TBD-treemap489": {"branch": "repo-assist/improve-treemap-labels-accumulator-20260704", "desc": "refactor(treemap): simplify buildBlockLabels using shared accumulator"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -36,5 +38,5 @@
   ],
   "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
   "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467],
-  "notes": "Run 28668252488 (2026-07-03): Tasks 3(->2),6,4,11. PRs merged since last run: #478 (perf/scatter), #480 (selection metric validation), #483 (solidColor), #484 (preset tests), #485 (wsl fix). PRs #465/#467 (dependabot) closed. Task 3->Task 2 substitution: no bug/help-wanted issues; no new human activity. Task 6: PR #476 is clean (no CI failures, no conflicts, tests pass on current main). Task 4: created PR refactor-gradient-lerp-helper-20260703 extracting gradientLerp from drawRadialGradientRect/Disc in raster backend (PR# TBD, ~#486). Monthly summary #481 updated. Next run: confirm gradlerp PR number, update suggested actions in monthly summary."
+  "notes": "Run 28694791743 (2026-07-04): Tasks 2,8,5(sub for 4),11. Task 8: created PR (TBD-perf488) for accumulator pattern in collectDiscs/collectBubbleDirEntries — 1 alloc/op. Task 5 (sub for 4): created PR (TBD-treemap489) for buildBlockLabels accumulator refactor in treemap/labels.go. Task 2: commented on #330 with progress update (PR #483 merged, #487 open; suggested raster gradient fill extraction as next step). Monthly summary #481 updated. Next run: confirm PR numbers for TBD-perf488/TBD-treemap489, update suggested actions. Issue #330 is natural candidate for continued task 2/10 follow-up."
 }
