@@ -24,63 +24,46 @@ func buildBlockLabels(
 	fillInk inks.Ink,
 	metrics LabelMetrics,
 ) []canvas.BlockLabel {
-	labels := make([]canvas.BlockLabel, 0)
 	if dir == nil || !rect.IsDirectory {
-		return labels
+		return nil
 	}
 
+	labels := make([]canvas.BlockLabel, 0, len(dir.Files))
+	appendBlockLabels(&labels, rect, dir, fillInk, metrics)
+
+	return labels
+}
+
+func appendBlockLabels(
+	dst *[]canvas.BlockLabel,
+	rect TreemapRectangle,
+	dir *model.Directory,
+	fillInk inks.Ink,
+	metrics LabelMetrics,
+) {
 	fileIdx := 0
 	dirIdx := 0
 
 	for i := range rect.Children {
 		child := rect.Children[i]
+
 		if child.IsDirectory {
-			labels, dirIdx = appendDirectoryLabels(labels, child, dir, dirIdx, fillInk, metrics)
+			if dirIdx < len(dir.Dirs) {
+				appendBlockLabels(dst, child, dir.Dirs[dirIdx], fillInk, metrics)
+				dirIdx++
+			}
 
 			continue
 		}
 
-		labels, fileIdx = appendFileLabels(labels, child, dir, fileIdx, fillInk, metrics)
+		if fileIdx < len(dir.Files) {
+			if label, ok := buildFileLabel(child, dir.Files[fileIdx], fillInk, metrics); ok {
+				*dst = append(*dst, label)
+			}
+
+			fileIdx++
+		}
 	}
-
-	return labels
-}
-
-func appendDirectoryLabels(
-	labels []canvas.BlockLabel,
-	child TreemapRectangle,
-	dir *model.Directory,
-	dirIdx int,
-	fillInk inks.Ink,
-	metrics LabelMetrics,
-) ([]canvas.BlockLabel, int) {
-	if dirIdx >= len(dir.Dirs) {
-		return labels, dirIdx
-	}
-
-	labels = append(labels, buildBlockLabels(child, dir.Dirs[dirIdx], fillInk, metrics)...)
-
-	return labels, dirIdx + 1
-}
-
-func appendFileLabels(
-	labels []canvas.BlockLabel,
-	child TreemapRectangle,
-	dir *model.Directory,
-	fileIdx int,
-	fillInk inks.Ink,
-	metrics LabelMetrics,
-) ([]canvas.BlockLabel, int) {
-	if fileIdx >= len(dir.Files) {
-		return labels, fileIdx
-	}
-
-	file := dir.Files[fileIdx]
-	if label, ok := buildFileLabel(child, file, fillInk, metrics); ok {
-		labels = append(labels, label)
-	}
-
-	return labels, fileIdx + 1
 }
 
 func buildFileLabel(
