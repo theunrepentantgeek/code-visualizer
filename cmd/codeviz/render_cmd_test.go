@@ -97,6 +97,23 @@ func TestRenderCmd_AllPresets_RegisteredAndUnique(t *testing.T) {
 	}
 }
 
+func TestRenderCmd_ListPresets_UsesMetricsStyleLayout(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	output := captureStdout(t, func() {
+		err := (&RenderCmd{}).Run(&Flags{})
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	g.Expect(output).To(ContainSubstring("Presets\n───────"))
+	g.Expect(output).NotTo(ContainSubstring("|"), "should not use ASCII table borders")
+
+	for _, p := range presets {
+		g.Expect(output).To(ContainSubstring(p.Name))
+	}
+}
+
 func TestRenderCmd_ParsedFromCLI_NoArgs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
