@@ -134,16 +134,22 @@ func collectBubbleDirEntries(
 	dirIndex map[string]*BubbleNode,
 	dir *model.Directory,
 ) []bubbleDirEntry {
-	var entries []bubbleDirEntry
-
-	for _, d := range dir.Dirs {
-		if bn, ok := dirIndex[d.Path]; ok && bn.Radius > 0 {
-			entries = append(entries, bubbleDirEntry{node: bn})
-			entries = append(entries, collectBubbleDirEntries(dirIndex, d)...)
-		}
-	}
+	entries := make([]bubbleDirEntry, 0, model.CountDirs(dir))
+	appendBubbleDirEntries(&entries, dirIndex, dir)
 
 	return entries
+}
+
+// appendBubbleDirEntries appends matching directories to dst, using a shared
+// accumulator to eliminate the O(N) intermediate slice copies from a naive
+// return-and-append recursive approach.
+func appendBubbleDirEntries(dst *[]bubbleDirEntry, dirIndex map[string]*BubbleNode, dir *model.Directory) {
+	for _, d := range dir.Dirs {
+		if bn, ok := dirIndex[d.Path]; ok && bn.Radius > 0 {
+			*dst = append(*dst, bubbleDirEntry{node: bn})
+			appendBubbleDirEntries(dst, dirIndex, d)
+		}
+	}
 }
 
 // addBubbleFileDiscs walks the model tree via path lookup

@@ -105,10 +105,33 @@ func collectDiscs(
 	dir *model.Directory,
 	cx, cy float64,
 ) []discEntry {
-	entries := make([]discEntry, 0)
+	entries := make([]discEntry, 0, countDiscNodes(node))
+	appendDiscEntries(&entries, node, dir, cx, cy)
 
+	return entries
+}
+
+// countDiscNodes counts nodes with positive DiscRadius in the subtree rooted at node.
+func countDiscNodes(node *RadialNode) int {
+	count := 0
 	if node.DiscRadius > 0 {
-		entries = append(entries, discEntry{
+		count++
+	}
+
+	for i := range node.Children {
+		count += countDiscNodes(&node.Children[i])
+	}
+
+	return count
+}
+
+// appendDiscEntries appends all nodes with positive DiscRadius to dst, using a
+// shared accumulator to eliminate the O(N) intermediate slice copies that a
+// naive return-and-append recursive approach incurs.
+// INVARIANT: node.Children are ordered files-first, then subdirectories.
+func appendDiscEntries(dst *[]discEntry, node *RadialNode, dir *model.Directory, cx, cy float64) {
+	if node.DiscRadius > 0 {
+		*dst = append(*dst, discEntry{
 			node:  *node,
 			sx:    cx + node.X,
 			sy:    cy + node.Y,
@@ -121,35 +144,23 @@ func collectDiscs(
 
 	for i := range node.Children {
 		child := &node.Children[i]
+
 		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			entries = append(entries, collectDiscs(child, dir.Dirs[dirIdx], cx, cy)...)
+			appendDiscEntries(dst, child, dir.Dirs[dirIdx], cx, cy)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			childEntries := collectDiscsLeaf(child, dir.Files[fileIdx], cx, cy)
-			entries = append(entries, childEntries...)
+			if child.DiscRadius > 0 {
+				*dst = append(*dst, discEntry{
+					node: *child,
+					file: dir.Files[fileIdx],
+					sx:   cx + child.X,
+					sy:   cy + child.Y,
+				})
+			}
+
 			fileIdx++
 		}
 	}
-
-	return entries
-}
-
-// collectDiscsLeaf collects a single file node (leaf).
-func collectDiscsLeaf(
-	node *RadialNode,
-	file *model.File,
-	cx, cy float64,
-) []discEntry {
-	if node.DiscRadius <= 0 {
-		return make([]discEntry, 0)
-	}
-
-	return []discEntry{{
-		node: *node,
-		file: file,
-		sx:   cx + node.X,
-		sy:   cy + node.Y,
-	}}
 }
 
 // addDiscs collects all discs, sorts them largest-first so smaller nodes are
