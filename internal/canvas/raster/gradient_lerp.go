@@ -30,7 +30,7 @@ func newGradientLerp(center, edge color.RGBA) gradientLerp {
 
 // at returns the interpolated colour at t, where t=0 gives center and t=1 gives edge.
 // t is clamped to [0,1] by the caller.
-func (l gradientLerp) at(t float64) color.RGBA {
+func (l *gradientLerp) at(t float64) color.RGBA {
 	return color.RGBA{
 		R: uint8(l.cr + l.dr*t),
 		G: uint8(l.cg + l.dg*t),
