@@ -5,34 +5,39 @@ import (
 	"math"
 )
 
-// renderRadialGradientPixels fills pixels in [x0,x1)×[y0,y1) with a radial gradient.
+// radialClip describes an optional circular clipping region. When r == 0 the clip is disabled.
+type radialClip struct {
+	cx, cy, r float64
+}
+
+// renderRadialGradientPixels fills pixels in rect with a radial gradient.
 // fx,fy is the gradient focus in image coordinates; invScale maps distance to t ∈ [0,1].
-// If clipR > 0, pixels outside the circle centred at (clipCx, clipCy) with radius clipR
-// are skipped. Pass clipR=0 to paint the full rectangle without clipping.
+// If clip.r > 0, pixels outside the circle are skipped.
 func renderRadialGradientPixels(
 	img *image.RGBA,
-	x0, y0, x1, y1 int,
+	rect image.Rectangle,
 	fx, fy float64,
 	invScale float64,
 	lerp gradientLerp,
-	clipCx, clipCy, clipR float64,
+	clip radialClip,
 ) {
-	hasClip := clipR > 0
-	r2 := clipR * clipR
+	hasClip := clip.r > 0
+	r2 := clip.r * clip.r
 
-	for py := y0; py < y1; py++ {
+	for py := rect.Min.Y; py < rect.Max.Y; py++ {
 		dy := float64(py) + 0.5 - fy
 		dy2 := dy * dy
 
 		var cdy2 float64
+
 		if hasClip {
-			cdy := float64(py) + 0.5 - clipCy
+			cdy := float64(py) + 0.5 - clip.cy
 			cdy2 = cdy * cdy
 		}
 
-		for px := x0; px < x1; px++ {
+		for px := rect.Min.X; px < rect.Max.X; px++ {
 			if hasClip {
-				cdx := float64(px) + 0.5 - clipCx
+				cdx := float64(px) + 0.5 - clip.cx
 				if cdx*cdx+cdy2 > r2 {
 					continue
 				}
