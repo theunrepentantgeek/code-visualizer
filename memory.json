@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-07-05T04:46:00Z",
-  "run_id": "28729800042",
+  "last_run": "2026-07-05T14:21:00Z",
+  "run_id": "28743766349",
   "monthly_summary_issue": 481,
   "backlog_cursor": 330,
   "comments_made": {
@@ -18,10 +18,9 @@
     "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation"},
     "488": {"branch": "repo-assist/perf-disc-accumulator-20260704-7ddcec3be7da26ef", "desc": "perf(render): eliminate O(N) intermediate slice copies in disc collection"},
     "489": {"branch": "repo-assist/improve-treemap-labels-accumulator-20260704-bc64d326322c2899", "desc": "refactor(treemap): simplify buildBlockLabels using shared accumulator"},
-    "497": {"branch": "repo-assist/refactor-legend-orientation-cursor-329-de1b104e2e0a3879", "desc": "refactor(legend): unify V/H swatch rendering via orientation cursor, closes #329"},
-    "498": {"branch": "repo-assist/refactor-raster-gradient-fill-330-87715c11dca19716", "desc": "refactor(raster): extract shared renderRadialGradientPixels helper, addresses #330"},
-    "TBD-geo324": {"branch": "repo-assist/refactor-bubbletree-geometry-324", "desc": "refactor(bubbletree): extract enclosing-circle geometry to geometry.go, step 1 of #324"},
-    "TBD-tfm324": {"branch": "repo-assist/refactor-bubbletree-transforms-324", "desc": "refactor(bubbletree): extract coordinate transforms to transforms.go, step 2 of #324"}
+    "498": {"branch": "repo-assist/refactor-raster-gradient-fill-330-87715c11dca19716", "desc": "refactor(raster): extract shared renderRadialGradientPixels helper, CI fix pushed (2 commits)"},
+    "TBD-packing324": {"branch": "repo-assist/refactor-bubbletree-packing-324-20260705", "desc": "refactor(bubbletree): extract circle packing to packing.go, step 3 of #324"},
+    "TBD-svgfill330": {"branch": "repo-assist/refactor-svg-fill-attr-330-20260705", "desc": "refactor(svg): extract svgFillAttr helper, addresses #330 SVG side"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -40,7 +39,7 @@
     "Keep PRs strictly scoped to description",
     "No backwards compatibility needed (pre-alpha tool)"
   ],
-  "closed_issues": [421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491],
-  "notes": "Run 28729800042 (2026-07-05): Tasks 5,4,2,11. Task 5: Created PR (TBD-geo324) for enclosing-circle geometry extraction to geometry.go (step 1 of #324, -212 lines). Task 4 (sub T5): Created PR (TBD-tfm324) for coordinate transforms to transforms.go (step 2 of #324, -124 lines). Task 2 (sub T5): no new human activity on open issues; commented on #324 with PR links. PR #487 merged (gradientLerp). Next run: confirm PR numbers for TBD-geo324/TBD-tfm324, consider step 3 of #324 (placement solver extraction). All workflow files (.github/workflows/*) are protected - cannot bundle Dependabot PRs. Task 4 Engineering Investments not actionable due to protected files."
+  "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
+  "closed_prs": [497, 499, 500, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491],
+  "notes": "Run 28743766349 (2026-07-05): Tasks 4,6,5,11. Task 6: Fixed PR #498 CI failures - revive argument-limit (12 args reduced to 7 via image.Rectangle+radialClip struct), line-length (wrapped long call), and cognitive-complexity (extracted renderClippedGradient helper). Task 5: Created PR (TBD-packing324) for circle packing extraction to packing.go, step 3 of #324 - layout.go now 125 lines (down from 685). Task 4: Created PR (TBD-svgfill330) for SVG svgFillAttr helper extraction, eliminates duplicate fill switch in DrawRectangle/DrawDisc, addresses #330 SVG side. Next run: confirm PR numbers for TBD-packing324/TBD-svgfill330. Issue #324 has remaining items: solver interface (item 2) and indexBubbleNodes (item 3). Task 4 Engineering Investments not actionable for Dependabot bundling due to protected workflow files."
 }
