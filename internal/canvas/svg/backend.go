@@ -52,14 +52,7 @@ func (s *svgBackend) writeHeader() {
 func (s *svgBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
-	fillAttr := s.colourCSS(model.SolidColor(fill))
-
-	switch f := fill.(type) {
-	case model.RadialGradientFill:
-		fillAttr = s.emitRadialGradient(f)
-	default:
-	}
-
+	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)
 
 	fmt.Fprintf(
@@ -112,14 +105,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 func (s *svgBackend) DrawDisc(
 	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
-	fillAttr := s.colourCSS(model.SolidColor(fill))
-
-	switch f := fill.(type) {
-	case model.RadialGradientFill:
-		fillAttr = s.emitRadialGradient(f)
-	default:
-	}
-
+	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)
 
 	fmt.Fprintf(
@@ -264,6 +250,17 @@ func (s *svgBackend) Finish(outputPath string) (err error) {
 // avoid repeated fmt.Sprintf allocations for the same colour. In typical
 // visualizations, nodes share a small number of palette colours (e.g. 16
 // buckets), so the cache hit rate is high.
+// svgFillAttr returns the SVG fill attribute value for the given fill.
+// For gradients it emits the gradient definition and returns a url(#id) ref;
+// for solid or default fills it returns a CSS colour string.
+func (s *svgBackend) svgFillAttr(fill model.Fill) string {
+	if f, ok := fill.(model.RadialGradientFill); ok {
+		return s.emitRadialGradient(f)
+	}
+
+	return s.colourCSS(model.SolidColor(fill))
+}
+
 func (s *svgBackend) colourCSS(c color.RGBA) string {
 	if cached, ok := s.colourCache[c]; ok {
 		return cached
