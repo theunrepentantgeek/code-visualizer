@@ -92,19 +92,8 @@ func (r *rasterBackend) drawRadialGradientRect(
 	x1 = min(x1, bounds.Max.X)
 	y1 = min(y1, bounds.Max.Y)
 
-	invMax := 1.0 / maxDist
 	lerp := newGradientLerp(grad.Center, grad.Edge)
-
-	for py := y0; py < y1; py++ {
-		dy := float64(py) + 0.5 - fy
-		dy2 := dy * dy // precompute dy² once per row
-
-		for px := x0; px < x1; px++ {
-			dx := float64(px) + 0.5 - fx
-			dist := math.Sqrt(dx*dx + dy2)
-			img.SetRGBA(px, py, lerp.at(min(dist*invMax, 1.0)))
-		}
-	}
+	renderRadialGradientPixels(img, image.Rect(x0, y0, x1, y1), fx, fy, 1.0/maxDist, lerp, radialClip{})
 }
 
 // maxCornerDist returns the maximum distance from point (fx,fy) to any corner
@@ -172,26 +161,12 @@ func (r *rasterBackend) drawRadialGradientDisc(
 	x1 := min(int(center.X+radius)+1, bounds.Max.X)
 	y1 := min(int(center.Y+radius)+1, bounds.Max.Y)
 
-	r2 := radius * radius
-	invRadius := 1.0 / radius
 	lerp := newGradientLerp(grad.Center, grad.Edge)
-
-	for py := y0; py < y1; py++ {
-		dy := float64(py) + 0.5 - center.Y
-		dy2 := dy * dy // precompute dy² once per row
-
-		for px := x0; px < x1; px++ {
-			dx := float64(px) + 0.5 - center.X
-			if dx*dx+dy2 > r2 {
-				continue
-			}
-
-			gdx := float64(px) + 0.5 - fx
-			gdy := float64(py) + 0.5 - fy
-			dist := math.Sqrt(gdx*gdx + gdy*gdy)
-			img.SetRGBA(px, py, lerp.at(min(dist*invRadius, 1.0)))
-		}
-	}
+	renderRadialGradientPixels(
+		img, image.Rect(x0, y0, x1, y1),
+		fx, fy, 1.0/radius, lerp,
+		radialClip{cx: center.X, cy: center.Y, r: radius},
+	)
 }
 
 func (r *rasterBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
