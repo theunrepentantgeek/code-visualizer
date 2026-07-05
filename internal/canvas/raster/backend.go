@@ -162,7 +162,11 @@ func (r *rasterBackend) drawRadialGradientDisc(
 	y1 := min(int(center.Y+radius)+1, bounds.Max.Y)
 
 	lerp := newGradientLerp(grad.Center, grad.Edge)
-	renderRadialGradientPixels(img, image.Rect(x0, y0, x1, y1), fx, fy, 1.0/radius, lerp, radialClip{cx: center.X, cy: center.Y, r: radius})
+	renderRadialGradientPixels(
+		img, image.Rect(x0, y0, x1, y1),
+		fx, fy, 1.0/radius, lerp,
+		radialClip{cx: center.X, cy: center.Y, r: radius},
+	)
 }
 
 func (r *rasterBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
