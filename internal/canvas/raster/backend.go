@@ -39,15 +39,10 @@ func New(width, height int) model.Backend {
 func (r *rasterBackend) DrawRectangle(
 	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
-	switch f := fill.(type) {
-	case model.SolidFill:
-		r.dc.SetColor(nrgba(f.Color))
-		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
-		r.dc.Fill()
-	case model.RadialGradientFill:
+	if f, ok := fill.(model.RadialGradientFill); ok {
 		r.drawRadialGradientRect(pos, size, f)
-	default:
-		r.dc.SetColor(nrgba(color.RGBA{A: 255}))
+	} else {
+		r.dc.SetColor(nrgba(model.SolidColor(fill)))
 		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
 		r.dc.Fill()
 	}
@@ -114,15 +109,10 @@ func maxCornerDist(fx, fy, rx, ry, w, h float64) float64 {
 func (r *rasterBackend) DrawDisc(
 	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
-	switch f := fill.(type) {
-	case model.SolidFill:
-		r.dc.SetColor(nrgba(f.Color))
-		r.dc.DrawCircle(center.X, center.Y, radius)
-		r.dc.Fill()
-	case model.RadialGradientFill:
+	if f, ok := fill.(model.RadialGradientFill); ok {
 		r.drawRadialGradientDisc(center, radius, f)
-	default:
-		r.dc.SetColor(nrgba(color.RGBA{A: 255}))
+	} else {
+		r.dc.SetColor(nrgba(model.SolidColor(fill)))
 		r.dc.DrawCircle(center.X, center.Y, radius)
 		r.dc.Fill()
 	}
