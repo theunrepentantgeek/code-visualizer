@@ -1,6 +1,8 @@
 package stages
 
 import (
+	"slices"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
@@ -16,24 +18,16 @@ type RequestedMetrics struct {
 
 // HasDeclarationExpressions reports whether any expression needs declaration-level data.
 func (r RequestedMetrics) HasDeclarationExpressions() bool {
-	for _, expr := range r.Expressions {
-		if expr.SourceLevel == metric.LevelDeclaration {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(r.Expressions, func(expr provider.ResolvedMetric) bool {
+		return expr.SourceLevel == metric.LevelDeclaration
+	})
 }
 
 // HasCommitExpressions reports whether any expression needs commit-level data.
 func (r RequestedMetrics) HasCommitExpressions() bool {
-	for _, expr := range r.Expressions {
-		if expr.SourceLevel == metric.LevelCommit {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(r.Expressions, func(expr provider.ResolvedMetric) bool {
+		return expr.SourceLevel == metric.LevelCommit
+	})
 }
 
 // DescriptorFor returns a BaseMetricDescriptor for the given metric name by
