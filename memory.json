@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-07-06T04:59:00Z",
-  "run_id": "28768816510",
+  "last_run": "2026-07-06T16:22:00Z",
+  "run_id": "28805341304",
   "monthly_summary_issue": 481,
   "backlog_cursor": 503,
   "comments_made": {
@@ -21,7 +21,9 @@
     "489": {"branch": "repo-assist/improve-treemap-labels-accumulator-20260704-bc64d326322c2899", "desc": "refactor(treemap): simplify buildBlockLabels using shared accumulator"},
     "501": {"branch": "repo-assist/refactor-bubbletree-packing-324-20260705-080b0f8b66033bdf", "desc": "refactor(bubbletree): extract circle packing to packing.go, step 3 of #324"},
     "502": {"branch": "repo-assist/refactor-svg-fill-attr-330-20260705-517711e75ae36093", "desc": "refactor(svg): extract svgFillAttr helper, addresses #330 SVG side"},
-    "TBD-index324": {"branch": "repo-assist/refactor-bubbletree-index-324-20260706", "desc": "refactor(bubbletree): move node indexing to BubbleNode.Index(), partial #324 item 3"}
+    "504": {"branch": "repo-assist/refactor-bubbletree-index-324-20260706", "desc": "refactor(bubbletree): move node indexing to BubbleNode.Index(), partial #324 item 3"},
+    "TBD-raster330": {"branch": "repo-assist/refactor-raster-solid-fill-330-20260706-b92c214", "desc": "refactor(raster): simplify fill dispatch in DrawRectangle/DrawDisc using model.SolidColor, addresses #330 raster side"},
+    "TBD-slices505": {"branch": "repo-assist/improve-has-level-expressions-20260706-b92c214", "desc": "refactor(stages): use slices.ContainsFunc in HasDeclarationExpressions/HasCommitExpressions, -8 lines"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -42,5 +44,5 @@
   ],
   "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
   "closed_prs": [497, 499, 500, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 498],
-  "notes": "Run 28768816510 (2026-07-06): Tasks 2,6,4->5,11. Task 2: Commented on #503 explaining PR #498 was merged despite push failure. Task 6: All Repo Assist PR CI shows action_required (infrastructure, not code failures) - no code changes needed. Task 4->5 substitution (Dependabot PRs all touch protected workflow files, go.mod also protected): Created PR (TBD-index324) moving indexBubbleNodes/indexBubbleNodesWalk from render.go to BubbleNode.Index() method in node.go - partial #324 item 3. Next run: confirm PR number for TBD-index324. Issue #324 has remaining items: solver interface (item 2) and full Layout pre-building of index (item 3 continued). PR #498 merged by maintainer on 2026-07-05. Issue #503 should be closed (commented suggesting it)."
+  "notes": "Run 28805341304 (2026-07-06 16:22): Tasks 10,5,4->5,11. Task 10: Created PR (TBD-raster330) simplifying fill dispatch in raster backend DrawRectangle/DrawDisc using model.SolidColor if/else - addresses #330 raster side. Task 5 x2: Created PR (TBD-slices505) replacing for-range-return loops in HasDeclarationExpressions/HasCommitExpressions with slices.ContainsFunc (-8 lines). Task 4->5 sub: Dependabot PRs all touch protected files. Confirmed TBD-index324 from prev run = PR #504. Issue #324 remaining: solver interface (item 2) and full Layout pre-building of index (item 3 continued) - blocked until #501 merges. Issue #503 should be closed (commented in prev run). Next run: confirm PR numbers for TBD-raster330, TBD-slices505."
 }
