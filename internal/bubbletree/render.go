@@ -72,7 +72,8 @@ func addBubbleDirDiscs(
 	dirIndex map[string]*BubbleNode,
 	root *model.Directory,
 ) {
-	entries := collectBubbleDirEntries(dirIndex, root)
+	entries := make([]bubbleDirEntry, 0, len(dirIndex))
+	entries = collectBubbleDirEntries(entries, dirIndex, root)
 
 	slices.SortFunc(entries, func(a, b bubbleDirEntry) int {
 		return cmp.Compare(b.node.Radius, a.node.Radius)
@@ -100,17 +101,17 @@ func addBubbleDirDiscs(
 }
 
 // collectBubbleDirEntries recursively walks model.Directory to find
-// all directories that have a corresponding BubbleNode.
+// all directories that have a corresponding BubbleNode, appending them
+// to entries (accumulator pattern — avoids O(N) slice merges per level).
 func collectBubbleDirEntries(
+	entries []bubbleDirEntry,
 	dirIndex map[string]*BubbleNode,
 	dir *model.Directory,
 ) []bubbleDirEntry {
-	var entries []bubbleDirEntry
-
 	for _, d := range dir.Dirs {
 		if bn, ok := dirIndex[d.Path]; ok && bn.Radius > 0 {
 			entries = append(entries, bubbleDirEntry{node: bn})
-			entries = append(entries, collectBubbleDirEntries(dirIndex, d)...)
+			entries = collectBubbleDirEntries(entries, dirIndex, d)
 		}
 	}
 
@@ -119,19 +120,12 @@ func collectBubbleDirEntries(
 
 // addBubbleFileDiscs walks the model tree via path lookup
 // and adds file discs to the canvas.
+// Pre-allocates a shared DiscSpec so it is not re-created for every
+// directory level in the recursive walk.
 func addBubbleFileDiscs(
 	cv *canvas.Canvas,
 	fileIndex map[string]*BubbleNode,
 	root *model.Directory,
-	is Inks,
-) {
-	addBubbleFileDiscsWalk(cv, fileIndex, root, is)
-}
-
-func addBubbleFileDiscsWalk(
-	cv *canvas.Canvas,
-	fileIndex map[string]*BubbleNode,
-	dir *model.Directory,
 	is Inks,
 ) {
 	borderWidth := bubbleBorderWidth
@@ -147,6 +141,16 @@ func addBubbleFileDiscsWalk(
 		},
 	}
 
+	addBubbleFileDiscsWalk(cv, fileIndex, root, is, fileSpec)
+}
+
+func addBubbleFileDiscsWalk(
+	cv *canvas.Canvas,
+	fileIndex map[string]*BubbleNode,
+	dir *model.Directory,
+	is Inks,
+	fileSpec *canvas.DiscSpec,
+) {
 	for _, f := range dir.Files {
 		bn, ok := fileIndex[f.Path]
 		if !ok || bn.Radius <= 0 {
@@ -167,7 +171,7 @@ func addBubbleFileDiscsWalk(
 	}
 
 	for _, d := range dir.Dirs {
-		addBubbleFileDiscsWalk(cv, fileIndex, d, is)
+		addBubbleFileDiscsWalk(cv, fileIndex, d, is, fileSpec)
 	}
 }
 
