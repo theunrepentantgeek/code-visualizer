@@ -1,10 +1,10 @@
 {
-  "last_run": "2026-07-06T16:22:00Z",
-  "run_id": "28805341304",
+  "last_run": "2026-07-07T15:35:00Z",
+  "run_id": "28878517401",
   "monthly_summary_issue": 481,
   "backlog_cursor": 503,
   "comments_made": {
-    "324": "2026-07-05", "329": "2026-07-04", "330": "2026-07-04",
+    "324": "2026-07-07", "329": "2026-07-04", "330": "2026-07-07",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
     "354": "2026-06-02", "355": "2026-06-02", "320": "2026-06-04",
     "373": "2026-06-08", "374": "2026-06-07", "385": "2026-06-11",
@@ -16,14 +16,10 @@
     "503": "2026-07-06"
   },
   "open_prs": {
-    "476": {"branch": "repo-assist/perf-spiral-bucketing-20260629-79f263e4b4c1f5e8", "desc": "perf(spiral): replace O(N) bucket scan with O(1) index calculation"},
     "488": {"branch": "repo-assist/perf-disc-accumulator-20260704-7ddcec3be7da26ef", "desc": "perf(render): eliminate O(N) intermediate slice copies in disc collection"},
     "489": {"branch": "repo-assist/improve-treemap-labels-accumulator-20260704-bc64d326322c2899", "desc": "refactor(treemap): simplify buildBlockLabels using shared accumulator"},
-    "501": {"branch": "repo-assist/refactor-bubbletree-packing-324-20260705-080b0f8b66033bdf", "desc": "refactor(bubbletree): extract circle packing to packing.go, step 3 of #324"},
     "502": {"branch": "repo-assist/refactor-svg-fill-attr-330-20260705-517711e75ae36093", "desc": "refactor(svg): extract svgFillAttr helper, addresses #330 SVG side"},
-    "504": {"branch": "repo-assist/refactor-bubbletree-index-324-20260706", "desc": "refactor(bubbletree): move node indexing to BubbleNode.Index(), partial #324 item 3"},
-    "TBD-raster330": {"branch": "repo-assist/refactor-raster-solid-fill-330-20260706-b92c214", "desc": "refactor(raster): simplify fill dispatch in DrawRectangle/DrawDisc using model.SolidColor, addresses #330 raster side"},
-    "TBD-slices505": {"branch": "repo-assist/improve-has-level-expressions-20260706-b92c214", "desc": "refactor(stages): use slices.ContainsFunc in HasDeclarationExpressions/HasCommitExpressions, -8 lines"}
+    "507": {"branch": "repo-assist/perf-bubbletree-render-alloc-20260707", "desc": "perf(bubbletree): pre-allocate DiscSpec and use accumulator in dir collection"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -43,6 +39,6 @@
     "No backwards compatibility needed (pre-alpha tool)"
   ],
   "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [497, 499, 500, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 498],
-  "notes": "Run 28805341304 (2026-07-06 16:22): Tasks 10,5,4->5,11. Task 10: Created PR (TBD-raster330) simplifying fill dispatch in raster backend DrawRectangle/DrawDisc using model.SolidColor if/else - addresses #330 raster side. Task 5 x2: Created PR (TBD-slices505) replacing for-range-return loops in HasDeclarationExpressions/HasCommitExpressions with slices.ContainsFunc (-8 lines). Task 4->5 sub: Dependabot PRs all touch protected files. Confirmed TBD-index324 from prev run = PR #504. Issue #324 remaining: solver interface (item 2) and full Layout pre-building of index (item 3 continued) - blocked until #501 merges. Issue #503 should be closed (commented in prev run). Next run: confirm PR numbers for TBD-raster330, TBD-slices505."
+  "closed_prs": [497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476],
+  "notes": "Run 28878517401 (2026-07-07): Tasks 4->5, 10, 2, 11. Task 4->5: Created PR #507 perf(bubbletree) - pre-allocate DiscSpec + accumulator in collectBubbleDirEntries in render.go. Task 10: Commented on #324 with final status table (all items done), suggested closing. Task 2: Commented on #330 with raster/SVG progress update (raster: #498+#505 merged; SVG: #502 open), suggested closing after #502 merges. Confirmed: PR #504 merged (bubbletree index), PR #505 merged (raster330), PR #506 merged (slices505). Issues #324 and #330 are close to closing. #503 still open but commented. Dependabot PRs #492,#493,#495 all touch protected workflow files."
 }
