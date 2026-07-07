@@ -24,3 +24,25 @@ type BubbleNode struct {
 	IsDirectory bool    // true for directory nodes, false for file nodes
 	Children    []BubbleNode
 }
+
+// Index builds path-based lookup maps for all descendant BubbleNodes,
+// separating directories from files. The root node itself is not included.
+func (n *BubbleNode) Index() (dirs map[string]*BubbleNode, files map[string]*BubbleNode) {
+	dirs = make(map[string]*BubbleNode)
+	files = make(map[string]*BubbleNode)
+	n.walkIndex(dirs, files)
+
+	return dirs, files
+}
+
+func (n *BubbleNode) walkIndex(dirs, files map[string]*BubbleNode) {
+	for i := range n.Children {
+		child := &n.Children[i]
+		if child.IsDirectory {
+			dirs[child.Path] = child
+			child.walkIndex(dirs, files)
+		} else {
+			files[child.Path] = child
+		}
+	}
+}

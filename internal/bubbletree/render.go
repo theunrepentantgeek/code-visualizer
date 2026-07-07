@@ -34,7 +34,7 @@ func RenderToCanvas(
 
 	addBubbleBackground(cv, width, height)
 
-	dirs, files := indexBubbleNodes(nodes)
+	dirs, files := nodes.Index()
 	addBubbleDirDiscs(cv, dirs, root)
 	addBubbleFileDiscs(cv, files, root, is)
 	addBubbleLabels(cv, *nodes)
@@ -58,35 +58,6 @@ func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 		H:     float64(height),
 		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
-}
-
-// indexBubbleNodes recursively indexes all BubbleNodes by their Path,
-// separating directories and files. Returns two maps.
-func indexBubbleNodes(
-	node *BubbleNode,
-) (dirs map[string]*BubbleNode, files map[string]*BubbleNode) {
-	dirs = make(map[string]*BubbleNode)
-	files = make(map[string]*BubbleNode)
-
-	indexBubbleNodesWalk(node, dirs, files)
-
-	return dirs, files
-}
-
-func indexBubbleNodesWalk(
-	node *BubbleNode,
-	dirs map[string]*BubbleNode,
-	files map[string]*BubbleNode,
-) {
-	for i := range node.Children {
-		child := &node.Children[i]
-		if child.IsDirectory {
-			dirs[child.Path] = child
-			indexBubbleNodesWalk(child, dirs, files)
-		} else {
-			files[child.Path] = child
-		}
-	}
 }
 
 // bubbleDirEntry holds a directory node for sorted drawing.
