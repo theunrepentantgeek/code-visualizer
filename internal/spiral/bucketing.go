@@ -32,9 +32,12 @@ func AssignFilesToBuckets(
 // bucketIndexFor returns the index of the bucket whose [Start, End) interval
 // contains t. Returns -1 when t is out of range or the slice is empty.
 //
-// Buckets are uniform equal-duration intervals so the index is computed in
-// O(1) by dividing the elapsed time from the first bucket's start by the
-// bucket duration, instead of scanning the slice linearly.
+// Buckets are normally uniform equal-duration intervals, so the index is
+// computed in O(1) by dividing the elapsed time from the first bucket's start
+// by the bucket duration. The computed bucket's [Start, End) interval is then
+// verified to actually contain t; if it does not (because the buckets are
+// non-uniform or non-consecutive), the function falls back to an O(N) linear
+// scan so the correct index is still returned.
 func bucketIndexFor(buckets []TimeBucket, t time.Time) int {
 	if len(buckets) == 0 {
 		return -1
@@ -42,7 +45,7 @@ func bucketIndexFor(buckets []TimeBucket, t time.Time) int {
 
 	dur := buckets[0].End.Sub(buckets[0].Start)
 	if dur <= 0 {
-		return -1
+		return linearBucketIndexFor(buckets, t)
 	}
 
 	delta := t.Sub(buckets[0].Start)
@@ -51,9 +54,28 @@ func bucketIndexFor(buckets []TimeBucket, t time.Time) int {
 	}
 
 	i := int(delta / dur)
-	if i >= len(buckets) {
-		return -1
+	if i >= 0 && i < len(buckets) && bucketContains(buckets[i], t) {
+		return i
 	}
 
-	return i
+	// The uniform-interval assumption did not hold; fall back to a linear scan.
+	return linearBucketIndexFor(buckets, t)
+}
+
+// linearBucketIndexFor scans buckets sequentially and returns the index of the
+// first bucket whose [Start, End) interval contains t, or -1 if none does.
+func linearBucketIndexFor(buckets []TimeBucket, t time.Time) int {
+	for i := range buckets {
+		if bucketContains(buckets[i], t) {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// bucketContains reports whether t falls within the bucket's half-open
+// [Start, End) interval.
+func bucketContains(bucket TimeBucket, t time.Time) bool {
+	return !t.Before(bucket.Start) && t.Before(bucket.End)
 }

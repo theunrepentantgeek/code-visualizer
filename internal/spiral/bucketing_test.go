@@ -207,3 +207,53 @@ func TestAssignFilesToBuckets_EmptyBuckets(t *testing.T) {
 	// returns -1 when the bucket slice is empty.
 	AssignFilesToBuckets([]TimeBucket{}, history)
 }
+
+// TestBucketIndexFor_NonUniformBuckets_FallsBackToLinearScan verifies that when
+// buckets are non-uniform (unequal durations) the O(1) fast-path assumption
+// breaks, and bucketIndexFor still returns the correct index via linear-scan
+// fallback rather than silently returning a wrong index.
+func TestBucketIndexFor_NonUniformBuckets_FallsBackToLinearScan(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Bucket 0 is short (1h), bucket 1 is long (10h), bucket 2 is short (1h).
+	// The O(1) calculation assumes every bucket is as long as bucket 0.
+	buckets := []TimeBucket{
+		{Start: baseHour, End: baseHour.Add(1 * time.Hour)},
+		{Start: baseHour.Add(1 * time.Hour), End: baseHour.Add(11 * time.Hour)},
+		{Start: baseHour.Add(11 * time.Hour), End: baseHour.Add(12 * time.Hour)},
+	}
+
+	// A commit 6h in falls in bucket 1. The O(1) math (6h / 1h = 6) is out of
+	// range, so it must fall back to a linear scan and find bucket 1.
+	g.Expect(bucketIndexFor(buckets, baseHour.Add(6*time.Hour))).To(Equal(1))
+
+	// A commit 11.5h in falls in bucket 2 (also unreachable via the fast path).
+	g.Expect(bucketIndexFor(buckets, baseHour.Add(11*time.Hour+30*time.Minute))).To(Equal(2))
+
+	// A commit inside bucket 0 is still resolved correctly.
+	g.Expect(bucketIndexFor(buckets, baseHour.Add(30*time.Minute))).To(Equal(0))
+}
+
+// TestBucketIndexFor_NonConsecutiveBuckets_FallsBackToLinearScan verifies that
+// when buckets have gaps between them, a commit landing inside a gap is not
+// misassigned to a bucket that does not actually contain it.
+func TestBucketIndexFor_NonConsecutiveBuckets_FallsBackToLinearScan(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Two 1h buckets with a 1h gap between them: [0,1h) ... [2h,3h).
+	buckets := []TimeBucket{
+		{Start: baseHour, End: baseHour.Add(1 * time.Hour)},
+		{Start: baseHour.Add(2 * time.Hour), End: baseHour.Add(3 * time.Hour)},
+	}
+
+	// A commit in the gap belongs to no bucket. The O(1) math (1.5h / 1h = 1)
+	// would wrongly pick bucket 1, so membership verification must reject it and
+	// the linear scan must return -1.
+	g.Expect(bucketIndexFor(buckets, baseHour.Add(90*time.Minute))).To(Equal(-1))
+
+	// Commits inside each real bucket still resolve correctly.
+	g.Expect(bucketIndexFor(buckets, baseHour.Add(30*time.Minute))).To(Equal(0))
+	g.Expect(bucketIndexFor(buckets, baseHour.Add(150*time.Minute))).To(Equal(1))
+}
