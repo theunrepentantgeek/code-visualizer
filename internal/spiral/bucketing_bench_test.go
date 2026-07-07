@@ -34,6 +34,7 @@ func BenchmarkAssignFilesToBuckets(b *testing.B) {
 			frac := time.Duration(float64(span) * float64(i*commitsPerFile+j) / float64(numFiles*commitsPerFile))
 			refs[j] = stages.CommitRef{When: base.Add(frac)}
 		}
+
 		history[f] = refs
 	}
 
@@ -45,6 +46,7 @@ func BenchmarkAssignFilesToBuckets(b *testing.B) {
 		for i := range buckets {
 			buckets[i].Files = buckets[i].Files[:0]
 		}
+
 		AssignFilesToBuckets(buckets, history)
 	}
 }
