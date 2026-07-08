@@ -246,10 +246,6 @@ func (s *svgBackend) Finish(outputPath string) (err error) {
 	return nil
 }
 
-// colourCSS returns the CSS colour string for c, using a per-backend cache to
-// avoid repeated fmt.Sprintf allocations for the same colour. In typical
-// visualizations, nodes share a small number of palette colours (e.g. 16
-// buckets), so the cache hit rate is high.
 // svgFillAttr returns the SVG fill attribute value for the given fill.
 // For gradients it emits the gradient definition and returns a url(#id) ref;
 // for solid or default fills it returns a CSS colour string.
@@ -261,6 +257,10 @@ func (s *svgBackend) svgFillAttr(fill model.Fill) string {
 	return s.colourCSS(model.SolidColor(fill))
 }
 
+// colourCSS returns the CSS colour string for c, using a per-backend cache to
+// avoid repeated fmt.Sprintf allocations for the same colour. In typical
+// visualizations, nodes share a small number of palette colours (e.g. 16
+// buckets), so the cache hit rate is high.
 func (s *svgBackend) colourCSS(c color.RGBA) string {
 	if cached, ok := s.colourCache[c]; ok {
 		return cached
