@@ -11,6 +11,28 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
+// dirHeaderSpec and dirLabelSpec are constant across every directory node in a
+// render pass. Pre-allocating them avoids repeated heap allocations in the
+// recursive walk.
+//
+//nolint:gochecknoglobals // pre-allocated render-phase specs
+var (
+	dirHeaderSpec = &canvas.RectangleSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        inks.FixedInk(headerFill),
+			Border:      inks.FixedInk(headerFill),
+			BorderWidth: 0,
+		},
+	}
+	dirLabelSpec = &canvas.TextSpec{
+		Ink:      inks.FixedInk(palette.White),
+		FontSize: 0,
+		Anchor:   canvas.AnchorStart,
+	}
+	dirBorderFillInk = inks.FixedInk(color.RGBA{A: 0})
+	dirBorderLineInk = inks.FixedInk(structuralBorder)
+)
+
 // RenderToCanvas walks the layout tree and model tree in parallel,
 // adding shapes to the canvas. Returns the populated canvas.
 func RenderToCanvas(
@@ -81,16 +103,9 @@ func addDirectoryShapes(
 	cv *canvas.Canvas,
 	rect TreemapRectangle,
 ) {
-	// Header bar fill
-	headerSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(headerFill),
-			Border:      inks.FixedInk(headerFill),
-			BorderWidth: 0,
-		},
-	}
+	// Header bar fill - spec is constant across all directories in this render pass.
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec:  headerSpec,
+		Spec:  dirHeaderSpec,
 		X:     rect.X,
 		Y:     rect.Y,
 		W:     rect.W,
@@ -98,26 +113,21 @@ func addDirectoryShapes(
 		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
-	// Header label
+	// Header label - spec is constant; only position and content vary.
 	if rect.Label != "" {
-		labelSpec := &canvas.TextSpec{
-			Ink:      inks.FixedInk(palette.White),
-			FontSize: 0,
-			Anchor:   canvas.AnchorStart,
-		}
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec:    labelSpec,
+			Spec:    dirLabelSpec,
 			X:       rect.X + 4,
 			Y:       rect.Y + headerHeight/2,
 			Content: rect.Label,
 		})
 	}
 
-	// Directory border
+	// Directory border - BorderWidth varies per directory, so only the inks are shared.
 	borderSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(color.RGBA{A: 0}),
-			Border:      inks.FixedInk(structuralBorder),
+			Fill:        dirBorderFillInk,
+			Border:      dirBorderLineInk,
 			BorderWidth: DynBorderWidth(rect.W, rect.H, inks.KindNumeric),
 		},
 	}
