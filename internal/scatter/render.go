@@ -136,7 +136,9 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 }
 
 func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
-	titleSpec := &canvas.TextSpec{Ink: inks.FixedInk(scatterLabelColour), FontSize: 12, Anchor: canvas.AnchorMiddle}
+	labelInk := inks.FixedInk(scatterLabelColour)
+
+	titleSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 12, Anchor: canvas.AnchorMiddle}
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:    titleSpec,
 		X:       layout.Plot.X + layout.Plot.W/2,
@@ -145,7 +147,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 	})
 
 	yTitleSpec := &canvas.TextSpec{
-		Ink:      inks.FixedInk(scatterLabelColour),
+		Ink:      labelInk,
 		FontSize: 12,
 		Anchor:   canvas.AnchorMiddle,
 		Rotation: -math.Pi / 2,
@@ -157,7 +159,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 		Content: layout.YAxis.Title,
 	})
 
-	tickSpec := &canvas.TextSpec{Ink: inks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorMiddle}
+	tickSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 10, Anchor: canvas.AnchorMiddle}
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    tickSpec,
@@ -176,7 +178,7 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 		})
 	}
 
-	yTickSpec := &canvas.TextSpec{Ink: inks.FixedInk(scatterLabelColour), FontSize: 10, Anchor: canvas.AnchorEnd}
+	yTickSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 10, Anchor: canvas.AnchorEnd}
 	for _, tick := range layout.YAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    yTickSpec,
@@ -205,6 +207,13 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 	discSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{Fill: is.Fill, Border: is.Border, BorderWidth: borderWidth},
 	}
+
+	// Pre-allocate both possible label inks so per-point rendering avoids heap allocations.
+	// canvas.TextColourFor returns exactly one of two values (black or white).
+	darkLabelColour := canvas.TextColourFor(scatterBgColour)
+	darkLabelInk := inks.FixedInk(darkLabelColour)
+	lightLabelInk := inks.FixedInk(canvas.TextColourFor(scatterDefaultBorder))
+
 	for _, point := range points {
 		fillValue := inks.MetricValueForFile(point.File, is.Fill)
 		borderValue := inks.MetricValueForFile(point.File, is.Border)
@@ -219,8 +228,14 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 
 		label, fontSize := scatterLabel(point.Label, point.Radius)
 		labelColour := canvas.TextColourFor(is.Fill.Dip(fillValue))
+		var labelInk inks.Ink
+		if labelColour == darkLabelColour {
+			labelInk = darkLabelInk
+		} else {
+			labelInk = lightLabelInk
+		}
 		labelSpec := &canvas.TextSpec{
-			Ink:      inks.FixedInk(labelColour),
+			Ink:      labelInk,
 			FontSize: fontSize,
 			Anchor:   canvas.AnchorMiddle,
 		}
