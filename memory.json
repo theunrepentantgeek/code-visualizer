@@ -1,10 +1,10 @@
 {
-  "last_run": "2026-07-08T04:21:00Z",
-  "run_id": "28916367161",
+  "last_run": "2026-07-08T15:01:00Z",
+  "run_id": "28952600875",
   "monthly_summary_issue": 481,
   "backlog_cursor": 503,
   "comments_made": {
-    "324": "2026-07-07", "329": "2026-07-04", "330": "2026-07-07",
+    "324": "2026-07-07", "329": "2026-07-04", "330": "2026-07-08",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
     "354": "2026-06-02", "355": "2026-06-02", "320": "2026-06-04",
     "373": "2026-06-08", "374": "2026-06-07", "385": "2026-06-11",
@@ -16,12 +16,7 @@
     "503": "2026-07-06"
   },
   "open_prs": {
-    "488": {"branch": "repo-assist/perf-disc-accumulator-20260704-7ddcec3be7da26ef", "desc": "perf(render): eliminate O(N) intermediate slice copies in disc collection"},
-    "489": {"branch": "repo-assist/improve-treemap-labels-accumulator-20260704-bc64d326322c2899", "desc": "refactor(treemap): simplify buildBlockLabels using shared accumulator"},
-    "502": {"branch": "repo-assist/refactor-svg-fill-attr-330-20260705-517711e75ae36093", "desc": "refactor(svg): extract svgFillAttr helper, addresses #330 SVG side"},
-    "507": {"branch": "repo-assist/perf-bubbletree-render-alloc-20260707", "desc": "perf(bubbletree): pre-allocate DiscSpec and use accumulator in dir collection"},
-    "aw_pr_scatter": {"branch": "repo-assist/perf-scatter-label-inks-20260708", "desc": "perf(scatter): eliminate redundant FixedInk allocations - share labelInk in addScatterAxisLabels, pre-allocate dark/light label inks in addScatterPoints"},
-    "aw_pr_treemap": {"branch": "repo-assist/improve-treemap-dir-specs-20260708", "desc": "refactor(treemap): pre-allocate constant directory render specs - dirHeaderSpec, dirLabelSpec, dirBorderFillInk, dirBorderLineInk as package-level vars"}
+    "aw_pr_geometry_tests": {"branch": "repo-assist/test-bubbletree-geometry-20260708", "desc": "test(bubbletree): add unit tests for geometry.go and transforms.go - 24 new tests for enclosing-circle geometry and coordinate transform helpers"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -38,9 +33,10 @@
     ".github/workflows/release.yml is protected (see #388)",
     ".github/workflows/* are ALL protected - cannot be pushed by automation",
     "Keep PRs strictly scoped to description",
-    "No backwards compatibility needed (pre-alpha tool)"
+    "No backwards compatibility needed (pre-alpha tool)",
+    "REJECTED: accumulator pattern with *[]T pointer parameters - maintainer called it 'nasty coupling' and 'short-sighted' (rejected PRs #488, #489, #507)"
   ],
   "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
-  "closed_prs": [497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476],
-  "notes": "Run 28916367161 (2026-07-08): Tasks 2 (N/A, fallback Task 1 also N/A - all labelled, all recently commented), 5, 8, 11. Task 5+8: Created PR aw_pr_scatter - scatter/render.go: shared labelInk in addScatterAxisLabels (removes 3 FixedInk allocs/render), pre-allocated dark/light label inks in addScatterPoints (saves 1 FixedInk alloc/point). Task 5: Created PR aw_pr_treemap - treemap/render.go: package-level dirHeaderSpec, dirLabelSpec, dirBorderFillInk, dirBorderLineInk; saves ~5-6 allocs/directory in recursive walk. Open issues needing closure: #503 (aw failure, resolved), #324 (all done), #330 (wait for #502). 5 open Repo Assist PRs: #488, #489, #502, #507, aw_pr_scatter, aw_pr_treemap."
+  "closed_prs": [488, 489, 502, 507, 508, 509, 497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476],
+  "notes": "Run 28952600875 (2026-07-08): Tasks 3->2 (no bug issues), 2, 4->5, 11. CRITICAL PREFERENCE CHANGE: maintainer rejected PRs #488, #489, #507 for using *[]T accumulator pattern - 'nasty coupling' and 'short-sighted'. Do NOT use accumulator pattern in future. PRs #508 (#perf-scatter) and #509 (#refactor-treemap) merged from previous run. PR #502 merged (SVG fillAttr). Task 2: Commented on #330 noting PR #502 merged and issue is fully resolved. Task 5: Created PR aw_pr_geometry_tests - 24 new tests for enclosing-circle geometry (geometry_test.go) and coordinate transforms (transforms_test.go) - these files were recently extracted from layout.go but had no direct tests. Issues #330 and #324 are ready to close."
 }
