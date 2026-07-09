@@ -119,19 +119,12 @@ func collectBubbleDirEntries(
 
 // addBubbleFileDiscs walks the model tree via path lookup
 // and adds file discs to the canvas.
+// Pre-allocates a shared fileSpec so it is not re-created at every level of
+// directory recursion.
 func addBubbleFileDiscs(
 	cv *canvas.Canvas,
 	fileIndex map[string]*BubbleNode,
 	root *model.Directory,
-	is Inks,
-) {
-	addBubbleFileDiscsWalk(cv, fileIndex, root, is)
-}
-
-func addBubbleFileDiscsWalk(
-	cv *canvas.Canvas,
-	fileIndex map[string]*BubbleNode,
-	dir *model.Directory,
 	is Inks,
 ) {
 	borderWidth := bubbleBorderWidth
@@ -147,6 +140,19 @@ func addBubbleFileDiscsWalk(
 		},
 	}
 
+	addBubbleFileDiscsWalk(cv, fileIndex, root, is, fileSpec)
+}
+
+// addBubbleFileDiscsWalk is the recursive worker for addBubbleFileDiscs.
+// It accepts a pre-allocated fileSpec to avoid repeated allocations per
+// directory level.
+func addBubbleFileDiscsWalk(
+	cv *canvas.Canvas,
+	fileIndex map[string]*BubbleNode,
+	dir *model.Directory,
+	is Inks,
+	fileSpec *canvas.DiscSpec,
+) {
 	for _, f := range dir.Files {
 		bn, ok := fileIndex[f.Path]
 		if !ok || bn.Radius <= 0 {
@@ -167,7 +173,7 @@ func addBubbleFileDiscsWalk(
 	}
 
 	for _, d := range dir.Dirs {
-		addBubbleFileDiscsWalk(cv, fileIndex, d, is)
+		addBubbleFileDiscsWalk(cv, fileIndex, d, is, fileSpec)
 	}
 }
 
