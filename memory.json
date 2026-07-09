@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-07-08T15:01:00Z",
-  "run_id": "28952600875",
+  "last_run": "2026-07-09T04:53:00Z",
+  "run_id": "28994369030",
   "monthly_summary_issue": 481,
-  "backlog_cursor": 503,
+  "backlog_cursor": 511,
   "comments_made": {
     "324": "2026-07-07", "329": "2026-07-04", "330": "2026-07-08",
     "333": "2026-06-20", "334": "2026-06-03", "335": "2026-06-01",
@@ -16,7 +16,9 @@
     "503": "2026-07-06"
   },
   "open_prs": {
-    "aw_pr_geometry_tests": {"branch": "repo-assist/test-bubbletree-geometry-20260708", "desc": "test(bubbletree): add unit tests for geometry.go and transforms.go - 24 new tests for enclosing-circle geometry and coordinate transform helpers"}
+    "511": {"branch": "repo-assist/test-bubbletree-geometry-20260708-4da35687f19dd5b6", "desc": "test(bubbletree): add unit tests for geometry.go and transforms.go - 24 new tests"},
+    "aw_pr_perf_disc": {"branch": "repo-assist/perf-bubbletree-filedisc-spec-20260709", "desc": "perf(bubbletree): pre-allocate fileSpec in addBubbleFileDiscs"},
+    "aw_pr_packing": {"branch": "repo-assist/test-bubbletree-packing-20260709", "desc": "test(bubbletree): add 16 unit tests for packing.go"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -36,7 +38,7 @@
     "No backwards compatibility needed (pre-alpha tool)",
     "REJECTED: accumulator pattern with *[]T pointer parameters - maintainer called it 'nasty coupling' and 'short-sighted' (rejected PRs #488, #489, #507)"
   ],
-  "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464],
+  "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464, 330, 503],
   "closed_prs": [488, 489, 502, 507, 508, 509, 497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476],
-  "notes": "Run 28952600875 (2026-07-08): Tasks 3->2 (no bug issues), 2, 4->5, 11. CRITICAL PREFERENCE CHANGE: maintainer rejected PRs #488, #489, #507 for using *[]T accumulator pattern - 'nasty coupling' and 'short-sighted'. Do NOT use accumulator pattern in future. PRs #508 (#perf-scatter) and #509 (#refactor-treemap) merged from previous run. PR #502 merged (SVG fillAttr). Task 2: Commented on #330 noting PR #502 merged and issue is fully resolved. Task 5: Created PR aw_pr_geometry_tests - 24 new tests for enclosing-circle geometry (geometry_test.go) and coordinate transforms (transforms_test.go) - these files were recently extracted from layout.go but had no direct tests. Issues #330 and #324 are ready to close."
+  "notes": "Run 28994369030 (2026-07-09): Tasks 7(→2 fallback, no stale non-RA PRs), 8, 10, 11. Issues #330 and #503 closed by maintainer. Task 8: PR aw_pr_perf_disc - pre-allocate fileSpec in addBubbleFileDiscs (same pattern as addEdges/addEdgesInner, addBubbleLabels). Task 10: PR aw_pr_packing - 16 unit tests for packing.go (tangentPositions, anyOverlap, packCircles). Task 2 fallback: no new human activity on open issues worth commenting on. Issue #324 still open, maintainer should close. Dependabot PR #493 touches protected .github/workflows files - cannot be automated."
 }
