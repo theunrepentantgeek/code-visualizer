@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-07-09T04:53:00Z",
-  "run_id": "28994369030",
+  "last_run": "2026-07-09T15:47:18Z",
+  "run_id": "29030749555",
   "monthly_summary_issue": 481,
   "backlog_cursor": 511,
   "comments_made": {
@@ -17,8 +17,10 @@
   },
   "open_prs": {
     "511": {"branch": "repo-assist/test-bubbletree-geometry-20260708-4da35687f19dd5b6", "desc": "test(bubbletree): add unit tests for geometry.go and transforms.go - 24 new tests"},
-    "aw_pr_perf_disc": {"branch": "repo-assist/perf-bubbletree-filedisc-spec-20260709", "desc": "perf(bubbletree): pre-allocate fileSpec in addBubbleFileDiscs"},
-    "aw_pr_packing": {"branch": "repo-assist/test-bubbletree-packing-20260709", "desc": "test(bubbletree): add 16 unit tests for packing.go"}
+    "512": {"branch": "repo-assist/perf-bubbletree-filedisc-spec-20260709-d8f6c8afbf2bb833", "desc": "perf(bubbletree): pre-allocate fileSpec in addBubbleFileDiscs"},
+    "513": {"branch": "repo-assist/test-bubbletree-packing-20260709-94def7fe795a2d9b", "desc": "test(bubbletree): add 16 unit tests for packing.go"},
+    "aw_pr_axistest": {"branch": "repo-assist/test-scatter-axis-resolve-20260709", "desc": "test(scatter): add 35 unit tests for axis_resolve.go pure-math functions"},
+    "aw_pr_relpath": {"branch": "repo-assist/improve-stages-git-relpath-20260709", "desc": "refactor(stages): extract walkFilesWithRepoRelPaths to reduce duplication"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -40,5 +42,5 @@
   ],
   "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464, 330, 503],
   "closed_prs": [488, 489, 502, 507, 508, 509, 497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476],
-  "notes": "Run 28994369030 (2026-07-09): Tasks 7(→2 fallback, no stale non-RA PRs), 8, 10, 11. Issues #330 and #503 closed by maintainer. Task 8: PR aw_pr_perf_disc - pre-allocate fileSpec in addBubbleFileDiscs (same pattern as addEdges/addEdgesInner, addBubbleLabels). Task 10: PR aw_pr_packing - 16 unit tests for packing.go (tangentPositions, anyOverlap, packCircles). Task 2 fallback: no new human activity on open issues worth commenting on. Issue #324 still open, maintainer should close. Dependabot PR #493 touches protected .github/workflows files - cannot be automated."
+  "notes": "Run 29030749555 (2026-07-09): Tasks 4(->5 fallback), 5, 9, 11. Task 4->5: PR aw_pr_relpath - extract walkFilesWithRepoRelPaths in stages/git_history.go. Task 5: same PR. Task 9: PR aw_pr_axistest - 35 unit tests for scatter/axis_resolve.go pure-math functions. PRs from run 28994369030 now have real numbers: aw_pr_perf_disc=>#512, aw_pr_packing=>#513. Issue #324 still open, maintainer should close. Dependabot PR #493 touches protected .github/workflows files - cannot be automated."
 }
