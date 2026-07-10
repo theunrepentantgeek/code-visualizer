@@ -97,8 +97,8 @@ func TestRenderCmd_AllPresets_RegisteredAndUnique(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // captureStdout swaps global os.Stdout, so this test cannot run in parallel
 func TestRenderCmd_ListPresets_UsesMetricsStyleLayout(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	output := captureStdout(t, func() {

@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+//nolint:paralleltest // captureStdout swaps global os.Stdout, so this test cannot run in parallel
 func TestHelpMetricsCmdRun_GroupsMetricsByProvider(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	output := captureStdout(t, func() {
