@@ -3,26 +3,26 @@ package bubbletree
 import (
 	"testing"
 
-	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 )
 
 func TestBubbleNodeIndexEmptyNode(t *testing.T) {
 	t.Parallel()
-	g := gomega.NewWithT(t)
+	g := NewGomegaWithT(t)
 
 	root := &BubbleNode{Path: "root", IsDirectory: true}
 
 	dirs, files := root.Index()
 
-	g.Expect(dirs).To(gomega.BeEmpty())
-	g.Expect(files).To(gomega.BeEmpty())
-	g.Expect(dirs).NotTo(gomega.HaveKey("root"))
-	g.Expect(files).NotTo(gomega.HaveKey("root"))
+	g.Expect(dirs).To(BeEmpty())
+	g.Expect(files).To(BeEmpty())
+	g.Expect(dirs).NotTo(HaveKey("root"))
+	g.Expect(files).NotTo(HaveKey("root"))
 }
 
 func TestBubbleNodeIndexOnlyFileChildren(t *testing.T) {
 	t.Parallel()
-	g := gomega.NewWithT(t)
+	g := NewGomegaWithT(t)
 
 	root := &BubbleNode{
 		Path:        "root",
@@ -35,18 +35,18 @@ func TestBubbleNodeIndexOnlyFileChildren(t *testing.T) {
 
 	dirs, files := root.Index()
 
-	g.Expect(dirs).To(gomega.BeEmpty())
-	g.Expect(files).To(gomega.HaveLen(2))
-	g.Expect(files).To(gomega.HaveKey("root/a.go"))
-	g.Expect(files).To(gomega.HaveKey("root/b.go"))
-	g.Expect(files["root/a.go"]).To(gomega.BeIdenticalTo(&root.Children[0]))
-	g.Expect(files["root/b.go"]).To(gomega.BeIdenticalTo(&root.Children[1]))
-	g.Expect(files).NotTo(gomega.HaveKey("root"))
+	g.Expect(dirs).To(BeEmpty())
+	g.Expect(files).To(HaveLen(2))
+	g.Expect(files).To(HaveKey("root/a.go"))
+	g.Expect(files).To(HaveKey("root/b.go"))
+	g.Expect(files["root/a.go"]).To(BeIdenticalTo(&root.Children[0]))
+	g.Expect(files["root/b.go"]).To(BeIdenticalTo(&root.Children[1]))
+	g.Expect(files).NotTo(HaveKey("root"))
 }
 
 func TestBubbleNodeIndexOnlyDirectoryChildren(t *testing.T) {
 	t.Parallel()
-	g := gomega.NewWithT(t)
+	g := NewGomegaWithT(t)
 
 	root := &BubbleNode{
 		Path:        "root",
@@ -59,18 +59,18 @@ func TestBubbleNodeIndexOnlyDirectoryChildren(t *testing.T) {
 
 	dirs, files := root.Index()
 
-	g.Expect(dirs).To(gomega.HaveLen(2))
-	g.Expect(files).To(gomega.BeEmpty())
-	g.Expect(dirs).To(gomega.HaveKey("root/dir-a"))
-	g.Expect(dirs).To(gomega.HaveKey("root/dir-b"))
-	g.Expect(dirs["root/dir-a"]).To(gomega.BeIdenticalTo(&root.Children[0]))
-	g.Expect(dirs["root/dir-b"]).To(gomega.BeIdenticalTo(&root.Children[1]))
-	g.Expect(dirs).NotTo(gomega.HaveKey("root"))
+	g.Expect(dirs).To(HaveLen(2))
+	g.Expect(files).To(BeEmpty())
+	g.Expect(dirs).To(HaveKey("root/dir-a"))
+	g.Expect(dirs).To(HaveKey("root/dir-b"))
+	g.Expect(dirs["root/dir-a"]).To(BeIdenticalTo(&root.Children[0]))
+	g.Expect(dirs["root/dir-b"]).To(BeIdenticalTo(&root.Children[1]))
+	g.Expect(dirs).NotTo(HaveKey("root"))
 }
 
 func TestBubbleNodeIndexMixedDirectChildren(t *testing.T) {
 	t.Parallel()
-	g := gomega.NewWithT(t)
+	g := NewGomegaWithT(t)
 
 	root := &BubbleNode{
 		Path:        "root",
@@ -84,16 +84,16 @@ func TestBubbleNodeIndexMixedDirectChildren(t *testing.T) {
 
 	dirs, files := root.Index()
 
-	g.Expect(dirs).To(gomega.HaveLen(1))
-	g.Expect(files).To(gomega.HaveLen(2))
-	g.Expect(dirs["root/docs"]).To(gomega.BeIdenticalTo(&root.Children[1]))
-	g.Expect(files["root/a.go"]).To(gomega.BeIdenticalTo(&root.Children[0]))
-	g.Expect(files["root/b.go"]).To(gomega.BeIdenticalTo(&root.Children[2]))
+	g.Expect(dirs).To(HaveLen(1))
+	g.Expect(files).To(HaveLen(2))
+	g.Expect(dirs["root/docs"]).To(BeIdenticalTo(&root.Children[1]))
+	g.Expect(files["root/a.go"]).To(BeIdenticalTo(&root.Children[0]))
+	g.Expect(files["root/b.go"]).To(BeIdenticalTo(&root.Children[2]))
 }
 
 func TestBubbleNodeIndexNestedDirectoriesIncludesDescendants(t *testing.T) {
 	t.Parallel()
-	g := gomega.NewWithT(t)
+	g := NewGomegaWithT(t)
 
 	root := &BubbleNode{
 		Path:        "root",
@@ -121,20 +121,20 @@ func TestBubbleNodeIndexNestedDirectoriesIncludesDescendants(t *testing.T) {
 
 	dirs, files := root.Index()
 
-	g.Expect(dirs).To(gomega.HaveLen(2))
-	g.Expect(files).To(gomega.HaveLen(3))
-	g.Expect(dirs["root/src"]).To(gomega.BeIdenticalTo(&root.Children[0]))
-	g.Expect(dirs["root/src/internal"]).To(gomega.BeIdenticalTo(&root.Children[0].Children[1]))
-	g.Expect(files["root/src/main.go"]).To(gomega.BeIdenticalTo(&root.Children[0].Children[0]))
-	g.Expect(files["root/src/internal/helper.go"]).To(gomega.BeIdenticalTo(&root.Children[0].Children[1].Children[0]))
-	g.Expect(files["root/README.md"]).To(gomega.BeIdenticalTo(&root.Children[1]))
-	g.Expect(dirs).NotTo(gomega.HaveKey("root"))
-	g.Expect(files).NotTo(gomega.HaveKey("root"))
+	g.Expect(dirs).To(HaveLen(2))
+	g.Expect(files).To(HaveLen(3))
+	g.Expect(dirs["root/src"]).To(BeIdenticalTo(&root.Children[0]))
+	g.Expect(dirs["root/src/internal"]).To(BeIdenticalTo(&root.Children[0].Children[1]))
+	g.Expect(files["root/src/main.go"]).To(BeIdenticalTo(&root.Children[0].Children[0]))
+	g.Expect(files["root/src/internal/helper.go"]).To(BeIdenticalTo(&root.Children[0].Children[1].Children[0]))
+	g.Expect(files["root/README.md"]).To(BeIdenticalTo(&root.Children[1]))
+	g.Expect(dirs).NotTo(HaveKey("root"))
+	g.Expect(files).NotTo(HaveKey("root"))
 }
 
 func TestBubbleNodeIndexReturnedPointersReferenceOriginalNodes(t *testing.T) {
 	t.Parallel()
-	g := gomega.NewWithT(t)
+	g := NewGomegaWithT(t)
 
 	root := &BubbleNode{
 		Path:        "root",
@@ -148,7 +148,7 @@ func TestBubbleNodeIndexReturnedPointersReferenceOriginalNodes(t *testing.T) {
 	dirs, files := root.Index()
 
 	dir, dirOK := dirs["root/docs"]
-	g.Expect(dirOK).To(gomega.BeTrue())
+	g.Expect(dirOK).To(BeTrue())
 
 	if dir == nil {
 		t.Fatal("expected dirs[\"root/docs\"] to be non-nil")
@@ -157,7 +157,7 @@ func TestBubbleNodeIndexReturnedPointersReferenceOriginalNodes(t *testing.T) {
 	dir.ShowLabel = true
 
 	file, fileOK := files["root/main.go"]
-	g.Expect(fileOK).To(gomega.BeTrue())
+	g.Expect(fileOK).To(BeTrue())
 
 	if file == nil {
 		t.Fatal("expected files[\"root/main.go\"] to be non-nil")
@@ -165,6 +165,6 @@ func TestBubbleNodeIndexReturnedPointersReferenceOriginalNodes(t *testing.T) {
 
 	file.Label = "renamed.go"
 
-	g.Expect(root.Children[0].ShowLabel).To(gomega.BeTrue())
-	g.Expect(root.Children[1].Label).To(gomega.Equal("renamed.go"))
+	g.Expect(root.Children[0].ShowLabel).To(BeTrue())
+	g.Expect(root.Children[1].Label).To(Equal("renamed.go"))
 }
