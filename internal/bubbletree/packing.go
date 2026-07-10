@@ -40,7 +40,7 @@ func packCircles(circles []BubbleNode) {
 		bestPos, bestAfter := findBestPlacement(circles, i, chain)
 
 		if bestAfter != nil {
-			circles[i].X, circles[i].Y = bestPos.x, bestPos.y
+			circles[i].X, circles[i].Y = bestPos.x, bestPos.y //nolint:gosec // G602 false positive: i < len(circles)
 
 			// Insert into chain between bestAfter and bestAfter.next.
 			chain[i].prev = bestAfter
