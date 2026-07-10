@@ -26,10 +26,12 @@ func TestTangentPositions_SymmetricCircles(t *testing.T) {
 	// Both candidate positions must be at the correct tangent distances from a and b.
 	expectDist := func(p point, center BubbleNode, r float64) {
 		t.Helper()
+
 		da := a.Radius + r + siblingPadding
 		db := center.Radius + r + siblingPadding
 		distA := math.Sqrt((p.x-a.X)*(p.x-a.X) + (p.y-a.Y)*(p.y-a.Y))
 		distCenter := math.Sqrt((p.x-center.X)*(p.x-center.X) + (p.y-center.Y)*(p.y-center.Y))
+
 		g.Expect(distA).To(BeNumerically("~", da, 1e-9))
 		g.Expect(distCenter).To(BeNumerically("~", db, 1e-9))
 	}
@@ -133,8 +135,8 @@ func TestAnyOverlap_SkipsOneAnchor_OverlapsOther(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	placed := []BubbleNode{
-		{X: 0, Y: 0, Radius: 5},  // skipped (anchor 0)
-		{X: 0, Y: 0, Radius: 5},  // not skipped — overlaps
+		{X: 0, Y: 0, Radius: 5}, // skipped (anchor 0)
+		{X: 0, Y: 0, Radius: 5}, // not skipped — overlaps
 	}
 
 	g.Expect(anyOverlap(point{0, 0}, 5, placed, 0, -1)).To(BeTrue())
@@ -225,6 +227,7 @@ func TestPackCircles_LargeCircleFirst_NoOverlap(t *testing.T) {
 
 	// One very large circle followed by many small ones.
 	circles := make([]BubbleNode, 10)
+
 	circles[0].Radius = 100
 	for i := 1; i < len(circles); i++ {
 		circles[i].Radius = 5
@@ -237,7 +240,7 @@ func TestPackCircles_LargeCircleFirst_NoOverlap(t *testing.T) {
 
 // ---------------------------------------------------------------------------
 // assertNoOverlaps verifies that no two circles in the slice overlap.
-// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------.
 func assertNoOverlaps(t *testing.T, g *GomegaWithT, circles []BubbleNode) {
 	t.Helper()
 
