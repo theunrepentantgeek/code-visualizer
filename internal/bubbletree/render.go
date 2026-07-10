@@ -105,15 +105,17 @@ func collectBubbleDirEntries(
 	dirIndex map[string]*BubbleNode,
 	dir *model.Directory,
 ) []bubbleDirEntry {
-	var entries []bubbleDirEntry
-
-	for _, d := range dir.Dirs {
-		if bn, ok := dirIndex[d.Path]; ok && bn.Radius > 0 {
-			entries = append(entries, bubbleDirEntry{node: bn})
-			entries = append(entries, collectBubbleDirEntries(dirIndex, d)...)
+	entries := make([]bubbleDirEntry, 0, model.CountDirs(dir))
+	var walk func(*model.Directory)
+	walk = func(d *model.Directory) {
+		for _, sub := range d.Dirs {
+			if bn, ok := dirIndex[sub.Path]; ok && bn.Radius > 0 {
+				entries = append(entries, bubbleDirEntry{node: bn})
+				walk(sub)
+			}
 		}
 	}
-
+	walk(dir)
 	return entries
 }
 
