@@ -14,8 +14,8 @@ func TestBubbleNodeIndexEmptyNode(t *testing.T) {
 
 	dirs, files := root.Index()
 
-	g.Expect(dirs).To(gomega.HaveLen(0))
-	g.Expect(files).To(gomega.HaveLen(0))
+	g.Expect(dirs).To(gomega.BeEmpty())
+	g.Expect(files).To(gomega.BeEmpty())
 	g.Expect(dirs).NotTo(gomega.HaveKey("root"))
 	g.Expect(files).NotTo(gomega.HaveKey("root"))
 }
@@ -35,7 +35,7 @@ func TestBubbleNodeIndexOnlyFileChildren(t *testing.T) {
 
 	dirs, files := root.Index()
 
-	g.Expect(dirs).To(gomega.HaveLen(0))
+	g.Expect(dirs).To(gomega.BeEmpty())
 	g.Expect(files).To(gomega.HaveLen(2))
 	g.Expect(files).To(gomega.HaveKey("root/a.go"))
 	g.Expect(files).To(gomega.HaveKey("root/b.go"))
@@ -60,7 +60,7 @@ func TestBubbleNodeIndexOnlyDirectoryChildren(t *testing.T) {
 	dirs, files := root.Index()
 
 	g.Expect(dirs).To(gomega.HaveLen(2))
-	g.Expect(files).To(gomega.HaveLen(0))
+	g.Expect(files).To(gomega.BeEmpty())
 	g.Expect(dirs).To(gomega.HaveKey("root/dir-a"))
 	g.Expect(dirs).To(gomega.HaveKey("root/dir-b"))
 	g.Expect(dirs["root/dir-a"]).To(gomega.BeIdenticalTo(&root.Children[0]))
@@ -147,8 +147,23 @@ func TestBubbleNodeIndexReturnedPointersReferenceOriginalNodes(t *testing.T) {
 
 	dirs, files := root.Index()
 
-	dirs["root/docs"].ShowLabel = true
-	files["root/main.go"].Label = "renamed.go"
+	dir, dirOK := dirs["root/docs"]
+	g.Expect(dirOK).To(gomega.BeTrue())
+
+	if dir == nil {
+		t.Fatal("expected dirs[\"root/docs\"] to be non-nil")
+	}
+
+	dir.ShowLabel = true
+
+	file, fileOK := files["root/main.go"]
+	g.Expect(fileOK).To(gomega.BeTrue())
+
+	if file == nil {
+		t.Fatal("expected files[\"root/main.go\"] to be non-nil")
+	}
+
+	file.Label = "renamed.go"
 
 	g.Expect(root.Children[0].ShowLabel).To(gomega.BeTrue())
 	g.Expect(root.Children[1].Label).To(gomega.Equal("renamed.go"))
