@@ -10,8 +10,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
+//nolint:paralleltest // captureStdout swaps global os.Stdout, so this test cannot run in parallel
 func TestHelpPalettesCmdRun_UsesMetricsStyleLayout(t *testing.T) {
-	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	output := captureStdout(t, func() {
