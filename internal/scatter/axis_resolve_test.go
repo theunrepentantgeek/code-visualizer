@@ -114,11 +114,11 @@ func TestNumericExtent_EmptySlice_ReturnsZeros(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	min, max := numericExtent(nil, horizontalAxis)
+	lo, hi := numericExtent(nil, horizontalAxis)
 
 	// Assert
-	g.Expect(min).To(Equal(0.0))
-	g.Expect(max).To(Equal(0.0))
+	g.Expect(lo).To(Equal(0.0))
+	g.Expect(hi).To(Equal(0.0))
 }
 
 func TestNumericExtent_SinglePoint_ReturnsThatValue(t *testing.T) {
@@ -129,11 +129,11 @@ func TestNumericExtent_SinglePoint_ReturnsThatValue(t *testing.T) {
 	points := []PointDatum{{X: AxisValue{Numeric: 42.0}}}
 
 	// Act
-	min, max := numericExtent(points, horizontalAxis)
+	lo, hi := numericExtent(points, horizontalAxis)
 
 	// Assert
-	g.Expect(min).To(BeNumerically("~", 42.0, 1e-9))
-	g.Expect(max).To(BeNumerically("~", 42.0, 1e-9))
+	g.Expect(lo).To(BeNumerically("~", 42.0, 1e-9))
+	g.Expect(hi).To(BeNumerically("~", 42.0, 1e-9))
 }
 
 func TestNumericExtent_MultiplePoints_ReturnsCorrectExtent(t *testing.T) {
