@@ -212,7 +212,7 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 	// canvas.TextColourFor returns exactly one of two values (black or white).
 	darkLabelColour := canvas.TextColourFor(scatterBgColour)
 	darkLabelInk := inks.FixedInk(darkLabelColour)
-lightLabelInk := inks.FixedInk(canvas.TextColourFor(darkLabelColour))
+	lightLabelInk := inks.FixedInk(canvas.TextColourFor(darkLabelColour))
 
 	for _, point := range points {
 		fillValue := inks.MetricValueForFile(point.File, is.Fill)
@@ -228,12 +228,14 @@ lightLabelInk := inks.FixedInk(canvas.TextColourFor(darkLabelColour))
 
 		label, fontSize := scatterLabel(point.Label, point.Radius)
 		labelColour := canvas.TextColourFor(is.Fill.Dip(fillValue))
+
 		var labelInk inks.Ink
 		if labelColour == darkLabelColour {
 			labelInk = darkLabelInk
 		} else {
 			labelInk = lightLabelInk
 		}
+
 		labelSpec := &canvas.TextSpec{
 			Ink:      labelInk,
 			FontSize: fontSize,

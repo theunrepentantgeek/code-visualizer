@@ -29,10 +29,10 @@ func TestExpandBoundsForDisc_MultipleDiscs(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	box := newEmptyBounds()
-	expandBoundsForDisc(&box, 0, 0, 1)   // bounds: (-1,-1)..(1,1)
-	expandBoundsForDisc(&box, 5, 0, 2)   // extends maxX to 7, maxY to 2, minY to -2
-	expandBoundsForDisc(&box, 0, -4, 1)  // extends minY to -5
-	expandBoundsForDisc(&box, -3, 0, 0)  // extends minX to -3
+	expandBoundsForDisc(&box, 0, 0, 1)  // bounds: (-1,-1)..(1,1)
+	expandBoundsForDisc(&box, 5, 0, 2)  // extends maxX to 7, maxY to 2, minY to -2
+	expandBoundsForDisc(&box, 0, -4, 1) // extends minY to -5
+	expandBoundsForDisc(&box, -3, 0, 0) // extends minX to -3
 
 	g.Expect(box.minX).To(BeNumerically("~", -3.0, 1e-9))
 	g.Expect(box.maxX).To(BeNumerically("~", 7.0, 1e-9))
