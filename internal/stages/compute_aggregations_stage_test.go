@@ -91,7 +91,9 @@ func TestRunAggregations_InvalidExpressionReturnsError(t *testing.T) {
 		},
 	}
 
-	g.Expect(stages.RunAggregations(c)).To(HaveOccurred())
+	g.Expect(stages.RunAggregations(c)).To(
+		MatchError(ContainSubstring("failed to compute metric aggregations")),
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -154,4 +156,8 @@ func TestPopulateDeclarations_WithDeclarationExpressionsDoesNotPanic(t *testing.
 	}
 
 	g.Expect(stages.PopulateDeclarations(c)).To(Succeed())
+
+	// An empty .go file has no source content, so no declarations should be
+	// populated on it.
+	g.Expect(root.Files[0].Declarations).To(BeEmpty())
 }
