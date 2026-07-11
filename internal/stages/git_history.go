@@ -185,16 +185,25 @@ func CommitTimeRange(fileRanges map[*model.File]TimeRange) TimeRange {
 	return TimeRange{Earliest: earliest, Latest: latest}
 }
 
-func buildTrackedPathSet(root *model.Directory, repoRoot string) map[string]bool {
-	tracked := make(map[string]bool)
-
+// walkFilesWithRepoRelPaths walks every file in root and calls fn with each
+// file's repo-relative slash path. Files whose absolute path cannot be made
+// relative to repoRoot are skipped silently.
+func walkFilesWithRepoRelPaths(root *model.Directory, repoRoot string, fn func(rel string, f *model.File)) {
 	model.WalkFiles(root, func(f *model.File) {
 		rel, err := filepath.Rel(repoRoot, f.Path)
 		if err != nil {
 			return
 		}
 
-		tracked[filepath.ToSlash(rel)] = true
+		fn(filepath.ToSlash(rel), f)
+	})
+}
+
+func buildTrackedPathSet(root *model.Directory, repoRoot string) map[string]bool {
+	tracked := make(map[string]bool)
+
+	walkFilesWithRepoRelPaths(root, repoRoot, func(rel string, _ *model.File) {
+		tracked[rel] = true
 	})
 
 	return tracked
@@ -203,13 +212,8 @@ func buildTrackedPathSet(root *model.Directory, repoRoot string) map[string]bool
 func indexFilesByRepoRelativePath(root *model.Directory, repoRoot string) map[string]*model.File {
 	index := make(map[string]*model.File)
 
-	model.WalkFiles(root, func(f *model.File) {
-		rel, err := filepath.Rel(repoRoot, f.Path)
-		if err != nil {
-			return
-		}
-
-		index[filepath.ToSlash(rel)] = f
+	walkFilesWithRepoRelPaths(root, repoRoot, func(rel string, f *model.File) {
+		index[rel] = f
 	})
 
 	return index
