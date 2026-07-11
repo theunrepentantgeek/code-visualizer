@@ -53,6 +53,75 @@ func TestCollectDataset_SkipsFilesMissingAxisOrSize(t *testing.T) {
 	g.Expect(dataset.Skipped.MissingSize).To(Equal(1))
 }
 
+func TestDataset_Files_ReturnsFilesInOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	f1 := scatterTestFile("a.go")
+	f2 := scatterTestFile("b.go")
+	dataset := Dataset{
+		Points: []PointDatum{
+			{File: f1, X: AxisValue{Numeric: 1}, Y: AxisValue{Numeric: 2}, Size: 3},
+			{File: f2, X: AxisValue{Numeric: 4}, Y: AxisValue{Numeric: 5}, Size: 6},
+		},
+	}
+
+	g.Expect(dataset.Files()).To(Equal([]*model.File{f1, f2}))
+}
+
+func TestDataset_Files_EmptyDataset_ReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(Dataset{}.Files()).To(BeEmpty())
+}
+
+func TestSkipCounts_Total_SumsAllFields(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s := SkipCounts{MissingX: 2, MissingY: 3, MissingSize: 5}
+	g.Expect(s.Total()).To(Equal(10))
+}
+
+func TestSkipCounts_Total_ZeroWhenNoneSkipped(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(SkipCounts{}.Total()).To(Equal(0))
+}
+
+func TestCollectDataset_SkipCountsReflectMissingValues(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	missingX := scatterTestFile("no-x.go")
+	missingX.SetQuantity(filesystem.FileLines, 10)
+	missingX.SetQuantity(filesystem.FileSize, 80)
+
+	missingY := scatterTestFile("no-y.go")
+	missingY.SetClassification(filesystem.FileType, "txt")
+	missingY.SetQuantity(filesystem.FileSize, 60)
+
+	missingSize := scatterTestFile("no-size.go")
+	missingSize.SetClassification(filesystem.FileType, "md")
+	missingSize.SetQuantity(filesystem.FileLines, 40)
+
+	root := &model.Directory{Files: []*model.File{missingX, missingY, missingSize}}
+
+	dataset := CollectDataset(
+		root,
+		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
+		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
+		filesystem.FileSize,
+	)
+
+	g.Expect(dataset.Skipped.MissingX).To(Equal(1))
+	g.Expect(dataset.Skipped.MissingY).To(Equal(1))
+	g.Expect(dataset.Skipped.MissingSize).To(Equal(1))
+	g.Expect(dataset.Skipped.Total()).To(Equal(3))
+}
+
 func TestLayout_CategoricalAxesUseAlphabeticalBands(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

@@ -397,3 +397,37 @@ func TestScatter_OverrideBorder_SkipsWhenZero(t *testing.T) {
 	s.OverrideBorder(MetricSpec{})
 	g.Expect(*s.Border).To(Equal(existing))
 }
+
+func TestScatter_OverrideXScale_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+	s.OverrideXScale("log")
+	g.Expect(*s.XScale).To(Equal("log"))
+}
+
+func TestScatter_OverrideXScale_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "linear"
+	s := &Scatter{XScale: &existing}
+	s.OverrideXScale("")
+	g.Expect(*s.XScale).To(Equal("linear"))
+}
+
+func TestScatter_OverrideYScale_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+	s.OverrideYScale("log")
+	g.Expect(*s.YScale).To(Equal("log"))
+}
+
+func TestScatter_OverrideYScale_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "linear"
+	s := &Scatter{YScale: &existing}
+	s.OverrideYScale("")
+	g.Expect(*s.YScale).To(Equal("linear"))
+}
