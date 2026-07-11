@@ -27,5 +27,4 @@ Key knobs in [`code-visualizer.yml`](code-visualizer.yml) to experiment with:
 
 - `spiral.resolution` — time bucket size (e.g. `daily`, `weekly`).
 - `spiral.size` / `spiral.fill` — metrics and palette driving each point.
-- `spiral.x-axis` — `linear` or `log` spacing.
 - `spiral.labels` — `none` or `laps`.
