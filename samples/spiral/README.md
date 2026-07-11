@@ -13,8 +13,8 @@ time spiral — each lap around the spiral is one unit of time.
 | Fill colour     | `commit-count` | `foliage` |
 | Labels          | laps | — |
 
-Commits are bucketed at `daily` resolution and laid out on a logarithmic
-x-axis, so busy and quiet periods are both readable. Both point size and fill
+Commits are bucketed at `daily` resolution and laid out along the spiral in
+time order, so busy and quiet periods are both readable. Both point size and fill
 colour encode how many commits landed in each bucket.
 
 ## Try it yourself
