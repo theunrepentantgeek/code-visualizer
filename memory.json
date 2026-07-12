@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-07-10T15:19:50Z",
-  "run_id": "29103136881",
+  "last_run": "2026-07-12T04:18:40Z",
+  "run_id": "29179475337",
   "monthly_summary_issue": 481,
   "backlog_cursor": 511,
   "comments_made": {
@@ -16,11 +16,7 @@
     "503": "2026-07-06"
   },
   "open_prs": {
-    "512": {"branch": "repo-assist/perf-bubbletree-filedisc-spec-20260709-d8f6c8afbf2bb833", "desc": "perf(bubbletree): pre-allocate fileSpec in addBubbleFileDiscs"},
-    "513": {"branch": "repo-assist/test-bubbletree-packing-20260709-94def7fe795a2d9b", "desc": "test(bubbletree): add 16 unit tests for packing.go"},
-    "514": {"branch": "repo-assist/improve-stages-git-relpath-20260709-c157ff52ef63eb20", "desc": "refactor(stages): extract walkFilesWithRepoRelPaths to reduce duplication"},
-    "515": {"branch": "repo-assist/test-scatter-axis-resolve-20260709-bfee907bdddbc071", "desc": "test(scatter): add 35 unit tests for axis_resolve.go pure-math functions (CI fixed 2026-07-10)"},
-    "aw_pr_perf_dir": {"branch": "repo-assist/perf-bubbletree-direntry-alloc-20260710", "desc": "perf(bubbletree): replace recursive append-of-appends with pre-allocated closure walk"}
+    "531": {"branch": "repo-assist/test-declaration-classification-agg-20260712", "desc": "test(stages): 5 unit tests for declaration-level classification aggregation"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -41,6 +37,6 @@
     "REJECTED: accumulator pattern with *[]T pointer parameters - maintainer called it 'nasty coupling' and 'short-sighted' (rejected PRs #488, #489, #507)"
   ],
   "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464, 330, 503],
-  "closed_prs": [488, 489, 502, 507, 508, 509, 497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476, 511, 517, 518, 493],
-  "notes": "Run 29103136881 (2026-07-10): Tasks 6(fixed #515 CI), 8(new PR perf/direntry), 11(updated monthly summary). PR aw_pr_perf_dir = pre-allocated closure walk for collectBubbleDirEntries. #511 merged, #517 merged, #493 (dependabot) merged by maintainer."
+  "closed_prs": [488, 489, 502, 507, 508, 509, 497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476, 511, 517, 518, 493, 512, 513, 514, 515, 521, 522],
+  "notes": "Run 29179475337 (2026-07-12): Tasks 1(fallback-no-op), 4(Dependabot PRs all protected->fallback to testing), 3(fallback to testing). Created PR: test(stages) declaration-level classification aggregation (5 tests, 78->83% coverage). Config functions LegendPositionStr/OrientationStr/MetricName/PaletteName/OverrideXScale/YScale still at 0% - future target."
 }

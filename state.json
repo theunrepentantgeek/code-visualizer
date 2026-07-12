@@ -1,12 +1,12 @@
 {
-  "last_run": "2026-07-11T14:09:00Z",
+  "last_run": "2026-07-12T04:18:40Z",
   "monthly_summary_issue": 481,
   "open_issues": [394, 427, 449, 481],
   "prs_created": [
-    {"desc": "test(scatter,config): SkipCounts.Total(), Dataset.Files(), scatter scale overrides", "run": "29155562835"}
+    {"desc": "test(stages): 5 unit tests for declaration-level classification aggregation", "run": "29179475337"}
   ],
   "issue_394_status": "on hold — radial dir metrics pending maintainer decision",
-  "issue_520_status": "labelled + commented; implementation possible once maintainer confirms config filename convention",
   "dependabot_note": "All Dependabot PRs touch protected files (go.mod/go.sum or .github/workflows); cannot bundle",
-  "rejected_patterns": ["accumulator *[]T pointer pattern (PRs #488, #489, #507)"]
+  "rejected_patterns": ["accumulator *[]T pointer pattern (PRs #488, #489, #507)"],
+  "coverage_notes": "Config 0% functions: LegendPositionStr, LegendOrientationStr, MetricName, PaletteName, OverrideXScale, OverrideYScale — future test targets"
 }
