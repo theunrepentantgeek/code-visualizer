@@ -530,6 +530,238 @@ func TestComputeAggregations_CommitLevel_MaxLinesChanged(t *testing.T) {
 	g.Expect(v).To(Equal(int64(50)))
 }
 
+// ---------------------------------------------------------------------------
+// Declaration-level classification aggregation tests
+// ---------------------------------------------------------------------------
+
+func TestComputeAggregations_DeclarationLevel_Classification_ModeAggregation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	d1 := &model.Declaration{Name: "A", Kind: "function"}
+	d1.SetClassification("visibility", "public")
+
+	d2 := &model.Declaration{Name: "B", Kind: "function"}
+	d2.SetClassification("visibility", "public")
+
+	d3 := &model.Declaration{Name: "C", Kind: "function"}
+	d3.SetClassification("visibility", "private")
+
+	root := &model.Directory{
+		Name: "root",
+		Files: []*model.File{
+			{Name: "a.go", Declarations: []*model.Declaration{d1, d2, d3}},
+		},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "visibility",
+			Aggregation: metric.AggMode,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "visibility",
+			Kind:  metric.Classification,
+			Level: metric.LevelDeclaration,
+		},
+		SourceLevel:      metric.LevelDeclaration,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Classification,
+		ResultName:       "visibility.mode",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(Succeed())
+
+	// File should have the mode classification from its declarations.
+	fv, fok := root.Files[0].Classification("visibility.mode")
+	g.Expect(fok).To(BeTrue())
+	g.Expect(fv).To(Equal("public"))
+
+	// Directory should aggregate all declarations flat.
+	dv, dok := root.Classification("visibility.mode")
+	g.Expect(dok).To(BeTrue())
+	g.Expect(dv).To(Equal("public"))
+}
+
+func TestComputeAggregations_DeclarationLevel_Classification_DistinctAggregation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	d1 := &model.Declaration{Name: "A", Kind: "function"}
+	d1.SetClassification("visibility", "public")
+
+	d2 := &model.Declaration{Name: "B", Kind: "function"}
+	d2.SetClassification("visibility", "public")
+
+	d3 := &model.Declaration{Name: "C", Kind: "method"}
+	d3.SetClassification("visibility", "private")
+
+	root := &model.Directory{
+		Name: "root",
+		Files: []*model.File{
+			{Name: "a.go", Declarations: []*model.Declaration{d1, d2}},
+			{Name: "b.go", Declarations: []*model.Declaration{d3}},
+		},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "visibility",
+			Aggregation: metric.AggDistinct,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "visibility",
+			Kind:  metric.Classification,
+			Level: metric.LevelDeclaration,
+		},
+		SourceLevel:      metric.LevelDeclaration,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "visibility.distinct",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(Succeed())
+
+	// a.go has 2 declarations but only 1 distinct value ("public").
+	fv, fok := root.Files[0].Quantity("visibility.distinct")
+	g.Expect(fok).To(BeTrue())
+	g.Expect(fv).To(Equal(int64(1)))
+
+	// b.go has 1 declaration with 1 distinct value ("private").
+	fv2, fok2 := root.Files[1].Quantity("visibility.distinct")
+	g.Expect(fok2).To(BeTrue())
+	g.Expect(fv2).To(Equal(int64(1)))
+
+	// Directory sees "public" and "private" → 2 distinct values.
+	dv, dok := root.Quantity("visibility.distinct")
+	g.Expect(dok).To(BeTrue())
+	g.Expect(dv).To(Equal(int64(2)))
+}
+
+func TestComputeAggregations_DeclarationLevel_Classification_EmptyDeclarationsNoMetricSet(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{Name: "root"}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "visibility",
+			Aggregation: metric.AggMode,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "visibility",
+			Kind:  metric.Classification,
+			Level: metric.LevelDeclaration,
+		},
+		SourceLevel:      metric.LevelDeclaration,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Classification,
+		ResultName:       "visibility.mode",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(Succeed())
+
+	_, ok := root.Classification("visibility.mode")
+	g.Expect(ok).To(BeFalse())
+}
+
+func TestComputeAggregations_DeclarationLevel_Classification_UnsupportedAggReturnsError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	d1 := &model.Declaration{Name: "A", Kind: "function"}
+	d1.SetClassification("visibility", "public")
+
+	root := &model.Directory{
+		Name: "root",
+		Files: []*model.File{
+			{Name: "a.go", Declarations: []*model.Declaration{d1}},
+		},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "visibility",
+			Aggregation: metric.AggSum,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "visibility",
+			Kind:  metric.Classification,
+			Level: metric.LevelDeclaration,
+		},
+		SourceLevel:      metric.LevelDeclaration,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Classification,
+		ResultName:       "visibility.sum",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(MatchError(ContainSubstring(`classification aggregation "sum"`)))
+}
+
+func TestComputeAggregations_DeclarationLevel_Classification_RecursiveSubdir(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	d1 := &model.Declaration{Name: "A", Kind: "function"}
+	d1.SetClassification("visibility", "public")
+
+	d2 := &model.Declaration{Name: "B", Kind: "function"}
+	d2.SetClassification("visibility", "private")
+
+	d3 := &model.Declaration{Name: "C", Kind: "function"}
+	d3.SetClassification("visibility", "public")
+
+	sub := &model.Directory{
+		Name:  "sub",
+		Files: []*model.File{{Name: "b.go", Declarations: []*model.Declaration{d2, d3}}},
+	}
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{{Name: "a.go", Declarations: []*model.Declaration{d1}}},
+		Dirs:  []*model.Directory{sub},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "visibility",
+			Aggregation: metric.AggDistinct,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "visibility",
+			Kind:  metric.Classification,
+			Level: metric.LevelDeclaration,
+		},
+		SourceLevel:      metric.LevelDeclaration,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "visibility.distinct",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(Succeed())
+
+	// sub directory sees "private" and "public" → 2.
+	sv, sok := sub.Quantity("visibility.distinct")
+	g.Expect(sok).To(BeTrue())
+	g.Expect(sv).To(Equal(int64(2)))
+
+	// root directory flat-aggregates all 3 declarations (public, private, public) → 2 distinct.
+	rv, rok := root.Quantity("visibility.distinct")
+	g.Expect(rok).To(BeTrue())
+	g.Expect(rv).To(Equal(int64(2)))
+}
+
 func TestComputeAggregations_CommitLevel_MeanLinesAdded(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
