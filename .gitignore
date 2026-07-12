@@ -35,3 +35,4 @@ tools/gofumpt
 tools/golangci-lint
 tools/golangci-lint-custom
 tools/task
+tools/hugo
