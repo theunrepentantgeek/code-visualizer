@@ -723,3 +723,67 @@ func TestLoad_ScatterConfig_ParsesAxesAndSize(t *testing.T) {
 	g.Expect(cfg.Scatter.Size).NotTo(BeNil())
 	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
 }
+
+// LegendPositionStr tests
+
+func TestConfig_LegendPositionStr_NilReceiverReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var cfg *Config
+	g.Expect(cfg.LegendPositionStr()).To(BeEmpty())
+}
+
+func TestConfig_LegendPositionStr_NilLegendReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := &Config{}
+	g.Expect(cfg.LegendPositionStr()).To(BeEmpty())
+}
+
+func TestConfig_LegendPositionStr_VisibleFalseReturnsNone(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	hidden := false
+	pos := "top-right"
+	cfg := &Config{Legend: &Legend{Visible: &hidden, Position: &pos}}
+	g.Expect(cfg.LegendPositionStr()).To(Equal("none"))
+}
+
+func TestConfig_LegendPositionStr_ReturnsConfiguredPosition(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	pos := "bottom-center"
+	cfg := &Config{Legend: &Legend{Position: &pos}}
+	g.Expect(cfg.LegendPositionStr()).To(Equal("bottom-center"))
+}
+
+// LegendOrientationStr tests
+
+func TestConfig_LegendOrientationStr_NilReceiverReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var cfg *Config
+	g.Expect(cfg.LegendOrientationStr()).To(BeEmpty())
+}
+
+func TestConfig_LegendOrientationStr_NilLegendReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := &Config{}
+	g.Expect(cfg.LegendOrientationStr()).To(BeEmpty())
+}
+
+func TestConfig_LegendOrientationStr_ReturnsConfiguredOrientation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ori := "horizontal"
+	cfg := &Config{Legend: &Legend{Orientation: &ori}}
+	g.Expect(cfg.LegendOrientationStr()).To(Equal("horizontal"))
+}
