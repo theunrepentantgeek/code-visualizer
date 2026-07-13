@@ -63,13 +63,27 @@ type discParams struct {
 func buildDiscParams(root *model.Directory, discMetric metric.Name, fileMin, fileMax float64) discParams {
 	dp := discParams{fileMin: fileMin, fileMax: fileMax}
 
-	vals := collectFileMetricValues(root, discMetric)
-	if len(vals) == 0 {
-		return dp
-	}
+	// Compute min/max in a single tree walk to avoid allocating an
+	// intermediate []float64 slice that mirrors every file metric value.
+	var (
+		found  bool
+		minVal float64
+		maxVal float64
+	)
 
-	minVal, maxVal := vals[0], vals[0]
-	for _, v := range vals[1:] {
+	model.WalkFiles(root, func(f *model.File) {
+		v := fileMetricValue(f, discMetric)
+		if v <= 0 {
+			return
+		}
+
+		if !found {
+			minVal, maxVal = v, v
+			found = true
+
+			return
+		}
+
 		if v < minVal {
 			minVal = v
 		}
@@ -77,6 +91,10 @@ func buildDiscParams(root *model.Directory, discMetric metric.Name, fileMin, fil
 		if v > maxVal {
 			maxVal = v
 		}
+	})
+
+	if !found {
+		return dp
 	}
 
 	dp.metricMin = minVal
@@ -249,20 +267,6 @@ func computeMaxDepth(dir *model.Directory) int {
 	}
 
 	return depth
-}
-
-// collectFileMetricValues returns all non-zero disc-metric values across every file under root.
-func collectFileMetricValues(root *model.Directory, discMetric metric.Name) []float64 {
-	var vals []float64
-
-	model.WalkFiles(root, func(f *model.File) {
-		v := fileMetricValue(f, discMetric)
-		if v > 0 {
-			vals = append(vals, v)
-		}
-	})
-
-	return vals
 }
 
 // adjustedDiscFactor returns a maxDiscFactor scaled down so that n nodes
