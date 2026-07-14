@@ -1,0 +1,54 @@
+baseURL: "https://theunrepentantgeek.github.io/code-visualizer/"
+title: "codeviz"
+languageCode: "en-gb"
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+enableInlineShortcodes: true
+
+markup:
+  highlight:
+    noClasses: false
+  goldmark:
+    renderer:
+      unsafe: true
+
+menu:
+  main:
+    - name: Documentation
+      pageRef: /docs
+      weight: 1
+    - name: Gallery
+      pageRef: /gallery
+      weight: 2
+    - name: Blog
+      pageRef: /blog
+      weight: 3
+    - name: Search
+      weight: 4
+      params:
+        type: search
+    - name: GitHub
+      weight: 5
+      url: "https://github.com/theunrepentantgeek/code-visualizer"
+      params:
+        icon: github
+
+params:
+  description: "Visualise the shape of your codebase."
+  navbar:
+    displayTitle: true
+    displayLogo: false
+  theme:
+    default: system
+    displayToggle: true
+  editURL:
+    enable: true
+    base: "https://github.com/theunrepentantgeek/code-visualizer/edit/main/docs/content"
+  search:
+    enable: true
+    type: flexsearch
+    flexsearch:
+      index: content
