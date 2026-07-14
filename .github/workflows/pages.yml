@@ -10,6 +10,8 @@ on:
       - "internal/**"
       - "go.mod"
       - "go.sum"
+      - "Taskfile.yml"
+      - ".go-version"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -55,10 +57,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Generate gallery images
-        run: |
-          mkdir -p tools
-          cp "$(command -v hugo)" tools/hugo
-          task docs:gallery
+        run: task docs:gallery
 
       - name: Build site
         working-directory: docs
