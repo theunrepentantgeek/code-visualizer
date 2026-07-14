@@ -169,7 +169,7 @@ Metrics marked *(git)* require the target directory to be inside a git repositor
 
 `categorization`, `temperature`, `good-bad`, `neutral`, `foliage`, `terrain`
 
-See [palettes.md](palettes.md) for detailed descriptions and colour samples.
+See [Palettes](../palettes) for detailed descriptions and colour samples.
 
 ### Filter rules
 
