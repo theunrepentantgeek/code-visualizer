@@ -13,7 +13,7 @@ layout: hextra-home
   become obvious at a glance.
 {{< /hextra/hero-subtitle >}}
 
-{{< hextra/hero-button text="Get started" link="docs/usage" >}}
+{{< hextra/hero-button text="Get started" link="/docs/usage" >}}
 
 <div class="hx-mt-6"></div>
 
