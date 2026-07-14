@@ -9,8 +9,9 @@ hand-picked snapshot.
 
 ## Tree-map
 
-A space-filling map where each rectangle is a file, sized by a metric of your
-choosing. Best when you want density at a glance.
+A space-filling map where nested rectangles mirror the directory tree — each
+leaf is a file, sized by a metric of your choosing. Best when you want density
+at a glance.
 
 ![Tree-map visualisation](tree-map.png)
 
@@ -30,8 +31,10 @@ immediately legible.
 
 ## Spiral
 
-Files laid along a spiral, rewarding a scan from the centre outwards when
-ordering matters more than grouping.
+Project activity plotted along a spiral of time — each spot is a time bucket
+(an hour or a day), and successive laps carry you through the history of the
+codebase. Reach for it when you want to see *when* the work happened, not just
+where it lives.
 
 ![Spiral visualisation](spiral.png)
 
