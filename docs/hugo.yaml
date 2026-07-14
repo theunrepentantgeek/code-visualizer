@@ -1,6 +1,6 @@
 baseURL: "https://theunrepentantgeek.github.io/code-visualizer/"
 title: "codeviz"
-languageCode: "en-gb"
+locale: "en-gb"
 
 module:
   imports:
