@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-07-13T15:34:44Z",
-  "run_id": "29262695515",
+  "last_run": "2026-07-14T03:48:57Z",
+  "run_id": "29304322224",
   "monthly_summary_issue": 481,
   "backlog_cursor": 511,
   "comments_made": {
@@ -16,12 +16,14 @@
     "503": "2026-07-06"
   },
   "open_prs": {
-    "531": {"branch": "repo-assist/test-scatter-config-20260711", "desc": "test(scatter,config): SkipCounts.Total(), Dataset.Files(), scatter scale override tests"},
-    "532": {"branch": "repo-assist/test-declaration-classification-agg-20260712", "desc": "test(stages): 5 unit tests for declaration-level classification aggregation"},
-    "533": {"branch": "repo-assist/test-config-nil-safe-accessors-20260712", "desc": "test(config): 10 unit tests for nil-safe Config/MetricSpec accessors"},
+    "536": {"branch": "repo-assist/perf-radialtree-buildDiscParams-20260713", "desc": "perf(radialtree): eliminate O(N) allocation in buildDiscParams"},
+    "535": {"branch": "repo-assist/test-stages-helpers-20260713", "desc": "test(stages): 6 tests for removeMetric, 5 for DrawingBounds"},
     "534": {"branch": "repo-assist/test-git-history-helpers-20260713", "desc": "test(stages): 7 unit tests for git_history helper functions"},
-    "aw_perf_disc": {"branch": "repo-assist/perf-gradient-pixelloop-20260713", "desc": "perf(radialtree): eliminate O(N) intermediate slice in buildDiscParams"},
-    "aw_stages_helpers": {"branch": "repo-assist/test-stages-helpers-20260713", "desc": "test(stages): 6 tests for removeMetric, 5 for DrawingBounds"}
+    "533": {"branch": "repo-assist/test-config-nil-safe-accessors-20260712", "desc": "test(config): 10 unit tests for nil-safe Config/MetricSpec accessors"},
+    "532": {"branch": "repo-assist/test-declaration-classification-agg-20260712", "desc": "test(stages): 5 unit tests for declaration-level classification aggregation"},
+    "531": {"branch": "repo-assist/test-scatter-config-20260711", "desc": "test(scatter,config): SkipCounts.Total(), Dataset.Files(), scatter scale override tests"},
+    "aw_mc_tests": {"branch": "repo-assist/test-metric-container-20260714", "desc": "test(model): 17 unit tests for MetricContainer"},
+    "aw_scatter_perf": {"branch": "repo-assist/perf-scatter-dataset-prealloc-20260714", "desc": "perf(scatter): pre-allocate Dataset.Points in CollectDataset"}
   },
   "issues_labelled": {
     "354": ["enhancement"], "355": ["bug"], "373": ["enhancement","refactor"],
@@ -43,5 +45,5 @@
   ],
   "closed_issues": [329, 421, 422, 423, 424, 402, 440, 444, 429, 445, 464, 330, 503],
   "closed_prs": [488, 489, 502, 507, 508, 509, 497, 499, 500, 501, 503, 504, 505, 506, 459, 460, 461, 469, 432, 438, 470, 473, 472, 475, 477, 479, 482, 462, 478, 480, 483, 484, 485, 465, 467, 487, 490, 491, 496, 498, 476, 511, 517, 518, 493, 512, 513, 514, 515, 521, 522],
-  "notes": "Run 29262695515 (2026-07-13): Tasks 3/no-op(no bugs, fallback tests), 10=test(stages) removeMetric+DrawingBounds, 8=perf(radialtree) eliminate O(N) slice in buildDiscParams. PRs #531,#532,#533,#534 still open."
+  "notes": "Run 29304322224 (2026-07-14): Tasks 2/no-op(no actionable issues), 10=test(model) MetricContainer 17 tests, 8=perf(scatter) Dataset.Points pre-allocation. PRs #531-#536 still open."
 }
