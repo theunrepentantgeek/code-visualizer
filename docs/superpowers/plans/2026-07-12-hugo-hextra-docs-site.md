@@ -535,7 +535,7 @@ Documentation deserves better than a single sprawling README. This site is the
 new home for `codeviz` — a place where the usage reference, the palette guide,
 and a gallery of live renders can each breathe.
 
-The gallery is the part I am most pleased with. Every image is regenerated from
+Every image in the gallery is regenerated from
 this repository on each build, so it can never drift out of step with the code.
 When a new visualisation lands, its picture appears here automatically — no
 stale screenshots, no manual bookkeeping.
