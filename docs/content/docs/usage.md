@@ -1,4 +1,7 @@
-# codeviz Usage
+---
+title: Usage
+weight: 1
+---
 
 ## Synopsis
 

@@ -1,4 +1,7 @@
-# Palettes
+---
+title: Palettes
+weight: 2
+---
 
 `codeviz` includes several colour palettes for visualising metrics.
 Each palette can be applied to fill or border colours using the `--fill-palette` and `--border-palette` flags.
