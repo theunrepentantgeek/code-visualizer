@@ -51,7 +51,8 @@ codeviz tree-map [flags] <target-path>
 | `--border-palette` |       | metric default   | Palette for border colour                                     |
 | `--width`          |       | `1920`           | Image width in pixels                                         |
 | `--height`         |       | `1080`           | Image height in pixels                                        |
-| `--filter`         |       | none             | Filter rule: glob to include, `!glob` to exclude (repeatable) |
+| `--include`        |       | none             | Include matching files; simple glob (repeatable)              |
+| `--exclude`        |       | none             | Exclude matching files; simple glob (repeatable)              |
 
 ## `radial-tree`
 
@@ -81,7 +82,8 @@ codeviz radial-tree [flags] <target-path>
 | `--labels`         |       | none           | Labels to display: `all`, `folders`, or `none`                |
 | `--width`          |       | `1920`         | Image width in pixels                                         |
 | `--height`         |       | `1920`         | Image height in pixels                                        |
-| `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
+| `--include`        |       | none           | Include matching files; simple glob (repeatable)              |
+| `--exclude`        |       | none           | Exclude matching files; simple glob (repeatable)              |
 
 ## `bubble-tree`
 
@@ -111,7 +113,8 @@ codeviz bubble-tree [flags] <target-path>
 | `--labels`         |       | none           | Labels to display: `all`, `folders`, or `none`                |
 | `--width`          |       | `1920`         | Image width in pixels                                         |
 | `--height`         |       | `1080`         | Image height in pixels                                        |
-| `--filter`         |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
+| `--include`        |       | none           | Include matching files; simple glob (repeatable)              |
+| `--exclude`        |       | none           | Exclude matching files; simple glob (repeatable)              |
 
 ## `spiral`
 
@@ -144,7 +147,8 @@ codeviz spiral [flags] <target-path>
 | `--labels`            |       | `laps`         | Labels to display: `all`, `laps`, or `none`                   |
 | `--width`             |       | `1920`         | Image width in pixels                                         |
 | `--height`            |       | `1920`         | Image height in pixels                                        |
-| `--filter`            |       | none           | Filter rule: glob to include, `!glob` to exclude (repeatable) |
+| `--include`           |       | none           | Include matching files; simple glob (repeatable)             |
+| `--exclude`           |       | none           | Exclude matching files; simple glob (repeatable)             |
 
 ## Shared Concepts
 
@@ -173,15 +177,22 @@ See [Palettes](../palettes) for detailed descriptions and colour samples.
 
 ### Filter rules
 
-The `--filter` flag accepts glob patterns. Prefix with `!` to exclude matching files.
-Multiple `--filter` flags are evaluated in order, like a `.gitignore`.
+Two repeatable flags control which files appear in a visualisation. The
+`--include` flag takes a glob that selects matching files, and the `--exclude`
+flag takes a glob that removes them. Every file is included by default, so an
+`--exclude` glob on its own trims a subset, whereas an `--include` paired with a
+catch-all `--exclude '*'` narrows the view to only the files you name.
+
+Include and exclude rules are evaluated together in the order they appear on the
+command line, and the first rule that matches a file wins — much like a
+`.gitignore`.
 
 ```sh
 # Include only Go files
-codeviz tree-map ./src -o out.png -s file-size --filter '*.go' --filter '!*'
+codeviz tree-map ./src -o out.png -s file-size --include '*.go' --exclude '*'
 
 # Exclude generated Go files
-codeviz tree-map ./src -o out.png -s file-size --filter '!*_gen.go' --filter '!*_gen_test.go'
+codeviz tree-map ./src -o out.png -s file-size --exclude '*_gen.go' --exclude '*_gen_test.go'
 ```
 
 ### Selection metrics (user-defined classification)
