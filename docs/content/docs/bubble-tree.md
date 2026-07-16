@@ -39,7 +39,7 @@ codeviz bubble-tree [flags] <target-path>
 | `--exclude`            |       | none           | Exclude matching files; simple glob (repeatable)                  |
 | `--include-binary-files` |     | `false`        | Include binary files, which are excluded by default               |
 
-See [Shared concepts](/docs/shared-concepts) for the list of metric names,
+See [Shared concepts]({{< relref "/docs/shared-concepts" >}}) for the list of metric names,
 palettes, and the include and exclude filter rules.
 
 ## Examples

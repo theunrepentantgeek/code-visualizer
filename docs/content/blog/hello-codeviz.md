@@ -15,5 +15,5 @@ this repository on each build, so it can never drift out of step with the code.
 When a new visualisation lands, its picture appears here automatically — no
 stale screenshots, no manual bookkeeping.
 
-More to come as the tool grows. For now, browse the [gallery](/gallery) and
-skim the [usage guide](/docs/usage).
+More to come as the tool grows. For now, browse the [gallery]({{< relref "/gallery" >}}) and
+skim the [usage guide]({{< relref "/docs/usage" >}}).

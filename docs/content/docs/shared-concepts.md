@@ -31,7 +31,7 @@ for the complete set, including source-code metrics and aggregation expressions.
 
 A palette is chosen by appending it to a colour metric, as in
 `--fill file-freshness,temperature`. When you omit the palette, each metric falls
-back to its own default. See [Palettes](/docs/palettes) for detailed descriptions
+back to its own default. See [Palettes]({{< relref "/docs/palettes" >}}) for detailed descriptions
 and colour samples.
 
 ## Filter rules
