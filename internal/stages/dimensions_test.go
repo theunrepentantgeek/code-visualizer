@@ -89,3 +89,49 @@ func TestResolveDimensions_HeightOnly_WidthDefault(t *testing.T) {
 	g.Expect(c.Width).To(Equal(1920))
 	g.Expect(c.Height).To(Equal(2160))
 }
+
+// ---------------------------------------------------------------------------
+// DrawingBounds
+// ---------------------------------------------------------------------------
+
+func TestDrawingBoundsWidth_ReturnsMaxXMinusMinX(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := stages.DrawingBounds{MinX: 10, MinY: 0, MaxX: 90, MaxY: 0}
+	g.Expect(b.Width()).To(Equal(80))
+}
+
+func TestDrawingBoundsWidth_ZeroWidth_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := stages.DrawingBounds{MinX: 50, MaxX: 50}
+	g.Expect(b.Width()).To(Equal(0))
+}
+
+func TestDrawingBoundsHeight_ReturnsMaxYMinusMinY(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := stages.DrawingBounds{MinX: 0, MinY: 20, MaxX: 0, MaxY: 180}
+	g.Expect(b.Height()).To(Equal(160))
+}
+
+func TestDrawingBoundsHeight_ZeroHeight_ReturnsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := stages.DrawingBounds{MinY: 100, MaxY: 100}
+	g.Expect(b.Height()).To(Equal(0))
+}
+
+func TestDrawingBounds_FullCanvas_WidthAndHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := stages.DrawingBounds{MinX: 0, MinY: 0, MaxX: 1920, MaxY: 1080}
+	g.Expect(b.Width()).To(Equal(1920))
+	g.Expect(b.Height()).To(Equal(1080))
+}
+
