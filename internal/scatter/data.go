@@ -43,6 +43,10 @@ func CollectDataset(root *model.Directory, xAxis, yAxis AxisSpec, sizeMetric met
 		return dataset
 	}
 
+	// Pre-size to avoid repeated slice reallocations. AllFileCount is zero
+	// for manually-constructed trees (tests), which is harmless.
+	dataset.Points = make([]PointDatum, 0, root.AllFileCount)
+
 	model.WalkFiles(root, func(file *model.File) {
 		x, okX := axisValueForFile(file, xAxis)
 		y, okY := axisValueForFile(file, yAxis)
