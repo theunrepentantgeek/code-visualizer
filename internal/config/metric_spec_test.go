@@ -440,3 +440,39 @@ func TestMetricSpec_Validate_EmptyMetricWithInvalidPalette_ReturnsError(t *testi
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(ContainSubstring(`invalid border palette "bogus"`)))
 }
+
+// MetricName tests
+
+func TestMetricSpec_MetricName_NilReceiverReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var ms *MetricSpec
+	g.Expect(ms.MetricName()).To(BeEmpty())
+}
+
+func TestMetricSpec_MetricName_ReturnsMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := &MetricSpec{Metric: metric.Name("file-size")}
+	g.Expect(ms.MetricName()).To(Equal(metric.Name("file-size")))
+}
+
+// PaletteName tests
+
+func TestMetricSpec_PaletteName_NilReceiverReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var ms *MetricSpec
+	g.Expect(ms.PaletteName()).To(BeEmpty())
+}
+
+func TestMetricSpec_PaletteName_ReturnsPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ms := &MetricSpec{Metric: metric.Name("file-type"), Palette: palette.PaletteName("categorization")}
+	g.Expect(ms.PaletteName()).To(Equal(palette.PaletteName("categorization")))
+}
