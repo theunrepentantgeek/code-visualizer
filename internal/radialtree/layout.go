@@ -73,7 +73,7 @@ func buildDiscParams(root *model.Directory, discMetric metric.Name, fileMin, fil
 
 	model.WalkFiles(root, func(f *model.File) {
 		v := fileMetricValue(f, discMetric)
-		if v <= 0 {
+		if !(v > 0) {
 			return
 		}
 
