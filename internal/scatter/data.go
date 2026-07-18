@@ -20,6 +20,14 @@ type SkipCounts struct {
 	MissingSize int
 }
 
+// Total returns the total number of files skipped for any reason.
+// Note: a single file may be counted in multiple fields if it is missing
+// more than one required value, so Total may exceed the number of distinct
+// skipped files.
+func (s SkipCounts) Total() int {
+	return s.MissingX + s.MissingY + s.MissingSize
+}
+
 // Dataset is the subset of files that can be plotted, plus skip statistics.
 type Dataset struct {
 	Points  []PointDatum

@@ -203,7 +203,7 @@ func RenderStage(c *stages.CommonState, x *State) error {
 
 // LogResult logs the final scatter summary.
 func LogResult(c *stages.CommonState, x *State) error {
-	skipped := x.Dataset.Skipped.MissingX + x.Dataset.Skipped.MissingY + x.Dataset.Skipped.MissingSize
+	skipped := x.Dataset.Skipped.Total()
 
 	slog.Info(
 		"Rendered scatter plot",
