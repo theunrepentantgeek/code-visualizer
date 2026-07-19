@@ -3,7 +3,7 @@ module github.com/theunrepentantgeek/code-visualizer
 go 1.26.1
 
 require (
-	github.com/alecthomas/kong v1.15.0
+	github.com/alecthomas/kong v1.16.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/dave/dst v0.27.4
 	github.com/fogleman/gg v1.3.0
