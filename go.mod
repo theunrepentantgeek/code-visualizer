@@ -9,7 +9,7 @@ require (
 	github.com/fogleman/gg v1.3.0
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/lmittmann/tint v1.1.3
+	github.com/lmittmann/tint v1.2.0
 	github.com/nikolaydubina/treemap v1.2.5
 	github.com/onsi/gomega v1.42.1
 	github.com/rotisserie/eris v0.5.4
