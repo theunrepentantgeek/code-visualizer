@@ -332,7 +332,9 @@ func collectFileDeclarationClassificationValues(f *model.File, resolved provider
 }
 
 func collectAllDeclarationNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
-	values := make([]float64, 0, model.CountDeclarations(dir))
+	// Use AllFileCount as a cheap capacity hint; avoids a full extra tree
+	// traversal that CountDeclarations would perform before WalkDeclarations.
+	values := make([]float64, 0, dir.AllFileCount)
 
 	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
 		if !declarationMatchesExpression(d, resolved) {
@@ -348,7 +350,9 @@ func collectAllDeclarationNumericValues(dir *model.Directory, resolved provider.
 }
 
 func collectAllDeclarationClassificationValues(dir *model.Directory, resolved provider.ResolvedMetric) []string {
-	values := make([]string, 0, model.CountDeclarations(dir))
+	// Use AllFileCount as a cheap capacity hint; avoids a full extra tree
+	// traversal that CountDeclarations would perform before WalkDeclarations.
+	values := make([]string, 0, dir.AllFileCount)
 
 	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
 		if !declarationMatchesExpression(d, resolved) {
@@ -428,7 +432,9 @@ func aggregateCommitNumeric(dir *model.Directory, resolved provider.ResolvedMetr
 }
 
 func collectCommitNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
-	values := make([]float64, 0, model.CountCommits(dir))
+	// Use AllFileCount as a cheap capacity hint; avoids a full extra tree
+	// traversal that CountCommits would perform before WalkCommits.
+	values := make([]float64, 0, dir.AllFileCount)
 
 	model.WalkCommits(dir, func(c *model.Commit, _ *model.File) {
 		switch resolved.Descriptor.Kind {
