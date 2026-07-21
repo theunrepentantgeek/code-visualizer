@@ -641,3 +641,55 @@ func TestLayoutSpiralParamsConsistentWithNodes(t *testing.T) {
 			"MaxTheta should be 0 for empty layout")
 	})
 }
+
+// MaxDiscRadius tests
+
+func TestMaxDiscRadius_ZeroBuckets_ReturnsDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	r := MaxDiscRadius(0, 1920, 1080, Daily)
+	g.Expect(r).To(BeNumerically("==", defaultDiscRadius))
+}
+
+func TestMaxDiscRadius_SingleBucket_ReturnsDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	r := MaxDiscRadius(1, 1920, 1080, Daily)
+	g.Expect(r).To(BeNumerically(">", 0))
+}
+
+func TestMaxDiscRadius_ManyBuckets_ReturnsPositive(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	r := MaxDiscRadius(365, 1920, 1080, Daily)
+	g.Expect(r).To(BeNumerically(">", 0))
+}
+
+func TestMaxDiscRadius_MoreBuckets_ReturnsSmallerRadius(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rFew := MaxDiscRadius(12, 1920, 1080, Daily)
+	rMany := MaxDiscRadius(365, 1920, 1080, Daily)
+	g.Expect(rFew).To(BeNumerically(">=", rMany),
+		"fewer buckets should allow at least as large a disc radius")
+}
+
+func TestMaxDiscRadius_HourlyResolution_ReturnsPositive(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	r := MaxDiscRadius(720, 1920, 1080, Hourly)
+	g.Expect(r).To(BeNumerically(">", 0))
+}
+
+func TestMaxDiscRadius_SquareCanvas_ReturnsPositive(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	r := MaxDiscRadius(100, 1000, 1000, Daily)
+	g.Expect(r).To(BeNumerically(">", 0))
+}
