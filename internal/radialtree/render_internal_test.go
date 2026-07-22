@@ -107,7 +107,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 	root := radialTestRoot()
 	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, 0, is)
+	cv := RenderToCanvas(&nodes, root, 800, 800, 800, 0, is)
 
 	out := filepath.Join(t.TempDir(), "radial.png")
 	err := cv.Render(out)
@@ -130,7 +130,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 	root := radialTestRoot()
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, 0, is)
+	cv := RenderToCanvas(&nodes, root, 400, 400, 400, 0, is)
 
 	out := filepath.Join(t.TempDir(), "radial.svg")
 	err := cv.Render(out)
@@ -181,7 +181,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 
 	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 800, 0, is)
+	cv := RenderToCanvas(&nodes, root, 800, 800, 800, 0, is)
 
 	out := filepath.Join(t.TempDir(), "nested.png")
 	err := cv.Render(out)
@@ -203,7 +203,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 
 	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(&nodes, root, 400, 0, is)
+	cv := RenderToCanvas(&nodes, root, 400, 400, 400, 0, is)
 
 	out := filepath.Join(t.TempDir(), "empty.png")
 	err := cv.Render(out)
@@ -251,7 +251,7 @@ func TestRenderStage_DefaultFooterKeepsConfiguredCanvasSize(t *testing.T) {
 	cfgOut, format, err := image.DecodeConfig(f)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(format).To(Equal("png"))
-	g.Expect(cfgOut.Width).To(Equal(1080))
+	g.Expect(cfgOut.Width).To(Equal(2000))
 	g.Expect(cfgOut.Height).To(Equal(1080))
 }
 
