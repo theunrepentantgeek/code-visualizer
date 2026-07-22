@@ -1,18 +1,18 @@
 name: Deploy documentation site
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - "samples/**"
-      - "cmd/**"
-      - "internal/**"
-      - "go.mod"
-      - "go.sum"
-      - "Taskfile.yml"
-      - ".go-version"
-      - ".github/workflows/pages.yml"
+#  push:
+#    branches: [main]
+#    paths:
+#      - "docs/**"
+#      - "samples/**"
+#      - "cmd/**"
+#      - "internal/**"
+#      - "go.mod"
+#      - "go.sum"
+#      - "Taskfile.yml"
+#      - ".go-version"
+#      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
