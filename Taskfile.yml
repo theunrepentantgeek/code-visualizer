@@ -152,8 +152,8 @@ tasks:
 
   docs:serve:
     desc: Serve the documentation site locally with live reload
-    deps:
-      - docs:gallery
+    # deps:
+    #  - docs:gallery
     dir: docs
     cmds:
       - "{{.HUGO}} mod get"
@@ -171,3 +171,18 @@ tasks:
       - "{{.HUGO}} --minify --gc"
     vars:
       HUGO: '{{joinPath .ROOT_DIR "tools" "hugo"}}'
+
+  docs:samples:
+    deps:
+      - build
+    desc: Build samples for the site
+    cmds:
+      - for:
+          matrix:
+            VIZ: [tree-map, bubble-tree, radial-tree, spiral, scatter]
+        cmd: "{{.CODEVIZ}} {{.ITEM.VIZ}} . --config docs/site-images/{{.ITEM.VIZ}}.yml --output {{.OUTPUT_DIR}}/{{.ITEM.VIZ}}-thumb.png --width {{.WIDTH}} --height {{.HEIGHT}}"
+    vars:
+      CODEVIZ: '{{joinPath .ROOT_DIR "bin" "codeviz"}}'
+      OUTPUT_DIR: '{{joinPath .ROOT_DIR "docs" "content" "docs" "visualizations"}}'
+      WIDTH: 960
+      HEIGHT: 720
