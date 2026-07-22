@@ -16,25 +16,22 @@ const (
 	labelGap  = 4.0
 )
 
-// RenderToCanvas walks the layout and model trees, adding shapes to the canvas.
-// canvasSize is the side length (pixels) of the square content area.
-// topOffset is the number of pixels to reserve at the top (e.g. for a title);
-// the canvas height becomes canvasSize + topOffset and the content centre is
-// shifted down by topOffset so it fits below the reserved area.
+// RenderToCanvas walks the layout and model trees, adding shapes to a
+// canvasWidth×canvasHeight canvas. Node coordinates are stored relative to the
+// tree centre, so (cx, cy) is the screen-space point the root is drawn at and
+// every node is translated by adding it.
 func RenderToCanvas(
 	nodes *RadialNode,
 	root *model.Directory,
-	canvasSize int,
-	topOffset int,
+	canvasWidth int,
+	canvasHeight int,
+	cx float64,
+	cy float64,
 	is Inks,
 ) *canvas.Canvas {
-	canvasHeight := canvasSize + topOffset
-	cv := canvas.NewCanvas(canvasSize, canvasHeight)
+	cv := canvas.NewCanvas(canvasWidth, canvasHeight)
 
-	cx := float64(canvasSize) / 2.0
-	cy := float64(canvasSize)/2.0 + float64(topOffset)
-
-	addBackground(cv, canvasSize, canvasHeight)
+	addBackground(cv, canvasWidth, canvasHeight)
 	addEdges(cv, *nodes, cx, cy)
 	addDiscs(cv, nodes, root, cx, cy, is)
 	addLabels(cv, *nodes, cx, cy, is)
