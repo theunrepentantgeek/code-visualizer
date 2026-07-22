@@ -39,9 +39,16 @@ func resolveLabels(cfg *config.Radial) LabelMode {
 	return LabelFoldersOnly
 }
 
+// radialCanvasSize returns the diameter of the square radial content area: the
+// smaller of the configured width and the drawing height remaining after any
+// title/footer reservation.
+func radialCanvasSize(c *stages.CommonState) int {
+	return min(c.Width, c.DrawingBounds.Height())
+}
+
 // BuildInksStage builds the radial inks and emits the Rendering image log line.
 func BuildInksStage(c *stages.CommonState, r *State) error {
-	canvasSize := min(c.Width, c.Height)
+	canvasSize := radialCanvasSize(c)
 
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
@@ -67,10 +74,10 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 }
 
 // LayoutStage runs the radial tree layout algorithm.
-// Radial uses a square canvas: canvasSize = min(Width, Height).
+// The circular content is sized to radialCanvasSize (the smaller of the width
+// and the drawing height); the surrounding canvas may be non-square.
 func LayoutStage(c *stages.CommonState, r *State) error {
-	availH := c.DrawingBounds.Height()
-	canvasSize := min(c.Width, availH)
+	canvasSize := radialCanvasSize(c)
 
 	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.Labels)
 
@@ -79,9 +86,11 @@ func LayoutStage(c *stages.CommonState, r *State) error {
 
 // RenderStage renders the radial tree to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, r *State) error {
-	canvasSize := min(c.Width, c.DrawingBounds.Height())
+	size := radialCanvasSize(c)
+	cx := float64(c.Width) / 2.0
+	cy := float64(size)/2.0 + float64(c.DrawingBounds.MinY)
 
-	cv := RenderToCanvas(&r.Nodes, c.Root, c.Width, c.Height, canvasSize, c.DrawingBounds.MinY, r.Inks)
+	cv := RenderToCanvas(&r.Nodes, c.Root, c.Width, c.Height, cx, cy, r.Inks)
 	legend.RenderInto(cv, r.LegendConfig)
 
 	c.Canvas = cv
@@ -92,7 +101,7 @@ func RenderStage(c *stages.CommonState, r *State) error {
 // LogResult logs the final summary.
 func LogResult(c *stages.CommonState, r *State) error {
 	files, dirs := stages.CountAll(c.Root)
-	canvasSize := min(c.Width, c.Height)
+	canvasSize := radialCanvasSize(c)
 
 	slog.Info(
 		"Rendered radial tree",
