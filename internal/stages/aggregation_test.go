@@ -861,7 +861,11 @@ func TestComputeAggregations_RangeFileSize(t *testing.T) {
 }
 
 // fileSizeResolved returns a ResolvedMetric for file-size with the given aggregation.
-func fileSizeResolved(agg metric.AggregationName, resultKind metric.Kind, resultName metric.Name) provider.ResolvedMetric {
+func fileSizeResolved(
+	agg metric.AggregationName,
+	resultKind metric.Kind,
+	resultName metric.Name,
+) provider.ResolvedMetric {
 	return provider.ResolvedMetric{
 		Expression: metric.MetricExpression{
 			Base:        "file-size",
