@@ -354,7 +354,6 @@
             "measures": {
               "author-count.mean": 526,
               "comment-ratio.max": 26.69,
-              "comment-ratio.mean": 26.69,
               "comment-ratio.min": 26.69,
               "commit-count.mean": 840,
               "commit-density.max": 33.3,
@@ -466,7 +465,6 @@
         "measures": {
           "author-count.mean": 450,
           "comment-ratio.max": 82.13,
-          "comment-ratio.mean": 54.41,
           "comment-ratio.min": 26.69,
           "commit-count.mean": 542,
           "commit-density.max": 83.24,
@@ -578,7 +576,6 @@
     "measures": {
       "author-count.mean": 572.25,
       "comment-ratio.max": 82.64,
-      "comment-ratio.mean": 54.9725,
       "comment-ratio.min": 26.69,
       "commit-count.mean": 478.25,
       "commit-density.max": 94.37,

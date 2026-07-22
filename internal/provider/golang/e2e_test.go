@@ -528,8 +528,9 @@ func TestE2E_FunctionLength_Aggregations(t *testing.T) {
 	g.Expect(meanVal).To(BeNumerically("<=", float64(maxVal)))
 }
 
-// TestE2E_CommentRatio_Aggregations verifies min, max, mean aggregations
-// for comment-ratio at directory level.
+// TestE2E_CommentRatio_Aggregations verifies min and max aggregations
+// for comment-ratio at directory level. Mean is intentionally excluded:
+// comment-ratio is a ratio metric, and mean-of-ratios produces invalid results.
 //
 //nolint:paralleltest // mutates global base registry
 func TestE2E_CommentRatio_Aggregations(t *testing.T) {
@@ -538,7 +539,6 @@ func TestE2E_CommentRatio_Aggregations(t *testing.T) {
 
 	minResolved := resolveAndAggregate(t, root, "comment-ratio.min")
 	maxResolved := resolveAndAggregate(t, root, "comment-ratio.max")
-	meanResolved := resolveAndAggregate(t, root, "comment-ratio.mean")
 
 	minVal, ok := root.Measure(minResolved.ResultName)
 	g.Expect(ok).To(BeTrue(), "comment-ratio.min should be set")
@@ -549,13 +549,6 @@ func TestE2E_CommentRatio_Aggregations(t *testing.T) {
 	g.Expect(ok).To(BeTrue(), "comment-ratio.max should be set")
 	g.Expect(maxVal).To(BeNumerically(">=", minVal), "max should be >= min")
 	g.Expect(maxVal).To(BeNumerically("<=", 1))
-
-	meanVal, ok := root.Measure(meanResolved.ResultName)
-	g.Expect(ok).To(BeTrue(), "comment-ratio.mean should be set")
-	g.Expect(meanVal).To(BeNumerically(">=", minVal),
-		"mean (%f) should be >= min (%f)", meanVal, minVal)
-	g.Expect(meanVal).To(BeNumerically("<=", maxVal),
-		"mean (%f) should be <= max (%f)", meanVal, maxVal)
 }
 
 // ---------------------------------------------------------------------------
@@ -850,7 +843,7 @@ func TestE2E_FilteredMetricsStillAggregate(t *testing.T) {
 	g.Expect(iv).To(BeNumerically(">", 0))
 
 	// Comment ratio should work on filtered set
-	crResolved := resolveAndAggregate(t, root, "comment-ratio.mean")
+	crResolved := resolveAndAggregate(t, root, "comment-ratio.max")
 	crv, ok := root.Measure(crResolved.ResultName)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(crv).To(BeNumerically(">", 0))
@@ -1166,18 +1159,18 @@ func TestE2E_FunctionLength_DirectoryMax_MatchesFlatMax(t *testing.T) {
 	assertDirectoryExtremum(t, root, "function-length.max", golang.FunctionLength, metric.AggregateMax, "max")
 }
 
-// TestE2E_CommentRatio_DirectoryMean_FromRawValues verifies that the
-// directory-level comment-ratio.mean is computed from all raw file values,
-// not from child directory means.
+// TestE2E_CommentRatio_DirectoryMax_FromRawValues verifies that the
+// directory-level comment-ratio.max is computed from all raw file values,
+// not from child directory maxes. Mean is excluded from comment-ratio since
+// mean-of-ratios produces statistically invalid results for derived metrics.
 //
 //nolint:paralleltest // mutates global base registry
-func TestE2E_CommentRatio_DirectoryMean_FromRawValues(t *testing.T) {
+func TestE2E_CommentRatio_DirectoryMax_FromRawValues(t *testing.T) {
 	g := NewGomegaWithT(t)
 	root := setupE2E(t, nil)
 
-	resolved := resolveAndAggregate(t, root, "comment-ratio.mean")
+	resolved := resolveAndAggregate(t, root, "comment-ratio.max")
 
-	// Manually collect all per-file comment-ratio values
 	var rawValues []float64
 
 	model.WalkFiles(root, func(f *model.File) {
@@ -1188,13 +1181,20 @@ func TestE2E_CommentRatio_DirectoryMean_FromRawValues(t *testing.T) {
 
 	g.Expect(rawValues).NotTo(BeEmpty())
 
-	expectedMean := metric.AggregateMean(rawValues)
+	expectedMax := metric.AggregateMax(rawValues)
 
-	rootMean, ok := root.Measure(resolved.ResultName)
+	rootMax, ok := root.Measure(resolved.ResultName)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(rootMean).To(BeNumerically("~", expectedMean, 0.0001),
-		"root comment-ratio.mean (%f) should equal mean of all file values (%f)",
-		rootMean, expectedMean)
+	g.Expect(rootMax).To(BeNumerically("~", expectedMax, 0.0001),
+		"root comment-ratio.max (%f) should equal max of all file values (%f)",
+		rootMax, expectedMax)
+
+	// Confirm Mean is not a supported aggregation
+	meanExpr, parseErr := metric.ParseExpression("comment-ratio.mean")
+	g.Expect(parseErr).NotTo(HaveOccurred())
+
+	_, resolveErr := provider.ResolveExpression(meanExpr, metric.LevelDirectory)
+	g.Expect(resolveErr).To(HaveOccurred(), "comment-ratio.mean should not be resolvable: mean-of-ratios is invalid")
 }
 
 // TestE2E_ImportSum_MatchesSumOfFileValues verifies that the directory-level

@@ -45,7 +45,7 @@ var GoProvider = provider.ProviderDescriptor{
 var (
 	goDeclCountAggs   = []metric.AggregationName{metric.AggCount}
 	goNumericAggs     = []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean}
-	goSummaryAggs     = []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean}
+	goRatioAggs       = []metric.AggregationName{metric.AggMin, metric.AggMax}
 	goVisibilityNames = []metric.FilterName{filterPublic, filterPrivate}
 	goImportFilters   = []metric.FilterName{filterStdlib, filterExternal, filterInternal}
 
@@ -183,7 +183,7 @@ var (
 			Kind:           metric.Measure,
 			Level:          metric.LevelFile,
 			Description:    "Ratio of comment lines to code lines in Go files.",
-			Aggregations:   goSummaryAggs,
+			Aggregations:   goRatioAggs,
 			DefaultPalette: palette.Neutral,
 		},
 	}

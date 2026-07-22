@@ -50,6 +50,11 @@ func TestRegisterBase_GoMetrics(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(cr.Kind).To(Equal(metric.Measure))
 	g.Expect(cr.Level).To(Equal(metric.LevelFile))
+	// comment-ratio is a derived ratio; Sum and Mean would give average-of-ratios, which is invalid
+	g.Expect(cr.SupportsAggregation(metric.AggMin)).To(BeTrue())
+	g.Expect(cr.SupportsAggregation(metric.AggMax)).To(BeTrue())
+	g.Expect(cr.SupportsAggregation(metric.AggSum)).To(BeFalse())
+	g.Expect(cr.SupportsAggregation(metric.AggMean)).To(BeFalse())
 
 	imports, ok := provider.GetBase(Imports)
 	g.Expect(ok).To(BeTrue())
