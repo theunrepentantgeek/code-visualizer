@@ -1,42 +1,42 @@
 ---
-title: spiral
-weight: 5
+title: bubble-tree
+weight: 30
 ---
 
-The `spiral` visualisation plots project activity along a spiral of time. Each
-lap represents one period — a day or an hour — and every spot is a time bucket
-whose discs are sized by an optional metric. It reveals when a codebase was busy
-and when it lay dormant, so it requires the target directory to be inside a git
-repository.
+The `bubble-tree` visualisation draws every file as a circle sized by a metric,
+with directories packed as enclosing bubbles. It offers a softer, more organic
+alternative to the tree-map while conveying the same nested structure.
+
+![bubble-tree](bubble-tree-thumb.png)
 
 ## Synopsis
 
 ```text
-codeviz spiral [flags] <target-path>
+codeviz bubble-tree [flags] <target-path>
 ```
 
 ## Required flags
 
-| Flag       | Short | Values                          | Description            |
-| ---------- | ----- | ------------------------------- | ---------------------- |
-| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path |
+| Flag       | Short | Values                          | Description                    |
+| ---------- | ----- | ------------------------------- | ------------------------------ |
+| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path         |
+| `--size`   | `-s`  | see `codeviz help metrics`      | Numeric metric for circle size |
 
 ## Optional flags
 
 | Flag                   | Short | Default        | Description                                                        |
 | ---------------------- | ----- | -------------- | ----------------------------------------------------------------- |
-| `--size`               | `-s`  | none           | Numeric metric for disc size; see `codeviz help metrics`          |
-| `--resolution`         | `-r`  | `daily`        | Time resolution: `daily` or `hourly`                              |
 | `--fill`               | `-f`  | none           | Fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
-| `--labels`             |       | `laps`         | Labels to display: `all`, `laps`, or `none`                       |
+| `--labels`             |       | `none`         | Labels to display: `all`, `folders`, or `none`                    |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
 | `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
-| `--width`              |       | `1920`         | Canvas width in pixels                                            |
-| `--height`             |       | `1920`         | Canvas height in pixels                                           |
+| `--width`              |       | `1920`         | Image width in pixels                                             |
+| `--height`             |       | `1080`         | Image height in pixels                                            |
 | `--title`              |       | none           | Override the title text on the generated image                    |
 | `--footer`             |       | none           | Override the footer text on the generated image                   |
 | `--hide-footer`        |       | `false`        | Suppress the attribution footer                                   |
+| `--flat`               |       | `false`        | Disable radial gradient shading and use flat solid fills          |
 | `--include`            |       | none           | Include matching files; simple glob (repeatable)                  |
 | `--exclude`            |       | none           | Exclude matching files; simple glob (repeatable)                  |
 | `--include-binary-files` |     | `false`        | Include binary files, which are excluded by default               |
@@ -46,14 +46,14 @@ palettes, and the include and exclude filter rules.
 
 ## Examples
 
-Plot the daily commit history of a repository:
+Size circles by line count:
 
 ```sh
-codeviz spiral ./src -o spiral.png
+codeviz bubble-tree ./src -o bubbles.png -s file-lines
 ```
 
-Switch to an hourly resolution and size discs by line count:
+Colour by file type, show every label, and render to SVG:
 
 ```sh
-codeviz spiral ./src -o spiral.png -s file-lines -r hourly
+codeviz bubble-tree ./src -o bubbles.svg -s file-size -f file-type --labels all
 ```

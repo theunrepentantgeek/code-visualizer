@@ -4,12 +4,11 @@ layout: hextra-home
 ---
 
 {{< hextra/hero-headline >}}
-  See the shape of your codebase
+  See the shape of your code.
 {{< /hextra/hero-headline >}}
 
 {{< hextra/hero-subtitle >}}
-  codeviz turns a directory tree into a picture — tree-maps, radial trees,
-  bubble trees, spirals, and scatter plots — so structure, size, and hot spots
+  codeviz turns a directory tree into a picture, so structure, size, and hot spots
   become obvious at a glance.
 {{< /hextra/hero-subtitle >}}
 

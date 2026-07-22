@@ -1,24 +1,26 @@
 ---
-title: radial-tree
-weight: 3
+title: tree-map
+weight: 10
 ---
 
-The `radial-tree` visualisation places the repository root at the centre and
-fans directories outward as concentric rings, with each file drawn as a disc.
-It suits codebases where the depth of the folder hierarchy is itself the story.
+The `tree-map` visualisation packs every file into a rectangle sized by a metric,
+nesting directories as enclosing rectangles so the layout mirrors the folder tree.
+It is the quickest way to see where the bulk of a codebase lives.
+
+![tree-map](tree-map-thumb.png)
 
 ## Synopsis
 
 ```text
-codeviz radial-tree [flags] <target-path>
+codeviz tree-map [flags] <target-path>
 ```
 
 ## Required flags
 
-| Flag          | Short | Values                          | Description                  |
-| ------------- | ----- | ------------------------------- | ---------------------------- |
-| `--output`    | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path       |
-| `--disc-size` | `-d`  | see `codeviz help metrics`      | Numeric metric for disc size |
+| Flag       | Short | Values                             | Description                    |
+| ---------- | ----- | ---------------------------------- | ------------------------------ |
+| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`    | Output image file path         |
+| `--size`   | `-s`  | see `codeviz help metrics`         | Numeric metric for cell area   |
 
 ## Optional flags
 
@@ -26,14 +28,14 @@ codeviz radial-tree [flags] <target-path>
 | ---------------------- | ----- | -------------- | ----------------------------------------------------------------- |
 | `--fill`               | `-f`  | none           | Fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
-| `--labels`             |       | `none`         | Labels to display: `all`, `folders`, or `none`                    |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
 | `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
 | `--width`              |       | `1920`         | Image width in pixels                                             |
-| `--height`             |       | `1920`         | Image height in pixels                                            |
+| `--height`             |       | `1080`         | Image height in pixels                                            |
 | `--title`              |       | none           | Override the title text on the generated image                    |
 | `--footer`             |       | none           | Override the footer text on the generated image                   |
 | `--hide-footer`        |       | `false`        | Suppress the attribution footer                                   |
+| `--flat`               |       | `false`        | Disable pincushion shading and use flat solid fills               |
 | `--include`            |       | none           | Include matching files; simple glob (repeatable)                  |
 | `--exclude`            |       | none           | Exclude matching files; simple glob (repeatable)                  |
 | `--include-binary-files` |     | `false`        | Include binary files, which are excluded by default               |
@@ -43,14 +45,32 @@ palettes, and the include and exclude filter rules.
 
 ## Examples
 
-Size discs by file size:
+Size cells by file size, with no separate fill metric:
 
 ```sh
-codeviz radial-tree ./src -o radial.png -d file-size
+codeviz tree-map ./src -o treemap.png -s file-size
 ```
 
-Colour by file type and label the folders:
+Colour each cell by its file type:
 
 ```sh
-codeviz radial-tree ./src -o radial.png -d file-lines -f file-type --labels folders
+codeviz tree-map ./src -o treemap.png -s file-size -f file-type
+```
+
+Colour by how recently each file changed, using the temperature palette:
+
+```sh
+codeviz tree-map ./src -o treemap.png -s file-lines -f file-freshness,temperature
+```
+
+Add a border metric to show how many authors have touched each file:
+
+```sh
+codeviz tree-map ./src -o treemap.png -s file-lines -f file-freshness -b author-count
+```
+
+Render at 4K with verbose logging:
+
+```sh
+codeviz -v tree-map ./src -o treemap.png -s file-size --width 3840 --height 2160
 ```

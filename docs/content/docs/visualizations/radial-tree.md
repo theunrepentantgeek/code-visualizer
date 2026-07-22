@@ -1,40 +1,38 @@
 ---
-title: scatter
-weight: 6
+title: radial-tree
+weight: 20
 ---
 
-The `scatter` visualisation plots each file as a disc positioned by two metrics —
-one on each axis — so you can look for correlations that the tree-based layouts
-hide. Plotting file age against commit count, for instance, quickly separates
-the stable core from the churning hotspots.
+The `radial-tree` visualisation places the repository root at the centre and
+fans directories outward as concentric rings, with each file drawn as a disc.
+It suits codebases where the depth of the folder hierarchy is itself the story.
+
+![radial-tree](radial-tree-thumb.png)
 
 ## Synopsis
 
 ```text
-codeviz scatter [flags] <target-path>
+codeviz radial-tree [flags] <target-path>
 ```
 
 ## Required flags
 
-| Flag       | Short | Values                          | Description                       |
-| ---------- | ----- | ------------------------------- | --------------------------------- |
-| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path            |
-| `--x-axis` | `-x`  | see `codeviz help metrics`      | Metric for horizontal position    |
-| `--y-axis` | `-y`  | see `codeviz help metrics`      | Metric for vertical position      |
-| `--size`   | `-s`  | see `codeviz help metrics`      | Numeric metric for disc size      |
+| Flag          | Short | Values                          | Description                  |
+| ------------- | ----- | ------------------------------- | ---------------------------- |
+| `--output`    | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path       |
+| `--disc-size` | `-d`  | see `codeviz help metrics`      | Numeric metric for disc size |
 
 ## Optional flags
 
 | Flag                   | Short | Default        | Description                                                        |
 | ---------------------- | ----- | -------------- | ----------------------------------------------------------------- |
-| `--x-scale`            |       | `linear`       | Horizontal axis scale: `linear` or `log`                          |
-| `--y-scale`            |       | `linear`       | Vertical axis scale: `linear` or `log`                            |
 | `--fill`               | `-f`  | none           | Fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
+| `--labels`             |       | `none`         | Labels to display: `all`, `folders`, or `none`                    |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
 | `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
 | `--width`              |       | `1920`         | Image width in pixels                                             |
-| `--height`             |       | `1080`         | Image height in pixels                                            |
+| `--height`             |       | `1920`         | Image height in pixels                                            |
 | `--title`              |       | none           | Override the title text on the generated image                    |
 | `--footer`             |       | none           | Override the footer text on the generated image                   |
 | `--hide-footer`        |       | `false`        | Suppress the attribution footer                                   |
@@ -47,15 +45,14 @@ palettes, and the include and exclude filter rules.
 
 ## Examples
 
-Plot file size against commit count, sizing discs by line count:
+Size discs by file size:
 
 ```sh
-codeviz scatter ./src -o scatter.png -x file-size -y commit-count -s file-lines
+codeviz radial-tree ./src -o radial.png -d file-size
 ```
 
-Compare file age with commit count on a logarithmic horizontal axis, coloured by
-file type:
+Colour by file type and label the folders:
 
 ```sh
-codeviz scatter ./src -o scatter.png -x file-age -y commit-count -s file-lines -f file-type --x-scale log
+codeviz radial-tree ./src -o radial.png -d file-lines -f file-type --labels folders
 ```

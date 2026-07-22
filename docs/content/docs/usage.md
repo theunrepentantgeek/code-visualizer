@@ -30,12 +30,12 @@ These flags apply to every subcommand.
 
 Each visualisation has its own reference page describing the flags it accepts:
 
-- [tree-map]({{< relref "/docs/tree-map" >}}) — files as nested rectangles sized by a metric.
-- [radial-tree]({{< relref "/docs/radial-tree" >}}) — the folder hierarchy fanned out from a central root.
-- [bubble-tree]({{< relref "/docs/bubble-tree" >}}) — files as circles packed into enclosing bubbles.
-- [spiral]({{< relref "/docs/spiral" >}}) — commit activity plotted along a spiral of time.
-- [scatter]({{< relref "/docs/scatter" >}}) — files positioned by two metrics, one on each axis.
-- [render]({{< relref "/docs/render" >}}) — named presets that combine a visualisation, metrics, and a palette.
+- [tree-map]({{< relref "tree-map" >}}) — files as nested rectangles sized by a metric.
+- [radial-tree]({{< relref "radial-tree" >}}) — the folder hierarchy fanned out from a central root.
+- [bubble-tree]({{< relref "bubble-tree" >}}) — files as circles packed into enclosing bubbles.
+- [spiral]({{< relref "spiral" >}}) — commit activity plotted along a spiral of time.
+- [scatter]({{< relref "scatter" >}}) — files positioned by two metrics, one on each axis.
+- [render]({{< relref "render" >}}) — named presets that combine a visualisation, metrics, and a palette.
 
 See [Shared concepts]({{< relref "/docs/shared-concepts" >}}) for the metric names, palettes, and
 the include and exclude filter rules that every command shares.

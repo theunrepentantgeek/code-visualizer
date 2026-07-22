@@ -1,29 +1,36 @@
 ---
-title: tree-map
-weight: 2
+title: scatter
+weight: 50
 ---
 
-The `tree-map` visualisation packs every file into a rectangle sized by a metric,
-nesting directories as enclosing rectangles so the layout mirrors the folder tree.
-It is the quickest way to see where the bulk of a codebase lives.
+The `scatter` visualisation plots each file as a disc positioned by two metrics —
+one on each axis — so you can look for correlations that the tree-based layouts
+hide. Plotting file age against commit count, for instance, quickly separates
+the stable core from the churning hotspots.
+
+![scatter](scatter-thumb.png)
 
 ## Synopsis
 
 ```text
-codeviz tree-map [flags] <target-path>
+codeviz scatter [flags] <target-path>
 ```
 
 ## Required flags
 
-| Flag       | Short | Values                             | Description                    |
-| ---------- | ----- | ---------------------------------- | ------------------------------ |
-| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg`    | Output image file path         |
-| `--size`   | `-s`  | see `codeviz help metrics`         | Numeric metric for cell area   |
+| Flag       | Short | Values                          | Description                       |
+| ---------- | ----- | ------------------------------- | --------------------------------- |
+| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path            |
+| `--x-axis` | `-x`  | see `codeviz help metrics`      | Metric for horizontal position    |
+| `--y-axis` | `-y`  | see `codeviz help metrics`      | Metric for vertical position      |
+| `--size`   | `-s`  | see `codeviz help metrics`      | Numeric metric for disc size      |
 
 ## Optional flags
 
 | Flag                   | Short | Default        | Description                                                        |
 | ---------------------- | ----- | -------------- | ----------------------------------------------------------------- |
+| `--x-scale`            |       | `linear`       | Horizontal axis scale: `linear` or `log`                          |
+| `--y-scale`            |       | `linear`       | Vertical axis scale: `linear` or `log`                            |
 | `--fill`               | `-f`  | none           | Fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
@@ -33,7 +40,6 @@ codeviz tree-map [flags] <target-path>
 | `--title`              |       | none           | Override the title text on the generated image                    |
 | `--footer`             |       | none           | Override the footer text on the generated image                   |
 | `--hide-footer`        |       | `false`        | Suppress the attribution footer                                   |
-| `--flat`               |       | `false`        | Disable pincushion shading and use flat solid fills               |
 | `--include`            |       | none           | Include matching files; simple glob (repeatable)                  |
 | `--exclude`            |       | none           | Exclude matching files; simple glob (repeatable)                  |
 | `--include-binary-files` |     | `false`        | Include binary files, which are excluded by default               |
@@ -43,32 +49,15 @@ palettes, and the include and exclude filter rules.
 
 ## Examples
 
-Size cells by file size, with no separate fill metric:
+Plot file size against commit count, sizing discs by line count:
 
 ```sh
-codeviz tree-map ./src -o treemap.png -s file-size
+codeviz scatter ./src -o scatter.png -x file-size -y commit-count -s file-lines
 ```
 
-Colour each cell by its file type:
+Compare file age with commit count on a logarithmic horizontal axis, coloured by
+file type:
 
 ```sh
-codeviz tree-map ./src -o treemap.png -s file-size -f file-type
-```
-
-Colour by how recently each file changed, using the temperature palette:
-
-```sh
-codeviz tree-map ./src -o treemap.png -s file-lines -f file-freshness,temperature
-```
-
-Add a border metric to show how many authors have touched each file:
-
-```sh
-codeviz tree-map ./src -o treemap.png -s file-lines -f file-freshness -b author-count
-```
-
-Render at 4K with verbose logging:
-
-```sh
-codeviz -v tree-map ./src -o treemap.png -s file-size --width 3840 --height 2160
+codeviz scatter ./src -o scatter.png -x file-age -y commit-count -s file-lines -f file-type --x-scale log
 ```
