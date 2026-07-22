@@ -1,7 +1,10 @@
-# Palettes
+---
+title: Palettes
+weight: 10
+---
 
 `codeviz` includes several colour palettes for visualising metrics.
-Each palette can be applied to fill or border colours using the `--fill-palette` and `--border-palette` flags.
+Each palette is applied by appending it to a colour metric, as in `--fill file-type,categorization` or `--border file-lines,foliage`.
 
 Ordered palettes map low-to-high metric values across a colour gradient.
 The categorization palette assigns visually distinct colours to discrete categories.

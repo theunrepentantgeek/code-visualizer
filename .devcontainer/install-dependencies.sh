@@ -164,6 +164,20 @@ if should-install "$TOOL_DEST/task"; then
     curl -sL "https://github.com/go-task/task/releases/download/v3.49.1/task_${os}_${arch}.tar.gz" | tar xz -C "$TOOL_DEST" task
 fi
 
+# Install Hugo (extended) for building the documentation site.
+# Hugo publishes extended tarballs for linux only; macOS users should
+# instead run `brew install hugo`.
+HUGO_VERSION=0.164.0
+write-verbose "Checking for $TOOL_DEST/hugo"
+if should-install "$TOOL_DEST/hugo"; then
+    if [[ ${os} == "linux" ]]; then
+        write-info "Installing Hugo ${HUGO_VERSION} (extended)"
+        curl -sL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_${os}-${arch}.tar.gz" | tar xz -C "$TOOL_DEST" hugo
+    else
+        write-info "Skipping Hugo install on ${os}; run 'brew install hugo' to build the docs site"
+    fi
+fi
+
 if [ "$VERBOSE" == true ]; then
     echo "Installed tools: $(ls "$TOOL_DEST")"
 fi

@@ -1,0 +1,21 @@
+imageSize:
+    width: 1920
+    height: 1920
+tree-map: {}
+radial-tree:
+    labels: all
+bubble-tree:
+    labels: folders
+spiral:
+    resolution: daily
+    size: commit-count
+    fill:
+        metric: commit-count
+        palette: foliage
+    labels: laps
+    x-axis: log
+fileFilter:
+    - pattern: .*
+      mode: exclude
+legend:
+    visible: false
