@@ -1,0 +1,29 @@
+imageSize:
+    width: 1920
+    height: 1080
+legend:
+    visible: false
+    position: bottom-right
+    orientation: vertical
+tree-map:
+    size: file-lines
+    fill:
+        metric: file-type
+        palette: categorization
+    border:
+        metric: file-freshness
+        palette: good-bad
+radial-tree:
+    labels: all
+bubble-tree:
+    labels: folders
+spiral:
+    resolution: daily
+    labels: laps
+fileFilter:
+    - pattern: superpowers
+      mode: exclude
+    - pattern: "*.svg"
+      mode: exclude
+    - pattern: ".*"
+      mode: exclude
