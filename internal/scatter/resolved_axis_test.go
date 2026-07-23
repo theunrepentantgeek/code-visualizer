@@ -41,8 +41,10 @@ func TestResolvedAxis_NumericTicks_ReturnsTicks(t *testing.T) {
 
 	ticks := a.NumericTicks()
 	g.Expect(ticks).To(HaveLen(2))
-	g.Expect(ticks[0].Value).To(Equal(10.0))
-	g.Expect(ticks[1].Value).To(Equal(20.0))
+	if len(ticks) == 2 {
+		g.Expect(ticks[0].Value).To(Equal(10.0))
+		g.Expect(ticks[1].Value).To(Equal(20.0))
+	}
 }
 
 // CategoricalBands tests
@@ -78,8 +80,10 @@ func TestResolvedAxis_CategoricalBands_ReturnsBands(t *testing.T) {
 
 	bands := a.CategoricalBands()
 	g.Expect(bands).To(HaveLen(2))
-	g.Expect(bands[0].Label).To(Equal("go"))
-	g.Expect(bands[1].Label).To(Equal("ts"))
+	if len(bands) == 2 {
+		g.Expect(bands[0].Label).To(Equal("go"))
+		g.Expect(bands[1].Label).To(Equal("ts"))
+	}
 }
 
 // Offset tests
