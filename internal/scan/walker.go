@@ -53,12 +53,15 @@ func (w walker) scanDir(dirPath string) (*model.Directory, error) {
 	// Populate file-count fields so callers can avoid repeated tree traversals.
 	node.DirectFileCount = len(node.Files)
 	allCount := node.DirectFileCount
+	allDirCount := len(node.Dirs)
 
 	for _, d := range node.Dirs {
 		allCount += d.AllFileCount
+		allDirCount += d.AllDirCount
 	}
 
 	node.AllFileCount = allCount
+	node.AllDirCount = allDirCount
 
 	if w.progress != nil {
 		w.progress.OnDirectoryScanned(dirPath, len(node.Files))
