@@ -118,5 +118,5 @@ selectionMetrics:
 	err := stages.RegisterSelectionMetrics(s)
 	g.Expect(err).To(HaveOccurred())
 	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
-	g.Expect(err.Error()).To(ContainSubstring("invalid selection metric configuration"))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid selection metric configuration")))
 }
