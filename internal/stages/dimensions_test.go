@@ -134,4 +134,3 @@ func TestDrawingBounds_FullCanvas_WidthAndHeight(t *testing.T) {
 	g.Expect(b.Width()).To(Equal(1920))
 	g.Expect(b.Height()).To(Equal(1080))
 }
-

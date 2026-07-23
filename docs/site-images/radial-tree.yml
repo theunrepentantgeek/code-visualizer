@@ -1,0 +1,25 @@
+imageSize:
+    width: 1920
+    height: 1920
+legend:
+    visible: false
+    position: bottom-center
+    orientation: horizontal
+tree-map: {}
+radial-tree:
+    discSize: file-lines
+    fill:
+        metric: file-type
+        palette: categorization
+    border:
+        metric: file-freshness
+        palette: good-bad
+    labels: folders
+bubble-tree:
+    labels: folders
+spiral:
+    resolution: daily
+    labels: laps
+fileFilter:
+    - pattern: .*
+      mode: exclude
