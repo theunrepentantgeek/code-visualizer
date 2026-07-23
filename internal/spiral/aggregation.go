@@ -1,9 +1,6 @@
 package spiral
 
 import (
-	"maps"
-	"slices"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -105,7 +102,7 @@ func sumUniqueNumericMetric(files []*model.File, m metric.Name) float64 {
 }
 
 func modeCategory(files []*model.File, m metric.Name) string {
-	counts := map[string]int{}
+	counts := make(map[string]int, len(files))
 
 	for _, f := range files {
 		if cat, ok := f.Classification(m); ok {
@@ -113,13 +110,20 @@ func modeCategory(files []*model.File, m metric.Name) string {
 		}
 	}
 
-	best := ""
-	bestCount := 0
+	// Find the maximum count in a single pass, then pick the
+	// lexicographically smallest key at that count.
+	// This avoids allocating and sorting a key slice.
+	maxCount := 0
+	for _, c := range counts {
+		if c > maxCount {
+			maxCount = c
+		}
+	}
 
-	for _, cat := range slices.Sorted(maps.Keys(counts)) {
-		if counts[cat] > bestCount {
+	best := ""
+	for cat, c := range counts {
+		if c == maxCount && (best == "" || cat < best) {
 			best = cat
-			bestCount = counts[cat]
 		}
 	}
 
