@@ -182,7 +182,7 @@ func TestParseFilterFlag_InvalidGlob(t *testing.T) {
 
 	_, err := ParseFilterFlag("![invalid")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("invalid glob pattern"))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid glob pattern")))
 }
 
 func TestParseFilterFlag_EmptyString(t *testing.T) {
@@ -191,7 +191,7 @@ func TestParseFilterFlag_EmptyString(t *testing.T) {
 
 	_, err := ParseFilterFlag("")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("empty filter"))
+	g.Expect(err).To(MatchError(ContainSubstring("empty filter")))
 }
 
 func TestParseFilterFlag_BangOnly(t *testing.T) {
@@ -200,7 +200,7 @@ func TestParseFilterFlag_BangOnly(t *testing.T) {
 
 	_, err := ParseFilterFlag("!")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("empty filter"))
+	g.Expect(err).To(MatchError(ContainSubstring("empty filter")))
 }
 
 func TestCompareByIndex_ReturnsNegativeForEarlierRule(t *testing.T) {

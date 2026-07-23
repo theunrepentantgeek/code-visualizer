@@ -456,7 +456,7 @@ func TestCanvas_Render_UnsupportedFormat(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 
 	if err != nil {
-		g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+		g.Expect(err).To(MatchError(ContainSubstring("unsupported")))
 	}
 }
 
