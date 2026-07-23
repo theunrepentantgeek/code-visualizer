@@ -58,7 +58,12 @@ func TestBuildCategoricalInk_NoFiles_ReturnsFixedInk(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fallback := color.RGBA{R: 0xAA, G: 0xBB, B: 0xCC, A: 0xFF}
-	ink := buildCategoricalInk([]*model.File{}, filesystem.FileType, palette.GetPalette(palette.Categorization), fallback)
+	ink := buildCategoricalInk(
+		[]*model.File{},
+		filesystem.FileType,
+		palette.GetPalette(palette.Categorization),
+		fallback,
+	)
 
 	g.Expect(ink.Info().Kind).To(Equal(inks.KindFixed))
 }
@@ -71,7 +76,12 @@ func TestBuildCategoricalInk_WithCategories_ReturnsCategoricalInk(t *testing.T) 
 	f.SetClassification(filesystem.FileType, "go")
 
 	fallback := color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xFF}
-	ink := buildCategoricalInk([]*model.File{f}, filesystem.FileType, palette.GetPalette(palette.Categorization), fallback)
+	ink := buildCategoricalInk(
+		[]*model.File{f},
+		filesystem.FileType,
+		palette.GetPalette(palette.Categorization),
+		fallback,
+	)
 
 	g.Expect(ink.Info().Kind).To(Equal(inks.KindCategorical))
 }
