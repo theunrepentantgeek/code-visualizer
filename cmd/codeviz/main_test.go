@@ -518,10 +518,9 @@ func TestTreemapCmd_ValidateConfig_InvalidSizeMetricListsAvailableMetrics(t *tes
 		t.Fatal("expected error")
 	}
 
-	errText := err.Error()
-	g.Expect(errText).To(ContainSubstring(`unknown size metric "not-a-real-metric"`))
-	g.Expect(errText).To(ContainSubstring("available metrics:"))
-	g.Expect(errText).To(ContainSubstring("file-size"))
+	g.Expect(err).To(MatchError(ContainSubstring(`unknown size metric "not-a-real-metric"`)))
+	g.Expect(err).To(MatchError(ContainSubstring("available metrics:")))
+	g.Expect(err).To(MatchError(ContainSubstring("file-size")))
 }
 
 func TestTreemapCmd_ValidateConfig_MeasureMetricAccepted(t *testing.T) {
