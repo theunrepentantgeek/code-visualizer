@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
 // ResolveMetrics resolves metric, resolution, and label settings from the
@@ -190,7 +191,19 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 
 // RenderStage renders the spiral to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, p *State) error {
-	cv := RenderToCanvas(p.Layout, p.Buckets, c.Width, c.Height, p.Inks)
+	var triangles []surface.Triangle
+	var surfaceInk inks.Ink
+	if p.SurfaceEnabled {
+		values := make([]float64, len(p.Buckets))
+		for index := range p.Buckets {
+			values[index] = p.Buckets[index].SurfaceValue
+		}
+
+		triangles = BuildSurface(p.Layout, values, surfaceSeed(p.Layout))
+		surfaceInk = p.SurfaceInk
+	}
+
+	cv := RenderToCanvas(p.Layout, p.Buckets, c.Width, c.Height, p.Inks, triangles, surfaceInk)
 
 	legend.RenderInto(cv, p.LegendConfig)
 

@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
 var (
@@ -27,10 +28,13 @@ func RenderToCanvas(
 	buckets []TimeBucket,
 	width, height int,
 	is Inks,
+	triangles []surface.Triangle,
+	surfaceInk inks.Ink,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
 	addBackground(cv, width, height)
+	addSurface(cv, triangles, surfaceInk)
 	addTrack(cv, layout)
 	addDiscs(cv, layout.Nodes, buckets, is)
 	addLabels(cv, layout.Nodes)
@@ -54,6 +58,35 @@ func addBackground(cv *canvas.Canvas, width, height int) {
 		H:     float64(height),
 		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
+}
+
+// addSurface adds interpolated metric triangles behind the spiral foreground.
+func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks.Ink) {
+	if len(triangles) == 0 || surfaceInk == nil {
+		return
+	}
+
+	surfaceSpec := &canvas.PolygonSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        surfaceInk,
+			Border:      surfaceInk,
+			BorderWidth: 0.5,
+		},
+	}
+
+	for _, triangle := range triangles {
+		points := make([]canvas.Position, len(triangle.Points))
+		for index, point := range triangle.Points {
+			points[index] = canvas.Position{X: point.X, Y: point.Y}
+		}
+
+		cv.AddPolygon(canvas.LayerSurface, canvas.Polygon{
+			Spec:   surfaceSpec,
+			Points: points,
+			Fill:   metricValue(triangle.Value, "", surfaceInk),
+			Border: metricValue(triangle.Value, "", surfaceInk),
+		})
+	}
 }
 
 // addTrack adds the faint guide curve as a Path on the Structure layer.
