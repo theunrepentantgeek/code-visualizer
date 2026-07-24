@@ -3,6 +3,7 @@ package surface
 import (
 	"math"
 	"math/rand/v2"
+	"reflect"
 )
 
 const attemptsPerActivePoint = 30
@@ -82,6 +83,14 @@ func Sample(region Region, originals []Point, minimumDistance float64, seed uint
 func isValidRegion(region Region) bool {
 	if region == nil {
 		return false
+	}
+
+	value := reflect.ValueOf(region)
+	switch value.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		if value.IsNil() {
+			return false
+		}
 	}
 
 	bounds := region.Bounds()

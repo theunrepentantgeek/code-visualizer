@@ -51,6 +51,29 @@ func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
 	g.Expect(triangles).To(gomega.BeEmpty())
 }
 
+func TestBuildAndSample_RejectTypedNilAnnulusRegion(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	var annulus *surface.Annulus
+	var region surface.Region = annulus
+	originals := []surface.Point{
+		{X: 0, Y: 0, Value: 1},
+		{X: 10, Y: 0, Value: 2},
+		{X: 0, Y: 10, Value: 3},
+	}
+	var triangles []surface.Triangle
+	var samples []surface.Point
+
+	g.Expect(func() {
+		triangles = surface.Build(region, originals, 42)
+		samples = surface.Sample(region, originals, surface.PoissonMinDistance, 42)
+	}).NotTo(gomega.Panic())
+
+	g.Expect(triangles).To(gomega.BeEmpty())
+	g.Expect(samples).To(gomega.BeEmpty())
+}
+
 func TestBuild_IgnoresNonFiniteOriginalCoordinates(t *testing.T) {
 	t.Parallel()
 
