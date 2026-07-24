@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/rotisserie/eris"
 
@@ -113,6 +114,30 @@ func (s *svgBackend) DrawDisc(
 		`<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		center.X, center.Y, radius,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
+	)
+}
+
+func (s *svgBackend) DrawPolygon(
+	points []model.Position, fill, border model.Fill, borderWidth float64,
+) {
+	if len(points) < 3 {
+		return
+	}
+
+	var pointPairs strings.Builder
+	for i, point := range points {
+		if i > 0 {
+			pointPairs.WriteByte(' ')
+		}
+
+		fmt.Fprintf(&pointPairs, "%.2f,%.2f", point.X, point.Y)
+	}
+
+	fmt.Fprintf(
+		&s.buf,
+		`<polygon points="%s" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
+		pointPairs.String(), s.svgFillAttr(fill),
+		s.colourCSS(model.SolidColor(border)), borderWidth,
 	)
 }
 

@@ -123,6 +123,33 @@ func TestSVGBackend_DrawPath_ProducesValidSVG(t *testing.T) {
 	g.Expect(content).To(ContainSubstring(`<path d="M 10.0 10.0 L 100.0 50.0 L 190.0 10.0" fill="none"`))
 }
 
+func TestSVGBackend_DrawPolygon_ProducesFilledPolygon(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	red := color.RGBA{R: 255, A: 255}
+	black := color.RGBA{A: 255}
+	b.DrawPolygon(
+		[]model.Position{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+		model.SolidFill{Color: red}, model.SolidFill{Color: black}, 0.5,
+	)
+
+	out := filepath.Join(t.TempDir(), "polygon.svg")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	content := readFile(t, out)
+	g.Expect(content).To(ContainSubstring(`<polygon points="1.00,1.00 9.00,1.00 1.00,9.00"`))
+	g.Expect(content).To(ContainSubstring(`fill="rgb(255,0,0)"`))
+	g.Expect(content).To(ContainSubstring(`stroke="rgb(0,0,0)"`))
+	g.Expect(content).To(ContainSubstring(`stroke-width="0.5"`))
+}
+
 func TestSVGBackend_DrawArcText_ProducesValidSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

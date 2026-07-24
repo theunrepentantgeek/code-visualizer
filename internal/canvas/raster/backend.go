@@ -126,6 +126,30 @@ func (r *rasterBackend) DrawDisc(
 	}
 }
 
+func (r *rasterBackend) DrawPolygon(
+	points []model.Position, fill, border model.Fill, borderWidth float64,
+) {
+	if len(points) < 3 {
+		return
+	}
+
+	r.dc.MoveTo(points[0].X, points[0].Y)
+
+	for _, point := range points[1:] {
+		r.dc.LineTo(point.X, point.Y)
+	}
+
+	r.dc.ClosePath()
+	r.dc.SetColor(nrgba(model.SolidColor(fill)))
+	r.dc.FillPreserve()
+
+	if borderWidth > 0 {
+		r.dc.SetColor(nrgba(model.SolidColor(border)))
+		r.dc.SetLineWidth(borderWidth)
+		r.dc.Stroke()
+	}
+}
+
 func (r *rasterBackend) drawRadialGradientDisc(
 	center model.Position, radius float64, grad model.RadialGradientFill,
 ) {

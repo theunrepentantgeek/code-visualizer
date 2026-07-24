@@ -122,6 +122,33 @@ func TestRasterBackend_DrawPath_ProducesValidPNG(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
+func TestRasterBackend_DrawPolygon_FillsInterior(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	red := color.RGBA{R: 255, A: 255}
+	black := color.RGBA{A: 255}
+	b.DrawPolygon(
+		[]model.Position{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+		model.SolidFill{Color: red}, model.SolidFill{Color: black}, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "polygon.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	r, green, blue, alpha := loadImage(t, out).At(2, 2).RGBA()
+	g.Expect(r).To(Equal(uint32(0xffff)))
+	g.Expect(green).To(BeZero())
+	g.Expect(blue).To(BeZero())
+	g.Expect(alpha).To(Equal(uint32(0xffff)))
+}
+
 func TestRasterBackend_Finish_JPG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

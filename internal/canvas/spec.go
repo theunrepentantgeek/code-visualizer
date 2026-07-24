@@ -21,6 +21,11 @@ type DiscSpec struct {
 	ShapeStyle
 }
 
+// PolygonSpec defines the visual template for filled polygons.
+type PolygonSpec struct {
+	ShapeStyle
+}
+
 // LineSpec defines the visual template for lines.
 type LineSpec struct {
 	Stroke      inks.Ink

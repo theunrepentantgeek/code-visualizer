@@ -112,6 +112,16 @@ func (c *Canvas) AddDisc(layer Layer, d Disc) {
 	})
 }
 
+// AddPolygon records a filled polygon on the given layer.
+func (c *Canvas) AddPolygon(layer Layer, p Polygon) {
+	p.Points = slices.Clone(p.Points)
+	c.shapes = append(c.shapes, layeredShape{
+		layer: layer,
+		order: len(c.shapes),
+		shape: &p,
+	})
+}
+
 // AddText records text on the given layer.
 func (c *Canvas) AddText(layer Layer, t Text) {
 	c.shapes = append(c.shapes, layeredShape{
