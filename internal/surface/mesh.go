@@ -199,6 +199,11 @@ func triangleInAnnulus(annulus Annulus, triangle Triangle) bool {
 	}
 
 	innerRadiusSquared := annulus.InnerRadius * annulus.InnerRadius
+	if annulus.InnerRadius > 0 &&
+		pointStrictlyInTriangle(Point{X: annulus.CX, Y: annulus.CY}, triangle) {
+		return false
+	}
+
 	for index, start := range triangle.Points {
 		end := triangle.Points[(index+1)%len(triangle.Points)]
 		if squaredDistanceToSegment(annulus.CX, annulus.CY, start, end) < innerRadiusSquared {
@@ -207,6 +212,18 @@ func triangleInAnnulus(annulus Annulus, triangle Triangle) bool {
 	}
 
 	return true
+}
+
+func pointStrictlyInTriangle(point Point, triangle Triangle) bool {
+	var hasPositive, hasNegative bool
+	for index, start := range triangle.Points {
+		end := triangle.Points[(index+1)%len(triangle.Points)]
+		crossProduct := (end.X-start.X)*(point.Y-start.Y) - (end.Y-start.Y)*(point.X-start.X)
+		hasPositive = hasPositive || crossProduct > 0
+		hasNegative = hasNegative || crossProduct < 0
+	}
+
+	return hasPositive != hasNegative
 }
 
 func squaredDistanceToSegment(x, y float64, start, end Point) float64 {
