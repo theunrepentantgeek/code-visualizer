@@ -149,6 +149,33 @@ func TestRasterBackend_DrawPolygon_FillsInterior(t *testing.T) {
 	g.Expect(alpha).To(Equal(uint32(0xffff)))
 }
 
+func TestRasterBackend_DrawPolygon_WithoutBorder_DoesNotPreservePath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(20, 20)
+	red := color.RGBA{R: 255, A: 255}
+	black := color.RGBA{A: 255}
+	b.DrawPolygon(
+		[]model.Position{
+			{X: 2, Y: 2},
+			{X: 10, Y: 2},
+			{X: 2, Y: 10},
+		},
+		model.SolidFill{Color: red}, model.SolidFill{Color: black}, 0,
+	)
+	b.DrawLine(model.Position{X: 15, Y: 15}, model.Position{X: 18, Y: 15}, black, 1)
+
+	out := filepath.Join(t.TempDir(), "polygon-without-border.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	r, green, blue, _ := loadImage(t, out).At(6, 2).RGBA()
+	g.Expect(r).To(Equal(uint32(0xffff)))
+	g.Expect(green).To(BeZero())
+	g.Expect(blue).To(BeZero())
+}
+
 func TestRasterBackend_Finish_JPG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
