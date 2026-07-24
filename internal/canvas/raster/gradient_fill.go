@@ -2,6 +2,7 @@ package raster
 
 import (
 	"image"
+	"image/color"
 	"math"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
@@ -36,7 +37,7 @@ func renderRadialGradientPixels(
 		for px := rect.Min.X; px < rect.Max.X; px++ {
 			dx := float64(px) + 0.5 - fx
 			dist := math.Sqrt(dx*dx + dy2)
-			img.SetRGBA(px, py, lerp.at(min(dist*invScale, 1.0)))
+			compositeGradientPixel(img, px, py, lerp.at(min(dist*invScale, 1.0)))
 		}
 	}
 }
@@ -68,7 +69,7 @@ func renderClippedGradient(
 
 			dx := float64(px) + 0.5 - fx
 			dist := math.Sqrt(dx*dx + dy2)
-			img.SetRGBA(px, py, lerp.at(min(dist*invScale, 1.0)))
+			compositeGradientPixel(img, px, py, lerp.at(min(dist*invScale, 1.0)))
 		}
 	}
 }
@@ -89,9 +90,23 @@ func renderPolygonGradientPixels(
 				continue
 			}
 
-			img.SetRGBA(px, py, lerp.at(min(math.Hypot(x-fx, y-fy)*invScale, 1.0)))
+			compositeGradientPixel(
+				img, px, py, lerp.at(min(math.Hypot(x-fx, y-fy)*invScale, 1.0)),
+			)
 		}
 	}
+}
+
+// compositeGradientPixel composites non-premultiplied gradient colour over img.
+func compositeGradientPixel(img *image.RGBA, x, y int, src color.RGBA) {
+	offset := img.PixOffset(x, y)
+	srcAlpha := uint32(src.A)
+	invSrcAlpha := 255 - srcAlpha
+
+	img.Pix[offset] = uint8((uint32(src.R)*srcAlpha + uint32(img.Pix[offset])*invSrcAlpha) / 255)
+	img.Pix[offset+1] = uint8((uint32(src.G)*srcAlpha + uint32(img.Pix[offset+1])*invSrcAlpha) / 255)
+	img.Pix[offset+2] = uint8((uint32(src.B)*srcAlpha + uint32(img.Pix[offset+2])*invSrcAlpha) / 255)
+	img.Pix[offset+3] = uint8(srcAlpha + uint32(img.Pix[offset+3])*invSrcAlpha/255)
 }
 
 func pointInPolygon(points []model.Position, x, y float64) bool {
