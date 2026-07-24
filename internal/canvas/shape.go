@@ -1,3 +1,4 @@
+//nolint:revive // Canvas exposes its six distinct shape values as part of its public rendering API.
 package canvas
 
 import (

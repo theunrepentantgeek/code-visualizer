@@ -86,7 +86,8 @@ func (r Rect) boundaryPoints(maximumSegmentLength float64) []Point {
 		{X: r.MaxX, Y: r.MaxY},
 		{X: r.MinX, Y: r.MaxY},
 	}
-	points := make([]Point, 0)
+	points := make([]Point, 0, len(corners))
+
 	for index, start := range corners {
 		end := corners[(index+1)%len(corners)]
 		points = append(points, segmentBoundaryPoints(start, end, maximumSegmentLength)...)
@@ -125,6 +126,7 @@ func segmentBoundaryPoints(start, end Point, maximumSegmentLength float64) []Poi
 	}
 
 	segments := max(1, int(math.Ceil(length/maximumSegmentLength)))
+
 	points := make([]Point, 0, segments)
 	for index := range segments {
 		fraction := float64(index) / float64(segments)
@@ -143,6 +145,7 @@ func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Poin
 	}
 
 	segments := max(3, int(math.Ceil(2*math.Pi*radius/maximumSegmentLength)))
+
 	points := make([]Point, 0, segments)
 	for index := range segments {
 		angle := 2 * math.Pi * float64(index) / float64(segments)

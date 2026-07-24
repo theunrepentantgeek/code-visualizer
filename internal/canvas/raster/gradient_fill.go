@@ -103,10 +103,22 @@ func compositeGradientPixel(img *image.RGBA, x, y int, src color.RGBA) {
 	srcAlpha := uint32(src.A)
 	invSrcAlpha := 255 - srcAlpha
 
-	img.Pix[offset] = uint8((uint32(src.R)*srcAlpha + uint32(img.Pix[offset])*invSrcAlpha) / 255)
-	img.Pix[offset+1] = uint8((uint32(src.G)*srcAlpha + uint32(img.Pix[offset+1])*invSrcAlpha) / 255)
-	img.Pix[offset+2] = uint8((uint32(src.B)*srcAlpha + uint32(img.Pix[offset+2])*invSrcAlpha) / 255)
-	img.Pix[offset+3] = uint8(srcAlpha + uint32(img.Pix[offset+3])*invSrcAlpha/255)
+	img.Pix[offset] = blendChannel(src.R, img.Pix[offset], srcAlpha, invSrcAlpha)
+	img.Pix[offset+1] = blendChannel(src.G, img.Pix[offset+1], srcAlpha, invSrcAlpha)
+	img.Pix[offset+2] = blendChannel(src.B, img.Pix[offset+2], srcAlpha, invSrcAlpha)
+	img.Pix[offset+3] = clampUint8(srcAlpha + uint32(img.Pix[offset+3])*invSrcAlpha/255)
+}
+
+func blendChannel(src, dst uint8, srcAlpha, invSrcAlpha uint32) uint8 {
+	return clampUint8((uint32(src)*srcAlpha + uint32(dst)*invSrcAlpha) / 255)
+}
+
+func clampUint8(value uint32) uint8 {
+	if value > 255 {
+		return 255
+	}
+
+	return uint8(value)
 }
 
 func pointInPolygon(points []model.Position, x, y float64) bool {

@@ -161,11 +161,13 @@ func BuildLegendStage(c *stages.CommonState, x *State) error {
 			Role: legend.RoleFill, MetricName: string(x.FillMetric), Ink: x.Inks.Fill,
 		})
 	}
+
 	if x.BorderMetric != "" {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleBorder, MetricName: string(x.BorderMetric), Ink: x.Inks.Border,
 		})
 	}
+
 	if x.Size != "" && x.Size != x.FillMetric {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleSize, MetricName: string(x.Size), Ink: inks.FixedInk(palette.White),

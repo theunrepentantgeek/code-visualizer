@@ -24,7 +24,9 @@ func TestBuildSurface_CreatesTrianglesWithCentroidsInSpiralAnnulus(t *testing.T)
 	triangles := spiral.BuildSurface(layout, values, 42)
 
 	g.Expect(triangles).NotTo(BeEmpty())
+
 	outerRadius := layout.A + layout.B*layout.MaxTheta
+
 	for _, triangle := range triangles {
 		centroidX := (triangle.Points[0].X + triangle.Points[1].X + triangle.Points[2].X) / 3
 		centroidY := (triangle.Points[0].Y + triangle.Points[1].Y + triangle.Points[2].Y) / 3
@@ -79,6 +81,7 @@ func TestRenderToCanvas_RendersSurfaceBeforeSpiralForeground(t *testing.T) {
 	}
 
 	g.Expect(backend.Calls[len(triangles)+1].Method).To(Equal("DrawPath"))
+
 	for _, call := range backend.Calls[len(triangles)+2:] {
 		g.Expect(call.Method).To(Equal("DrawDisc"))
 	}
@@ -102,6 +105,7 @@ func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 	g.Expect(backend.Calls).To(HaveLen(1 + 1 + len(layout.Nodes)))
+
 	for _, call := range backend.Calls {
 		g.Expect(call.Method).NotTo(Equal("DrawPolygon"))
 	}
@@ -127,19 +131,24 @@ func TestRenderStage_UsesSurfaceValuesWhenEnabled(t *testing.T) {
 	}
 
 	g.Expect(spiral.RenderStage(common, state)).To(Succeed())
+
 	backend := mock.NewBackend()
 	g.Expect(common.Canvas.RenderTo(backend)).To(Succeed())
 
 	expectedColour := surfaceInk.Dip(inks.MeasureValue(10))
+
 	var polygonCount int
+
 	for _, call := range backend.Calls {
 		if call.Method != "DrawPolygon" {
 			continue
 		}
 
 		polygonCount++
+
 		g.Expect(call.Fill).To(Equal(expectedColour))
 	}
+
 	g.Expect(polygonCount).To(BeNumerically(">", 0))
 }
 
@@ -158,6 +167,7 @@ func TestRenderStage_DisabledSurfaceRendersNoPolygons(t *testing.T) {
 	}
 
 	g.Expect(spiral.RenderStage(common, state)).To(Succeed())
+
 	backend := mock.NewBackend()
 	g.Expect(common.Canvas.RenderTo(backend)).To(Succeed())
 

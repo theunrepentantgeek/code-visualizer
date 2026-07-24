@@ -175,6 +175,7 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 	}
 
 	minX, maxX := points[0].X, points[0].X
+
 	minY, maxY := points[0].Y, points[0].Y
 	for _, point := range points[1:] {
 		minX = min(minX, point.X)
@@ -187,6 +188,7 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 	// establishes the radius, matching rectangle gradient normalization.
 	fx := minX + grad.Focus.X*(maxX-minX)
 	fy := minY + grad.Focus.Y*(maxY-minY)
+
 	maxDist := 0.0
 	for _, point := range points {
 		maxDist = max(maxDist, math.Hypot(point.X-fx, point.Y-fy))

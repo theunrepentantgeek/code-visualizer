@@ -25,10 +25,12 @@ func (s *Spiral) OverrideFill(v MetricSpec) { overrideMetricSpec(&s.Fill, v) }
 // OverrideBorder sets Border to v if v is non-zero.
 func (s *Spiral) OverrideBorder(v MetricSpec) { overrideMetricSpec(&s.Border, v) }
 
-// OverrideSurface enables Surface when v is true.
-func (s *Spiral) OverrideSurface(v bool) {
-	if v {
-		s.Surface = &v
+// OverrideSurface enables Surface when value is true.
+//
+//nolint:revive // The boolean is the optional --surface override; false leaves the configured value unchanged.
+func (s *Spiral) OverrideSurface(value bool) {
+	if value {
+		s.Surface = &value
 	}
 }
 

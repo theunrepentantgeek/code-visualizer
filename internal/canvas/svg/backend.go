@@ -125,6 +125,7 @@ func (s *svgBackend) DrawPolygon(
 	}
 
 	var pointPairs strings.Builder
+
 	for i, point := range points {
 		if i > 0 {
 			pointPairs.WriteByte(' ')

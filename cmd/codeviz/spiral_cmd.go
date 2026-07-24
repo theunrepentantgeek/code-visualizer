@@ -53,13 +53,27 @@ func (*SpiralCmd) Validate() error {
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
-	size := ptrString(cfg.Size)
-	if size != "" {
-		if err := validateNumericMetric("size", metric.Name(size)); err != nil {
-			return err
-		}
+	if err := validateSpiralSize(cfg); err != nil {
+		return err
 	}
 
+	if !cfg.SurfaceEnabled() {
+		return validateSpiralColours(cfg)
+	}
+
+	return validateSurfaceConfig(cfg)
+}
+
+func validateSpiralSize(cfg *config.Spiral) error {
+	size := ptrString(cfg.Size)
+	if size == "" {
+		return nil
+	}
+
+	return validateNumericMetric("size", metric.Name(size))
+}
+
+func validateSpiralColours(cfg *config.Spiral) error {
 	if err := cfg.Fill.Validate("fill"); err != nil {
 		return eris.Wrap(err, "invalid fill spec")
 	}
@@ -68,8 +82,12 @@ func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
 		return eris.Wrap(err, "invalid border spec")
 	}
 
-	if !cfg.SurfaceEnabled() {
-		return nil
+	return nil
+}
+
+func validateSurfaceConfig(cfg *config.Spiral) error {
+	if err := validateSpiralColours(cfg); err != nil {
+		return err
 	}
 
 	if err := cfg.SurfaceMetric.Validate("surface"); err != nil {
@@ -94,11 +112,7 @@ func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
 		return eris.New("surface metric must not use aggregation")
 	}
 
-	if err := validateNumericMetric("surface", surfaceMetric); err != nil {
-		return err
-	}
-
-	return nil
+	return validateNumericMetric("surface", surfaceMetric)
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,

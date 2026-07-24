@@ -58,11 +58,13 @@ func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) erro
 			Role: legend.RoleFill, MetricName: string(t.FillMetric), Ink: t.Inks.Fill,
 		})
 	}
+
 	if t.BorderMetric != "" {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleBorder, MetricName: string(t.BorderMetric), Ink: t.Inks.Border,
 		})
 	}
+
 	if t.Size != "" && t.Size != t.FillMetric {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleSize, MetricName: string(t.Size), Ink: inks.FixedInk(palette.White),

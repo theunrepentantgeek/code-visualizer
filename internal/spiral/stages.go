@@ -23,6 +23,7 @@ func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	p.BorderMetric, p.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
 	p.SurfaceEnabled = cfg.SurfaceEnabled()
 	p.SurfaceMetric = ""
+
 	p.SurfacePalette = ""
 	if p.SurfaceEnabled {
 		if cfg.SurfaceMetric != nil && !cfg.SurfaceMetric.IsZero() {
@@ -33,6 +34,7 @@ func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 			p.SurfacePalette = p.FillPalette
 		}
 	}
+
 	p.Resolution = resolveResolution(cfg)
 	p.Labels = resolveLabels(cfg)
 
@@ -62,7 +64,7 @@ func resolveLabels(cfg *config.Spiral) LabelMode {
 // count), only configured colour and surface metrics contribute.
 func collectRequestedMetrics(
 	size metric.Name,
-	fill, border, surface *config.MetricSpec,
+	fill, border, surfaceSpec *config.MetricSpec,
 ) stages.RequestedMetrics {
 	seen := map[metric.Name]bool{}
 	names := make([]metric.Name, 0, 4)
@@ -72,7 +74,7 @@ func collectRequestedMetrics(
 		names = append(names, size)
 	}
 
-	for _, spec := range []*config.MetricSpec{fill, border, surface} {
+	for _, spec := range []*config.MetricSpec{fill, border, surfaceSpec} {
 		if spec != nil && spec.Metric != "" && !seen[spec.Metric] {
 			seen[spec.Metric] = true
 			names = append(names, spec.Metric)
@@ -112,6 +114,7 @@ func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
 // BuildInksStage builds spiral inks and emits the Rendering image log line.
 func BuildInksStage(c *stages.CommonState, p *State) error {
 	p.Inks = BuildInks(p.Buckets, c.Requested, p.FillMetric, p.FillPalette, p.BorderMetric, p.BorderPalette)
+
 	p.SurfaceInk = nil
 	if p.SurfaceEnabled {
 		if p.SurfaceMetric == p.FillMetric && p.SurfacePalette == p.FillPalette {
@@ -144,16 +147,19 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 			Role: legend.RoleFill, MetricName: string(p.FillMetric), Ink: p.Inks.Fill,
 		})
 	}
+
 	if p.BorderMetric != "" {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleBorder, MetricName: string(p.BorderMetric), Ink: p.Inks.Border,
 		})
 	}
+
 	if p.Size != "" && p.Size != p.FillMetric {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleSize, MetricName: string(p.Size), Ink: inks.FixedInk(palette.White),
 		})
 	}
+
 	if p.SurfaceMetric != "" && (p.SurfaceMetric != p.FillMetric || p.SurfacePalette != p.FillPalette) {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleSurface, MetricName: string(p.SurfaceMetric), Ink: p.SurfaceInk,
@@ -191,8 +197,11 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 
 // RenderStage renders the spiral to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, p *State) error {
-	var triangles []surface.Triangle
-	var surfaceInk inks.Ink
+	var (
+		triangles  []surface.Triangle
+		surfaceInk inks.Ink
+	)
+
 	if p.SurfaceEnabled {
 		values := make([]float64, len(p.Buckets))
 		for index := range p.Buckets {

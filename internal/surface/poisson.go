@@ -30,6 +30,7 @@ func Sample(region Region, originals []Point, minimumDistance float64, seed uint
 
 	bounds := region.Bounds()
 	grid := newPoissonGrid(bounds, minimumDistance)
+
 	active := make([]Point, 0, len(originals)+1)
 	for _, original := range originals {
 		if !isFinitePoint(original) {
@@ -40,8 +41,10 @@ func Sample(region Region, originals []Point, minimumDistance float64, seed uint
 		active = append(active, original)
 	}
 
+	//nolint:gosec // A seeded PCG intentionally makes sampled surfaces deterministic.
 	random := rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15))
 	samples := make([]Point, 0)
+
 	if len(active) == 0 {
 		initial, found := initialSample(region, bounds, random)
 		if !found {
@@ -53,47 +56,74 @@ func Sample(region Region, originals []Point, minimumDistance float64, seed uint
 		samples = append(samples, initial)
 	}
 
+	return sampleInfill(region, &grid, active, samples, minimumDistance, random)
+}
+
+func sampleInfill(
+	region Region,
+	grid *poissonGrid,
+	active, samples []Point,
+	minimumDistance float64,
+	random *rand.Rand,
+) []Point {
 	for len(active) > 0 {
 		activeIndex := random.IntN(len(active))
 		activePoint := active[activeIndex]
-		accepted := false
-
-		for range attemptsPerActivePoint {
-			candidate := annulusCandidate(activePoint, minimumDistance, random)
-			if !region.Contains(candidate.X, candidate.Y) || grid.hasNearby(candidate, minimumDistance) {
-				continue
-			}
-
-			grid.insert(candidate)
-			active = append(active, candidate)
-			samples = append(samples, candidate)
-			accepted = true
-			break
-		}
+		candidate, accepted := sampleCandidate(region, *grid, activePoint, minimumDistance, random)
 
 		if !accepted {
 			active[activeIndex] = active[len(active)-1]
 			active = active[:len(active)-1]
+
+			continue
 		}
+
+		grid.insert(candidate)
+		active = append(active, candidate)
+		samples = append(samples, candidate)
 	}
 
 	return samples
 }
 
+func sampleCandidate(
+	region Region,
+	grid poissonGrid,
+	activePoint Point,
+	minimumDistance float64,
+	random *rand.Rand,
+) (Point, bool) {
+	for range attemptsPerActivePoint {
+		candidate := annulusCandidate(activePoint, minimumDistance, random)
+		if !region.Contains(candidate.X, candidate.Y) || grid.hasNearby(candidate, minimumDistance) {
+			continue
+		}
+
+		return candidate, true
+	}
+
+	return Point{}, false
+}
+
 func isValidRegion(region Region) bool {
-	if region == nil {
+	if region == nil || isTypedNilRegion(region) {
 		return false
 	}
 
+	return validBounds(region.Bounds())
+}
+
+func isTypedNilRegion(region Region) bool {
 	value := reflect.ValueOf(region)
 	switch value.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
-		if value.IsNil() {
-			return false
-		}
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return value.IsNil()
+	default:
+		return false
 	}
+}
 
-	bounds := region.Bounds()
+func validBounds(bounds Rect) bool {
 	return isFinite(bounds.MinX) &&
 		isFinite(bounds.MinY) &&
 		isFinite(bounds.MaxX) &&
@@ -148,6 +178,7 @@ func (g poissonGrid) hasNearby(candidate Point, minimumDistance float64) bool {
 		for y := cell.y - cellRadius; y <= cell.y+cellRadius; y++ {
 			for _, point := range g.cells[gridCell{x: x, y: y}] {
 				dx := candidate.X - point.X
+
 				dy := candidate.Y - point.Y
 				if dx*dx+dy*dy < minimumDistanceSquared {
 					return true

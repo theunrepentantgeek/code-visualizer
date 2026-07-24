@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
@@ -46,14 +47,17 @@ func TestSample_RespectsMinimumDistance(t *testing.T) {
 	)
 
 	g.Expect(samples).NotTo(gomega.BeEmpty())
+
 	for _, sample := range samples {
 		g.Expect(sample.Original).To(gomega.BeFalse())
+
 		for _, original := range originals {
 			g.Expect(surface.Distance(sample, original)).To(
 				gomega.BeNumerically(">=", surface.PoissonMinDistance),
 			)
 		}
 	}
+
 	for i, sample := range samples {
 		for _, other := range samples[i+1:] {
 			g.Expect(surface.Distance(sample, other)).To(
@@ -77,6 +81,7 @@ func TestSample_ReturnsOnlyPointsInsideAnnulus(t *testing.T) {
 	samples := surface.Sample(region, nil, surface.PoissonMinDistance, 42)
 
 	g.Expect(samples).NotTo(gomega.BeEmpty())
+
 	for _, sample := range samples {
 		g.Expect(region.Contains(sample.X, sample.Y)).To(gomega.BeTrue())
 	}

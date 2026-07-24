@@ -40,6 +40,7 @@ func aggregateBucket(
 
 	aggregateColourMetric(b.Files, fillMetric, requested, &b.FillValue, &b.FillLabel)
 	aggregateColourMetric(b.Files, borderMetric, requested, &b.BorderValue, &b.BorderLabel)
+
 	if surfaceMetric != "" {
 		b.SurfaceValue = bucketNumericValue(b.Files, surfaceMetric)
 	}

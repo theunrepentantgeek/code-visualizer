@@ -23,6 +23,7 @@ func TestTriangleInRegion_RejectsAnnulusHoleCrossingEdge(t *testing.T) {
 	for _, point := range triangle.Points {
 		g.Expect(region.Contains(point.X, point.Y)).To(gomega.BeTrue())
 	}
+
 	centroid := Point{
 		X: (triangle.Points[0].X + triangle.Points[1].X + triangle.Points[2].X) / 3,
 		Y: (triangle.Points[0].Y + triangle.Points[1].Y + triangle.Points[2].Y) / 3,
@@ -51,9 +52,11 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 
 	triangle := Triangle{Points: [3]Point{originals[0], originals[1], originals[2]}}
 	g.Expect(pointStrictlyInTriangle(Point{X: region.CX, Y: region.CY}, triangle)).To(gomega.BeTrue())
+
 	for _, point := range triangle.Points {
 		g.Expect(region.Contains(point.X, point.Y)).To(gomega.BeTrue())
 	}
+
 	for index, start := range triangle.Points {
 		end := triangle.Points[(index+1)%len(triangle.Points)]
 		g.Expect(squaredDistanceToSegment(region.CX, region.CY, start, end)).To(

@@ -59,17 +59,20 @@ func BuildLegendStage(c *stages.CommonState, b *State) error {
 		c.RootConfig.LegendPositionStr(),
 		c.RootConfig.LegendOrientationStr(),
 	)
+
 	entries := make([]legend.Entry, 0, 3)
 	if b.FillMetric != "" {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleFill, MetricName: string(b.FillMetric), Ink: b.Inks.Fill,
 		})
 	}
+
 	if b.BorderMetric != "" {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleBorder, MetricName: string(b.BorderMetric), Ink: b.Inks.Border,
 		})
 	}
+
 	if b.Size != "" && b.Size != b.FillMetric {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleSize, MetricName: string(b.Size), Ink: inks.FixedInk(palette.White),

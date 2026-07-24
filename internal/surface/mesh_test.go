@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
@@ -55,15 +56,22 @@ func TestBuildAndSample_RejectTypedNilAnnulusRegion(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
-	var annulus *surface.Annulus
-	var region surface.Region = annulus
+
+	var (
+		annulus *surface.Annulus
+		region  surface.Region = annulus
+	)
+
 	originals := []surface.Point{
 		{X: 0, Y: 0, Value: 1},
 		{X: 10, Y: 0, Value: 2},
 		{X: 0, Y: 10, Value: 3},
 	}
-	var triangles []surface.Triangle
-	var samples []surface.Point
+
+	var (
+		triangles []surface.Triangle
+		samples   []surface.Point
+	)
 
 	g.Expect(func() {
 		triangles = surface.Build(region, originals, 42)
@@ -88,6 +96,7 @@ func TestBuild_IgnoresNonFiniteOriginalCoordinates(t *testing.T) {
 	}
 
 	var triangles []surface.Triangle
+
 	g.Expect(func() {
 		triangles = surface.Build(
 			surface.Rect{MinX: 0, MinY: 0, MaxX: 10, MaxY: 10},
@@ -97,6 +106,7 @@ func TestBuild_IgnoresNonFiniteOriginalCoordinates(t *testing.T) {
 	}).NotTo(gomega.Panic())
 
 	g.Expect(triangles).NotTo(gomega.BeEmpty())
+
 	for _, triangle := range triangles {
 		for _, point := range triangle.Points {
 			g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(gomega.BeFalse())
@@ -135,11 +145,14 @@ func TestBuild_PreservesObservedVertexValues(t *testing.T) {
 	)
 
 	g.Expect(triangles).NotTo(gomega.BeEmpty())
+
 	type coordinate struct {
 		x float64
 		y float64
 	}
+
 	foundOriginals := make(map[coordinate]float64)
+
 	for _, triangle := range triangles {
 		for _, point := range triangle.Points {
 			if point.Original {
@@ -147,6 +160,7 @@ func TestBuild_PreservesObservedVertexValues(t *testing.T) {
 			}
 		}
 	}
+
 	for _, original := range originals {
 		g.Expect(foundOriginals).To(gomega.HaveKeyWithValue(
 			coordinate{x: original.X, y: original.Y},
@@ -173,6 +187,7 @@ func TestBuild_InterpolatesInfillFromOriginalsOnly(t *testing.T) {
 	)
 
 	foundInfill := false
+
 	for _, triangle := range triangles {
 		for _, point := range triangle.Points {
 			if point.Original {
@@ -180,9 +195,11 @@ func TestBuild_InterpolatesInfillFromOriginalsOnly(t *testing.T) {
 			}
 
 			foundInfill = true
+
 			g.Expect(point.Value).To(gomega.BeNumerically("~", surface.Interpolate(point, originals)))
 		}
 	}
+
 	g.Expect(foundInfill).To(gomega.BeTrue())
 }
 
@@ -228,10 +245,12 @@ func TestBuild_RestrictsAnnularMeshToRegionAndMaximumEdge(t *testing.T) {
 
 	g.Expect(first).NotTo(gomega.BeEmpty())
 	g.Expect(first).To(gomega.Equal(second))
+
 	for _, triangle := range first {
 		for _, point := range triangle.Points {
 			g.Expect(region.Contains(point.X, point.Y)).To(gomega.BeTrue())
 		}
+
 		centroid := centroid(triangle)
 		g.Expect(region.Contains(centroid.X, centroid.Y)).To(gomega.BeTrue())
 		g.Expect(surface.LongestEdge(triangle)).To(
@@ -250,6 +269,7 @@ func TestBuild_SeedsAnnulusBoundaries(t *testing.T) {
 		InnerRadius: 6,
 		OuterRadius: 14,
 	}
+
 	originals := []surface.Point{
 		{X: 30, Y: 20, Value: 1},
 		{X: 20, Y: 30, Value: 2},
@@ -265,23 +285,29 @@ func TestBuild_SeedsAnnulusBoundaries(t *testing.T) {
 	triangles := surface.Build(region, originals, 42)
 
 	g.Expect(triangles).NotTo(gomega.BeEmpty())
+
 	hasInnerBoundaryVertex := false
 	hasOuterBoundaryVertex := false
+
 	for _, triangle := range triangles {
 		g.Expect(surface.LongestEdge(triangle)).To(
 			gomega.BeNumerically("<=", surface.MaxTriangleEdge),
 		)
+
 		for _, point := range triangle.Points {
 			radius := math.Hypot(point.X-region.CX, point.Y-region.CY)
 			if math.Abs(radius-region.InnerRadius) <= 1e-9 {
 				hasInnerBoundaryVertex = true
+
 				g.Expect(point.Original).To(gomega.BeFalse())
 				g.Expect(point.Value).To(
 					gomega.BeNumerically("~", surface.Interpolate(point, originals)),
 				)
 			}
+
 			if math.Abs(radius-region.OuterRadius) <= 1e-9 {
 				hasOuterBoundaryVertex = true
+
 				g.Expect(point.Original).To(gomega.BeFalse())
 				g.Expect(point.Value).To(
 					gomega.BeNumerically("~", surface.Interpolate(point, originals)),
@@ -289,6 +315,7 @@ func TestBuild_SeedsAnnulusBoundaries(t *testing.T) {
 			}
 		}
 	}
+
 	g.Expect(hasInnerBoundaryVertex).To(gomega.BeTrue())
 	g.Expect(hasOuterBoundaryVertex).To(gomega.BeTrue())
 }
@@ -310,6 +337,7 @@ func centroid(triangle surface.Triangle) surface.Point {
 		centroid.X += point.X
 		centroid.Y += point.Y
 	}
+
 	centroid.X /= float64(len(triangle.Points))
 	centroid.Y /= float64(len(triangle.Points))
 
