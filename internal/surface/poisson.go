@@ -20,7 +20,10 @@ type poissonGrid struct {
 
 // Sample returns infill points generated with Bridson Poisson-disk sampling.
 func Sample(region Region, originals []Point, minimumDistance float64, seed uint64) []Point {
-	if !isValidRegion(region) || minimumDistance <= 0 || !isFinite(minimumDistance) {
+	if !isValidRegion(region) ||
+		minimumDistance <= 0 ||
+		!isFinite(minimumDistance) ||
+		minimumDistance*minimumDistance == 0 {
 		return nil
 	}
 

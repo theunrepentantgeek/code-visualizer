@@ -2,10 +2,32 @@ package surface_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
+
+func TestSample_RejectsUnderflowingMinimumDistance(t *testing.T) {
+	t.Parallel()
+
+	samples := make(chan []surface.Point, 1)
+	go func() {
+		samples <- surface.Sample(
+			surface.Rect{MinX: 0, MinY: 0, MaxX: 50, MaxY: 50},
+			nil,
+			1e-200,
+			42,
+		)
+	}()
+
+	select {
+	case result := <-samples:
+		gomega.NewWithT(t).Expect(result).To(gomega.BeNil())
+	case <-time.After(time.Second):
+		t.Fatal("Sample did not return for an underflowing minimum distance")
+	}
+}
 
 func TestSample_RespectsMinimumDistance(t *testing.T) {
 	t.Parallel()
