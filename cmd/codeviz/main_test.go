@@ -685,6 +685,18 @@ func TestSpiralCmd_ValidateConfig_SurfaceMetricMustBeNumeric(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("surface metric must be numeric")))
 }
 
+func TestSpiralCmd_ValidateConfig_SurfaceMetricMustNotUseAggregation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Spiral.SurfaceMetric = &config.MetricSpec{Metric: "file-size.sum"}
+
+	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
+
+	g.Expect(err).To(MatchError(ContainSubstring("surface metric must not use aggregation")))
+}
+
 func TestSpiralCmd_ValidateConfig_SurfaceFallbackFillMustBeNumeric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

@@ -240,6 +240,32 @@ func TestBuildInksStage_SurfaceUsesFillInkForSameMetric(t *testing.T) {
 	g.Expect(viz.SurfaceInk).To(BeIdenticalTo(viz.Inks.Fill))
 }
 
+func TestBuildInksStage_BuildsIndependentSurfaceInkForSameMetricWithDifferentPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			BaseMetrics: []metric.Name{"file-lines"},
+		},
+	}
+	viz := &spiral.State{
+		Buckets: []spiral.TimeBucket{
+			{FillValue: 1, SurfaceValue: 1},
+			{FillValue: 10, SurfaceValue: 10},
+		},
+		FillMetric:     "file-lines",
+		FillPalette:    palette.Foliage,
+		SurfaceEnabled: true,
+		SurfaceMetric:  "file-lines",
+		SurfacePalette: palette.Temperature,
+	}
+
+	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
+	g.Expect(viz.SurfaceInk).NotTo(BeIdenticalTo(viz.Inks.Fill))
+	g.Expect(viz.SurfaceInk.Dip(inks.MeasureValue(10))).NotTo(Equal(viz.Inks.Fill.Dip(inks.MeasureValue(10))))
+}
+
 func TestBuildInksStage_BuildsNumericSurfaceInk(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -307,13 +333,35 @@ func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
 
 	common := &stages.CommonState{RootConfig: config.New()}
 	viz := &spiral.State{
-		FillMetric:    "file-lines",
-		SurfaceMetric: "file-lines",
-		Inks:          spiral.Inks{Fill: inks.FixedInk(palette.White)},
-		SurfaceInk:    inks.FixedInk(palette.White),
+		FillMetric:     "file-lines",
+		FillPalette:    palette.Foliage,
+		SurfaceMetric:  "file-lines",
+		SurfacePalette: palette.Foliage,
+		Inks:           spiral.Inks{Fill: inks.FixedInk(palette.White)},
+		SurfaceInk:     inks.FixedInk(palette.White),
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
 	g.Expect(viz.LegendConfig.Entries).To(HaveLen(1))
 	g.Expect(viz.LegendConfig.Entries[0].Role).To(Equal(legend.RoleFill))
+}
+
+func TestBuildLegendStage_AddsSurfaceForSameMetricWithDifferentPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{RootConfig: config.New()}
+	viz := &spiral.State{
+		FillMetric:     "file-lines",
+		FillPalette:    palette.Foliage,
+		SurfaceMetric:  "file-lines",
+		SurfacePalette: palette.Temperature,
+		Inks:           spiral.Inks{Fill: inks.FixedInk(palette.White)},
+		SurfaceInk:     inks.FixedInk(palette.White),
+	}
+
+	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
+	g.Expect(viz.LegendConfig.Entries[1].Role).To(Equal(legend.RoleSurface))
+	g.Expect(viz.LegendConfig.Entries[1].MetricName).To(Equal("file-lines"))
 }

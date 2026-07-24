@@ -113,7 +113,7 @@ func BuildInksStage(c *stages.CommonState, p *State) error {
 	p.Inks = BuildInks(p.Buckets, c.Requested, p.FillMetric, p.FillPalette, p.BorderMetric, p.BorderPalette)
 	p.SurfaceInk = nil
 	if p.SurfaceEnabled {
-		if p.SurfaceMetric == p.FillMetric {
+		if p.SurfaceMetric == p.FillMetric && p.SurfacePalette == p.FillPalette {
 			p.SurfaceInk = p.Inks.Fill
 		} else {
 			values := make([]float64, len(p.Buckets))
@@ -153,7 +153,7 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 			Role: legend.RoleSize, MetricName: string(p.Size), Ink: inks.FixedInk(palette.White),
 		})
 	}
-	if p.SurfaceMetric != "" && p.SurfaceMetric != p.FillMetric {
+	if p.SurfaceMetric != "" && (p.SurfaceMetric != p.FillMetric || p.SurfacePalette != p.FillPalette) {
 		entries = append(entries, legend.Entry{
 			Role: legend.RoleSurface, MetricName: string(p.SurfaceMetric), Ink: p.SurfaceInk,
 		})

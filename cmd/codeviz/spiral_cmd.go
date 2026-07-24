@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -82,6 +83,15 @@ func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
 
 	if surfaceMetric == "" {
 		return eris.New("surface requires a numeric fill metric or surface metric")
+	}
+
+	resolved, err := provider.ResolveForValidation(surfaceMetric)
+	if err != nil {
+		return friendlyMetricError("surface", surfaceMetric, err)
+	}
+
+	if resolved.NeedsAggregation {
+		return eris.New("surface metric must not use aggregation")
 	}
 
 	if err := validateNumericMetric("surface", surfaceMetric); err != nil {
