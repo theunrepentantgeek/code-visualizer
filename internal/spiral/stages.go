@@ -6,22 +6,36 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
-// ResolveMetrics resolves size, fill, border, resolution, and label settings
-// from the spiral config and populates c.Requested.
+// ResolveMetrics resolves metric, resolution, and label settings from the
+// spiral config and populates c.Requested.
 func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	p.Size = metric.Name(stages.PtrString(cfg.Size))
 	p.FillMetric = cfg.Fill.MetricName()
 	p.FillPalette = stages.ResolveFillPalette(cfg.Fill, p.FillMetric)
 	p.BorderMetric, p.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	p.SurfaceEnabled = cfg.SurfaceEnabled()
+	p.SurfaceMetric = ""
+	p.SurfacePalette = ""
+	if p.SurfaceEnabled {
+		if cfg.SurfaceMetric != nil && !cfg.SurfaceMetric.IsZero() {
+			p.SurfaceMetric = cfg.SurfaceMetric.MetricName()
+			p.SurfacePalette = stages.ResolveFillPalette(cfg.SurfaceMetric, p.SurfaceMetric)
+		} else {
+			p.SurfaceMetric = p.FillMetric
+			p.SurfacePalette = p.FillPalette
+		}
+	}
 	p.Resolution = resolveResolution(cfg)
 	p.Labels = resolveLabels(cfg)
 
-	c.Requested = collectRequestedMetrics(p.Size, cfg.Fill, cfg.Border)
+	c.Requested = collectRequestedMetrics(p.Size, cfg.Fill, cfg.Border, cfg.SurfaceMetric)
 
 	return nil
 }
@@ -42,19 +56,22 @@ func resolveLabels(cfg *config.Spiral) LabelMode {
 	return LabelLaps
 }
 
-// collectRequestedMetrics merges size + fill + border into a deduplicated
-// metric set. When size is empty (spiral defaults to commit count), only fill
-// and border contribute.
-func collectRequestedMetrics(size metric.Name, fill, border *config.MetricSpec) stages.RequestedMetrics {
+// collectRequestedMetrics merges size, fill, border, and surface into a
+// deduplicated metric set. When size is empty (spiral defaults to commit
+// count), only configured colour and surface metrics contribute.
+func collectRequestedMetrics(
+	size metric.Name,
+	fill, border, surface *config.MetricSpec,
+) stages.RequestedMetrics {
+	seen := map[metric.Name]bool{}
+	names := make([]metric.Name, 0, 4)
+
 	if size != "" {
-		return stages.CollectRequestedMetrics(size, fill, border)
+		seen[size] = true
+		names = append(names, size)
 	}
 
-	seen := map[metric.Name]bool{}
-
-	var names []metric.Name
-
-	for _, spec := range []*config.MetricSpec{fill, border} {
+	for _, spec := range []*config.MetricSpec{fill, border, surface} {
 		if spec != nil && spec.Metric != "" && !seen[spec.Metric] {
 			seen[spec.Metric] = true
 			names = append(names, spec.Metric)
@@ -86,7 +103,7 @@ func BuildTimeBucketsStage(c *stages.CommonState, p *State) error {
 
 // AggregateBucketMetricsStage fills in per-bucket aggregated metric values.
 func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
-	AggregateBucketMetrics(p.Buckets, c.Requested, p.Size, p.FillMetric, p.BorderMetric)
+	AggregateBucketMetrics(p.Buckets, c.Requested, p.Size, p.FillMetric, p.BorderMetric, p.SurfaceMetric)
 
 	return nil
 }
@@ -94,6 +111,19 @@ func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
 // BuildInksStage builds spiral inks and emits the Rendering image log line.
 func BuildInksStage(c *stages.CommonState, p *State) error {
 	p.Inks = BuildInks(p.Buckets, c.Requested, p.FillMetric, p.FillPalette, p.BorderMetric, p.BorderPalette)
+	p.SurfaceInk = nil
+	if p.SurfaceEnabled {
+		if p.SurfaceMetric == p.FillMetric {
+			p.SurfaceInk = p.Inks.Fill
+		} else {
+			values := make([]float64, len(p.Buckets))
+			for i := range p.Buckets {
+				values[i] = p.Buckets[i].SurfaceValue
+			}
+
+			p.SurfaceInk = inks.NumericInk(p.SurfaceMetric, values, palette.GetPalette(p.SurfacePalette))
+		}
+	}
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
@@ -107,12 +137,29 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 		c.RootConfig.LegendOrientationStr(),
 	)
 
-	p.LegendConfig = legend.Build(
-		pos, orient,
-		p.Inks.Fill, p.FillMetric,
-		p.Inks.Border, p.BorderMetric,
-		p.Size,
-	)
+	entries := make([]legend.Entry, 0, 4)
+	if p.FillMetric != "" {
+		entries = append(entries, legend.Entry{
+			Role: legend.RoleFill, MetricName: string(p.FillMetric), Ink: p.Inks.Fill,
+		})
+	}
+	if p.BorderMetric != "" {
+		entries = append(entries, legend.Entry{
+			Role: legend.RoleBorder, MetricName: string(p.BorderMetric), Ink: p.Inks.Border,
+		})
+	}
+	if p.Size != "" && p.Size != p.FillMetric {
+		entries = append(entries, legend.Entry{
+			Role: legend.RoleSize, MetricName: string(p.Size), Ink: inks.FixedInk(palette.White),
+		})
+	}
+	if p.SurfaceMetric != "" && p.SurfaceMetric != p.FillMetric {
+		entries = append(entries, legend.Entry{
+			Role: legend.RoleSurface, MetricName: string(p.SurfaceMetric), Ink: p.SurfaceInk,
+		})
+	}
+
+	p.LegendConfig = legend.Build(pos, orient, entries)
 
 	return nil
 }

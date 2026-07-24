@@ -14,23 +14,23 @@ import (
 // this metric is naturally len(files) — not the sum of per-file lifetime totals.
 const commitCountMetric metric.Name = "commit-count"
 
-// AggregateBucketMetrics fills in SizeValue, FillValue, FillLabel, BorderValue,
-// and BorderLabel for every bucket based on the files assigned to it. When
-// sizeMetric is empty, SizeValue defaults to len(b.Files).
+// AggregateBucketMetrics fills in metric values for every bucket based on the
+// files assigned to it. When sizeMetric is empty, SizeValue defaults to
+// len(b.Files).
 func AggregateBucketMetrics(
 	buckets []TimeBucket,
 	requested stages.RequestedMetrics,
-	sizeMetric, fillMetric, borderMetric metric.Name,
+	sizeMetric, fillMetric, borderMetric, surfaceMetric metric.Name,
 ) {
 	for i := range buckets {
-		aggregateBucket(&buckets[i], requested, sizeMetric, fillMetric, borderMetric)
+		aggregateBucket(&buckets[i], requested, sizeMetric, fillMetric, borderMetric, surfaceMetric)
 	}
 }
 
 func aggregateBucket(
 	b *TimeBucket,
 	requested stages.RequestedMetrics,
-	sizeMetric, fillMetric, borderMetric metric.Name,
+	sizeMetric, fillMetric, borderMetric, surfaceMetric metric.Name,
 ) {
 	if sizeMetric != "" {
 		b.SizeValue = bucketNumericValue(b.Files, sizeMetric)
@@ -40,6 +40,9 @@ func aggregateBucket(
 
 	aggregateColourMetric(b.Files, fillMetric, requested, &b.FillValue, &b.FillLabel)
 	aggregateColourMetric(b.Files, borderMetric, requested, &b.BorderValue, &b.BorderLabel)
+	if surfaceMetric != "" {
+		b.SurfaceValue = bucketNumericValue(b.Files, surfaceMetric)
+	}
 }
 
 func aggregateColourMetric(

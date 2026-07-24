@@ -19,8 +19,10 @@ type SpiralCmd struct {
 
 	Size metric.Name `default:"" help:"Metric for disc size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
 
-	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
-	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
+	Fill          config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Border        config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
+	Surface       bool              `help:"Enable the spiral surface." optional:""`
+	SurfaceMetric config.MetricSpec `help:"Surface height: numeric metric[,palette]." name:"surface-metric" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Labels string `help:"Label mode: all, laps, or none." enum:",all,laps,none" default:""`
 
@@ -63,6 +65,27 @@ func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
 
 	if err := cfg.Border.Validate("border"); err != nil {
 		return eris.Wrap(err, "invalid border spec")
+	}
+
+	if !cfg.SurfaceEnabled() {
+		return nil
+	}
+
+	if err := cfg.SurfaceMetric.Validate("surface"); err != nil {
+		return eris.Wrap(err, "invalid surface spec")
+	}
+
+	surfaceMetric := cfg.SurfaceMetric.MetricName()
+	if surfaceMetric == "" {
+		surfaceMetric = cfg.Fill.MetricName()
+	}
+
+	if surfaceMetric == "" {
+		return eris.New("surface requires a numeric fill metric or surface metric")
+	}
+
+	if err := validateNumericMetric("surface", surfaceMetric); err != nil {
+		return err
 	}
 
 	return nil
@@ -129,6 +152,8 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.Spiral.OverrideSize(string(c.Size))
 	cfg.Spiral.OverrideFill(c.Fill)
 	cfg.Spiral.OverrideBorder(c.Border)
+	cfg.Spiral.OverrideSurface(c.Surface)
+	cfg.Spiral.OverrideSurfaceMetric(c.SurfaceMetric)
 	cfg.Spiral.OverrideLabels(c.Labels)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)

@@ -364,6 +364,34 @@ func TestSave_ThenLoad_RoundTrips(t *testing.T) {
 	g.Expect(loaded.Treemap.Fill.Metric).To(Equal(metric.Name("file-type")))
 }
 
+func TestSave_ThenLoad_RoundTripsSpiralSurface(t *testing.T) {
+	t.Parallel()
+
+	for _, ext := range []string{"yaml", "json"} {
+		t.Run(ext, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			path := filepath.Join(t.TempDir(), "config."+ext)
+			original := New()
+			original.Spiral.Surface = new(true)
+			original.Spiral.SurfaceMetric = &MetricSpec{
+				Metric:  metric.Name("file-lines"),
+				Palette: palette.Foliage,
+			}
+
+			g.Expect(original.Save(path)).To(Succeed())
+
+			loaded := New()
+			g.Expect(loaded.Load(path)).To(Succeed())
+			g.Expect(loaded.Spiral.Surface).NotTo(BeNil())
+			g.Expect(*loaded.Spiral.Surface).To(BeTrue())
+			g.Expect(loaded.Spiral.SurfaceMetric).NotTo(BeNil())
+			g.Expect(*loaded.Spiral.SurfaceMetric).To(Equal(*original.Spiral.SurfaceMetric))
+		})
+	}
+}
+
 func TestSave_OmitsNilFields(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

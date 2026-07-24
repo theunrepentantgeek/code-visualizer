@@ -2,9 +2,6 @@ package legend
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 // ResolveOptions resolves legend position and orientation from raw strings.
@@ -24,17 +21,13 @@ func ResolveOptions(posStr, orientStr string) (model.LegendPosition, model.Legen
 	return pos, orient
 }
 
-// Build constructs a Config from resolved options and the pre-built Ink
-// objects used for rendering. Returns nil if the legend is disabled
-// ("none") or no entries would be produced.
+// Build constructs a Config from resolved options and explicitly ordered
+// pre-built legend entries. Returns nil if the legend is disabled ("none") or
+// no entries would be produced.
 func Build(
 	position model.LegendPosition,
 	orientation model.LegendOrientation,
-	fillInk inks.Ink,
-	fillMetric metric.Name,
-	borderInk inks.Ink,
-	borderMetric metric.Name,
-	sizeMetric metric.Name,
+	entries []Entry,
 ) *Config {
 	if position == model.LegendPositionNone {
 		return nil
@@ -42,32 +35,6 @@ func Build(
 
 	if orientation == "" {
 		orientation = DefaultOrientation(position)
-	}
-
-	var entries []Entry
-
-	if fillMetric != "" {
-		entries = append(entries, Entry{
-			Role:       RoleFill,
-			MetricName: string(fillMetric),
-			Ink:        fillInk,
-		})
-	}
-
-	if borderMetric != "" {
-		entries = append(entries, Entry{
-			Role:       RoleBorder,
-			MetricName: string(borderMetric),
-			Ink:        borderInk,
-		})
-	}
-
-	if sizeMetric != "" && sizeMetric != fillMetric {
-		entries = append(entries, Entry{
-			Role:       RoleSize,
-			MetricName: string(sizeMetric),
-			Ink:        inks.FixedInk(palette.White),
-		})
 	}
 
 	if len(entries) == 0 {

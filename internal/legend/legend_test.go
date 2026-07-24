@@ -57,9 +57,9 @@ func TestBuildLegendConfig_NonePosition_ReturnsNil(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionNone, model0.LegendOrientationVertical,
-		inks.FixedInk(color.RGBA{A: 255}), "file-size",
-		inks.FixedInk(color.RGBA{A: 255}), "",
-		"file-lines",
+		[]legend.Entry{{
+			Role: legend.RoleFill, MetricName: "file-size", Ink: inks.FixedInk(color.RGBA{A: 255}),
+		}},
 	)
 
 	g.Expect(cfg).To(BeNil())
@@ -76,9 +76,9 @@ func TestBuildLegendConfig_FillOnly_SingleEntry(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
-		fillInk, "file-size",
-		inks.FixedInk(color.RGBA{A: 255}), "",
-		"file-size",
+		[]legend.Entry{{
+			Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk,
+		}},
 	)
 
 	if cfg == nil {
@@ -105,9 +105,10 @@ func TestBuildLegendConfig_FillAndBorder_TwoEntries(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
-		fillInk, "file-size",
-		borderInk, "file-type",
-		"file-size",
+		[]legend.Entry{
+			{Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk},
+			{Role: legend.RoleBorder, MetricName: "file-type", Ink: borderInk},
+		},
 	)
 
 	if cfg == nil {
@@ -130,9 +131,10 @@ func TestBuildLegendConfig_DifferentSizeMetric_AddsEntry(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
-		fillInk, "file-size",
-		inks.FixedInk(color.RGBA{A: 255}), "",
-		"file-lines",
+		[]legend.Entry{
+			{Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk},
+			{Role: legend.RoleSize, MetricName: "file-lines", Ink: inks.FixedInk(palette.White)},
+		},
 	)
 
 	if cfg == nil {
@@ -155,9 +157,9 @@ func TestBuildLegendConfig_SameSizeAsFill_NoSizeEntry(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
-		fillInk, "file-size",
-		inks.FixedInk(color.RGBA{A: 255}), "",
-		"file-size",
+		[]legend.Entry{{
+			Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk,
+		}},
 	)
 
 	if cfg == nil {
@@ -173,12 +175,32 @@ func TestBuildLegendConfig_NoMetrics_ReturnsNil(t *testing.T) {
 
 	cfg := legend.Build(
 		model0.LegendPositionBottomRight, model0.LegendOrientationVertical,
-		inks.FixedInk(color.RGBA{A: 255}), "",
-		inks.FixedInk(color.RGBA{A: 255}), "",
-		"",
+		nil,
 	)
 
 	g.Expect(cfg).To(BeNil())
+}
+
+func TestBuildLegendConfig_SurfaceEntry(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	surfaceInk := inks.NumericInk("file-lines", []float64{1, 2}, palette.GetPalette(palette.Foliage))
+	cfg := legend.Build(
+		model0.LegendPositionBottomRight,
+		model0.LegendOrientationVertical,
+		[]legend.Entry{{
+			Role: legend.RoleSurface, MetricName: "file-lines", Ink: surfaceInk,
+		}},
+	)
+
+	if cfg == nil {
+		t.Fatal("expected non-nil LegendConfig")
+	}
+
+	g.Expect(cfg.Entries).To(ConsistOf(
+		legend.Entry{Role: legend.RoleSurface, MetricName: "file-lines", Ink: surfaceInk},
+	))
 }
 
 func makeLegendTestRoot() *model.Directory {

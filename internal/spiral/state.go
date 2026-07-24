@@ -1,6 +1,7 @@
 package spiral
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -9,16 +10,20 @@ import (
 // State is the viz-specific pipeline state for the spiral visualization.
 type State struct {
 	// Resolved during the pipeline:
-	Size          metric.Name
-	FillMetric    metric.Name
-	FillPalette   palette.PaletteName
-	BorderMetric  metric.Name
-	BorderPalette palette.PaletteName
-	Resolution    Resolution
-	Labels        LabelMode
+	Size           metric.Name
+	FillMetric     metric.Name
+	FillPalette    palette.PaletteName
+	BorderMetric   metric.Name
+	BorderPalette  palette.PaletteName
+	SurfaceEnabled bool
+	SurfaceMetric  metric.Name
+	SurfacePalette palette.PaletteName
+	Resolution     Resolution
+	Labels         LabelMode
 
 	Buckets      []TimeBucket
 	Inks         Inks
+	SurfaceInk   inks.Ink
 	Layout       SpiralLayout
 	LegendConfig *legend.Config
 }

@@ -624,6 +624,92 @@ func TestSpiralCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("invalid fill palette")))
 }
 
+func TestCLI_ParsesSpiralSurfaceFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"spiral", ".", "-o", "out.png",
+		"--surface",
+		"--surface-metric", "file-lines,foliage",
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.Spiral.Surface).To(BeTrue())
+	g.Expect(cli.Spiral.SurfaceMetric).To(Equal(config.MetricSpec{
+		Metric: metric.Name("file-lines"), Palette: "foliage",
+	}))
+}
+
+func TestSpiralCmd_ValidateConfig_SurfaceDisabledLeavesFillOptional(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	err := (&SpiralCmd{}).validateConfig(config.New().Spiral)
+
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestSpiralCmd_ValidateConfig_SurfaceNeedsMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Spiral.Surface = new(true)
+
+	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
+
+	g.Expect(err).To(MatchError(ContainSubstring(
+		"surface requires a numeric fill metric or surface metric",
+	)))
+}
+
+func TestSpiralCmd_ValidateConfig_SurfaceMetricMustBeNumeric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Spiral.SurfaceMetric = &config.MetricSpec{Metric: "file-type"}
+
+	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
+
+	g.Expect(err).To(MatchError(ContainSubstring("surface metric must be numeric")))
+}
+
+func TestSpiralCmd_ValidateConfig_SurfaceFallbackFillMustBeNumeric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Spiral.Surface = new(true)
+	cfg.Spiral.Fill = &config.MetricSpec{Metric: "file-type"}
+
+	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
+
+	g.Expect(err).To(MatchError(ContainSubstring("surface metric must be numeric")))
+}
+
+func TestSpiralCmd_ValidateConfig_NumericSurfaceMetricWithoutFillPasses(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Spiral.SurfaceMetric = &config.MetricSpec{Metric: "file-lines"}
+
+	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
+
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
 func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
