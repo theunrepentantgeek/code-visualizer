@@ -1,6 +1,7 @@
 package surface_test
 
 import (
+	"math"
 	"testing"
 
 	"github.com/onsi/gomega"
@@ -48,6 +49,37 @@ func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
 	)
 
 	g.Expect(triangles).To(gomega.BeEmpty())
+}
+
+func TestBuild_IgnoresNonFiniteOriginalCoordinates(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	originals := []surface.Point{
+		{X: 1, Y: 1, Value: 1},
+		{X: 9, Y: 1, Value: 2},
+		{X: 1, Y: 9, Value: 3},
+		{X: math.NaN(), Y: 5, Value: 4},
+		{X: 5, Y: math.Inf(1), Value: 5},
+		{X: math.Inf(-1), Y: 5, Value: 6},
+	}
+
+	var triangles []surface.Triangle
+	g.Expect(func() {
+		triangles = surface.Build(
+			surface.Rect{MinX: 0, MinY: 0, MaxX: 10, MaxY: 10},
+			originals,
+			42,
+		)
+	}).NotTo(gomega.Panic())
+
+	g.Expect(triangles).NotTo(gomega.BeEmpty())
+	for _, triangle := range triangles {
+		for _, point := range triangle.Points {
+			g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(gomega.BeFalse())
+			g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(gomega.BeFalse())
+		}
+	}
 }
 
 func TestBuild_PreservesObservedVertexValues(t *testing.T) {
@@ -183,6 +215,59 @@ func TestBuild_RestrictsAnnularMeshToRegionAndMaximumEdge(t *testing.T) {
 			gomega.BeNumerically("<=", surface.MaxTriangleEdge),
 		)
 	}
+}
+
+func TestBuild_SeedsAnnulusBoundaries(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	region := surface.Annulus{
+		CX:          20,
+		CY:          20,
+		InnerRadius: 6,
+		OuterRadius: 14,
+	}
+	originals := []surface.Point{
+		{X: 30, Y: 20, Value: 1},
+		{X: 20, Y: 30, Value: 2},
+		{X: 10, Y: 20, Value: 3},
+		{X: 20, Y: 10, Value: 4},
+	}
+	for _, original := range originals {
+		radius := math.Hypot(original.X-region.CX, original.Y-region.CY)
+		g.Expect(radius).To(gomega.BeNumerically(">", region.InnerRadius))
+		g.Expect(radius).To(gomega.BeNumerically("<", region.OuterRadius))
+	}
+
+	triangles := surface.Build(region, originals, 42)
+
+	g.Expect(triangles).NotTo(gomega.BeEmpty())
+	hasInnerBoundaryVertex := false
+	hasOuterBoundaryVertex := false
+	for _, triangle := range triangles {
+		g.Expect(surface.LongestEdge(triangle)).To(
+			gomega.BeNumerically("<=", surface.MaxTriangleEdge),
+		)
+		for _, point := range triangle.Points {
+			radius := math.Hypot(point.X-region.CX, point.Y-region.CY)
+			if math.Abs(radius-region.InnerRadius) <= 1e-9 {
+				hasInnerBoundaryVertex = true
+				g.Expect(point.Original).To(gomega.BeFalse())
+				g.Expect(point.Value).To(
+					gomega.BeNumerically("~", surface.Interpolate(point, originals)),
+				)
+			}
+			if math.Abs(radius-region.OuterRadius) <= 1e-9 {
+				hasOuterBoundaryVertex = true
+				g.Expect(point.Original).To(gomega.BeFalse())
+				g.Expect(point.Value).To(
+					gomega.BeNumerically("~", surface.Interpolate(point, originals)),
+				)
+			}
+		}
+	}
+	g.Expect(hasInnerBoundaryVertex).To(gomega.BeTrue())
+	g.Expect(hasOuterBoundaryVertex).To(gomega.BeTrue())
 }
 
 func TestLongestEdge_ReturnsLengthOfLongestTriangleSide(t *testing.T) {

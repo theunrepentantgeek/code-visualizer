@@ -35,6 +35,10 @@ type Region interface {
 	Contains(x, y float64) bool
 }
 
+type boundaryPointProvider interface {
+	boundaryPoints(maximumSegmentLength float64) []Point
+}
+
 type Annulus struct {
 	CX          float64
 	CY          float64
@@ -62,6 +66,93 @@ func (a Annulus) Contains(x, y float64) bool {
 
 	return distanceSquared >= a.InnerRadius*a.InnerRadius &&
 		distanceSquared <= a.OuterRadius*a.OuterRadius
+}
+
+func (r Rect) boundaryPoints(maximumSegmentLength float64) []Point {
+	if !isFinite(maximumSegmentLength) ||
+		maximumSegmentLength <= 0 ||
+		!isFinite(r.MinX) ||
+		!isFinite(r.MinY) ||
+		!isFinite(r.MaxX) ||
+		!isFinite(r.MaxY) ||
+		r.MinX >= r.MaxX ||
+		r.MinY >= r.MaxY {
+		return nil
+	}
+
+	corners := [4]Point{
+		{X: r.MinX, Y: r.MinY},
+		{X: r.MaxX, Y: r.MinY},
+		{X: r.MaxX, Y: r.MaxY},
+		{X: r.MinX, Y: r.MaxY},
+	}
+	points := make([]Point, 0)
+	for index, start := range corners {
+		end := corners[(index+1)%len(corners)]
+		points = append(points, segmentBoundaryPoints(start, end, maximumSegmentLength)...)
+	}
+
+	return points
+}
+
+func (a Annulus) boundaryPoints(maximumSegmentLength float64) []Point {
+	if !isFinite(maximumSegmentLength) ||
+		maximumSegmentLength <= 0 ||
+		!isFinite(a.CX) ||
+		!isFinite(a.CY) ||
+		!isFinite(a.InnerRadius) ||
+		!isFinite(a.OuterRadius) ||
+		a.InnerRadius < 0 ||
+		a.OuterRadius < a.InnerRadius {
+		return nil
+	}
+
+	points := circularBoundaryPoints(a.CX, a.CY, a.OuterRadius, maximumSegmentLength)
+	if a.InnerRadius > 0 {
+		points = append(
+			points,
+			circularBoundaryPoints(a.CX, a.CY, a.InnerRadius, maximumSegmentLength)...,
+		)
+	}
+
+	return points
+}
+
+func segmentBoundaryPoints(start, end Point, maximumSegmentLength float64) []Point {
+	length := Distance(start, end)
+	if !isFinite(length) {
+		return nil
+	}
+
+	segments := max(1, int(math.Ceil(length/maximumSegmentLength)))
+	points := make([]Point, 0, segments)
+	for index := range segments {
+		fraction := float64(index) / float64(segments)
+		points = append(points, Point{
+			X: start.X + (end.X-start.X)*fraction,
+			Y: start.Y + (end.Y-start.Y)*fraction,
+		})
+	}
+
+	return points
+}
+
+func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Point {
+	if radius == 0 {
+		return nil
+	}
+
+	segments := max(3, int(math.Ceil(2*math.Pi*radius/maximumSegmentLength)))
+	points := make([]Point, 0, segments)
+	for index := range segments {
+		angle := 2 * math.Pi * float64(index) / float64(segments)
+		points = append(points, Point{
+			X: cx + radius*math.Cos(angle),
+			Y: cy + radius*math.Sin(angle),
+		})
+	}
+
+	return points
 }
 
 type Triangle struct {

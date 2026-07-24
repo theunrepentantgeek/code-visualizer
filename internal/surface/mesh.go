@@ -34,17 +34,32 @@ func Interpolate(point Point, originals []Point) float64 {
 
 // Build creates an interpolated Delaunay triangle mesh restricted to region.
 func Build(region Region, originals []Point, seed uint64) []Triangle {
-	if len(originals) < 3 {
+	if !isValidRegion(region) {
 		return nil
 	}
 
-	observed := append([]Point(nil), originals...)
-	for index := range observed {
-		observed[index].Original = true
-	}
-	points := append([]Point(nil), observed...)
+	observed := make([]Point, 0, len(originals))
+	for _, original := range originals {
+		if !isFinitePoint(original) {
+			continue
+		}
 
-	infill := Sample(region, observed, PoissonMinDistance, seed)
+		original.Original = true
+		observed = append(observed, original)
+	}
+	if len(observed) < 3 {
+		return nil
+	}
+
+	boundary := boundarySamples(region, observed)
+	for index := range boundary {
+		boundary[index].Value = Interpolate(boundary[index], observed)
+	}
+
+	points := append([]Point(nil), observed...)
+	points = append(points, boundary...)
+	samplingSources := append([]Point(nil), points...)
+	infill := Sample(region, samplingSources, PoissonMinDistance, seed)
 	for _, point := range infill {
 		point.Value = Interpolate(point, observed)
 		points = append(points, point)
@@ -99,6 +114,13 @@ func triangleInRegion(region Region, triangle Triangle) bool {
 		return false
 	}
 
+	switch annulus := region.(type) {
+	case Annulus:
+		return triangleInAnnulus(annulus, triangle)
+	case *Annulus:
+		return annulus != nil && triangleInAnnulus(*annulus, triangle)
+	}
+
 	var center Point
 	for _, point := range triangle.Points {
 		if !region.Contains(point.X, point.Y) {
@@ -111,4 +133,99 @@ func triangleInRegion(region Region, triangle Triangle) bool {
 	center.Y /= float64(len(triangle.Points))
 
 	return region.Contains(center.X, center.Y)
+}
+
+func boundarySamples(region Region, originals []Point) []Point {
+	provider, ok := region.(boundaryPointProvider)
+	if !ok {
+		return nil
+	}
+
+	candidates := provider.boundaryPoints(PoissonMinDistance)
+	samples := make([]Point, 0, len(candidates))
+	for _, candidate := range candidates {
+		if !isFinitePoint(candidate) || isNearOriginal(candidate, originals) || isDuplicate(candidate, samples) {
+			continue
+		}
+
+		candidate.Original = false
+		samples = append(samples, candidate)
+	}
+
+	return samples
+}
+
+func isNearOriginal(point Point, originals []Point) bool {
+	for _, original := range originals {
+		if Distance(point, original) < PoissonMinDistance {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isDuplicate(point Point, points []Point) bool {
+	for _, existing := range points {
+		if point.X == existing.X && point.Y == existing.Y {
+			return true
+		}
+	}
+
+	return false
+}
+
+func triangleInAnnulus(annulus Annulus, triangle Triangle) bool {
+	if !isFinite(annulus.CX) ||
+		!isFinite(annulus.CY) ||
+		!isFinite(annulus.InnerRadius) ||
+		!isFinite(annulus.OuterRadius) ||
+		annulus.InnerRadius < 0 ||
+		annulus.OuterRadius < annulus.InnerRadius {
+		return false
+	}
+
+	outerRadiusSquared := annulus.OuterRadius * annulus.OuterRadius
+	for _, point := range triangle.Points {
+		if !isFinitePoint(point) {
+			return false
+		}
+
+		dx := point.X - annulus.CX
+		dy := point.Y - annulus.CY
+		if dx*dx+dy*dy > outerRadiusSquared {
+			return false
+		}
+	}
+
+	innerRadiusSquared := annulus.InnerRadius * annulus.InnerRadius
+	for index, start := range triangle.Points {
+		end := triangle.Points[(index+1)%len(triangle.Points)]
+		if squaredDistanceToSegment(annulus.CX, annulus.CY, start, end) < innerRadiusSquared {
+			return false
+		}
+	}
+
+	return true
+}
+
+func squaredDistanceToSegment(x, y float64, start, end Point) float64 {
+	dx := end.X - start.X
+	dy := end.Y - start.Y
+	lengthSquared := dx*dx + dy*dy
+	if lengthSquared == 0 {
+		dx = x - start.X
+		dy = y - start.Y
+
+		return dx*dx + dy*dy
+	}
+
+	fraction := ((x-start.X)*dx + (y-start.Y)*dy) / lengthSquared
+	fraction = math.Max(0, math.Min(1, fraction))
+	nearestX := start.X + fraction*dx
+	nearestY := start.Y + fraction*dy
+	dx = x - nearestX
+	dy = y - nearestY
+
+	return dx*dx + dy*dy
 }
