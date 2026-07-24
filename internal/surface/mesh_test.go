@@ -80,12 +80,23 @@ func TestBuild_PreservesObservedVertexValues(t *testing.T) {
 	)
 
 	g.Expect(triangles).NotTo(gomega.BeEmpty())
+	type coordinate struct {
+		x float64
+		y float64
+	}
+	foundOriginals := make(map[coordinate]float64)
 	for _, triangle := range triangles {
 		for _, point := range triangle.Points {
 			if point.Original {
-				g.Expect(point.Value).To(gomega.BeElementOf(observedValues(originals)))
+				foundOriginals[coordinate{x: point.X, y: point.Y}] = point.Value
 			}
 		}
+	}
+	for _, original := range originals {
+		g.Expect(foundOriginals).To(gomega.HaveKeyWithValue(
+			coordinate{x: original.X, y: original.Y},
+			original.Value,
+		))
 	}
 }
 
@@ -195,13 +206,4 @@ func centroid(triangle surface.Triangle) surface.Point {
 	centroid.Y /= float64(len(triangle.Points))
 
 	return centroid
-}
-
-func observedValues(points []surface.Point) []float64 {
-	values := make([]float64, 0, len(points))
-	for _, point := range points {
-		values = append(values, point.Value)
-	}
-
-	return values
 }
