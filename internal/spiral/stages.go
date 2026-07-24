@@ -210,6 +210,13 @@ func RenderStage(c *stages.CommonState, p *State) error {
 
 		triangles = BuildSurface(p.Layout, values, surfaceSeed(p.Layout))
 		surfaceInk = p.SurfaceInk
+
+		if len(triangles) == 0 {
+			slog.Warn(
+				"surface rendering unavailable; rendering spiral without surface",
+				"points", len(p.Layout.Nodes),
+			)
+		}
 	}
 
 	cv := RenderToCanvas(p.Layout, p.Buckets, c.Width, c.Height, p.Inks, triangles, surfaceInk)

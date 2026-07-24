@@ -1,6 +1,8 @@
 package spiral_test
 
 import (
+	"bytes"
+	"log/slog"
 	"math"
 	"testing"
 
@@ -174,6 +176,45 @@ func TestRenderStage_DisabledSurfaceRendersNoPolygons(t *testing.T) {
 	for _, call := range backend.Calls {
 		g.Expect(call.Method).NotTo(Equal("DrawPolygon"))
 	}
+}
+
+//nolint:paralleltest // mutates global slog default logger
+func TestRenderStage_WarnsAndRendersSpiralWhenSurfaceCannotBeBuilt(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		Level: slog.LevelWarn,
+	})))
+	defer slog.SetDefault(oldDefault)
+
+	buckets := []spiral.TimeBucket{
+		{FillValue: 100, BorderValue: 100, SurfaceValue: 10},
+		{FillValue: 100, BorderValue: 100, SurfaceValue: 20},
+	}
+	common := &stages.CommonState{Width: 240, Height: 240}
+	state := &spiral.State{
+		Buckets:        buckets,
+		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},
+		SurfaceEnabled: true,
+		SurfaceInk:     numericInk(),
+		Layout:         spiral.Layout(buckets, 240, 240, spiral.Hourly, spiral.LabelNone),
+	}
+
+	g.Expect(spiral.RenderStage(common, state)).To(Succeed())
+	g.Expect(buf.String()).To(ContainSubstring("surface rendering unavailable"))
+
+	backend := mock.NewBackend()
+	g.Expect(common.Canvas.RenderTo(backend)).To(Succeed())
+
+	for _, call := range backend.Calls {
+		g.Expect(call.Method).NotTo(Equal("DrawPolygon"))
+	}
+
+	g.Expect(backend.Calls).To(HaveLen(1 + 1 + len(buckets)))
 }
 
 func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface.Triangle) {
