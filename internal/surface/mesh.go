@@ -308,7 +308,7 @@ func triangleInRegion(region Region, triangle Triangle) bool {
 }
 
 func boundarySamples(region Region, originals []Point) []Point {
-	loops := BoundaryLoops(region, MaxBoundarySegmentLength)
+	loops := BoundaryLoops(region, MaxTriangleEdge)
 	if len(loops) == 0 {
 		return nil
 	}
