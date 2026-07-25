@@ -138,6 +138,15 @@ func TestBoundaryLoops_ReturnsNilForUnsupportedRegion(t *testing.T) {
 	g.Expect(BoundaryLoops(unsupportedRegion{}, MaxBoundarySegmentLength)).To(gomega.BeNil())
 }
 
+func TestBoundaryLoops_ReturnsNilForTypedNilRegion(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	var region *Annulus
+
+	g.Expect(BoundaryLoops(region, MaxBoundarySegmentLength)).To(gomega.BeNil())
+}
+
 type unsupportedRegion struct{}
 
 func (unsupportedRegion) Bounds() Rect {

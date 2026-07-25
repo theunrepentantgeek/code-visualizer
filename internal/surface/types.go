@@ -130,6 +130,10 @@ func (a Annulus) BoundaryLoops(maximumSegmentLength float64) [][]Point {
 
 // BoundaryLoops returns ordered boundary loops supplied by region.
 func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Point {
+	if region == nil || isTypedNilRegion(region) {
+		return nil
+	}
+
 	provider, ok := region.(boundaryLoopProvider)
 	if !ok {
 		return nil
