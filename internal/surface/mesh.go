@@ -46,14 +46,22 @@ func Build(region Region, originals []Point, seed uint64) []Triangle {
 		return nil
 	}
 
-	points := meshPoints(region, observed, seed)
+	points, complete := meshPoints(region, observed, seed)
+	if !complete || len(points) < 3 {
+		return nil
+	}
 
 	triangulation, err := delaunay.Triangulate(delaunayPoints(points))
 	if err != nil {
 		return nil
 	}
 
-	return regionTriangles(region, points, triangulation.Triangles)
+	triangles, complete := regionTriangles(region, points, triangulation.Triangles)
+	if !complete {
+		return nil
+	}
+
+	return triangles
 }
 
 func observedPoints(originals []Point) []Point {
@@ -70,7 +78,7 @@ func observedPoints(originals []Point) []Point {
 	return observed
 }
 
-func meshPoints(region Region, observed []Point, seed uint64) []Point {
+func meshPoints(region Region, observed []Point, seed uint64) ([]Point, bool) {
 	boundary := boundarySamples(region, observed)
 	for index := range boundary {
 		boundary[index].Value = Interpolate(boundary[index], observed)
@@ -86,10 +94,116 @@ func meshPoints(region Region, observed []Point, seed uint64) []Point {
 		points = append(points, point)
 	}
 
-	return points
+	return refineMeshPoints(region, points, observed)
 }
 
-func regionTriangles(region Region, points []Point, indexes []int) []Triangle {
+func refineMeshPoints(region Region, points, observed []Point) ([]Point, bool) {
+	limit := refinementPointLimit(region, len(points))
+
+	for {
+		triangulation, err := delaunay.Triangulate(delaunayPoints(points))
+		if err != nil {
+			return nil, false
+		}
+
+		candidates, oversized := refinementPoints(region, points, triangulation.Triangles)
+		if !oversized {
+			return points, true
+		}
+
+		if len(candidates) == 0 || len(points)+len(candidates) > limit {
+			return nil, false
+		}
+
+		for _, candidate := range candidates {
+			candidate.Value = Interpolate(candidate, observed)
+			points = append(points, candidate)
+		}
+	}
+}
+
+// A grid at half the maximum edge has cell diagonals below the edge limit, so
+// its vertices are a conservative refinement bound over the region's bounds.
+// Existing points do not consume this allowance, so it is added to pointCount.
+func refinementPointLimit(region Region, pointCount int) int {
+	bounds := region.Bounds()
+	spacing := MaxTriangleEdge / 2
+	columns := math.Ceil((bounds.MaxX-bounds.MinX)/spacing) + 1
+	rows := math.Ceil((bounds.MaxY-bounds.MinY)/spacing) + 1
+	maxInt := int(^uint(0) >> 1)
+
+	if pointCount >= maxInt ||
+		!isFinite(columns) ||
+		!isFinite(rows) ||
+		columns >= float64(maxInt) ||
+		rows >= float64(maxInt) {
+		return maxInt
+	}
+
+	columnCount := int(columns)
+	rowCount := int(rows)
+
+	remaining := maxInt - pointCount
+	if columnCount > remaining/rowCount {
+		return maxInt
+	}
+
+	return pointCount + columnCount*rowCount
+}
+
+func refinementPoints(
+	region Region,
+	points []Point,
+	indexes []int,
+) ([]Point, bool) {
+	candidates := make([]Point, 0)
+
+	var oversized bool
+
+	for index := 0; index+2 < len(indexes); index += 3 {
+		triangle, ok := triangleAt(points, [3]int{
+			indexes[index],
+			indexes[index+1],
+			indexes[index+2],
+		})
+		if !ok || isDegenerateTriangle(triangle) || !triangleInRegion(region, triangle) {
+			continue
+		}
+
+		if LongestEdge(triangle) <= MaxTriangleEdge {
+			continue
+		}
+
+		oversized = true
+
+		candidate, found := refinementPoint(region, triangle, points, candidates)
+		if found {
+			candidates = append(candidates, candidate)
+		}
+	}
+
+	return candidates, oversized
+}
+
+// Splitting the longest edge ensures the next triangulation cannot retain the offending edge.
+func refinementPoint(region Region, target Triangle, points, candidates []Point) (Point, bool) {
+	start, end, _ := longestTriangleEdge(target)
+	candidate := Point{
+		X: (start.X + end.X) / 2,
+		Y: (start.Y + end.Y) / 2,
+	}
+
+	if !isFinitePoint(candidate) ||
+		!region.Contains(candidate.X, candidate.Y) ||
+		isDuplicate(candidate, points) ||
+		isDuplicate(candidate, candidates) {
+		return Point{}, false
+	}
+
+	return candidate, true
+}
+
+func regionTriangles(region Region, points []Point, indexes []int) ([]Triangle, bool) {
 	triangles := make([]Triangle, 0, len(indexes)/3)
 	for index := 0; index+2 < len(indexes); index += 3 {
 		triangle, ok := triangleAt(points, [3]int{
@@ -97,17 +211,21 @@ func regionTriangles(region Region, points []Point, indexes []int) []Triangle {
 			indexes[index+1],
 			indexes[index+2],
 		})
-		if !ok {
+		if !ok || isDegenerateTriangle(triangle) {
 			continue
 		}
 
 		triangle.Value = (triangle.Points[0].Value + triangle.Points[1].Value + triangle.Points[2].Value) / 3
-		if triangleInRegion(region, triangle) && LongestEdge(triangle) <= MaxTriangleEdge {
+		if triangleInRegion(region, triangle) {
+			if LongestEdge(triangle) > MaxTriangleEdge {
+				return nil, false
+			}
+
 			triangles = append(triangles, triangle)
 		}
 	}
 
-	return triangles
+	return triangles, true
 }
 
 func triangleAt(points []Point, indexes [3]int) (Triangle, bool) {
@@ -124,15 +242,31 @@ func triangleAt(points []Point, indexes [3]int) (Triangle, bool) {
 	return triangle, true
 }
 
+func isDegenerateTriangle(triangle Triangle) bool {
+	first, second, third := triangle.Points[0], triangle.Points[1], triangle.Points[2]
+	start, end, _ := longestTriangleEdge(triangle)
+	midpoint := Point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}
+
+	return (second.X-first.X)*(third.Y-first.Y) == (second.Y-first.Y)*(third.X-first.X) ||
+		isDuplicate(midpoint, triangle.Points[:])
+}
+
 // LongestEdge returns the length of a triangle's longest side.
 func LongestEdge(triangle Triangle) float64 {
-	return math.Max(
-		Distance(triangle.Points[0], triangle.Points[1]),
-		math.Max(
-			Distance(triangle.Points[1], triangle.Points[2]),
-			Distance(triangle.Points[2], triangle.Points[0]),
-		),
-	)
+	_, _, length := longestTriangleEdge(triangle)
+
+	return length
+}
+
+func longestTriangleEdge(triangle Triangle) (start, end Point, longest float64) {
+	for index, point := range triangle.Points {
+		next := triangle.Points[(index+1)%len(triangle.Points)]
+		if length := Distance(point, next); length > longest {
+			start, end, longest = point, next, length
+		}
+	}
+
+	return start, end, longest
 }
 
 func delaunayPoints(points []Point) []delaunay.Point {

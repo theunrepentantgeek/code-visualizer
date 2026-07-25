@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -217,6 +218,60 @@ func TestRenderStage_WarnsAndRendersSpiralWhenSurfaceCannotBeBuilt(t *testing.T)
 	g.Expect(backend.Calls).To(HaveLen(1 + 1 + len(buckets)))
 }
 
+//nolint:paralleltest // mutates global slog default logger
+func TestRenderStage_RendersSurfaceFor162PointSpiral(t *testing.T) {
+	g := NewGomegaWithT(t)
+	buckets := largeSurfaceStageBuckets()
+	layout := spiral.Layout(
+		buckets,
+		320,
+		240-int(canvas.FooterReservedHeight),
+		spiral.Daily,
+		spiral.LabelNone,
+	)
+
+	values := make([]float64, len(buckets))
+	for index := range buckets {
+		values[index] = buckets[index].SurfaceValue
+	}
+
+	g.Expect(spiral.BuildSurface(layout, values, surfaceSeedForTest(layout))).NotTo(BeEmpty())
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		Level: slog.LevelWarn,
+	})))
+	defer slog.SetDefault(oldDefault)
+
+	common := &stages.CommonState{Width: 320, Height: 240}
+	state := &spiral.State{
+		Buckets:        buckets,
+		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},
+		SurfaceEnabled: true,
+		SurfaceInk:     numericInk(),
+		Layout:         layout,
+	}
+
+	g.Expect(spiral.RenderStage(common, state)).To(Succeed())
+	g.Expect(buf.String()).NotTo(ContainSubstring("surface rendering unavailable"))
+
+	backend := mock.NewBackend()
+	g.Expect(common.Canvas.RenderTo(backend)).To(Succeed())
+
+	var polygons int
+
+	for _, call := range backend.Calls {
+		if call.Method == "DrawPolygon" {
+			polygons++
+		}
+	}
+
+	g.Expect(polygons).To(BeNumerically(">", 0))
+}
+
 func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface.Triangle) {
 	layout := spiral.SpiralLayout{
 		Nodes: []spiral.SpiralNode{
@@ -257,4 +312,34 @@ func surfaceStageBuckets() []spiral.TimeBucket {
 	}
 
 	return buckets
+}
+
+func largeSurfaceStageBuckets() []spiral.TimeBucket {
+	buckets := make([]spiral.TimeBucket, 162)
+	for index := range buckets {
+		value := float64(index + 1)
+		buckets[index] = spiral.TimeBucket{
+			FillValue:    value,
+			BorderValue:  value,
+			SurfaceValue: value,
+		}
+	}
+
+	return buckets
+}
+
+func surfaceSeedForTest(layout spiral.SpiralLayout) uint64 {
+	seed := uint64(len(layout.Nodes))
+	for _, dimension := range [...]float64{
+		layout.CX,
+		layout.CY,
+		layout.A,
+		layout.B,
+		layout.MaxTheta,
+	} {
+		seed ^= math.Float64bits(dimension)
+		seed *= 1099511628211
+	}
+
+	return seed
 }
