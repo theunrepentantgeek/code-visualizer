@@ -147,6 +147,21 @@ The sampler must produce a sufficiently dense point set that all accepted
 triangles satisfy the 8-pixel maximum. If a boundary triangle still exceeds
 the limit, it is discarded rather than rendered.
 
+### Boundary overlays
+
+Each region also provides its rendering boundary as one or more closed,
+ordered point loops using the same dense samples that seed its mesh. A
+visualization draws every loop as a continuous 2-pixel path in its canvas
+background colour immediately after its surface polygons and before its
+foreground structure.
+
+This overlays anti-aliasing gaps between independently rasterized boundary
+triangles while preserving the internal triangle seams and the underlying
+surface geometry. An annulus supplies separate outer and inner loops; a
+rectangle supplies one loop. Future region implementations must supply their
+own closed loops, so every visualization that adopts surfaces can apply the
+same boundary treatment without annulus-specific rendering logic.
+
 ## Pipeline Integration
 
 1. Extend spiral config, command parsing, validation, and metric resolution
@@ -158,8 +173,9 @@ the limit, it is discarded rather than rendered.
    boundaries.
 4. After layout and before `RenderToCanvas`, convert spiral nodes to original
    surface points and generate the mesh.
-5. Render generated triangles on `LayerSurface`, then retain the existing
-   background, track, discs, and label calls and their order.
+5. Render generated triangles and their closed background-colour boundary
+   overlays on `LayerSurface`, then retain the existing background, track,
+   discs, and label calls and their order.
 6. Extend legend construction with the distinct surface metric only when
    needed.
 
