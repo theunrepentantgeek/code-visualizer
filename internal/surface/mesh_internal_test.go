@@ -72,3 +72,75 @@ func TestBoundarySamples_RetainsAnnulusBoundaryNearObservedPoint(t *testing.T) {
 
 	g.Expect(samples).To(gomega.ContainElement(Point{X: 20, Y: 0}))
 }
+
+func TestBoundarySamples_SeedSmoothAnnulusArcs(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	region := Annulus{InnerRadius: 10, OuterRadius: 20}
+
+	samples := boundarySamples(region, nil)
+
+	g.Expect(samples).To(gomega.HaveLen(189))
+}
+
+func TestBoundaryLoops_ReturnsOrderedAnnulusLoops(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+
+	loops := BoundaryLoops(Annulus{InnerRadius: 10, OuterRadius: 20}, 1)
+
+	g.Expect(loops).To(gomega.HaveLen(2))
+	g.Expect(loops[0]).To(gomega.HaveLen(126))
+	g.Expect(loops[1]).To(gomega.HaveLen(63))
+	g.Expect(loops[0][0]).To(gomega.Equal(Point{X: 20, Y: 0}))
+	g.Expect(loops[1][0]).To(gomega.Equal(Point{X: 10, Y: 0}))
+	for _, loop := range loops {
+		g.Expect(loop[len(loop)-1]).NotTo(gomega.Equal(loop[0]))
+		g.Expect(loop[1].Y).To(gomega.BeNumerically(">", 0))
+		for index, point := range loop {
+			next := loop[(index+1)%len(loop)]
+			g.Expect(Distance(point, next)).To(gomega.BeNumerically("<=", 1.0))
+		}
+	}
+}
+
+func TestBoundaryLoops_ReturnsClosedRectPerimeter(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+
+	loops := BoundaryLoops(Rect{MinX: 1, MinY: 2, MaxX: 3, MaxY: 3}, 1)
+
+	g.Expect(loops).To(gomega.Equal([][]Point{{
+		{X: 1, Y: 2},
+		{X: 2, Y: 2},
+		{X: 3, Y: 2},
+		{X: 3, Y: 3},
+		{X: 2, Y: 3},
+		{X: 1, Y: 3},
+	}}))
+	for index, point := range loops[0] {
+		next := loops[0][(index+1)%len(loops[0])]
+		g.Expect(Distance(point, next)).To(gomega.BeNumerically("<=", 1.0))
+	}
+}
+
+func TestBoundaryLoops_ReturnsNilForUnsupportedRegion(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+
+	g.Expect(BoundaryLoops(unsupportedRegion{}, 1)).To(gomega.BeNil())
+}
+
+type unsupportedRegion struct{}
+
+func (unsupportedRegion) Bounds() Rect {
+	return Rect{MaxX: 1, MaxY: 1}
+}
+
+func (unsupportedRegion) Contains(float64, float64) bool {
+	return true
+}

@@ -3,9 +3,10 @@ package surface
 import "math"
 
 const (
-	MaxTriangleEdge    = 8.0
-	PoissonMinDistance = 4.0
-	IDWPower           = 2.0
+	MaxTriangleEdge          = 8.0
+	MaxBoundarySegmentLength = 1.0
+	PoissonMinDistance       = 4.0
+	IDWPower                 = 2.0
 )
 
 type Point struct {
@@ -35,8 +36,8 @@ type Region interface {
 	Contains(x, y float64) bool
 }
 
-type boundaryPointProvider interface {
-	boundaryPoints(maximumSegmentLength float64) []Point
+type boundaryLoopProvider interface {
+	BoundaryLoops(maximumSegmentLength float64) [][]Point
 }
 
 type Annulus struct {
@@ -68,7 +69,8 @@ func (a Annulus) Contains(x, y float64) bool {
 		distanceSquared <= a.OuterRadius*a.OuterRadius
 }
 
-func (r Rect) boundaryPoints(maximumSegmentLength float64) []Point {
+// BoundaryLoops returns the rectangle perimeter as one ordered loop.
+func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Point {
 	if !isFinite(maximumSegmentLength) ||
 		maximumSegmentLength <= 0 ||
 		!isFinite(r.MinX) ||
@@ -86,17 +88,18 @@ func (r Rect) boundaryPoints(maximumSegmentLength float64) []Point {
 		{X: r.MaxX, Y: r.MaxY},
 		{X: r.MinX, Y: r.MaxY},
 	}
-	points := make([]Point, 0, len(corners))
+	loop := make([]Point, 0, len(corners))
 
 	for index, start := range corners {
 		end := corners[(index+1)%len(corners)]
-		points = append(points, segmentBoundaryPoints(start, end, maximumSegmentLength)...)
+		loop = append(loop, segmentBoundaryPoints(start, end, maximumSegmentLength)...)
 	}
 
-	return points
+	return [][]Point{loop}
 }
 
-func (a Annulus) boundaryPoints(maximumSegmentLength float64) []Point {
+// BoundaryLoops returns the annulus outer boundary followed by its inner boundary.
+func (a Annulus) BoundaryLoops(maximumSegmentLength float64) [][]Point {
 	if !isFinite(maximumSegmentLength) ||
 		maximumSegmentLength <= 0 ||
 		!isFinite(a.CX) ||
@@ -108,15 +111,31 @@ func (a Annulus) boundaryPoints(maximumSegmentLength float64) []Point {
 		return nil
 	}
 
-	points := circularBoundaryPoints(a.CX, a.CY, a.OuterRadius, maximumSegmentLength)
+	loops := make([][]Point, 0, 2)
+	if a.OuterRadius > 0 {
+		loops = append(
+			loops,
+			circularBoundaryPoints(a.CX, a.CY, a.OuterRadius, maximumSegmentLength),
+		)
+	}
 	if a.InnerRadius > 0 {
-		points = append(
-			points,
-			circularBoundaryPoints(a.CX, a.CY, a.InnerRadius, maximumSegmentLength)...,
+		loops = append(
+			loops,
+			circularBoundaryPoints(a.CX, a.CY, a.InnerRadius, maximumSegmentLength),
 		)
 	}
 
-	return points
+	return loops
+}
+
+// BoundaryLoops returns ordered boundary loops supplied by region.
+func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Point {
+	provider, ok := region.(boundaryLoopProvider)
+	if !ok {
+		return nil
+	}
+
+	return provider.BoundaryLoops(maximumSegmentLength)
 }
 
 func segmentBoundaryPoints(start, end Point, maximumSegmentLength float64) []Point {
