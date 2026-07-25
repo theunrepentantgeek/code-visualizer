@@ -23,15 +23,18 @@ func BuildSurface(layout SpiralLayout, values []float64, seed uint64) []surface.
 
 	// A full spiral coil grows by 2πB, so half of that spacing extends the
 	// surface equally on either side of the guide track.
+	return surface.Build(surfaceAnnulus(layout), originals, seed)
+}
+
+func surfaceAnnulus(layout SpiralLayout) surface.Annulus {
 	halfSpacing := math.Pi * layout.B
-	region := surface.Annulus{
+
+	return surface.Annulus{
 		CX:          layout.CX,
 		CY:          layout.CY,
 		InnerRadius: math.Max(0, layout.A-halfSpacing),
 		OuterRadius: layout.A + layout.B*layout.MaxTheta + halfSpacing,
 	}
-
-	return surface.Build(region, originals, seed)
 }
 
 func surfaceSeed(layout SpiralLayout) uint64 {

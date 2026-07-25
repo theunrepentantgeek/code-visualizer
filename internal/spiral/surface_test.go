@@ -2,6 +2,7 @@ package spiral_test
 
 import (
 	"bytes"
+	"image/color"
 	"log/slog"
 	"math"
 	"testing"
@@ -135,6 +136,50 @@ func TestRenderToCanvas_RendersSurfaceBeforeSpiralForeground(t *testing.T) {
 	}
 }
 
+func TestRenderToCanvas_OverlaysAnnulusBoundaryBeforeGuideTrack(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	buckets := largeSurfaceStageBuckets()
+	layout := spiral.Layout(buckets, 320, 240, spiral.Daily, spiral.LabelNone)
+	triangles := []surface.Triangle{{
+		Points: [3]surface.Point{
+			{X: 20, Y: 30},
+			{X: 40, Y: 30},
+			{X: 20, Y: 50},
+		},
+		Value: 2,
+	}}
+	cv := spiral.RenderToCanvas(
+		layout,
+		buckets,
+		320,
+		240,
+		spiral.Inks{Fill: numericInk(), Border: numericInk()},
+		triangles,
+		numericInk(),
+	)
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+	g.Expect(backend.Calls[1].Method).To(Equal("DrawPolygon"))
+
+	boundaryCalls := backend.Calls[2:4]
+	for _, call := range boundaryCalls {
+		g.Expect(call.Method).To(Equal("DrawPath"))
+		g.Expect(call.Fill).To(Equal(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}))
+		g.Expect(call.StrokeWidth).To(Equal(2.0))
+		g.Expect(len(call.Points)).To(BeNumerically(">", 3))
+		g.Expect(call.Points[len(call.Points)-1]).To(Equal(call.Points[0]))
+		g.Expect(call.Points[1 : len(call.Points)-1]).NotTo(ContainElement(call.Points[0]))
+	}
+
+	guideTrack := backend.Calls[4]
+	g.Expect(guideTrack.Method).To(Equal("DrawPath"))
+	g.Expect(guideTrack.Fill).To(Equal(color.RGBA{R: 0xDD, G: 0xDD, B: 0xDD, A: 0xFF}))
+	g.Expect(guideTrack.StrokeWidth).To(Equal(1.0))
+}
+
 func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -157,6 +202,15 @@ func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 	for _, call := range backend.Calls {
 		g.Expect(call.Method).NotTo(Equal("DrawPolygon"))
 	}
+
+	var pathCalls int
+	for _, call := range backend.Calls {
+		if call.Method == "DrawPath" {
+			pathCalls++
+		}
+	}
+
+	g.Expect(pathCalls).To(Equal(1))
 }
 
 func TestRenderStage_UsesSurfaceValuesWhenEnabled(t *testing.T) {

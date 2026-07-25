@@ -17,9 +17,10 @@ var (
 )
 
 const (
-	trackWidth    = 1.0
-	labelGap      = 4.0
-	trackMinSteps = 500
+	surfaceBoundaryWidth = 2.0
+	trackWidth           = 1.0
+	labelGap             = 4.0
+	trackMinSteps        = 500
 )
 
 // RenderToCanvas builds a Canvas from a spiral layout and time buckets.
@@ -35,6 +36,7 @@ func RenderToCanvas(
 
 	addBackground(cv, width, height)
 	addSurface(cv, triangles, surfaceInk)
+	addSurfaceBoundaries(cv, layout, triangles)
 	addTrack(cv, layout)
 	addDiscs(cv, layout.Nodes, buckets, is)
 	addLabels(cv, layout.Nodes)
@@ -85,6 +87,34 @@ func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks
 			Points: points,
 			Fill:   metricValue(triangle.Value, "", surfaceInk),
 			Border: metricValue(triangle.Value, "", surfaceInk),
+		})
+	}
+}
+
+func addSurfaceBoundaries(cv *canvas.Canvas, layout SpiralLayout, triangles []surface.Triangle) {
+	if len(triangles) == 0 {
+		return
+	}
+
+	boundarySpec := &canvas.LineSpec{
+		Stroke:      inks.FixedInk(bgColour),
+		StrokeWidth: surfaceBoundaryWidth,
+	}
+
+	for _, loop := range surface.BoundaryLoops(surfaceAnnulus(layout), surface.MaxBoundarySegmentLength) {
+		if len(loop) == 0 {
+			continue
+		}
+
+		points := make([]canvas.Position, 0, len(loop)+1)
+		for _, point := range loop {
+			points = append(points, canvas.Position{X: point.X, Y: point.Y})
+		}
+		points = append(points, points[0])
+
+		cv.AddPath(canvas.LayerSurface, canvas.Path{
+			Spec:   boundarySpec,
+			Points: points,
 		})
 	}
 }

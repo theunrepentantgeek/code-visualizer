@@ -88,10 +88,12 @@ func (m *Backend) DrawLine(from, _ model.Position, stroke color.RGBA, strokeWidt
 	})
 }
 
-func (m *Backend) DrawPath(points []model.Position, _ color.RGBA, _ float64) {
+func (m *Backend) DrawPath(points []model.Position, stroke color.RGBA, strokeWidth float64) {
 	m.Calls = append(m.Calls, Call{
-		Method: "DrawPath",
-		Points: slices.Clone(points),
+		Method:      "DrawPath",
+		Points:      slices.Clone(points),
+		Fill:        stroke,
+		StrokeWidth: strokeWidth,
 	})
 }
 
