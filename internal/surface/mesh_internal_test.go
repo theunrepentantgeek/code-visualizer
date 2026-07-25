@@ -44,12 +44,6 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 		{X: 4 * math.Cos(4*math.Pi/3), Y: 4 * math.Sin(4*math.Pi/3)},
 	}
 
-	for _, point := range boundarySamples(region, originals) {
-		g.Expect(math.Hypot(point.X-region.CX, point.Y-region.CY)).NotTo(
-			gomega.BeNumerically("~", region.InnerRadius),
-		)
-	}
-
 	triangle := Triangle{Points: [3]Point{originals[0], originals[1], originals[2]}}
 	g.Expect(pointStrictlyInTriangle(Point{X: region.CX, Y: region.CY}, triangle)).To(gomega.BeTrue())
 
@@ -65,4 +59,16 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 	}
 
 	g.Expect(triangleInRegion(region, triangle)).To(gomega.BeFalse())
+}
+
+func TestBoundarySamples_RetainsAnnulusBoundaryNearObservedPoint(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	region := Annulus{InnerRadius: 10, OuterRadius: 20}
+	originals := []Point{{X: 19, Y: 0}}
+
+	samples := boundarySamples(region, originals)
+
+	g.Expect(samples).To(gomega.ContainElement(Point{X: 20, Y: 0}))
 }

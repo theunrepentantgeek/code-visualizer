@@ -313,11 +313,13 @@ func boundarySamples(region Region, originals []Point) []Point {
 		return nil
 	}
 
-	candidates := provider.boundaryPoints(PoissonMinDistance)
+	candidates := provider.boundaryPoints(MaxTriangleEdge)
 
 	samples := make([]Point, 0, len(candidates))
 	for _, candidate := range candidates {
-		if !isFinitePoint(candidate) || isNearOriginal(candidate, originals) || isDuplicate(candidate, samples) {
+		if !isFinitePoint(candidate) ||
+			isDuplicate(candidate, originals) ||
+			isDuplicate(candidate, samples) {
 			continue
 		}
 
@@ -326,16 +328,6 @@ func boundarySamples(region Region, originals []Point) []Point {
 	}
 
 	return samples
-}
-
-func isNearOriginal(point Point, originals []Point) bool {
-	for _, original := range originals {
-		if Distance(point, original) < PoissonMinDistance {
-			return true
-		}
-	}
-
-	return false
 }
 
 func isDuplicate(point Point, points []Point) bool {

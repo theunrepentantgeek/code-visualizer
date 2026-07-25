@@ -28,16 +28,61 @@ func TestBuildSurface_CreatesTrianglesWithCentroidsInSpiralAnnulus(t *testing.T)
 
 	g.Expect(triangles).NotTo(BeEmpty())
 
-	outerRadius := layout.A + layout.B*layout.MaxTheta
+	halfSpacing := math.Pi * layout.B
+	innerRadius := math.Max(0, layout.A-halfSpacing)
+	outerRadius := layout.A + layout.B*layout.MaxTheta + halfSpacing
 
 	for _, triangle := range triangles {
 		centroidX := (triangle.Points[0].X + triangle.Points[1].X + triangle.Points[2].X) / 3
 		centroidY := (triangle.Points[0].Y + triangle.Points[1].Y + triangle.Points[2].Y) / 3
 		distance := math.Hypot(centroidX-layout.CX, centroidY-layout.CY)
 
-		g.Expect(distance).To(BeNumerically(">=", layout.A))
+		g.Expect(distance).To(BeNumerically(">=", innerRadius))
 		g.Expect(distance).To(BeNumerically("<=", outerRadius))
 	}
+}
+
+func TestBuildSurface_ExtendsHalfCoilSpacingBeyondSpiralTrack(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+	buckets := make([]spiral.TimeBucket, 162)
+
+	values := make([]float64, len(buckets))
+	for index := range values {
+		values[index] = float64(index)
+	}
+
+	layout := spiral.Layout(buckets, 1920, 1920, spiral.Daily, spiral.LabelNone)
+	triangles := spiral.BuildSurface(layout, values, 42)
+	halfSpacing := math.Pi * layout.B
+	innerRadius := layout.A - halfSpacing
+	outerRadius := layout.A + layout.B*layout.MaxTheta + halfSpacing
+
+	var (
+		minimumRadius = math.Inf(1)
+		maximumRadius float64
+	)
+
+	for _, triangle := range triangles {
+		for _, point := range triangle.Points {
+			radius := math.Hypot(point.X-layout.CX, point.Y-layout.CY)
+			minimumRadius = math.Min(minimumRadius, radius)
+			maximumRadius = math.Max(maximumRadius, radius)
+		}
+	}
+
+	g.Expect(minimumRadius).To(BeNumerically("~", innerRadius))
+	g.Expect(maximumRadius).To(BeNumerically("~", outerRadius))
+}
+
+func TestBuildSurface_RendersShortSpiral(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+	layout := spiral.Layout(make([]spiral.TimeBucket, 3), 240, 240, spiral.Hourly, spiral.LabelNone)
+
+	g.Expect(spiral.BuildSurface(layout, []float64{1, 2, 3}, 42)).NotTo(BeEmpty())
 }
 
 func TestBuildSurface_RejectsInsufficientOrMismatchedInputs(t *testing.T) {
