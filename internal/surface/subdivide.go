@@ -2,8 +2,6 @@ package surface
 
 import "math"
 
-const polygonAreaEpsilon = 1e-12
-
 func SubdivideTriangle(triangle Triangle, breakpoints []float64) []Polygon {
 	if !validTriangle(triangle) || !validBreakpoints(breakpoints) {
 		return nil
@@ -171,7 +169,8 @@ func validPolygon(points []Point) bool {
 		}
 	}
 
-	return polygonArea(points) > polygonAreaEpsilon
+	area := polygonArea(points)
+	return isFinite(area) && area > 0
 }
 
 func polygonArea(points []Point) float64 {

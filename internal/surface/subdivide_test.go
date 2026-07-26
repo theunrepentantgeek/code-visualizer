@@ -63,6 +63,34 @@ func TestSubdivideTriangle_ReturnsEveryCrossedPaletteBand(t *testing.T) {
 	expectPolygonContainsPoint(g, polygons[1], surface.Point{X: 2, Y: 4, Value: 2})
 }
 
+func TestSubdivideTriangle_PreservesTinyPositiveAreaFragments(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	triangle := surface.Triangle{
+		Points: [3]surface.Point{
+			{X: 0, Y: 0, Value: 0},
+			{X: 4e-7, Y: 0, Value: 0},
+			{X: 0, Y: 4e-7, Value: 2},
+		},
+	}
+
+	polygons := surface.SubdivideTriangle(triangle, []float64{1})
+
+	g.Expect(polygons).To(gomega.HaveLen(2))
+	g.Expect(polygons[0].Points).To(gomega.ConsistOf(
+		surface.Point{X: 0, Y: 0, Value: 0},
+		surface.Point{X: 4e-7, Y: 0, Value: 0},
+		surface.Point{X: 2e-7, Y: 2e-7, Value: 1},
+		surface.Point{X: 0, Y: 2e-7, Value: 1},
+	))
+	g.Expect(polygons[1].Points).To(gomega.ConsistOf(
+		surface.Point{X: 0, Y: 2e-7, Value: 1},
+		surface.Point{X: 2e-7, Y: 2e-7, Value: 1},
+		surface.Point{X: 0, Y: 4e-7, Value: 2},
+	))
+}
+
 func TestSubdivideTriangle_TreatsBreakpointValueAsUpperBand(t *testing.T) {
 	t.Parallel()
 
