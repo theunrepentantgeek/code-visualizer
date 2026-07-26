@@ -1,3 +1,4 @@
+//revive:disable-next-line:max-public-structs Polygon must stay exported for the palette-band subdivision API.
 package surface
 
 import "math"

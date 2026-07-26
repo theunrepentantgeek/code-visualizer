@@ -120,6 +120,7 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeAnnulusBoundaryOverlays(
 
 	surfaceCalls := leadingSurfacePolygonCalls(backend.Calls)
 	g.Expect(surfaceCalls).To(HaveLen(2))
+
 	for index, expectedColour := range []color.RGBA{
 		surfaceInk.Dip(inks.MeasureValue(1)),
 		surfaceInk.Dip(inks.MeasureValue(2)),
@@ -240,6 +241,7 @@ func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 	}
 
 	var pathCalls int
+
 	for _, call := range backend.Calls {
 		if call.Method == "DrawPath" {
 			pathCalls++
@@ -452,11 +454,13 @@ func numericInk() inks.Ink {
 }
 
 func leadingSurfacePolygonCalls(calls []mock.Call) []mock.Call {
-	polygons := make([]mock.Call, 0)
+	polygons := make([]mock.Call, 0, len(calls))
+
 	for _, call := range calls[1:] {
 		if call.Method != "DrawPolygon" {
 			break
 		}
+
 		polygons = append(polygons, call)
 	}
 

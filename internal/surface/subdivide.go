@@ -8,39 +8,66 @@ func SubdivideTriangle(triangle Triangle, breakpoints []float64) []Polygon {
 	}
 
 	if len(breakpoints) == 0 {
-		return []Polygon{{
-			Points: append([]Point(nil), triangle.Points[:]...),
-			Value:  triangle.Value,
-		}}
+		return []Polygon{wholeTrianglePolygon(triangle)}
 	}
 
+	return subdivideTriangleBands(triangle, breakpoints)
+}
+
+func wholeTrianglePolygon(triangle Triangle) Polygon {
+	return Polygon{
+		Points: append([]Point(nil), triangle.Points[:]...),
+		Value:  triangle.Value,
+	}
+}
+
+func subdivideTriangleBands(triangle Triangle, breakpoints []float64) []Polygon {
 	polygons := make([]Polygon, 0, len(breakpoints)+1)
+
 	original := append([]Point(nil), triangle.Points[:]...)
 
 	for bandIndex := range len(breakpoints) + 1 {
-		points := append([]Point(nil), original...)
-		if bandIndex > 0 {
-			points = clipAtOrAbove(points, breakpoints[bandIndex-1])
-		}
-		if bandIndex < len(breakpoints) {
-			points = clipBelow(points, breakpoints[bandIndex])
-		}
-		if !validPolygon(points) {
-			continue
-		}
-
-		value, ok := representativeValue(points, breakpoints, bandIndex)
+		polygon, ok := subdivideTriangleBand(original, breakpoints, bandIndex)
 		if !ok {
 			continue
 		}
 
-		polygons = append(polygons, Polygon{
-			Points: append([]Point(nil), points...),
-			Value:  value,
-		})
+		polygons = append(polygons, polygon)
 	}
 
 	return polygons
+}
+
+func subdivideTriangleBand(original []Point, breakpoints []float64, bandIndex int) (Polygon, bool) {
+	points := clipPointsToBand(original, breakpoints, bandIndex)
+	if !validPolygon(points) {
+		return Polygon{}, false
+	}
+
+	value, ok := representativeValue(points, breakpoints, bandIndex)
+	if !ok {
+		return Polygon{}, false
+	}
+
+	return Polygon{
+		Points: append([]Point(nil), points...),
+		Value:  value,
+	}, true
+}
+
+func clipPointsToBand(original []Point, breakpoints []float64, bandIndex int) []Point {
+	points := append([]Point(nil), original...)
+
+	switch {
+	case bandIndex == 0:
+		return clipBelow(points, breakpoints[0])
+	case bandIndex == len(breakpoints):
+		return clipAtOrAbove(points, breakpoints[bandIndex-1])
+	default:
+		points = clipAtOrAbove(points, breakpoints[bandIndex-1])
+
+		return clipBelow(points, breakpoints[bandIndex])
+	}
 }
 
 func validTriangle(triangle Triangle) bool {
@@ -62,6 +89,7 @@ func validBreakpoints(breakpoints []float64) bool {
 		if !isFinite(breakpoint) {
 			return false
 		}
+
 		if index > 0 && breakpoints[index-1] >= breakpoint {
 			return false
 		}
@@ -90,25 +118,64 @@ func clipPolygon(points []Point, breakpoint float64, inside func(float64) bool) 
 	clipped := make([]Point, 0, len(points)+1)
 	for index, start := range points {
 		end := points[(index+1)%len(points)]
-		startInside := inside(start.Value)
-		endInside := inside(end.Value)
-
-		switch {
-		case startInside && endInside:
-			clipped = append(clipped, end)
-		case startInside && !endInside:
-			if start.Value != end.Value {
-				clipped = appendPoint(clipped, edgeIntersection(start, end, breakpoint))
-			}
-		case !startInside && endInside:
-			if start.Value != end.Value {
-				clipped = appendPoint(clipped, edgeIntersection(start, end, breakpoint))
-			}
-			clipped = appendPoint(clipped, end)
-		}
+		clipped = clipPolygonEdge(clipped, start, end, breakpoint, inside)
 	}
 
 	return normalizePolygon(clipped)
+}
+
+type clipTransition int
+
+const (
+	clipDrop clipTransition = iota
+	clipKeepEnd
+	clipKeepIntersection
+	clipKeepIntersectionAndEnd
+)
+
+func clipPolygonEdge(
+	clipped []Point,
+	start, end Point,
+	breakpoint float64,
+	inside func(float64) bool,
+) []Point {
+	switch clipTransitionForEdge(inside(start.Value), inside(end.Value)) {
+	case clipKeepEnd:
+		return appendPoint(clipped, end)
+	case clipKeepIntersection:
+		return appendIntersectionPoint(clipped, start, end, breakpoint)
+	case clipKeepIntersectionAndEnd:
+		clipped = appendIntersectionPoint(clipped, start, end, breakpoint)
+
+		return appendPoint(clipped, end)
+	case clipDrop:
+		return clipped
+	default:
+		panic("unhandled clip transition")
+	}
+}
+
+func clipTransitionForEdge(startInside, endInside bool) clipTransition {
+	switch {
+	case startInside && endInside:
+		return clipKeepEnd
+	case startInside && !endInside:
+		return clipKeepIntersection
+	case !startInside && endInside:
+		return clipKeepIntersectionAndEnd
+	case !startInside && !endInside:
+		return clipDrop
+	default:
+		return clipDrop
+	}
+}
+
+func appendIntersectionPoint(points []Point, start, end Point, breakpoint float64) []Point {
+	if start.Value == end.Value {
+		return points
+	}
+
+	return appendPoint(points, edgeIntersection(start, end, breakpoint))
 }
 
 func appendPoint(points []Point, point Point) []Point {
@@ -137,6 +204,7 @@ func normalizePolygon(points []Point) []Point {
 		if normalized[len(normalized)-1].Original {
 			normalized[0].Original = true
 		}
+
 		normalized = normalized[:len(normalized)-1]
 	}
 
@@ -170,11 +238,13 @@ func validPolygon(points []Point) bool {
 	}
 
 	area := polygonArea(points)
+
 	return isFinite(area) && area > 0
 }
 
 func polygonArea(points []Point) float64 {
 	area := 0.0
+
 	for index, point := range points {
 		next := points[(index+1)%len(points)]
 		area += point.X*next.Y - next.X*point.Y

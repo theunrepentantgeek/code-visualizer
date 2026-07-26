@@ -24,6 +24,11 @@ func TestSubdivideTriangle_SplitsTwoLowOneHighVerticesAtBreakpoint(t *testing.T)
 	polygons := surface.SubdivideTriangle(triangle, []float64{1})
 
 	g.Expect(polygons).To(gomega.HaveLen(2))
+
+	if len(polygons) != 2 {
+		t.Fatalf("expected 2 polygons, got %d", len(polygons))
+	}
+
 	g.Expect(polygons[0].Points).To(gomega.ConsistOf(
 		surface.Point{X: 0, Y: 0, Value: 0},
 		surface.Point{X: 4, Y: 0, Value: 0},
@@ -54,13 +59,31 @@ func TestSubdivideTriangle_ReturnsEveryCrossedPaletteBand(t *testing.T) {
 	polygons := surface.SubdivideTriangle(triangle, []float64{1, 2})
 
 	g.Expect(polygons).To(gomega.HaveLen(3))
+
+	if len(polygons) != 3 {
+		t.Fatalf("expected 3 polygons, got %d", len(polygons))
+	}
+
 	g.Expect(bucketIndex([]float64{1, 2}, polygons[0].Value)).To(gomega.Equal(0))
 	g.Expect(bucketIndex([]float64{1, 2}, polygons[1].Value)).To(gomega.Equal(1))
 	g.Expect(bucketIndex([]float64{1, 2}, polygons[2].Value)).To(gomega.Equal(2))
-	expectPolygonContainsPoint(g, polygons[1], surface.Point{X: 0, Y: 2, Value: 1})
-	expectPolygonContainsPoint(g, polygons[1], surface.Point{X: 0, Y: 4, Value: 2})
-	expectPolygonContainsPoint(g, polygons[1], surface.Point{X: 4, Y: 2, Value: 1})
-	expectPolygonContainsPoint(g, polygons[1], surface.Point{X: 2, Y: 4, Value: 2})
+	g.Expect(polygons[0].Points).To(gomega.ConsistOf(
+		surface.Point{X: 0, Y: 0, Value: 0},
+		surface.Point{X: 6, Y: 0, Value: 0},
+		surface.Point{X: 4, Y: 2, Value: 1},
+		surface.Point{X: 0, Y: 2, Value: 1},
+	))
+	g.Expect(polygons[1].Points).To(gomega.ConsistOf(
+		surface.Point{X: 0, Y: 2, Value: 1},
+		surface.Point{X: 4, Y: 2, Value: 1},
+		surface.Point{X: 2, Y: 4, Value: 2},
+		surface.Point{X: 0, Y: 4, Value: 2},
+	))
+	g.Expect(polygons[2].Points).To(gomega.ConsistOf(
+		surface.Point{X: 0, Y: 4, Value: 2},
+		surface.Point{X: 2, Y: 4, Value: 2},
+		surface.Point{X: 0, Y: 6, Value: 3},
+	))
 }
 
 func TestSubdivideTriangle_PreservesTinyPositiveAreaFragments(t *testing.T) {
@@ -78,6 +101,11 @@ func TestSubdivideTriangle_PreservesTinyPositiveAreaFragments(t *testing.T) {
 	polygons := surface.SubdivideTriangle(triangle, []float64{1})
 
 	g.Expect(polygons).To(gomega.HaveLen(2))
+
+	if len(polygons) != 2 {
+		t.Fatalf("expected 2 polygons, got %d", len(polygons))
+	}
+
 	g.Expect(polygons[0].Points).To(gomega.ConsistOf(
 		surface.Point{X: 0, Y: 0, Value: 0},
 		surface.Point{X: 4e-7, Y: 0, Value: 0},
@@ -106,6 +134,11 @@ func TestSubdivideTriangle_TreatsBreakpointValueAsUpperBand(t *testing.T) {
 	polygons := surface.SubdivideTriangle(triangle, []float64{1})
 
 	g.Expect(polygons).To(gomega.HaveLen(1))
+
+	if len(polygons) != 1 {
+		t.Fatalf("expected 1 polygon, got %d", len(polygons))
+	}
+
 	g.Expect(polygons[0].Points).To(gomega.ConsistOf(trianglePoints(triangle)))
 	g.Expect(bucketIndex([]float64{1}, polygons[0].Value)).To(gomega.Equal(1))
 }
@@ -126,6 +159,11 @@ func TestSubdivideTriangle_LeavesUncrossedTriangleWhole(t *testing.T) {
 	polygons := surface.SubdivideTriangle(triangle, []float64{1})
 
 	g.Expect(polygons).To(gomega.HaveLen(1))
+
+	if len(polygons) != 1 {
+		t.Fatalf("expected 1 polygon, got %d", len(polygons))
+	}
+
 	g.Expect(polygons[0].Points).To(gomega.ConsistOf(trianglePoints(triangle)))
 	g.Expect(bucketIndex([]float64{1}, polygons[0].Value)).To(gomega.Equal(1))
 	g.Expect(polygons[0].Value).To(gomega.And(
@@ -153,6 +191,10 @@ func TestSubdivideTriangle_ReturnsWholeTriangleWhenBreakpointsEmpty(t *testing.T
 		Points: trianglePoints(triangle),
 		Value:  3,
 	}}))
+
+	if len(polygons) != 1 {
+		t.Fatalf("expected 1 polygon, got %d", len(polygons))
+	}
 
 	polygons[0].Points[0].X = 99
 	g.Expect(triangle.Points[0].X).To(gomega.Equal(0.0))
@@ -240,6 +282,7 @@ func TestSubdivideTriangle_IsDeterministicAndDoesNotMutateInputs(t *testing.T) {
 	}
 	breakpoints := []float64{1}
 	originalTriangle := triangle
+
 	originalBreakpoints := append([]float64(nil), breakpoints...)
 
 	first := surface.SubdivideTriangle(triangle, breakpoints)
@@ -262,21 +305,4 @@ func bucketIndex(breakpoints []float64, value float64) int {
 	}
 
 	return len(breakpoints)
-}
-
-func expectPolygonContainsPoint(
-	g *gomega.WithT,
-	polygon surface.Polygon,
-	want surface.Point,
-) {
-	for _, point := range polygon.Points {
-		if math.Abs(point.X-want.X) <= 1e-9 &&
-			math.Abs(point.Y-want.Y) <= 1e-9 &&
-			math.Abs(point.Value-want.Value) <= 1e-9 &&
-			point.Original == want.Original {
-			return
-		}
-	}
-
-	g.Expect(polygon.Points).To(gomega.ContainElement(want))
 }

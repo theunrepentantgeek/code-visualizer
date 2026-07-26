@@ -70,6 +70,7 @@ func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks
 
 	if surfaceInk.Info().Kind == inks.KindNumeric {
 		addBandedSurface(cv, triangles, surfaceInk, inks.NumericBreakpoints(surfaceInk))
+
 		return
 	}
 
@@ -158,6 +159,7 @@ func addSurfaceBoundaries(cv *canvas.Canvas, layout SpiralLayout, triangles []su
 		for _, point := range loop {
 			points = append(points, canvas.Position{X: point.X, Y: point.Y})
 		}
+
 		points = append(points, points[0])
 
 		cv.AddPath(canvas.LayerSurface, canvas.Path{

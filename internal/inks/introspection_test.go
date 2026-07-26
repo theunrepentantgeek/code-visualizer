@@ -57,7 +57,11 @@ func TestNumericBreakpoints_FixedAndCategoricalReturnNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	g.Expect(inks.NumericBreakpoints(inks.FixedInk(color.RGBA{R: 255, A: 255}))).To(BeNil())
-	g.Expect(inks.NumericBreakpoints(inks.CategoricalInk("file-type", []string{"go", "rs"}, palette.GetPalette(palette.Categorization)))).To(BeNil())
+	g.Expect(
+		inks.NumericBreakpoints(
+			inks.CategoricalInk("file-type", []string{"go", "rs"}, palette.GetPalette(palette.Categorization)),
+		),
+	).To(BeNil())
 }
 
 func TestNumericBreakpoints_ReturnsACopy(t *testing.T) {
@@ -72,10 +76,19 @@ func TestNumericBreakpoints_ReturnsACopy(t *testing.T) {
 	g.Expect(first).NotTo(BeNil())
 	g.Expect(first).NotTo(BeEmpty())
 
+	if len(first) == 0 {
+		t.Fatal("expected numeric breakpoints")
+	}
+
 	original := first[0]
 	first[0] = original + 1
 
 	second := inks.NumericBreakpoints(ink)
 	g.Expect(second).To(Equal(metric.ComputeBuckets(values, len(pal.Colours)).Boundaries))
+
+	if len(second) == 0 {
+		t.Fatal("expected numeric breakpoints copy")
+	}
+
 	g.Expect(second[0]).To(Equal(original))
 }
