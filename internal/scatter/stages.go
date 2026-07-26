@@ -6,10 +6,8 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -155,26 +153,12 @@ func BuildLegendStage(c *stages.CommonState, x *State) error {
 		c.RootConfig.LegendOrientationStr(),
 	)
 
-	entries := make([]legend.Entry, 0, 3)
-	if x.FillMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleFill, MetricName: string(x.FillMetric), Ink: x.Inks.Fill,
-		})
-	}
-
-	if x.BorderMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleBorder, MetricName: string(x.BorderMetric), Ink: x.Inks.Border,
-		})
-	}
-
-	if x.Size != "" && x.Size != x.FillMetric {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleSize, MetricName: string(x.Size), Ink: inks.FixedInk(palette.White),
-		})
-	}
-
-	x.LegendConfig = legend.Build(pos, orient, entries)
+	x.LegendConfig = legend.Builder{
+		Position: pos, Orientation: orient,
+		FillInk: x.Inks.Fill, FillMetric: x.FillMetric,
+		BorderInk: x.Inks.Border, BorderMetric: x.BorderMetric,
+		SizeMetric: x.Size,
+	}.Build()
 
 	return nil
 }

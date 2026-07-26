@@ -141,32 +141,20 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 		c.RootConfig.LegendOrientationStr(),
 	)
 
-	entries := make([]legend.Entry, 0, 4)
-	if p.FillMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleFill, MetricName: string(p.FillMetric), Ink: p.Inks.Fill,
-		})
-	}
-
-	if p.BorderMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleBorder, MetricName: string(p.BorderMetric), Ink: p.Inks.Border,
-		})
-	}
-
-	if p.Size != "" && p.Size != p.FillMetric {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleSize, MetricName: string(p.Size), Ink: inks.FixedInk(palette.White),
-		})
+	builder := legend.Builder{
+		Position: pos, Orientation: orient,
+		FillInk: p.Inks.Fill, FillMetric: p.FillMetric,
+		BorderInk: p.Inks.Border, BorderMetric: p.BorderMetric,
+		SizeMetric: p.Size,
 	}
 
 	if p.SurfaceMetric != "" && (p.SurfaceMetric != p.FillMetric || p.SurfacePalette != p.FillPalette) {
-		entries = append(entries, legend.Entry{
+		builder.AdditionalEntries = append(builder.AdditionalEntries, legend.Entry{
 			Role: legend.RoleSurface, MetricName: string(p.SurfaceMetric), Ink: p.SurfaceInk,
 		})
 	}
 
-	p.LegendConfig = legend.Build(pos, orient, entries)
+	p.LegendConfig = builder.Build()
 
 	return nil
 }

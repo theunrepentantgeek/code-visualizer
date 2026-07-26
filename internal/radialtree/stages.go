@@ -4,10 +4,8 @@ import (
 	"log/slog"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -66,26 +64,12 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 		c.RootConfig.LegendOrientationStr(),
 	)
 
-	entries := make([]legend.Entry, 0, 3)
-	if r.FillMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleFill, MetricName: string(r.FillMetric), Ink: r.Inks.Fill,
-		})
-	}
-
-	if r.BorderMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleBorder, MetricName: string(r.BorderMetric), Ink: r.Inks.Border,
-		})
-	}
-
-	if r.DiscSize != "" && r.DiscSize != r.FillMetric {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleSize, MetricName: string(r.DiscSize), Ink: inks.FixedInk(palette.White),
-		})
-	}
-
-	r.LegendConfig = legend.Build(pos, orient, entries)
+	r.LegendConfig = legend.Builder{
+		Position: pos, Orientation: orient,
+		FillInk: r.Inks.Fill, FillMetric: r.FillMetric,
+		BorderInk: r.Inks.Border, BorderMetric: r.BorderMetric,
+		SizeMetric: r.DiscSize,
+	}.Build()
 
 	return nil
 }

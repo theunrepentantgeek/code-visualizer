@@ -7,7 +7,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -52,26 +51,12 @@ func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) erro
 		c.RootConfig.LegendOrientationStr(),
 	)
 
-	entries := make([]legend.Entry, 0, 3)
-	if t.FillMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleFill, MetricName: string(t.FillMetric), Ink: t.Inks.Fill,
-		})
-	}
-
-	if t.BorderMetric != "" {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleBorder, MetricName: string(t.BorderMetric), Ink: t.Inks.Border,
-		})
-	}
-
-	if t.Size != "" && t.Size != t.FillMetric {
-		entries = append(entries, legend.Entry{
-			Role: legend.RoleSize, MetricName: string(t.Size), Ink: inks.FixedInk(palette.White),
-		})
-	}
-
-	t.LegendConfig = legend.Build(pos, orient, entries)
+	t.LegendConfig = legend.Builder{
+		Position: pos, Orientation: orient,
+		FillInk: t.Inks.Fill, FillMetric: t.FillMetric,
+		BorderInk: t.Inks.Border, BorderMetric: t.BorderMetric,
+		SizeMetric: t.Size,
+	}.Build()
 	if t.LegendConfig != nil {
 		t.LegendConfig.LabelSample = labelSampleLines(labelMetricsFor(t, cfg))
 	}
