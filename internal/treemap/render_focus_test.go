@@ -33,6 +33,10 @@ func (b *captureBackend) DrawRectangle(
 func (*captureBackend) DrawDisc(canvas.Position, float64, canvasmodel.Fill, canvasmodel.Fill, float64) {
 }
 
+func (*captureBackend) DrawPolygon([]canvas.Position, canvasmodel.Fill, canvasmodel.Fill, float64) {}
+
+func (*captureBackend) DrawFilledPath([][]canvas.Position, color.RGBA) {}
+
 func (*captureBackend) DrawLine(canvas.Position, canvas.Position, color.RGBA, float64) {}
 
 func (*captureBackend) DrawPath([]canvas.Position, color.RGBA, float64) {}

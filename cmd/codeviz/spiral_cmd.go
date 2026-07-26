@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -19,8 +20,10 @@ type SpiralCmd struct {
 
 	Size metric.Name `default:"" help:"Metric for disc size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
 
-	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
-	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
+	Fill          config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Border        config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
+	Surface       bool              `help:"Enable the spiral surface." optional:""`
+	SurfaceMetric config.MetricSpec `help:"Surface height: numeric metric[,palette]." name:"surface-metric" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Labels string `help:"Label mode: all, laps, or none." enum:",all,laps,none" default:""`
 
@@ -50,13 +53,27 @@ func (*SpiralCmd) Validate() error {
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
-	size := ptrString(cfg.Size)
-	if size != "" {
-		if err := validateNumericMetric("size", metric.Name(size)); err != nil {
-			return err
-		}
+	if err := validateSpiralSize(cfg); err != nil {
+		return err
 	}
 
+	if !cfg.SurfaceEnabled() {
+		return validateSpiralColours(cfg)
+	}
+
+	return validateSurfaceConfig(cfg)
+}
+
+func validateSpiralSize(cfg *config.Spiral) error {
+	size := ptrString(cfg.Size)
+	if size == "" {
+		return nil
+	}
+
+	return validateNumericMetric("size", metric.Name(size))
+}
+
+func validateSpiralColours(cfg *config.Spiral) error {
 	if err := cfg.Fill.Validate("fill"); err != nil {
 		return eris.Wrap(err, "invalid fill spec")
 	}
@@ -66,6 +83,36 @@ func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
 	}
 
 	return nil
+}
+
+func validateSurfaceConfig(cfg *config.Spiral) error {
+	if err := validateSpiralColours(cfg); err != nil {
+		return err
+	}
+
+	if err := cfg.SurfaceMetric.Validate("surface"); err != nil {
+		return eris.Wrap(err, "invalid surface spec")
+	}
+
+	surfaceMetric := cfg.SurfaceMetric.MetricName()
+	if surfaceMetric == "" {
+		surfaceMetric = cfg.Fill.MetricName()
+	}
+
+	if surfaceMetric == "" {
+		return eris.New("surface requires a numeric fill metric or surface metric")
+	}
+
+	resolved, err := provider.ResolveForValidation(surfaceMetric)
+	if err != nil {
+		return friendlyMetricError("surface", surfaceMetric, err)
+	}
+
+	if resolved.NeedsAggregation {
+		return eris.New("surface metric must not use aggregation")
+	}
+
+	return validateNumericMetric("surface", surfaceMetric)
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
@@ -129,6 +176,8 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.Spiral.OverrideSize(string(c.Size))
 	cfg.Spiral.OverrideFill(c.Fill)
 	cfg.Spiral.OverrideBorder(c.Border)
+	cfg.Spiral.OverrideSurface(c.Surface)
+	cfg.Spiral.OverrideSurfaceMetric(c.SurfaceMetric)
 	cfg.Spiral.OverrideLabels(c.Labels)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)

@@ -24,58 +24,56 @@ func ResolveOptions(posStr, orientStr string) (model.LegendPosition, model.Legen
 	return pos, orient
 }
 
-// Build constructs a Config from resolved options and the pre-built Ink
-// objects used for rendering. Returns nil if the legend is disabled
-// ("none") or no entries would be produced.
-func Build(
-	position model.LegendPosition,
-	orientation model.LegendOrientation,
-	fillInk inks.Ink,
-	fillMetric metric.Name,
-	borderInk inks.Ink,
-	borderMetric metric.Name,
-	sizeMetric metric.Name,
-) *Config {
-	if position == model.LegendPositionNone {
+// Builder collects the standard legend inputs and any visualization-specific entries.
+type Builder struct {
+	Position          model.LegendPosition
+	Orientation       model.LegendOrientation
+	FillInk           inks.Ink
+	FillMetric        metric.Name
+	BorderInk         inks.Ink
+	BorderMetric      metric.Name
+	SizeMetric        metric.Name
+	AdditionalEntries []Entry
+}
+
+// Build constructs a Config from the builder. Returns nil if the legend is
+// disabled ("none") or no entries would be produced.
+func (b Builder) Build() *Config {
+	if b.Position == model.LegendPositionNone {
 		return nil
 	}
 
+	orientation := b.Orientation
 	if orientation == "" {
-		orientation = DefaultOrientation(position)
+		orientation = DefaultOrientation(b.Position)
 	}
 
-	var entries []Entry
-
-	if fillMetric != "" {
+	entries := make([]Entry, 0, 3+len(b.AdditionalEntries))
+	if b.FillMetric != "" {
 		entries = append(entries, Entry{
-			Role:       RoleFill,
-			MetricName: string(fillMetric),
-			Ink:        fillInk,
+			Role: RoleFill, MetricName: string(b.FillMetric), Ink: b.FillInk,
 		})
 	}
 
-	if borderMetric != "" {
+	if b.BorderMetric != "" {
 		entries = append(entries, Entry{
-			Role:       RoleBorder,
-			MetricName: string(borderMetric),
-			Ink:        borderInk,
+			Role: RoleBorder, MetricName: string(b.BorderMetric), Ink: b.BorderInk,
 		})
 	}
 
-	if sizeMetric != "" && sizeMetric != fillMetric {
+	if b.SizeMetric != "" && b.SizeMetric != b.FillMetric {
 		entries = append(entries, Entry{
-			Role:       RoleSize,
-			MetricName: string(sizeMetric),
-			Ink:        inks.FixedInk(palette.White),
+			Role: RoleSize, MetricName: string(b.SizeMetric), Ink: inks.FixedInk(palette.White),
 		})
 	}
 
+	entries = append(entries, b.AdditionalEntries...)
 	if len(entries) == 0 {
 		return nil
 	}
 
 	return &Config{
-		Position:    position,
+		Position:    b.Position,
 		Orientation: orientation,
 		Entries:     entries,
 	}

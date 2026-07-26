@@ -174,18 +174,56 @@ func TestGolden_Bubbletree(t *testing.T) { runVizGolden(t, "bubbletree", renderB
 //nolint:paralleltest // mutates the global metric registry
 func TestGolden_Scatter(t *testing.T) { runVizGolden(t, "scatter", renderScatter) }
 
-// renderSpiral: size=file-lines, fill=file-type, with synthetic git history
-// injected so the time-bucket stages have data.
+// renderSpiral uses size=file-lines and fill=file-type.
 func renderSpiral(common *stages.CommonState) error {
 	cfg := common.RootConfig
 	size := "file-lines"
 
-	if cfg.Spiral == nil {
-		cfg.Spiral = &config.Spiral{}
+	cfg.Spiral = &config.Spiral{
+		Size: &size,
+		Fill: &config.MetricSpec{Metric: "file-type"},
 	}
 
-	cfg.Spiral.Size = &size
-	cfg.Spiral.Fill = &config.MetricSpec{Metric: "file-type"}
+	return renderSpiralPipeline(common)
+}
+
+// renderSpiralSurfaceShared uses the numeric fill metric for both the discs
+// and surface.
+func renderSpiralSurfaceShared(common *stages.CommonState) error {
+	cfg := common.RootConfig
+	size := "file-lines"
+	surface := true
+
+	cfg.Spiral = &config.Spiral{
+		Size:    &size,
+		Fill:    &config.MetricSpec{Metric: "file-lines", Palette: "terrain"},
+		Surface: &surface,
+	}
+
+	return renderSpiralPipeline(common)
+}
+
+// renderSpiralSurfaceDistinct uses distinct numeric metrics and palettes for
+// the disc fill and surface.
+func renderSpiralSurfaceDistinct(common *stages.CommonState) error {
+	cfg := common.RootConfig
+	size := "file-lines"
+	surface := true
+
+	cfg.Spiral = &config.Spiral{
+		Size:          &size,
+		Fill:          &config.MetricSpec{Metric: "file-lines", Palette: "terrain"},
+		Surface:       &surface,
+		SurfaceMetric: &config.MetricSpec{Metric: "file-size", Palette: "temperature"},
+	}
+
+	return renderSpiralPipeline(common)
+}
+
+// renderSpiralPipeline injects synthetic history before running the common
+// spiral rendering pipeline.
+func renderSpiralPipeline(common *stages.CommonState) error {
+	cfg := common.RootConfig
 
 	common.FileHistory, common.FileTimeRange = buildSpiralHistory(common.Root)
 
@@ -202,6 +240,16 @@ func renderSpiral(common *stages.CommonState) error {
 
 //nolint:paralleltest // mutates the global metric registry
 func TestGolden_Spiral(t *testing.T) { runVizGolden(t, "spiral", renderSpiral) }
+
+//nolint:paralleltest // mutates the global metric registry
+func TestGolden_SpiralSurfaceShared(t *testing.T) {
+	runVizGolden(t, "spiral-surface-shared", renderSpiralSurfaceShared)
+}
+
+//nolint:paralleltest // mutates the global metric registry
+func TestGolden_SpiralSurfaceDistinct(t *testing.T) {
+	runVizGolden(t, "spiral-surface-distinct", renderSpiralSurfaceDistinct)
+}
 
 // runVizGolden renders the named viz to PNG and SVG and golden-compares both.
 func runVizGolden(t *testing.T, name string, render func(*stages.CommonState) error) {

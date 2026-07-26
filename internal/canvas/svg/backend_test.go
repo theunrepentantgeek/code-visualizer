@@ -123,6 +123,99 @@ func TestSVGBackend_DrawPath_ProducesValidSVG(t *testing.T) {
 	g.Expect(content).To(ContainSubstring(`<path d="M 10.0 10.0 L 100.0 50.0 L 190.0 10.0" fill="none"`))
 }
 
+func TestSVGBackend_DrawPolygon_ProducesFilledPolygon(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	red := color.RGBA{R: 255, A: 255}
+	black := color.RGBA{A: 255}
+	b.DrawPolygon(
+		[]model.Position{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+		model.SolidFill{Color: red}, model.SolidFill{Color: black}, 0.5,
+	)
+
+	out := filepath.Join(t.TempDir(), "polygon.svg")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	content := readFile(t, out)
+	g.Expect(content).To(ContainSubstring(`<polygon points="1.00,1.00 9.00,1.00 1.00,9.00"`))
+	g.Expect(content).To(ContainSubstring(`fill="rgb(255,0,0)"`))
+	g.Expect(content).To(ContainSubstring(`stroke="rgb(0,0,0)"`))
+	g.Expect(content).To(ContainSubstring(`stroke-width="0.5"`))
+}
+
+func TestSVGBackend_DrawPolygon_WithoutBorder_OmitsStrokeAttributes(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	b.DrawPolygon(
+		[]model.Position{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+		model.SolidFill{Color: color.RGBA{R: 255, A: 255}},
+		model.SolidFill{Color: color.RGBA{A: 255}},
+		0,
+	)
+
+	out := filepath.Join(t.TempDir(), "borderless-polygon.svg")
+	g.Expect(b.Finish(out)).To(Succeed())
+
+	content := readFile(t, out)
+	g.Expect(content).To(ContainSubstring("<polygon"))
+	g.Expect(content).NotTo(ContainSubstring("stroke="))
+	g.Expect(content).NotTo(ContainSubstring("stroke-width="))
+}
+
+func TestSVGBackend_DrawFilledPath_ProducesBorderlessEvenOddPath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	filledPathBackend, ok := b.(interface {
+		DrawFilledPath(loops [][]model.Position, fill color.RGBA)
+	})
+
+	g.Expect(ok).To(BeTrue())
+
+	if !ok {
+		return
+	}
+
+	filledPathBackend.DrawFilledPath([][]model.Position{
+		{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 9, Y: 9},
+			{X: 1, Y: 9},
+		},
+		{
+			{X: 3, Y: 3},
+			{X: 7, Y: 3},
+			{X: 7, Y: 7},
+			{X: 3, Y: 7},
+		},
+	}, color.RGBA{R: 255, A: 255})
+
+	out := filepath.Join(t.TempDir(), "filled-path.svg")
+	g.Expect(b.Finish(out)).To(Succeed())
+
+	content := readFile(t, out)
+	expectedPath := `<path d="M 1.00 1.00 L 9.00 1.00 L 9.00 9.00 L 1.00 9.00 Z ` +
+		`M 3.00 3.00 L 7.00 3.00 L 7.00 7.00 L 3.00 7.00 Z"`
+	g.Expect(content).To(ContainSubstring(expectedPath))
+	g.Expect(content).To(ContainSubstring(`fill-rule="evenodd"`))
+	g.Expect(content).NotTo(ContainSubstring("stroke="))
+}
+
 func TestSVGBackend_DrawArcText_ProducesValidSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

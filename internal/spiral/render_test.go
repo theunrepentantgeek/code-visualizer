@@ -24,7 +24,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 800, 600, spiral.Hourly, spiral.LabelNone)
 	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
-	cv := spiral.RenderToCanvas(layout, buckets, 800, 600, inks)
+	cv := spiral.RenderToCanvas(layout, buckets, 800, 600, inks, nil, nil)
 
 	out := filepath.Join(t.TempDir(), "spiral.png")
 	err := cv.Render(out)
@@ -47,7 +47,7 @@ func TestRenderToCanvas_SVG(t *testing.T) {
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
 	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
-	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks)
+	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks, nil, nil)
 
 	out := filepath.Join(t.TempDir(), "spiral.svg")
 	err := cv.Render(out)
@@ -84,7 +84,7 @@ func TestRenderToCanvas_JPG(t *testing.T) {
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
 	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
-	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks)
+	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks, nil, nil)
 
 	out := filepath.Join(t.TempDir(), "spiral.jpg")
 	err := cv.Render(out)

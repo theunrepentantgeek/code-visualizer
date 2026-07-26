@@ -92,9 +92,22 @@ func TestAggregateBucketMetrics_CommitCountSize(t *testing.T) {
 		{Files: []*model.File{}},        // empty bucket
 	}
 
-	AggregateBucketMetrics(buckets, stages.RequestedMetrics{}, commitCountMetric, "", "")
+	AggregateBucketMetrics(buckets, stages.RequestedMetrics{}, commitCountMetric, "", "", "")
 
 	g.Expect(buckets[0].SizeValue).To(Equal(3.0))
 	g.Expect(buckets[1].SizeValue).To(Equal(1.0))
 	g.Expect(buckets[2].SizeValue).To(Equal(0.0))
+}
+
+func TestAggregateBucketMetrics_SurfaceUsesNumericBucketValue(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	f1 := makeFileWithSize(100)
+	f2 := makeFileWithSize(50)
+	buckets := []TimeBucket{{Files: []*model.File{f1, f1, f2}}}
+
+	AggregateBucketMetrics(buckets, stages.RequestedMetrics{}, "", "", "", sizeMetric)
+
+	g.Expect(buckets[0].SurfaceValue).To(Equal(150.0))
 }

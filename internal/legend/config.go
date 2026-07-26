@@ -13,9 +13,10 @@ import (
 type Role string
 
 const (
-	RoleFill   Role = "Fill"
-	RoleBorder Role = "Border"
-	RoleSize   Role = "Size"
+	RoleFill    Role = "Fill"
+	RoleBorder  Role = "Border"
+	RoleSize    Role = "Size"
+	RoleSurface Role = "Surface"
 )
 
 // Entry describes one metric shown in the legend.

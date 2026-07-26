@@ -132,6 +132,76 @@ func TestRasterBackend_DrawDisc_WithRadialGradientFill(t *testing.T) {
 	g.Expect(center.B).To(BeNumerically(">", edge.B))
 }
 
+func TestRasterBackend_DrawPolygon_RadialGradientVariesFromEdgeToCenter(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	backend := raster.New(200, 200)
+	backend.DrawPolygon(
+		[]model.Position{
+			{X: 20, Y: 20},
+			{X: 180, Y: 20},
+			{X: 180, Y: 180},
+			{X: 20, Y: 180},
+		},
+		model.RadialGradientFill{
+			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
+			Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
+			Focus:  model.Point{X: 0.5, Y: 0.5},
+		},
+		model.SolidFill{Color: color.RGBA{A: 255}}, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "polygon-gradient.png")
+	err := backend.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	img := loadImage(t, out)
+	center := colorAt(img, 100, 100)
+	edge := colorAt(img, 30, 100)
+
+	g.Expect(center.R).To(BeNumerically(">", edge.R))
+	g.Expect(center.G).To(BeNumerically(">", edge.G))
+	g.Expect(center.B).To(BeNumerically(">", edge.B))
+}
+
+func TestRasterBackend_DrawPolygon_SemiTransparentRadialGradient_CompositesOverBackground(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	backend := raster.New(100, 100)
+	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	semiBlue := color.RGBA{B: 255, A: 64}
+
+	backend.DrawRectangle(
+		model.Position{},
+		model.Size{Width: 100, Height: 100},
+		model.SolidFill{Color: white}, model.SolidFill{Color: white}, 0,
+	)
+	backend.DrawPolygon(
+		[]model.Position{
+			{X: 20, Y: 20},
+			{X: 80, Y: 20},
+			{X: 80, Y: 80},
+			{X: 20, Y: 80},
+		},
+		model.RadialGradientFill{
+			Center: semiBlue,
+			Edge:   semiBlue,
+			Focus:  model.Point{X: 0.5, Y: 0.5},
+		},
+		model.SolidFill{Color: white}, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "semi-transparent-polygon-gradient.png")
+	err := backend.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	g.Expect(colorAt(loadImage(t, out), 50, 50)).To(Equal(color.RGBA{
+		R: 191, G: 191, B: 255, A: 255,
+	}))
+}
+
 func loadImage(t *testing.T, path string) image.Image {
 	t.Helper()
 

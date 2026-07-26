@@ -63,12 +63,13 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 		c.RootConfig.LegendPositionStr(),
 		c.RootConfig.LegendOrientationStr(),
 	)
-	r.LegendConfig = legend.Build(
-		pos, orient,
-		r.Inks.Fill, r.FillMetric,
-		r.Inks.Border, r.BorderMetric,
-		r.DiscSize,
-	)
+
+	r.LegendConfig = legend.Builder{
+		Position: pos, Orientation: orient,
+		FillInk: r.Inks.Fill, FillMetric: r.FillMetric,
+		BorderInk: r.Inks.Border, BorderMetric: r.BorderMetric,
+		SizeMetric: r.DiscSize,
+	}.Build()
 
 	return nil
 }
