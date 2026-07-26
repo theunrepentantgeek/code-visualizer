@@ -122,6 +122,25 @@ func (c *Canvas) AddPolygon(layer Layer, p Polygon) {
 	})
 }
 
+// AddFilledPath records a borderless filled path on the given layer.
+func (c *Canvas) AddFilledPath(layer Layer, p FilledPath) {
+	p.Loops = clonePositionLoops(p.Loops)
+	c.shapes = append(c.shapes, layeredShape{
+		layer: layer,
+		order: len(c.shapes),
+		shape: &p,
+	})
+}
+
+func clonePositionLoops(loops [][]Position) [][]Position {
+	cloned := make([][]Position, len(loops))
+	for index, loop := range loops {
+		cloned[index] = slices.Clone(loop)
+	}
+
+	return cloned
+}
+
 // AddText records text on the given layer.
 func (c *Canvas) AddText(layer Layer, t Text) {
 	c.shapes = append(c.shapes, layeredShape{

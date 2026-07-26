@@ -156,6 +156,22 @@ func (r *rasterBackend) DrawPolygon(
 	}
 }
 
+func (r *rasterBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
+	r.dc.SetFillRuleEvenOdd()
+	defer r.dc.SetFillRuleWinding()
+
+	for _, loop := range loops {
+		if len(loop) < 3 {
+			continue
+		}
+
+		r.drawPolygonPath(loop)
+	}
+
+	r.dc.SetColor(nrgba(fill))
+	r.dc.Fill()
+}
+
 func (r *rasterBackend) drawPolygonPath(points []model.Position) {
 	r.dc.MoveTo(points[0].X, points[0].Y)
 

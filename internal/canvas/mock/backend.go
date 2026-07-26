@@ -16,6 +16,7 @@ type Call struct {
 	Pos         model.Position
 	Size        model.Size
 	Points      []model.Position
+	Loops       [][]model.Position
 	Fill        color.RGBA
 	Border      color.RGBA
 	RawFill     model.Fill
@@ -76,6 +77,19 @@ func (m *Backend) DrawPolygon(
 		RawFill:     fill,
 		RawBorder:   border,
 		BorderWidth: borderWidth,
+	})
+}
+
+func (m *Backend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
+	cloned := make([][]model.Position, len(loops))
+	for index, loop := range loops {
+		cloned[index] = slices.Clone(loop)
+	}
+
+	m.Calls = append(m.Calls, Call{
+		Method: "DrawFilledPath",
+		Loops:  cloned,
+		Fill:   fill,
 	})
 }
 

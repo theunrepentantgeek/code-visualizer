@@ -1,8 +1,10 @@
 package spiral
 
 import (
+	"cmp"
 	"image/color"
 	"math"
+	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
@@ -78,24 +80,18 @@ func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks
 }
 
 func addFlatSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks.Ink) {
-	surfaceSpec := &canvas.PolygonSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        surfaceInk,
-			Border:      surfaceInk,
-			BorderWidth: 0.5,
-		},
-	}
+	loopsByColour := make(map[color.RGBA][][]canvas.Position)
 
 	for _, triangle := range triangles {
 		fill := metricValue(triangle.Value, "", surfaceInk)
-
-		cv.AddPolygon(canvas.LayerSurface, canvas.Polygon{
-			Spec:   surfaceSpec,
-			Points: surfacePolygonPoints(triangle.Points[:]),
-			Fill:   fill,
-			Border: fill,
-		})
+		colour := surfaceInk.Dip(fill)
+		loopsByColour[colour] = append(
+			loopsByColour[colour],
+			surfacePolygonPoints(triangle.Points[:]),
+		)
 	}
+
+	addSurfaceFillPaths(cv, loopsByColour)
 }
 
 func addBandedSurface(
@@ -104,13 +100,7 @@ func addBandedSurface(
 	surfaceInk inks.Ink,
 	breakpoints []float64,
 ) {
-	surfaceSpec := &canvas.PolygonSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        surfaceInk,
-			Border:      surfaceInk,
-			BorderWidth: 0,
-		},
-	}
+	loopsByColour := make(map[color.RGBA][][]canvas.Position)
 
 	for _, triangle := range triangles {
 		fragments := surface.SubdivideTriangle(triangle, breakpoints)
@@ -120,15 +110,37 @@ func addBandedSurface(
 
 		for _, fragment := range fragments {
 			fill := metricValue(fragment.Value, "", surfaceInk)
-
-			cv.AddPolygon(canvas.LayerSurface, canvas.Polygon{
-				Spec:   surfaceSpec,
-				Points: surfacePolygonPoints(fragment.Points),
-				Fill:   fill,
-				Border: fill,
-			})
+			colour := surfaceInk.Dip(fill)
+			loopsByColour[colour] = append(
+				loopsByColour[colour],
+				surfacePolygonPoints(fragment.Points),
+			)
 		}
 	}
+
+	addSurfaceFillPaths(cv, loopsByColour)
+}
+
+func addSurfaceFillPaths(cv *canvas.Canvas, loopsByColour map[color.RGBA][][]canvas.Position) {
+	colours := make([]color.RGBA, 0, len(loopsByColour))
+	for colour := range loopsByColour {
+		colours = append(colours, colour)
+	}
+
+	slices.SortFunc(colours, func(left, right color.RGBA) int {
+		return cmp.Compare(rgbaKey(left), rgbaKey(right))
+	})
+
+	for _, colour := range colours {
+		cv.AddFilledPath(canvas.LayerSurface, canvas.FilledPath{
+			Loops: loopsByColour[colour],
+			Fill:  colour,
+		})
+	}
+}
+
+func rgbaKey(colour color.RGBA) uint32 {
+	return uint32(colour.R)<<24 | uint32(colour.G)<<16 | uint32(colour.B)<<8 | uint32(colour.A)
 }
 
 func surfacePolygonPoints(points []surface.Point) []canvas.Position {

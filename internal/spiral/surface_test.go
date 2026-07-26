@@ -118,7 +118,7 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeAnnulusBoundaryOverlays(
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 	g.Expect(backend.Calls[0].Method).To(Equal("DrawRectangle"))
 
-	surfaceCalls := leadingSurfacePolygonCalls(backend.Calls)
+	surfaceCalls := leadingSurfaceFilledPathCalls(backend.Calls)
 	g.Expect(surfaceCalls).To(HaveLen(2))
 
 	for index, expectedColour := range []color.RGBA{
@@ -126,10 +126,9 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeAnnulusBoundaryOverlays(
 		surfaceInk.Dip(inks.MeasureValue(2)),
 	} {
 		call := surfaceCalls[index]
-		g.Expect(call.Method).To(Equal("DrawPolygon"))
+		g.Expect(call.Method).To(Equal("DrawFilledPath"))
 		g.Expect(call.Fill).To(Equal(expectedColour))
-		g.Expect(call.Border).To(Equal(expectedColour))
-		g.Expect(call.BorderWidth).To(Equal(0.0))
+		g.Expect(call.Loops).To(HaveLen(1))
 	}
 
 	for _, call := range backend.Calls[len(surfaceCalls)+1 : len(surfaceCalls)+3] {
@@ -143,6 +142,59 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeAnnulusBoundaryOverlays(
 	for _, call := range backend.Calls[len(surfaceCalls)+4:] {
 		g.Expect(call.Method).To(Equal("DrawDisc"))
 	}
+}
+
+func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout, buckets := surfaceRenderFixture()
+	triangles := []surface.Triangle{
+		{
+			Points: [3]surface.Point{
+				{X: 20, Y: 30, Value: 1},
+				{X: 40, Y: 30, Value: 1},
+				{X: 20, Y: 50, Value: 1},
+			},
+			Value: 1,
+		},
+		{
+			Points: [3]surface.Point{
+				{X: 40, Y: 30, Value: 1},
+				{X: 40, Y: 50, Value: 1},
+				{X: 20, Y: 50, Value: 1},
+			},
+			Value: 1,
+		},
+	}
+	cv := spiral.RenderToCanvas(
+		layout,
+		buckets,
+		160,
+		120,
+		spiral.Inks{Fill: numericInk(), Border: numericInk()},
+		triangles,
+		inks.NumericInk("surface", []float64{1}, palette.GetPalette(palette.Temperature)),
+	)
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	var filledPaths []mock.Call
+
+	for _, call := range backend.Calls {
+		if call.Method == "DrawFilledPath" {
+			filledPaths = append(filledPaths, call)
+		}
+	}
+
+	g.Expect(filledPaths).To(HaveLen(1))
+
+	if len(filledPaths) != 1 {
+		return
+	}
+
+	g.Expect(filledPaths[0].Loops).To(HaveLen(2))
 }
 
 func TestRenderToCanvas_OverlaysAnnulusBoundaryBeforeGuideTrack(t *testing.T) {
@@ -171,7 +223,7 @@ func TestRenderToCanvas_OverlaysAnnulusBoundaryBeforeGuideTrack(t *testing.T) {
 	backend := mock.NewBackend()
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
-	surfaceCalls := leadingSurfacePolygonCalls(backend.Calls)
+	surfaceCalls := leadingSurfaceFilledPathCalls(backend.Calls)
 	g.Expect(surfaceCalls).NotTo(BeEmpty())
 
 	boundaryCalls := backend.Calls[len(surfaceCalls)+1 : len(surfaceCalls)+3]
@@ -210,18 +262,17 @@ func TestRenderToCanvas_UsesFlatSurfaceFallbackForFixedInk(t *testing.T) {
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
-	surfaceCalls := leadingSurfacePolygonCalls(backend.Calls)
+	surfaceCalls := leadingSurfaceFilledPathCalls(backend.Calls)
 	g.Expect(surfaceCalls).To(HaveLen(1))
 	g.Expect(surfaceCalls[0].Fill).To(Equal(fixedColour))
-	g.Expect(surfaceCalls[0].Border).To(Equal(fixedColour))
-	g.Expect(surfaceCalls[0].BorderWidth).To(Equal(0.5))
+	g.Expect(surfaceCalls[0].Loops).To(HaveLen(1))
 }
 
 func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	layout, buckets, _ := surfaceRenderFixture()
+	layout, buckets := surfaceRenderFixture()
 	cv := spiral.RenderToCanvas(
 		layout,
 		buckets,
@@ -277,19 +328,19 @@ func TestRenderStage_UsesSurfaceValuesWhenEnabled(t *testing.T) {
 
 	expectedColour := surfaceInk.Dip(inks.MeasureValue(10))
 
-	var polygonCount int
+	var filledPathCount int
 
 	for _, call := range backend.Calls {
-		if call.Method != "DrawPolygon" {
+		if call.Method != "DrawFilledPath" {
 			continue
 		}
 
-		polygonCount++
+		filledPathCount++
 
 		g.Expect(call.Fill).To(Equal(expectedColour))
 	}
 
-	g.Expect(polygonCount).To(BeNumerically(">", 0))
+	g.Expect(filledPathCount).To(BeNumerically(">", 0))
 }
 
 func TestRenderStage_DisabledSurfaceRendersNoPolygons(t *testing.T) {
@@ -312,7 +363,7 @@ func TestRenderStage_DisabledSurfaceRendersNoPolygons(t *testing.T) {
 	g.Expect(common.Canvas.RenderTo(backend)).To(Succeed())
 
 	for _, call := range backend.Calls {
-		g.Expect(call.Method).NotTo(Equal("DrawPolygon"))
+		g.Expect(call.Method).NotTo(Equal("DrawFilledPath"))
 	}
 }
 
@@ -349,7 +400,7 @@ func TestRenderStage_WarnsAndRendersSpiralWhenSurfaceCannotBeBuilt(t *testing.T)
 	g.Expect(common.Canvas.RenderTo(backend)).To(Succeed())
 
 	for _, call := range backend.Calls {
-		g.Expect(call.Method).NotTo(Equal("DrawPolygon"))
+		g.Expect(call.Method).NotTo(Equal("DrawFilledPath"))
 	}
 
 	g.Expect(backend.Calls).To(HaveLen(1 + 1 + len(buckets)))
@@ -398,18 +449,18 @@ func TestRenderStage_RendersSurfaceFor162PointSpiral(t *testing.T) {
 	backend := mock.NewBackend()
 	g.Expect(common.Canvas.RenderTo(backend)).To(Succeed())
 
-	var polygons int
+	var filledPaths int
 
 	for _, call := range backend.Calls {
-		if call.Method == "DrawPolygon" {
-			polygons++
+		if call.Method == "DrawFilledPath" {
+			filledPaths++
 		}
 	}
 
-	g.Expect(polygons).To(BeNumerically(">", 0))
+	g.Expect(filledPaths).To(BeNumerically(">", 0))
 }
 
-func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface.Triangle) {
+func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket) {
 	layout := spiral.SpiralLayout{
 		Nodes: []spiral.SpiralNode{
 			{X: 20, Y: 30, DiscRadius: 4},
@@ -422,16 +473,8 @@ func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface
 		{FillValue: 2, BorderValue: 2},
 		{FillValue: 3, BorderValue: 3},
 	}
-	triangles := []surface.Triangle{{
-		Points: [3]surface.Point{
-			{X: 20, Y: 30},
-			{X: 40, Y: 30},
-			{X: 20, Y: 50},
-		},
-		Value: 2,
-	}}
 
-	return layout, buckets, triangles
+	return layout, buckets
 }
 
 func bandedSurfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface.Triangle) {
@@ -453,18 +496,18 @@ func numericInk() inks.Ink {
 	return inks.NumericInk("surface", []float64{1, 2, 3}, palette.GetPalette(palette.Temperature))
 }
 
-func leadingSurfacePolygonCalls(calls []mock.Call) []mock.Call {
-	polygons := make([]mock.Call, 0, len(calls))
+func leadingSurfaceFilledPathCalls(calls []mock.Call) []mock.Call {
+	filledPaths := make([]mock.Call, 0, len(calls))
 
 	for _, call := range calls[1:] {
-		if call.Method != "DrawPolygon" {
+		if call.Method != "DrawFilledPath" {
 			break
 		}
 
-		polygons = append(polygons, call)
+		filledPaths = append(filledPaths, call)
 	}
 
-	return polygons
+	return filledPaths
 }
 
 func surfaceStageBuckets() []spiral.TimeBucket {

@@ -176,6 +176,49 @@ func TestRasterBackend_DrawPolygon_WithoutBorder_DoesNotPreservePath(t *testing.
 	g.Expect(blue).To(BeZero())
 }
 
+func TestRasterBackend_DrawFilledPath_UsesEvenOddFillRule(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	filledPathBackend, ok := b.(interface {
+		DrawFilledPath(loops [][]model.Position, fill color.RGBA)
+	})
+
+	g.Expect(ok).To(BeTrue())
+
+	if !ok {
+		return
+	}
+
+	filledPathBackend.DrawFilledPath([][]model.Position{
+		{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 9, Y: 9},
+			{X: 1, Y: 9},
+		},
+		{
+			{X: 3, Y: 3},
+			{X: 7, Y: 3},
+			{X: 7, Y: 7},
+			{X: 3, Y: 7},
+		},
+	}, color.RGBA{R: 255, A: 255})
+
+	out := filepath.Join(t.TempDir(), "filled-path.png")
+	g.Expect(b.Finish(out)).To(Succeed())
+
+	r, green, blue, alpha := loadImage(t, out).At(2, 2).RGBA()
+	g.Expect(r).To(Equal(uint32(0xffff)))
+	g.Expect(green).To(BeZero())
+	g.Expect(blue).To(BeZero())
+	g.Expect(alpha).To(Equal(uint32(0xffff)))
+
+	_, _, _, alpha = loadImage(t, out).At(5, 5).RGBA()
+	g.Expect(alpha).To(BeZero())
+}
+
 func TestRasterBackend_Finish_JPG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

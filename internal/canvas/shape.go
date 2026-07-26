@@ -2,6 +2,8 @@
 package canvas
 
 import (
+	"image/color"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
@@ -62,6 +64,16 @@ func (p *Polygon) drawTo(b Backend) {
 	border := model.SolidFill{Color: p.Spec.Border.Dip(p.Border)}
 
 	b.DrawPolygon(p.Points, fill, border, p.Spec.BorderWidth)
+}
+
+// FilledPath carries closed loops to be filled as one borderless shape.
+type FilledPath struct {
+	Loops [][]Position
+	Fill  color.RGBA
+}
+
+func (p *FilledPath) drawTo(b Backend) {
+	b.DrawFilledPath(p.Loops, p.Fill)
 }
 
 // Text carries position and content for standalone text.

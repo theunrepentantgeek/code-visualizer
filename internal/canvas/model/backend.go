@@ -13,6 +13,7 @@ type Backend interface {
 	DrawRectangle(pos Position, size Size, fill, border Fill, borderWidth float64)
 	DrawDisc(center Position, radius float64, fill, border Fill, borderWidth float64)
 	DrawPolygon(points []Position, fill, border Fill, borderWidth float64)
+	DrawFilledPath(loops [][]Position, fill color.RGBA)
 	DrawLine(from, to Position, stroke color.RGBA, strokeWidth float64)
 	DrawPath(points []Position, stroke color.RGBA, strokeWidth float64)
 	DrawText(pos Position, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64)
