@@ -186,6 +186,11 @@ type Triangle struct {
 	Value  float64
 }
 
+type Polygon struct {
+	Points []Point
+	Value  float64
+}
+
 func Distance(a, b Point) float64 {
 	return math.Hypot(a.X-b.X, a.Y-b.Y)
 }
