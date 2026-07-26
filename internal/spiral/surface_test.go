@@ -98,11 +98,11 @@ func TestBuildSurface_RejectsInsufficientOrMismatchedInputs(t *testing.T) {
 	}, []float64{1, 2}, 42)).To(BeNil())
 }
 
-func TestRenderToCanvas_RendersSurfaceBeforeSpiralForeground(t *testing.T) {
+func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeAnnulusBoundaryOverlays(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	layout, buckets, triangles := surfaceRenderFixture()
+	layout, buckets, triangles := bandedSurfaceRenderFixture()
 	surfaceInk := numericInk()
 	cv := spiral.RenderToCanvas(
 		layout,
@@ -116,22 +116,30 @@ func TestRenderToCanvas_RendersSurfaceBeforeSpiralForeground(t *testing.T) {
 	backend := mock.NewBackend()
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
-	g.Expect(backend.Calls).To(HaveLen(1 + len(triangles) + 1 + len(layout.Nodes)))
 	g.Expect(backend.Calls[0].Method).To(Equal("DrawRectangle"))
 
-	for index, triangle := range triangles {
-		call := backend.Calls[index+1]
-		expectedColour := surfaceInk.Dip(inks.MeasureValue(triangle.Value))
-
+	surfaceCalls := leadingSurfacePolygonCalls(backend.Calls)
+	g.Expect(surfaceCalls).To(HaveLen(2))
+	for index, expectedColour := range []color.RGBA{
+		surfaceInk.Dip(inks.MeasureValue(1)),
+		surfaceInk.Dip(inks.MeasureValue(2)),
+	} {
+		call := surfaceCalls[index]
 		g.Expect(call.Method).To(Equal("DrawPolygon"))
 		g.Expect(call.Fill).To(Equal(expectedColour))
 		g.Expect(call.Border).To(Equal(expectedColour))
-		g.Expect(call.BorderWidth).To(Equal(0.5))
+		g.Expect(call.BorderWidth).To(Equal(0.0))
 	}
 
-	g.Expect(backend.Calls[len(triangles)+1].Method).To(Equal("DrawPath"))
+	for _, call := range backend.Calls[len(surfaceCalls)+1 : len(surfaceCalls)+3] {
+		g.Expect(call.Method).To(Equal("DrawPath"))
+		g.Expect(call.Fill).To(Equal(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}))
+		g.Expect(call.StrokeWidth).To(Equal(2.0))
+	}
 
-	for _, call := range backend.Calls[len(triangles)+2:] {
+	g.Expect(backend.Calls[len(surfaceCalls)+3].Method).To(Equal("DrawPath"))
+
+	for _, call := range backend.Calls[len(surfaceCalls)+4:] {
 		g.Expect(call.Method).To(Equal("DrawDisc"))
 	}
 }
@@ -162,9 +170,10 @@ func TestRenderToCanvas_OverlaysAnnulusBoundaryBeforeGuideTrack(t *testing.T) {
 	backend := mock.NewBackend()
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
-	g.Expect(backend.Calls[1].Method).To(Equal("DrawPolygon"))
+	surfaceCalls := leadingSurfacePolygonCalls(backend.Calls)
+	g.Expect(surfaceCalls).NotTo(BeEmpty())
 
-	boundaryCalls := backend.Calls[2:4]
+	boundaryCalls := backend.Calls[len(surfaceCalls)+1 : len(surfaceCalls)+3]
 	for _, call := range boundaryCalls {
 		g.Expect(call.Method).To(Equal("DrawPath"))
 		g.Expect(call.Fill).To(Equal(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}))
@@ -174,10 +183,37 @@ func TestRenderToCanvas_OverlaysAnnulusBoundaryBeforeGuideTrack(t *testing.T) {
 		g.Expect(call.Points[1 : len(call.Points)-1]).NotTo(ContainElement(call.Points[0]))
 	}
 
-	guideTrack := backend.Calls[4]
+	guideTrack := backend.Calls[len(surfaceCalls)+3]
 	g.Expect(guideTrack.Method).To(Equal("DrawPath"))
 	g.Expect(guideTrack.Fill).To(Equal(color.RGBA{R: 0xDD, G: 0xDD, B: 0xDD, A: 0xFF}))
 	g.Expect(guideTrack.StrokeWidth).To(Equal(1.0))
+}
+
+func TestRenderToCanvas_UsesFlatSurfaceFallbackForFixedInk(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout, buckets, triangles := bandedSurfaceRenderFixture()
+	fixedColour := color.RGBA{R: 0x12, G: 0x34, B: 0x56, A: 0xFF}
+	surfaceInk := inks.FixedInk(fixedColour)
+	cv := spiral.RenderToCanvas(
+		layout,
+		buckets,
+		320,
+		240,
+		spiral.Inks{Fill: numericInk(), Border: numericInk()},
+		triangles,
+		surfaceInk,
+	)
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	surfaceCalls := leadingSurfacePolygonCalls(backend.Calls)
+	g.Expect(surfaceCalls).To(HaveLen(1))
+	g.Expect(surfaceCalls[0].Fill).To(Equal(fixedColour))
+	g.Expect(surfaceCalls[0].Border).To(Equal(fixedColour))
+	g.Expect(surfaceCalls[0].BorderWidth).To(Equal(0.5))
 }
 
 func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
@@ -396,8 +432,35 @@ func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface
 	return layout, buckets, triangles
 }
 
+func bandedSurfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface.Triangle) {
+	buckets := largeSurfaceStageBuckets()
+	layout := spiral.Layout(buckets, 320, 240, spiral.Daily, spiral.LabelNone)
+	triangles := []surface.Triangle{{
+		Points: [3]surface.Point{
+			{X: 20, Y: 30, Value: 1},
+			{X: 40, Y: 30, Value: 1},
+			{X: 20, Y: 50, Value: 3},
+		},
+		Value: 5.0 / 3.0,
+	}}
+
+	return layout, buckets, triangles
+}
+
 func numericInk() inks.Ink {
 	return inks.NumericInk("surface", []float64{1, 2, 3}, palette.GetPalette(palette.Temperature))
+}
+
+func leadingSurfacePolygonCalls(calls []mock.Call) []mock.Call {
+	polygons := make([]mock.Call, 0)
+	for _, call := range calls[1:] {
+		if call.Method != "DrawPolygon" {
+			break
+		}
+		polygons = append(polygons, call)
+	}
+
+	return polygons
 }
 
 func surfaceStageBuckets() []spiral.TimeBucket {

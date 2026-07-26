@@ -68,6 +68,15 @@ func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks
 		return
 	}
 
+	if surfaceInk.Info().Kind == inks.KindNumeric {
+		addBandedSurface(cv, triangles, surfaceInk, inks.NumericBreakpoints(surfaceInk))
+		return
+	}
+
+	addFlatSurface(cv, triangles, surfaceInk)
+}
+
+func addFlatSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks.Ink) {
 	surfaceSpec := &canvas.PolygonSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        surfaceInk,
@@ -77,18 +86,57 @@ func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks
 	}
 
 	for _, triangle := range triangles {
-		points := make([]canvas.Position, len(triangle.Points))
-		for index, point := range triangle.Points {
-			points[index] = canvas.Position{X: point.X, Y: point.Y}
-		}
+		fill := metricValue(triangle.Value, "", surfaceInk)
 
 		cv.AddPolygon(canvas.LayerSurface, canvas.Polygon{
 			Spec:   surfaceSpec,
-			Points: points,
-			Fill:   metricValue(triangle.Value, "", surfaceInk),
-			Border: metricValue(triangle.Value, "", surfaceInk),
+			Points: surfacePolygonPoints(triangle.Points[:]),
+			Fill:   fill,
+			Border: fill,
 		})
 	}
+}
+
+func addBandedSurface(
+	cv *canvas.Canvas,
+	triangles []surface.Triangle,
+	surfaceInk inks.Ink,
+	breakpoints []float64,
+) {
+	surfaceSpec := &canvas.PolygonSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        surfaceInk,
+			Border:      surfaceInk,
+			BorderWidth: 0,
+		},
+	}
+
+	for _, triangle := range triangles {
+		fragments := surface.SubdivideTriangle(triangle, breakpoints)
+		if fragments == nil {
+			continue
+		}
+
+		for _, fragment := range fragments {
+			fill := metricValue(fragment.Value, "", surfaceInk)
+
+			cv.AddPolygon(canvas.LayerSurface, canvas.Polygon{
+				Spec:   surfaceSpec,
+				Points: surfacePolygonPoints(fragment.Points),
+				Fill:   fill,
+				Border: fill,
+			})
+		}
+	}
+}
+
+func surfacePolygonPoints(points []surface.Point) []canvas.Position {
+	positions := make([]canvas.Position, len(points))
+	for index, point := range points {
+		positions[index] = canvas.Position{X: point.X, Y: point.Y}
+	}
+
+	return positions
 }
 
 func addSurfaceBoundaries(cv *canvas.Canvas, layout SpiralLayout, triangles []surface.Triangle) {
