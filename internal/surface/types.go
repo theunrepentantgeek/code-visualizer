@@ -101,46 +101,61 @@ func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Point {
 
 // BoundaryLoops returns the annulus outer boundary followed by its inner boundary.
 func (a Annulus) BoundaryLoops(maximumSegmentLength float64) [][]Point {
-	if !isFinite(maximumSegmentLength) ||
-		maximumSegmentLength <= 0 ||
-		!isFinite(a.CX) ||
-		!isFinite(a.CY) ||
-		!isFinite(a.InnerRadius) ||
-		!isFinite(a.OuterRadius) ||
-		a.InnerRadius < 0 ||
-		a.OuterRadius < a.InnerRadius {
+	if !validBoundaryLoopLength(maximumSegmentLength) || !validAnnulus(a) {
 		return nil
 	}
 
-	loops := make([][]Point, 0, 2)
-	if a.OuterRadius > 0 {
-		loops = append(
-			loops,
-			circularBoundaryPoints(a.CX, a.CY, a.OuterRadius, maximumSegmentLength),
-		)
-	}
-	if a.InnerRadius > 0 {
-		loops = append(
-			loops,
-			circularBoundaryPoints(a.CX, a.CY, a.InnerRadius, maximumSegmentLength),
-		)
-	}
-
-	return loops
+	return annulusBoundaryLoops(a, maximumSegmentLength)
 }
 
 // BoundaryLoops returns ordered boundary loops supplied by region.
 func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Point {
-	if region == nil || isTypedNilRegion(region) {
-		return nil
-	}
-
-	provider, ok := region.(boundaryLoopProvider)
-	if !ok {
+	provider := boundaryLoopProviderForRegion(region)
+	if provider == nil {
 		return nil
 	}
 
 	return provider.BoundaryLoops(maximumSegmentLength)
+}
+
+func annulusBoundaryLoops(a Annulus, maximumSegmentLength float64) [][]Point {
+	loops := make([][]Point, 0, 2)
+
+	loops = appendCircularBoundaryLoop(loops, a.CX, a.CY, a.OuterRadius, maximumSegmentLength)
+	loops = appendCircularBoundaryLoop(loops, a.CX, a.CY, a.InnerRadius, maximumSegmentLength)
+
+	return loops
+}
+
+func appendCircularBoundaryLoop(
+	loops [][]Point,
+	cx, cy, radius, maximumSegmentLength float64,
+) [][]Point {
+	if radius <= 0 {
+		return loops
+	}
+
+	return append(
+		loops,
+		circularBoundaryPoints(cx, cy, radius, maximumSegmentLength),
+	)
+}
+
+func boundaryLoopProviderForRegion(region Region) boundaryLoopProvider {
+	if isNilInterfaceValue(region) {
+		return nil
+	}
+
+	provider, ok := region.(boundaryLoopProvider)
+	if !ok || isNilInterfaceValue(provider) {
+		return nil
+	}
+
+	return provider
+}
+
+func validBoundaryLoopLength(maximumSegmentLength float64) bool {
+	return isFinite(maximumSegmentLength) && maximumSegmentLength > 0
 }
 
 func segmentBoundaryPoints(start, end Point, maximumSegmentLength float64) []Point {

@@ -90,15 +90,30 @@ func TestBoundaryLoops_ReturnsDenseOrderedAnnulusLoops(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	loops := BoundaryLoops(Annulus{InnerRadius: 10, OuterRadius: 20}, MaxBoundarySegmentLength)
+	if len(loops) != 2 {
+		t.Fatalf("expected 2 annulus loops, got %d", len(loops))
+	}
+
+	outerLoop := loops[0]
+	if len(outerLoop) < 2 {
+		t.Fatalf("expected outer loop to contain at least 2 points, got %d", len(outerLoop))
+	}
+
+	innerLoop := loops[1]
+	if len(innerLoop) < 2 {
+		t.Fatalf("expected inner loop to contain at least 2 points, got %d", len(innerLoop))
+	}
 
 	g.Expect(loops).To(gomega.HaveLen(2))
-	g.Expect(loops[0]).To(gomega.HaveLen(126))
-	g.Expect(loops[1]).To(gomega.HaveLen(63))
-	g.Expect(loops[0][0]).To(gomega.Equal(Point{X: 20, Y: 0}))
-	g.Expect(loops[1][0]).To(gomega.Equal(Point{X: 10, Y: 0}))
-	for _, loop := range loops {
+	g.Expect(outerLoop).To(gomega.HaveLen(126))
+	g.Expect(innerLoop).To(gomega.HaveLen(63))
+	g.Expect(outerLoop[0]).To(gomega.Equal(Point{X: 20, Y: 0}))
+	g.Expect(innerLoop[0]).To(gomega.Equal(Point{X: 10, Y: 0}))
+
+	for _, loop := range [][]Point{outerLoop, innerLoop} {
 		g.Expect(loop[len(loop)-1]).NotTo(gomega.Equal(loop[0]))
 		g.Expect(loop[1].Y).To(gomega.BeNumerically(">", 0))
+
 		for index, point := range loop {
 			next := loop[(index+1)%len(loop)]
 			g.Expect(Distance(point, next)).To(gomega.BeNumerically("<=", MaxBoundarySegmentLength))
@@ -115,6 +130,14 @@ func TestBoundaryLoops_ReturnsDenseClosedRectPerimeter(t *testing.T) {
 		Rect{MinX: 1, MinY: 2, MaxX: 3, MaxY: 3},
 		MaxBoundarySegmentLength,
 	)
+	if len(loops) != 1 {
+		t.Fatalf("expected 1 rectangle loop, got %d", len(loops))
+	}
+
+	rectLoop := loops[0]
+	if len(rectLoop) < 2 {
+		t.Fatalf("expected rectangle loop to contain at least 2 points, got %d", len(rectLoop))
+	}
 
 	g.Expect(loops).To(gomega.Equal([][]Point{{
 		{X: 1, Y: 2},
@@ -124,8 +147,9 @@ func TestBoundaryLoops_ReturnsDenseClosedRectPerimeter(t *testing.T) {
 		{X: 2, Y: 3},
 		{X: 1, Y: 3},
 	}}))
-	for index, point := range loops[0] {
-		next := loops[0][(index+1)%len(loops[0])]
+
+	for index, point := range rectLoop {
+		next := rectLoop[(index+1)%len(rectLoop)]
 		g.Expect(Distance(point, next)).To(gomega.BeNumerically("<=", MaxBoundarySegmentLength))
 	}
 }
@@ -142,12 +166,18 @@ func TestBoundaryLoops_ReturnsNilForTypedNilRegion(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
+
 	var region *Annulus
 
+	g.Expect(func() {
+		BoundaryLoops(region, MaxBoundarySegmentLength)
+	}).NotTo(gomega.Panic())
 	g.Expect(BoundaryLoops(region, MaxBoundarySegmentLength)).To(gomega.BeNil())
 }
 
 type unsupportedRegion struct{}
+
+type typedNilBoundaryProvider struct{}
 
 func (unsupportedRegion) Bounds() Rect {
 	return Rect{MaxX: 1, MaxY: 1}
@@ -155,4 +185,29 @@ func (unsupportedRegion) Bounds() Rect {
 
 func (unsupportedRegion) Contains(float64, float64) bool {
 	return true
+}
+
+func TestBoundaryLoops_ReturnsNilForTypedNilBoundaryProvider(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+
+	var region Region = (*typedNilBoundaryProvider)(nil)
+
+	g.Expect(func() {
+		BoundaryLoops(region, MaxBoundarySegmentLength)
+	}).NotTo(gomega.Panic())
+	g.Expect(BoundaryLoops(region, MaxBoundarySegmentLength)).To(gomega.BeNil())
+}
+
+func (*typedNilBoundaryProvider) Bounds() Rect {
+	panic("typed-nil provider Bounds should not be called")
+}
+
+func (*typedNilBoundaryProvider) Contains(float64, float64) bool {
+	panic("typed-nil provider Contains should not be called")
+}
+
+func (*typedNilBoundaryProvider) BoundaryLoops(float64) [][]Point {
+	panic("typed-nil provider BoundaryLoops should not be called")
 }

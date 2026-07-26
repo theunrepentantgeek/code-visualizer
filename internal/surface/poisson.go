@@ -114,10 +114,18 @@ func isValidRegion(region Region) bool {
 }
 
 func isTypedNilRegion(region Region) bool {
-	value := reflect.ValueOf(region)
-	switch value.Kind() {
+	return isNilInterfaceValue(region)
+}
+
+func isNilInterfaceValue(value any) bool {
+	if value == nil {
+		return true
+	}
+
+	reflectValue := reflect.ValueOf(value)
+	switch reflectValue.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
-		return value.IsNil()
+		return reflectValue.IsNil()
 	default:
 		return false
 	}

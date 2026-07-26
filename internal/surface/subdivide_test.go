@@ -259,6 +259,7 @@ func TestSubdivideTriangle_ReturnsNilForInvalidBreakpointsOrGeometry(t *testing.
 		Value: 2.0 / 3.0,
 	}, []float64{1})
 	g.Expect(overflowPolygons).To(gomega.HaveLen(2))
+
 	for _, polygon := range overflowPolygons {
 		for _, point := range polygon.Points {
 			g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(gomega.BeFalse())
