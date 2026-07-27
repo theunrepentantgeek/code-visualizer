@@ -124,6 +124,14 @@ tasks:
       - 'cp -r {{joinPath .ROOT_DIR ".." "superpowers" "agents" "*"}}
         .agents/'
 
+  samples:
+    cmds:
+      - task: samples-tree-map
+      - task: samples-bubble-tree
+      - task: samples-radial-tree
+      - task: samples-spiral
+      - task: samples-scatter
+
   samples-tree-map:
     deps:
       - build
