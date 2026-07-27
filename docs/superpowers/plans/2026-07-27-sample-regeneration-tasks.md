@@ -159,11 +159,13 @@ Run: `task --list | grep -E 'samples(-tree-map|-bubble-tree|-radial-tree|-spiral
 
 Expected: `samples`, `samples-tree-map`, `samples-bubble-tree`, `samples-radial-tree`, `samples-spiral`, and `samples-scatter` are listed.
 
-- [ ] **Step 2: Verify a direct subtask changes no other sample outputs**
+- [ ] **Step 2: Verify a direct subtask changes only its own outputs**
 
-Run: `before=$(git status --short samples); task samples-tree-map; after=$(git status --short samples); test "$before" = "$after"`
+Run: `task samples-tree-map; test -z "$(git status --short samples | grep -vE '^ M samples/tree-map/code-visualizer\.(png|svg)$')" && git restore -- samples`
 
-Expected: PASS, because the checked-in tree-map outputs are deterministic and other visualization directories are untouched.
+Expected: PASS. The command may update the current tree-map artifacts because
+they represent the repository's current metrics, but no other visualization
+directory is modified.
 
 - [ ] **Step 3: Run the complete test suite**
 
