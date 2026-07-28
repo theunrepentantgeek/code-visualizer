@@ -1,72 +1,35 @@
 package stages
 
 import (
+	"bytes"
+	"log/slog"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
-
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
-// ---------------------------------------------------------------------------
-// removeMetric
-// ---------------------------------------------------------------------------
-
-func TestRemoveMetric_RemovesFirstElement(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // mutates global slog default logger
+func TestLogMetricProgress_LogsAggregateLoadedObservations(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	names := []metric.Name{"a", "b", "c"}
-	got := removeMetric(names, "a")
+	var buf bytes.Buffer
 
-	g.Expect(got).To(Equal([]metric.Name{"b", "c"}))
-}
+	oldDefault := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
 
-func TestRemoveMetric_RemovesMiddleElement(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
+	tracker := &metricProgressTracker{}
+	tracker.OnMetricStarted("first")
+	tracker.OnMetricStarted("second")
+	tracker.OnFileProcessed("first")
+	tracker.OnFileProcessed("first")
+	tracker.OnFileProcessed("second")
 
-	names := []metric.Name{"a", "b", "c"}
-	got := removeMetric(names, "b")
+	logMetricProgress(tracker)
 
-	g.Expect(got).To(Equal([]metric.Name{"a", "c"}))
-}
-
-func TestRemoveMetric_RemovesLastElement(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	names := []metric.Name{"a", "b", "c"}
-	got := removeMetric(names, "c")
-
-	g.Expect(got).To(Equal([]metric.Name{"a", "b"}))
-}
-
-func TestRemoveMetric_TargetAbsent_ReturnsSameSlice(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	names := []metric.Name{"a", "b", "c"}
-	got := removeMetric(names, "z")
-
-	g.Expect(got).To(Equal([]metric.Name{"a", "b", "c"}))
-}
-
-func TestRemoveMetric_EmptySlice_ReturnsEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	got := removeMetric(nil, "a")
-
-	g.Expect(got).To(BeNil())
-}
-
-func TestRemoveMetric_SingleElement_Match_ReturnsEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	names := []metric.Name{"a"}
-	got := removeMetric(names, "a")
-
-	g.Expect(got).To(BeEmpty())
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading metrics." loaded=3`))
+	g.Expect(buf.String()).NotTo(ContainSubstring("metric="))
+	g.Expect(buf.String()).To(HavePrefix("time="))
+	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
 }

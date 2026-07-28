@@ -9,6 +9,7 @@ import (
 func Register() {
 	RegisterBase()
 
+	loader := &metricsLoader{}
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{
 			FileAge,
@@ -19,6 +20,7 @@ func Register() {
 			TotalLinesRemoved,
 			CommitDensity,
 		},
-		Load: loadAllFileMetrics,
+		Load:     loader.Load,
+		Reporter: loader,
 	})
 }

@@ -9,11 +9,21 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
+type metricsLoader struct {
+	onFile func()
+}
+
+func (l *metricsLoader) SetOnFileProcessed(fn func()) { l.onFile = fn }
+
+func (l *metricsLoader) Load(root *model.Directory) error {
+	return walkGitFilesAll(root, l.onFile)
+}
+
 // loadAllFileMetrics runs the git analysis once and populates all 7 file-level
 // git metrics in a single pass. This replaces 7 separate legacy providers that
 // each independently walked git history.
 func loadAllFileMetrics(root *model.Directory) error {
-	return walkGitFilesAll(root)
+	return walkGitFilesAll(root, nil)
 }
 
 // walkGitFilesAll opens the repo service, walks all files, and invokes every
@@ -24,7 +34,7 @@ func loadAllFileMetrics(root *model.Directory) error {
 // no history, or contains none of the scanned files, walkGitFilesAll returns
 // an error rather than producing an empty result that would cascade into
 // confusing downstream failures.
-func walkGitFilesAll(root *model.Directory) error {
+func walkGitFilesAll(root *model.Directory, onFile func()) error {
 	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
@@ -45,6 +55,10 @@ func walkGitFilesAll(root *model.Directory) error {
 
 		for _, def := range providerDefs {
 			def.process(s, f, relPath)
+		}
+
+		if onFile != nil {
+			onFile()
 		}
 	})
 

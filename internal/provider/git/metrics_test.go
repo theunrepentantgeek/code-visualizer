@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -127,6 +128,25 @@ func TestFileAgeProvider(t *testing.T) {
 
 	// old.go should be older than new.go
 	g.Expect(ageOld).To(BeNumerically(">", ageNew))
+}
+
+func TestMetricsLoaderReportsFileProgress(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	root := buildTree(dir, "old.go", "new.go")
+	var processed atomic.Int64
+
+	resetService()
+	loader := &metricsLoader{
+		onFile: func() {
+			processed.Add(1)
+		},
+	}
+
+	g.Expect(loader.Load(root)).To(Succeed())
+	g.Expect(processed.Load()).To(Equal(int64(2)))
 }
 
 func TestFileFreshnessProvider(t *testing.T) {
