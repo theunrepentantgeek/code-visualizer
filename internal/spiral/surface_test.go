@@ -98,7 +98,7 @@ func TestBuildSurface_RejectsInsufficientOrMismatchedInputs(t *testing.T) {
 	}, []float64{1, 2}, 42)).To(BeNil())
 }
 
-func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeAnnulusBoundaryOverlays(t *testing.T) {
+func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeGuideTrack(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -131,15 +131,9 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeAnnulusBoundaryOverlays(
 		g.Expect(call.Loops).To(HaveLen(1))
 	}
 
-	for _, call := range backend.Calls[len(surfaceCalls)+1 : len(surfaceCalls)+3] {
-		g.Expect(call.Method).To(Equal("DrawPath"))
-		g.Expect(call.Fill).To(Equal(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}))
-		g.Expect(call.StrokeWidth).To(Equal(2.0))
-	}
+	g.Expect(backend.Calls[len(surfaceCalls)+1].Method).To(Equal("DrawPath"))
 
-	g.Expect(backend.Calls[len(surfaceCalls)+3].Method).To(Equal("DrawPath"))
-
-	for _, call := range backend.Calls[len(surfaceCalls)+4:] {
+	for _, call := range backend.Calls[len(surfaceCalls)+2:] {
 		g.Expect(call.Method).To(Equal("DrawDisc"))
 	}
 }
@@ -197,7 +191,7 @@ func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
 	g.Expect(filledPaths[0].Loops).To(HaveLen(2))
 }
 
-func TestRenderToCanvas_OverlaysAnnulusBoundaryBeforeGuideTrack(t *testing.T) {
+func TestRenderToCanvas_RendersGuideTrackWithoutAnnulusBoundaryOverlay(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -226,17 +220,15 @@ func TestRenderToCanvas_OverlaysAnnulusBoundaryBeforeGuideTrack(t *testing.T) {
 	surfaceCalls := leadingSurfaceFilledPathCalls(backend.Calls)
 	g.Expect(surfaceCalls).NotTo(BeEmpty())
 
-	boundaryCalls := backend.Calls[len(surfaceCalls)+1 : len(surfaceCalls)+3]
-	for _, call := range boundaryCalls {
-		g.Expect(call.Method).To(Equal("DrawPath"))
-		g.Expect(call.Fill).To(Equal(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}))
-		g.Expect(call.StrokeWidth).To(Equal(2.0))
-		g.Expect(len(call.Points)).To(BeNumerically(">", 3))
-		g.Expect(call.Points[len(call.Points)-1]).To(Equal(call.Points[0]))
-		g.Expect(call.Points[1 : len(call.Points)-1]).NotTo(ContainElement(call.Points[0]))
+	for _, call := range backend.Calls {
+		if call.Method != "DrawPath" {
+			continue
+		}
+
+		g.Expect(call.Fill).NotTo(Equal(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}))
 	}
 
-	guideTrack := backend.Calls[len(surfaceCalls)+3]
+	guideTrack := backend.Calls[len(surfaceCalls)+1]
 	g.Expect(guideTrack.Method).To(Equal("DrawPath"))
 	g.Expect(guideTrack.Fill).To(Equal(color.RGBA{R: 0xDD, G: 0xDD, B: 0xDD, A: 0xFF}))
 	g.Expect(guideTrack.StrokeWidth).To(Equal(1.0))
