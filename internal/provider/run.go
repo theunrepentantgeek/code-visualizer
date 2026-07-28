@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"sync"
+
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 
@@ -20,6 +22,7 @@ type MetricProgress interface {
 // per-file progress while a loader runs.
 type FileProgressReporter interface {
 	SetOnFileProcessed(fn func())
+	FileProgressMutex() *sync.Mutex
 }
 
 // RunLoaders loads the requested base metrics using registered loaders.
@@ -63,9 +66,10 @@ func runLoaderLevel(root *model.Directory, level []BaseMetricLoader, progress Me
 func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress MetricProgress) error {
 	notifyStarted(loader, progress)
 
-	if loader.progressMu != nil {
-		loader.progressMu.Lock()
-		defer loader.progressMu.Unlock()
+	if loader.Reporter != nil {
+		mu := loader.Reporter.FileProgressMutex()
+		mu.Lock()
+		defer mu.Unlock()
 	}
 
 	wireFileProgress(loader, progress)

@@ -3,6 +3,7 @@ package git
 import (
 	"log/slog"
 	"path/filepath"
+	"sync"
 
 	"github.com/rotisserie/eris"
 
@@ -11,9 +12,13 @@ import (
 
 type metricsLoader struct {
 	onFile func()
+	mu     sync.Mutex
 }
 
 func (l *metricsLoader) SetOnFileProcessed(fn func()) { l.onFile = fn }
+func (l *metricsLoader) FileProgressMutex() *sync.Mutex {
+	return &l.mu
+}
 
 func (l *metricsLoader) Load(root *model.Directory) error {
 	return walkGitFilesAll(root, l.onFile)

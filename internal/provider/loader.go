@@ -1,8 +1,6 @@
 package provider
 
 import (
-	"sync"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -17,8 +15,7 @@ type BaseMetricLoader struct {
 	// Load populates the directory tree with metric values.
 	Load LoadFunc
 	// Reporter optionally receives per-file progress callbacks during loading.
-	Reporter   FileProgressReporter
-	progressMu *sync.Mutex
+	Reporter FileProgressReporter
 }
 
 // LoadFunc is the function signature for metric loading.

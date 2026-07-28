@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
 	"sync"
 
@@ -17,7 +16,6 @@ type baseRegistry struct {
 	descriptors map[metric.Name]BaseMetricDescriptor
 	providers   map[metric.Name]ProviderDescriptor
 	loaders     []BaseMetricLoader
-	reporterMu  map[FileProgressReporter]*sync.Mutex
 }
 
 func newBaseRegistry() *baseRegistry {
@@ -25,7 +23,6 @@ func newBaseRegistry() *baseRegistry {
 		descriptors: make(map[metric.Name]BaseMetricDescriptor),
 		providers:   make(map[metric.Name]ProviderDescriptor),
 		loaders:     nil,
-		reporterMu:  make(map[FileProgressReporter]*sync.Mutex),
 	}
 }
 
@@ -74,26 +71,7 @@ func (r *baseRegistry) registerLoader(loader BaseMetricLoader) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if loader.Reporter != nil && loader.progressMu == nil {
-		loader.progressMu = r.progressMutexFor(loader.Reporter)
-	}
-
 	r.loaders = append(r.loaders, loader)
-}
-
-func (r *baseRegistry) progressMutexFor(reporter FileProgressReporter) *sync.Mutex {
-	if !reflect.TypeOf(reporter).Comparable() {
-		return new(sync.Mutex)
-	}
-
-	if mu, ok := r.reporterMu[reporter]; ok {
-		return mu
-	}
-
-	mu := new(sync.Mutex)
-	r.reporterMu[reporter] = mu
-
-	return mu
 }
 
 func (r *baseRegistry) loadersFor(requested []metric.Name) []BaseMetricLoader {

@@ -230,9 +230,13 @@ func TestRunLoadersEmptyRequest(t *testing.T) {
 
 type fileProgressLoader struct {
 	onFile func()
+	mu     sync.Mutex
 }
 
 func (l *fileProgressLoader) SetOnFileProcessed(fn func()) { l.onFile = fn }
+func (l *fileProgressLoader) FileProgressMutex() *sync.Mutex {
+	return &l.mu
+}
 
 func (l *fileProgressLoader) Load(_ *model.Directory) error {
 	if l.onFile != nil {
@@ -276,6 +280,7 @@ func TestRunLoadersWiresFileProgressReporter(t *testing.T) {
 
 type blockingFileProgressLoader struct {
 	onFile        func()
+	mu            sync.Mutex
 	firstSet      chan struct{}
 	secondSet     chan struct{}
 	continueFirst chan struct{}
@@ -293,6 +298,10 @@ func (l *blockingFileProgressLoader) SetOnFileProcessed(fn func()) {
 	}
 
 	close(l.secondSet)
+}
+
+func (l *blockingFileProgressLoader) FileProgressMutex() *sync.Mutex {
+	return &l.mu
 }
 
 func (l *blockingFileProgressLoader) Load(_ *model.Directory) error {
