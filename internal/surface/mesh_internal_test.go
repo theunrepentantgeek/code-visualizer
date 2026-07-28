@@ -11,12 +11,12 @@ func TestTriangleInRegion_RejectsAnnulusHoleCrossingEdge(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
-	region := Annulus{InnerRadius: 6, OuterRadius: 12}
+	region := Annulus{InnerRadius: 100, OuterRadius: 200}
 	triangle := Triangle{
 		Points: [3]Point{
-			{X: 6, Y: 0},
-			{X: 3 * math.Sqrt(3), Y: 3},
-			{X: 10, Y: 0},
+			{X: 100, Y: 0},
+			{X: 0, Y: 100},
+			{X: 140, Y: 140},
 		},
 	}
 
