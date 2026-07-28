@@ -71,6 +71,10 @@ func (r *baseRegistry) registerLoader(loader BaseMetricLoader) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	if loader.Reporter != nil && loader.progressMu == nil {
+		loader.progressMu = new(sync.Mutex)
+	}
+
 	r.loaders = append(r.loaders, loader)
 }
 

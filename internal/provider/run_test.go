@@ -273,3 +273,78 @@ func TestRunLoadersWiresFileProgressReporter(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(progress.fileProcessed).To(Equal([]metric.Name{"lines", "lines"}))
 }
+
+type blockingFileProgressLoader struct {
+	onFile        func()
+	firstSet      chan struct{}
+	secondSet     chan struct{}
+	continueFirst chan struct{}
+	setCount      atomic.Int32
+}
+
+func (l *blockingFileProgressLoader) SetOnFileProcessed(fn func()) {
+	l.onFile = fn
+
+	if l.setCount.Add(1) == 1 {
+		close(l.firstSet)
+		<-l.continueFirst
+
+		return
+	}
+
+	close(l.secondSet)
+}
+
+func (l *blockingFileProgressLoader) Load(_ *model.Directory) error {
+	if l.onFile != nil {
+		l.onFile()
+	}
+
+	return nil
+}
+
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersSerializesSharedFileProgressReporters(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
+
+	loader := &blockingFileProgressLoader{
+		firstSet:      make(chan struct{}),
+		secondSet:     make(chan struct{}),
+		continueFirst: make(chan struct{}),
+	}
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:  []metric.Name{"lines"},
+		Load:     loader.Load,
+		Reporter: loader,
+	})
+
+	first := &fileProgressTracker{}
+	second := &fileProgressTracker{}
+	firstDone := make(chan error, 1)
+	secondDone := make(chan error, 1)
+
+	go func() {
+		firstDone <- provider.RunLoaders(nil, []metric.Name{"lines"}, first)
+	}()
+
+	<-loader.firstSet
+
+	go func() {
+		secondDone <- provider.RunLoaders(nil, []metric.Name{"lines"}, second)
+	}()
+
+	select {
+	case <-loader.secondSet:
+		t.Fatal("second progress callback replaced the first before its load completed")
+	case <-time.After(10 * time.Millisecond):
+	}
+
+	close(loader.continueFirst)
+
+	g.Expect(<-firstDone).To(Succeed())
+	<-loader.secondSet
+	g.Expect(<-secondDone).To(Succeed())
+	g.Expect(first.fileProcessed).To(Equal([]metric.Name{"lines"}))
+	g.Expect(second.fileProcessed).To(Equal([]metric.Name{"lines"}))
+}

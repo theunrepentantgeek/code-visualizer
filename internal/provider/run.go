@@ -62,6 +62,12 @@ func runLoaderLevel(root *model.Directory, level []BaseMetricLoader, progress Me
 
 func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress MetricProgress) error {
 	notifyStarted(loader, progress)
+
+	if loader.progressMu != nil {
+		loader.progressMu.Lock()
+		defer loader.progressMu.Unlock()
+	}
+
 	wireFileProgress(loader, progress)
 
 	if err := loader.Load(root); err != nil {
