@@ -41,7 +41,7 @@ func walkGitFilesAll(root *model.Directory, onFile func()) error {
 	}
 
 	pathSet := buildRelPathSet(s, root)
-	if err := s.bulkPrewarm(pathSet); err != nil {
+	if err := s.bulkPrewarm(pathSet, onFile); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
@@ -57,9 +57,6 @@ func walkGitFilesAll(root *model.Directory, onFile func()) error {
 			def.process(s, f, relPath)
 		}
 
-		if onFile != nil {
-			onFile()
-		}
 	})
 
 	if !anyFileHasGitMetric(root) {
