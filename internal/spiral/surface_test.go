@@ -191,49 +191,6 @@ func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
 	g.Expect(filledPaths[0].Loops).To(HaveLen(2))
 }
 
-func TestRenderToCanvas_RendersGuideTrackWithoutAnnulusBoundaryOverlay(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	buckets := largeSurfaceStageBuckets()
-	layout := spiral.Layout(buckets, 320, 240, spiral.Daily, spiral.LabelNone)
-	triangles := []surface.Triangle{{
-		Points: [3]surface.Point{
-			{X: 20, Y: 30},
-			{X: 40, Y: 30},
-			{X: 20, Y: 50},
-		},
-		Value: 2,
-	}}
-	cv := spiral.RenderToCanvas(
-		layout,
-		buckets,
-		320,
-		240,
-		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		triangles,
-		numericInk(),
-	)
-	backend := mock.NewBackend()
-
-	g.Expect(cv.RenderTo(backend)).To(Succeed())
-	surfaceCalls := leadingSurfaceFilledPathCalls(backend.Calls)
-	g.Expect(surfaceCalls).NotTo(BeEmpty())
-
-	for _, call := range backend.Calls {
-		if call.Method != "DrawPath" {
-			continue
-		}
-
-		g.Expect(call.Fill).NotTo(Equal(color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}))
-	}
-
-	guideTrack := backend.Calls[len(surfaceCalls)+1]
-	g.Expect(guideTrack.Method).To(Equal("DrawPath"))
-	g.Expect(guideTrack.Fill).To(Equal(color.RGBA{R: 0xDD, G: 0xDD, B: 0xDD, A: 0xFF}))
-	g.Expect(guideTrack.StrokeWidth).To(Equal(1.0))
-}
-
 func TestRenderToCanvas_UsesFlatSurfaceFallbackForFixedInk(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

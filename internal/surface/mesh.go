@@ -7,9 +7,10 @@ import (
 )
 
 // Boundary samples are placed with trigonometry, so their recovered radius can
-// differ from the region's radius by a few floating-point ulps. Comparing radii
-// with this relative tolerance keeps the resulting rim triangles instead of
-// discarding an arbitrary half of them and leaving a ragged edge.
+// differ from the region's radius by a few units in the last place of the
+// floating-point representation. Comparing radii with this relative tolerance
+// keeps the resulting rim triangles instead of discarding an arbitrary half of
+// them and leaving a ragged edge.
 const radiusTolerance = 1e-9
 
 // Interpolate estimates a point's value from observed points using inverse-distance weighting.
