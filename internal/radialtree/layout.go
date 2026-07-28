@@ -20,8 +20,15 @@ const (
 // canvasSize is the width and height of the square canvas in pixels.
 // discMetric is the metric used to scale file node disc sizes.
 // labels controls which labels are shown.
-func Layout(root *model.Directory, canvasSize int, discMetric metric.Name, labels LabelMode) RadialNode {
-	maxDepth := computeMaxDepth(root)
+// grain controls whether files are included alongside directories.
+func Layout(
+	root *model.Directory,
+	canvasSize int,
+	discMetric metric.Name,
+	labels LabelMode,
+	grain Grain,
+) RadialNode {
+	maxDepth := computeMaxDepth(root, grain)
 
 	var ringSpacing float64
 	if maxDepth == 0 {
@@ -31,7 +38,7 @@ func Layout(root *model.Directory, canvasSize int, discMetric metric.Name, label
 		ringSpacing = (float64(canvasSize)/2.0 - margin) / float64(maxDepth+1)
 	}
 
-	n1 := len(root.Files) + len(root.Dirs)
+	n1 := len(visibleFiles(root, grain)) + len(root.Dirs)
 	if n1 > 0 && maxDepth > 0 {
 		// Ensure ring 1 has enough circumference for n1 nodes at minimum disc size.
 		const minGapPixels = 4.0
@@ -47,8 +54,26 @@ func Layout(root *model.Directory, canvasSize int, discMetric metric.Name, label
 	effectiveMaxDiscFactor := adjustedDiscFactor(n1, ringSpacing, maxDiscFactor)
 	dp := buildDiscParams(root, discMetric, minFileDisc, ringSpacing*effectiveMaxDiscFactor)
 
+	opts := layoutOptions{
+		ringSpacing: ringSpacing,
+		discMetric:  discMetric,
+		labels:      labels,
+		grain:       grain,
+		discParams:  dp,
+	}
+
 	// Start at top (−π/2) and sweep the full circle clockwise.
-	return layoutDir(root, 0, -math.Pi/2, 2*math.Pi, ringSpacing, discMetric, labels, dp)
+	return layoutDir(root, 0, -math.Pi/2, 2*math.Pi, opts)
+}
+
+// layoutOptions holds the parameters that remain constant for every node
+// visited during a single layout pass.
+type layoutOptions struct {
+	ringSpacing float64
+	discMetric  metric.Name
+	labels      LabelMode
+	grain       Grain
+	discParams  discParams
 }
 
 // discParams holds the precomputed parameters used to scale file disc radii.
@@ -107,16 +132,14 @@ func buildDiscParams(root *model.Directory, discMetric metric.Name, fileMin, fil
 func layoutDir(
 	dir *model.Directory,
 	depth int,
-	startAngle, sweepAngle, ringSpacing float64,
-	discMetric metric.Name,
-	labels LabelMode,
-	dp discParams,
+	startAngle, sweepAngle float64,
+	opts layoutOptions,
 ) RadialNode {
 	// Place this directory at the midpoint of its angular sector.
 	angle := startAngle + sweepAngle/2
-	radius := float64(depth) * ringSpacing
+	radius := float64(depth) * opts.ringSpacing
 
-	dirDisc := math.Max(ringSpacing*dirDiscFactor, minDirDisc)
+	dirDisc := math.Max(opts.ringSpacing*dirDiscFactor, minDirDisc)
 
 	node := RadialNode{
 		X:           radius * math.Cos(angle),
@@ -125,10 +148,10 @@ func layoutDir(
 		Angle:       angle,
 		Label:       dir.Name,
 		IsDirectory: true,
-		ShowLabel:   labels == LabelAll || labels == LabelFoldersOnly,
+		ShowLabel:   opts.labels == LabelAll || opts.labels == LabelFoldersOnly,
 	}
 
-	allocationUnits := childAllocationUnits(dir)
+	allocationUnits := childAllocationUnits(dir, opts.grain)
 	if allocationUnits == 0 {
 		return node
 	}
@@ -144,21 +167,21 @@ func layoutDir(
 		childStart += paddingSweep
 	}
 
-	childRadius := float64(depth+1) * ringSpacing
+	childRadius := float64(depth+1) * opts.ringSpacing
 	fileSweep := contentSweep / float64(allocationUnits)
 
 	// Files first: each file occupies one allocation unit of the padded sweep.
-	for _, f := range dir.Files {
+	for _, f := range visibleFiles(dir, opts.grain) {
 		childAngle := childStart + fileSweep/2
 
 		fileNode := RadialNode{
 			X:           childRadius * math.Cos(childAngle),
 			Y:           childRadius * math.Sin(childAngle),
-			DiscRadius:  fileDiscRadius(f, discMetric, dp),
+			DiscRadius:  fileDiscRadius(f, opts.discMetric, opts.discParams),
 			Angle:       childAngle,
 			Label:       f.Name,
 			IsDirectory: false,
-			ShowLabel:   labels == LabelAll,
+			ShowLabel:   opts.labels == LabelAll,
 		}
 
 		node.Children = append(node.Children, fileNode)
@@ -168,9 +191,9 @@ func layoutDir(
 	// Subdirs: each gets a proportional slice of the padded sweep based on its
 	// file-leaf weight, with empty directories still reserving one unit.
 	for _, d := range dir.Dirs {
-		weight := childWeight(d)
+		weight := childWeight(d, opts.grain)
 		childSweep := float64(weight) / float64(allocationUnits) * contentSweep
-		child := layoutDir(d, depth+1, childStart, childSweep, ringSpacing, discMetric, labels, dp)
+		child := layoutDir(d, depth+1, childStart, childSweep, opts)
 		node.Children = append(node.Children, child)
 		childStart += childSweep
 	}
@@ -221,29 +244,44 @@ func clamp(v, lo, hi float64) float64 {
 	return v
 }
 
-// computeLeafCount returns the total number of file leaves under dir.
+// visibleFiles returns the files of dir that are laid out for the given grain.
+// Directory grain omits files entirely, leaving only the folder structure.
+func visibleFiles(dir *model.Directory, grain Grain) []*model.File {
+	if grain == GrainDirectory {
+		return nil
+	}
+
+	return dir.Files
+}
+
+// computeLeafCount returns the total number of leaves under dir: file leaves
+// for file grain, or leaf directories for directory grain.
 // Returns 0 for empty directories; callers are responsible for handling the
 // zero case to avoid division by zero in sector calculations.
-func computeLeafCount(dir *model.Directory) int {
-	count := len(dir.Files)
+func computeLeafCount(dir *model.Directory, grain Grain) int {
+	if grain == GrainDirectory && len(dir.Dirs) == 0 {
+		return 1
+	}
+
+	count := len(visibleFiles(dir, grain))
 	for _, d := range dir.Dirs {
-		count += computeLeafCount(d)
+		count += computeLeafCount(d, grain)
 	}
 
 	return count
 }
 
-func childAllocationUnits(dir *model.Directory) int {
-	units := len(dir.Files)
+func childAllocationUnits(dir *model.Directory, grain Grain) int {
+	units := len(visibleFiles(dir, grain))
 	for _, d := range dir.Dirs {
-		units += childWeight(d)
+		units += childWeight(d, grain)
 	}
 
 	return units
 }
 
-func childWeight(dir *model.Directory) int {
-	leafCount := computeLeafCount(dir)
+func childWeight(dir *model.Directory, grain Grain) int {
+	leafCount := computeLeafCount(dir, grain)
 	if leafCount == 0 {
 		return 1
 	}
@@ -253,15 +291,16 @@ func childWeight(dir *model.Directory) int {
 
 // computeMaxDepth returns the maximum depth of any node in the tree rooted at dir.
 // Root is at depth 0; its direct children (files or dirs) are at depth 1, etc.
-func computeMaxDepth(dir *model.Directory) int {
+// Files are ignored when they are not laid out for the given grain.
+func computeMaxDepth(dir *model.Directory, grain Grain) int {
 	depth := 0
 
-	if len(dir.Files) > 0 {
+	if len(visibleFiles(dir, grain)) > 0 {
 		depth = 1
 	}
 
 	for _, d := range dir.Dirs {
-		if child := 1 + computeMaxDepth(d); child > depth {
+		if child := 1 + computeMaxDepth(d, grain); child > depth {
 			depth = child
 		}
 	}

@@ -15,6 +15,7 @@ type State struct {
 	BorderMetric  metric.Name
 	BorderPalette palette.PaletteName
 	Labels        LabelMode
+	Grain         Grain
 	Inks          Inks
 	Nodes         RadialNode
 	LegendConfig  *legend.Config

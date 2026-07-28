@@ -105,7 +105,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := radialTestRoot()
-	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 800, filesystem.FileSize, LabelNone, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
@@ -128,7 +128,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := radialTestRoot()
-	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 400, filesystem.FileSize, LabelNone, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
@@ -179,7 +179,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 		},
 	}
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
+	nodes := Layout(root, 800, filesystem.FileSize, LabelAll, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
@@ -201,7 +201,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 
 	root := &model.Directory{Name: "empty"}
 
-	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 400, filesystem.FileSize, LabelNone, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
@@ -268,7 +268,7 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 		},
 	}
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 800, filesystem.FileSize, LabelNone, GrainFile)
 
 	cx := float64(800) / 2.0
 	cy := float64(800) / 2.0
@@ -331,7 +331,7 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 	g.Expect(is.Border.Info().Kind).NotTo(Equal(inks.KindFixed),
 		"precondition: border ink should be metric-driven when a border metric is configured")
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
+	nodes := Layout(root, 800, filesystem.FileSize, LabelAll, GrainFile)
 
 	cx := float64(800) / 2.0
 	cy := cx

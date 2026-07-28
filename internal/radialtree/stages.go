@@ -17,6 +17,7 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 	r.FillPalette = stages.ResolveFillPalette(cfg.Fill, r.FillMetric)
 	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
 	r.Labels = resolveLabels(cfg)
+	r.Grain = resolveGrain(cfg)
 
 	c.Requested = stages.CollectRequestedMetrics(r.DiscSize, cfg.Fill, cfg.Border)
 
@@ -39,6 +40,14 @@ func resolveLabels(cfg *config.Radial) LabelMode {
 	return LabelFoldersOnly
 }
 
+func resolveGrain(cfg *config.Radial) Grain {
+	if grain := stages.PtrString(cfg.Grain); grain != "" {
+		return Grain(grain)
+	}
+
+	return GrainFile
+}
+
 // radialCanvasSize returns the diameter of the square radial content area: the
 // smaller of the configured width and the drawing height remaining after any
 // title/footer reservation.
@@ -58,7 +67,15 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 }
 
 // BuildLegendStage builds the legend config from inks.
+// Directory grain draws no file discs, so the fill, border, and size metrics
+// have nothing to describe and the legend is omitted.
 func BuildLegendStage(c *stages.CommonState, r *State) error {
+	if r.Grain == GrainDirectory {
+		r.LegendConfig = nil
+
+		return nil
+	}
+
 	pos, orient := legend.ResolveOptions(
 		c.RootConfig.LegendPositionStr(),
 		c.RootConfig.LegendOrientationStr(),
@@ -80,7 +97,7 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 func LayoutStage(c *stages.CommonState, r *State) error {
 	canvasSize := radialCanvasSize(c)
 
-	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.Labels)
+	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.Labels, r.Grain)
 
 	return nil
 }
@@ -110,6 +127,7 @@ func LogResult(c *stages.CommonState, r *State) error {
 		"directories", dirs,
 		"output", c.Output,
 		"canvas_size", canvasSize,
+		"grain", string(r.Grain),
 		"disc_metric", string(r.DiscSize),
 		"fill_metric", string(r.FillMetric),
 		"fill_palette", string(r.FillPalette),
