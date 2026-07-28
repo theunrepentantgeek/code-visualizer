@@ -345,6 +345,7 @@ func TestBuild_RetainsEveryAnnulusBoundarySampleAsMeshVertex(t *testing.T) {
 	}
 
 	originals := make([]surface.Point, 0, 120)
+
 	for index := range 120 {
 		angle := 2 * math.Pi * float64(index) / 120
 		radius := 110 + 80*float64(index%7)/7
