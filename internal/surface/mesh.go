@@ -6,6 +6,12 @@ import (
 	"github.com/fogleman/delaunay"
 )
 
+// Boundary samples are placed with trigonometry, so their recovered radius can
+// differ from the region's radius by a few floating-point ulps. Comparing radii
+// with this relative tolerance keeps the resulting rim triangles instead of
+// discarding an arbitrary half of them and leaving a ragged edge.
+const radiusTolerance = 1e-9
+
 // Interpolate estimates a point's value from observed points using inverse-distance weighting.
 func Interpolate(point Point, originals []Point) float64 {
 	if len(originals) == 0 {
@@ -368,7 +374,8 @@ func validAnnulus(annulus Annulus) bool {
 }
 
 func triangleWithinOuterRadius(annulus Annulus, triangle Triangle) bool {
-	outerRadiusSquared := annulus.OuterRadius * annulus.OuterRadius
+	outerRadius := annulus.OuterRadius * (1 + radiusTolerance)
+	outerRadiusSquared := outerRadius * outerRadius
 
 	for _, point := range triangle.Points {
 		if !isFinitePoint(point) {
@@ -391,12 +398,40 @@ func triangleAvoidsInnerRadius(annulus Annulus, triangle Triangle) bool {
 		return true
 	}
 
-	innerRadiusSquared := annulus.InnerRadius * annulus.InnerRadius
 	if pointStrictlyInTriangle(Point{X: annulus.CX, Y: annulus.CY}, triangle) {
 		return false
 	}
 
-	return triangleEdgesAvoidInnerRadius(annulus, triangle, innerRadiusSquared)
+	if !triangleOutsideInnerRadius(annulus, triangle) {
+		return false
+	}
+
+	return triangleEdgesAvoidInnerRadius(annulus, triangle, innerChordLimitSquared(annulus))
+}
+
+func triangleOutsideInnerRadius(annulus Annulus, triangle Triangle) bool {
+	innerRadius := annulus.InnerRadius * (1 - radiusTolerance)
+	innerRadiusSquared := innerRadius * innerRadius
+
+	for _, point := range triangle.Points {
+		dx := point.X - annulus.CX
+
+		dy := point.Y - annulus.CY
+		if dx*dx+dy*dy < innerRadiusSquared {
+			return false
+		}
+	}
+
+	return true
+}
+
+// An edge joining two points on the inner circle passes closer to the centre
+// than the inner radius by the chord's sagitta, so edges of the permitted
+// length may approach this far without entering the empty core.
+func innerChordLimitSquared(annulus Annulus) float64 {
+	halfEdge := MaxTriangleEdge / 2
+
+	return math.Max(0, annulus.InnerRadius*annulus.InnerRadius-halfEdge*halfEdge)
 }
 
 func triangleEdgesAvoidInnerRadius(annulus Annulus, triangle Triangle, innerRadiusSquared float64) bool {

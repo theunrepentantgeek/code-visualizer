@@ -246,13 +246,24 @@ func TestBuild_RestrictsAnnularMeshToRegionAndMaximumEdge(t *testing.T) {
 	g.Expect(first).NotTo(gomega.BeEmpty())
 	g.Expect(first).To(gomega.Equal(second))
 
+	// Rim triangles span chords of the boundary circles, so they may reach
+	// inside the inner circle by up to the sagitta of a maximum-length chord.
+	sagitta := region.InnerRadius -
+		math.Sqrt(region.InnerRadius*region.InnerRadius-surface.MaxTriangleEdge*surface.MaxTriangleEdge/4)
+	tolerantRegion := surface.Annulus{
+		CX:          region.CX,
+		CY:          region.CY,
+		InnerRadius: region.InnerRadius - sagitta,
+		OuterRadius: region.OuterRadius + sagitta,
+	}
+
 	for _, triangle := range first {
 		for _, point := range triangle.Points {
-			g.Expect(region.Contains(point.X, point.Y)).To(gomega.BeTrue())
+			g.Expect(tolerantRegion.Contains(point.X, point.Y)).To(gomega.BeTrue())
 		}
 
 		centroid := centroid(triangle)
-		g.Expect(region.Contains(centroid.X, centroid.Y)).To(gomega.BeTrue())
+		g.Expect(tolerantRegion.Contains(centroid.X, centroid.Y)).To(gomega.BeTrue())
 		g.Expect(surface.LongestEdge(triangle)).To(
 			gomega.BeNumerically("<=", surface.MaxTriangleEdge),
 		)
@@ -318,6 +329,51 @@ func TestBuild_SeedsAnnulusBoundaries(t *testing.T) {
 
 	g.Expect(hasInnerBoundaryVertex).To(gomega.BeTrue())
 	g.Expect(hasOuterBoundaryVertex).To(gomega.BeTrue())
+}
+
+// Every boundary sample must anchor a retained triangle, otherwise the rendered
+// surface shows a ragged rim where rim triangles were discarded.
+func TestBuild_RetainsEveryAnnulusBoundarySampleAsMeshVertex(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	region := surface.Annulus{
+		CX:          500,
+		CY:          500,
+		InnerRadius: 100,
+		OuterRadius: 200,
+	}
+
+	originals := make([]surface.Point, 0, 120)
+	for index := range 120 {
+		angle := 2 * math.Pi * float64(index) / 120
+		radius := 110 + 80*float64(index%7)/7
+
+		originals = append(originals, surface.Point{
+			X:     region.CX + radius*math.Cos(angle),
+			Y:     region.CY + radius*math.Sin(angle),
+			Value: radius,
+		})
+	}
+
+	triangles := surface.Build(region, originals, 42)
+	g.Expect(triangles).NotTo(gomega.BeEmpty())
+
+	vertices := make(map[[2]float64]bool, len(triangles)*3)
+	for _, triangle := range triangles {
+		for _, point := range triangle.Points {
+			vertices[[2]float64{point.X, point.Y}] = true
+		}
+	}
+
+	loops := surface.BoundaryLoops(region, surface.MaxTriangleEdge)
+	g.Expect(loops).To(gomega.HaveLen(2))
+
+	for _, loop := range loops {
+		for _, point := range loop {
+			g.Expect(vertices).To(gomega.HaveKey([2]float64{point.X, point.Y}))
+		}
+	}
 }
 
 func TestLongestEdge_ReturnsLengthOfLongestTriangleSide(t *testing.T) {
