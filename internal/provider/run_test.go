@@ -314,7 +314,12 @@ func TestRunLoadersSerializesSharedFileProgressReporters(t *testing.T) {
 		continueFirst: make(chan struct{}),
 	}
 	provider.RegisterLoader(provider.BaseMetricLoader{
-		Metrics:  []metric.Name{"lines"},
+		Metrics:  []metric.Name{"first"},
+		Load:     loader.Load,
+		Reporter: loader,
+	})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:  []metric.Name{"second"},
 		Load:     loader.Load,
 		Reporter: loader,
 	})
@@ -325,13 +330,13 @@ func TestRunLoadersSerializesSharedFileProgressReporters(t *testing.T) {
 	secondDone := make(chan error, 1)
 
 	go func() {
-		firstDone <- provider.RunLoaders(nil, []metric.Name{"lines"}, first)
+		firstDone <- provider.RunLoaders(nil, []metric.Name{"first"}, first)
 	}()
 
 	<-loader.firstSet
 
 	go func() {
-		secondDone <- provider.RunLoaders(nil, []metric.Name{"lines"}, second)
+		secondDone <- provider.RunLoaders(nil, []metric.Name{"second"}, second)
 	}()
 
 	select {
@@ -345,6 +350,6 @@ func TestRunLoadersSerializesSharedFileProgressReporters(t *testing.T) {
 	g.Expect(<-firstDone).To(Succeed())
 	<-loader.secondSet
 	g.Expect(<-secondDone).To(Succeed())
-	g.Expect(first.fileProcessed).To(Equal([]metric.Name{"lines"}))
-	g.Expect(second.fileProcessed).To(Equal([]metric.Name{"lines"}))
+	g.Expect(first.fileProcessed).To(Equal([]metric.Name{"first"}))
+	g.Expect(second.fileProcessed).To(Equal([]metric.Name{"second"}))
 }
