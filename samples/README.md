@@ -22,4 +22,12 @@ task samples
 ```
 
 This rebuilds the binary and regenerates every `code-visualizer.png` /
-`code-visualizer.svg` from the matching `code-visualizer.yml`.
+`code-visualizer.svg` from the matching `code-visualizer.yml`. To regenerate
+only one visualization, run its task instead:
+
+```sh
+task samples-tree-map
+```
+
+Each `samples-<visualization>` task rebuilds the binary and regenerates only
+that visualization's PNG and SVG files.
