@@ -398,7 +398,7 @@ func (s *repoService) fetchCommitTimestamps(relPath string) ([]time.Time, error)
 //
 // If any paths are already cached, they are skipped. The function is safe for
 // concurrent use; concurrent calls are coalesced via a singleflight group.
-func (s *repoService) bulkPrewarm(paths map[string]bool) error {
+func (s *repoService) bulkPrewarm(paths map[string]bool, onFileProcessed func()) error {
 	s.commitMu.RLock()
 
 	missing := make(map[string]bool, len(paths))
@@ -415,7 +415,7 @@ func (s *repoService) bulkPrewarm(paths map[string]bool) error {
 	}
 
 	_, err, _ := s.bulkGroup.Do("prewarm", func() (any, error) {
-		return nil, s.doBulkPrewarm(missing)
+		return nil, s.doBulkPrewarm(missing, onFileProcessed)
 	})
 
 	return err //nolint:wrapcheck // error already wrapped inside doBulkPrewarm
@@ -424,7 +424,7 @@ func (s *repoService) bulkPrewarm(paths map[string]bool) error {
 // doBulkPrewarm performs the actual bulk commit-cache population.
 // It walks the entire commit history once, using tree diffs to determine
 // which tracked files were modified in each commit.
-func (s *repoService) doBulkPrewarm(paths map[string]bool) error {
+func (s *repoService) doBulkPrewarm(paths map[string]bool, onFileProcessed func()) error {
 	// Initialise empty commitData for all tracked paths so that untracked files
 	// get a count=0 entry in the cache (avoids re-fetching them individually).
 	cache := make(map[string]*commitData, len(paths))
@@ -443,7 +443,7 @@ func (s *repoService) doBulkPrewarm(paths map[string]bool) error {
 	}
 	defer iter.Close()
 
-	err = iter.ForEach(s.prewarmCommit(cache, paths))
+	err = iter.ForEach(s.prewarmCommit(cache, paths, onFileProcessed))
 	if err != nil {
 		return eris.Wrap(err, "bulk prewarm: failed to iterate commits")
 	}
@@ -464,6 +464,7 @@ func (s *repoService) doBulkPrewarm(paths map[string]bool) error {
 func (*repoService) prewarmCommit(
 	cache map[string]*commitData,
 	paths map[string]bool,
+	onFileProcessed func(),
 ) func(c *object.Commit) error {
 	return func(c *object.Commit) error {
 		changed := changedFilesInCommit(c, paths)
@@ -471,6 +472,10 @@ func (*repoService) prewarmCommit(
 		for _, relPath := range changed {
 			data := cache[relPath]
 			data.updateFrom(c, relPath)
+
+			if onFileProcessed != nil {
+				onFileProcessed()
+			}
 		}
 
 		return nil
