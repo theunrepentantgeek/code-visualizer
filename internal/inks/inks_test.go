@@ -180,3 +180,18 @@ func TestMetricValueForFile_FixedInk(t *testing.T) {
 	g.Expect(inks.MetricValueForFile(file, inks.FixedInk(fallbackColour()))).
 		To(Equal(inks.MetricValue{}))
 }
+
+func TestMetricValueForDirectory_NumericInk(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := &model.Directory{}
+	dir.SetQuantity(metric.Name("file-size.sum"), 300)
+	ink := inks.NumericInk(
+		metric.Name("file-size.sum"),
+		[]float64{100, 300},
+		palette.GetPalette(palette.Temperature),
+	)
+
+	g.Expect(inks.MetricValueForDirectory(dir, ink)).To(Equal(inks.QuantityValue(300)))
+}

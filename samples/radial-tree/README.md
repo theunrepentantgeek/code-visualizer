@@ -27,4 +27,6 @@ Key knobs in [`code-visualizer.yml`](code-visualizer.yml) to experiment with:
 
 - `radial-tree.discSize` — the metric that drives disc area.
 - `radial-tree.fill` / `radial-tree.border` — swap in other metrics and palettes.
+- `radial-tree.directoryFill` / `radial-tree.directoryBorder` — override the
+  aggregated metrics used to colour directory discs.
 - `legend.position` / `legend.orientation` — where the legend is drawn.

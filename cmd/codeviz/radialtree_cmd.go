@@ -20,6 +20,9 @@ type RadialCmd struct {
 	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
 
+	DirectoryFill   config.MetricSpec `help:"Directory fill colour: metric[,palette] (defaults to aggregated fill)." name:"directory-fill" optional:""`       //nolint:revive,nolintlint // kong struct tags require long lines
+	DirectoryBorder config.MetricSpec `help:"Directory border colour: metric[,palette] (defaults to aggregated border)." name:"directory-border" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
 	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
@@ -58,6 +61,14 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 
 	if err := cfg.Border.Validate("border"); err != nil {
 		return eris.Wrap(err, "invalid border spec")
+	}
+
+	if err := cfg.DirectoryFill.Validate("directory fill"); err != nil {
+		return eris.Wrap(err, "invalid directory fill spec")
+	}
+
+	if err := cfg.DirectoryBorder.Validate("directory border"); err != nil {
+		return eris.Wrap(err, "invalid directory border spec")
 	}
 
 	return nil
@@ -123,6 +134,8 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideDiscSize(string(c.DiscSize))
 	cfg.Radial.OverrideFill(c.Fill)
 	cfg.Radial.OverrideBorder(c.Border)
+	cfg.Radial.OverrideDirectoryFill(c.DirectoryFill)
+	cfg.Radial.OverrideDirectoryBorder(c.DirectoryBorder)
 	cfg.Radial.OverrideLabels(c.Labels)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)

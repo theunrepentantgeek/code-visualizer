@@ -9,11 +9,11 @@ import (
 
 // CollectRequestedMetrics returns the classified set of metrics
 // implied by size + optional fill + optional border specs.
-func CollectRequestedMetrics(size metric.Name, fill *config.MetricSpec, border *config.MetricSpec) RequestedMetrics {
+func CollectRequestedMetrics(size metric.Name, specs ...*config.MetricSpec) RequestedMetrics {
 	seen := map[metric.Name]bool{size: true}
 	names := []metric.Name{size}
 
-	for _, spec := range []*config.MetricSpec{fill, border} {
+	for _, spec := range specs {
 		if name := spec.MetricName(); name != "" && !seen[name] {
 			seen[name] = true
 			names = append(names, name)
