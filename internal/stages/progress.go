@@ -98,11 +98,11 @@ type metricProgressTracker struct {
 	loaded atomic.Int64
 }
 
-func (t *metricProgressTracker) OnMetricStarted(name metric.Name) {
+func (*metricProgressTracker) OnMetricStarted(name metric.Name) {
 	slog.Debug("Metric started", "metric", string(name))
 }
 
-func (t *metricProgressTracker) OnMetricFinished(name metric.Name) {
+func (*metricProgressTracker) OnMetricFinished(name metric.Name) {
 	slog.Debug("Metric finished", "metric", string(name))
 }
 

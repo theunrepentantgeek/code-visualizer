@@ -136,9 +136,11 @@ func TestMetricsLoaderReportsFileProgress(t *testing.T) {
 
 	dir := setupTestGitRepo(t)
 	root := buildTree(dir, "old.go", "new.go")
+
 	var processed atomic.Int64
 
 	resetService()
+
 	loader := &metricsLoader{
 		onFile: func() {
 			processed.Add(1)

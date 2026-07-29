@@ -16,6 +16,7 @@ func TestLogMetricProgress_LogsAggregateLoadedObservations(t *testing.T) {
 	var buf bytes.Buffer
 
 	oldDefault := slog.Default()
+
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
 	defer slog.SetDefault(oldDefault)
 

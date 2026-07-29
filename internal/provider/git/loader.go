@@ -61,7 +61,6 @@ func walkGitFilesAll(root *model.Directory, onFile func()) error {
 		for _, def := range providerDefs {
 			def.process(s, f, relPath)
 		}
-
 	})
 
 	if !anyFileHasGitMetric(root) {
