@@ -14,10 +14,10 @@
 <circle cx="115.69" cy="129.39" r="6.65" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
 <circle cx="182.16" cy="131.29" r="5.47" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
 <circle cx="175.36" cy="100.14" r="4.35" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
-<circle cx="160.00" cy="106.50" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
-<circle cx="153.64" cy="121.86" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
-<circle cx="128.62" cy="117.48" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
-<circle cx="153.64" cy="91.14" r="4.00" fill="rgb(68,68,68)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="160.00" cy="106.50" r="4.00" fill="rgb(166,206,227)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="153.64" cy="121.86" r="4.00" fill="rgb(166,206,227)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="128.62" cy="117.48" r="4.00" fill="rgb(166,206,227)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
+<circle cx="153.64" cy="91.14" r="4.00" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
 <circle cx="147.28" cy="75.78" r="3.95" fill="rgb(178,223,138)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
 <circle cx="165.57" cy="139.28" r="3.78" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
 <circle cx="166.36" cy="91.14" r="3.35" fill="rgb(178,223,138)" stroke="rgb(51,51,51)" stroke-width="1.0"/>
