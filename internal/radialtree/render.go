@@ -88,10 +88,11 @@ func addEdgesInner(cv *canvas.Canvas, node RadialNode, cx, cy float64, edgeSpec 
 
 // discEntry holds a node and its screen position for deferred drawing.
 type discEntry struct {
-	node   RadialNode
-	file   *model.File
-	sx, sy float64
-	isDir  bool
+	node      RadialNode
+	file      *model.File
+	directory *model.Directory
+	sx, sy    float64
+	isDir     bool
 }
 
 // collectDiscs recursively gathers all nodes with a positive DiscRadius,
@@ -106,10 +107,11 @@ func collectDiscs(
 
 	if node.DiscRadius > 0 {
 		entries = append(entries, discEntry{
-			node:  *node,
-			sx:    cx + node.X,
-			sy:    cy + node.Y,
-			isDir: node.IsDirectory,
+			node:      *node,
+			sx:        cx + node.X,
+			sy:        cy + node.Y,
+			isDir:     node.IsDirectory,
+			directory: dir,
 		})
 	}
 
@@ -174,8 +176,8 @@ func addDiscs(
 	}
 	dirSpec := &canvas.DiscSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(defaultDirFill),
-			Border:      inks.FixedInk(defaultBorder),
+			Fill:        is.DirectoryFill,
+			Border:      is.DirectoryBorder,
 			BorderWidth: 1.0,
 		},
 	}
@@ -193,6 +195,8 @@ func addDisc(cv *canvas.Canvas, e discEntry, is Inks, fileSpec, dirSpec *canvas.
 	spec := fileSpec
 	if e.isDir {
 		spec = dirSpec
+		fillMV = inks.MetricValueForDirectory(e.directory, is.DirectoryFill)
+		borderMV = inks.MetricValueForDirectory(e.directory, is.DirectoryBorder)
 	}
 
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{

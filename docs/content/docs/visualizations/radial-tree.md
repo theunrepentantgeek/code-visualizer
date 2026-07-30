@@ -64,6 +64,6 @@ Show the folder structure only, leaving out the files — useful for large codeb
 codeviz radial-tree ./src -o radial.png -d file-lines --grain directory
 ```
 
-With `--grain directory` every folder is drawn (and named) using the standard
-folder disc; no file discs are drawn, so the `--disc-size`, `--fill`, and
-`--border` metrics have nothing to colour or scale and the legend is omitted.
+With `--grain directory` every folder is drawn (and named), and no file discs are
+drawn. Folder discs are sized and coloured from the aggregated (rolled up)
+directory metrics, so the legend describes those rather than the file metrics.

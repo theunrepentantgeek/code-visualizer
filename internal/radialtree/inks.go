@@ -19,9 +19,12 @@ var (
 	bgColour        = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
-// Inks pairs the fill and border Ink instances for a radial tree render pass.
-// Alias for inks.ShapeInks so other viz packages share the same struct.
-type Inks = inks.ShapeInks
+// Inks pairs file and directory fill and border inks for a radial tree render pass.
+type Inks struct {
+	inks.ShapeInks
+	DirectoryFill   inks.Ink
+	DirectoryBorder inks.Ink
+}
 
 // BuildInks creates fill and border inks from metric configuration.
 // A zero borderMetric yields a fixed default border ink.
@@ -34,7 +37,11 @@ func BuildInks(
 	borderPaletteName palette.PaletteName,
 ) Inks {
 	is := Inks{
-		Border: inks.FixedInk(defaultBorder),
+		ShapeInks: inks.ShapeInks{
+			Border: inks.FixedInk(defaultBorder),
+		},
+		DirectoryFill:   inks.FixedInk(defaultDirFill),
+		DirectoryBorder: inks.FixedInk(defaultBorder),
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fillMetric)

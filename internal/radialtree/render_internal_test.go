@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"encoding/xml"
 	"image"
+	"image/color"
 	_ "image/png"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -105,7 +107,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := radialTestRoot()
-	nodes := Layout(root, 800, filesystem.FileSize, LabelNone, GrainFile)
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelNone, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
@@ -128,7 +130,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := radialTestRoot()
-	nodes := Layout(root, 400, filesystem.FileSize, LabelNone, GrainFile)
+	nodes := Layout(root, 400, filesystem.FileSize, "", LabelNone, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
@@ -179,7 +181,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 		},
 	}
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelAll, GrainFile)
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
@@ -201,7 +203,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 
 	root := &model.Directory{Name: "empty"}
 
-	nodes := Layout(root, 400, filesystem.FileSize, LabelNone, GrainFile)
+	nodes := Layout(root, 400, filesystem.FileSize, "", LabelNone, GrainFile)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
@@ -268,7 +270,7 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 		},
 	}
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelNone, GrainFile)
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelNone, GrainFile)
 
 	cx := float64(800) / 2.0
 	cy := float64(800) / 2.0
@@ -301,7 +303,7 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 	)
 }
 
-func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
+func TestRenderRadialToCanvas_DirectoryUsesDirectoryInks(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -320,52 +322,28 @@ func TestRenderRadialToCanvas_DirBorderUsesFixedInk(t *testing.T) {
 		},
 	}
 
-	// Build inks with a border metric configured.
 	is := BuildInks(
 		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
 	)
+	directoryFill := color.RGBA{R: 0x12, G: 0x34, B: 0x56, A: 0xFF}
+	directoryBorder := color.RGBA{R: 0x65, G: 0x43, B: 0x21, A: 0xFF}
+	is.DirectoryFill = inks.FixedInk(directoryFill)
+	is.DirectoryBorder = inks.FixedInk(directoryBorder)
 
-	// Precondition: the border ink must be metric-driven, not fixed.
-	g.Expect(is.Border.Info().Kind).NotTo(Equal(inks.KindFixed),
-		"precondition: border ink should be metric-driven when a border metric is configured")
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
+	cv := RenderToCanvas(&nodes, root, 800, 800, 400, 400, is)
+	backend := mock.NewBackend()
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelAll, GrainFile)
+	var directoryDiscCount int
 
-	cx := float64(800) / 2.0
-	cy := cx
-	entries := collectDiscs(&nodes, root, cx, cy)
-
-	// Find a directory entry and a file entry.
-	var dirEntry *discEntry
-
-	var fileEntry *discEntry
-
-	for i := range entries {
-		if entries[i].isDir && dirEntry == nil {
-			dirEntry = &entries[i]
-		}
-
-		if !entries[i].isDir && entries[i].file != nil && fileEntry == nil {
-			fileEntry = &entries[i]
+	for _, call := range backend.Calls {
+		if call.Method == "DrawDisc" && call.Fill == directoryFill && call.Border == directoryBorder {
+			directoryDiscCount++
 		}
 	}
 
-	g.Expect(dirEntry).NotTo(BeNil(), "should have at least one directory disc")
-	g.Expect(fileEntry).NotTo(BeNil(), "should have at least one file disc")
-
-	// Directory border must resolve to defaultBorder (fixed ink),
-	// not the metric ink's lowest bucket.
-	dirBorderInk := inks.FixedInk(defaultBorder)
-	g.Expect(dirBorderInk.Dip(inks.MetricValue{})).To(Equal(defaultBorder),
-		"directory disc border should resolve to defaultBorder")
-
-	// File border should follow the metric ink.
-	if fileEntry != nil && fileEntry.file != nil {
-		fileMV := inks.MetricValueForFile(fileEntry.file, is.Border)
-		fileBorderColour := is.Border.Dip(fileMV)
-		g.Expect(fileBorderColour).NotTo(Equal(defaultBorder),
-			"file disc border should follow the metric ink, not the fixed default")
-	}
+	g.Expect(directoryDiscCount).To(Equal(2))
 }

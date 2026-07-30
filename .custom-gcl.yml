@@ -1,0 +1,7 @@
+version: v2.12.2
+name: golangci-lint-custom
+destination: /home/runner/work/code-visualizer/code-visualizer/tools
+plugins:
+  - module: "go.uber.org/nilaway"
+    import: "go.uber.org/nilaway/cmd/gclplugin"
+    version: latest

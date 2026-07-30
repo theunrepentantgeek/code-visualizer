@@ -3,17 +3,32 @@ package git
 import (
 	"log/slog"
 	"path/filepath"
+	"sync"
 
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
+type metricsLoader struct {
+	onFile func()
+	mu     sync.Mutex
+}
+
+func (l *metricsLoader) SetOnFileProcessed(fn func()) { l.onFile = fn }
+func (l *metricsLoader) FileProgressMutex() *sync.Mutex {
+	return &l.mu
+}
+
+func (l *metricsLoader) Load(root *model.Directory) error {
+	return walkGitFilesAll(root, l.onFile)
+}
+
 // loadAllFileMetrics runs the git analysis once and populates all 7 file-level
 // git metrics in a single pass. This replaces 7 separate legacy providers that
 // each independently walked git history.
 func loadAllFileMetrics(root *model.Directory) error {
-	return walkGitFilesAll(root)
+	return walkGitFilesAll(root, nil)
 }
 
 // walkGitFilesAll opens the repo service, walks all files, and invokes every
@@ -24,14 +39,14 @@ func loadAllFileMetrics(root *model.Directory) error {
 // no history, or contains none of the scanned files, walkGitFilesAll returns
 // an error rather than producing an empty result that would cascade into
 // confusing downstream failures.
-func walkGitFilesAll(root *model.Directory) error {
+func walkGitFilesAll(root *model.Directory, onFile func()) error {
 	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
 
 	pathSet := buildRelPathSet(s, root)
-	if err := s.bulkPrewarm(pathSet); err != nil {
+	if err := s.bulkPrewarm(pathSet, onFile); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
