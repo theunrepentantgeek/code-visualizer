@@ -1,9 +1,7 @@
 package metric
 
 import (
-	"maps"
 	"math"
-	"slices"
 )
 
 // AggregateSum returns the sum of all values.
@@ -92,18 +90,25 @@ func AggregateMode(values []string) string {
 		return ""
 	}
 
-	counts := make(map[string]int)
+	counts := make(map[string]int, len(values))
 	for _, v := range values {
 		counts[v]++
 	}
 
-	best := ""
-	bestCount := 0
+	// Find the maximum count in a single pass, then find the
+	// lexicographically smallest key that reaches that count.
+	// This avoids allocating and sorting a key slice.
+	maxCount := 0
+	for _, c := range counts {
+		if c > maxCount {
+			maxCount = c
+		}
+	}
 
-	for _, key := range slices.Sorted(maps.Keys(counts)) {
-		if counts[key] > bestCount {
+	best := ""
+	for key, c := range counts {
+		if c == maxCount && (best == "" || key < best) {
 			best = key
-			bestCount = counts[key]
 		}
 	}
 
@@ -116,7 +121,7 @@ func AggregateDistinct(values []string) int {
 		return 0
 	}
 
-	unique := make(map[string]struct{})
+	unique := make(map[string]struct{}, len(values))
 	for _, v := range values {
 		unique[v] = struct{}{}
 	}
