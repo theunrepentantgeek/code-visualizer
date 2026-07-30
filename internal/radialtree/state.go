@@ -20,6 +20,7 @@ type State struct {
 	DirectoryBorderMetric  metric.Name
 	DirectoryBorderPalette palette.PaletteName
 	Labels                 LabelMode
+	Grain                  Grain
 	Inks                   Inks
 	Nodes                  RadialNode
 	LegendConfig           *legend.Config

@@ -25,6 +25,8 @@ type RadialCmd struct {
 
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
+	Grain string `enum:",file,directory" default:"" help:"Granularity of nodes shown: file (default) or directory."` //nolint:revive,nolintlint // kong struct tags require long lines
+
 	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive,nolintlint // kong struct tags require long lines
 
@@ -137,6 +139,7 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideDirectoryFill(c.DirectoryFill)
 	cfg.Radial.OverrideDirectoryBorder(c.DirectoryBorder)
 	cfg.Radial.OverrideLabels(c.Labels)
+	cfg.Radial.OverrideGrain(c.Grain)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

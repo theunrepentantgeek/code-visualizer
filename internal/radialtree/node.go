@@ -13,6 +13,14 @@ const (
 	LabelNone        = viz.LabelNone
 )
 
+// Grain is an alias for [viz.Grain].
+type Grain = viz.Grain
+
+const (
+	GrainFile      = viz.GrainFile
+	GrainDirectory = viz.GrainDirectory
+)
+
 // RadialNode is a positioned visual element in the rendered radial tree.
 // X and Y are pixel offsets from the canvas centre (canvas centre = origin).
 type RadialNode struct {

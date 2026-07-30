@@ -1,3 +1,4 @@
+//nolint:dupl // config structs and their overrides are structurally similar by design
 package config
 
 // Radial holds persistent configuration for radial tree visualizations.
@@ -9,6 +10,7 @@ type Radial struct {
 	DirectoryFill   *MetricSpec `yaml:"directoryFill,omitempty"    json:"directoryFill,omitempty"`
 	DirectoryBorder *MetricSpec `yaml:"directoryBorder,omitempty"  json:"directoryBorder,omitempty"`
 	Labels          *string     `yaml:"labels,omitempty"           json:"labels,omitempty"`
+	Grain           *string     `yaml:"grain,omitempty"            json:"grain,omitempty"`
 }
 
 // OverrideDiscSize sets DiscSize to v if v is non-empty.
@@ -30,3 +32,6 @@ func (r *Radial) OverrideDirectoryBorder(v MetricSpec) {
 
 // OverrideLabels sets Labels to v if v is non-empty.
 func (r *Radial) OverrideLabels(v string) { overrideString(&r.Labels, v) }
+
+// OverrideGrain sets Grain to v if v is non-empty.
+func (r *Radial) OverrideGrain(v string) { overrideString(&r.Grain, v) }

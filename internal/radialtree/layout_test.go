@@ -28,7 +28,7 @@ func TestLayoutRootIsAtCentre(t *testing.T) {
 		Files: []*model.File{makeFile("only.go", 100)},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.X).To(BeNumerically("==", 0))
 	g.Expect(node.Y).To(BeNumerically("==", 0))
 }
@@ -46,7 +46,7 @@ func TestLayoutChildrenInRing(t *testing.T) {
 		},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(3))
 
 	radii := make([]float64, 0, len(node.Children))
@@ -75,7 +75,7 @@ func TestLayoutSingleFile(t *testing.T) {
 		Files: []*model.File{makeFile("only.go", 100)},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(1))
 	g.Expect(node.Children[0].DiscRadius).To(BeNumerically(">", 0))
 }
@@ -94,7 +94,7 @@ func TestLayoutAnglesFullCircle(t *testing.T) {
 		},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(4))
 
 	angles := make([]float64, 4)
@@ -138,7 +138,7 @@ func TestLayoutDirectoryGroupsAddAngularGaps(t *testing.T) {
 		},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(2))
 	g.Expect(node.Children[0].Children).To(HaveLen(2))
 	g.Expect(node.Children[1].Children).To(HaveLen(2))
@@ -165,7 +165,7 @@ func TestLayoutEmptySiblingDirectoriesGetDistinctSectors(t *testing.T) {
 		},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(2))
 	g.Expect(node.Children[0].Angle).NotTo(BeNumerically("~", node.Children[1].Angle, 0.001))
 
@@ -186,7 +186,7 @@ func TestLayoutNestedDepth(t *testing.T) {
 		Dirs: []*model.Directory{inner},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 
 	// Root is at centre (radius 0).
 	g.Expect(node.X).To(BeNumerically("==", 0))
@@ -215,7 +215,7 @@ func TestLayoutDiscSizeScalesWithMetric(t *testing.T) {
 		},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(2))
 
 	var smallDisc, largeDisc float64
@@ -242,7 +242,7 @@ func TestLayoutLabelAll(t *testing.T) {
 		Files: []*model.File{makeFile("only.go", 100)},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.ShowLabel).To(BeTrue())
 	g.Expect(node.Children).To(HaveLen(1))
 	g.Expect(node.Children[0].ShowLabel).To(BeTrue())
@@ -257,7 +257,7 @@ func TestLayoutLabelFoldersOnly(t *testing.T) {
 		Files: []*model.File{makeFile("only.go", 100)},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelFoldersOnly)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelFoldersOnly, GrainFile)
 	g.Expect(node.IsDirectory).To(BeTrue())
 	g.Expect(node.ShowLabel).To(BeTrue())
 	g.Expect(node.Children).To(HaveLen(1))
@@ -273,7 +273,7 @@ func TestLayoutLabelNone(t *testing.T) {
 		Files: []*model.File{makeFile("only.go", 100)},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelNone)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelNone, GrainFile)
 	g.Expect(node.ShowLabel).To(BeFalse())
 	g.Expect(node.Children).To(HaveLen(1))
 	g.Expect(node.Children[0].ShowLabel).To(BeFalse())
@@ -286,7 +286,7 @@ func TestLayoutEmptyDirectory(t *testing.T) {
 	root := &model.Directory{Name: "empty"}
 
 	// Should not panic.
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.X).To(BeNumerically("==", 0))
 	g.Expect(node.Y).To(BeNumerically("==", 0))
 }
@@ -300,7 +300,7 @@ func TestLayoutRootLabel(t *testing.T) {
 		Files: []*model.File{makeFile("only.go", 100)},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Label).To(Equal("myroot"))
 }
 
@@ -318,8 +318,8 @@ func TestLayoutCanvasSize(t *testing.T) {
 		}
 	}
 
-	small := Layout(makeRoot(), 800, filesystem.FileSize, "", LabelAll)
-	large := Layout(makeRoot(), 1600, filesystem.FileSize, "", LabelAll)
+	small := Layout(makeRoot(), 800, filesystem.FileSize, "", LabelAll, GrainFile)
+	large := Layout(makeRoot(), 1600, filesystem.FileSize, "", LabelAll, GrainFile)
 
 	g.Expect(small.Children).To(HaveLen(2))
 	g.Expect(large.Children).To(HaveLen(2))
@@ -342,7 +342,7 @@ func TestLayoutZeroMetricUsesMinDisc(t *testing.T) {
 		Files: []*model.File{emptyFile},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(1))
 	// Should use the minimum disc size floor, not zero
 	g.Expect(node.Children[0].DiscRadius).To(BeNumerically("==", minFileDisc))
@@ -361,7 +361,7 @@ func TestLayoutUniformMetricUsesMidpoint(t *testing.T) {
 		},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(3))
 
 	// All discs should be the same size (midpoint between min and max)
@@ -378,7 +378,7 @@ func TestComputeLeafCountEmptyDir(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	empty := &model.Directory{Name: "empty"}
-	g.Expect(computeLeafCount(empty)).To(Equal(0))
+	g.Expect(computeLeafCount(empty, GrainFile)).To(Equal(0))
 }
 
 func TestComputeLeafCountWithFiles(t *testing.T) {
@@ -389,7 +389,7 @@ func TestComputeLeafCountWithFiles(t *testing.T) {
 		Name:  "dir",
 		Files: []*model.File{makeFile("a.go", 100), makeFile("b.go", 200)},
 	}
-	g.Expect(computeLeafCount(dir)).To(Equal(2))
+	g.Expect(computeLeafCount(dir, GrainFile)).To(Equal(2))
 }
 
 func TestClamp_BelowLo(t *testing.T) {
@@ -474,6 +474,107 @@ func normalizeAngle(angle float64) float64 {
 	return normalized
 }
 
+func TestLayoutGrainDirectoryOmitsFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeFile("a.go", 100), makeFile("b.go", 200)},
+		Dirs: []*model.Directory{
+			{
+				Name:  "sub",
+				Files: []*model.File{makeFile("c.go", 300)},
+			},
+		},
+	}
+
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainDirectory)
+	g.Expect(node.Children).To(HaveLen(1))
+
+	sub := node.Children[0]
+	g.Expect(sub.IsDirectory).To(BeTrue())
+	g.Expect(sub.Label).To(Equal("sub"))
+	g.Expect(sub.Children).To(BeEmpty())
+}
+
+func TestLayoutGrainDirectoryLabelsDirectories(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{{Name: "sub"}},
+	}
+
+	node := Layout(root, 800, filesystem.FileSize, "", LabelFoldersOnly, GrainDirectory)
+	g.Expect(node.ShowLabel).To(BeTrue())
+	g.Expect(node.Children).To(HaveLen(1))
+	g.Expect(node.Children[0].ShowLabel).To(BeTrue())
+}
+
+func TestLayoutGrainDirectorySiblingsShareRings(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// The deep subtree has many files but only one extra directory level, so
+	// depth must be driven by directories alone.
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{
+			{
+				Name:  "one",
+				Files: []*model.File{makeFile("a.go", 100), makeFile("b.go", 100)},
+			},
+			{
+				Name: "two",
+				Dirs: []*model.Directory{{Name: "deep"}},
+			},
+		},
+	}
+
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainDirectory)
+	g.Expect(node.Children).To(HaveLen(2))
+
+	r1 := math.Sqrt(node.Children[0].X*node.Children[0].X + node.Children[0].Y*node.Children[0].Y)
+	r2 := math.Sqrt(node.Children[1].X*node.Children[1].X + node.Children[1].Y*node.Children[1].Y)
+	g.Expect(r1).To(BeNumerically("~", r2, r1*0.01))
+
+	// Both subtrees have one leaf directory each, so they share the circle evenly.
+	g.Expect(node.Children[0].Children).To(BeEmpty())
+	g.Expect(node.Children[1].Children).To(HaveLen(1))
+}
+
+func TestComputeLeafCountGrainDirectory(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := &model.Directory{
+		Name:  "dir",
+		Files: []*model.File{makeFile("a.go", 100)},
+		Dirs: []*model.Directory{
+			{Name: "one"},
+			{Name: "two", Dirs: []*model.Directory{{Name: "deep"}}},
+		},
+	}
+
+	// One leaf directory for "one", one for "deep"; files are ignored.
+	g.Expect(computeLeafCount(dir, GrainDirectory)).To(Equal(2))
+}
+
+func TestComputeMaxDepthGrainDirectoryIgnoresFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeFile("a.go", 100)},
+	}
+
+	g.Expect(computeMaxDepth(root, GrainDirectory)).To(Equal(0))
+	g.Expect(computeMaxDepth(root, GrainFile)).To(Equal(1))
+}
+
 func TestLayoutDirectoryDiscsScaleWithRolledUpMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -489,7 +590,7 @@ func TestLayoutDirectoryDiscsScaleWithRolledUpMetric(t *testing.T) {
 	root := &model.Directory{Name: "root", Dirs: []*model.Directory{small, large}}
 	root.SetQuantity(dirMetric, 1000)
 
-	node := Layout(root, 800, filesystem.FileSize, dirMetric, LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, dirMetric, LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(2))
 
 	smallNode, largeNode := node.Children[0], node.Children[1]
@@ -509,7 +610,7 @@ func TestLayoutDirectoryDiscsAreUniformWithoutMetric(t *testing.T) {
 		},
 	}
 
-	node := Layout(root, 800, filesystem.FileSize, "", LabelAll)
+	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 	g.Expect(node.Children).To(HaveLen(2))
 	g.Expect(node.Children[0].DiscRadius).To(BeNumerically("==", node.Children[1].DiscRadius))
 	g.Expect(node.Children[0].DiscRadius).To(BeNumerically("==", node.DiscRadius))

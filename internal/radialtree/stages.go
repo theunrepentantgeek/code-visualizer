@@ -32,6 +32,7 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 		r.DirectoryBorderMetric,
 	)
 	r.Labels = resolveLabels(cfg)
+	r.Grain = resolveGrain(cfg)
 
 	c.Requested = stages.CollectRequestedMetrics(
 		r.DiscSize,
@@ -103,6 +104,14 @@ func resolveLabels(cfg *config.Radial) LabelMode {
 	return LabelFoldersOnly
 }
 
+func resolveGrain(cfg *config.Radial) Grain {
+	if grain := stages.PtrString(cfg.Grain); grain != "" {
+		return Grain(grain)
+	}
+
+	return GrainFile
+}
+
 // radialCanvasSize returns the diameter of the square radial content area: the
 // smaller of the configured width and the drawing height remaining after any
 // title/footer reservation.
@@ -147,18 +156,28 @@ func buildDirectoryInks(
 }
 
 // BuildLegendStage builds the legend config from inks.
+// Directory grain draws only directory discs, so the legend describes the
+// aggregated directory metrics instead of the file ones.
 func BuildLegendStage(c *stages.CommonState, r *State) error {
 	pos, orient := legend.ResolveOptions(
 		c.RootConfig.LegendPositionStr(),
 		c.RootConfig.LegendOrientationStr(),
 	)
 
-	r.LegendConfig = legend.Builder{
+	builder := legend.Builder{
 		Position: pos, Orientation: orient,
 		FillInk: r.Inks.Fill, FillMetric: r.FillMetric,
 		BorderInk: r.Inks.Border, BorderMetric: r.BorderMetric,
 		SizeMetric: r.DiscSize,
-	}.Build()
+	}
+
+	if r.Grain == GrainDirectory {
+		builder.FillInk, builder.FillMetric = r.Inks.DirectoryFill, r.DirectoryFillMetric
+		builder.BorderInk, builder.BorderMetric = r.Inks.DirectoryBorder, r.DirectoryBorderMetric
+		builder.SizeMetric = r.DirectoryDiscSize
+	}
+
+	r.LegendConfig = builder.Build()
 
 	return nil
 }
@@ -169,7 +188,7 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 func LayoutStage(c *stages.CommonState, r *State) error {
 	canvasSize := radialCanvasSize(c)
 
-	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.DirectoryDiscSize, r.Labels)
+	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.DirectoryDiscSize, r.Labels, r.Grain)
 
 	return nil
 }
@@ -199,6 +218,7 @@ func LogResult(c *stages.CommonState, r *State) error {
 		"directories", dirs,
 		"output", c.Output,
 		"canvas_size", canvasSize,
+		"grain", string(r.Grain),
 		"disc_metric", string(r.DiscSize),
 		"fill_metric", string(r.FillMetric),
 		"fill_palette", string(r.FillPalette),

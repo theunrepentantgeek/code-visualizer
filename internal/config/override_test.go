@@ -126,6 +126,23 @@ func TestRadial_OverrideLabels_SetsWhenNonEmpty(t *testing.T) {
 	g.Expect(*r.Labels).To(Equal("all"))
 }
 
+func TestRadial_OverrideGrain_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	r := &Radial{}
+	r.OverrideGrain("directory")
+	g.Expect(*r.Grain).To(Equal("directory"))
+}
+
+func TestRadial_OverrideGrain_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "directory"
+	r := &Radial{Grain: &existing}
+	r.OverrideGrain("")
+	g.Expect(*r.Grain).To(Equal("directory"))
+}
+
 // Bubbletree overrides
 
 func TestBubbletree_OverrideSize_SetsWhenNonEmpty(t *testing.T) {
