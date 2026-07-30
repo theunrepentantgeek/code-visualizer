@@ -1,3 +1,4 @@
+//nolint:dupl // config structs and their overrides are structurally similar by design
 package config
 
 // Scatter holds persistent configuration for scatter plot visualizations.

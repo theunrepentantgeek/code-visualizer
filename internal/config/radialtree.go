@@ -1,3 +1,4 @@
+//nolint:dupl // config structs and their overrides are structurally similar by design
 package config
 
 // Radial holds persistent configuration for radial tree visualizations.
