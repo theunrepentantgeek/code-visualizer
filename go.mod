@@ -6,6 +6,7 @@ require (
 	github.com/alecthomas/kong v1.16.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/dave/dst v0.27.4
+	github.com/fogleman/delaunay v0.0.0-20180910191513-63f09b4c883d
 	github.com/fogleman/gg v1.3.0
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
@@ -14,7 +15,7 @@ require (
 	github.com/onsi/gomega v1.42.1
 	github.com/rotisserie/eris v0.5.4
 	github.com/sebdah/goldie/v2 v2.8.0
-	go.yaml.in/yaml/v3 v3.0.4
+	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/image v0.44.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/text v0.40.0

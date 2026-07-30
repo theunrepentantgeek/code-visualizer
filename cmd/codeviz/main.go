@@ -73,8 +73,10 @@ func setupLogger(quiet, verbose, debug bool) { //nolint:revive,nolintlint // fla
 
 	noColor := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
 
-	handler := tint.NewTextHandler(os.Stderr, &tint.Options{Level: level, NoColor: noColor})
-	slog.SetDefault(slog.New(handler))
+	slog.SetDefault(slog.New(tint.NewTextHandler(os.Stderr, &tint.Options{
+		Level:   level,
+		NoColor: noColor,
+	})))
 }
 
 func main() {

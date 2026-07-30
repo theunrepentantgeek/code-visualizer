@@ -61,7 +61,7 @@ func TestFormatFromPath_Errors(t *testing.T) {
 
 			_, err := FormatFromPath(tc.path)
 			g.Expect(err).To(HaveOccurred())
-			g.Expect(err.Error()).To(ContainSubstring(tc.errContains))
+			g.Expect(err).To(MatchError(ContainSubstring(tc.errContains)))
 		})
 	}
 }

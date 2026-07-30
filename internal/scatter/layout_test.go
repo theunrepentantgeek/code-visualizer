@@ -437,8 +437,8 @@ func TestValidateLogScale_ErrorsOnZeroValue(t *testing.T) {
 	err := ValidateLogScale(dataset, xAxis, yAxis)
 	g.Expect(err).To(HaveOccurred())
 	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
-	g.Expect(err.Error()).To(ContainSubstring("x-axis"))
-	g.Expect(err.Error()).To(ContainSubstring("zero.go"))
+	g.Expect(err).To(MatchError(ContainSubstring("x-axis")))
+	g.Expect(err).To(MatchError(ContainSubstring("zero.go")))
 }
 
 func TestValidateLogScale_PassesWhenAllPositive(t *testing.T) {

@@ -69,7 +69,7 @@ func TestParseExpression_EmptyStringReturnsError(t *testing.T) {
 
 	_, err := ParseExpression("")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("empty"))
+	g.Expect(err).To(MatchError(ContainSubstring("empty")))
 }
 
 func TestParseExpression_TooManySegmentsReturnsError(t *testing.T) {
@@ -78,7 +78,7 @@ func TestParseExpression_TooManySegmentsReturnsError(t *testing.T) {
 
 	_, err := ParseExpression("a.b.c.d")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("too many segments"))
+	g.Expect(err).To(MatchError(ContainSubstring("too many segments")))
 }
 
 func TestParseExpression_InvalidCharactersReturnsError(t *testing.T) {
@@ -87,7 +87,7 @@ func TestParseExpression_InvalidCharactersReturnsError(t *testing.T) {
 
 	_, err := ParseExpression("file size")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("invalid"))
+	g.Expect(err).To(MatchError(ContainSubstring("invalid")))
 }
 
 func TestParseExpression_ThreeSegmentsUnknownAggregationReturnsError(t *testing.T) {
@@ -96,7 +96,7 @@ func TestParseExpression_ThreeSegmentsUnknownAggregationReturnsError(t *testing.
 
 	_, err := ParseExpression("public.types.total")
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("aggregation"))
+	g.Expect(err).To(MatchError(ContainSubstring("aggregation")))
 }
 
 func TestParseExpression_EmptySegmentsReturnError(t *testing.T) {
@@ -106,7 +106,7 @@ func TestParseExpression_EmptySegmentsReturnError(t *testing.T) {
 	for _, input := range []string{".a", "a.", "a..b"} {
 		_, err := ParseExpression(input)
 		g.Expect(err).To(HaveOccurred(), input)
-		g.Expect(err.Error()).To(ContainSubstring("invalid"), input)
+		g.Expect(err).To(MatchError(ContainSubstring("invalid")), input)
 	}
 }
 

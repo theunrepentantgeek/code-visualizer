@@ -187,6 +187,48 @@ func TestCanvas_AddPath_DispatchesToBackend(t *testing.T) {
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawPath"))
 }
 
+func TestCanvas_AddPolygon_DispatchesBeforeStructurePath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(800, 600)
+	red := color.RGBA{R: 255, A: 255}
+	polygonSpec := &canvas.PolygonSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:   inks.FixedInk(red),
+			Border: inks.FixedInk(black),
+		},
+	}
+	pathSpec := &canvas.LineSpec{
+		Stroke:      inks.FixedInk(black),
+		StrokeWidth: 1,
+	}
+
+	c.AddPath(canvas.LayerStructure, canvas.Path{
+		Spec: pathSpec,
+		Points: []canvas.Position{
+			{X: 0, Y: 0},
+			{X: 10, Y: 10},
+		},
+	})
+	c.AddPolygon(canvas.LayerSurface, canvas.Polygon{
+		Spec: polygonSpec,
+		Points: []canvas.Position{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+	})
+
+	mb := mock.NewBackend()
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(mb.Calls).To(HaveLen(2))
+	g.Expect(mb.Calls[0].Method).To(Equal("DrawPolygon"))
+	g.Expect(mb.Calls[0].Fill).To(Equal(red))
+	g.Expect(mb.Calls[1].Method).To(Equal("DrawPath"))
+}
+
 func TestAddArcText_DispatchesToBackend(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -456,7 +498,7 @@ func TestCanvas_Render_UnsupportedFormat(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 
 	if err != nil {
-		g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+		g.Expect(err).To(MatchError(ContainSubstring("unsupported")))
 	}
 }
 

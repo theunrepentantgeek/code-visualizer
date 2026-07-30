@@ -51,12 +51,12 @@ func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) erro
 		c.RootConfig.LegendOrientationStr(),
 	)
 
-	t.LegendConfig = legend.Build(
-		pos, orient,
-		t.Inks.Fill, t.FillMetric,
-		t.Inks.Border, t.BorderMetric,
-		t.Size,
-	)
+	t.LegendConfig = legend.Builder{
+		Position: pos, Orientation: orient,
+		FillInk: t.Inks.Fill, FillMetric: t.FillMetric,
+		BorderInk: t.Inks.Border, BorderMetric: t.BorderMetric,
+		SizeMetric: t.Size,
+	}.Build()
 	if t.LegendConfig != nil {
 		t.LegendConfig.LabelSample = labelSampleLines(labelMetricsFor(t, cfg))
 	}

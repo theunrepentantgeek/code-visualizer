@@ -103,8 +103,8 @@ func TestResolveExpression_SameLevelAggregationRejected(t *testing.T) {
 	expr := metric.MetricExpression{Base: "file-size", Aggregation: metric.AggSum}
 	_, err := resolveExpressionWith(reg, expr, metric.LevelFile)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("already a per-file metric"))
-	g.Expect(err.Error()).To(ContainSubstring("cross-level"))
+	g.Expect(err).To(MatchError(ContainSubstring("already a per-file metric")))
+	g.Expect(err).To(MatchError(ContainSubstring("cross-level")))
 }
 
 func TestResolveExpression_InvalidAggregationError(t *testing.T) {
@@ -122,9 +122,9 @@ func TestResolveExpression_InvalidAggregationError(t *testing.T) {
 	expr := metric.MetricExpression{Base: "file-size", Aggregation: metric.AggMode}
 	_, err := resolveExpressionWith(reg, expr, metric.LevelDirectory)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("mode"))
-	g.Expect(err.Error()).To(ContainSubstring("not a valid aggregation"))
-	g.Expect(err.Error()).To(ContainSubstring("sum, min, max, mean"))
+	g.Expect(err).To(MatchError(ContainSubstring("mode")))
+	g.Expect(err).To(MatchError(ContainSubstring("not a valid aggregation")))
+	g.Expect(err).To(MatchError(ContainSubstring("sum, min, max, mean")))
 }
 
 func TestResolveExpression_InvalidFilterError(t *testing.T) {
@@ -143,8 +143,8 @@ func TestResolveExpression_InvalidFilterError(t *testing.T) {
 	expr := metric.MetricExpression{Filter: "stdlib", Base: "types", Aggregation: metric.AggCount}
 	_, err := resolveExpressionWith(reg, expr, metric.LevelFile)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("stdlib"))
-	g.Expect(err.Error()).To(ContainSubstring("not a valid filter"))
+	g.Expect(err).To(MatchError(ContainSubstring("stdlib")))
+	g.Expect(err).To(MatchError(ContainSubstring("not a valid filter")))
 }
 
 func TestResolveExpression_MissingAggregationAtHigherLevel(t *testing.T) {
@@ -162,8 +162,8 @@ func TestResolveExpression_MissingAggregationAtHigherLevel(t *testing.T) {
 	expr := metric.MetricExpression{Base: "cyclomatic-complexity"}
 	_, err := resolveExpressionWith(reg, expr, metric.LevelFile)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("requires aggregation"))
-	g.Expect(err.Error()).To(ContainSubstring("sum, max, mean"))
+	g.Expect(err).To(MatchError(ContainSubstring("requires aggregation")))
+	g.Expect(err).To(MatchError(ContainSubstring("sum, max, mean")))
 }
 
 func TestResolveExpression_UnknownBaseMetricError(t *testing.T) {
@@ -175,7 +175,7 @@ func TestResolveExpression_UnknownBaseMetricError(t *testing.T) {
 	expr := metric.MetricExpression{Base: "nonexistent"}
 	_, err := resolveExpressionWith(reg, expr, metric.LevelFile)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("unknown base metric"))
+	g.Expect(err).To(MatchError(ContainSubstring("unknown base metric")))
 }
 
 func TestResolveExpression_FilterWithAggregation(t *testing.T) {
@@ -214,5 +214,5 @@ func TestResolveExpression_FilterOnMetricWithNoFilters(t *testing.T) {
 	expr := metric.MetricExpression{Filter: "stdlib", Base: "file-size", Aggregation: metric.AggSum}
 	_, err := resolveExpressionWith(reg, expr, metric.LevelDirectory)
 	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(ContainSubstring("has no filters"))
+	g.Expect(err).To(MatchError(ContainSubstring("has no filters")))
 }

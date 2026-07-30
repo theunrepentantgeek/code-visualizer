@@ -128,7 +128,7 @@ func TestSelectionMetricRule_Validate_EmptyPattern_ReturnsError(t *testing.T) {
 	err := rule.Validate()
 	g.Expect(err).To(HaveOccurred())
 	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
-	g.Expect(err.Error()).To(ContainSubstring("empty glob pattern"))
+	g.Expect(err).To(MatchError(ContainSubstring("empty glob pattern")))
 }
 
 func TestSelectionMetric_Validate_AllValidRules(t *testing.T) {
@@ -159,8 +159,8 @@ func TestSelectionMetric_Validate_InvalidRule_ReturnsError(t *testing.T) {
 	err := m.Validate()
 	g.Expect(err).To(HaveOccurred())
 	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
-	g.Expect(err.Error()).To(ContainSubstring(`"bad-metric"`))
-	g.Expect(err.Error()).To(ContainSubstring(`"broken"`))
+	g.Expect(err).To(MatchError(ContainSubstring(`"bad-metric"`)))
+	g.Expect(err).To(MatchError(ContainSubstring(`"broken"`)))
 }
 
 func TestSelectionMetric_Validate_EmptyRules_Succeeds(t *testing.T) {

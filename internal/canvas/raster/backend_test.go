@@ -122,6 +122,103 @@ func TestRasterBackend_DrawPath_ProducesValidPNG(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
+func TestRasterBackend_DrawPolygon_FillsInterior(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	red := color.RGBA{R: 255, A: 255}
+	black := color.RGBA{A: 255}
+	b.DrawPolygon(
+		[]model.Position{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+		model.SolidFill{Color: red}, model.SolidFill{Color: black}, 0,
+	)
+
+	out := filepath.Join(t.TempDir(), "polygon.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	r, green, blue, alpha := loadImage(t, out).At(2, 2).RGBA()
+	g.Expect(r).To(Equal(uint32(0xffff)))
+	g.Expect(green).To(BeZero())
+	g.Expect(blue).To(BeZero())
+	g.Expect(alpha).To(Equal(uint32(0xffff)))
+}
+
+func TestRasterBackend_DrawPolygon_WithoutBorder_DoesNotPreservePath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(20, 20)
+	red := color.RGBA{R: 255, A: 255}
+	black := color.RGBA{A: 255}
+	b.DrawPolygon(
+		[]model.Position{
+			{X: 2, Y: 2},
+			{X: 10, Y: 2},
+			{X: 2, Y: 10},
+		},
+		model.SolidFill{Color: red}, model.SolidFill{Color: black}, 0,
+	)
+	b.DrawLine(model.Position{X: 15, Y: 15}, model.Position{X: 18, Y: 15}, black, 1)
+
+	out := filepath.Join(t.TempDir(), "polygon-without-border.png")
+	err := b.Finish(out)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	r, green, blue, _ := loadImage(t, out).At(6, 2).RGBA()
+	g.Expect(r).To(Equal(uint32(0xffff)))
+	g.Expect(green).To(BeZero())
+	g.Expect(blue).To(BeZero())
+}
+
+func TestRasterBackend_DrawFilledPath_UsesEvenOddFillRule(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(10, 10)
+	filledPathBackend, ok := b.(interface {
+		DrawFilledPath(loops [][]model.Position, fill color.RGBA)
+	})
+
+	g.Expect(ok).To(BeTrue())
+
+	if !ok {
+		return
+	}
+
+	filledPathBackend.DrawFilledPath([][]model.Position{
+		{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 9, Y: 9},
+			{X: 1, Y: 9},
+		},
+		{
+			{X: 3, Y: 3},
+			{X: 7, Y: 3},
+			{X: 7, Y: 7},
+			{X: 3, Y: 7},
+		},
+	}, color.RGBA{R: 255, A: 255})
+
+	out := filepath.Join(t.TempDir(), "filled-path.png")
+	g.Expect(b.Finish(out)).To(Succeed())
+
+	r, green, blue, alpha := loadImage(t, out).At(2, 2).RGBA()
+	g.Expect(r).To(Equal(uint32(0xffff)))
+	g.Expect(green).To(BeZero())
+	g.Expect(blue).To(BeZero())
+	g.Expect(alpha).To(Equal(uint32(0xffff)))
+
+	_, _, _, alpha = loadImage(t, out).At(5, 5).RGBA()
+	g.Expect(alpha).To(BeZero())
+}
+
 func TestRasterBackend_Finish_JPG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -151,7 +248,7 @@ func TestRasterBackend_Finish_UnsupportedFormat(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 
 	if err != nil {
-		g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+		g.Expect(err).To(MatchError(ContainSubstring("unsupported")))
 	}
 }
 

@@ -251,6 +251,57 @@ func TestSpiral_OverrideBorder_SkipsWhenZero(t *testing.T) {
 	g.Expect(*s.Border).To(Equal(existing))
 }
 
+func TestSpiral_SurfaceEnabled(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s := &Spiral{}
+	g.Expect(s.SurfaceEnabled()).To(BeFalse())
+
+	s.OverrideSurface(true)
+	g.Expect(s.SurfaceEnabled()).To(BeTrue())
+
+	s = &Spiral{}
+	s.OverrideSurfaceMetric(MetricSpec{Metric: metric.Name("file-lines")})
+	g.Expect(s.SurfaceEnabled()).To(BeTrue())
+}
+
+func TestSpiral_OverrideSurface_SkipsFalse(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	enabled := true
+	s := &Spiral{Surface: &enabled}
+	s.OverrideSurface(false)
+
+	g.Expect(s.Surface).NotTo(BeNil())
+	g.Expect(*s.Surface).To(BeTrue())
+}
+
+func TestSpiral_OverrideSurfaceMetric_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s := &Spiral{}
+	spec := MetricSpec{Metric: metric.Name("file-lines"), Palette: palette.Foliage}
+	s.OverrideSurfaceMetric(spec)
+
+	g.Expect(s.SurfaceMetric).NotTo(BeNil())
+	g.Expect(*s.SurfaceMetric).To(Equal(spec))
+}
+
+func TestSpiral_OverrideSurfaceMetric_SkipsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	s := &Spiral{SurfaceMetric: &existing}
+	s.OverrideSurfaceMetric(MetricSpec{})
+
+	g.Expect(s.SurfaceMetric).NotTo(BeNil())
+	g.Expect(*s.SurfaceMetric).To(Equal(existing))
+}
+
 // Radial overrides (fill/border)
 
 func TestRadial_OverrideFill_SetsWhenNonZero(t *testing.T) {
