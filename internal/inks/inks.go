@@ -74,6 +74,88 @@ func MetricValueForFile(file *model.File, ink Ink) MetricValue {
 	}
 }
 
+// MetricValueForDirectory builds a MetricValue from a directory's data for the
+// given ink. Returns the zero MetricValue when directory is nil, when the ink
+// is fixed, or when the directory has no value for the ink's metric.
+func MetricValueForDirectory(dir *model.Directory, ink Ink) MetricValue {
+	if dir == nil {
+		return MetricValue{}
+	}
+
+	info := ink.Info()
+
+	switch info.Kind {
+	case KindNumeric:
+		m := info.MetricName
+		if v, ok := dir.Quantity(m); ok {
+			return MetricValue{Kind: metric.Quantity, Quantity: int(v)}
+		}
+
+		if v, ok := dir.Measure(m); ok {
+			return MetricValue{Kind: metric.Measure, Measure: v}
+		}
+	case KindCategorical:
+		if v, ok := dir.Classification(info.MetricName); ok {
+			return MetricValue{Kind: metric.Classification, Category: v}
+		}
+	default:
+		// Nothing
+	}
+
+	return MetricValue{}
+}
+
+// BuildDirectoryMetricInk creates an ink from directory metric values.
+func BuildDirectoryMetricInk(
+	root *model.Directory,
+	d provider.BaseMetricDescriptor,
+	palName palette.PaletteName,
+	fallback color.RGBA,
+) Ink {
+	if d.Name == "" {
+		return FixedInk(fallback)
+	}
+
+	pal := palette.GetPalette(palName)
+
+	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
+		values := collectDirectoryNumericValues(root, d.Name)
+		if len(values) == 0 {
+			return FixedInk(fallback)
+		}
+
+		return NumericInk(d.Name, values, pal)
+	}
+
+	return CategoricalInk(d.Name, collectDirectoryTypes(root, d.Name), pal)
+}
+
+func collectDirectoryNumericValues(root *model.Directory, name metric.Name) []float64 {
+	values := make([]float64, 0)
+
+	model.WalkDirectories(root, func(dir *model.Directory) {
+		if value, ok := dir.Quantity(name); ok {
+			values = append(values, float64(value))
+		} else if value, ok := dir.Measure(name); ok {
+			values = append(values, value)
+		}
+	})
+
+	return values
+}
+
+func collectDirectoryTypes(root *model.Directory, name metric.Name) []string {
+	seen := map[string]struct{}{}
+
+	model.WalkDirectories(root, func(dir *model.Directory) {
+		if value, ok := dir.Classification(name); ok {
+			seen[value] = struct{}{}
+		}
+	})
+
+	return slices.Sorted(maps.Keys(seen))
+}
+
 // CollectNumericValues walks the directory tree and returns every file's
 // numeric value for metric m (quantity preferred, then measure).
 func CollectNumericValues(root *model.Directory, m metric.Name) []float64 {
