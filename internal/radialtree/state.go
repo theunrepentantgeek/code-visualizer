@@ -10,6 +10,7 @@ import (
 type State struct {
 	// Resolved during the pipeline:
 	DiscSize               metric.Name
+	DirectoryDiscSize      metric.Name
 	FillMetric             metric.Name
 	FillPalette            palette.PaletteName
 	BorderMetric           metric.Name

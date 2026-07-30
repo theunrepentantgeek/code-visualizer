@@ -17,6 +17,7 @@ import (
 // fills c.Requested.
 func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 	r.DiscSize = metric.Name(stages.PtrString(cfg.DiscSize))
+	r.DirectoryDiscSize = resolveDirectoryMetric(nil, r.DiscSize)
 	r.FillMetric = resolveFillMetric(cfg, r.DiscSize)
 	r.FillPalette = stages.ResolveFillPalette(cfg.Fill, r.FillMetric)
 	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
@@ -36,6 +37,7 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 		r.DiscSize,
 		cfg.Fill,
 		cfg.Border,
+		directoryMetricSpec(nil, r.DirectoryDiscSize),
 		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
 		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
 	)
@@ -167,7 +169,7 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 func LayoutStage(c *stages.CommonState, r *State) error {
 	canvasSize := radialCanvasSize(c)
 
-	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.Labels)
+	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.DirectoryDiscSize, r.Labels)
 
 	return nil
 }

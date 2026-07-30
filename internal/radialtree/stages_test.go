@@ -59,6 +59,22 @@ func TestResolveRadialMetrics_DefaultDirectoryFillAggregatesFileFill(t *testing.
 	g.Expect(common.Requested.Expressions[0].ResultName).To(Equal(metric.Name("file-size.sum")))
 }
 
+func TestResolveRadialMetrics_DirectoryDiscSizeAggregatesDiscSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	discSizeStr := "file-size"
+	common := &stages.CommonState{}
+	viz := &radialtree.State{}
+	cfg := &config.Radial{DiscSize: &discSizeStr}
+
+	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.DirectoryDiscSize).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(common.Requested.Expressions).To(ContainElement(
+		HaveField("ResultName", metric.Name("file-size.sum")),
+	))
+}
+
 func TestResolveRadialMetrics_ExplicitDirectoryBorder(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

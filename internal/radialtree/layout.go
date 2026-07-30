@@ -14,13 +14,24 @@ const (
 	minDirDisc    = 4.0
 	maxDiscFactor = 0.40
 	minFileDisc   = 3.0
+	// maxDirDiscFactor scales the base directory disc size to give the largest
+	// directory disc room to grow when a directory disc metric is available.
+	maxDirDiscFactor = 2.0
 )
 
 // Layout builds a radial tree layout for root.
 // canvasSize is the width and height of the square canvas in pixels.
 // discMetric is the metric used to scale file node disc sizes.
+// dirDiscMetric is the aggregated metric used to scale directory node disc
+// sizes; when empty (or absent from the model) directories use a fixed size.
 // labels controls which labels are shown.
-func Layout(root *model.Directory, canvasSize int, discMetric metric.Name, labels LabelMode) RadialNode {
+func Layout(
+	root *model.Directory,
+	canvasSize int,
+	discMetric metric.Name,
+	dirDiscMetric metric.Name,
+	labels LabelMode,
+) RadialNode {
 	maxDepth := computeMaxDepth(root)
 
 	var ringSpacing float64
@@ -46,6 +57,7 @@ func Layout(root *model.Directory, canvasSize int, discMetric metric.Name, label
 
 	effectiveMaxDiscFactor := adjustedDiscFactor(n1, ringSpacing, maxDiscFactor)
 	dp := buildDiscParams(root, discMetric, minFileDisc, ringSpacing*effectiveMaxDiscFactor)
+	dp.dir = buildDirDiscParams(root, dirDiscMetric, ringSpacing)
 
 	// Start at top (−π/2) and sweep the full circle clockwise.
 	return layoutDir(root, 0, -math.Pi/2, 2*math.Pi, ringSpacing, discMetric, labels, dp)
@@ -58,6 +70,19 @@ type discParams struct {
 	metricMin float64 // minimum non-zero metric value across all files
 	metricMax float64 // maximum non-zero metric value across all files
 	useEqual  bool    // true when all metric values are equal or no values exist
+	dir       dirDiscParams
+}
+
+// dirDiscParams holds the precomputed parameters used to scale directory disc
+// radii from an aggregated (rolled up) metric.
+type dirDiscParams struct {
+	metricName metric.Name // aggregated metric scaling directory discs
+	base       float64     // pixel disc radius used when no metric value applies
+	dirMin     float64     // minimum pixel disc radius for directory nodes
+	dirMax     float64     // maximum pixel disc radius for directory nodes
+	metricMin  float64     // minimum non-zero metric value across all directories
+	metricMax  float64     // maximum non-zero metric value across all directories
+	found      bool        // true when directory metric values vary and can be scaled
 }
 
 func buildDiscParams(root *model.Directory, discMetric metric.Name, fileMin, fileMax float64) discParams {
@@ -116,7 +141,7 @@ func layoutDir(
 	angle := startAngle + sweepAngle/2
 	radius := float64(depth) * ringSpacing
 
-	dirDisc := math.Max(ringSpacing*dirDiscFactor, minDirDisc)
+	dirDisc := directoryDiscRadius(dir, dp.dir)
 
 	node := RadialNode{
 		X:           radius * math.Cos(angle),
@@ -193,6 +218,86 @@ func fileDiscRadius(f *model.File, discMetric metric.Name, dp discParams) float6
 	scaled := dp.fileMin + (val-dp.metricMin)/(dp.metricMax-dp.metricMin)*(dp.fileMax-dp.fileMin)
 
 	return clamp(scaled, dp.fileMin, dp.fileMax)
+}
+
+// buildDirDiscParams precomputes the scaling parameters for directory discs
+// from the aggregated (rolled up) directory metric. When the metric is absent
+// or uniform across the tree, directories fall back to a fixed base size.
+func buildDirDiscParams(root *model.Directory, discMetric metric.Name, ringSpacing float64) dirDiscParams {
+	base := math.Max(ringSpacing*dirDiscFactor, minDirDisc)
+	dp := dirDiscParams{
+		metricName: discMetric,
+		base:       base,
+		dirMin:     minDirDisc,
+		dirMax:     base * maxDirDiscFactor,
+	}
+
+	if discMetric == "" {
+		return dp
+	}
+
+	var minVal, maxVal float64
+
+	model.WalkDirectories(root, func(d *model.Directory) {
+		v := directoryMetricValue(d, discMetric)
+		if !(v > 0) {
+			return
+		}
+
+		if !dp.found {
+			minVal, maxVal = v, v
+			dp.found = true
+
+			return
+		}
+
+		minVal = math.Min(minVal, v)
+		maxVal = math.Max(maxVal, v)
+	})
+
+	if minVal == maxVal {
+		// No values, or every directory has the same value: nothing to scale.
+		dp.found = false
+
+		return dp
+	}
+
+	dp.metricMin, dp.metricMax = minVal, maxVal
+
+	return dp
+}
+
+// directoryDiscRadius returns the disc pixel radius for dir, scaled so that
+// disc area varies linearly with the rolled up directory metric.
+func directoryDiscRadius(dir *model.Directory, dp dirDiscParams) float64 {
+	if !dp.found {
+		return dp.base
+	}
+
+	val := directoryMetricValue(dir, dp.metricName)
+	if val <= 0 {
+		return dp.dirMin
+	}
+
+	fraction := (val - dp.metricMin) / (dp.metricMax - dp.metricMin)
+	minArea := dp.dirMin * dp.dirMin
+	area := minArea + fraction*(dp.dirMax*dp.dirMax-minArea)
+
+	return clamp(math.Sqrt(area), dp.dirMin, dp.dirMax)
+}
+
+// directoryMetricValue returns the disc-metric value for dir as a float64.
+// Quantity is checked first (int64), then Measure (float64). Returns 0 if absent.
+func directoryMetricValue(dir *model.Directory, discMetric metric.Name) float64 {
+	if q, ok := dir.Quantity(discMetric); ok {
+		return float64(q)
+	}
+
+	if m, ok := dir.Measure(discMetric); ok {
+		return m
+	}
+
+	return 0
 }
 
 // fileMetricValue returns the disc-metric value for f as a float64.

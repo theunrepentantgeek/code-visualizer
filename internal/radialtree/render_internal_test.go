@@ -107,7 +107,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := radialTestRoot()
-	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelNone)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
@@ -130,7 +130,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := radialTestRoot()
-	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 400, filesystem.FileSize, "", LabelNone)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
@@ -181,7 +181,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 		},
 	}
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelAll)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
@@ -203,7 +203,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 
 	root := &model.Directory{Name: "empty"}
 
-	nodes := Layout(root, 400, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 400, filesystem.FileSize, "", LabelNone)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
@@ -270,7 +270,7 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 		},
 	}
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelNone)
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelNone)
 
 	cx := float64(800) / 2.0
 	cy := float64(800) / 2.0
@@ -332,7 +332,7 @@ func TestRenderRadialToCanvas_DirectoryUsesDirectoryInks(t *testing.T) {
 	is.DirectoryFill = inks.FixedInk(directoryFill)
 	is.DirectoryBorder = inks.FixedInk(directoryBorder)
 
-	nodes := Layout(root, 800, filesystem.FileSize, LabelAll)
+	nodes := Layout(root, 800, filesystem.FileSize, "", LabelAll)
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400, 400, is)
 	backend := mock.NewBackend()
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
