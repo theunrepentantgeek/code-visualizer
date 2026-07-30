@@ -187,6 +187,7 @@ func TestMetricValueForDirectory_NumericInk(t *testing.T) {
 
 	dir := &model.Directory{}
 	dir.SetQuantity(metric.Name("file-size.sum"), 300)
+
 	ink := inks.NumericInk(
 		metric.Name("file-size.sum"),
 		[]float64{100, 300},

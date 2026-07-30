@@ -66,12 +66,15 @@ func resolveDirectoryMetric(spec *config.MetricSpec, fallback metric.Name) metri
 		return ""
 	}
 
-	aggregation := metric.AggMode
+	var aggregation metric.AggregationName
+
 	switch desc.Kind {
 	case metric.Quantity:
 		aggregation = metric.AggSum
 	case metric.Measure:
 		aggregation = metric.AggMean
+	default:
+		aggregation = metric.AggMode
 	}
 
 	expression := metric.MetricExpression{Filter: expr.Filter, Base: expr.Base, Aggregation: aggregation}
@@ -131,11 +134,12 @@ func buildDirectoryInks(
 	fillPalette palette.PaletteName,
 	borderMetric metric.Name,
 	borderPalette palette.PaletteName,
-) (inks.Ink, inks.Ink) {
+) (fill inks.Ink, border inks.Ink) {
 	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	fill := inks.BuildDirectoryMetricInk(root, fillDesc, fillPalette, defaultDirFill)
+	fill = inks.BuildDirectoryMetricInk(root, fillDesc, fillPalette, defaultDirFill)
+
 	borderDesc, _ := requested.DescriptorFor(borderMetric)
-	border := inks.BuildDirectoryMetricInk(root, borderDesc, borderPalette, defaultBorder)
+	border = inks.BuildDirectoryMetricInk(root, borderDesc, borderPalette, defaultBorder)
 
 	return fill, border
 }

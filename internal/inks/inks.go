@@ -98,6 +98,8 @@ func MetricValueForDirectory(dir *model.Directory, ink Ink) MetricValue {
 		if v, ok := dir.Classification(info.MetricName); ok {
 			return MetricValue{Kind: metric.Classification, Category: v}
 		}
+	default:
+		// Nothing
 	}
 
 	return MetricValue{}
@@ -130,6 +132,7 @@ func BuildDirectoryMetricInk(
 
 func collectDirectoryNumericValues(root *model.Directory, name metric.Name) []float64 {
 	values := make([]float64, 0)
+
 	model.WalkDirectories(root, func(dir *model.Directory) {
 		if value, ok := dir.Quantity(name); ok {
 			values = append(values, float64(value))
@@ -143,6 +146,7 @@ func collectDirectoryNumericValues(root *model.Directory, name metric.Name) []fl
 
 func collectDirectoryTypes(root *model.Directory, name metric.Name) []string {
 	seen := map[string]struct{}{}
+
 	model.WalkDirectories(root, func(dir *model.Directory) {
 		if value, ok := dir.Classification(name); ok {
 			seen[value] = struct{}{}

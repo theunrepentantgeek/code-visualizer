@@ -338,6 +338,7 @@ func TestRenderRadialToCanvas_DirectoryUsesDirectoryInks(t *testing.T) {
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
 	var directoryDiscCount int
+
 	for _, call := range backend.Calls {
 		if call.Method == "DrawDisc" && call.Fill == directoryFill && call.Border == directoryBorder {
 			directoryDiscCount++
