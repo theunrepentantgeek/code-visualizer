@@ -480,3 +480,45 @@ func TestValidateLogScale_SkipsLinearAxes(t *testing.T) {
 	err := ValidateLogScale(dataset, xAxis, yAxis)
 	g.Expect(err).NotTo(HaveOccurred())
 }
+
+func TestValidateLogScale_ErrorsOnYAxisNonPositive(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	bad := scatterTestFile("bad.go")
+	bad.SetQuantity(filesystem.FileLines, 10)
+	bad.SetQuantity(filesystem.FileSize, 0) // zero y-value
+
+	root := &model.Directory{Files: []*model.File{bad}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Linear}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Log}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).To(HaveOccurred())
+	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
+	g.Expect(err).To(MatchError(ContainSubstring("y-axis")))
+	g.Expect(err).To(MatchError(ContainSubstring("bad.go")))
+}
+
+func TestValidateLogScale_ReportsBothAxesWhenBothInvalid(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	bad := scatterTestFile("bad.go")
+	bad.SetQuantity(filesystem.FileLines, 0) // zero x-value
+	bad.SetQuantity(filesystem.FileSize, 0)  // zero y-value
+
+	root := &model.Directory{Files: []*model.File{bad}}
+	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
+	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Log}
+
+	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+
+	err := ValidateLogScale(dataset, xAxis, yAxis)
+	g.Expect(err).To(HaveOccurred())
+	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
+	g.Expect(err).To(MatchError(ContainSubstring("x-axis")))
+	g.Expect(err).To(MatchError(ContainSubstring("y-axis")))
+}
