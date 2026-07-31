@@ -44,6 +44,56 @@ func TestResolveRadialMetrics_FillOverridesDiscSizeAsFillMetric(t *testing.T) {
 	g.Expect(common.Requested.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
+func TestResolveRadialMetrics_DefaultDirectoryFillAggregatesFileFill(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	discSizeStr := "file-size"
+	common := &stages.CommonState{}
+	viz := &radialtree.State{}
+	cfg := &config.Radial{DiscSize: &discSizeStr}
+
+	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.DirectoryFillMetric).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(common.Requested.Expressions).To(HaveLen(1))
+	g.Expect(common.Requested.Expressions[0].ResultName).To(Equal(metric.Name("file-size.sum")))
+}
+
+func TestResolveRadialMetrics_DirectoryDiscSizeAggregatesDiscSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	discSizeStr := "file-size"
+	common := &stages.CommonState{}
+	viz := &radialtree.State{}
+	cfg := &config.Radial{DiscSize: &discSizeStr}
+
+	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.DirectoryDiscSize).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(common.Requested.Expressions).To(ContainElement(
+		HaveField("ResultName", metric.Name("file-size.sum")),
+	))
+}
+
+func TestResolveRadialMetrics_ExplicitDirectoryBorder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	discSizeStr := "file-size"
+	common := &stages.CommonState{}
+	viz := &radialtree.State{}
+	cfg := &config.Radial{
+		DiscSize:        &discSizeStr,
+		DirectoryBorder: &config.MetricSpec{Metric: "file-type.mode"},
+	}
+
+	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.DirectoryBorderMetric).To(Equal(metric.Name("file-type.mode")))
+	g.Expect(common.Requested.Expressions).To(ContainElement(
+		HaveField("ResultName", metric.Name("file-type.mode")),
+	))
+}
+
 func TestResolveRadialMetrics_LabelsDefaultToFolders(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -72,4 +122,65 @@ func TestResolveRadialMetrics_LabelsNoneExplicit(t *testing.T) {
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Labels).To(Equal(radialtree.LabelNone))
+}
+
+func TestResolveRadialMetrics_GrainDefaultsToFile(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	discSizeStr := "file-size"
+	common := &stages.CommonState{}
+	viz := &radialtree.State{}
+	cfg := &config.Radial{DiscSize: &discSizeStr}
+
+	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.Grain).To(Equal(radialtree.GrainFile))
+}
+
+func TestResolveRadialMetrics_GrainDirectoryExplicit(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	discSizeStr := "file-size"
+	grainStr := string(radialtree.GrainDirectory)
+	common := &stages.CommonState{}
+	viz := &radialtree.State{}
+	cfg := &config.Radial{
+		DiscSize: &discSizeStr,
+		Grain:    &grainStr,
+	}
+
+	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.Grain).To(Equal(radialtree.GrainDirectory))
+}
+
+func TestBuildLegendStage_GrainDirectoryDescribesDirectoryMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{RootConfig: config.New()}
+	viz := &radialtree.State{
+		Grain:               radialtree.GrainDirectory,
+		FillMetric:          metric.Name("file-lines"),
+		DirectoryFillMetric: metric.Name("file-lines.sum"),
+	}
+
+	g.Expect(radialtree.BuildLegendStage(common, viz)).To(Succeed())
+	g.Expect(viz.LegendConfig).ToNot(BeNil())
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(1))
+	g.Expect(viz.LegendConfig.Entries[0].MetricName).To(Equal("file-lines.sum"))
+}
+
+func TestBuildLegendStage_GrainFileBuildsLegend(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{RootConfig: config.New()}
+	viz := &radialtree.State{
+		Grain:      radialtree.GrainFile,
+		FillMetric: metric.Name("file-lines"),
+	}
+
+	g.Expect(radialtree.BuildLegendStage(common, viz)).To(Succeed())
+	g.Expect(viz.LegendConfig).ToNot(BeNil())
 }

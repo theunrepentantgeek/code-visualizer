@@ -29,6 +29,7 @@ codeviz radial-tree [flags] <target-path>
 | `--fill`               | `-f`  | none           | Fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
 | `--labels`             |       | `none`         | Labels to display: `all`, `folders`, or `none`                    |
+| `--grain`              |       | `file`         | Granularity of nodes shown: `file` or `directory`                 |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
 | `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
 | `--width`              |       | `1920`         | Image width in pixels                                             |
@@ -56,3 +57,13 @@ Colour by file type and label the folders:
 ```sh
 codeviz radial-tree ./src -o radial.png -d file-lines -f file-type --labels folders
 ```
+
+Show the folder structure only, leaving out the files — useful for large codebases:
+
+```sh
+codeviz radial-tree ./src -o radial.png -d file-lines --grain directory
+```
+
+With `--grain directory` every folder is drawn (and named), and no file discs are
+drawn. Folder discs are sized and coloured from the aggregated (rolled up)
+directory metrics, so the legend describes those rather than the file metrics.

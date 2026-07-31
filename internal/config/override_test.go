@@ -126,6 +126,23 @@ func TestRadial_OverrideLabels_SetsWhenNonEmpty(t *testing.T) {
 	g.Expect(*r.Labels).To(Equal("all"))
 }
 
+func TestRadial_OverrideGrain_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	r := &Radial{}
+	r.OverrideGrain("directory")
+	g.Expect(*r.Grain).To(Equal("directory"))
+}
+
+func TestRadial_OverrideGrain_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "directory"
+	r := &Radial{Grain: &existing}
+	r.OverrideGrain("")
+	g.Expect(*r.Grain).To(Equal("directory"))
+}
+
 // Bubbletree overrides
 
 func TestBubbletree_OverrideSize_SetsWhenNonEmpty(t *testing.T) {
@@ -249,6 +266,57 @@ func TestSpiral_OverrideBorder_SkipsWhenZero(t *testing.T) {
 	s := &Spiral{Border: &existing}
 	s.OverrideBorder(MetricSpec{})
 	g.Expect(*s.Border).To(Equal(existing))
+}
+
+func TestSpiral_SurfaceEnabled(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s := &Spiral{}
+	g.Expect(s.SurfaceEnabled()).To(BeFalse())
+
+	s.OverrideSurface(true)
+	g.Expect(s.SurfaceEnabled()).To(BeTrue())
+
+	s = &Spiral{}
+	s.OverrideSurfaceMetric(MetricSpec{Metric: metric.Name("file-lines")})
+	g.Expect(s.SurfaceEnabled()).To(BeTrue())
+}
+
+func TestSpiral_OverrideSurface_SkipsFalse(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	enabled := true
+	s := &Spiral{Surface: &enabled}
+	s.OverrideSurface(false)
+
+	g.Expect(s.Surface).NotTo(BeNil())
+	g.Expect(*s.Surface).To(BeTrue())
+}
+
+func TestSpiral_OverrideSurfaceMetric_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s := &Spiral{}
+	spec := MetricSpec{Metric: metric.Name("file-lines"), Palette: palette.Foliage}
+	s.OverrideSurfaceMetric(spec)
+
+	g.Expect(s.SurfaceMetric).NotTo(BeNil())
+	g.Expect(*s.SurfaceMetric).To(Equal(spec))
+}
+
+func TestSpiral_OverrideSurfaceMetric_SkipsZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	existing := MetricSpec{Metric: metric.Name("file-age")}
+	s := &Spiral{SurfaceMetric: &existing}
+	s.OverrideSurfaceMetric(MetricSpec{})
+
+	g.Expect(s.SurfaceMetric).NotTo(BeNil())
+	g.Expect(*s.SurfaceMetric).To(Equal(existing))
 }
 
 // Radial overrides (fill/border)

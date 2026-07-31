@@ -8,6 +8,8 @@ type Layer int
 const (
 	// LayerBackground is for canvas background fills.
 	LayerBackground Layer = 0
+	// LayerSurface is for filled surface geometry behind structure.
+	LayerSurface Layer = 5
 	// LayerStructure is for edges, guide tracks, and directory borders.
 	LayerStructure Layer = 10
 	// LayerContent is for file rectangles, file discs, and data shapes.

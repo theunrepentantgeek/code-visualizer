@@ -1,12 +1,15 @@
 package spiral
 
 import (
+	"cmp"
 	"image/color"
 	"math"
+	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
 var (
@@ -27,10 +30,13 @@ func RenderToCanvas(
 	buckets []TimeBucket,
 	width, height int,
 	is Inks,
+	triangles []surface.Triangle,
+	surfaceInk inks.Ink,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
 	addBackground(cv, width, height)
+	addSurface(cv, triangles, surfaceInk)
 	addTrack(cv, layout)
 	addDiscs(cv, layout.Nodes, buckets, is)
 	addLabels(cv, layout.Nodes)
@@ -54,6 +60,94 @@ func addBackground(cv *canvas.Canvas, width, height int) {
 		H:     float64(height),
 		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
+}
+
+// addSurface adds interpolated metric triangles behind the spiral foreground.
+func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks.Ink) {
+	if len(triangles) == 0 || surfaceInk == nil {
+		return
+	}
+
+	if surfaceInk.Info().Kind == inks.KindNumeric {
+		addBandedSurface(cv, triangles, surfaceInk, inks.NumericBreakpoints(surfaceInk))
+
+		return
+	}
+
+	addFlatSurface(cv, triangles, surfaceInk)
+}
+
+func addFlatSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks.Ink) {
+	loopsByColour := make(map[color.RGBA][][]canvas.Position)
+
+	for _, triangle := range triangles {
+		fill := metricValue(triangle.Value, "", surfaceInk)
+		colour := surfaceInk.Dip(fill)
+		loopsByColour[colour] = append(
+			loopsByColour[colour],
+			surfacePolygonPoints(triangle.Points[:]),
+		)
+	}
+
+	addSurfaceFillPaths(cv, loopsByColour)
+}
+
+func addBandedSurface(
+	cv *canvas.Canvas,
+	triangles []surface.Triangle,
+	surfaceInk inks.Ink,
+	breakpoints []float64,
+) {
+	loopsByColour := make(map[color.RGBA][][]canvas.Position)
+
+	for _, triangle := range triangles {
+		fragments := surface.SubdivideTriangle(triangle, breakpoints)
+		if fragments == nil {
+			continue
+		}
+
+		for _, fragment := range fragments {
+			fill := metricValue(fragment.Value, "", surfaceInk)
+			colour := surfaceInk.Dip(fill)
+			loopsByColour[colour] = append(
+				loopsByColour[colour],
+				surfacePolygonPoints(fragment.Points),
+			)
+		}
+	}
+
+	addSurfaceFillPaths(cv, loopsByColour)
+}
+
+func addSurfaceFillPaths(cv *canvas.Canvas, loopsByColour map[color.RGBA][][]canvas.Position) {
+	colours := make([]color.RGBA, 0, len(loopsByColour))
+	for colour := range loopsByColour {
+		colours = append(colours, colour)
+	}
+
+	slices.SortFunc(colours, func(left, right color.RGBA) int {
+		return cmp.Compare(rgbaKey(left), rgbaKey(right))
+	})
+
+	for _, colour := range colours {
+		cv.AddFilledPath(canvas.LayerSurface, canvas.FilledPath{
+			Loops: loopsByColour[colour],
+			Fill:  colour,
+		})
+	}
+}
+
+func rgbaKey(colour color.RGBA) uint32 {
+	return uint32(colour.R)<<24 | uint32(colour.G)<<16 | uint32(colour.B)<<8 | uint32(colour.A)
+}
+
+func surfacePolygonPoints(points []surface.Point) []canvas.Position {
+	positions := make([]canvas.Position, len(points))
+	for index, point := range points {
+		positions[index] = canvas.Position{X: point.X, Y: point.Y}
+	}
+
+	return positions
 }
 
 // addTrack adds the faint guide curve as a Path on the Structure layer.

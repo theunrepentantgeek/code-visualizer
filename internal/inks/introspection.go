@@ -1,6 +1,8 @@
 package inks
 
 import (
+	"slices"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
@@ -23,4 +25,14 @@ func (ink *numericInk) Info() Info {
 // Info returns introspection data about the ink's kind and metric.
 func (ink *categoricalInk) Info() Info {
 	return Info{Kind: KindCategorical, MetricName: ink.metricName}
+}
+
+// NumericBreakpoints returns the numeric bucket boundaries for numeric inks.
+func NumericBreakpoints(ink Ink) []float64 {
+	numeric, ok := ink.(*numericInk)
+	if !ok {
+		return nil
+	}
+
+	return slices.Clone(numeric.boundaries.Boundaries)
 }

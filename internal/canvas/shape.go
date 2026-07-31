@@ -1,6 +1,9 @@
+//nolint:revive // Canvas exposes its six distinct shape values as part of its public rendering API.
 package canvas
 
 import (
+	"image/color"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
@@ -46,6 +49,31 @@ func (d *Disc) drawTo(b Backend) {
 		fill, border,
 		d.Spec.BorderWidth,
 	)
+}
+
+// Polygon carries vertices and metric values for filled polygonal shapes.
+type Polygon struct {
+	Spec   *PolygonSpec
+	Points []Position
+	Fill   inks.MetricValue
+	Border inks.MetricValue
+}
+
+func (p *Polygon) drawTo(b Backend) {
+	fill := p.Spec.Fill.Fill(p.Fill, model.Point{X: 0.5, Y: 0.5})
+	border := model.SolidFill{Color: p.Spec.Border.Dip(p.Border)}
+
+	b.DrawPolygon(p.Points, fill, border, p.Spec.BorderWidth)
+}
+
+// FilledPath carries closed loops to be filled as one borderless shape.
+type FilledPath struct {
+	Loops [][]Position
+	Fill  color.RGBA
+}
+
+func (p *FilledPath) drawTo(b Backend) {
+	b.DrawFilledPath(p.Loops, p.Fill)
 }
 
 // Text carries position and content for standalone text.

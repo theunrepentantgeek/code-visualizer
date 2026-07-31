@@ -15,4 +15,9 @@ type Directory struct {
 	// AllFileCount is the total number of files in this directory and all descendants.
 	// Populated during the file scan; zero if the directory was constructed manually.
 	AllFileCount int
+
+	// AllDirCount is the total number of subdirectories in this directory and all descendants,
+	// not counting the directory itself.
+	// Populated during the file scan; zero if the directory was constructed manually.
+	AllDirCount int
 }

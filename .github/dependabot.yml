@@ -27,3 +27,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # codeql actions need to be updated together
+      codeql-action:
+        patterns:
+          - "github/codeql-action/*"

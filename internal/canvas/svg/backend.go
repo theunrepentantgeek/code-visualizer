@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/rotisserie/eris"
 
@@ -113,6 +114,65 @@ func (s *svgBackend) DrawDisc(
 		`<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		center.X, center.Y, radius,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
+	)
+}
+
+func (s *svgBackend) DrawPolygon(
+	points []model.Position, fill, border model.Fill, borderWidth float64,
+) {
+	if len(points) < 3 {
+		return
+	}
+
+	var pointPairs strings.Builder
+
+	for i, point := range points {
+		if i > 0 {
+			pointPairs.WriteByte(' ')
+		}
+
+		fmt.Fprintf(&pointPairs, "%.2f,%.2f", point.X, point.Y)
+	}
+
+	fmt.Fprintf(&s.buf, `<polygon points="%s" fill="%s"`, pointPairs.String(), s.svgFillAttr(fill))
+
+	if borderWidth > 0 {
+		fmt.Fprintf(&s.buf, ` stroke="%s" stroke-width="%.1f"`, s.colourCSS(model.SolidColor(border)), borderWidth)
+	}
+
+	s.buf.WriteString("/>\n")
+}
+
+func (s *svgBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
+	var pathData strings.Builder
+
+	// Closed loops are combined with even-odd filling so holes and islands remain intact.
+	for _, loop := range loops {
+		if len(loop) < 3 {
+			continue
+		}
+
+		if pathData.Len() > 0 {
+			pathData.WriteByte(' ')
+		}
+
+		fmt.Fprintf(&pathData, "M %.2f %.2f", loop[0].X, loop[0].Y)
+
+		for _, point := range loop[1:] {
+			fmt.Fprintf(&pathData, " L %.2f %.2f", point.X, point.Y)
+		}
+
+		pathData.WriteString(" Z")
+	}
+
+	if pathData.Len() == 0 {
+		return
+	}
+
+	fmt.Fprintf(
+		&s.buf,
+		`<path d="%s" fill="%s" fill-rule="evenodd"/>`+"\n",
+		pathData.String(), s.colourCSS(fill),
 	)
 }
 

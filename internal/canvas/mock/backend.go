@@ -5,6 +5,7 @@ package mock
 
 import (
 	"image/color"
+	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 )
@@ -14,6 +15,8 @@ type Call struct {
 	Method      string
 	Pos         model.Position
 	Size        model.Size
+	Points      []model.Position
+	Loops       [][]model.Position
 	Fill        color.RGBA
 	Border      color.RGBA
 	RawFill     model.Fill
@@ -23,6 +26,7 @@ type Call struct {
 	Anchor      model.TextAnchor
 	Rotation    float64
 	StrokeWidth float64
+	BorderWidth float64
 }
 
 // Backend records all drawing calls for test assertions.
@@ -37,26 +41,55 @@ func NewBackend() *Backend {
 	return &Backend{}
 }
 
-func (m *Backend) DrawRectangle(pos model.Position, size model.Size, fill, border model.Fill, _ float64) {
+func (m *Backend) DrawRectangle(pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64) {
 	m.Calls = append(m.Calls, Call{
-		Method:    "DrawRectangle",
-		Pos:       pos,
-		Size:      size,
-		Fill:      model.SolidColor(fill),
-		Border:    model.SolidColor(border),
-		RawFill:   fill,
-		RawBorder: border,
+		Method:      "DrawRectangle",
+		Pos:         pos,
+		Size:        size,
+		Fill:        model.SolidColor(fill),
+		Border:      model.SolidColor(border),
+		RawFill:     fill,
+		RawBorder:   border,
+		BorderWidth: borderWidth,
 	})
 }
 
-func (m *Backend) DrawDisc(center model.Position, _ float64, fill, border model.Fill, _ float64) {
+func (m *Backend) DrawDisc(center model.Position, _ float64, fill, border model.Fill, borderWidth float64) {
 	m.Calls = append(m.Calls, Call{
-		Method:    "DrawDisc",
-		Pos:       center,
-		Fill:      model.SolidColor(fill),
-		Border:    model.SolidColor(border),
-		RawFill:   fill,
-		RawBorder: border,
+		Method:      "DrawDisc",
+		Pos:         center,
+		Fill:        model.SolidColor(fill),
+		Border:      model.SolidColor(border),
+		RawFill:     fill,
+		RawBorder:   border,
+		BorderWidth: borderWidth,
+	})
+}
+
+func (m *Backend) DrawPolygon(
+	points []model.Position, fill, border model.Fill, borderWidth float64,
+) {
+	m.Calls = append(m.Calls, Call{
+		Method:      "DrawPolygon",
+		Points:      slices.Clone(points),
+		Fill:        model.SolidColor(fill),
+		Border:      model.SolidColor(border),
+		RawFill:     fill,
+		RawBorder:   border,
+		BorderWidth: borderWidth,
+	})
+}
+
+func (m *Backend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
+	cloned := make([][]model.Position, len(loops))
+	for index, loop := range loops {
+		cloned[index] = slices.Clone(loop)
+	}
+
+	m.Calls = append(m.Calls, Call{
+		Method: "DrawFilledPath",
+		Loops:  cloned,
+		Fill:   fill,
 	})
 }
 
@@ -69,9 +102,12 @@ func (m *Backend) DrawLine(from, _ model.Position, stroke color.RGBA, strokeWidt
 	})
 }
 
-func (m *Backend) DrawPath(_ []model.Position, _ color.RGBA, _ float64) {
+func (m *Backend) DrawPath(points []model.Position, stroke color.RGBA, strokeWidth float64) {
 	m.Calls = append(m.Calls, Call{
-		Method: "DrawPath",
+		Method:      "DrawPath",
+		Points:      slices.Clone(points),
+		Fill:        stroke,
+		StrokeWidth: strokeWidth,
 	})
 }
 

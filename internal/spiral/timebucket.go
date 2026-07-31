@@ -43,11 +43,12 @@ type TimeBucket struct {
 	Files []*model.File // files whose activity falls in this bucket
 
 	// Aggregated metric values (populated after bucket assignment by the CLI layer).
-	SizeValue   float64
-	FillValue   float64
-	FillLabel   string
-	BorderValue float64
-	BorderLabel string
+	SizeValue    float64
+	FillValue    float64
+	FillLabel    string
+	BorderValue  float64
+	BorderLabel  string
+	SurfaceValue float64
 }
 
 // BuildTimeBuckets creates consecutive time buckets at the given resolution

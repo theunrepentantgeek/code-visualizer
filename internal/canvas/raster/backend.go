@@ -126,6 +126,108 @@ func (r *rasterBackend) DrawDisc(
 	}
 }
 
+func (r *rasterBackend) DrawPolygon(
+	points []model.Position, fill, border model.Fill, borderWidth float64,
+) {
+	if len(points) < 3 {
+		return
+	}
+
+	r.drawPolygonPath(points)
+
+	if f, ok := fill.(model.RadialGradientFill); ok && r.drawRadialGradientPolygon(points, f) {
+		if borderWidth <= 0 {
+			r.dc.ClearPath()
+		}
+	} else {
+		r.dc.SetColor(nrgba(model.SolidColor(fill)))
+
+		if borderWidth > 0 {
+			r.dc.FillPreserve()
+		} else {
+			r.dc.Fill()
+		}
+	}
+
+	if borderWidth > 0 {
+		r.dc.SetColor(nrgba(model.SolidColor(border)))
+		r.dc.SetLineWidth(borderWidth)
+		r.dc.Stroke()
+	}
+}
+
+func (r *rasterBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
+	r.dc.SetFillRuleEvenOdd()
+	defer r.dc.SetFillRuleWinding()
+
+	for _, loop := range loops {
+		if len(loop) < 3 {
+			continue
+		}
+
+		r.drawPolygonPath(loop)
+	}
+
+	r.dc.SetColor(nrgba(fill))
+	r.dc.Fill()
+}
+
+func (r *rasterBackend) drawPolygonPath(points []model.Position) {
+	r.dc.MoveTo(points[0].X, points[0].Y)
+
+	for _, point := range points[1:] {
+		r.dc.LineTo(point.X, point.Y)
+	}
+
+	r.dc.ClosePath()
+}
+
+func (r *rasterBackend) drawRadialGradientPolygon(
+	points []model.Position, grad model.RadialGradientFill,
+) bool {
+	img, ok := r.dc.Image().(*image.RGBA)
+	if !ok {
+		return false
+	}
+
+	minX, maxX := points[0].X, points[0].X
+
+	minY, maxY := points[0].Y, points[0].Y
+	for _, point := range points[1:] {
+		minX = min(minX, point.X)
+		maxX = max(maxX, point.X)
+		minY = min(minY, point.Y)
+		maxY = max(maxY, point.Y)
+	}
+
+	// Focus is relative to the polygon's bounding box; the farthest vertex
+	// establishes the radius, matching rectangle gradient normalization.
+	fx := minX + grad.Focus.X*(maxX-minX)
+	fy := minY + grad.Focus.Y*(maxY-minY)
+
+	maxDist := 0.0
+	for _, point := range points {
+		maxDist = max(maxDist, math.Hypot(point.X-fx, point.Y-fy))
+	}
+
+	if maxDist == 0 {
+		return true
+	}
+
+	bounds := img.Bounds()
+	x0 := max(int(math.Floor(minX)), bounds.Min.X)
+	y0 := max(int(math.Floor(minY)), bounds.Min.Y)
+	x1 := min(int(math.Ceil(maxX)), bounds.Max.X)
+	y1 := min(int(math.Ceil(maxY)), bounds.Max.Y)
+
+	lerp := newGradientLerp(grad.Center, grad.Edge)
+	renderPolygonGradientPixels(
+		img, image.Rect(x0, y0, x1, y1), points, fx, fy, 1.0/maxDist, lerp,
+	)
+
+	return true
+}
+
 func (r *rasterBackend) drawRadialGradientDisc(
 	center model.Position, radius float64, grad model.RadialGradientFill,
 ) {
