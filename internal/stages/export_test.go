@@ -79,8 +79,8 @@ func TestExportData_WritesJSON(t *testing.T) {
 	root.Files = []*model.File{f}
 
 	s := &stages.CommonState{
-		Flags:    &stages.Flags{ExportData: path},
-		Root:     root,
+		Flags:     &stages.Flags{ExportData: path},
+		Root:      root,
 		Requested: stages.RequestedMetrics{BaseMetrics: []metric.Name{"file-size"}},
 	}
 

@@ -1,9 +1,6 @@
 package spiral
 
 import (
-	"maps"
-	"slices"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -109,21 +106,23 @@ func sumUniqueNumericMetric(files []*model.File, m metric.Name) float64 {
 }
 
 func modeCategory(files []*model.File, m metric.Name) string {
-	counts := map[string]int{}
-
-	for _, f := range files {
-		if cat, ok := f.Classification(m); ok {
-			counts[cat]++
-		}
-	}
+	counts := make(map[string]int, len(files))
 
 	best := ""
-	bestCount := 0
+	maxCount := 0
 
-	for _, cat := range slices.Sorted(maps.Keys(counts)) {
-		if counts[cat] > bestCount {
+	for _, f := range files {
+		cat, ok := f.Classification(m)
+		if !ok {
+			continue
+		}
+
+		counts[cat]++
+		count := counts[cat]
+
+		if count > maxCount || (count == maxCount && cat < best) {
 			best = cat
-			bestCount = counts[cat]
+			maxCount = count
 		}
 	}
 
