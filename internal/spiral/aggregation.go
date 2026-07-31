@@ -108,26 +108,21 @@ func sumUniqueNumericMetric(files []*model.File, m metric.Name) float64 {
 func modeCategory(files []*model.File, m metric.Name) string {
 	counts := make(map[string]int, len(files))
 
-	for _, f := range files {
-		if cat, ok := f.Classification(m); ok {
-			counts[cat]++
-		}
-	}
-
-	// Find the maximum count in a single pass, then pick the
-	// lexicographically smallest key at that count.
-	// This avoids allocating and sorting a key slice.
-	maxCount := 0
-	for _, c := range counts {
-		if c > maxCount {
-			maxCount = c
-		}
-	}
-
 	best := ""
-	for cat, c := range counts {
-		if c == maxCount && (best == "" || cat < best) {
+	maxCount := 0
+
+	for _, f := range files {
+		cat, ok := f.Classification(m)
+		if !ok {
+			continue
+		}
+
+		counts[cat]++
+		count := counts[cat]
+
+		if count > maxCount || (count == maxCount && cat < best) {
 			best = cat
+			maxCount = count
 		}
 	}
 
