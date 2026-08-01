@@ -481,7 +481,7 @@ func TestValidateLogScale_SkipsLinearAxes(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
-func TestValidateLogScale_ErrorsOnYAxisNonPositive(t *testing.T) {
+func TestValidateLogScale_ErrorsOnYAxisNonPositive(t *testing.T) { //nolint:dupl // similar structure, different axis config and assertions
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -502,7 +502,7 @@ func TestValidateLogScale_ErrorsOnYAxisNonPositive(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("bad.go")))
 }
 
-func TestValidateLogScale_ReportsBothAxesWhenBothInvalid(t *testing.T) {
+func TestValidateLogScale_ReportsBothAxesWhenBothInvalid(t *testing.T) { //nolint:dupl // similar structure, different axis config and assertions
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
