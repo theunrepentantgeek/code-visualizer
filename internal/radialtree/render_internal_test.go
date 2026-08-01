@@ -347,3 +347,27 @@ func TestRenderRadialToCanvas_DirectoryUsesDirectoryInks(t *testing.T) {
 
 	g.Expect(directoryDiscCount).To(Equal(2))
 }
+
+func TestCollectDiscsLeaf_ZeroRadius_ReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	node := &RadialNode{DiscRadius: 0}
+	file := radialTestFile("small.go", "go", 10)
+
+	entries := collectDiscsLeaf(node, file, 400, 400)
+
+	g.Expect(entries).To(BeEmpty())
+}
+
+func TestCollectDiscsLeaf_NegativeRadius_ReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	node := &RadialNode{DiscRadius: -5}
+	file := radialTestFile("neg.go", "go", 10)
+
+	entries := collectDiscsLeaf(node, file, 400, 400)
+
+	g.Expect(entries).To(BeEmpty())
+}
