@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-07-18T14:07:36Z",
-  "run_id": "29647376121",
-  "monthly_summary_issue": 481,
-  "backlog_cursor": 481,
+  "last_run": "2026-08-02T04:09:16Z",
+  "run_id": "30731822484",
+  "monthly_summary_issue": "aw_aug26",
+  "backlog_cursor": 576,
   "comments_made": {
     "324": "2026-07-07",
     "329": "2026-07-04",
@@ -31,71 +31,38 @@
     "464": "2026-06-27",
     "471": "2026-06-28",
     "474": "2026-06-28",
-    "503": "2026-07-06"
+    "503": "2026-07-06",
+    "550": "2026-07-21",
+    "551": "2026-07-23",
+    "576": "2026-07-31"
   },
   "open_prs": {
-    "aw_scatter_inks": {
-      "branch": "repo-assist/test-scatter-inks-layout-20260718",
-      "desc": "test(scatter): 11 unit tests for categorical inks and layout helpers"
-    }
+    "557": {"branch": "repo-assist/test-aggregation-safety-guardrail-20260721-fc04891fb0c9d064", "desc": "test(stages): cover AggMin/AggRange; document source-grounded safety"},
+    "588": {"branch": "repo-assist/improve-scatter-log-scale-validation-b6877aead571d566", "desc": "improve(scatter): validate both log-scale axes before returning error"},
+    "589": {"branch": "repo-assist/perf-treemap-prealloc-specs-20260731-8fca31c4a81c5047", "desc": "perf(treemap): pre-allocate RectangleSpec per border-width in render walk"},
+    "596": {"branch": "repo-assist/improve-scatter-axis-guides-20260801-f6116e6-bc76a4e8b374bb7d", "desc": "improve(scatter): compute CategoricalBands once per axis in addScatterAxisGuides"},
+    "597": {"branch": "repo-assist/test-radialtree-metric-value-20260801-f6116e6-2adf8d2dff68523a", "desc": "test(radialtree): cover directoryMetricValue, fileMetricValue, and collectDiscsLeaf"},
+    "aw_leg598": {"branch": "repo-assist/test-legend-horizontal-categorical-20260802", "desc": "test(legend): cover horizontal orientation, categorical, and border swatch paths"}
   },
   "issues_labelled": {
-    "354": [
-      "enhancement"
-    ],
-    "355": [
-      "bug"
-    ],
-    "373": [
-      "enhancement",
-      "refactor"
-    ],
-    "374": [
-      "enhancement"
-    ],
-    "385": [
-      "bug"
-    ],
-    "402": [
-      "enhancement"
-    ],
-    "405": [
-      "enhancement"
-    ],
-    "421": [
-      "enhancement"
-    ],
-    "422": [
-      "enhancement"
-    ],
-    "423": [
-      "enhancement"
-    ],
-    "429": [
-      "enhancement"
-    ],
-    "440": [
-      "bug"
-    ],
-    "442": [
-      "enhancement"
-    ],
-    "444": [
-      "bug"
-    ],
-    "445": [
-      "enhancement"
-    ],
-    "464": [
-      "enhancement"
-    ],
-    "471": [
-      "enhancement"
-    ],
-    "474": [
-      "enhancement",
-      "performance"
-    ]
+    "354": ["enhancement"],
+    "355": ["bug"],
+    "373": ["enhancement", "refactor"],
+    "374": ["enhancement"],
+    "385": ["bug"],
+    "402": ["enhancement"],
+    "405": ["enhancement"],
+    "421": ["enhancement"],
+    "422": ["enhancement"],
+    "423": ["enhancement"],
+    "429": ["enhancement"],
+    "440": ["bug"],
+    "442": ["enhancement"],
+    "444": ["bug"],
+    "445": ["enhancement"],
+    "464": ["enhancement"],
+    "471": ["enhancement"],
+    "474": ["enhancement", "performance"]
   },
   "maintainer_preferences": [
     "Do not move helpers to new packages",
@@ -106,73 +73,7 @@
     "No backwards compatibility needed (pre-alpha tool)",
     "REJECTED: accumulator pattern with *[]T pointer parameters - maintainer called it 'nasty coupling' and 'short-sighted' (rejected PRs #488, #489, #507)"
   ],
-  "closed_issues": [
-    329,
-    421,
-    422,
-    423,
-    424,
-    402,
-    440,
-    444,
-    429,
-    445,
-    464,
-    330,
-    503
-  ],
-  "closed_prs": [
-    488,
-    489,
-    502,
-    507,
-    508,
-    509,
-    497,
-    499,
-    500,
-    501,
-    503,
-    504,
-    505,
-    506,
-    459,
-    460,
-    461,
-    469,
-    432,
-    438,
-    470,
-    473,
-    472,
-    475,
-    477,
-    479,
-    482,
-    462,
-    478,
-    480,
-    483,
-    484,
-    485,
-    465,
-    467,
-    487,
-    490,
-    491,
-    496,
-    498,
-    476,
-    511,
-    517,
-    518,
-    493,
-    512,
-    513,
-    514,
-    515,
-    521,
-    522
-  ],
-  "notes": "Run 29647376121 (2026-07-18): All prior Repo Assist PRs (#531-536, aw_mc_tests, aw_scatter_perf) were merged by maintainer. Tasks 2+3: no actionable issues (all meta/on-hold). Task 9: new PR aw_scatter_inks with 11 scatter tests."
+  "closed_issues": [329,421,422,423,424,402,440,444,429,445,464,330,503],
+  "closed_prs": [488,489,502,507,508,509,497,499,500,501,503,504,505,506,459,460,461,469,432,438,470,473,472,475,477,479,482,462,478,480,483,484,485,465,467,487,490,491,496,498,476,511,517,518,493,512,513,514,515,521,522,531,532,533,534,535,536],
+  "notes": "Run 30731822484 (2026-08-02): Tasks 3/2 not applicable (no bugs, all issues commented). Task 5: PR aw_leg598 - 3 legend tests covering addEntriesH, addCategorySwatches, catLabelPos, addOutlineSwatch. Closed July summary #481, created August summary aw_aug26."
 }
