@@ -1,9 +1,22 @@
 {
-  "last_run": "2026-08-02T04:09:16Z",
-  "monthly_summary_issue": "aw_aug26",
-  "open_issues": [394, 550, 551, 576],
-  "issue_394_status": "on hold — radial dir metrics pending maintainer decision",
-  "dependabot_note": "All Dependabot PRs touch protected files (go.mod/go.sum or .github/workflows); cannot bundle",
-  "rejected_patterns": ["accumulator *[]T pointer pattern (PRs #488, #489, #507)"],
-  "coverage_notes": "legend addEntriesH, addCategorySwatches, catLabelPos, addOutlineSwatch now covered (PR aw_leg598). scatter/stages/treemap pipeline AcquireData paths still 0%."
+  "last_run": "2026-08-02T14:14:00Z",
+  "last_run_id": "30751590933",
+  "monthly_summary_issue": 599,
+  "monthly_summary_month": "2026-08",
+  "comments_made": {
+    "550": "2026-07-21",
+    "551": "2026-07-23",
+    "576": "2026-07-31"
+  },
+  "prs_created": [
+    {"pr": "repo-assist/improve-radialtree-prealloc-children", "desc": "improve(radialtree): pre-allocate node.Children"},
+    {"pr": "repo-assist/perf-radialtree-collectdiscs-accumulator", "desc": "perf(radialtree): collectDiscs accumulator"},
+    {"pr": "#597", "desc": "test(radialtree): cover directoryMetricValue etc"},
+    {"pr": "#598", "desc": "test(legend): cover horizontal orientation etc"},
+    {"pr": "#596", "desc": "improve(scatter): CategoricalBands once per axis"},
+    {"pr": "#589", "desc": "perf(treemap): pre-allocate RectangleSpec"},
+    {"pr": "#588", "desc": "improve(scatter): validate log-scale axes"},
+    {"pr": "#557", "desc": "test(stages): AggMin/AggRange"}
+  ],
+  "notes": "PR #597 tests collectDiscsLeaf which is removed by perf PR (accumulator). These two PRs conflict — maintainer should review perf PR first or update #597."
 }
