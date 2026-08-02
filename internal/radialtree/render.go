@@ -95,18 +95,19 @@ type discEntry struct {
 	isDir     bool
 }
 
-// collectDiscs recursively gathers all nodes with a positive DiscRadius,
-// along with their corresponding model.File (nil for directories).
+// collectDiscs recursively gathers all nodes with a positive DiscRadius into
+// out, along with their corresponding model.File (nil for directories).
+// Callers pre-allocate out and pass a pointer to avoid intermediate
+// slice allocations at each recursive level.
 // INVARIANT: node.Children are ordered files-first, then subdirectories.
 func collectDiscs(
 	node *RadialNode,
 	dir *model.Directory,
 	cx, cy float64,
-) []discEntry {
-	entries := make([]discEntry, 0)
-
+	out *[]discEntry,
+) {
 	if node.DiscRadius > 0 {
-		entries = append(entries, discEntry{
+		*out = append(*out, discEntry{
 			node:      *node,
 			sx:        cx + node.X,
 			sy:        cy + node.Y,
@@ -121,34 +122,21 @@ func collectDiscs(
 	for i := range node.Children {
 		child := &node.Children[i]
 		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			entries = append(entries, collectDiscs(child, dir.Dirs[dirIdx], cx, cy)...)
+			collectDiscs(child, dir.Dirs[dirIdx], cx, cy, out)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			childEntries := collectDiscsLeaf(child, dir.Files[fileIdx], cx, cy)
-			entries = append(entries, childEntries...)
+			if child.DiscRadius > 0 {
+				*out = append(*out, discEntry{
+					node: *child,
+					file: dir.Files[fileIdx],
+					sx:   cx + child.X,
+					sy:   cy + child.Y,
+				})
+			}
+
 			fileIdx++
 		}
 	}
-
-	return entries
-}
-
-// collectDiscsLeaf collects a single file node (leaf).
-func collectDiscsLeaf(
-	node *RadialNode,
-	file *model.File,
-	cx, cy float64,
-) []discEntry {
-	if node.DiscRadius <= 0 {
-		return make([]discEntry, 0)
-	}
-
-	return []discEntry{{
-		node: *node,
-		file: file,
-		sx:   cx + node.X,
-		sy:   cy + node.Y,
-	}}
 }
 
 // addDiscs collects all discs, sorts them largest-first so smaller nodes are
@@ -160,7 +148,8 @@ func addDiscs(
 	cx, cy float64,
 	is Inks,
 ) {
-	entries := collectDiscs(nodes, root, cx, cy)
+	entries := make([]discEntry, 0, root.AllFileCount+len(root.Dirs))
+	collectDiscs(nodes, root, cx, cy, &entries)
 
 	slices.SortFunc(entries, func(a, b discEntry) int {
 		return cmp.Compare(b.node.DiscRadius, a.node.DiscRadius)

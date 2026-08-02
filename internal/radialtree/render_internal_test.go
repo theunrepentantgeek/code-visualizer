@@ -274,7 +274,8 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 
 	cx := float64(800) / 2.0
 	cy := float64(800) / 2.0
-	entries := collectDiscs(&nodes, root, cx, cy)
+	entries := make([]discEntry, 0, len(root.Files))
+	collectDiscs(&nodes, root, cx, cy, &entries)
 
 	g.Expect(len(entries)).To(BeNumerically(">=", 2))
 
