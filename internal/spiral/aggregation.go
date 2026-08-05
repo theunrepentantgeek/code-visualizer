@@ -80,16 +80,16 @@ func bucketNumericValue(files []*model.File, m metric.Name) float64 {
 }
 
 func sumUniqueNumericMetric(files []*model.File, m metric.Name) float64 {
-	seen := map[*model.File]bool{}
+	seen := make(map[*model.File]struct{}, len(files))
 
 	var total float64
 
 	for _, f := range files {
-		if seen[f] {
+		if _, ok := seen[f]; ok {
 			continue
 		}
 
-		seen[f] = true
+		seen[f] = struct{}{}
 
 		if v, ok := f.Quantity(m); ok {
 			total += float64(v)

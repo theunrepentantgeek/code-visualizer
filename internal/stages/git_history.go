@@ -64,7 +64,7 @@ func GroupGitHistoryByFile(c *CommonState) error {
 
 	byPath := indexFilesByRepoRelativePath(c.Root, repoRoot)
 
-	result := make(map[*model.File][]CommitRef)
+	result := make(map[*model.File][]CommitRef, len(byPath))
 
 	for i := range c.GitHistory {
 		commit := &c.GitHistory[i]
@@ -210,7 +210,7 @@ func buildTrackedPathSet(root *model.Directory, repoRoot string) map[string]bool
 }
 
 func indexFilesByRepoRelativePath(root *model.Directory, repoRoot string) map[string]*model.File {
-	index := make(map[string]*model.File)
+	index := make(map[string]*model.File, root.AllFileCount)
 
 	walkFilesWithRepoRelPaths(root, repoRoot, func(rel string, f *model.File) {
 		index[rel] = f
