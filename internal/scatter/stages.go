@@ -1,6 +1,7 @@
 package scatter
 
 import (
+	"errors"
 	"log/slog"
 
 	"github.com/rotisserie/eris"
@@ -118,15 +119,15 @@ func BuildInksStage(c *stages.CommonState, x *State) error {
 }
 
 // ValidateLogScale checks that all data values are positive when log scale is used.
+// Both axes are always validated so that users see all issues in a single run.
 func ValidateLogScale(dataset Dataset, xAxis, yAxis AxisSpec) error {
 	xValue := func(p PointDatum) float64 { return p.X.Numeric }
-	if err := validateAxisPositive(dataset.Points, xAxis, "x-axis", xValue); err != nil {
-		return err
-	}
+	xErr := validateAxisPositive(dataset.Points, xAxis, "x-axis", xValue)
 
 	yValue := func(p PointDatum) float64 { return p.Y.Numeric }
+	yErr := validateAxisPositive(dataset.Points, yAxis, "y-axis", yValue)
 
-	return validateAxisPositive(dataset.Points, yAxis, "y-axis", yValue)
+	return errors.Join(xErr, yErr)
 }
 
 func validateAxisPositive(points []PointDatum, axis AxisSpec, label string, value func(PointDatum) float64) error {
