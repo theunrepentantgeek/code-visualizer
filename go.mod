@@ -8,7 +8,7 @@ require (
 	github.com/dave/dst v0.27.4
 	github.com/fogleman/delaunay v0.0.0-20180910191513-63f09b4c883d
 	github.com/fogleman/gg v1.3.0
-	github.com/go-git/go-git/v5 v5.19.1
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/lmittmann/tint v1.2.0
 	github.com/nikolaydubina/treemap v1.2.5
