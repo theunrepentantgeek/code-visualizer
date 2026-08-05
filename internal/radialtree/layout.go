@@ -190,8 +190,12 @@ func layoutDir(
 	childRadius := float64(depth+1) * opts.ringSpacing
 	fileSweep := contentSweep / float64(allocationUnits)
 
+	// Pre-allocate with the exact child count to avoid incremental slice growth.
+	files := visibleFiles(dir, opts.grain)
+	node.Children = make([]RadialNode, 0, len(files)+len(dir.Dirs))
+
 	// Files first: each file occupies one allocation unit of the padded sweep.
-	for _, f := range visibleFiles(dir, opts.grain) {
+	for _, f := range files {
 		childAngle := childStart + fileSweep/2
 
 		fileNode := RadialNode{
