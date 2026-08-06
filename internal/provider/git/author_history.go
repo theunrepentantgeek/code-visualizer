@@ -58,7 +58,7 @@ type AuthorHistoryResult struct {
 // for all tracked changed files are extracted from that diff in one pass,
 // avoiding O(N) repeated DiffTree calls for commits touching many files.
 //
-//nolint:revive // A single-pass history walk keeps the accumulators local and coherent.
+//nolint:cyclop,revive // A single-pass history walk keeps the accumulators local and coherent.
 func BulkAuthorHistory(
 	repoPath string,
 	filePaths map[string]bool,
@@ -88,6 +88,7 @@ func BulkAuthorHistory(
 		firstSeen time.Time
 		lastSeen  time.Time
 	}
+
 	fileAccum := make(map[string]map[string]*authorAccum)
 	lastActive := make(map[string]time.Time)
 	headDate := time.Time{}

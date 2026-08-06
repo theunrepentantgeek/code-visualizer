@@ -2,6 +2,10 @@ package model
 
 // WalkFiles calls fn for every file in the tree, depth-first.
 func WalkFiles(dir *Directory, fn func(*File)) {
+	if dir == nil {
+		return
+	}
+
 	for _, f := range dir.Files {
 		fn(f)
 	}
