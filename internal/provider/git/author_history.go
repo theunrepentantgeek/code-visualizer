@@ -21,6 +21,11 @@ type AuthorRecord struct {
 	LastSeen  time.Time // most recent commit by this author touching this file
 }
 
+type fileDiffStats struct {
+	added   int64
+	removed int64
+}
+
 // FileAuthorRecords maps repo-relative file paths (slash-separated) to
 // the per-author contribution records for that file.
 type FileAuthorRecords map[string][]AuthorRecord
@@ -111,7 +116,7 @@ func BulkAuthorHistory(
 		}
 
 		// Compute per-file line stats in one batch (single DiffTree per commit).
-		var lineStats map[string][2]int64
+		var lineStats map[string]fileDiffStats
 		if c.NumParents() > 0 {
 			lineStats = batchFileDiffStats(c, changed)
 		}
@@ -133,8 +138,8 @@ func BulkAuthorHistory(
 				// Root commit: credit lines in the file at this point.
 				accum.added += linesInBlob(c, path)
 			} else if stats, ok := lineStats[path]; ok {
-				accum.added += stats[0]
-				accum.removed += stats[1]
+				accum.added += stats.added
+				accum.removed += stats.removed
 			}
 
 			// Update time windows.
@@ -203,10 +208,10 @@ func linesInBlob(c *object.Commit, relPath string) int64 {
 }
 
 // batchFileDiffStats performs a single tree diff against the first parent and
-// returns a map of relPath → [added, removed] for the provided changed files.
+// returns a map of relPath → line stats for the provided changed files.
 // Using one DiffTree call per commit avoids O(N) repeated diff operations for
 // commits that touch many tracked files.
-func batchFileDiffStats(c *object.Commit, changed []string) map[string][2]int64 {
+func batchFileDiffStats(c *object.Commit, changed []string) map[string]fileDiffStats {
 	parent, err := c.Parent(0)
 	if err != nil {
 		return nil
@@ -233,7 +238,7 @@ func batchFileDiffStats(c *object.Commit, changed []string) map[string][2]int64 
 		want[p] = true
 	}
 
-	result := make(map[string][2]int64, len(changed))
+	result := make(map[string]fileDiffStats, len(changed))
 
 	for _, diff := range diffs {
 		name := changeName(diff)
@@ -253,7 +258,7 @@ func batchFileDiffStats(c *object.Commit, changed []string) map[string][2]int64 
 			removed += int64(stat.Deletion)
 		}
 
-		result[name] = [2]int64{added, removed}
+		result[name] = fileDiffStats{added: added, removed: removed}
 	}
 
 	return result

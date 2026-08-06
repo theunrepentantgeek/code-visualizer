@@ -108,7 +108,7 @@ func TestBulkAuthorHistory_TimeWindowsAreConsistent(t *testing.T) {
 
 	for path, records := range result.ByFile {
 		for _, r := range records {
-			g.Expect(r.FirstSeen.After(r.LastSeen)).To(BeFalse(),
+			g.Expect(r.FirstSeen).To(BeTemporally("<=", r.LastSeen),
 				"FirstSeen should not be after LastSeen for %q / %q", path, r.Email)
 		}
 	}
