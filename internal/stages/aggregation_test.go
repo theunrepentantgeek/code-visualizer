@@ -806,3 +806,108 @@ func TestComputeAggregations_CommitLevel_MeanLinesAdded(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(BeNumerically("~", 20.0, 0.01))
 }
+
+// ---------------------------------------------------------------------------
+// Error path tests
+// ---------------------------------------------------------------------------
+
+// TestComputeAggregations_UnsupportedSourceLevel verifies that an unknown
+// SourceLevel value returns a descriptive error rather than silently
+// producing no metric.
+func TestComputeAggregations_UnsupportedSourceLevel(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{fileWithQuantity("a.go", 10)},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "file-size",
+			Aggregation: metric.AggSum,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "file-size",
+			Kind:  metric.Quantity,
+			Level: metric.LevelFile,
+		},
+		SourceLevel:      metric.MetricLevel(99), // unsupported
+		ResultKind:       metric.Quantity,
+		ResultName:       "file-size.sum",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("not supported"))
+}
+
+// TestComputeAggregations_UnsupportedNumericAggregation verifies that an
+// aggregation name that is not valid for numeric metrics (e.g. AggMode)
+// returns a descriptive error from applyNumericAggregation.
+func TestComputeAggregations_UnsupportedNumericAggregation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{fileWithQuantity("a.go", 10)},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "file-size",
+			Aggregation: metric.AggMode, // valid for classification, not numeric
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "file-size",
+			Kind:  metric.Quantity,
+			Level: metric.LevelFile,
+		},
+		SourceLevel:      metric.LevelFile,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "file-size.mode",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+}
+
+// TestComputeAggregations_UnsupportedDescriptorKind verifies that an unknown
+// Descriptor.Kind on a file-level metric returns a descriptive error from
+// aggregateDirectory.
+func TestComputeAggregations_UnsupportedDescriptorKind(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{fileWithQuantity("a.go", 10)},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "file-size",
+			Aggregation: metric.AggSum,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "file-size",
+			Kind:  metric.Kind(99), // unsupported
+			Level: metric.LevelFile,
+		},
+		SourceLevel:      metric.LevelFile,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "file-size.sum",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("unsupported"))
+}
