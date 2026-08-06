@@ -57,6 +57,8 @@ type AuthorHistoryResult struct {
 // For non-root commits, a single tree diff is performed per commit and stats
 // for all tracked changed files are extracted from that diff in one pass,
 // avoiding O(N) repeated DiffTree calls for commits touching many files.
+//
+//nolint:revive // A single-pass history walk keeps the accumulators local and coherent.
 func BulkAuthorHistory(
 	repoPath string,
 	filePaths map[string]bool,
@@ -211,6 +213,8 @@ func linesInBlob(c *object.Commit, relPath string) int64 {
 // returns a map of relPath → line stats for the provided changed files.
 // Using one DiffTree call per commit avoids O(N) repeated diff operations for
 // commits that touch many tracked files.
+//
+//nolint:revive // The linear diff processing is intentionally kept in one function.
 func batchFileDiffStats(c *object.Commit, changed []string) map[string]fileDiffStats {
 	parent, err := c.Parent(0)
 	if err != nil {

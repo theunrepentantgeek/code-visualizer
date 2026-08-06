@@ -31,6 +31,8 @@ func buildTrackedSet(t *testing.T, repoRootPath string, dir *model.Directory) ma
 // returns a result with at least one file, a non-zero HEAD date, and a
 // non-empty last-active map when run against the code-visualizer repo itself.
 func TestBulkAuthorHistory_ReturnsNonEmptyResult(t *testing.T) {
+	t.Parallel()
+
 	g := NewGomegaWithT(t)
 
 	root := repoRoot(t)
@@ -52,6 +54,8 @@ func TestBulkAuthorHistory_ReturnsNonEmptyResult(t *testing.T) {
 // TestBulkAuthorHistory_EachFileHasAtLeastOneAuthor verifies that every file
 // returned in ByFile has at least one AuthorRecord.
 func TestBulkAuthorHistory_EachFileHasAtLeastOneAuthor(t *testing.T) {
+	t.Parallel()
+
 	g := NewGomegaWithT(t)
 
 	root := repoRoot(t)
@@ -72,6 +76,8 @@ func TestBulkAuthorHistory_EachFileHasAtLeastOneAuthor(t *testing.T) {
 // TestBulkAuthorHistory_AuthorRecordsHaveNonEmptyEmail verifies that every
 // AuthorRecord has a non-empty email address.
 func TestBulkAuthorHistory_AuthorRecordsHaveNonEmptyEmail(t *testing.T) {
+	t.Parallel()
+
 	g := NewGomegaWithT(t)
 
 	root := repoRoot(t)
@@ -94,6 +100,8 @@ func TestBulkAuthorHistory_AuthorRecordsHaveNonEmptyEmail(t *testing.T) {
 // TestBulkAuthorHistory_TimeWindowsAreConsistent verifies that FirstSeen is
 // never after LastSeen for any AuthorRecord.
 func TestBulkAuthorHistory_TimeWindowsAreConsistent(t *testing.T) {
+	t.Parallel()
+
 	g := NewGomegaWithT(t)
 
 	root := repoRoot(t)
@@ -117,6 +125,8 @@ func TestBulkAuthorHistory_TimeWindowsAreConsistent(t *testing.T) {
 // TestBulkAuthorHistory_LastActiveContainsKnownAuthor verifies that the
 // LastActive map contains the repo's primary committer.
 func TestBulkAuthorHistory_LastActiveContainsKnownAuthor(t *testing.T) {
+	t.Parallel()
+
 	g := NewGomegaWithT(t)
 
 	root := repoRoot(t)
@@ -142,6 +152,8 @@ func TestBulkAuthorHistory_LastActiveContainsKnownAuthor(t *testing.T) {
 // passing an empty tracked set returns an empty ByFile map (but HeadDate and
 // LastActive may still be populated if the repo has commits).
 func TestBulkAuthorHistory_EmptyTrackedSet_ReturnsEmptyByFile(t *testing.T) {
+	t.Parallel()
+
 	g := NewGomegaWithT(t)
 
 	root := repoRoot(t)
@@ -158,6 +170,8 @@ func TestBulkAuthorHistory_EmptyTrackedSet_ReturnsEmptyByFile(t *testing.T) {
 // TestBulkAuthorHistory_ContributionWeightNonNegative verifies that Added and
 // Removed are never negative.
 func TestBulkAuthorHistory_ContributionWeightNonNegative(t *testing.T) {
+	t.Parallel()
+
 	g := NewGomegaWithT(t)
 
 	root := repoRoot(t)

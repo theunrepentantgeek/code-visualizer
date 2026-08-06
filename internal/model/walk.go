@@ -7,7 +7,9 @@ func WalkFiles(dir *Directory, fn func(*File)) {
 	}
 
 	for _, d := range dir.Dirs {
-		WalkFiles(d, fn)
+		if d != nil {
+			WalkFiles(d, fn)
+		}
 	}
 }
 
