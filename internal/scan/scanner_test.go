@@ -562,3 +562,44 @@ func TestFilterBinaryFiles_UpdatesFileCounts(t *testing.T) {
 	g.Expect(filteredSub.DirectFileCount).To(Equal(1), "filtered sub DirectFileCount should be 1")
 	g.Expect(filteredSub.AllFileCount).To(Equal(1), "filtered sub AllFileCount should equal DirectFileCount")
 }
+
+// TestFilterBinaryFiles_UpdatesDirCount verifies that AllDirCount is correctly
+// computed after binary filtering — the count should reflect the surviving
+// subdirectory tree, not the unfiltered original.
+func TestFilterBinaryFiles_UpdatesDirCount(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	grandchild := &model.Directory{
+		Path: "/project/sub/nested",
+		Name: "nested",
+		Files: []*model.File{
+			{Path: "/project/sub/nested/util.go", Name: "util.go", IsBinary: false},
+		},
+	}
+	child := &model.Directory{
+		Path: "/project/sub",
+		Name: "sub",
+		Files: []*model.File{
+			{Path: "/project/sub/data.bin", Name: "data.bin", IsBinary: true},
+		},
+		Dirs: []*model.Directory{grandchild},
+	}
+	root := &model.Directory{
+		Path: "/project",
+		Name: "project",
+		Files: []*model.File{
+			{Path: "/project/main.go", Name: "main.go", IsBinary: false},
+		},
+		Dirs: []*model.Directory{child},
+	}
+
+	filtered := FilterBinaryFiles(root)
+
+	// root → sub → nested; root.AllDirCount should be 2.
+	g.Expect(filtered.AllDirCount).To(Equal(2), "root AllDirCount should count sub and nested")
+
+	g.Expect(filtered.Dirs).To(HaveLen(1))
+	filteredSub := filtered.Dirs[0]
+	g.Expect(filteredSub.AllDirCount).To(Equal(1), "sub AllDirCount should count nested only")
+}
