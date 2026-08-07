@@ -33,7 +33,6 @@ codeviz spiral [flags] <target-path>
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
 | `--surface`            |       | `false`        | Render a metric surface; requires numeric fill or surface metric   |
 | `--surface-metric`     |       | none           | Numeric surface metric: `metric[,palette]`; enables the surface   |
-| `--labels`             |       | `laps`         | Labels to display: `all`, `laps`, or `none`                       |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
 | `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
 | `--width`              |       | `1920`         | Canvas width in pixels                                            |
@@ -72,9 +71,9 @@ codeviz spiral ./src -o spiral.png --fill file-lines,terrain --surface
 ```
 
 The surface is rendered as discrete colour bands in the annular region traced
-by the active time buckets. The guide track, discs, and labels remain in the
-foreground. By default, the surface shares the fill metric and palette, so it
-does not add a separate legend entry.
+by the active time buckets. The guide track and discs remain in the foreground.
+By default, the surface shares the fill metric and palette, so it does not add
+a separate legend entry.
 
 Use `--surface-metric` to select a different numeric metric and optional
 palette. It implies surface enablement, so `--surface-metric file-lines,terrain`
