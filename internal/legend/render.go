@@ -309,7 +309,20 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 		return y
 	}
 
-	lb.addRect(x, y, w, h, palette.White, lb.swBorder, 0.5)
+	if sample.Shape == model.LegendLabelSampleCircle {
+		spec := &canvas.DiscSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        inks.FixedInk(palette.White),
+				Border:      inks.FixedInk(lb.swBorder),
+				BorderWidth: 0.5,
+			},
+		}
+		lb.cv.AddDisc(canvas.LayerOverlay, canvas.Disc{
+			Spec: spec, X: x + w/2, Y: y + h/2, Radius: min(w, h) / 2,
+		})
+	} else {
+		lb.addRect(x, y, w, h, palette.White, lb.swBorder, 0.5)
+	}
 
 	centerX := x + w/2
 	totalH := float64(len(sample.Lines)) * model.LegendLineHeight

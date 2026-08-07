@@ -93,6 +93,19 @@ func TestMeasureLabelSample_MultipleLines_SquareDrivenByHeight(t *testing.T) {
 	g.Expect(h).To(Equal(w))
 }
 
+func TestMeasureLabelSample_Circle_RemainsSquare(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	w, h := MeasureLabelSample(&model.LegendLabelSample{
+		Shape: model.LegendLabelSampleCircle,
+		Lines: []string{"file-name", "file-size"},
+	})
+
+	g.Expect(w).To(BeNumerically(">", 0))
+	g.Expect(h).To(Equal(w))
+}
+
 // MeasureEntryHWidth
 
 func TestMeasureEntryHWidth_NumericEntry_ReturnsPositiveWidth(t *testing.T) {
