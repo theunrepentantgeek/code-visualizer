@@ -6,16 +6,18 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 const discLabelPadding = 2.0
 
 // LabelMetrics identifies the metrics included in each disc label.
 type LabelMetrics struct {
-	Size    metric.Name
-	Fill    metric.Name
-	Border  metric.Name
-	Surface metric.Name
+	Size      metric.Name
+	Fill      metric.Name
+	Border    metric.Name
+	Surface   metric.Name
+	Requested stages.RequestedMetrics
 }
 
 func effectiveSizeMetric(name metric.Name) metric.Name {
@@ -49,7 +51,7 @@ func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string {
 		}
 
 		seen[role.name] = true
-		if value, ok := discMetricValue(bucket, role.name, role.role); ok {
+		if value, ok := discMetricValue(bucket, role.name, role.role, metrics.Requested); ok {
 			lines = append(lines, value)
 		}
 	}
@@ -66,7 +68,12 @@ const (
 	labelSurface
 )
 
-func discMetricValue(bucket TimeBucket, name metric.Name, role labelRole) (string, bool) {
+func discMetricValue(
+	bucket TimeBucket,
+	name metric.Name,
+	role labelRole,
+	requested stages.RequestedMetrics,
+) (string, bool) {
 	switch role {
 	case labelSize:
 		if name == commitCountMetric {
@@ -75,19 +82,26 @@ func discMetricValue(bucket TimeBucket, name metric.Name, role labelRole) (strin
 
 		return strconv.FormatFloat(bucket.SizeValue, 'f', -1, 64), true
 	case labelFill:
-		return colourLabelValue(bucket.FillValue, bucket.FillLabel)
+		return colourLabelValue(bucket.FillValue, bucket.FillLabel, name, requested)
 	case labelBorder:
-		return colourLabelValue(bucket.BorderValue, bucket.BorderLabel)
+		return colourLabelValue(bucket.BorderValue, bucket.BorderLabel, name, requested)
 	default:
 		return strconv.FormatFloat(bucket.SurfaceValue, 'f', -1, 64), true
 	}
 }
 
-func colourLabelValue(value float64, label string) (string, bool) {
+func colourLabelValue(
+	value float64,
+	label string,
+	name metric.Name,
+	requested stages.RequestedMetrics,
+) (string, bool) {
 	if label != "" {
 		return label, true
 	}
-	if value == 0 {
+
+	descriptor, ok := requested.DescriptorFor(name)
+	if !ok || descriptor.Kind == metric.Classification {
 		return "", false
 	}
 

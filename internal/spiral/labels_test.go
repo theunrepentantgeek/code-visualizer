@@ -46,6 +46,21 @@ func TestBuildDiscLabel_DeduplicatesMetricRolesAndOmitsMissingCategory(t *testin
 	})).To(Equal([]string{"day 7", "Aug", "2"}))
 }
 
+func TestBuildDiscLabel_RetainsZeroNumericFillAndBorderValues(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	bucket := TimeBucket{
+		Start:       time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		FillValue:   0,
+		BorderValue: 0,
+	}
+
+	g.Expect(buildDiscLabel(bucket, LabelMetrics{
+		Fill: "file-lines", Border: "file-size",
+	})).To(Equal([]string{"day 7", "Aug", "0", "0", "0"}))
+}
+
 func TestBuildDiscLabel_DefaultSizeUsesCommitCount(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

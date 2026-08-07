@@ -155,10 +155,11 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 			p.LegendConfig.LabelSample = legend.LabelSample{
 				Shape: legend.LabelSampleCircle,
 				Lines: buildDiscLabel(bucket, LabelMetrics{
-					Size:    effectiveSizeMetric(p.Size),
-					Fill:    p.FillMetric,
-					Border:  p.BorderMetric,
-					Surface: p.SurfaceMetric,
+					Size:      effectiveSizeMetric(p.Size),
+					Fill:      p.FillMetric,
+					Border:    p.BorderMetric,
+					Surface:   p.SurfaceMetric,
+					Requested: c.Requested,
 				}),
 			}
 
@@ -190,10 +191,11 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 
 	p.Layout = layout
 	p.DiscLabels = buildDiscLabels(layout.Nodes, p.Buckets, p.Inks.Fill, LabelMetrics{
-		Size:    effectiveSizeMetric(p.Size),
-		Fill:    p.FillMetric,
-		Border:  p.BorderMetric,
-		Surface: p.SurfaceMetric,
+		Size:      effectiveSizeMetric(p.Size),
+		Fill:      p.FillMetric,
+		Border:    p.BorderMetric,
+		Surface:   p.SurfaceMetric,
+		Requested: c.Requested,
 	})
 
 	return nil
