@@ -2,6 +2,7 @@ package spiral
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -55,11 +56,12 @@ func TestApplyDiscSizes_LargestBucketGetsMaxDisc(t *testing.T) {
 	g.Expect(nodes[4].DiscRadius).To(Equal(0.0))
 }
 
-func TestApplyDiscSizes_AllZeroSizeValues_GetsMinRadius(t *testing.T) {
+func TestApplyDiscSizes_UsesReadableFloorWhenGeometrySupportsIt(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 
 	buckets := makeBuckets(3, Daily)
+	maxDisc := 20.0
 
 	nodes := make([]SpiralNode, 3)
 	for i := range nodes {
@@ -68,10 +70,11 @@ func TestApplyDiscSizes_AllZeroSizeValues_GetsMinRadius(t *testing.T) {
 		buckets[i].Files = makeFiles(1) // active but zero SizeValue
 	}
 
-	ApplyDiscSizes(nodes, buckets, 20.0)
+	ApplyDiscSizes(nodes, buckets, maxDisc)
 
 	for i := range nodes {
 		g.Expect(nodes[i].DiscRadius).To(Equal(minDiscRadius))
+		g.Expect(nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc))
 	}
 }
 
@@ -117,19 +120,26 @@ func TestApplyDiscSizes_UsesReadableFloorAndSquareRootScaling(t *testing.T) {
 	g.Expect(nodes[2].DiscRadius).To(BeNumerically("==", 20))
 }
 
-func TestApplyDiscSizes_CapsMaximumAtReadableFloor(t *testing.T) {
+func TestApplyDiscSizes_DenseHourlyLayoutHonorsGeometryMaximum(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 
-	buckets := makeBuckets(2, Daily)
+	start := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	buckets := BuildTimeBuckets(Hourly, start, start.Add(720*time.Hour))
 	nodes := make([]SpiralNode, len(buckets))
-	buckets[0].Files = makeFiles(1)
-	buckets[0].SizeValue = 1
-	buckets[1].Files = makeFiles(1)
-	buckets[1].SizeValue = 4
+	maxDisc := MaxDiscRadius(len(buckets), 1920, 1080, Hourly)
 
-	ApplyDiscSizes(nodes, buckets, 4)
+	g.Expect(maxDisc).To(BeNumerically(">", 0))
+	g.Expect(maxDisc).To(BeNumerically("<", minDiscRadius))
 
-	g.Expect(nodes[0].DiscRadius).To(Equal(minDiscRadius))
-	g.Expect(nodes[1].DiscRadius).To(Equal(minDiscRadius))
+	for i := range buckets {
+		buckets[i].Files = makeFiles(1)
+		buckets[i].SizeValue = float64(i%5 + 1)
+	}
+
+	ApplyDiscSizes(nodes, buckets, maxDisc)
+
+	for i := range nodes {
+		g.Expect(nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
+	}
 }

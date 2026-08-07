@@ -154,6 +154,10 @@ func TestLayoutStage_StoresDiscLabelsAfterVerticalOffset(t *testing.T) {
 
 	g.Expect(LayoutStage(common, viz)).To(Succeed())
 	g.Expect(viz.DiscLabels).To(HaveLen(1))
-	g.Expect(viz.DiscLabels[0].X).To(BeNumerically("==", viz.Layout.Nodes[0].X-10))
-	g.Expect(viz.DiscLabels[0].Y).To(BeNumerically("==", viz.Layout.Nodes[0].Y-10))
+	g.Expect(viz.DiscLabels[0].X).To(
+		BeNumerically("==", viz.Layout.Nodes[0].X-viz.Layout.Nodes[0].DiscRadius+discLabelPadding),
+	)
+	g.Expect(viz.DiscLabels[0].Y).To(
+		BeNumerically("==", viz.Layout.Nodes[0].Y-viz.Layout.Nodes[0].DiscRadius+discLabelPadding),
+	)
 }

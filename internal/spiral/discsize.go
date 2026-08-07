@@ -7,10 +7,10 @@ const minDiscRadius = 12.0
 
 // ApplyDiscSizes sets disc radii on nodes proportional to their bucket
 // SizeValue. Empty buckets get zero radius (not drawn). Active buckets are
-// scaled between minDiscRadius and the readable maximum.
+// scaled between the readable floor (when geometry permits) and maxDisc.
 func ApplyDiscSizes(nodes []SpiralNode, buckets []TimeBucket, maxDisc float64) {
 	maxSize := 0.0
-	cappedMax := max(maxDisc, minDiscRadius)
+	effectiveMin := min(minDiscRadius, maxDisc)
 
 	for _, b := range buckets {
 		if b.SizeValue > maxSize {
@@ -26,12 +26,15 @@ func ApplyDiscSizes(nodes []SpiralNode, buckets []TimeBucket, maxDisc float64) {
 		}
 
 		if maxSize == 0 {
-			nodes[i].DiscRadius = minDiscRadius
+			nodes[i].DiscRadius = effectiveMin
 
 			continue
 		}
 
 		ratio := buckets[i].SizeValue / maxSize
-		nodes[i].DiscRadius = minDiscRadius + (cappedMax-minDiscRadius)*math.Sqrt(ratio)
+		nodes[i].DiscRadius = min(
+			maxDisc,
+			max(effectiveMin, effectiveMin+(maxDisc-effectiveMin)*math.Sqrt(ratio)),
+		)
 	}
 }
