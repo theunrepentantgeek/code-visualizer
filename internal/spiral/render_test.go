@@ -131,7 +131,7 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 		},
 		DiscLabels: []canvas.BlockLabel{{
 			X: 10, Y: 10, W: 80, H: 80,
-			Lines: []string{"day 7", "Aug", "3"},
+			Lines: []string{"7", "Aug", "3"},
 		}},
 		LegendConfig: &legend.Config{
 			Position:    model.LegendPositionBottomRight,
@@ -162,12 +162,12 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 			fillIndex = index
 		}
 
-		if call.Text == "day 7" || call.Text == "Aug" || call.Text == "3" {
+		if call.Text == "7" || call.Text == "Aug" || call.Text == "3" {
 			labelIndexes[call.Text] = index
 			g.Expect(call.Anchor).To(Equal(canvas.AnchorMiddle))
 		}
 
-		g.Expect(call.Text).NotTo(Equal("day 8"))
+		g.Expect(call.Text).NotTo(Equal("8"))
 	}
 
 	g.Expect(labelIndexes).To(HaveLen(3))

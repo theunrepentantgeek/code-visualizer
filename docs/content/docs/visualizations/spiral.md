@@ -63,12 +63,12 @@ codeviz spiral ./src -o spiral.png -s file-lines -r hourly
 
 ## Dot labels and legend
 
-Active dots generally have upright, centered labels showing their day and
+Active dots have upright, centered labels showing their numeric day and
 abbreviated month, followed by values for each distinct active size, fill,
-border, and surface metric. Labels are fitted per dot: SVG keeps tiny text,
-while PNG/JPEG simplify or omit labels when they would be illegible. The circle
-key in the legend explains this label layout; metric names remain listed in the
-legend entries.
+border, and surface metric. Spiral labels retain text in SVG, PNG, and JPEG
+output, including zero-valued metrics. The circle key in the legend explains
+this label structure with `Day`, `Month`, and the configured metric names;
+metric names remain listed in the legend entries.
 
 ## Metric surfaces
 

@@ -148,23 +148,14 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 
 	p.LegendConfig = builder.Build()
 	if p.LegendConfig != nil {
-		for _, bucket := range p.Buckets {
-			if len(bucket.Files) == 0 {
-				continue
-			}
-
-			p.LegendConfig.LabelSample = legend.LabelSample{
-				Shape: legend.LabelSampleCircle,
-				Lines: buildDiscLabel(bucket, LabelMetrics{
-					Size:      effectiveSizeMetric(p.Size),
-					Fill:      p.FillMetric,
-					Border:    p.BorderMetric,
-					Surface:   p.SurfaceMetric,
-					Requested: c.Requested,
-				}),
-			}
-
-			break
+		p.LegendConfig.LabelSample = legend.LabelSample{
+			Shape: legend.LabelSampleCircle,
+			Lines: buildLegendLabelSample(LabelMetrics{
+				Size:    p.Size,
+				Fill:    p.FillMetric,
+				Border:  p.BorderMetric,
+				Surface: p.SurfaceMetric,
+			}),
 		}
 	}
 

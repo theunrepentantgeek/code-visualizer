@@ -32,7 +32,7 @@ func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string {
 	metrics.Size = effectiveSizeMetric(metrics.Size)
 
 	lines := []string{
-		"day " + strconv.Itoa(bucket.Start.Day()),
+		strconv.Itoa(bucket.Start.Day()),
 		bucket.Start.Format("Jan"),
 	}
 	seen := make(map[metric.Name]bool, 4)
@@ -54,6 +54,23 @@ func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string {
 		if value, ok := discMetricValue(bucket, role.name, role.role, metrics.Requested); ok {
 			lines = append(lines, value)
 		}
+	}
+
+	return lines
+}
+
+func buildLegendLabelSample(metrics LabelMetrics) []string {
+	metrics.Size = effectiveSizeMetric(metrics.Size)
+	lines := []string{"Day", "Month"}
+	seen := make(map[metric.Name]bool, 4)
+
+	for _, name := range []metric.Name{metrics.Size, metrics.Fill, metrics.Border, metrics.Surface} {
+		if name == "" || seen[name] {
+			continue
+		}
+
+		seen[name] = true
+		lines = append(lines, string(name))
 	}
 
 	return lines
@@ -131,12 +148,13 @@ func buildDiscLabels(
 		bucket := buckets[i]
 		fill := fillInk.Dip(metricValue(bucket.FillValue, bucket.FillLabel, fillInk))
 		labels = append(labels, canvas.BlockLabel{
-			X:     node.X - node.DiscRadius + discLabelPadding,
-			Y:     node.Y - node.DiscRadius + discLabelPadding,
-			W:     size,
-			H:     size,
-			Lines: buildDiscLabel(bucket, metrics),
-			Ink:   canvas.TextColourFor(fill),
+			X:            node.X - node.DiscRadius + discLabelPadding,
+			Y:            node.Y - node.DiscRadius + discLabelPadding,
+			W:            size,
+			H:            size,
+			Lines:        buildDiscLabel(bucket, metrics),
+			Ink:          canvas.TextColourFor(fill),
+			PreserveText: true,
 		})
 	}
 

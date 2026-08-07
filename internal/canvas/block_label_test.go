@@ -63,6 +63,31 @@ func TestCanvas_AddBlockLabel_GreeksTinyRasterLabels(t *testing.T) {
 	g.Expect(mb.Calls[1].Method).To(Equal("DrawLine"))
 }
 
+func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(40, 20)
+	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
+		X: 5, Y: 5, W: 30, H: 8,
+		Lines:        []string{"a.go", "0"},
+		Ink:          color.RGBA{A: 255},
+		PreserveText: true,
+	}, canvas.FormatPNG)
+
+	mb := mock.NewBackend()
+	g.Expect(c.RenderTo(mb)).To(Succeed())
+	g.Expect(mb.Calls).To(HaveLen(2))
+	for _, call := range mb.Calls {
+		g.Expect(call.Method).To(Equal("DrawText"))
+		g.Expect(call.Pos.X).To(BeNumerically(">=", 5.0))
+		g.Expect(call.Pos.X).To(BeNumerically("<=", 35.0))
+		g.Expect(call.Pos.Y).To(BeNumerically(">=", 5.0))
+		g.Expect(call.Pos.Y).To(BeNumerically("<=", 13.0))
+	}
+	g.Expect(mb.Calls[1].Text).To(Equal("0"))
+}
+
 func TestCanvas_AddBlockLabel_OmitsUnreadableRasterLabels(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
