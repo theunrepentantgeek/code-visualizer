@@ -112,6 +112,8 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeGuideTrack(t *testing.T)
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
 		triangles,
 		surfaceInk,
+		nil,
+		canvas.FormatPNG,
 	)
 	backend := mock.NewBackend()
 
@@ -169,6 +171,8 @@ func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
 		triangles,
 		inks.NumericInk("surface", []float64{1}, palette.GetPalette(palette.Temperature)),
+		nil,
+		canvas.FormatPNG,
 	)
 	backend := mock.NewBackend()
 
@@ -206,6 +210,8 @@ func TestRenderToCanvas_UsesFlatSurfaceFallbackForFixedInk(t *testing.T) {
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
 		triangles,
 		surfaceInk,
+		nil,
+		canvas.FormatPNG,
 	)
 	backend := mock.NewBackend()
 
@@ -230,6 +236,8 @@ func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
 		nil,
 		nil,
+		nil,
+		canvas.FormatPNG,
 	)
 	backend := mock.NewBackend()
 
@@ -261,7 +269,7 @@ func TestRenderStage_UsesSurfaceValuesWhenEnabled(t *testing.T) {
 		[]float64{10, 20},
 		palette.GetPalette(palette.Temperature),
 	)
-	common := &stages.CommonState{Width: 240, Height: 240}
+	common := &stages.CommonState{Width: 240, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:        buckets,
 		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},
@@ -297,7 +305,7 @@ func TestRenderStage_DisabledSurfaceRendersNoPolygons(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := surfaceStageBuckets()
-	common := &stages.CommonState{Width: 240, Height: 240}
+	common := &stages.CommonState{Width: 240, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:      buckets,
 		Inks:         spiral.Inks{Fill: numericInk(), Border: numericInk()},
@@ -333,7 +341,7 @@ func TestRenderStage_WarnsAndRendersSpiralWhenSurfaceCannotBeBuilt(t *testing.T)
 		{FillValue: 100, BorderValue: 100, SurfaceValue: 10},
 		{FillValue: 100, BorderValue: 100, SurfaceValue: 20},
 	}
-	common := &stages.CommonState{Width: 240, Height: 240}
+	common := &stages.CommonState{Width: 240, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:        buckets,
 		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},
@@ -382,7 +390,7 @@ func TestRenderStage_RendersSurfaceFor162PointSpiral(t *testing.T) {
 	})))
 	defer slog.SetDefault(oldDefault)
 
-	common := &stages.CommonState{Width: 320, Height: 240}
+	common := &stages.CommonState{Width: 320, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:        buckets,
 		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},

@@ -30,6 +30,8 @@ func RenderToCanvas(
 	is Inks,
 	triangles []surface.Triangle,
 	surfaceInk inks.Ink,
+	discLabels []canvas.BlockLabel,
+	format canvas.ImageFormat,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
@@ -37,6 +39,9 @@ func RenderToCanvas(
 	addSurface(cv, triangles, surfaceInk)
 	addTrack(cv, layout)
 	addDiscs(cv, layout.Nodes, buckets, is)
+	for _, label := range discLabels {
+		cv.AddBlockLabel(canvas.LayerOverlay, label, format)
+	}
 
 	return cv
 }

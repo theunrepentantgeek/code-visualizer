@@ -61,6 +61,13 @@ Switch to an hourly resolution and size discs by line count:
 codeviz spiral ./src -o spiral.png -s file-lines -r hourly
 ```
 
+## Dot labels and legend
+
+Every active dot has an upright, centered label showing its day and abbreviated
+month, followed by values for each distinct active size, fill, border, and
+surface metric. The circle key in the legend explains this label layout; metric
+names remain listed in the legend entries.
+
 ## Metric surfaces
 
 Use `--surface` with a numeric `--fill` metric to add a metric surface beneath

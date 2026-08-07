@@ -5,6 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
@@ -203,6 +204,11 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 
 // RenderStage renders the spiral to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, p *State) error {
+	format, err := canvas.FormatFromPath(c.Output)
+	if err != nil {
+		return eris.Wrap(err, "resolve spiral label format")
+	}
+
 	var (
 		triangles  []surface.Triangle
 		surfaceInk inks.Ink
@@ -225,7 +231,9 @@ func RenderStage(c *stages.CommonState, p *State) error {
 		}
 	}
 
-	cv := RenderToCanvas(p.Layout, p.Buckets, c.Width, c.Height, p.Inks, triangles, surfaceInk)
+	cv := RenderToCanvas(
+		p.Layout, p.Buckets, c.Width, c.Height, p.Inks, triangles, surfaceInk, p.DiscLabels, format,
+	)
 
 	legend.RenderInto(cv, p.LegendConfig)
 
