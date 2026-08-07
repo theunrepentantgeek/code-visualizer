@@ -6,12 +6,14 @@
 spiral dot, replace the legacy external labels, and show a matching circular
 key in the legend.
 
-**Architecture:** A new spiral label builder converts one aggregated time bucket
-and its active metric roles into date and value lines, which are reused for dot
-labels and the legend key. The existing generic legend sample gains a shape
-field so treemaps retain their square sample while spirals request a circle.
-The spiral renderer adds `canvas.BlockLabel` overlays after discs and before
-the legend, using the existing format-aware text fitting behavior.
+**Architecture:** A spiral dot-label builder converts one aggregated time bucket
+and its active metric roles into numeric-day, month, and value lines. A
+separate structural legend-key builder produces `Day`, `Month`, and configured
+metric names without selecting a bucket. The existing generic legend sample
+gains a shape field so treemaps retain their square sample while spirals request
+a circle. The spiral renderer adds `canvas.BlockLabel` overlays after discs and
+before the legend, using the existing format-aware text fitting behavior and
+`PreserveText: true` for raster output.
 
 **Tech Stack:** Go 1.26, internal canvas and legend packages, Gomega, Goldie,
 gofumpt, Task.
@@ -22,8 +24,8 @@ gofumpt, Task.
 
 | File | Responsibility |
 | --- | --- |
-| `internal/spiral/labels.go` | Build date/value label lines, deduplicate effective metric roles, and construct centered disc-label bounds. |
-| `internal/spiral/labels_test.go` | Unit-test label date formatting, metric ordering, deduplication, unavailable values, and legend sample selection. |
+| `internal/spiral/labels.go` | Build dot date/value lines and a separate structural legend-key label, deduplicate effective metric roles, and construct centered disc-label bounds. |
+| `internal/spiral/labels_test.go` | Unit-test dot date formatting, metric ordering, deduplication, unavailable values, and structural legend-key construction. |
 | `internal/spiral/discsize.go` | Raise the readable minimum disc radius while preserving square-root metric scaling above it. |
 | `internal/spiral/stages.go` | Build labels after bucket aggregation and discs sizing; attach the circle legend sample and canvas labels in the correct z-order. |
 | `internal/spiral/render.go` | Stop rendering the external, rotated timeline labels. |
@@ -168,7 +170,7 @@ gofumpt, Task.
       Orientation: model.LegendOrientationVertical,
       LabelSample: legend.LabelSample{
           Shape: legend.LabelSampleCircle,
-          Lines: []string{"day 7", "Aug", "12", "go"},
+          Lines: []string{"Day", "Month", "commit-count", "file-type"},
       },
       Entries: []legend.Entry{{
           Role: legend.RoleFill, MetricName: "file-type", Ink: fillInk,
@@ -273,7 +275,7 @@ gofumpt, Task.
   and numeric surface `31`. Assert:
 
   ```go
-  g.Expect(lines).To(Equal([]string{"day 7", "Aug", "12", "go", "9", "31"}))
+  g.Expect(lines).To(Equal([]string{"7", "Aug", "12", "go", "9", "31"}))
   ```
 
   Add duplicate-role cases where size and fill both use `file-lines`, and fill
@@ -309,6 +311,7 @@ gofumpt, Task.
   }
 
   func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string
+  func buildLegendLabelSample(metrics LabelMetrics) []string
   func effectiveSizeMetric(name metric.Name) metric.Name
   func buildDiscLabels(layout SpiralLayout, buckets []TimeBucket, metrics LabelMetrics, fillInk inks.Ink) []canvas.BlockLabel
   ```
@@ -318,7 +321,7 @@ gofumpt, Task.
 
   ```go
   lines := []string{
-      "day " + strconv.Itoa(bucket.Start.Day()),
+      strconv.Itoa(bucket.Start.Day()),
       bucket.Start.Format("Jan"),
   }
   ```
@@ -342,6 +345,7 @@ gofumpt, Task.
       Ink: canvas.TextColourFor(fillInk.Dip(
           metricValue(bucket.FillValue, bucket.FillLabel, fillInk),
       )),
+      PreserveText: true,
   }
   ```
 
@@ -374,9 +378,11 @@ gofumpt, Task.
   ```
 
   In `BuildLegendStage`, use `effectiveSizeMetric(p.Size)` for the builder’s
-  `SizeMetric`, and assign a `legend.LabelSample` with `Shape:
-  legend.LabelSampleCircle` using the first active bucket’s
-  `buildDiscLabel` result. If no bucket is active, leave the sample empty.
+  `SizeMetric`, and always assign a circular `legend.LabelSample` when legend
+  configuration exists. Its separate structural builder returns `Day`, `Month`,
+  then deduplicated configured metric names in size/fill/border/surface order;
+  the effective blank size is `commit-count`. It does not select an active
+  bucket, so it remains present when no buckets are active.
 
 - [ ] **Step 4: Run focused spiral unit and stage tests**
 
@@ -479,9 +485,10 @@ gofumpt, Task.
   and add a paragraph after the optional flags:
 
   ```markdown
-  Every active dot includes its day and month plus the distinct values used by
-  its size, fill, border, and surface encodings. The legend identifies those
-  metrics and includes a circular key showing the dot label layout.
+  Every active dot includes its numeric day and month plus the distinct values
+  used by its size, fill, border, and surface encodings. The existing legend
+  entries identify those metrics and their encodings, while its circular key
+  names the date and configured metrics.
   ```
 
   Delete `labels: laps` from both spiral YAML files. Then run:
