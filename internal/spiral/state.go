@@ -19,7 +19,6 @@ type State struct {
 	SurfaceMetric  metric.Name
 	SurfacePalette palette.PaletteName
 	Resolution     Resolution
-	Labels         LabelMode
 
 	Buckets      []TimeBucket
 	Inks         Inks

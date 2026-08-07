@@ -22,7 +22,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	layout := spiral.Layout(buckets, 800, 600, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 800, 600, spiral.Hourly)
 	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
 	cv := spiral.RenderToCanvas(layout, buckets, 800, 600, inks, nil, nil)
 
@@ -45,7 +45,7 @@ func TestRenderToCanvas_SVG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly)
 	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
 	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks, nil, nil)
 
@@ -82,7 +82,7 @@ func TestRenderToCanvas_JPG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly)
 	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
 	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks, nil, nil)
 

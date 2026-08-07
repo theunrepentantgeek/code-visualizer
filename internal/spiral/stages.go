@@ -14,8 +14,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
-// ResolveMetrics resolves metric, resolution, and label settings from the
-// spiral config and populates c.Requested.
+// ResolveMetrics resolves metric and resolution settings from the spiral config
+// and populates c.Requested.
 func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	p.Size = metric.Name(stages.PtrString(cfg.Size))
 	p.FillMetric = cfg.Fill.MetricName()
@@ -36,7 +36,6 @@ func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	}
 
 	p.Resolution = resolveResolution(cfg)
-	p.Labels = resolveLabels(cfg)
 
 	c.Requested = collectRequestedMetrics(p.Size, cfg.Fill, cfg.Border, cfg.SurfaceMetric)
 
@@ -49,14 +48,6 @@ func resolveResolution(cfg *config.Spiral) Resolution {
 	}
 
 	return Daily
-}
-
-func resolveLabels(cfg *config.Spiral) LabelMode {
-	if lbl := stages.PtrString(cfg.Labels); lbl != "" {
-		return LabelMode(lbl)
-	}
-
-	return LabelLaps
 }
 
 // collectRequestedMetrics merges size, fill, border, and surface into a
@@ -164,7 +155,7 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 	bounds := c.DrawingBounds
 	availH := bounds.Height()
 
-	layout := Layout(p.Buckets, c.Width, availH, p.Resolution, p.Labels)
+	layout := Layout(p.Buckets, c.Width, availH, p.Resolution)
 	maxDisc := MaxDiscRadius(len(p.Buckets), c.Width, availH, p.Resolution)
 
 	ApplyDiscSizes(layout.Nodes, p.Buckets, maxDisc)

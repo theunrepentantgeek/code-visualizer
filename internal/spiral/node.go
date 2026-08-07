@@ -3,17 +3,6 @@ package spiral
 
 import (
 	"time"
-
-	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
-)
-
-// LabelMode is an alias for [viz.LabelMode].
-type LabelMode = viz.LabelMode
-
-const (
-	LabelAll  = viz.LabelAll
-	LabelLaps = viz.LabelLaps
-	LabelNone = viz.LabelNone
 )
 
 // SpiralNode is a positioned visual element on the rendered spiral timeline.
@@ -25,6 +14,4 @@ type SpiralNode struct {
 	SpiralRadius float64   // distance from canvas centre to this point
 	TimeStart    time.Time // start of this time bucket (inclusive)
 	TimeEnd      time.Time // end of this time bucket (exclusive)
-	Label        string    // time label (e.g. "2pm", "Apr 29")
-	ShowLabel    bool      // whether to render label
 }

@@ -34,7 +34,6 @@ func Layout(
 	width int,
 	height int,
 	resolution Resolution,
-	labels LabelMode,
 ) SpiralLayout {
 	if len(buckets) == 0 {
 		return SpiralLayout{}
@@ -44,7 +43,7 @@ func Layout(
 	params := computeSpiralParams(len(buckets), width, height, resolution)
 
 	for i, b := range buckets {
-		nodes[i] = positionNode(i, b, params, resolution, labels)
+		nodes[i] = positionNode(i, b, params)
 	}
 
 	var maxTheta float64
@@ -144,13 +143,11 @@ func computeMaxDisc(innerRadius, outerRadius float64, spotsPerLap int, totalAngl
 	return maxR
 }
 
-// positionNode places bucket i on the spiral and assigns label visibility.
+// positionNode places bucket i on the spiral.
 func positionNode(
 	i int,
 	bucket TimeBucket,
 	params spiralParams,
-	resolution Resolution,
-	labels LabelMode,
 ) SpiralNode {
 	theta := float64(i) * (2 * math.Pi / float64(params.spotsPerLap))
 	r := params.a + params.b*theta
@@ -158,9 +155,6 @@ func positionNode(
 	// Clockwise from north: x = cx + r*sin(θ), y = cy - r*cos(θ)
 	x := params.centreX + r*math.Sin(theta)
 	y := params.centreY - r*math.Cos(theta)
-
-	showLabel := computeLabelVisibility(i, params.spotsPerLap, labels)
-	label := formatBucketLabel(bucket, resolution)
 
 	return SpiralNode{
 		X:            x,
@@ -170,29 +164,5 @@ func positionNode(
 		SpiralRadius: r,
 		TimeStart:    bucket.Start,
 		TimeEnd:      bucket.End,
-		Label:        label,
-		ShowLabel:    showLabel,
-	}
-}
-
-// computeLabelVisibility determines whether a node at index i should show its label.
-func computeLabelVisibility(i, spotsPerLap int, labels LabelMode) bool {
-	switch labels {
-	case LabelAll:
-		return true
-	case LabelLaps:
-		return i%spotsPerLap == 0
-	default:
-		return false
-	}
-}
-
-// formatBucketLabel generates a human-readable label for a time bucket.
-func formatBucketLabel(bucket TimeBucket, resolution Resolution) string {
-	switch resolution {
-	case Hourly:
-		return bucket.Start.Format("3pm")
-	default:
-		return bucket.Start.Format("Jan 2")
 	}
 }

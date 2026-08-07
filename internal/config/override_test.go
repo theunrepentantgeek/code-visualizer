@@ -224,14 +224,6 @@ func TestSpiral_OverrideSize_SetsWhenNonEmpty(t *testing.T) {
 	g.Expect(*s.Size).To(Equal("file-age"))
 }
 
-func TestSpiral_OverrideLabels_SetsWhenNonEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-	s := &Spiral{}
-	s.OverrideLabels("none")
-	g.Expect(*s.Labels).To(Equal("none"))
-}
-
 func TestSpiral_OverrideFill_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

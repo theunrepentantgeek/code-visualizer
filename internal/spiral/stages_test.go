@@ -110,33 +110,6 @@ func TestResolveMetrics_HourlyResolution(t *testing.T) {
 	g.Expect(viz.Resolution).To(Equal(spiral.Hourly))
 }
 
-func TestResolveMetrics_DefaultsLabelsToLaps(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	sizeStr := "file-size"
-	common := &stages.CommonState{}
-	viz := &spiral.State{}
-	cfg := &config.Spiral{Size: &sizeStr}
-
-	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.Labels).To(Equal(spiral.LabelLaps))
-}
-
-func TestResolveMetrics_LabelsAllCanBeSet(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	sizeStr := "file-size"
-	lblStr := "all"
-	common := &stages.CommonState{}
-	viz := &spiral.State{}
-	cfg := &config.Spiral{Size: &sizeStr, Labels: &lblStr}
-
-	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.Labels).To(Equal(spiral.LabelAll))
-}
-
 func TestResolveMetrics_SurfaceDefaultsToFill(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
