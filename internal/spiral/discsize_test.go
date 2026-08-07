@@ -96,3 +96,40 @@ func TestApplyDiscSizes_SmallerBucketIsSmallerThanLarger(t *testing.T) {
 	g.Expect(nodes[0].DiscRadius).To(BeNumerically("<", nodes[1].DiscRadius),
 		"bucket with fewer commits should have smaller disc")
 }
+
+func TestApplyDiscSizes_UsesReadableFloorAndSquareRootScaling(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	buckets := makeBuckets(3, Daily)
+	nodes := make([]SpiralNode, len(buckets))
+	for i, size := range []float64{1, 4, 9} {
+		buckets[i].Files = makeFiles(1)
+		buckets[i].SizeValue = size
+	}
+
+	ApplyDiscSizes(nodes, buckets, 20)
+
+	g.Expect(minDiscRadius).To(Equal(12.0))
+	g.Expect(nodes[0].DiscRadius).To(BeNumerically(">", minDiscRadius))
+	g.Expect(nodes[0].DiscRadius).To(BeNumerically("<", nodes[1].DiscRadius))
+	g.Expect(nodes[1].DiscRadius).To(BeNumerically("<", nodes[2].DiscRadius))
+	g.Expect(nodes[2].DiscRadius).To(BeNumerically("==", 20))
+}
+
+func TestApplyDiscSizes_CapsMaximumAtReadableFloor(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	buckets := makeBuckets(2, Daily)
+	nodes := make([]SpiralNode, len(buckets))
+	buckets[0].Files = makeFiles(1)
+	buckets[0].SizeValue = 1
+	buckets[1].Files = makeFiles(1)
+	buckets[1].SizeValue = 4
+
+	ApplyDiscSizes(nodes, buckets, 4)
+
+	g.Expect(nodes[0].DiscRadius).To(Equal(minDiscRadius))
+	g.Expect(nodes[1].DiscRadius).To(Equal(minDiscRadius))
+}

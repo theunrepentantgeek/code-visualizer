@@ -136,7 +136,7 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 		Position: pos, Orientation: orient,
 		FillInk: p.Inks.Fill, FillMetric: p.FillMetric,
 		BorderInk: p.Inks.Border, BorderMetric: p.BorderMetric,
-		SizeMetric: p.Size,
+		SizeMetric: effectiveSizeMetric(p.Size),
 	}
 
 	if p.SurfaceMetric != "" && (p.SurfaceMetric != p.FillMetric || p.SurfacePalette != p.FillPalette) {
@@ -146,6 +146,25 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 	}
 
 	p.LegendConfig = builder.Build()
+	if p.LegendConfig != nil {
+		for _, bucket := range p.Buckets {
+			if len(bucket.Files) == 0 {
+				continue
+			}
+
+			p.LegendConfig.LabelSample = legend.LabelSample{
+				Shape: legend.LabelSampleCircle,
+				Lines: buildDiscLabel(bucket, LabelMetrics{
+					Size:    effectiveSizeMetric(p.Size),
+					Fill:    p.FillMetric,
+					Border:  p.BorderMetric,
+					Surface: p.SurfaceMetric,
+				}),
+			}
+
+			break
+		}
+	}
 
 	return nil
 }
@@ -170,6 +189,12 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 	}
 
 	p.Layout = layout
+	p.DiscLabels = buildDiscLabels(layout.Nodes, p.Buckets, p.Inks.Fill, LabelMetrics{
+		Size:    effectiveSizeMetric(p.Size),
+		Fill:    p.FillMetric,
+		Border:  p.BorderMetric,
+		Surface: p.SurfaceMetric,
+	})
 
 	return nil
 }

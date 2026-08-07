@@ -295,9 +295,9 @@ func TestBuildLegendStage_AddsDistinctSurfaceMetric(t *testing.T) {
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
-	g.Expect(viz.LegendConfig.Entries[1].Role).To(Equal(legend.RoleSurface))
-	g.Expect(viz.LegendConfig.Entries[1].MetricName).To(Equal("file-size"))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(3))
+	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
+	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-size"))
 }
 
 func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
@@ -315,7 +315,7 @@ func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(1))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
 	g.Expect(viz.LegendConfig.Entries[0].Role).To(Equal(legend.RoleFill))
 }
 
@@ -334,7 +334,7 @@ func TestBuildLegendStage_AddsSurfaceForSameMetricWithDifferentPalette(t *testin
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
-	g.Expect(viz.LegendConfig.Entries[1].Role).To(Equal(legend.RoleSurface))
-	g.Expect(viz.LegendConfig.Entries[1].MetricName).To(Equal("file-lines"))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(3))
+	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
+	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-lines"))
 }

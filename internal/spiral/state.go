@@ -1,6 +1,7 @@
 package spiral
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -24,5 +25,6 @@ type State struct {
 	Inks         Inks
 	SurfaceInk   inks.Ink
 	Layout       SpiralLayout
+	DiscLabels   []canvas.BlockLabel
 	LegendConfig *legend.Config
 }
