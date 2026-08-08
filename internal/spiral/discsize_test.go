@@ -106,6 +106,7 @@ func TestApplyDiscSizes_UsesReadableFloorAndSquareRootScaling(t *testing.T) {
 	g := NewWithT(t)
 
 	buckets := makeBuckets(3, Daily)
+
 	nodes := make([]SpiralNode, len(buckets))
 	for i, size := range []float64{1, 4, 9} {
 		buckets[i].Files = makeFiles(1)
@@ -172,7 +173,8 @@ func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T
 		nextLap := layout.Nodes[i+Hourly.SpotsPerLap()]
 		distance := math.Hypot(nextLap.X-current.X, nextLap.Y-current.Y)
 		g.Expect(distance).To(
-			BeNumerically(">=",
+			BeNumerically(
+				">=",
 				current.DiscRadius+borderWidth(current.DiscRadius)/2+
 					nextLap.DiscRadius+borderWidth(nextLap.DiscRadius)/2,
 			),

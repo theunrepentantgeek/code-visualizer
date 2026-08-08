@@ -78,6 +78,7 @@ func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T)
 	mb := mock.NewBackend()
 	g.Expect(c.RenderTo(mb)).To(Succeed())
 	g.Expect(mb.Calls).To(HaveLen(2))
+
 	for _, call := range mb.Calls {
 		g.Expect(call.Method).To(Equal("DrawText"))
 		g.Expect(call.Pos.X).To(BeNumerically(">=", 5.0))
@@ -85,6 +86,7 @@ func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T)
 		g.Expect(call.Pos.Y).To(BeNumerically(">=", 5.0))
 		g.Expect(call.Pos.Y).To(BeNumerically("<=", 13.0))
 	}
+
 	g.Expect(mb.Calls[1].Text).To(Equal("0"))
 }
 
