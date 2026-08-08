@@ -134,8 +134,7 @@ func computeMaxDisc(innerRadius, outerRadius float64, spotsPerLap int, totalAngl
 	angularStep := 2 * math.Pi / float64(spotsPerLap)
 	gapAngular := innerRadius * angularStep // arc at inner radius (worst case)
 
-	var gapRadial float64
-	gapRadial = (outerRadius - innerRadius) / (totalAngle / (2 * math.Pi))
+	gapRadial := (outerRadius - innerRadius) / (totalAngle / (2 * math.Pi))
 
 	maxR := math.Min(gapAngular, gapRadial) / 2
 	maxR = max(0, maxR-borderWidth(maxR)/2)

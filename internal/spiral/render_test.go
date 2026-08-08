@@ -29,8 +29,10 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 800, 600, spiral.Hourly)
-	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
-	cv := spiral.RenderToCanvas(layout, buckets, 800, 600, inks, nil, nil, nil, canvas.FormatPNG)
+	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
+	cv := spiral.RenderToCanvas(layout, buckets, 800, 600, shapeInks, spiral.RenderOptions{
+		Format: canvas.FormatPNG,
+	})
 
 	out := filepath.Join(t.TempDir(), "spiral.png")
 	err := cv.Render(out)
@@ -52,8 +54,10 @@ func TestRenderToCanvas_SVG(t *testing.T) {
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly)
-	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
-	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks, nil, nil, nil, canvas.FormatSVG)
+	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
+	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, shapeInks, spiral.RenderOptions{
+		Format: canvas.FormatSVG,
+	})
 
 	out := filepath.Join(t.TempDir(), "spiral.svg")
 	err := cv.Render(out)
@@ -89,8 +93,10 @@ func TestRenderToCanvas_JPG(t *testing.T) {
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly)
-	inks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
-	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, inks, nil, nil, nil, canvas.FormatJPG)
+	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
+	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, shapeInks, spiral.RenderOptions{
+		Format: canvas.FormatJPG,
+	})
 
 	out := filepath.Join(t.TempDir(), "spiral.jpg")
 	err := cv.Render(out)
@@ -149,6 +155,7 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 
 	labelIndexes := make(map[string]int)
 	fillIndex := -1
+
 	for index, call := range backend.Calls {
 		g.Expect(call.Method).NotTo(Equal("DrawArcText"))
 
@@ -172,6 +179,7 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 
 	g.Expect(labelIndexes).To(HaveLen(3))
 	g.Expect(fillIndex).To(BeNumerically(">=", 0))
+
 	for _, labelIndex := range labelIndexes {
 		g.Expect(labelIndex).To(BeNumerically("<", fillIndex))
 	}

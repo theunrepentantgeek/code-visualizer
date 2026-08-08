@@ -110,10 +110,11 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeGuideTrack(t *testing.T)
 		160,
 		120,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		triangles,
-		surfaceInk,
-		nil,
-		canvas.FormatPNG,
+		spiral.RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: surfaceInk,
+			Format:     canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 
@@ -169,10 +170,11 @@ func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
 		160,
 		120,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		triangles,
-		inks.NumericInk("surface", []float64{1}, palette.GetPalette(palette.Temperature)),
-		nil,
-		canvas.FormatPNG,
+		spiral.RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: inks.NumericInk("surface", []float64{1}, palette.GetPalette(palette.Temperature)),
+			Format:     canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 
@@ -208,10 +210,11 @@ func TestRenderToCanvas_UsesFlatSurfaceFallbackForFixedInk(t *testing.T) {
 		320,
 		240,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		triangles,
-		surfaceInk,
-		nil,
-		canvas.FormatPNG,
+		spiral.RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: surfaceInk,
+			Format:     canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 
@@ -234,10 +237,9 @@ func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 		160,
 		120,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		nil,
-		nil,
-		nil,
-		canvas.FormatPNG,
+		spiral.RenderOptions{
+			Format: canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 

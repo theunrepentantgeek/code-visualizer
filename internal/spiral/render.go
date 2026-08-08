@@ -22,25 +22,31 @@ const (
 	trackMinSteps = 500
 )
 
+// RenderOptions contains optional rendering inputs for a spiral canvas.
+type RenderOptions struct {
+	Triangles  []surface.Triangle
+	SurfaceInk inks.Ink
+	DiscLabels []canvas.BlockLabel
+	Format     canvas.ImageFormat
+}
+
 // RenderToCanvas builds a Canvas from a spiral layout and time buckets.
 func RenderToCanvas(
 	layout SpiralLayout,
 	buckets []TimeBucket,
 	width, height int,
 	is Inks,
-	triangles []surface.Triangle,
-	surfaceInk inks.Ink,
-	discLabels []canvas.BlockLabel,
-	format canvas.ImageFormat,
+	options RenderOptions,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
 	addBackground(cv, width, height)
-	addSurface(cv, triangles, surfaceInk)
+	addSurface(cv, options.Triangles, options.SurfaceInk)
 	addTrack(cv, layout)
 	addDiscs(cv, layout.Nodes, buckets, is)
-	for _, label := range discLabels {
-		cv.AddBlockLabel(canvas.LayerOverlay, label, format)
+
+	for _, label := range options.DiscLabels {
+		cv.AddBlockLabel(canvas.LayerOverlay, label, options.Format)
 	}
 
 	return cv

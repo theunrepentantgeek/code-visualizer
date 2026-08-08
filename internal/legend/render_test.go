@@ -1,6 +1,7 @@
 package legend_test
 
 import (
+	"slices"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -132,6 +133,7 @@ func TestRenderInto_CircleLabelSample_RendersDiscBeforeEntryHeading(t *testing.T
 	discIndex := -1
 	sampleLineIndexes := make([]int, 0, 2)
 	entryHeadingIndex := -1
+
 	for i, call := range mb.Calls {
 		switch {
 		case call.Method == "DrawDisc":
@@ -140,11 +142,14 @@ func TestRenderInto_CircleLabelSample_RendersDiscBeforeEntryHeading(t *testing.T
 			sampleLineIndexes = append(sampleLineIndexes, i)
 		case call.Method == "DrawText" && call.Text == "Fill":
 			entryHeadingIndex = i
+		default:
+			continue
 		}
 	}
 
 	g.Expect(discIndex).To(BeNumerically(">=", 0))
 	g.Expect(sampleLineIndexes).To(HaveLen(2))
+
 	for _, sampleLineIndex := range sampleLineIndexes {
 		g.Expect(sampleLineIndex).To(BeNumerically(">", discIndex))
 		g.Expect(sampleLineIndex).To(BeNumerically("<", entryHeadingIndex))
@@ -174,6 +179,7 @@ func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.
 
 	cv := canvas.NewCanvas(int(width), 200)
 	cv.SetDrawingBounds(int(drawingMinY), int(drawingMaxY))
+
 	pal := palette.GetPalette(palette.Temperature)
 	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, pal)
 	cfg := &legend.Config{
@@ -208,18 +214,22 @@ func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.
 		case call.Method == "DrawDisc":
 			disc = call
 		case call.Method == "DrawText":
-			for _, line := range sampleLines {
-				if call.Text == line {
-					sampleTexts = append(sampleTexts, call)
-					break
-				}
+			if slices.Contains(sampleLines, call.Text) {
+				sampleTexts = append(sampleTexts, call)
 			}
+		default:
+			continue
 		}
 	}
 
-	g.Expect(background).NotTo(BeNil())
-	g.Expect(disc).NotTo(BeNil())
-	g.Expect(sampleTexts).To(HaveLen(len(sampleLines)))
+	if background == nil || disc == nil {
+		t.Fatal("expected legend background and sample disc")
+	}
+
+	if len(sampleTexts) != len(sampleLines) {
+		t.Fatal("expected all label sample lines")
+	}
+
 	g.Expect(sampleTexts[0].FontSize).To(BeNumerically("<", model.LegendFontSize))
 
 	g.Expect(background.Pos.X).To(BeNumerically(">=", 0))

@@ -102,6 +102,27 @@ func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
 	}))
 }
 
+func TestBuildDiscLabels_UsesOnlyPairedNodesAndBuckets(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	nodes := []SpiralNode{
+		{X: 30, Y: 40, DiscRadius: 12},
+		{X: 60, Y: 80, DiscRadius: 12},
+	}
+	buckets := []TimeBucket{{
+		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		Files: makeFiles(1),
+	}}
+
+	labels := buildDiscLabels(nodes, buckets, inks.FixedInk(color.RGBA{A: 255}), LabelMetrics{
+		Size: commitCountMetric,
+	})
+
+	g.Expect(labels).To(HaveLen(1))
+	g.Expect(labels[0].Lines).To(Equal([]string{"7", "Aug", "1"}))
+}
+
 func TestRenderToCanvas_PreservesZeroMetricTextInRasterDiscLabels(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
@@ -118,7 +139,10 @@ func TestRenderToCanvas_PreservesZeroMetricTextInRasterDiscLabels(t *testing.T) 
 		),
 	})
 	cv := RenderToCanvas(
-		SpiralLayout{Nodes: nodes}, buckets, 50, 50, Inks{Fill: ink, Border: ink}, nil, nil, labels, canvas.FormatPNG,
+		SpiralLayout{Nodes: nodes}, buckets, 50, 50, Inks{Fill: ink, Border: ink}, RenderOptions{
+			DiscLabels: labels,
+			Format:     canvas.FormatPNG,
+		},
 	)
 
 	mb := mock.NewBackend()
@@ -126,6 +150,7 @@ func TestRenderToCanvas_PreservesZeroMetricTextInRasterDiscLabels(t *testing.T) 
 
 	hasZeroText := false
 	hasLine := false
+
 	for _, call := range mb.Calls {
 		hasZeroText = hasZeroText || (call.Method == "DrawText" && call.Text == "0")
 		hasLine = hasLine || call.Method == "DrawLine"

@@ -31,10 +31,11 @@ func effectiveSizeMetric(name metric.Name) metric.Name {
 func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string {
 	metrics.Size = effectiveSizeMetric(metrics.Size)
 
-	lines := []string{
+	lines := make([]string, 0, 6)
+	lines = append(lines,
 		strconv.Itoa(bucket.Start.Day()),
 		bucket.Start.Format("Jan"),
-	}
+	)
 	seen := make(map[metric.Name]bool, 4)
 
 	for _, role := range []struct {
@@ -61,7 +62,8 @@ func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string {
 
 func buildLegendLabelSample(metrics LabelMetrics) []string {
 	metrics.Size = effectiveSizeMetric(metrics.Size)
-	lines := []string{"Day", "Month"}
+	lines := make([]string, 0, 6)
+	lines = append(lines, "Day", "Month")
 	seen := make(map[metric.Name]bool, 4)
 
 	for _, name := range []metric.Name{metrics.Size, metrics.Fill, metrics.Border, metrics.Surface} {
@@ -133,9 +135,10 @@ func buildDiscLabels(
 ) []canvas.BlockLabel {
 	count := min(len(nodes), len(buckets))
 	labels := make([]canvas.BlockLabel, 0, count)
+	nodes = nodes[:count]
+	buckets = buckets[:count]
 
-	for i := range count {
-		node := nodes[i]
+	for i, node := range nodes {
 		if node.DiscRadius <= 0 {
 			continue
 		}

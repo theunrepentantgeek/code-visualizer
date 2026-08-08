@@ -223,7 +223,12 @@ func RenderStage(c *stages.CommonState, p *State) error {
 	}
 
 	cv := RenderToCanvas(
-		p.Layout, p.Buckets, c.Width, c.Height, p.Inks, triangles, surfaceInk, p.DiscLabels, format,
+		p.Layout, p.Buckets, c.Width, c.Height, p.Inks, RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: surfaceInk,
+			DiscLabels: p.DiscLabels,
+			Format:     format,
+		},
 	)
 	if c.DrawingBounds.MaxY > 0 {
 		cv.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)

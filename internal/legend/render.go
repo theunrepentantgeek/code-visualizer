@@ -106,6 +106,7 @@ func legendOrigin(
 	}
 
 	drawingMinY := float64(cv.DrawingMinY())
+
 	drawingMaxY := float64(cv.DrawingMaxY())
 	if legendH <= drawingMaxY-drawingMinY {
 		oy = min(max(oy, drawingMinY), drawingMaxY-legendH)
@@ -256,10 +257,14 @@ func (c *swatchCursor) swatchPos() (x, y float64) { return c.x, c.y }
 // Vertical: to the right of the swatch. Horizontal: below the swatch.
 func (c *swatchCursor) numericLabelPos() (x, y float64, anchor canvas.TextAnchor) {
 	if c.horizontal {
-		return c.x + c.scale*model.SwatchSize, c.y + c.scale*(model.SwatchSize+model.LegendLineHeight), canvas.AnchorMiddle
+		return c.x + c.scale*model.SwatchSize,
+			c.y + c.scale*(model.SwatchSize+model.LegendLineHeight),
+			canvas.AnchorMiddle
 	}
 
-	return c.x + c.scale*(model.SwatchSize+model.LabelGap), c.y + c.scale*model.SwatchSize, canvas.AnchorStart
+	return c.x + c.scale*(model.SwatchSize+model.LabelGap),
+		c.y + c.scale*model.SwatchSize,
+		canvas.AnchorStart
 }
 
 // catLabelPos returns the position and anchor for a categorical swatch label.
@@ -267,10 +272,14 @@ func (c *swatchCursor) numericLabelPos() (x, y float64, anchor canvas.TextAnchor
 // Horizontal: below the swatch, centred horizontally.
 func (c *swatchCursor) catLabelPos() (x, y float64, anchor canvas.TextAnchor) {
 	if c.horizontal {
-		return c.x + c.scale*model.SwatchSize/2, c.y + c.scale*(model.SwatchSize+model.LegendLineHeight), canvas.AnchorMiddle
+		return c.x + c.scale*model.SwatchSize/2,
+			c.y + c.scale*(model.SwatchSize+model.LegendLineHeight),
+			canvas.AnchorMiddle
 	}
 
-	return c.x + c.scale*(model.SwatchSize+model.LabelGap), c.y + c.scale*model.SwatchSize/2, canvas.AnchorStart
+	return c.x + c.scale*(model.SwatchSize+model.LabelGap),
+		c.y + c.scale*model.SwatchSize/2,
+		canvas.AnchorStart
 }
 
 // advance moves the cursor by delta along the main axis.
@@ -370,6 +379,7 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 	if w <= 0 || h <= 0 {
 		return y
 	}
+
 	w = lb.scaleValue(w)
 	h = lb.scaleValue(h)
 
