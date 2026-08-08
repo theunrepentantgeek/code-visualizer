@@ -150,3 +150,54 @@ func TestRenderInto_CircleLabelSample_RendersDiscBeforeEntryHeading(t *testing.T
 		g.Expect(sampleLineIndex).To(BeNumerically("<", entryHeadingIndex))
 	}
 }
+
+func TestRenderInto_SmallCanvasKeepsLargeCircleSampleLegendWithinBounds(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const (
+		width      = 320.0
+		height     = 240.0
+		sampleSide = 92.0
+	)
+
+	cv := canvas.NewCanvas(int(width), int(height))
+	pal := palette.GetPalette(palette.Temperature)
+	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, pal)
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomRight,
+		Orientation: model.LegendOrientationVertical,
+		LabelSample: legend.LabelSample{
+			Shape: legend.LabelSampleCircle,
+			Lines: []string{"one", "two", "three", "four", "five"},
+		},
+		Entries: []legend.Entry{
+			{Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk},
+		},
+	}
+
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	for _, call := range mb.Calls {
+		switch call.Method {
+		case "DrawRectangle":
+			g.Expect(call.Pos.X).To(BeNumerically(">=", 0))
+			g.Expect(call.Pos.Y).To(BeNumerically(">=", 0))
+			g.Expect(call.Pos.X + call.Size.Width).To(BeNumerically("<=", width))
+			g.Expect(call.Pos.Y + call.Size.Height).To(BeNumerically("<=", height))
+		case "DrawDisc":
+			g.Expect(call.Pos.X - sampleSide/2).To(BeNumerically(">=", 0))
+			g.Expect(call.Pos.Y - sampleSide/2).To(BeNumerically(">=", 0))
+			g.Expect(call.Pos.X + sampleSide/2).To(BeNumerically("<=", width))
+			g.Expect(call.Pos.Y + sampleSide/2).To(BeNumerically("<=", height))
+		case "DrawText":
+			g.Expect(call.Pos.X).To(BeNumerically(">=", 0))
+			g.Expect(call.Pos.Y).To(BeNumerically(">=", 0))
+			g.Expect(call.Pos.X).To(BeNumerically("<=", width))
+			g.Expect(call.Pos.Y).To(BeNumerically("<=", height))
+		}
+	}
+}

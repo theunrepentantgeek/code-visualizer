@@ -11,6 +11,8 @@ const (
 	defaultDiscRadius = 4.0
 	// innerRadiusFraction controls the inner/outer radius ratio (~1:3).
 	innerRadiusFraction = 1.0 / 3.0
+	// discRadiusSafetyFactor absorbs floating-point error in adjacent-lap distances.
+	discRadiusSafetyFactor = 1 - 1e-12
 )
 
 // SpiralLayout holds the positioned nodes and the Archimedean spiral parameters
@@ -136,11 +138,8 @@ func computeMaxDisc(innerRadius, outerRadius float64, spotsPerLap int, totalAngl
 	}
 
 	maxR := math.Min(gapAngular, gapRadial) / 2
-	if maxR < defaultDiscRadius {
-		maxR = defaultDiscRadius
-	}
 
-	return maxR
+	return maxR * discRadiusSafetyFactor
 }
 
 // positionNode places bucket i on the spiral.

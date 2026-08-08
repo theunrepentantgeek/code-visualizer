@@ -1,6 +1,7 @@
 package spiral
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -141,5 +142,36 @@ func TestApplyDiscSizes_DenseHourlyLayoutHonorsGeometryMaximum(t *testing.T) {
 
 	for i := range nodes {
 		g.Expect(nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
+	}
+}
+
+func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	start := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	buckets := BuildTimeBuckets(Hourly, start, start.Add(2000*time.Hour))
+	layout := Layout(buckets, 1920, 1080, Hourly)
+	maxDisc := MaxDiscRadius(len(buckets), 1920, 1080, Hourly)
+
+	for i := range buckets {
+		buckets[i].Files = makeFiles(1)
+		buckets[i].SizeValue = 1
+	}
+
+	ApplyDiscSizes(layout.Nodes, buckets, maxDisc)
+
+	for i := range layout.Nodes {
+		g.Expect(layout.Nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
+	}
+
+	for i := 0; i+Hourly.SpotsPerLap() < len(layout.Nodes); i++ {
+		current := layout.Nodes[i]
+		nextLap := layout.Nodes[i+Hourly.SpotsPerLap()]
+		distance := math.Hypot(nextLap.X-current.X, nextLap.Y-current.Y)
+		g.Expect(distance).To(
+			BeNumerically(">=", current.DiscRadius+nextLap.DiscRadius),
+			"same-angle buckets %d and %d should not overlap", i, i+Hourly.SpotsPerLap(),
+		)
 	}
 }
