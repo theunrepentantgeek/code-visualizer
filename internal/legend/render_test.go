@@ -151,28 +151,41 @@ func TestRenderInto_CircleLabelSample_RendersDiscBeforeEntryHeading(t *testing.T
 	}
 }
 
-func TestRenderInto_SmallCanvasKeepsLargeCircleSampleLegendWithinBounds(t *testing.T) {
+func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	const (
-		width      = 320.0
-		height     = 240.0
-		sampleSide = 92.0
+		width       = 280.0
+		drawingMinY = 40.0
+		drawingMaxY = 160.0
 	)
 
-	cv := canvas.NewCanvas(int(width), int(height))
+	sampleLines := []string{
+		"directory-name",
+		"source-file-name",
+		"relative-path",
+		"language",
+		"permissions",
+		"last-change",
+		"modified-date",
+		"owner",
+	}
+
+	cv := canvas.NewCanvas(int(width), 200)
+	cv.SetDrawingBounds(int(drawingMinY), int(drawingMaxY))
 	pal := palette.GetPalette(palette.Temperature)
 	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, pal)
 	cfg := &legend.Config{
-		Position:    model.LegendPositionBottomRight,
+		Position:    model.LegendPositionBottomCenter,
 		Orientation: model.LegendOrientationVertical,
 		LabelSample: legend.LabelSample{
 			Shape: legend.LabelSampleCircle,
-			Lines: []string{"one", "two", "three", "four", "five"},
+			Lines: sampleLines,
 		},
 		Entries: []legend.Entry{
 			{Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk},
+			{Role: legend.RoleBorder, MetricName: "line-count", Ink: fillInk},
 		},
 	}
 
@@ -181,23 +194,50 @@ func TestRenderInto_SmallCanvasKeepsLargeCircleSampleLegendWithinBounds(t *testi
 	mb := mock.NewBackend()
 	g.Expect(cv.RenderTo(mb)).To(Succeed())
 
-	for _, call := range mb.Calls {
-		switch call.Method {
-		case "DrawRectangle":
-			g.Expect(call.Pos.X).To(BeNumerically(">=", 0))
-			g.Expect(call.Pos.Y).To(BeNumerically(">=", 0))
-			g.Expect(call.Pos.X + call.Size.Width).To(BeNumerically("<=", width))
-			g.Expect(call.Pos.Y + call.Size.Height).To(BeNumerically("<=", height))
-		case "DrawDisc":
-			g.Expect(call.Pos.X - sampleSide/2).To(BeNumerically(">=", 0))
-			g.Expect(call.Pos.Y - sampleSide/2).To(BeNumerically(">=", 0))
-			g.Expect(call.Pos.X + sampleSide/2).To(BeNumerically("<=", width))
-			g.Expect(call.Pos.Y + sampleSide/2).To(BeNumerically("<=", height))
-		case "DrawText":
-			g.Expect(call.Pos.X).To(BeNumerically(">=", 0))
-			g.Expect(call.Pos.Y).To(BeNumerically(">=", 0))
-			g.Expect(call.Pos.X).To(BeNumerically("<=", width))
-			g.Expect(call.Pos.Y).To(BeNumerically("<=", height))
+	var (
+		background  *mock.Call
+		disc        *mock.Call
+		sampleTexts []*mock.Call
+	)
+
+	for i := range mb.Calls {
+		call := &mb.Calls[i]
+		switch {
+		case call.Method == "DrawRectangle" && background == nil:
+			background = call
+		case call.Method == "DrawDisc":
+			disc = call
+		case call.Method == "DrawText":
+			for _, line := range sampleLines {
+				if call.Text == line {
+					sampleTexts = append(sampleTexts, call)
+					break
+				}
+			}
 		}
+	}
+
+	g.Expect(background).NotTo(BeNil())
+	g.Expect(disc).NotTo(BeNil())
+	g.Expect(sampleTexts).To(HaveLen(len(sampleLines)))
+	g.Expect(sampleTexts[0].FontSize).To(BeNumerically("<", model.LegendFontSize))
+
+	g.Expect(background.Pos.X).To(BeNumerically(">=", 0))
+	g.Expect(background.Pos.Y).To(BeNumerically(">=", drawingMinY))
+	g.Expect(background.Pos.X + background.Size.Width).To(BeNumerically("<=", width))
+	g.Expect(background.Pos.Y + background.Size.Height).To(BeNumerically("<=", drawingMaxY))
+
+	scale := sampleTexts[0].FontSize / model.LegendFontSize
+	sampleSide := scale * (float64(len(sampleLines))*model.LegendLineHeight + 2*model.LabelGap)
+	g.Expect(disc.Pos.X - sampleSide/2).To(BeNumerically(">=", 0))
+	g.Expect(disc.Pos.Y - sampleSide/2).To(BeNumerically(">=", drawingMinY))
+	g.Expect(disc.Pos.X + sampleSide/2).To(BeNumerically("<=", width))
+	g.Expect(disc.Pos.Y + sampleSide/2).To(BeNumerically("<=", drawingMaxY))
+
+	for _, sampleText := range sampleTexts {
+		g.Expect(sampleText.Pos.X).To(BeNumerically(">=", 0))
+		g.Expect(sampleText.Pos.X).To(BeNumerically("<=", width))
+		g.Expect(sampleText.Pos.Y).To(BeNumerically(">=", drawingMinY))
+		g.Expect(sampleText.Pos.Y).To(BeNumerically("<=", drawingMaxY))
 	}
 }
