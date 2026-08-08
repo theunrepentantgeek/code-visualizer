@@ -5,6 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
@@ -14,8 +15,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
-// ResolveMetrics resolves metric, resolution, and label settings from the
-// spiral config and populates c.Requested.
+// ResolveMetrics resolves metric and resolution settings from the spiral config
+// and populates c.Requested.
 func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	p.Size = metric.Name(stages.PtrString(cfg.Size))
 	p.FillMetric = cfg.Fill.MetricName()
@@ -36,7 +37,6 @@ func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	}
 
 	p.Resolution = resolveResolution(cfg)
-	p.Labels = resolveLabels(cfg)
 
 	c.Requested = collectRequestedMetrics(p.Size, cfg.Fill, cfg.Border, cfg.SurfaceMetric)
 
@@ -49,14 +49,6 @@ func resolveResolution(cfg *config.Spiral) Resolution {
 	}
 
 	return Daily
-}
-
-func resolveLabels(cfg *config.Spiral) LabelMode {
-	if lbl := stages.PtrString(cfg.Labels); lbl != "" {
-		return LabelMode(lbl)
-	}
-
-	return LabelLaps
 }
 
 // collectRequestedMetrics merges size, fill, border, and surface into a
@@ -145,7 +137,7 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 		Position: pos, Orientation: orient,
 		FillInk: p.Inks.Fill, FillMetric: p.FillMetric,
 		BorderInk: p.Inks.Border, BorderMetric: p.BorderMetric,
-		SizeMetric: p.Size,
+		SizeMetric: effectiveSizeMetric(p.Size),
 	}
 
 	if p.SurfaceMetric != "" && (p.SurfaceMetric != p.FillMetric || p.SurfacePalette != p.FillPalette) {
@@ -155,6 +147,17 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 	}
 
 	p.LegendConfig = builder.Build()
+	if p.LegendConfig != nil {
+		p.LegendConfig.LabelSample = legend.LabelSample{
+			Shape: legend.LabelSampleCircle,
+			Lines: buildLegendLabelSample(LabelMetrics{
+				Size:    p.Size,
+				Fill:    p.FillMetric,
+				Border:  p.BorderMetric,
+				Surface: p.SurfaceMetric,
+			}),
+		}
+	}
 
 	return nil
 }
@@ -164,7 +167,7 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 	bounds := c.DrawingBounds
 	availH := bounds.Height()
 
-	layout := Layout(p.Buckets, c.Width, availH, p.Resolution, p.Labels)
+	layout := Layout(p.Buckets, c.Width, availH, p.Resolution)
 	maxDisc := MaxDiscRadius(len(p.Buckets), c.Width, availH, p.Resolution)
 
 	ApplyDiscSizes(layout.Nodes, p.Buckets, maxDisc)
@@ -179,12 +182,24 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 	}
 
 	p.Layout = layout
+	p.DiscLabels = buildDiscLabels(layout.Nodes, p.Buckets, p.Inks.Fill, LabelMetrics{
+		Size:      effectiveSizeMetric(p.Size),
+		Fill:      p.FillMetric,
+		Border:    p.BorderMetric,
+		Surface:   p.SurfaceMetric,
+		Requested: c.Requested,
+	})
 
 	return nil
 }
 
 // RenderStage renders the spiral to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, p *State) error {
+	format, err := canvas.FormatFromPath(c.Output)
+	if err != nil {
+		return eris.Wrap(err, "resolve spiral label format")
+	}
+
 	var (
 		triangles  []surface.Triangle
 		surfaceInk inks.Ink
@@ -207,7 +222,17 @@ func RenderStage(c *stages.CommonState, p *State) error {
 		}
 	}
 
-	cv := RenderToCanvas(p.Layout, p.Buckets, c.Width, c.Height, p.Inks, triangles, surfaceInk)
+	cv := RenderToCanvas(
+		p.Layout, p.Buckets, c.Width, c.Height, p.Inks, RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: surfaceInk,
+			DiscLabels: p.DiscLabels,
+			Format:     format,
+		},
+	)
+	if c.DrawingBounds.MaxY > 0 {
+		cv.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)
+	}
 
 	legend.RenderInto(cv, p.LegendConfig)
 

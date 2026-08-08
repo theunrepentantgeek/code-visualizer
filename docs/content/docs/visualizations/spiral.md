@@ -33,7 +33,6 @@ codeviz spiral [flags] <target-path>
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
 | `--surface`            |       | `false`        | Render a metric surface; requires numeric fill or surface metric   |
 | `--surface-metric`     |       | none           | Numeric surface metric: `metric[,palette]`; enables the surface   |
-| `--labels`             |       | `laps`         | Labels to display: `all`, `laps`, or `none`                       |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
 | `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
 | `--width`              |       | `1920`         | Canvas width in pixels                                            |
@@ -62,6 +61,15 @@ Switch to an hourly resolution and size discs by line count:
 codeviz spiral ./src -o spiral.png -s file-lines -r hourly
 ```
 
+## Dot labels and legend
+
+Active dots have upright, centered labels showing their numeric day and
+abbreviated month, followed by values for each distinct active size, fill,
+border, and surface metric. Spiral labels retain text in SVG, PNG, and JPEG
+output, including zero-valued metrics. The circle key in the legend explains
+this label structure with `Day`, `Month`, and the configured metric names;
+metric names remain listed in the legend entries.
+
 ## Metric surfaces
 
 Use `--surface` with a numeric `--fill` metric to add a metric surface beneath
@@ -72,9 +80,9 @@ codeviz spiral ./src -o spiral.png --fill file-lines,terrain --surface
 ```
 
 The surface is rendered as discrete colour bands in the annular region traced
-by the active time buckets. The guide track, discs, and labels remain in the
-foreground. By default, the surface shares the fill metric and palette, so it
-does not add a separate legend entry.
+by the active time buckets. The guide track and discs remain in the foreground.
+By default, the surface shares the fill metric and palette, so it does not add
+a separate legend entry.
 
 Use `--surface-metric` to select a different numeric metric and optional
 palette. It implies surface enablement, so `--surface-metric file-lines,terrain`

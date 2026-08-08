@@ -621,6 +621,7 @@ func TestDirectoryMetricValue_ReturnsMeasureValue(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	const testMetric = metric.Name("comment-ratio")
+
 	dir := &model.Directory{Name: "pkg"}
 	dir.SetMeasure(testMetric, 0.42)
 
@@ -645,6 +646,7 @@ func TestFileMetricValue_ReturnsMeasureValue(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	const testMetric = metric.Name("comment-ratio")
+
 	f := &model.File{Name: "main.go"}
 	f.SetMeasure(testMetric, 0.75)
 
