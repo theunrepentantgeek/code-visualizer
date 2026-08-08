@@ -129,6 +129,34 @@ func TestToLegendData_FixedInkEntry_EmptySwatches(t *testing.T) {
 	g.Expect(data.Entries[0].Swatches).To(BeNil())
 }
 
+func TestToLegendData_CircleLabelSample_PreservesShapeAndFiltersEmptyLines(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := &Config{
+		Position: model.LegendPositionBottomRight,
+		LabelSample: LabelSample{
+			Shape: LabelSampleCircle,
+			Lines: []string{"file-name", "", "file-size"},
+		},
+		Entries: []Entry{
+			{Role: RoleSize, MetricName: "file-size", Ink: inks.FixedInk(palette.White)},
+		},
+	}
+
+	data := cfg.toLegendData()
+	g.Expect(data).NotTo(BeNil())
+
+	if data == nil {
+		return
+	}
+
+	g.Expect(data.LabelSample).To(Equal(&model.LegendLabelSample{
+		Shape: model.LegendLabelSampleCircle,
+		Lines: []string{"file-name", "file-size"},
+	}))
+}
+
 func TestToLegendData_RoundTrip_PositionConstants(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

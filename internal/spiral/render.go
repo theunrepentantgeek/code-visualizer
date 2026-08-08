@@ -14,15 +14,21 @@ import (
 
 var (
 	trackColour = color.RGBA{R: 0xDD, G: 0xDD, B: 0xDD, A: 0xFF}
-	labelColour = color.RGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xFF}
 	bgColour    = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 )
 
 const (
 	trackWidth    = 1.0
-	labelGap      = 4.0
 	trackMinSteps = 500
 )
+
+// RenderOptions contains optional rendering inputs for a spiral canvas.
+type RenderOptions struct {
+	Triangles  []surface.Triangle
+	SurfaceInk inks.Ink
+	DiscLabels []canvas.BlockLabel
+	Format     canvas.ImageFormat
+}
 
 // RenderToCanvas builds a Canvas from a spiral layout and time buckets.
 func RenderToCanvas(
@@ -30,16 +36,18 @@ func RenderToCanvas(
 	buckets []TimeBucket,
 	width, height int,
 	is Inks,
-	triangles []surface.Triangle,
-	surfaceInk inks.Ink,
+	options RenderOptions,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 
 	addBackground(cv, width, height)
-	addSurface(cv, triangles, surfaceInk)
+	addSurface(cv, options.Triangles, options.SurfaceInk)
 	addTrack(cv, layout)
 	addDiscs(cv, layout.Nodes, buckets, is)
-	addLabels(cv, layout.Nodes)
+
+	for _, label := range options.DiscLabels {
+		cv.AddBlockLabel(canvas.LayerOverlay, label, options.Format)
+	}
 
 	return cv
 }
@@ -227,58 +235,6 @@ func addDiscs(
 			Border: borderMV,
 		})
 	}
-}
-
-// addLabels adds rotated text labels tangent to the spiral.
-// Pre-allocates a shared labelInk to avoid recreating it for every label.
-func addLabels(cv *canvas.Canvas, nodes []SpiralNode) {
-	labelInk := inks.FixedInk(labelColour)
-
-	for _, n := range nodes {
-		if !n.ShowLabel || n.Label == "" {
-			continue
-		}
-
-		addLabel(cv, n, labelInk)
-	}
-}
-
-// addLabel adds a single rotated label for a spiral node.
-func addLabel(cv *canvas.Canvas, n SpiralNode, labelInk inks.Ink) {
-	labelR := n.DiscRadius + labelGap
-	lx := n.X + labelR*math.Sin(n.Angle)
-	ly := n.Y - labelR*math.Cos(n.Angle)
-
-	norm := math.Mod(n.Angle, 2*math.Pi)
-	if norm < 0 {
-		norm += 2 * math.Pi
-	}
-
-	var anchor canvas.TextAnchor
-
-	var rotation float64
-
-	if norm <= math.Pi {
-		anchor = canvas.AnchorStart
-		rotation = n.Angle
-	} else {
-		anchor = canvas.AnchorEnd
-		rotation = n.Angle + math.Pi
-	}
-
-	labelSpec := &canvas.TextSpec{
-		Ink:      labelInk,
-		FontSize: 0,
-		Anchor:   anchor,
-		Rotation: rotation,
-	}
-
-	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    labelSpec,
-		X:       lx,
-		Y:       ly,
-		Content: n.Label,
-	})
 }
 
 // metricValue builds a MetricValue from time-bucket data for the given ink.

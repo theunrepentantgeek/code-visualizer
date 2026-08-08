@@ -110,33 +110,6 @@ func TestResolveMetrics_HourlyResolution(t *testing.T) {
 	g.Expect(viz.Resolution).To(Equal(spiral.Hourly))
 }
 
-func TestResolveMetrics_DefaultsLabelsToLaps(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	sizeStr := "file-size"
-	common := &stages.CommonState{}
-	viz := &spiral.State{}
-	cfg := &config.Spiral{Size: &sizeStr}
-
-	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.Labels).To(Equal(spiral.LabelLaps))
-}
-
-func TestResolveMetrics_LabelsAllCanBeSet(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	sizeStr := "file-size"
-	lblStr := "all"
-	common := &stages.CommonState{}
-	viz := &spiral.State{}
-	cfg := &config.Spiral{Size: &sizeStr, Labels: &lblStr}
-
-	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.Labels).To(Equal(spiral.LabelAll))
-}
-
 func TestResolveMetrics_SurfaceDefaultsToFill(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -322,9 +295,9 @@ func TestBuildLegendStage_AddsDistinctSurfaceMetric(t *testing.T) {
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
-	g.Expect(viz.LegendConfig.Entries[1].Role).To(Equal(legend.RoleSurface))
-	g.Expect(viz.LegendConfig.Entries[1].MetricName).To(Equal("file-size"))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(3))
+	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
+	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-size"))
 }
 
 func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
@@ -342,7 +315,7 @@ func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(1))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
 	g.Expect(viz.LegendConfig.Entries[0].Role).To(Equal(legend.RoleFill))
 }
 
@@ -361,7 +334,7 @@ func TestBuildLegendStage_AddsSurfaceForSameMetricWithDifferentPalette(t *testin
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
-	g.Expect(viz.LegendConfig.Entries[1].Role).To(Equal(legend.RoleSurface))
-	g.Expect(viz.LegendConfig.Entries[1].MetricName).To(Equal("file-lines"))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(3))
+	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
+	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-lines"))
 }

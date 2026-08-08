@@ -1,7 +1,9 @@
 package spiral
 
 import (
+	"math"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -55,11 +57,12 @@ func TestApplyDiscSizes_LargestBucketGetsMaxDisc(t *testing.T) {
 	g.Expect(nodes[4].DiscRadius).To(Equal(0.0))
 }
 
-func TestApplyDiscSizes_AllZeroSizeValues_GetsMinRadius(t *testing.T) {
+func TestApplyDiscSizes_UsesReadableFloorWhenGeometrySupportsIt(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 
 	buckets := makeBuckets(3, Daily)
+	maxDisc := 20.0
 
 	nodes := make([]SpiralNode, 3)
 	for i := range nodes {
@@ -68,10 +71,11 @@ func TestApplyDiscSizes_AllZeroSizeValues_GetsMinRadius(t *testing.T) {
 		buckets[i].Files = makeFiles(1) // active but zero SizeValue
 	}
 
-	ApplyDiscSizes(nodes, buckets, 20.0)
+	ApplyDiscSizes(nodes, buckets, maxDisc)
 
 	for i := range nodes {
 		g.Expect(nodes[i].DiscRadius).To(Equal(minDiscRadius))
+		g.Expect(nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc))
 	}
 }
 
@@ -95,4 +99,85 @@ func TestApplyDiscSizes_SmallerBucketIsSmallerThanLarger(t *testing.T) {
 
 	g.Expect(nodes[0].DiscRadius).To(BeNumerically("<", nodes[1].DiscRadius),
 		"bucket with fewer commits should have smaller disc")
+}
+
+func TestApplyDiscSizes_UsesReadableFloorAndSquareRootScaling(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	buckets := makeBuckets(3, Daily)
+	nodes := make([]SpiralNode, len(buckets))
+	for i, size := range []float64{1, 4, 9} {
+		buckets[i].Files = makeFiles(1)
+		buckets[i].SizeValue = size
+	}
+
+	ApplyDiscSizes(nodes, buckets, 20)
+
+	g.Expect(minDiscRadius).To(Equal(12.0))
+	g.Expect(nodes[0].DiscRadius).To(BeNumerically(">", minDiscRadius))
+	g.Expect(nodes[0].DiscRadius).To(BeNumerically("<", nodes[1].DiscRadius))
+	g.Expect(nodes[1].DiscRadius).To(BeNumerically("<", nodes[2].DiscRadius))
+	g.Expect(nodes[2].DiscRadius).To(BeNumerically("==", 20))
+}
+
+func TestApplyDiscSizes_DenseHourlyLayoutHonorsGeometryMaximum(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	start := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	buckets := BuildTimeBuckets(Hourly, start, start.Add(720*time.Hour))
+	nodes := make([]SpiralNode, len(buckets))
+	maxDisc := MaxDiscRadius(len(buckets), 1920, 1080, Hourly)
+
+	g.Expect(maxDisc).To(BeNumerically(">", 0))
+	g.Expect(maxDisc).To(BeNumerically("<", minDiscRadius))
+
+	for i := range buckets {
+		buckets[i].Files = makeFiles(1)
+		buckets[i].SizeValue = float64(i%5 + 1)
+	}
+
+	ApplyDiscSizes(nodes, buckets, maxDisc)
+
+	for i := range nodes {
+		g.Expect(nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
+	}
+}
+
+func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	start := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	buckets := BuildTimeBuckets(Hourly, start, start.Add(2000*time.Hour))
+	layout := Layout(buckets, 1920, 1080, Hourly)
+	maxDisc := MaxDiscRadius(len(buckets), 1920, 1080, Hourly)
+	g.Expect(maxDisc).To(BeNumerically(">", 0))
+
+	for i := range buckets {
+		buckets[i].Files = makeFiles(1)
+		buckets[i].SizeValue = 1
+	}
+
+	ApplyDiscSizes(layout.Nodes, buckets, maxDisc)
+
+	for i := range layout.Nodes {
+		g.Expect(layout.Nodes[i].DiscRadius).To(BeNumerically(">", 0), "bucket %d", i)
+		g.Expect(layout.Nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
+	}
+
+	for i := 0; i+Hourly.SpotsPerLap() < len(layout.Nodes); i++ {
+		current := layout.Nodes[i]
+		nextLap := layout.Nodes[i+Hourly.SpotsPerLap()]
+		distance := math.Hypot(nextLap.X-current.X, nextLap.Y-current.Y)
+		g.Expect(distance).To(
+			BeNumerically(">=",
+				current.DiscRadius+borderWidth(current.DiscRadius)/2+
+					nextLap.DiscRadius+borderWidth(nextLap.DiscRadius)/2,
+			),
+			"painted extents of same-angle buckets %d and %d should not overlap",
+			i, i+Hourly.SpotsPerLap(),
+		)
+	}
 }

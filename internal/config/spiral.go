@@ -10,7 +10,6 @@ type Spiral struct {
 	Border        *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
 	Surface       *bool       `yaml:"surface,omitempty"           json:"surface,omitempty"`
 	SurfaceMetric *MetricSpec `yaml:"surfaceMetric,omitempty"  json:"surfaceMetric,omitempty"`
-	Labels        *string     `yaml:"labels,omitempty"            json:"labels,omitempty"`
 }
 
 // OverrideResolution sets Resolution to v if v is non-empty.
@@ -36,9 +35,6 @@ func (s *Spiral) OverrideSurface(value bool) {
 
 // OverrideSurfaceMetric sets SurfaceMetric to v if v is non-zero.
 func (s *Spiral) OverrideSurfaceMetric(v MetricSpec) { overrideMetricSpec(&s.SurfaceMetric, v) }
-
-// OverrideLabels sets Labels to v if v is non-empty.
-func (s *Spiral) OverrideLabels(v string) { overrideString(&s.Labels, v) }
 
 // SurfaceEnabled reports whether the spiral surface has been configured.
 func (s *Spiral) SurfaceEnabled() bool {

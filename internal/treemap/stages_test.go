@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -110,11 +111,14 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 		return
 	}
 
-	g.Expect(viz.LegendConfig.LabelSample).To(Equal([]string{
-		"file-name",
-		"file-size",
-		"file-type",
-		"file-lines",
+	g.Expect(viz.LegendConfig.LabelSample).To(Equal(legend.LabelSample{
+		Shape: legend.LabelSampleSquare,
+		Lines: []string{
+			"file-name",
+			"file-size",
+			"file-type",
+			"file-lines",
+		},
 	}))
 }
 

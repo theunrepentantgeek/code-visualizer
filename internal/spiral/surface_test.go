@@ -22,7 +22,7 @@ func TestBuildSurface_CreatesTrianglesWithCentroidsInSpiralAnnulus(t *testing.T)
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	layout := spiral.Layout(make([]spiral.TimeBucket, 8), 240, 240, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(make([]spiral.TimeBucket, 8), 240, 240, spiral.Hourly)
 	values := []float64{1, 2, 3, 4, 5, 6, 7, 8}
 
 	triangles := spiral.BuildSurface(layout, values, 42)
@@ -54,7 +54,7 @@ func TestBuildSurface_ExtendsHalfCoilSpacingBeyondSpiralTrack(t *testing.T) {
 		values[index] = float64(index)
 	}
 
-	layout := spiral.Layout(buckets, 1920, 1920, spiral.Daily, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 1920, 1920, spiral.Daily)
 	triangles := spiral.BuildSurface(layout, values, 42)
 	halfSpacing := math.Pi * layout.B
 	innerRadius := layout.A - halfSpacing
@@ -81,7 +81,7 @@ func TestBuildSurface_RendersShortSpiral(t *testing.T) {
 	t.Parallel()
 
 	g := NewGomegaWithT(t)
-	layout := spiral.Layout(make([]spiral.TimeBucket, 3), 240, 240, spiral.Hourly, spiral.LabelNone)
+	layout := spiral.Layout(make([]spiral.TimeBucket, 3), 240, 240, spiral.Hourly)
 
 	g.Expect(spiral.BuildSurface(layout, []float64{1, 2, 3}, 42)).NotTo(BeEmpty())
 }
@@ -110,8 +110,11 @@ func TestRenderToCanvas_RendersNumericSurfaceBandsBeforeGuideTrack(t *testing.T)
 		160,
 		120,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		triangles,
-		surfaceInk,
+		spiral.RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: surfaceInk,
+			Format:     canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 
@@ -167,8 +170,11 @@ func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
 		160,
 		120,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		triangles,
-		inks.NumericInk("surface", []float64{1}, palette.GetPalette(palette.Temperature)),
+		spiral.RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: inks.NumericInk("surface", []float64{1}, palette.GetPalette(palette.Temperature)),
+			Format:     canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 
@@ -204,8 +210,11 @@ func TestRenderToCanvas_UsesFlatSurfaceFallbackForFixedInk(t *testing.T) {
 		320,
 		240,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		triangles,
-		surfaceInk,
+		spiral.RenderOptions{
+			Triangles:  triangles,
+			SurfaceInk: surfaceInk,
+			Format:     canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 
@@ -228,8 +237,9 @@ func TestRenderToCanvas_WithoutSurfaceRendersNoPolygons(t *testing.T) {
 		160,
 		120,
 		spiral.Inks{Fill: numericInk(), Border: numericInk()},
-		nil,
-		nil,
+		spiral.RenderOptions{
+			Format: canvas.FormatPNG,
+		},
 	)
 	backend := mock.NewBackend()
 
@@ -261,13 +271,13 @@ func TestRenderStage_UsesSurfaceValuesWhenEnabled(t *testing.T) {
 		[]float64{10, 20},
 		palette.GetPalette(palette.Temperature),
 	)
-	common := &stages.CommonState{Width: 240, Height: 240}
+	common := &stages.CommonState{Width: 240, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:        buckets,
 		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},
 		SurfaceEnabled: true,
 		SurfaceInk:     surfaceInk,
-		Layout:         spiral.Layout(buckets, 240, 240, spiral.Hourly, spiral.LabelNone),
+		Layout:         spiral.Layout(buckets, 240, 240, spiral.Hourly),
 	}
 
 	g.Expect(spiral.RenderStage(common, state)).To(Succeed())
@@ -297,12 +307,12 @@ func TestRenderStage_DisabledSurfaceRendersNoPolygons(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := surfaceStageBuckets()
-	common := &stages.CommonState{Width: 240, Height: 240}
+	common := &stages.CommonState{Width: 240, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:      buckets,
 		Inks:         spiral.Inks{Fill: numericInk(), Border: numericInk()},
 		SurfaceInk:   numericInk(),
-		Layout:       spiral.Layout(buckets, 240, 240, spiral.Hourly, spiral.LabelNone),
+		Layout:       spiral.Layout(buckets, 240, 240, spiral.Hourly),
 		LegendConfig: nil,
 	}
 
@@ -333,13 +343,13 @@ func TestRenderStage_WarnsAndRendersSpiralWhenSurfaceCannotBeBuilt(t *testing.T)
 		{FillValue: 100, BorderValue: 100, SurfaceValue: 10},
 		{FillValue: 100, BorderValue: 100, SurfaceValue: 20},
 	}
-	common := &stages.CommonState{Width: 240, Height: 240}
+	common := &stages.CommonState{Width: 240, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:        buckets,
 		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},
 		SurfaceEnabled: true,
 		SurfaceInk:     numericInk(),
-		Layout:         spiral.Layout(buckets, 240, 240, spiral.Hourly, spiral.LabelNone),
+		Layout:         spiral.Layout(buckets, 240, 240, spiral.Hourly),
 	}
 
 	g.Expect(spiral.RenderStage(common, state)).To(Succeed())
@@ -364,7 +374,6 @@ func TestRenderStage_RendersSurfaceFor162PointSpiral(t *testing.T) {
 		320,
 		240-int(canvas.FooterReservedHeight),
 		spiral.Daily,
-		spiral.LabelNone,
 	)
 
 	values := make([]float64, len(buckets))
@@ -383,7 +392,7 @@ func TestRenderStage_RendersSurfaceFor162PointSpiral(t *testing.T) {
 	})))
 	defer slog.SetDefault(oldDefault)
 
-	common := &stages.CommonState{Width: 320, Height: 240}
+	common := &stages.CommonState{Width: 320, Height: 240, Output: "spiral.png"}
 	state := &spiral.State{
 		Buckets:        buckets,
 		Inks:           spiral.Inks{Fill: numericInk(), Border: numericInk()},
@@ -428,7 +437,7 @@ func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket) {
 
 func bandedSurfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []surface.Triangle) {
 	buckets := largeSurfaceStageBuckets()
-	layout := spiral.Layout(buckets, 320, 240, spiral.Daily, spiral.LabelNone)
+	layout := spiral.Layout(buckets, 320, 240, spiral.Daily)
 	triangles := []surface.Triangle{{
 		Points: [3]surface.Point{
 			{X: 20, Y: 30, Value: 1},
