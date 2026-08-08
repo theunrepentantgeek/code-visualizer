@@ -146,6 +146,15 @@ func TestApplyDiscSizes_DenseHourlyLayoutHonorsGeometryMaximum(t *testing.T) {
 	}
 }
 
+func TestMaxDiscRadius_SingleBucketKeepsReadableLabelSpace(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	maxDisc := MaxDiscRadius(1, 1920, 1080, Daily)
+
+	g.Expect(maxDisc).To(BeNumerically(">", minDiscRadius))
+}
+
 func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

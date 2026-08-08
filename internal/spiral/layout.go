@@ -128,7 +128,10 @@ func MaxDiscRadius(
 // computeMaxDisc calculates the maximum disc radius that avoids overlap.
 func computeMaxDisc(innerRadius, outerRadius float64, spotsPerLap int, totalAngle float64) float64 {
 	if totalAngle == 0 {
-		return defaultDiscRadius
+		maxR := min(innerRadius, outerRadius-innerRadius)
+		maxR = max(0, maxR-borderWidth(maxR)/2)
+
+		return maxR * discRadiusSafetyFactor
 	}
 
 	angularStep := 2 * math.Pi / float64(spotsPerLap)
