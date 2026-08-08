@@ -21,11 +21,14 @@ func TestBuildDiscLabel_FormatsDateAndMetricValuesInRoleOrder(t *testing.T) {
 	g := NewWithT(t)
 
 	bucket := TimeBucket{
-		Start:        time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
-		SizeValue:    3.5,
-		FillLabel:    "go",
-		BorderValue:  8,
-		SurfaceValue: 1.25,
+		Start:                 time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		SizeValue:             3.5,
+		SizeValueAvailable:    true,
+		FillLabel:             "go",
+		BorderValue:           8,
+		BorderValueAvailable:  true,
+		SurfaceValue:          1.25,
+		SurfaceValueAvailable: true,
 	}
 
 	g.Expect(buildDiscLabel(bucket, LabelMetrics{
@@ -38,9 +41,10 @@ func TestBuildDiscLabel_DeduplicatesMetricRolesAndOmitsMissingCategory(t *testin
 	g := NewWithT(t)
 
 	bucket := TimeBucket{
-		Start:     time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
-		SizeValue: 2,
-		FillLabel: "",
+		Start:              time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		SizeValue:          2,
+		SizeValueAvailable: true,
+		FillLabel:          "",
 	}
 
 	g.Expect(buildDiscLabel(bucket, LabelMetrics{
@@ -53,14 +57,36 @@ func TestBuildDiscLabel_RetainsZeroNumericFillAndBorderValues(t *testing.T) {
 	g := NewWithT(t)
 
 	bucket := TimeBucket{
-		Start:       time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
-		FillValue:   0,
-		BorderValue: 0,
+		Start:                 time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		FillValue:             0,
+		FillValueAvailable:    true,
+		BorderValue:           0,
+		BorderValueAvailable:  true,
+		SurfaceValueAvailable: true,
 	}
 
 	g.Expect(buildDiscLabel(bucket, LabelMetrics{
 		Fill: "file-lines", Border: "file-size",
 	})).To(Equal([]string{"7", "Aug", "0", "0", "0"}))
+}
+
+func TestBuildDiscLabel_OmitsUnavailableNumericMetric(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	buckets := []TimeBucket{{
+		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		Files: makeFiles(1),
+	}}
+	requested := stages.ClassifyRequestedMetrics(
+		[]metric.Name{commitCountMetric, "file-lines"},
+		metric.LevelDirectory,
+	)
+	AggregateBucketMetrics(buckets, requested, commitCountMetric, "file-lines", "", "")
+
+	g.Expect(buildDiscLabel(buckets[0], LabelMetrics{
+		Size: commitCountMetric, Fill: "file-lines", Requested: requested,
+	})).To(Equal([]string{"7", "Aug", "1"}))
 }
 
 func TestBuildDiscLabel_DefaultSizeUsesCommitCount(t *testing.T) {

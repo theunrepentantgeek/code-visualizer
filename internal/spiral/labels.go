@@ -99,18 +99,31 @@ func discMetricValue(
 			return strconv.FormatFloat(float64(len(bucket.Files)), 'f', -1, 64), true
 		}
 
+		if !bucket.SizeValueAvailable {
+			return "", false
+		}
+
 		return strconv.FormatFloat(bucket.SizeValue, 'f', -1, 64), true
 	case labelFill:
-		return colourLabelValue(bucket.FillValue, bucket.FillLabel, name, requested)
+		return colourLabelValue(
+			bucket.FillValue, bucket.FillValueAvailable, bucket.FillLabel, name, requested,
+		)
 	case labelBorder:
-		return colourLabelValue(bucket.BorderValue, bucket.BorderLabel, name, requested)
+		return colourLabelValue(
+			bucket.BorderValue, bucket.BorderValueAvailable, bucket.BorderLabel, name, requested,
+		)
 	default:
+		if !bucket.SurfaceValueAvailable {
+			return "", false
+		}
+
 		return strconv.FormatFloat(bucket.SurfaceValue, 'f', -1, 64), true
 	}
 }
 
 func colourLabelValue(
 	value float64,
+	available bool,
 	label string,
 	name metric.Name,
 	requested stages.RequestedMetrics,
@@ -121,6 +134,10 @@ func colourLabelValue(
 
 	descriptor, ok := requested.DescriptorFor(name)
 	if !ok || descriptor.Kind == metric.Classification {
+		return "", false
+	}
+
+	if !available {
 		return "", false
 	}
 
