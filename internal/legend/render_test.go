@@ -232,6 +232,53 @@ func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.
 	}
 }
 
+func TestRenderInto_ConstrainedCircleSamplePreservesExplicitVerticalOrientation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := canvas.NewCanvas(280, 200)
+	cv.SetDrawingBounds(40, 160)
+	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, palette.GetPalette(palette.Temperature))
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomCenter,
+		Orientation: model.LegendOrientationVertical,
+		LabelSample: legend.LabelSample{
+			Shape: legend.LabelSampleCircle,
+			Lines: []string{
+				"directory-name", "source-file-name", "relative-path", "language",
+				"permissions", "last-change", "modified-date", "owner",
+			},
+		},
+		Entries: []legend.Entry{
+			{Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk},
+			{Role: legend.RoleBorder, MetricName: "line-count", Ink: fillInk},
+		},
+	}
+
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	var fill, border *mock.Call
+	for i := range mb.Calls {
+		call := &mb.Calls[i]
+		switch call.Text {
+		case "Fill":
+			fill = call
+		case "Border":
+			border = call
+		}
+	}
+
+	if fill == nil || border == nil {
+		t.Fatal("expected fill and border headings")
+	}
+
+	g.Expect(fill.Pos.X).To(BeNumerically("==", border.Pos.X))
+	g.Expect(fill.Pos.Y).To(BeNumerically("<", border.Pos.Y))
+}
+
 func collectConstrainedCircleSampleCalls(
 	calls []mock.Call,
 	sampleLines []string,

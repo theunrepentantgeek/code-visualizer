@@ -45,35 +45,21 @@ type legendLayout struct {
 	scale         float64
 }
 
-// fitLegendToCanvas switches oversized circular label legends to horizontal
-// layout, scaling that layout only when necessary to keep it fully visible.
+// fitLegendToCanvas scales oversized legends to keep them fully visible while
+// preserving their configured orientation.
 func fitLegendToCanvas(cv *canvas.Canvas, data *model.LegendData) legendLayout {
 	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
-	if legendFits(cv, w, h) ||
-		data.LabelSample == nil ||
-		data.LabelSample.Shape != model.LegendLabelSampleCircle {
+	if legendFits(cv, w, h) {
 		return legendLayout{data: data, width: w, height: h, scale: 1}
 	}
 
-	adapted := *data
-	if data.Orientation == model.LegendOrientationHorizontal {
-		adapted.Orientation = model.LegendOrientationVertical
-	} else {
-		adapted.Orientation = model.LegendOrientationHorizontal
-	}
-
-	adaptedW, adaptedH := legendlayout.MeasureLegend(&adapted, legendlayout.NewBasicMeasurer())
-	if legendFits(cv, adaptedW, adaptedH) {
-		return legendLayout{data: &adapted, width: adaptedW, height: adaptedH, scale: 1}
-	}
-
 	scale := min(
-		float64(cv.Width())/adaptedW,
-		float64(cv.DrawingMaxY()-cv.DrawingMinY())/adaptedH,
+		float64(cv.Width())/w,
+		float64(cv.DrawingMaxY()-cv.DrawingMinY())/h,
 	)
 
 	return legendLayout{
-		data: &adapted, width: adaptedW * scale, height: adaptedH * scale, scale: scale,
+		data: data, width: w * scale, height: h * scale, scale: scale,
 	}
 }
 
