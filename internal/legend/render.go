@@ -49,7 +49,9 @@ type legendLayout struct {
 // preserving their configured orientation.
 func fitLegendToCanvas(cv *canvas.Canvas, data *model.LegendData) legendLayout {
 	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
-	if legendFits(cv, w, h) {
+	if legendFits(cv, w, h) ||
+		data.LabelSample == nil ||
+		data.LabelSample.Shape != model.LegendLabelSampleCircle {
 		return legendLayout{data: data, width: w, height: h, scale: 1}
 	}
 

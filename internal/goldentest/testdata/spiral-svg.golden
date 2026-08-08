@@ -14,23 +14,23 @@
 <circle cx="209.99" cy="130.57" r="1.49" fill="rgb(51,160,44)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
 <circle cx="106.54" cy="80.75" r="1.49" fill="rgb(51,160,44)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
 <circle cx="187.78" cy="164.18" r="1.49" fill="rgb(178,223,138)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
-<rect x="0.00" y="119.67" width="320.00" height="93.33" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.0"/>
-<circle cx="44.17" cy="163.83" r="34.17" fill="rgb(255,255,255)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
-<text x="44.17" y="143.83" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Day</text>
-<text x="44.17" y="157.17" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Month</text>
-<text x="44.17" y="170.50" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
-<text x="44.17" y="183.83" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
-<text x="165.00" y="136.33" fill="rgb(38,38,38)" font-size="10.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Fill</text>
-<text x="165.00" y="149.67" fill="rgb(38,38,38)" font-size="10.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
-<rect x="90.00" y="161.33" width="23.33" height="23.33" fill="rgb(51,160,44)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
-<text x="101.67" y="198.00" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">CSS</text>
-<rect x="121.67" y="161.33" width="23.33" height="23.33" fill="rgb(178,223,138)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
-<text x="133.33" y="198.00" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Go</text>
-<rect x="153.33" y="161.33" width="23.33" height="23.33" fill="rgb(166,206,227)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
-<text x="165.00" y="198.00" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Markdown</text>
-<rect x="208.33" y="161.33" width="23.33" height="23.33" fill="rgb(31,120,180)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
-<text x="220.00" y="198.00" fill="rgb(51,51,51)" font-size="10.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Text</text>
-<text x="280.83" y="136.33" fill="rgb(38,38,38)" font-size="10.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Size</text>
-<text x="280.83" y="149.67" fill="rgb(38,38,38)" font-size="10.8" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
+<rect x="232.16" y="0.00" width="71.84" height="213.00" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.0"/>
+<circle cx="268.08" cy="33.40" r="25.84" fill="rgb(255,255,255)" stroke="rgb(102,102,102)" stroke-width="0.3"/>
+<text x="268.08" y="18.28" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Day</text>
+<text x="268.08" y="28.36" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Month</text>
+<text x="268.08" y="38.44" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
+<text x="268.08" y="48.52" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
+<text x="274.70" y="73.10" fill="rgb(38,38,38)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Fill</text>
+<text x="274.70" y="83.18" fill="rgb(38,38,38)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
+<rect x="246.34" y="92.01" width="17.64" height="17.64" fill="rgb(51,160,44)" stroke="rgb(102,102,102)" stroke-width="0.3"/>
+<text x="267.76" y="100.83" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="start" dominant-baseline="central">CSS</text>
+<rect x="246.34" y="112.17" width="17.64" height="17.64" fill="rgb(178,223,138)" stroke="rgb(102,102,102)" stroke-width="0.3"/>
+<text x="267.76" y="120.99" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Go</text>
+<rect x="246.34" y="132.34" width="17.64" height="17.64" fill="rgb(166,206,227)" stroke="rgb(102,102,102)" stroke-width="0.3"/>
+<text x="267.76" y="141.16" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Markdown</text>
+<rect x="246.34" y="152.50" width="17.64" height="17.64" fill="rgb(31,120,180)" stroke="rgb(102,102,102)" stroke-width="0.3"/>
+<text x="267.76" y="161.33" fill="rgb(51,51,51)" font-size="7.6" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Text</text>
+<text x="255.16" y="186.53" fill="rgb(38,38,38)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Size</text>
+<text x="255.16" y="196.62" fill="rgb(38,38,38)" font-size="8.2" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
 <text x="160.00" y="226.00" fill="rgba(128,128,128,0.784)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">code-visualizer golden</text>
 </svg>

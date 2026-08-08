@@ -90,8 +90,10 @@ func bucketNumericMetricValue(files []*model.File, m metric.Name) (float64, bool
 func sumUniqueNumericMetric(files []*model.File, m metric.Name) (float64, bool) {
 	seen := map[*model.File]bool{}
 
-	var total float64
-	var available bool
+	var (
+		total     float64
+		available bool
+	)
 
 	for _, f := range files {
 		if seen[f] {

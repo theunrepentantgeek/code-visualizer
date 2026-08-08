@@ -15,17 +15,17 @@
 <circle cx="209.99" cy="130.57" r="1.49" fill="rgb(82,190,128)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
 <circle cx="106.54" cy="80.75" r="1.49" fill="rgb(82,190,128)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
 <circle cx="187.78" cy="164.18" r="1.49" fill="rgb(82,190,128)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
-<rect x="37.00" y="101.00" width="267.00" height="112.00" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.0"/>
-<circle cx="90.00" cy="154.00" r="41.00" fill="rgb(255,255,255)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
-<text x="90.00" y="130.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Day</text>
-<text x="90.00" y="146.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Month</text>
-<text x="90.00" y="162.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
-<text x="90.00" y="178.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-size</text>
-<text x="180.00" y="121.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Fill</text>
-<text x="180.00" y="137.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
-<rect x="145.00" y="151.00" width="28.00" height="28.00" fill="rgb(82,190,128)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
-<text x="260.50" y="121.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Surface</text>
-<text x="260.50" y="137.00" fill="rgb(38,38,38)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-size</text>
-<rect x="229.00" y="151.00" width="28.00" height="28.00" fill="rgb(247,247,247)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
+<rect x="219.12" y="0.00" width="84.88" height="213.00" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.0"/>
+<circle cx="261.56" cy="42.44" r="32.83" fill="rgb(255,255,255)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
+<text x="261.56" y="23.22" fill="rgb(51,51,51)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Day</text>
+<text x="261.56" y="36.03" fill="rgb(51,51,51)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Month</text>
+<text x="261.56" y="48.85" fill="rgb(51,51,51)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
+<text x="261.56" y="61.66" fill="rgb(51,51,51)" font-size="9.6" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-size</text>
+<text x="261.56" y="92.89" fill="rgb(38,38,38)" font-size="10.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Fill</text>
+<text x="261.56" y="105.70" fill="rgb(38,38,38)" font-size="10.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
+<rect x="250.35" y="116.91" width="22.42" height="22.42" fill="rgb(82,190,128)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
+<text x="261.56" y="156.95" fill="rgb(38,38,38)" font-size="10.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Surface</text>
+<text x="261.56" y="169.76" fill="rgb(38,38,38)" font-size="10.4" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-size</text>
+<rect x="250.35" y="180.97" width="22.42" height="22.42" fill="rgb(247,247,247)" stroke="rgb(102,102,102)" stroke-width="0.4"/>
 <text x="160.00" y="226.00" fill="rgba(128,128,128,0.784)" font-size="13.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">code-visualizer golden</text>
 </svg>
