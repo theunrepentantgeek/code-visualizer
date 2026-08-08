@@ -153,6 +153,7 @@ func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T
 	buckets := BuildTimeBuckets(Hourly, start, start.Add(2000*time.Hour))
 	layout := Layout(buckets, 1920, 1080, Hourly)
 	maxDisc := MaxDiscRadius(len(buckets), 1920, 1080, Hourly)
+	g.Expect(maxDisc).To(BeNumerically(">", 0))
 
 	for i := range buckets {
 		buckets[i].Files = makeFiles(1)
@@ -162,6 +163,7 @@ func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T
 	ApplyDiscSizes(layout.Nodes, buckets, maxDisc)
 
 	for i := range layout.Nodes {
+		g.Expect(layout.Nodes[i].DiscRadius).To(BeNumerically(">", 0), "bucket %d", i)
 		g.Expect(layout.Nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
 	}
 
@@ -170,8 +172,12 @@ func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T
 		nextLap := layout.Nodes[i+Hourly.SpotsPerLap()]
 		distance := math.Hypot(nextLap.X-current.X, nextLap.Y-current.Y)
 		g.Expect(distance).To(
-			BeNumerically(">=", current.DiscRadius+nextLap.DiscRadius),
-			"same-angle buckets %d and %d should not overlap", i, i+Hourly.SpotsPerLap(),
+			BeNumerically(">=",
+				current.DiscRadius+borderWidth(current.DiscRadius)/2+
+					nextLap.DiscRadius+borderWidth(nextLap.DiscRadius)/2,
+			),
+			"painted extents of same-angle buckets %d and %d should not overlap",
+			i, i+Hourly.SpotsPerLap(),
 		)
 	}
 }
