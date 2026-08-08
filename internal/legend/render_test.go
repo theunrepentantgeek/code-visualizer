@@ -200,27 +200,7 @@ func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.
 	mb := mock.NewBackend()
 	g.Expect(cv.RenderTo(mb)).To(Succeed())
 
-	var (
-		background  *mock.Call
-		disc        *mock.Call
-		sampleTexts []*mock.Call
-	)
-
-	for i := range mb.Calls {
-		call := &mb.Calls[i]
-		switch {
-		case call.Method == "DrawRectangle" && background == nil:
-			background = call
-		case call.Method == "DrawDisc":
-			disc = call
-		case call.Method == "DrawText":
-			if slices.Contains(sampleLines, call.Text) {
-				sampleTexts = append(sampleTexts, call)
-			}
-		default:
-			continue
-		}
-	}
+	background, disc, sampleTexts := collectConstrainedCircleSampleCalls(mb.Calls, sampleLines)
 
 	if background == nil || disc == nil {
 		t.Fatal("expected legend background and sample disc")
@@ -250,4 +230,25 @@ func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.
 		g.Expect(sampleText.Pos.Y).To(BeNumerically(">=", drawingMinY))
 		g.Expect(sampleText.Pos.Y).To(BeNumerically("<=", drawingMaxY))
 	}
+}
+
+func collectConstrainedCircleSampleCalls(
+	calls []mock.Call,
+	sampleLines []string,
+) (background *mock.Call, disc *mock.Call, sampleTexts []*mock.Call) {
+	for i := range calls {
+		call := &calls[i]
+		switch {
+		case call.Method == "DrawRectangle" && background == nil:
+			background = call
+		case call.Method == "DrawDisc":
+			disc = call
+		case call.Method == "DrawText" && slices.Contains(sampleLines, call.Text):
+			sampleTexts = append(sampleTexts, call)
+		default:
+			continue
+		}
+	}
+
+	return background, disc, sampleTexts
 }
