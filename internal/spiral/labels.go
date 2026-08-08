@@ -20,6 +20,11 @@ type LabelMetrics struct {
 	Requested stages.RequestedMetrics
 }
 
+type numericLabelValue struct {
+	value     float64
+	available bool
+}
+
 func effectiveSizeMetric(name metric.Name) metric.Name {
 	if name == "" {
 		return commitCountMetric
@@ -32,7 +37,8 @@ func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string {
 	metrics.Size = effectiveSizeMetric(metrics.Size)
 
 	lines := make([]string, 0, 6)
-	lines = append(lines,
+	lines = append(
+		lines,
 		strconv.Itoa(bucket.Start.Day()),
 		bucket.Start.Format("Jan"),
 	)
@@ -106,11 +112,13 @@ func discMetricValue(
 		return strconv.FormatFloat(bucket.SizeValue, 'f', -1, 64), true
 	case labelFill:
 		return colourLabelValue(
-			bucket.FillValue, bucket.FillValueAvailable, bucket.FillLabel, name, requested,
+			numericLabelValue{value: bucket.FillValue, available: bucket.FillValueAvailable},
+			bucket.FillLabel, name, requested,
 		)
 	case labelBorder:
 		return colourLabelValue(
-			bucket.BorderValue, bucket.BorderValueAvailable, bucket.BorderLabel, name, requested,
+			numericLabelValue{value: bucket.BorderValue, available: bucket.BorderValueAvailable},
+			bucket.BorderLabel, name, requested,
 		)
 	default:
 		if !bucket.SurfaceValueAvailable {
@@ -122,8 +130,7 @@ func discMetricValue(
 }
 
 func colourLabelValue(
-	value float64,
-	available bool,
+	value numericLabelValue,
 	label string,
 	name metric.Name,
 	requested stages.RequestedMetrics,
@@ -137,11 +144,11 @@ func colourLabelValue(
 		return "", false
 	}
 
-	if !available {
+	if !value.available {
 		return "", false
 	}
 
-	return strconv.FormatFloat(value, 'f', -1, 64), true
+	return strconv.FormatFloat(value.value, 'f', -1, 64), true
 }
 
 func buildDiscLabels(

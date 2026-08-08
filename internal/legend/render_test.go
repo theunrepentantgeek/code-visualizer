@@ -238,6 +238,7 @@ func TestRenderInto_ConstrainedCircleSamplePreservesExplicitVerticalOrientation(
 
 	cv := canvas.NewCanvas(280, 200)
 	cv.SetDrawingBounds(40, 160)
+
 	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, palette.GetPalette(palette.Temperature))
 	cfg := &legend.Config{
 		Position:    model.LegendPositionBottomCenter,
@@ -261,6 +262,7 @@ func TestRenderInto_ConstrainedCircleSamplePreservesExplicitVerticalOrientation(
 	g.Expect(cv.RenderTo(mb)).To(Succeed())
 
 	var fill, border *mock.Call
+
 	for i := range mb.Calls {
 		call := &mb.Calls[i]
 		switch call.Text {
@@ -268,6 +270,8 @@ func TestRenderInto_ConstrainedCircleSamplePreservesExplicitVerticalOrientation(
 			fill = call
 		case "Border":
 			border = call
+		default:
+			continue
 		}
 	}
 
