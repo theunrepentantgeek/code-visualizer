@@ -70,6 +70,14 @@ func loadGitMetrics(root *model.Directory, requested []metric.Name, onFile func(
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
 
+	return s.loadGitMetrics(root, requested, onFile)
+}
+
+func (s *repoService) loadGitMetrics(
+	root *model.Directory,
+	requested []metric.Name,
+	onFile func(),
+) error {
 	requirements := newMetricRequirements(requested)
 
 	pathSet := buildRelPathSet(s, root)

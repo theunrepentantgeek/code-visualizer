@@ -1,6 +1,7 @@
 package git
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -39,6 +40,8 @@ func (data *commitData) updateChangeStats(change *object.Change) {
 
 	patch, err := object.Changes{change}.Patch()
 	if err != nil {
+		slog.Debug("could not get git change stats", "path", changeName(change), "error", err)
+
 		return
 	}
 

@@ -188,12 +188,12 @@ func trackedChangesInMergeCommit(
 	result := make([]trackedChange, 0, len(filePaths))
 
 	for path := range filePaths {
-		_, found := changesFromParent[0][path]
-		if !found || !differsFromAllParents(path, changesFromParent) {
+		if !differsFromAllParents(path, changesFromParent) {
 			continue
 		}
 
-		// Churn metrics historically diffed against the first parent.
+		// Churn metrics use the actual parent 0 change. It can be nil when
+		// that parent's tree could not be read, which preserves best effort.
 		result = append(result, trackedChange{path: path, change: firstParentChanges[path]})
 	}
 

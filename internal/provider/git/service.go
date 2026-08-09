@@ -17,12 +17,13 @@ import (
 )
 
 type repoService struct {
-	repo        *gogit.Repository
-	rootPath    string // git worktree root (absolute path)
-	commitGroup singleflight.Group
-	commitMu    sync.RWMutex
-	commitCache map[string]*commitData
-	bulkGroup   singleflight.Group
+	repo              *gogit.Repository
+	rootPath          string // git worktree root (absolute path)
+	commitGroup       singleflight.Group
+	commitMu          sync.RWMutex
+	commitCache       map[string]*commitData
+	fetchCommitDataFn commitDataFetcher
+	bulkGroup         singleflight.Group
 }
 
 // RepoRoot returns the absolute path to the git worktree root.
@@ -239,25 +240,26 @@ func filterChangesForFile(changes object.Changes, relPath string) object.Changes
 type commitDataCacheLookup func(string) *commitData
 
 func (s *repoService) getMetadataCommitData(relPath string) (*commitData, error) {
-	return s.getCommitData(relPath, s.cachedCommitData)
+	return s.getCommitData(relPath, "metadata", s.cachedCommitData)
 }
 
 func (s *repoService) getLineStatsCommitData(relPath string) (*commitData, error) {
-	return s.getCommitData(relPath, s.cachedLineStatsCommitData)
+	return s.getCommitData(relPath, "line-stats", s.cachedLineStatsCommitData)
 }
 
 // getCommitData returns cached commit data for the given file path, fetching it
-// from git on first access. Concurrent requests for the same path are coalesced
-// via singleflight so the git log is only read once per file per process run.
+// from git on first access. Concurrent requests with the same completeness
+// requirement are coalesced via singleflight.
 func (s *repoService) getCommitData(
 	relPath string,
+	completeness string,
 	cacheLookup commitDataCacheLookup,
 ) (*commitData, error) {
 	if cached := cacheLookup(relPath); cached != nil {
 		return cached, nil
 	}
 
-	result, err, _ := s.commitGroup.Do(relPath, func() (any, error) {
+	result, err, _ := s.commitGroup.Do(completeness+":"+relPath, func() (any, error) {
 		return s.fetchAndCacheCommitData(relPath, cacheLookup)
 	})
 	if err != nil {
@@ -296,7 +298,12 @@ func (s *repoService) fetchAndCacheCommitData(
 		return cached, nil
 	}
 
-	data, err := s.fetchCommitData(relPath)
+	fetch := s.fetchCommitData
+	if s.fetchCommitDataFn != nil {
+		fetch = s.fetchCommitDataFn
+	}
+
+	data, err := fetch(relPath)
 	if err != nil {
 		return nil, err
 	}

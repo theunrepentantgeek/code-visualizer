@@ -4,8 +4,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -484,6 +486,66 @@ func setupMergeRepo(t *testing.T) string {
 	return dir
 }
 
+// setupMergeChurnRepo creates a merge where merge.go changes on both branches
+// and the resolved merge content differs from either parent.
+func setupMergeChurnRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+
+	run := func(args ...string) {
+		t.Helper()
+
+		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
+		cmd.Dir = dir
+
+		cmd.Env = append(
+			os.Environ(),
+			"GIT_AUTHOR_NAME=Alice",
+			"GIT_AUTHOR_EMAIL=alice@example.com",
+			"GIT_COMMITTER_NAME=Alice",
+			"GIT_COMMITTER_EMAIL=alice@example.com",
+		)
+
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("command %v failed: %s\n%s", args, err, out)
+		}
+	}
+
+	write := func(contents string) {
+		t.Helper()
+
+		if err := os.WriteFile(filepath.Join(dir, "merge.go"), []byte(contents), 0o600); err != nil {
+			t.Fatalf("write merge.go: %s", err)
+		}
+	}
+
+	run("git", "init", "-b", "main")
+	run("git", "config", "user.name", "Alice")
+	run("git", "config", "user.email", "alice@example.com")
+
+	write("base-one\nbase-two\nbase-three\nbase-four\nbase-five\nbase-six\nbase-seven\n")
+	run("git", "add", "merge.go")
+	run("git", "commit", "-m", "initial")
+
+	run("git", "checkout", "-b", "feature")
+	write("base-one\nbase-two\nbase-three\nbase-four\nfeature-five\nfeature-six\nbase-seven\n")
+	run("git", "add", "merge.go")
+	run("git", "commit", "-m", "feature changes")
+
+	run("git", "checkout", "main")
+	write("main-one\nbase-two\nbase-three\nbase-four\nbase-five\nbase-six\nbase-seven\n")
+	run("git", "add", "merge.go")
+	run("git", "commit", "-m", "main changes")
+
+	run("git", "merge", "feature", "--no-ff", "--no-commit")
+	write("main-one\nbase-two\nbase-three\nbase-four\nresolved-five\nresolved-six\nbase-seven\nmerge-eight\n")
+	run("git", "add", "merge.go")
+	run("git", "commit", "-m", "resolve merge")
+
+	return dir
+}
+
 // TestFileFreshness_MergeCommitDoesNotPollute verifies that a merge commit
 // touching stable.go's tree entry (but not its content) doesn't update the
 // freshness timestamp for stable.go. This was the root cause of #114.
@@ -934,6 +996,114 @@ func TestTrackedChangesInMergeCommit_LeavesChurnChangeNilWhenFirstParentFails(t 
 	g.Expect(changes[0].change).To(BeNil())
 }
 
+func TestLoadGitMetrics_AttributesMergeChurnToFirstParent(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupMergeChurnRepo(t)
+	root := buildTree(dir, "merge.go")
+
+	resetService()
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	g.Expect(s.loadGitMetrics(
+		root,
+		[]metric.Name{TotalLinesAdded, TotalLinesRemoved},
+		nil,
+	)).To(Succeed())
+
+	added, ok := root.Files[0].Quantity(TotalLinesAdded)
+	g.Expect(ok).To(BeTrue())
+	// Main changes add/remove 1 line, feature changes add/remove 2 lines,
+	// and the resolved merge adds 3 and removes 2 against parent 0.
+	g.Expect(added).To(Equal(int64(6)))
+
+	removed, ok := root.Files[0].Quantity(TotalLinesRemoved)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(removed).To(Equal(int64(5)))
+}
+
+func TestGetCommitData_SeparatesMetadataAndLineStatsFlights(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	metadataFetchStarted := make(chan struct{})
+	lineStatsFetchStarted := make(chan struct{})
+	releaseMetadataFetch := make(chan struct{})
+
+	var releaseOnce sync.Once
+
+	release := func() {
+		releaseOnce.Do(func() {
+			close(releaseMetadataFetch)
+		})
+	}
+	defer release()
+
+	var fetches atomic.Int64
+
+	s := &repoService{
+		commitCache: make(map[string]*commitData),
+		fetchCommitDataFn: func(string) (*commitData, error) {
+			if fetches.Add(1) == 1 {
+				close(metadataFetchStarted)
+				<-releaseMetadataFetch
+
+				return &commitData{hasLineStats: false}, nil
+			}
+
+			close(lineStatsFetchStarted)
+
+			return &commitData{hasLineStats: true}, nil
+		},
+	}
+
+	metadataResult := make(chan error, 1)
+
+	go func() {
+		_, err := s.getMetadataCommitData("file.go")
+		metadataResult <- err
+	}()
+
+	select {
+	case <-metadataFetchStarted:
+	case <-time.After(time.Second):
+		t.Fatal("metadata request did not start fetching")
+	}
+
+	type lineStatsResult struct {
+		data *commitData
+		err  error
+	}
+
+	lineStatsResultCh := make(chan lineStatsResult, 1)
+
+	go func() {
+		data, err := s.getLineStatsCommitData("file.go")
+		lineStatsResultCh <- lineStatsResult{data: data, err: err}
+	}()
+
+	select {
+	case <-lineStatsFetchStarted:
+	case <-time.After(time.Second):
+		t.Fatal("line-stat request waited on the metadata-only flight")
+	}
+
+	result := <-lineStatsResultCh
+	g.Expect(result.err).NotTo(HaveOccurred())
+	g.Expect(result.data).NotTo(BeNil())
+	g.Expect(result.data.hasLineStats).To(BeTrue())
+
+	release()
+	g.Expect(<-metadataResult).To(Succeed())
+}
+
 func TestBulkPrewarm_UpgradesMetadataCacheForLineStats(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -985,23 +1155,17 @@ func TestBulkPrewarm_PreservesLineStatsDuringMetadataPrewarm(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	dir := setupDiffRepo(t)
-
-	resetService()
-
-	s, err := getService(dir)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	if s == nil {
-		t.Fatal("expected git repository service")
-	}
-
-	paths := map[string]bool{"churn.go": true}
-	lineStats := newMetricRequirements([]metric.Name{TotalLinesAdded, TotalLinesRemoved})
-	g.Expect(s.bulkPrewarm(paths, lineStats, nil)).To(Succeed())
-
+	s := &repoService{commitCache: map[string]*commitData{
+		"churn.go": {
+			hasLineStats: true,
+			linesAdded:   3,
+			linesRemoved: 1,
+		},
+	}}
 	metadata := newMetricRequirements([]metric.Name{CommitCount})
-	g.Expect(s.bulkPrewarm(paths, metadata, nil)).To(Succeed())
+	s.mergeBulkPrewarmCache(map[string]*commitData{
+		"churn.go": {hasLineStats: false},
+	}, metadata)
 
 	s.commitMu.RLock()
 	cached := s.commitCache["churn.go"]
@@ -1068,13 +1232,21 @@ func TestLoadGitMetrics_RefreshesChurnAfterMetadataOnlyPrewarm(t *testing.T) {
 	root := buildTree(dir, "churn.go")
 
 	resetService()
-	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	g.Expect(s.loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
 
 	count, ok := root.Files[0].Quantity(CommitCount)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(count).To(Equal(int64(3)))
 
-	g.Expect(loadGitMetrics(root, []metric.Name{TotalLinesAdded}, nil)).To(Succeed())
+	g.Expect(s.loadGitMetrics(root, []metric.Name{TotalLinesAdded}, nil)).To(Succeed())
 
 	added, ok := root.Files[0].Quantity(TotalLinesAdded)
 	g.Expect(ok).To(BeTrue())
