@@ -753,6 +753,101 @@ func setupDiffRepo(t *testing.T) string {
 	return dir
 }
 
+// setupMultiFileDiffRepo adds a commit which changes two tracked files. It
+// exercises reuse of one commit tree diff for both files' churn statistics.
+func setupMultiFileDiffRepo(t *testing.T) string {
+	t.Helper()
+
+	dir := setupDiffRepo(t)
+	write := func(name, content string) {
+		t.Helper()
+		g := NewGomegaWithT(t)
+		g.Expect(os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600)).To(Succeed())
+	}
+	run := func(args ...string) {
+		t.Helper()
+
+		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("command %v failed: %s\n%s", args, err, out)
+		}
+	}
+
+	write("other.go", "one\ntwo\n")
+	run("git", "add", "other.go")
+	run("git", "commit", "-m", "add other")
+
+	write("churn.go", "line1\nlineX\nline3\nline4\nline5\nline6\n")
+	write("other.go", "one\ntwo\nthree\n")
+	run("git", "add", "churn.go", "other.go")
+	run("git", "commit", "-m", "change both")
+
+	return dir
+}
+
+func TestLoadGitMetrics_ChurnForMultiFileCommit(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupMultiFileDiffRepo(t)
+	root := buildTree(dir, "churn.go", "other.go")
+
+	resetService()
+	g.Expect(loadGitMetrics(
+		root,
+		[]metric.Name{TotalLinesAdded, TotalLinesRemoved},
+		nil,
+	)).To(Succeed())
+
+	churnAdded, ok := root.Files[0].Quantity(TotalLinesAdded)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(churnAdded).To(Equal(int64(4)))
+
+	churnRemoved, ok := root.Files[0].Quantity(TotalLinesRemoved)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(churnRemoved).To(Equal(int64(1)))
+
+	otherAdded, ok := root.Files[1].Quantity(TotalLinesAdded)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(otherAdded).To(Equal(int64(1)))
+
+	otherRemoved, ok := root.Files[1].Quantity(TotalLinesRemoved)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(otherRemoved).To(Equal(int64(0)))
+
+	_, countOK := root.Files[0].Quantity(CommitCount)
+	g.Expect(countOK).To(BeFalse())
+}
+
+func TestTrackedChangesInCommit_RetainsChangesForEachTrackedPath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupMultiFileDiffRepo(t)
+
+	resetService()
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	head, err := s.repo.Head()
+	g.Expect(err).NotTo(HaveOccurred())
+
+	commit, err := s.repo.CommitObject(head.Hash())
+	g.Expect(err).NotTo(HaveOccurred())
+
+	changes := trackedChangesInCommit(commit, map[string]bool{
+		"churn.go": true,
+		"other.go": true,
+	})
+	g.Expect(changes).To(HaveLen(2))
+
+	for _, entry := range changes {
+		g.Expect(entry.change).NotTo(BeNil())
+	}
+}
+
 func TestTotalLinesAddedProvider(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -794,6 +889,27 @@ func TestMetricsLoaderLoadsOnlyRequestedTotalLinesAdded(t *testing.T) {
 
 	_, countOK := root.Files[0].Quantity(CommitCount)
 	g.Expect(countOK).To(BeFalse())
+}
+
+func TestLoadGitMetrics_RefreshesChurnAfterMetadataOnlyPrewarm(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+	root := buildTree(dir, "churn.go")
+
+	resetService()
+	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
+
+	count, ok := root.Files[0].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(3)))
+
+	g.Expect(loadGitMetrics(root, []metric.Name{TotalLinesAdded}, nil)).To(Succeed())
+
+	added, ok := root.Files[0].Quantity(TotalLinesAdded)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(added).To(Equal(int64(3)))
 }
 
 func TestTotalLinesRemovedProvider(t *testing.T) {

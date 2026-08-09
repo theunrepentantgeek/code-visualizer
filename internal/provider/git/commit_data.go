@@ -14,11 +14,13 @@ type commitData struct {
 	authors      map[string]bool
 	linesAdded   int64
 	linesRemoved int64
+	hasLineStats bool
 }
 
 func (data *commitData) updateFrom(
 	c *object.Commit,
-	relPath string,
+	change *object.Change,
+	needsLineStats bool,
 ) {
 	when := c.Author.When
 
@@ -33,9 +35,17 @@ func (data *commitData) updateFrom(
 	data.authors[c.Author.Email] = true
 	data.count++
 
-	if c.NumParents() > 0 {
-		added, removed := computeFileDiffStats(c, relPath)
-		data.linesAdded += added
-		data.linesRemoved += removed
+	if !needsLineStats || change == nil || change.From.Name == "" {
+		return
+	}
+
+	patch, err := object.Changes{change}.Patch()
+	if err != nil {
+		return
+	}
+
+	for _, stat := range patch.Stats() {
+		data.linesAdded += int64(stat.Addition)
+		data.linesRemoved += int64(stat.Deletion)
 	}
 }

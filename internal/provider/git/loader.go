@@ -73,7 +73,7 @@ func loadGitMetrics(root *model.Directory, requested []metric.Name, onFile func(
 	requirements := newMetricRequirements(requested)
 
 	pathSet := buildRelPathSet(s, root)
-	if err := s.bulkPrewarm(pathSet, onFile); err != nil {
+	if err := s.bulkPrewarm(pathSet, requirements, onFile); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
