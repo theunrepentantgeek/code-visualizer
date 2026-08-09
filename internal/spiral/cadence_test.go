@@ -61,6 +61,26 @@ func TestDailySpotsPerLapReturns28WhenGeometryHasNoRadialGrowth(t *testing.T) {
 	g.Expect(DailySpotsPerLap(28, width, height)).To(Equal(28))
 }
 
+func TestDailySpotsPerLapReturns28WhenGeometryHasNegativeRadialGrowth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const (
+		bucketCount = 28
+		width       = 79
+		height      = 1080
+	)
+
+	for _, candidate := range dailyCadences {
+		g.Expect(dailyCadenceScore(bucketCount, width, height, candidate)).To(
+			Equal(math.Inf(1)),
+			"candidate %d", candidate,
+		)
+	}
+
+	g.Expect(DailySpotsPerLap(bucketCount, width, height)).To(Equal(28))
+}
+
 func TestSelectDailyCadencePrefers28OnEqualScore(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

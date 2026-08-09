@@ -29,7 +29,7 @@ func dailyCadenceScore(bucketCount, width, height, spotsPerLap int) float64 {
 	}
 
 	params := computeSpiralParams(bucketCount, width, height, spotsPerLap)
-	if params.b == 0 {
+	if params.b <= 0 {
 		return math.Inf(1)
 	}
 
