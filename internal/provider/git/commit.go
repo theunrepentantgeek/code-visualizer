@@ -1,12 +1,15 @@
 package git
 
 import (
+	"strings"
 	"time"
 
 	gogit "github.com/go-git/go-git/v5"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 // Signature mirrors go-git's object.Signature: an author or committer record
@@ -87,6 +90,121 @@ func BulkCommitHistory(
 	})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to iterate commits")
+	}
+
+	return commits, nil
+}
+
+// BulkCommitHistoryAndPrewarm walks the commit graph once, returning commits
+// that touch tracked paths and prewarming requested file metric data.
+func BulkCommitHistoryAndPrewarm(
+	repoPath string,
+	tracked map[string]bool,
+	requested []metric.Name,
+	onCommitProcessed func(),
+) ([]Commit, error) {
+	s, err := getService(repoPath)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to open git repository")
+	}
+
+	return s.bulkCommitHistoryAndPrewarm(
+		normalizeTrackedPaths(tracked),
+		newMetricRequirements(requested),
+		onCommitProcessed,
+	)
+}
+
+func normalizeTrackedPaths(tracked map[string]bool) map[string]bool {
+	for path := range tracked {
+		if strings.Contains(path, `\`) {
+			normalized := make(map[string]bool, len(tracked))
+			for path, included := range tracked {
+				normalized[strings.ReplaceAll(path, `\`, `/`)] = included
+			}
+
+			return normalized
+		}
+	}
+
+	return tracked
+}
+
+func (s *repoService) bulkCommitHistoryAndPrewarm(
+	tracked map[string]bool,
+	requirements metricRequirements,
+	onCommitProcessed func(),
+) ([]Commit, error) {
+	head, err := s.repo.Head()
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to get HEAD")
+	}
+
+	iter, err := s.repo.Log(&gogit.LogOptions{From: head.Hash()})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to start log iteration")
+	}
+	defer iter.Close()
+
+	prewarm := len(requirements.processors) > 0
+
+	var cache map[string]*commitData
+	if prewarm {
+		cache = make(map[string]*commitData, len(tracked))
+		for path := range tracked {
+			cache[path] = &commitData{
+				authors:      make(map[string]bool),
+				hasLineStats: requirements.needsLineStats,
+			}
+		}
+	}
+
+	var commits []Commit
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		changed := trackedChangesInCommit(c, tracked)
+
+		if onCommitProcessed != nil {
+			onCommitProcessed()
+		}
+
+		if prewarm {
+			for _, entry := range changed {
+				data := cache[entry.path]
+				data.updateMetadata(c)
+
+				if requirements.needsLineStats {
+					data.updateChangeStats(entry.change)
+				}
+			}
+		}
+
+		if len(changed) == 0 {
+			return nil
+		}
+
+		changedPaths := make([]string, 0, len(changed))
+		for _, entry := range changed {
+			changedPaths = append(changedPaths, entry.path)
+		}
+
+		commits = append(commits, Commit{
+			Hash:         c.Hash.String(),
+			Author:       toSignature(c.Author),
+			Committer:    toSignature(c.Committer),
+			Message:      c.Message,
+			ParentHashes: parentHashes(c),
+			ChangedPaths: changedPaths,
+		})
+
+		return nil
+	})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to iterate commits")
+	}
+
+	if prewarm {
+		s.mergeBulkPrewarmCache(cache, requirements)
 	}
 
 	return commits, nil

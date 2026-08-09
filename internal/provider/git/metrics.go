@@ -49,11 +49,20 @@ func buildRelPathSet(s *repoService, root *model.Directory) map[string]bool {
 	paths := make(map[string]bool)
 
 	model.WalkFiles(root, func(f *model.File) {
-		relPath, err := filepath.Rel(s.RepoRoot(), f.Path)
+		relPath, err := repoRelativePath(s.RepoRoot(), f.Path)
 		if err == nil {
 			paths[relPath] = true
 		}
 	})
 
 	return paths
+}
+
+func repoRelativePath(repoRoot, path string) (string, error) {
+	relPath, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.ToSlash(relPath), nil
 }

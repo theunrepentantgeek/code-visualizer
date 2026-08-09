@@ -72,12 +72,20 @@ func getService(repoPath string) (*repoService, error) {
 		return nil, err
 	}
 
+	if result, exists := services[rootPath]; exists {
+		services[repoPath] = result
+
+		return result.svc, result.err
+	}
+
 	svc := &repoService{
 		repo:        repo,
 		rootPath:    rootPath,
 		commitCache: make(map[string]*commitData),
 	}
-	services[repoPath] = &serviceResult{svc, nil}
+	result := &serviceResult{svc, nil}
+	services[repoPath] = result
+	services[rootPath] = result
 
 	return svc, nil
 }

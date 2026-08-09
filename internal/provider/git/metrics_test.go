@@ -100,6 +100,18 @@ func buildTree(dir string, files ...string) *model.Directory {
 	return root
 }
 
+func TestRepoRelativePath_UsesSlashSeparators(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repoRoot := filepath.Join("repo", "root")
+	path := filepath.Join(repoRoot, "nested", "file.go")
+
+	rel, err := repoRelativePath(repoRoot, path)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(rel).To(Equal("nested/file.go"))
+}
+
 func TestIsGitMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -155,6 +167,28 @@ func TestMetricsLoaderReportsFileProgress(t *testing.T) {
 	}
 
 	g.Expect(loader.Load(root, []metric.Name{CommitCount})).To(Succeed())
+	g.Expect(processed.Load()).To(Equal(int64(2)))
+}
+
+func TestLoadGitMetrics_ReportsProgressFromCombinedPrewarmCache(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	root := buildTree(dir, "old.go", "new.go")
+
+	resetService()
+	_, err := BulkCommitHistoryAndPrewarm(
+		dir,
+		map[string]bool{"old.go": true, "new.go": true},
+		[]metric.Name{CommitCount},
+		nil,
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	var processed atomic.Int64
+	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, func() {
+		processed.Add(1)
+	})).To(Succeed())
 	g.Expect(processed.Load()).To(Equal(int64(2)))
 }
 

@@ -2,7 +2,6 @@ package git
 
 import (
 	"log/slog"
-	"path/filepath"
 	"sync"
 
 	"github.com/rotisserie/eris"
@@ -81,12 +80,21 @@ func (s *repoService) loadGitMetrics(
 	requirements := newMetricRequirements(requested)
 
 	pathSet := buildRelPathSet(s, root)
-	if err := s.bulkPrewarm(pathSet, requirements, onFile); err != nil {
+	progressReported := false
+	prewarmProgress := onFile
+	if onFile != nil {
+		prewarmProgress = func() {
+			progressReported = true
+			onFile()
+		}
+	}
+
+	if err := s.bulkPrewarm(pathSet, requirements, prewarmProgress); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
 	model.WalkFiles(root, func(f *model.File) {
-		relPath, relErr := filepath.Rel(s.RepoRoot(), f.Path)
+		relPath, relErr := repoRelativePath(s.RepoRoot(), f.Path)
 		if relErr != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", relErr)
 
@@ -95,6 +103,10 @@ func (s *repoService) loadGitMetrics(
 
 		for _, def := range requirements.processors {
 			def.process(s, f, relPath)
+		}
+
+		if onFile != nil && !progressReported {
+			onFile()
 		}
 	})
 

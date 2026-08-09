@@ -37,7 +37,7 @@ func LoadGitHistory(c *CommonState) error {
 
 	onCommit, stop := BuildHistoryProgress(c.Flags)
 
-	commits, err := git.BulkCommitHistory(repoRoot, tracked, onCommit)
+	commits, err := git.BulkCommitHistoryAndPrewarm(repoRoot, tracked, c.Requested.BaseMetrics, onCommit)
 
 	stop()
 

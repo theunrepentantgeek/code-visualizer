@@ -12,9 +12,9 @@ import (
 func AcquireData(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
+	pipeline.ApplyFuncX(s, stages.LoadGitHistory)
 	pipeline.ApplyFuncX(s, stages.RunProviders)
 	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
-	pipeline.ApplyFuncX(s, stages.LoadGitHistory)
 	pipeline.ApplyFuncX(s, stages.GroupGitHistoryByFile)
 	pipeline.ApplyFuncX(s, stages.ExtractFileHistory)
 }
