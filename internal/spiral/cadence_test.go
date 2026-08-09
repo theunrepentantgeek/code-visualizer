@@ -1,6 +1,7 @@
 package spiral
 
 import (
+	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -18,6 +19,13 @@ func TestDailySpotsPerLapReturnsAllowedCadence(t *testing.T) {
 	}
 }
 
+func TestDailySpotsPerLapReturns28ForSingleBucket(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(DailySpotsPerLap(1, 1920, 1080)).To(Equal(28))
+}
+
 func TestDailySpotsPerLapMinimizesCandidateScore(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -33,6 +41,24 @@ func TestDailySpotsPerLapMinimizesCandidateScore(t *testing.T) {
 			)
 		}
 	}
+}
+
+func TestDailySpotsPerLapReturns28WhenGeometryHasNoRadialGrowth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	width := int(2 * margin)
+	const height = 1080
+
+	for _, candidate := range dailyCadences {
+		g.Expect(computeSpiralParams(28, width, height, candidate).b).To(BeZero())
+		g.Expect(dailyCadenceScore(28, width, height, candidate)).To(
+			Equal(math.Inf(1)),
+			"candidate %d", candidate,
+		)
+	}
+
+	g.Expect(DailySpotsPerLap(28, width, height)).To(Equal(28))
 }
 
 func TestSelectDailyCadencePrefers28OnEqualScore(t *testing.T) {
