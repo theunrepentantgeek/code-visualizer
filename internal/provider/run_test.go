@@ -225,7 +225,7 @@ func TestRunLoadersPassesRequestedMetricsInLoaderOrder(t *testing.T) {
 
 	err := provider.RunLoaders(nil, []metric.Name{"third", "first"}, nil)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(slices.Equal(loader.requested, []metric.Name{"first", "third"})).To(BeTrue())
+	g.Expect(loader.requested).To(Equal([]metric.Name{"first", "third"}))
 }
 
 //nolint:paralleltest // mutates global base registry
@@ -303,6 +303,25 @@ func TestRunLoadersWiresFileProgressReporter(t *testing.T) {
 	err := provider.RunLoaders(nil, []metric.Name{"lines"}, progress)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(progress.fileProcessed).To(Equal([]metric.Name{"lines", "lines"}))
+}
+
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersReportsSelectedMetricsForFileProgress(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
+
+	progress := &fileProgressTracker{}
+	loader := &fileProgressLoader{}
+
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:  []metric.Name{"a", "b", "c"},
+		Load:     loader.Load,
+		Reporter: loader,
+	})
+
+	err := provider.RunLoaders(nil, []metric.Name{"c"}, progress)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(progress.fileProcessed).To(Equal([]metric.Name{"c", "c"}))
 }
 
 type blockingFileProgressLoader struct {

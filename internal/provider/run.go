@@ -74,6 +74,7 @@ func runSingleLoader(
 	requested []metric.Name,
 	progress MetricProgress,
 ) error {
+	// LoadersFor supplies only loaders owning a requested metric, so selected is nonempty.
 	selected := requestedMetricsForLoader(loader, requested)
 	notifyStarted(selected, progress)
 
