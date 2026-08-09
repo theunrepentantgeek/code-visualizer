@@ -167,8 +167,10 @@ func TestMetricsLoaderLoadsOnlyRequestedCommitCount(t *testing.T) {
 
 	_, ageOK := root.Files[0].Quantity(FileAge)
 	g.Expect(ageOK).To(BeFalse())
+
 	_, addedOK := root.Files[0].Quantity(TotalLinesAdded)
 	g.Expect(addedOK).To(BeFalse())
+
 	_, densityOK := root.Files[0].Measure(CommitDensity)
 	g.Expect(densityOK).To(BeFalse())
 }
@@ -789,6 +791,7 @@ func TestMetricsLoaderLoadsOnlyRequestedTotalLinesAdded(t *testing.T) {
 
 	_, removedOK := root.Files[0].Quantity(TotalLinesRemoved)
 	g.Expect(removedOK).To(BeFalse())
+
 	_, countOK := root.Files[0].Quantity(CommitCount)
 	g.Expect(countOK).To(BeFalse())
 }
