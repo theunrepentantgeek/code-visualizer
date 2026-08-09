@@ -236,14 +236,14 @@ func TestRunLoadersReportsProgressForRequestedMetrics(t *testing.T) {
 	progress := &progressTracker{}
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
-		Metrics: []metric.Name{"first", "second"},
+		Metrics: []metric.Name{"first", "second", "third"},
 		Load:    func(_ *model.Directory, _ []metric.Name) error { return nil },
 	})
 
-	err := provider.RunLoaders(nil, []metric.Name{"second"}, progress)
+	err := provider.RunLoaders(nil, []metric.Name{"third", "first"}, progress)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(progress.started).To(Equal([]metric.Name{"second"}))
-	g.Expect(progress.finished).To(Equal([]metric.Name{"second"}))
+	g.Expect(progress.started).To(Equal([]metric.Name{"first", "third"}))
+	g.Expect(progress.finished).To(Equal([]metric.Name{"first", "third"}))
 }
 
 //nolint:paralleltest // mutates global base registry
