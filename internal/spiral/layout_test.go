@@ -135,6 +135,17 @@ func TestLayoutDailySpotsPerLap(t *testing.T) {
 	)
 }
 
+func TestLayoutWithCadence(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout := LayoutWithCadence(makeBuckets(56, Daily), 1920, 1080, 56)
+
+	g.Expect(layout.Nodes[len(layout.Nodes)-1].Angle).To(
+		BeNumerically("~", 55*(2*math.Pi/56), 0.001),
+	)
+}
+
 func TestLayoutUniformAngularSpacing(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -587,6 +598,16 @@ func TestMaxDiscRadius_MoreBuckets_ReturnsSmallerRadius(t *testing.T) {
 	rMany := MaxDiscRadius(365, 1920, 1080, Daily)
 	g.Expect(rFew).To(BeNumerically(">=", rMany),
 		"fewer buckets should allow at least as large a disc radius")
+}
+
+func TestMaxDiscRadiusWithCadence(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	r56 := MaxDiscRadiusWithCadence(365, 1920, 1080, 56)
+	r14 := MaxDiscRadiusWithCadence(365, 1920, 1080, 14)
+
+	g.Expect(r56).To(BeNumerically(">", r14))
 }
 
 func TestMaxDiscRadius_HourlyResolution_ReturnsPositive(t *testing.T) {

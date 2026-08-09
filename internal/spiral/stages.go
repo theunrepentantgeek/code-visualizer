@@ -167,8 +167,9 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 	bounds := c.DrawingBounds
 	availH := bounds.Height()
 
-	layout := Layout(p.Buckets, c.Width, availH, p.Resolution)
-	maxDisc := MaxDiscRadius(len(p.Buckets), c.Width, availH, p.Resolution)
+	p.SpotsPerLap = SpotsPerLap(p.Resolution, len(p.Buckets), c.Width, availH)
+	layout := LayoutWithCadence(p.Buckets, c.Width, availH, p.SpotsPerLap)
+	maxDisc := MaxDiscRadiusWithCadence(len(p.Buckets), c.Width, availH, p.SpotsPerLap)
 
 	ApplyDiscSizes(layout.Nodes, p.Buckets, maxDisc)
 

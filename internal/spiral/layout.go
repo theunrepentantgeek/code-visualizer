@@ -37,12 +37,23 @@ func Layout(
 	height int,
 	resolution Resolution,
 ) SpiralLayout {
+	return LayoutWithCadence(buckets, width, height, resolution.SpotsPerLap())
+}
+
+// LayoutWithCadence positions time buckets along an Archimedean spiral using
+// the supplied spots-per-lap cadence.
+func LayoutWithCadence(
+	buckets []TimeBucket,
+	width int,
+	height int,
+	spotsPerLap int,
+) SpiralLayout {
 	if len(buckets) == 0 {
 		return SpiralLayout{}
 	}
 
 	nodes := make([]SpiralNode, len(buckets))
-	params := computeSpiralParams(len(buckets), width, height, resolution.SpotsPerLap())
+	params := computeSpiralParams(len(buckets), width, height, spotsPerLap)
 
 	for i, b := range buckets {
 		nodes[i] = positionNode(i, b, params)
@@ -117,11 +128,22 @@ func MaxDiscRadius(
 	height int,
 	resolution Resolution,
 ) float64 {
+	return MaxDiscRadiusWithCadence(bucketCount, width, height, resolution.SpotsPerLap())
+}
+
+// MaxDiscRadiusWithCadence returns the maximum disc radius that avoids overlap
+// for the given layout parameters and spots-per-lap cadence.
+func MaxDiscRadiusWithCadence(
+	bucketCount int,
+	width int,
+	height int,
+	spotsPerLap int,
+) float64 {
 	if bucketCount == 0 {
 		return defaultDiscRadius
 	}
 
-	params := computeSpiralParams(bucketCount, width, height, resolution.SpotsPerLap())
+	params := computeSpiralParams(bucketCount, width, height, spotsPerLap)
 
 	return params.maxDisc
 }

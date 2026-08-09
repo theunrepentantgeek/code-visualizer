@@ -338,3 +338,47 @@ func TestBuildLegendStage_AddsSurfaceForSameMetricWithDifferentPalette(t *testin
 	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
 	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-lines"))
 }
+
+func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{
+		Width:  1920,
+		Height: 1080,
+		DrawingBounds: stages.DrawingBounds{
+			MaxX: 1920,
+			MaxY: 1080,
+		},
+	}
+	viz := &spiral.State{
+		Resolution: spiral.Daily,
+		Buckets:    make([]spiral.TimeBucket, 365),
+		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
+	}
+
+	g.Expect(spiral.LayoutStage(common, viz)).To(Succeed())
+	g.Expect(viz.SpotsPerLap).To(Equal(spiral.DailySpotsPerLap(365, 1920, 1080)))
+}
+
+func TestLayoutStageKeepsHourlyCadence(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{
+		Width:  1920,
+		Height: 1080,
+		DrawingBounds: stages.DrawingBounds{
+			MaxX: 1920,
+			MaxY: 1080,
+		},
+	}
+	viz := &spiral.State{
+		Resolution: spiral.Hourly,
+		Buckets:    make([]spiral.TimeBucket, 720),
+		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
+	}
+
+	g.Expect(spiral.LayoutStage(common, viz)).To(Succeed())
+	g.Expect(viz.SpotsPerLap).To(Equal(24))
+}

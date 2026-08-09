@@ -20,6 +20,7 @@ type State struct {
 	SurfaceMetric  metric.Name
 	SurfacePalette palette.PaletteName
 	Resolution     Resolution
+	SpotsPerLap    int
 
 	Buckets      []TimeBucket
 	Inks         Inks
