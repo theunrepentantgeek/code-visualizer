@@ -3,6 +3,14 @@
 Date: 2026-08-09
 Branch: `fix/performance`
 
+## Revision: shared spiral history and metric acquisition
+
+The first implementation removed repeated tree diffs and stopped unrequested
+metric writes, but the acceptance benchmark still had a 75.85-second median.
+Profiling showed two separate full Git-history traversals: 33.68 seconds for
+Git metric prewarming and 32.05 seconds for spiral history loading. The
+following extension replaces those two passes with one pass for spiral renders.
+
 ## Goal
 
 Restore practical Git-metric loading performance across every visualization.
@@ -134,3 +142,53 @@ The Git loader continues to scale with one commit-graph walk, while a
 non-churn request avoids the expensive per-file patch path entirely. Requests
 for churn metrics retain correct values and no longer repeat full tree diffs
 for every changed file.
+
+## Shared spiral acquisition
+
+### Goal
+
+For spiral visualizations, use one Git commit traversal to produce both the
+rich history required for time buckets and the cache entries required by the
+selected Git metrics. The Azure Service Operator acceptance benchmark remains
+three cold SVG renders with a median under 60 seconds.
+
+### Data flow
+
+After scanning and Git-requirement validation, `spiral.AcquireData` loads Git
+history before running providers. `stages.LoadGitHistory` supplies
+`CommonState.Requested.BaseMetrics` to a new Git history API.
+
+That API walks the commit graph once and, for each tracked change:
+
+1. Produces the same `git.Commit` value and `ChangedPaths` used by
+   `GroupGitHistoryByFile`.
+2. Updates the corresponding cached `commitData` using the selected Git metric
+   requirements.
+3. Generates patch statistics only if a selected churn metric requires them.
+
+The API atomically publishes both the completed history slice and the completed
+metric cache. `RunProviders` then runs as before. Its Git loader finds complete
+cache entries and writes selected values without another history traversal;
+filesystem and Go providers are unchanged.
+
+When a spiral requests no Git metric, the history API still returns the rich
+history required by the visualization but performs no metric-cache work.
+Other visualizations retain their current provider-first behavior and public
+Git APIs retain their existing semantics.
+
+### Compatibility and failure handling
+
+The returned history records, file-history grouping, metric names, values,
+progress callbacks, and rendered output do not change. The stage retains its
+current wrapped errors for repository resolution, history traversal, and empty
+history. Cache publication remains atomic: metadata-only work must never
+overwrite cached line statistics.
+
+### Tests
+
+Tests will prove that a shared spiral pass produces the same history and metric
+values as separate passes for commit-count and churn requests; that subsequent
+Git provider loading reuses the warmed cache without a second traversal; and
+that stage ordering still loads history before providers. Existing merge and
+first-parent churn tests remain authoritative. The external acceptance
+benchmark is the three-run cold median under 60 seconds.
