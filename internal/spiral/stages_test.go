@@ -355,13 +355,15 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 		},
 	}
 	buckets := make([]spiral.TimeBucket, bucketCount)
+
 	for i := range buckets {
 		buckets[i] = spiral.TimeBucket{
-			Files:      []*model.File{{Name: "file.go"}},
-			SizeValue:  float64(i + 1),
+			Files:              []*model.File{{Name: "file.go"}},
+			SizeValue:          float64(i + 1),
 			SizeValueAvailable: true,
 		}
 	}
+
 	viz := &spiral.State{
 		Resolution: spiral.Daily,
 		Buckets:    buckets,

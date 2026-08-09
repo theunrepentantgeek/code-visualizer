@@ -47,8 +47,9 @@ func TestDailySpotsPerLapReturns28WhenGeometryHasNoRadialGrowth(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	width := int(2 * margin)
 	const height = 1080
+
+	width := int(2 * margin)
 
 	for _, candidate := range dailyCadences {
 		g.Expect(computeSpiralParams(28, width, height, candidate).b).To(BeZero())
