@@ -22,6 +22,16 @@ const (
 	LinesChanged metric.Name = "lines-changed"
 )
 
+var fileMetricNames = []metric.Name{
+	FileAge,
+	FileFreshness,
+	AuthorCount,
+	CommitCount,
+	TotalLinesAdded,
+	TotalLinesRemoved,
+	CommitDensity,
+}
+
 // IsGitMetric reports whether name is a metric that requires a git repository.
 func IsGitMetric(name metric.Name) bool {
 	switch name {

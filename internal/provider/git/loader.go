@@ -21,31 +21,56 @@ func (l *metricsLoader) FileProgressMutex() *sync.Mutex {
 	return &l.mu
 }
 
-func (l *metricsLoader) Load(root *model.Directory, _ []metric.Name) error {
-	return walkGitFilesAll(root, l.onFile)
+func (l *metricsLoader) Load(root *model.Directory, requested []metric.Name) error {
+	return loadGitMetrics(root, requested, l.onFile)
 }
 
 // loadAllFileMetrics runs the git analysis once and populates all 7 file-level
 // git metrics in a single pass. This replaces 7 separate legacy providers that
 // each independently walked git history.
 func loadAllFileMetrics(root *model.Directory) error {
-	return walkGitFilesAll(root, nil)
+	return loadGitMetrics(root, fileMetricNames, nil)
 }
 
-// walkGitFilesAll opens the repo service, walks all files, and invokes every
-// providerDef's process function for each file. This populates all git metrics
-// in a single walk rather than one walk per metric.
+type metricRequirements struct {
+	processors     []providerDef
+	needsLineStats bool
+}
+
+func newMetricRequirements(requested []metric.Name) metricRequirements {
+	requirements := metricRequirements{
+		processors: make([]providerDef, 0, len(requested)),
+	}
+
+	for _, name := range requested {
+		def, ok := providerDefs[name]
+		if !ok {
+			continue
+		}
+
+		requirements.processors = append(requirements.processors, def)
+		if name == TotalLinesAdded || name == TotalLinesRemoved {
+			requirements.needsLineStats = true
+		}
+	}
+
+	return requirements
+}
+
+// loadGitMetrics opens the repo service, prewarms data for all scanned files,
+// then invokes only requested metric processors for each file.
 //
 // Git metrics have no silent fallback: if the repository cannot be opened, has
-// no history, or contains none of the scanned files, walkGitFilesAll returns
+// no history, or contains none of the scanned files, loadGitMetrics returns
 // an error rather than producing an empty result that would cascade into
 // confusing downstream failures.
-func walkGitFilesAll(root *model.Directory, onFile func()) error {
+func loadGitMetrics(root *model.Directory, requested []metric.Name, onFile func()) error {
 	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
 
+	requirements := newMetricRequirements(requested)
 	pathSet := buildRelPathSet(s, root)
 	if err := s.bulkPrewarm(pathSet, onFile); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
@@ -59,12 +84,12 @@ func walkGitFilesAll(root *model.Directory, onFile func()) error {
 			return
 		}
 
-		for _, def := range providerDefs {
+		for _, def := range requirements.processors {
 			def.process(s, f, relPath)
 		}
 	})
 
-	if !anyFileHasGitMetric(root) {
+	if !s.anyPathHasGitHistory(pathSet) {
 		return eris.Errorf(
 			"git loader produced no metrics: none of the scanned files under %s have git history",
 			s.RepoRoot(),
@@ -72,23 +97,4 @@ func walkGitFilesAll(root *model.Directory, onFile func()) error {
 	}
 
 	return nil
-}
-
-// anyFileHasGitMetric reports whether at least one file in the tree has the
-// FileAge metric set. FileAge is populated for every file with non-empty
-// commit history, so it serves as a sentinel for "git produced data".
-func anyFileHasGitMetric(root *model.Directory) bool {
-	var found bool
-
-	model.WalkFiles(root, func(f *model.File) {
-		if found {
-			return
-		}
-
-		if _, ok := f.Quantity(FileAge); ok {
-			found = true
-		}
-	})
-
-	return found
 }

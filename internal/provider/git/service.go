@@ -89,6 +89,19 @@ func resetService() {
 
 var errUntracked = errors.New("file has no git history")
 
+func (s *repoService) anyPathHasGitHistory(paths map[string]bool) bool {
+	s.commitMu.RLock()
+	defer s.commitMu.RUnlock()
+
+	for path := range paths {
+		if data, ok := s.commitCache[path]; ok && data.count > 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 // metricFor is a generic helper that fetches commit data for a file, checks
 // whether the file is untracked (count == 0), and applies the compute function.
 func metricFor[T int64 | float64](s *repoService, relPath string, compute func(*commitData) T) (T, error) {

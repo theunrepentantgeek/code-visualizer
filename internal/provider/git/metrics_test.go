@@ -147,8 +147,30 @@ func TestMetricsLoaderReportsFileProgress(t *testing.T) {
 		},
 	}
 
-	g.Expect(loader.Load(root, nil)).To(Succeed())
+	g.Expect(loader.Load(root, []metric.Name{CommitCount})).To(Succeed())
 	g.Expect(processed.Load()).To(Equal(int64(2)))
+}
+
+func TestMetricsLoaderLoadsOnlyRequestedCommitCount(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	root := buildTree(dir, "shared.go")
+
+	resetService()
+	g.Expect((&metricsLoader{}).Load(root, []metric.Name{CommitCount})).To(Succeed())
+
+	count, countOK := root.Files[0].Quantity(CommitCount)
+	g.Expect(countOK).To(BeTrue())
+	g.Expect(count).To(Equal(int64(2)))
+
+	_, ageOK := root.Files[0].Quantity(FileAge)
+	g.Expect(ageOK).To(BeFalse())
+	_, addedOK := root.Files[0].Quantity(TotalLinesAdded)
+	g.Expect(addedOK).To(BeFalse())
+	_, densityOK := root.Files[0].Measure(CommitDensity)
+	g.Expect(densityOK).To(BeFalse())
 }
 
 func TestFileFreshnessProvider(t *testing.T) {
@@ -749,6 +771,26 @@ func TestTotalLinesAddedProvider(t *testing.T) {
 	added, ok = root.Files[1].Quantity(TotalLinesAdded)
 	g.Expect(ok).To(BeTrue(), "total-lines-added should be set for stable.go")
 	g.Expect(added).To(Equal(int64(0)), "stable.go has no modifications after creation")
+}
+
+func TestMetricsLoaderLoadsOnlyRequestedTotalLinesAdded(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+	root := buildTree(dir, "churn.go")
+
+	resetService()
+	g.Expect((&metricsLoader{}).Load(root, []metric.Name{TotalLinesAdded})).To(Succeed())
+
+	added, addedOK := root.Files[0].Quantity(TotalLinesAdded)
+	g.Expect(addedOK).To(BeTrue())
+	g.Expect(added).To(Equal(int64(3)))
+
+	_, removedOK := root.Files[0].Quantity(TotalLinesRemoved)
+	g.Expect(removedOK).To(BeFalse())
+	_, countOK := root.Files[0].Quantity(CommitCount)
+	g.Expect(countOK).To(BeFalse())
 }
 
 func TestTotalLinesRemovedProvider(t *testing.T) {
