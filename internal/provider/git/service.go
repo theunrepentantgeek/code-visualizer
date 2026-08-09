@@ -291,7 +291,11 @@ func (s *repoService) cachedCommitData(relPath string) *commitData {
 
 func (s *repoService) cachedLineStatsCommitData(relPath string) *commitData {
 	cached := s.cachedCommitData(relPath)
-	if cached == nil || !cached.hasLineStats {
+	if cached == nil {
+		return nil
+	}
+
+	if !cached.hasLineStats {
 		return nil
 	}
 

@@ -117,6 +117,11 @@ func TestLoadGitHistory_PrewarmsRequestedGitMetricsForRunProviders(t *testing.T)
 	}
 
 	g.Expect(bFile).NotTo(BeNil())
+
+	if bFile == nil {
+		t.Fatal("expected b.go in file tree")
+	}
+
 	count, ok := bFile.Quantity(git.CommitCount)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(count).To(Equal(int64(2)))

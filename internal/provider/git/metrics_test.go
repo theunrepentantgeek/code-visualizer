@@ -170,6 +170,7 @@ func TestMetricsLoaderReportsFileProgress(t *testing.T) {
 	g.Expect(processed.Load()).To(Equal(int64(2)))
 }
 
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestLoadGitMetrics_ReportsProgressFromCombinedPrewarmCache(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -177,6 +178,7 @@ func TestLoadGitMetrics_ReportsProgressFromCombinedPrewarmCache(t *testing.T) {
 	root := buildTree(dir, "old.go", "new.go")
 
 	resetService()
+
 	_, err := BulkCommitHistoryAndPrewarm(
 		dir,
 		map[string]bool{"old.go": true, "new.go": true},
@@ -186,6 +188,7 @@ func TestLoadGitMetrics_ReportsProgressFromCombinedPrewarmCache(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var processed atomic.Int64
+
 	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, func() {
 		processed.Add(1)
 	})).To(Succeed())

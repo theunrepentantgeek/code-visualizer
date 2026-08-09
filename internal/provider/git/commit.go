@@ -135,6 +135,40 @@ func (s *repoService) bulkCommitHistoryAndPrewarm(
 	requirements metricRequirements,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
+	iter, err := s.commitIterator()
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+
+	cache := newBulkPrewarmCache(tracked, requirements)
+
+	var commits []Commit
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		commit, include := processBulkCommit(
+			c,
+			tracked,
+			cache,
+			requirements,
+			onCommitProcessed,
+		)
+		if include {
+			commits = append(commits, commit)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to iterate commits")
+	}
+
+	s.publishBulkPrewarmCache(cache, requirements)
+
+	return commits, nil
+}
+
+func (s *repoService) commitIterator() (object.CommitIter, error) {
 	head, err := s.repo.Head()
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to get HEAD")
@@ -144,70 +178,98 @@ func (s *repoService) bulkCommitHistoryAndPrewarm(
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to start log iteration")
 	}
-	defer iter.Close()
 
-	prewarm := len(requirements.processors) > 0
+	return iter, nil
+}
 
-	var cache map[string]*commitData
-	if prewarm {
-		cache = make(map[string]*commitData, len(tracked))
-		for path := range tracked {
-			cache[path] = &commitData{
-				authors:      make(map[string]bool),
-				hasLineStats: requirements.needsLineStats,
-			}
-		}
-	}
-
-	var commits []Commit
-
-	err = iter.ForEach(func(c *object.Commit) error {
-		changed := trackedChangesInCommit(c, tracked)
-
-		if onCommitProcessed != nil {
-			onCommitProcessed()
-		}
-
-		if prewarm {
-			for _, entry := range changed {
-				data := cache[entry.path]
-				data.updateMetadata(c)
-
-				if requirements.needsLineStats {
-					data.updateChangeStats(entry.change)
-				}
-			}
-		}
-
-		if len(changed) == 0 {
-			return nil
-		}
-
-		changedPaths := make([]string, 0, len(changed))
-		for _, entry := range changed {
-			changedPaths = append(changedPaths, entry.path)
-		}
-
-		commits = append(commits, Commit{
-			Hash:         c.Hash.String(),
-			Author:       toSignature(c.Author),
-			Committer:    toSignature(c.Committer),
-			Message:      c.Message,
-			ParentHashes: parentHashes(c),
-			ChangedPaths: changedPaths,
-		})
-
+func newBulkPrewarmCache(
+	tracked map[string]bool,
+	requirements metricRequirements,
+) map[string]*commitData {
+	if len(requirements.processors) == 0 {
 		return nil
-	})
-	if err != nil {
-		return nil, eris.Wrap(err, "failed to iterate commits")
 	}
 
-	if prewarm {
+	cache := make(map[string]*commitData, len(tracked))
+	for path := range tracked {
+		cache[path] = &commitData{
+			authors:      make(map[string]bool),
+			hasLineStats: requirements.needsLineStats,
+		}
+	}
+
+	return cache
+}
+
+func (s *repoService) publishBulkPrewarmCache(
+	cache map[string]*commitData,
+	requirements metricRequirements,
+) {
+	if cache != nil {
 		s.mergeBulkPrewarmCache(cache, requirements)
 	}
+}
 
-	return commits, nil
+func processBulkCommit(
+	c *object.Commit,
+	tracked map[string]bool,
+	cache map[string]*commitData,
+	requirements metricRequirements,
+	onCommitProcessed func(),
+) (Commit, bool) {
+	changed := trackedChangesInCommit(c, tracked)
+
+	if onCommitProcessed != nil {
+		onCommitProcessed()
+	}
+
+	prewarmTrackedChanges(cache, c, changed, requirements)
+
+	if len(changed) == 0 {
+		return Commit{}, false
+	}
+
+	return commitFromTrackedChanges(c, changed), true
+}
+
+func prewarmTrackedChanges(
+	cache map[string]*commitData,
+	c *object.Commit,
+	changed []trackedChange,
+	requirements metricRequirements,
+) {
+	if cache == nil {
+		return
+	}
+
+	for _, entry := range changed {
+		data := cache[entry.path]
+		if data == nil {
+			continue
+		}
+
+		data.updateMetadata(c)
+
+		if requirements.needsLineStats {
+			data.updateChangeStats(entry.change)
+		}
+	}
+}
+
+func commitFromTrackedChanges(c *object.Commit, changed []trackedChange) Commit {
+	changedPaths := make([]string, 0, len(changed))
+	for _, entry := range changed {
+		changedPaths = append(changedPaths, entry.path)
+	}
+
+	return Commit{
+		Hash:         c.Hash.String(),
+		Author:       toSignature(c.Author),
+		Committer:    toSignature(c.Committer),
+		Message:      c.Message,
+		ParentHashes: parentHashes(c),
+		ChangedPaths: changedPaths,
+	}
 }
 
 func toSignature(s object.Signature) Signature {

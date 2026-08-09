@@ -80,6 +80,7 @@ func TestBulkCommitHistory_InvokesProgressCallback(t *testing.T) {
 	g.Expect(count).To(BeNumerically(">=", 1))
 }
 
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestBulkCommitHistoryAndPrewarm_ReturnsHistoryAndWarmsCommitCount(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -95,12 +96,20 @@ func TestBulkCommitHistoryAndPrewarm_ReturnsHistoryAndWarmsCommitCount(t *testin
 	s, err := getService(dir)
 	g.Expect(err).NotTo(HaveOccurred())
 
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
 	cached := s.cachedCommitData("shared.go")
-	g.Expect(cached).NotTo(BeNil())
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
+
 	g.Expect(cached.count).To(Equal(int64(2)))
 	g.Expect(cached.hasLineStats).To(BeFalse())
 }
 
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestBulkCommitHistoryAndPrewarm_NormalizesTrackedPaths(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -116,14 +125,24 @@ func TestBulkCommitHistoryAndPrewarm_NormalizesTrackedPaths(t *testing.T) {
 		nil,
 	)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(commits).To(HaveLen(1))
+
+	if len(commits) != 1 {
+		t.Fatalf("got %d commits, want 1", len(commits))
+	}
+
 	g.Expect(commits[0].ChangedPaths).To(ConsistOf(trackedPath))
 
 	s, err := getService(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
 	g.Expect(s.cachedCommitData(trackedPath)).NotTo(BeNil())
 }
 
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestLoadGitMetrics_ReusesCombinedPrewarmCache(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -138,8 +157,14 @@ func TestLoadGitMetrics_ReusesCombinedPrewarmCache(t *testing.T) {
 	s, err := getService(dir)
 	g.Expect(err).NotTo(HaveOccurred())
 
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
 	cached := s.cachedCommitData("shared.go")
-	g.Expect(cached).NotTo(BeNil())
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
 
 	root := buildTree(dir, "shared.go")
 	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
@@ -150,6 +175,7 @@ func TestLoadGitMetrics_ReusesCombinedPrewarmCache(t *testing.T) {
 	g.Expect(count).To(Equal(int64(2)))
 }
 
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestLoadGitMetrics_ReusesCombinedPrewarmCacheForSubdirectoryTarget(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -164,6 +190,10 @@ func TestLoadGitMetrics_ReusesCombinedPrewarmCacheForSubdirectoryTarget(t *testi
 	s, err := getService(subdir)
 	g.Expect(err).NotTo(HaveOccurred())
 
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
 	_, err = BulkCommitHistoryAndPrewarm(
 		repoRoot,
 		map[string]bool{trackedPath: true},
@@ -173,7 +203,9 @@ func TestLoadGitMetrics_ReusesCombinedPrewarmCacheForSubdirectoryTarget(t *testi
 	g.Expect(err).NotTo(HaveOccurred())
 
 	cached := s.cachedCommitData(trackedPath)
-	g.Expect(cached).NotTo(BeNil())
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
 
 	root := buildTree(subdir, "code.go")
 	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())

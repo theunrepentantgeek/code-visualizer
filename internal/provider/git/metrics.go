@@ -3,6 +3,8 @@ package git
 import (
 	"path/filepath"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -61,7 +63,7 @@ func buildRelPathSet(s *repoService, root *model.Directory) map[string]bool {
 func repoRelativePath(repoRoot, path string) (string, error) {
 	relPath, err := filepath.Rel(repoRoot, path)
 	if err != nil {
-		return "", err
+		return "", eris.Wrap(err, "failed to compute repository-relative path")
 	}
 
 	return filepath.ToSlash(relPath), nil

@@ -36,6 +36,11 @@ type metricRequirements struct {
 	needsLineStats bool
 }
 
+type fileProgressCallbacks struct {
+	onPrewarm func()
+	onFile    func()
+}
+
 func newMetricRequirements(requested []metric.Name) metricRequirements {
 	requirements := metricRequirements{
 		processors: make([]providerDef, 0, len(requested)),
@@ -80,19 +85,43 @@ func (s *repoService) loadGitMetrics(
 	requirements := newMetricRequirements(requested)
 
 	pathSet := buildRelPathSet(s, root)
-	progressReported := false
-	prewarmProgress := onFile
-	if onFile != nil {
-		prewarmProgress = func() {
-			progressReported = true
-			onFile()
-		}
-	}
+	progressCallbacks := newFileProgressCallbacks(onFile)
 
-	if err := s.bulkPrewarm(pathSet, requirements, prewarmProgress); err != nil {
+	if err := s.bulkPrewarm(pathSet, requirements, progressCallbacks.onPrewarm); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
+	s.applySelectedFileMetrics(root, requirements, progressCallbacks.onFile)
+
+	return s.requireGitHistory(pathSet)
+}
+
+func newFileProgressCallbacks(onFile func()) fileProgressCallbacks {
+	if onFile == nil {
+		return fileProgressCallbacks{}
+	}
+
+	prewarmProgressReported := false
+
+	return fileProgressCallbacks{
+		onPrewarm: func() {
+			prewarmProgressReported = true
+
+			onFile()
+		},
+		onFile: func() {
+			if !prewarmProgressReported {
+				onFile()
+			}
+		},
+	}
+}
+
+func (s *repoService) applySelectedFileMetrics(
+	root *model.Directory,
+	requirements metricRequirements,
+	onFile func(),
+) {
 	model.WalkFiles(root, func(f *model.File) {
 		relPath, relErr := repoRelativePath(s.RepoRoot(), f.Path)
 		if relErr != nil {
@@ -105,17 +134,19 @@ func (s *repoService) loadGitMetrics(
 			def.process(s, f, relPath)
 		}
 
-		if onFile != nil && !progressReported {
+		if onFile != nil {
 			onFile()
 		}
 	})
+}
 
-	if !s.anyPathHasGitHistory(pathSet) {
-		return eris.Errorf(
-			"git loader produced no metrics: none of the scanned files under %s have git history",
-			s.RepoRoot(),
-		)
+func (s *repoService) requireGitHistory(pathSet map[string]bool) error {
+	if s.anyPathHasGitHistory(pathSet) {
+		return nil
 	}
 
-	return nil
+	return eris.Errorf(
+		"git loader produced no metrics: none of the scanned files under %s have git history",
+		s.RepoRoot(),
+	)
 }
