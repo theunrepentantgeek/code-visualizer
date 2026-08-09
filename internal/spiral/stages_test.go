@@ -1,6 +1,7 @@
 package spiral_test
 
 import (
+	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -343,6 +344,8 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
+	const bucketCount = 730
+
 	common := &stages.CommonState{
 		Width:  1920,
 		Height: 1080,
@@ -351,14 +354,33 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 			MaxY: 1080,
 		},
 	}
+	buckets := make([]spiral.TimeBucket, bucketCount)
+	for i := range buckets {
+		buckets[i] = spiral.TimeBucket{
+			Files:      []*model.File{{Name: "file.go"}},
+			SizeValue:  float64(i + 1),
+			SizeValueAvailable: true,
+		}
+	}
 	viz := &spiral.State{
 		Resolution: spiral.Daily,
-		Buckets:    make([]spiral.TimeBucket, 365),
+		Buckets:    buckets,
 		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
 	}
 
 	g.Expect(spiral.LayoutStage(common, viz)).To(Succeed())
-	g.Expect(viz.SpotsPerLap).To(Equal(spiral.DailySpotsPerLap(365, 1920, 1080)))
+	g.Expect(viz.SpotsPerLap).To(Equal(spiral.DailySpotsPerLap(bucketCount, 1920, 1080)))
+	g.Expect(viz.SpotsPerLap).NotTo(Equal(28))
+	g.Expect(viz.Layout.Nodes[1].Angle).To(
+		BeNumerically("~", 2*math.Pi/float64(viz.SpotsPerLap), 1e-9),
+	)
+	g.Expect(viz.Layout.Nodes[bucketCount-1].DiscRadius).To(
+		BeNumerically(
+			"~",
+			spiral.MaxDiscRadiusWithCadence(bucketCount, 1920, 1080, viz.SpotsPerLap),
+			1e-9,
+		),
+	)
 }
 
 func TestLayoutStageKeepsHourlyCadence(t *testing.T) {
