@@ -2,6 +2,7 @@ package provider_test
 
 import (
 	"errors"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -17,6 +18,16 @@ import (
 type loaderOrderTracker struct {
 	mu    sync.Mutex
 	calls []metric.Name
+}
+
+type recordingLoader struct {
+	requested []metric.Name
+}
+
+func (l *recordingLoader) Load(_ *model.Directory, requested []metric.Name) error {
+	l.requested = slices.Clone(requested)
+
+	return nil
 }
 
 func (t *loaderOrderTracker) record(name metric.Name) {
@@ -64,7 +75,7 @@ func TestRunLoadersBasicExecution(t *testing.T) {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"m1"},
-		Load: func(_ *model.Directory) error {
+		Load: func(_ *model.Directory, _ []metric.Name) error {
 			tracker.record("m1")
 
 			return nil
@@ -85,7 +96,7 @@ func TestRunLoadersRespectsDependencies(t *testing.T) {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"base"},
-		Load: func(_ *model.Directory) error {
+		Load: func(_ *model.Directory, _ []metric.Name) error {
 			tracker.record("base")
 
 			return nil
@@ -94,7 +105,7 @@ func TestRunLoadersRespectsDependencies(t *testing.T) {
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics:      []metric.Name{"derived"},
 		Dependencies: []metric.Name{"base"},
-		Load: func(_ *model.Directory) error {
+		Load: func(_ *model.Directory, _ []metric.Name) error {
 			tracker.record("derived")
 
 			return nil
@@ -114,12 +125,12 @@ func TestRunLoadersCycleDetection(t *testing.T) {
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics:      []metric.Name{"a"},
 		Dependencies: []metric.Name{"b"},
-		Load:         func(_ *model.Directory) error { return nil },
+		Load:         func(_ *model.Directory, _ []metric.Name) error { return nil },
 	})
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics:      []metric.Name{"b"},
 		Dependencies: []metric.Name{"a"},
-		Load:         func(_ *model.Directory) error { return nil },
+		Load:         func(_ *model.Directory, _ []metric.Name) error { return nil },
 	})
 
 	err := provider.RunLoaders(nil, []metric.Name{"a", "b"}, nil)
@@ -135,7 +146,7 @@ func TestRunLoadersFailsOnMissingDependency(t *testing.T) {
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics:      []metric.Name{"derived"},
 		Dependencies: []metric.Name{"base"},
-		Load:         func(_ *model.Directory) error { return nil },
+		Load:         func(_ *model.Directory, _ []metric.Name) error { return nil },
 	})
 
 	err := provider.RunLoaders(nil, []metric.Name{"derived"}, nil)
@@ -150,7 +161,7 @@ func TestRunLoadersErrorPropagation(t *testing.T) {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"fail"},
-		Load: func(_ *model.Directory) error {
+		Load: func(_ *model.Directory, _ []metric.Name) error {
 			return errors.New("load failed")
 		},
 	})
@@ -174,7 +185,7 @@ func TestRunLoadersParallelExecution(t *testing.T) {
 	registerConcurrentLoader := func(name metric.Name) {
 		provider.RegisterLoader(provider.BaseMetricLoader{
 			Metrics: []metric.Name{name},
-			Load: func(_ *model.Directory) error {
+			Load: func(_ *model.Directory, _ []metric.Name) error {
 				current := counter.Add(1)
 
 				for {
@@ -202,21 +213,37 @@ func TestRunLoadersParallelExecution(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates global base registry
-func TestRunLoadersReportsProgress(t *testing.T) {
+func TestRunLoadersPassesRequestedMetricsInLoaderOrder(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
+
+	loader := &recordingLoader{}
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{"first", "second", "third"},
+		Load:    loader.Load,
+	})
+
+	err := provider.RunLoaders(nil, []metric.Name{"third", "first"}, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(slices.Equal(loader.requested, []metric.Name{"first", "third"})).To(BeTrue())
+}
+
+//nolint:paralleltest // mutates global base registry
+func TestRunLoadersReportsProgressForRequestedMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 	resetBaseRegistry(t)
 
 	progress := &progressTracker{}
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
-		Metrics: []metric.Name{"m1", "m2"},
-		Load:    func(_ *model.Directory) error { return nil },
+		Metrics: []metric.Name{"first", "second"},
+		Load:    func(_ *model.Directory, _ []metric.Name) error { return nil },
 	})
 
-	err := provider.RunLoaders(nil, []metric.Name{"m1"}, progress)
+	err := provider.RunLoaders(nil, []metric.Name{"second"}, progress)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(progress.started).To(Equal([]metric.Name{"m1", "m2"}))
-	g.Expect(progress.finished).To(Equal([]metric.Name{"m1", "m2"}))
+	g.Expect(progress.started).To(Equal([]metric.Name{"second"}))
+	g.Expect(progress.finished).To(Equal([]metric.Name{"second"}))
 }
 
 //nolint:paralleltest // mutates global base registry
@@ -238,7 +265,7 @@ func (l *fileProgressLoader) FileProgressMutex() *sync.Mutex {
 	return &l.mu
 }
 
-func (l *fileProgressLoader) Load(_ *model.Directory) error {
+func (l *fileProgressLoader) Load(_ *model.Directory, _ []metric.Name) error {
 	if l.onFile != nil {
 		l.onFile()
 		l.onFile()
@@ -304,7 +331,7 @@ func (l *blockingFileProgressLoader) FileProgressMutex() *sync.Mutex {
 	return &l.mu
 }
 
-func (l *blockingFileProgressLoader) Load(_ *model.Directory) error {
+func (l *blockingFileProgressLoader) Load(_ *model.Directory, _ []metric.Name) error {
 	if l.onFile != nil {
 		l.onFile()
 	}

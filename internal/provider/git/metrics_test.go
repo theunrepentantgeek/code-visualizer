@@ -147,7 +147,7 @@ func TestMetricsLoaderReportsFileProgress(t *testing.T) {
 		},
 	}
 
-	g.Expect(loader.Load(root)).To(Succeed())
+	g.Expect(loader.Load(root, nil)).To(Succeed())
 	g.Expect(processed.Load()).To(Equal(int64(2)))
 }
 

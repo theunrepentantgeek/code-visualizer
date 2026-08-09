@@ -7,6 +7,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -20,7 +21,7 @@ func (l *metricsLoader) FileProgressMutex() *sync.Mutex {
 	return &l.mu
 }
 
-func (l *metricsLoader) Load(root *model.Directory) error {
+func (l *metricsLoader) Load(root *model.Directory, _ []metric.Name) error {
 	return walkGitFilesAll(root, l.onFile)
 }
 
