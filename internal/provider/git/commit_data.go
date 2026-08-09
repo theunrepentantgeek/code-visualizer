@@ -17,11 +17,7 @@ type commitData struct {
 	hasLineStats bool
 }
 
-func (data *commitData) updateFrom(
-	c *object.Commit,
-	change *object.Change,
-	needsLineStats bool,
-) {
+func (data *commitData) updateMetadata(c *object.Commit) {
 	when := c.Author.When
 
 	if data.oldest.IsZero() || when.Before(data.oldest) {
@@ -34,8 +30,10 @@ func (data *commitData) updateFrom(
 
 	data.authors[c.Author.Email] = true
 	data.count++
+}
 
-	if !needsLineStats || change == nil || change.From.Name == "" {
+func (data *commitData) updateChangeStats(change *object.Change) {
+	if change == nil || change.From.Name == "" {
 		return
 	}
 

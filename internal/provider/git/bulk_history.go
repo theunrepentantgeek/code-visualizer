@@ -155,6 +155,7 @@ func trackedChangesFromDiff(changes object.Changes, filePaths map[string]bool) [
 	for i := range changes {
 		change := changes[i]
 		name := changeName(change)
+
 		if filePaths[name] {
 			result = append(result, trackedChange{path: name, change: change})
 		}
@@ -179,7 +180,7 @@ func trackedChangesInMergeCommit(
 	commitTree *object.Tree,
 	filePaths map[string]bool,
 ) []trackedChange {
-	changesFromParent := collectParentChanges(c, commitTree, filePaths)
+	changesFromParent, firstParentChanges := collectParentChanges(c, commitTree, filePaths)
 	if len(changesFromParent) == 0 {
 		return nil
 	}
@@ -187,13 +188,13 @@ func trackedChangesInMergeCommit(
 	result := make([]trackedChange, 0, len(filePaths))
 
 	for path := range filePaths {
-		change, found := changesFromParent[0][path]
+		_, found := changesFromParent[0][path]
 		if !found || !differsFromAllParents(path, changesFromParent) {
 			continue
 		}
 
 		// Churn metrics historically diffed against the first parent.
-		result = append(result, trackedChange{path: path, change: change})
+		result = append(result, trackedChange{path: path, change: firstParentChanges[path]})
 	}
 
 	return result
@@ -205,14 +206,24 @@ func collectParentChanges(
 	c *object.Commit,
 	commitTree *object.Tree,
 	filePaths map[string]bool,
-) []map[string]*object.Change {
+) ([]map[string]*object.Change, map[string]*object.Change) {
 	parents := c.Parents()
 	defer parents.Close()
 
 	result := make([]map[string]*object.Change, 0, c.NumParents())
 
+	var firstParentChanges map[string]*object.Change
+
+	parentIndex := 0
+
 	_ = parents.ForEach(func(parent *object.Commit) error {
 		changes := trackedChangesFromParent(parent, commitTree, filePaths)
+		if parentIndex == 0 {
+			firstParentChanges = changes
+		}
+
+		parentIndex++
+
 		if changes != nil {
 			result = append(result, changes)
 		}
@@ -220,7 +231,7 @@ func collectParentChanges(
 		return nil
 	})
 
-	return result
+	return result, firstParentChanges
 }
 
 // trackedChangesFromParent returns the tracked changes that differ between
@@ -245,6 +256,7 @@ func trackedChangesFromParent(
 	for i := range changes {
 		change := changes[i]
 		name := changeName(change)
+
 		if filePaths[name] {
 			diffs[name] = change
 		}

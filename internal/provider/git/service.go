@@ -3,6 +3,8 @@ package git
 
 import (
 	"errors"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -102,15 +104,16 @@ func (s *repoService) anyPathHasGitHistory(paths map[string]bool) bool {
 	return false
 }
 
+type commitDataFetcher func(string) (*commitData, error)
+
 // metricFor is a generic helper that fetches commit data for a file, checks
 // whether the file is untracked (count == 0), and applies the compute function.
 func metricFor[T int64 | float64](
-	s *repoService,
 	relPath string,
-	needsLineStats bool,
+	fetch commitDataFetcher,
 	compute func(*commitData) T,
 ) (T, error) {
-	data, err := s.getCommitData(relPath, needsLineStats)
+	data, err := fetch(relPath)
 	if err != nil {
 		var zero T
 
@@ -127,37 +130,37 @@ func metricFor[T int64 | float64](
 }
 
 func (s *repoService) fileAge(relPath string) (int64, error) {
-	return metricFor(s, relPath, false, func(data *commitData) int64 {
+	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) int64 {
 		return int64(time.Since(data.oldest).Hours() / 24)
 	})
 }
 
 func (s *repoService) fileFreshness(relPath string) (int64, error) {
-	return metricFor(s, relPath, false, func(data *commitData) int64 {
+	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) int64 {
 		return int64(time.Since(data.newest).Hours() / 24)
 	})
 }
 
 func (s *repoService) authorCount(relPath string) (int64, error) {
-	return metricFor(s, relPath, false, func(data *commitData) int64 {
+	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) int64 {
 		return int64(len(data.authors))
 	})
 }
 
 func (s *repoService) commitCount(relPath string) (int64, error) {
-	return metricFor(s, relPath, false, func(data *commitData) int64 {
+	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) int64 {
 		return data.count
 	})
 }
 
 func (s *repoService) totalLinesAdded(relPath string) (int64, error) {
-	return metricFor(s, relPath, true, func(data *commitData) int64 {
+	return metricFor(relPath, s.getLineStatsCommitData, func(data *commitData) int64 {
 		return data.linesAdded
 	})
 }
 
 func (s *repoService) totalLinesRemoved(relPath string) (int64, error) {
-	return metricFor(s, relPath, true, func(data *commitData) int64 {
+	return metricFor(relPath, s.getLineStatsCommitData, func(data *commitData) int64 {
 		return data.linesRemoved
 	})
 }
@@ -165,7 +168,7 @@ func (s *repoService) totalLinesRemoved(relPath string) (int64, error) {
 const monthHours = 24 * 30.44
 
 func (s *repoService) commitDensity(relPath string) (float64, error) {
-	return metricFor(s, relPath, false, func(data *commitData) float64 {
+	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) float64 {
 		fileAgeMonths := time.Since(data.oldest).Hours() / monthHours
 		if fileAgeMonths < 1 {
 			fileAgeMonths = 1
@@ -233,46 +236,29 @@ func filterChangesForFile(changes object.Changes, relPath string) object.Changes
 	return nil
 }
 
+type commitDataCacheLookup func(string) *commitData
+
+func (s *repoService) getMetadataCommitData(relPath string) (*commitData, error) {
+	return s.getCommitData(relPath, s.cachedCommitData)
+}
+
+func (s *repoService) getLineStatsCommitData(relPath string) (*commitData, error) {
+	return s.getCommitData(relPath, s.cachedLineStatsCommitData)
+}
+
 // getCommitData returns cached commit data for the given file path, fetching it
 // from git on first access. Concurrent requests for the same path are coalesced
 // via singleflight so the git log is only read once per file per process run.
-func (s *repoService) getCommitData(relPath string, needsLineStats bool) (*commitData, error) {
-	s.commitMu.RLock()
-
-	if cached, ok := s.commitCache[relPath]; ok &&
-		(!needsLineStats || cached.hasLineStats) {
-		s.commitMu.RUnlock()
-
+func (s *repoService) getCommitData(
+	relPath string,
+	cacheLookup commitDataCacheLookup,
+) (*commitData, error) {
+	if cached := cacheLookup(relPath); cached != nil {
 		return cached, nil
 	}
 
-	s.commitMu.RUnlock()
-
 	result, err, _ := s.commitGroup.Do(relPath, func() (any, error) {
-		s.commitMu.RLock()
-		cached, ok := s.commitCache[relPath]
-		s.commitMu.RUnlock()
-		if ok && (!needsLineStats || cached.hasLineStats) {
-			return cached, nil
-		}
-
-		data, err := s.fetchCommitData(relPath)
-		if err != nil {
-			return nil, err
-		}
-
-		s.commitMu.Lock()
-		if cached, ok := s.commitCache[relPath]; ok &&
-			(!needsLineStats || cached.hasLineStats) {
-			s.commitMu.Unlock()
-
-			return cached, nil
-		}
-
-		s.commitCache[relPath] = data
-		s.commitMu.Unlock()
-
-		return data, nil
+		return s.fetchAndCacheCommitData(relPath, cacheLookup)
 	})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to get commit data")
@@ -284,6 +270,51 @@ func (s *repoService) getCommitData(relPath string, needsLineStats bool) (*commi
 	}
 
 	return cd, nil
+}
+
+func (s *repoService) cachedCommitData(relPath string) *commitData {
+	s.commitMu.RLock()
+	defer s.commitMu.RUnlock()
+
+	return s.commitCache[relPath]
+}
+
+func (s *repoService) cachedLineStatsCommitData(relPath string) *commitData {
+	cached := s.cachedCommitData(relPath)
+	if cached == nil || !cached.hasLineStats {
+		return nil
+	}
+
+	return cached
+}
+
+func (s *repoService) fetchAndCacheCommitData(
+	relPath string,
+	cacheLookup commitDataCacheLookup,
+) (*commitData, error) {
+	if cached := cacheLookup(relPath); cached != nil {
+		return cached, nil
+	}
+
+	data, err := s.fetchCommitData(relPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.cacheFetchedCommitData(relPath, data), nil
+}
+
+func (s *repoService) cacheFetchedCommitData(relPath string, data *commitData) *commitData {
+	s.commitMu.Lock()
+	defer s.commitMu.Unlock()
+
+	if cached := s.commitCache[relPath]; cached != nil && cached.hasLineStats {
+		return cached
+	}
+
+	s.commitCache[relPath] = data
+
+	return data
 }
 
 func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
@@ -321,7 +352,7 @@ func processCommitForFile(c *object.Commit, relPath string, data *commitData) {
 		return
 	}
 
-	data.updateFrom(c, nil, false)
+	data.updateMetadata(c)
 
 	// Accumulate diff stats for non-root commits that modify an existing file.
 	if c.NumParents() > 0 {
@@ -432,30 +463,76 @@ func (s *repoService) bulkPrewarm(
 	requirements metricRequirements,
 	onFileProcessed func(),
 ) error {
-	for {
-		s.commitMu.RLock()
+	missing, groupKey := s.bulkPrewarmWork(paths, requirements)
+	if len(missing) == 0 {
+		return nil
+	}
 
-		missing := make(map[string]bool, len(paths))
-		for p := range paths {
-			data, ok := s.commitCache[p]
-			if !ok || (requirements.needsLineStats && !data.hasLineStats) {
-				missing[p] = true
-			}
-		}
-
-		s.commitMu.RUnlock()
-
+	_, err, _ := s.bulkGroup.Do(groupKey, func() (any, error) {
+		missing, _ = s.bulkPrewarmWork(paths, requirements)
 		if len(missing) == 0 {
-			return nil
+			return struct{}{}, nil
 		}
 
-		_, err, _ := s.bulkGroup.Do("prewarm", func() (any, error) {
-			return nil, s.doBulkPrewarm(missing, requirements, onFileProcessed)
-		})
-		if err != nil {
-			return err //nolint:wrapcheck // error already wrapped inside doBulkPrewarm
+		return nil, s.doBulkPrewarm(missing, requirements, onFileProcessed)
+	})
+	if err != nil {
+		return eris.Wrap(err, "bulk prewarm")
+	}
+
+	return nil
+}
+
+func (s *repoService) bulkPrewarmWork(
+	paths map[string]bool,
+	requirements metricRequirements,
+) (map[string]bool, string) {
+	if requirements.needsLineStats {
+		missing := s.missingBulkPrewarmPaths(paths, hasLineStats)
+
+		return missing, bulkPrewarmGroupKey(missing, "line-stats")
+	}
+
+	missing := s.missingBulkPrewarmPaths(paths, hasCommitData)
+
+	return missing, bulkPrewarmGroupKey(missing, "metadata")
+}
+
+func hasCommitData(data *commitData) bool {
+	return data != nil
+}
+
+func hasLineStats(data *commitData) bool {
+	return data != nil && data.hasLineStats
+}
+
+func (s *repoService) missingBulkPrewarmPaths(
+	paths map[string]bool,
+	isCached func(*commitData) bool,
+) map[string]bool {
+	s.commitMu.RLock()
+	defer s.commitMu.RUnlock()
+
+	missing := make(map[string]bool, len(paths))
+	for path := range paths {
+		data := s.commitCache[path]
+		if !isCached(data) {
+			missing[path] = true
 		}
 	}
+
+	return missing
+}
+
+func bulkPrewarmGroupKey(paths map[string]bool, requirement string) string {
+	keys := make([]string, 0, len(paths))
+	for path := range paths {
+		keys = append(keys, path)
+	}
+
+	slices.Sort(keys)
+
+	return requirement + ":" + strings.Join(keys, "\x00")
 }
 
 // doBulkPrewarm performs the actual bulk commit-cache population.
@@ -492,20 +569,33 @@ func (s *repoService) doBulkPrewarm(
 		return eris.Wrap(err, "bulk prewarm: failed to iterate commits")
 	}
 
-	// Atomically store results, without replacing complete line stats with a
-	// metadata-only entry from a concurrent prewarm.
+	s.mergeBulkPrewarmCache(cache, requirements)
+
+	return nil
+}
+
+// mergeBulkPrewarmCache atomically stores results without allowing a
+// metadata-only prewarm to replace complete line statistics.
+func (s *repoService) mergeBulkPrewarmCache(
+	cache map[string]*commitData,
+	requirements metricRequirements,
+) {
+	isCached := hasCommitData
+	if requirements.needsLineStats {
+		isCached = hasLineStats
+	}
+
 	s.commitMu.Lock()
+	defer s.commitMu.Unlock()
+
 	for p, data := range cache {
-		existing, ok := s.commitCache[p]
-		if ok && (!requirements.needsLineStats || existing.hasLineStats) {
+		existing := s.commitCache[p]
+		if isCached(existing) {
 			continue
 		}
 
 		s.commitCache[p] = data
 	}
-	s.commitMu.Unlock()
-
-	return nil
 }
 
 func (*repoService) prewarmCommit(
@@ -519,7 +609,11 @@ func (*repoService) prewarmCommit(
 
 		for _, entry := range changed {
 			data := cache[entry.path]
-			data.updateFrom(c, entry.change, requirements.needsLineStats)
+			data.updateMetadata(c)
+
+			if requirements.needsLineStats {
+				data.updateChangeStats(entry.change)
+			}
 
 			if onFileProcessed != nil {
 				onFileProcessed()

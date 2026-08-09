@@ -9,6 +9,11 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/storage/memory"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -764,13 +769,14 @@ func setupMultiFileDiffRepo(t *testing.T) string {
 		g := NewGomegaWithT(t)
 		g.Expect(os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600)).To(Succeed())
 	}
+
 	run := func(args ...string) {
 		t.Helper()
 
 		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
 		cmd.Dir = dir
-		out, err := cmd.CombinedOutput()
-		if err != nil {
+
+		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("command %v failed: %s\n%s", args, err, out)
 		}
 	}
@@ -828,8 +834,13 @@ func TestTrackedChangesInCommit_RetainsChangesForEachTrackedPath(t *testing.T) {
 	dir := setupMultiFileDiffRepo(t)
 
 	resetService()
+
 	s, err := getService(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
 
 	head, err := s.repo.Head()
 	g.Expect(err).NotTo(HaveOccurred())
@@ -846,6 +857,164 @@ func TestTrackedChangesInCommit_RetainsChangesForEachTrackedPath(t *testing.T) {
 	for _, entry := range changes {
 		g.Expect(entry.change).NotTo(BeNil())
 	}
+}
+
+func TestTrackedChangesInMergeCommit_LeavesChurnChangeNilWhenFirstParentFails(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	store := memory.NewStorage()
+	storeBlob := func(contents string) plumbing.Hash {
+		t.Helper()
+
+		encoded := store.NewEncodedObject()
+		encoded.SetType(plumbing.BlobObject)
+
+		writer, err := encoded.Writer()
+		g.Expect(err).NotTo(HaveOccurred())
+		_, err = writer.Write([]byte(contents))
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(writer.Close()).To(Succeed())
+
+		hash, err := store.SetEncodedObject(encoded)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		return hash
+	}
+	storeTree := func(blobHash plumbing.Hash) plumbing.Hash {
+		t.Helper()
+
+		tree := &object.Tree{Entries: []object.TreeEntry{{
+			Name: "merge.go",
+			Mode: filemode.Regular,
+			Hash: blobHash,
+		}}}
+		encoded := store.NewEncodedObject()
+		g.Expect(tree.Encode(encoded)).To(Succeed())
+
+		hash, err := store.SetEncodedObject(encoded)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		return hash
+	}
+	storeCommit := func(treeHash plumbing.Hash, parents []plumbing.Hash) plumbing.Hash {
+		t.Helper()
+
+		commit := &object.Commit{TreeHash: treeHash, ParentHashes: parents}
+		encoded := store.NewEncodedObject()
+		g.Expect(commit.Encode(encoded)).To(Succeed())
+
+		hash, err := store.SetEncodedObject(encoded)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		return hash
+	}
+
+	firstParent := storeCommit(plumbing.NewHash("missing tree"), nil)
+	secondParent := storeCommit(storeTree(storeBlob("second parent")), nil)
+	mergeHash := storeCommit(storeTree(storeBlob("merge")), []plumbing.Hash{
+		firstParent,
+		secondParent,
+	})
+	merge, err := object.GetCommit(store, mergeHash)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if merge == nil {
+		t.Fatal("expected merge commit")
+	}
+
+	changes := trackedChangesInCommit(merge, map[string]bool{"merge.go": true})
+	g.Expect(changes).To(HaveLen(1))
+
+	if len(changes) != 1 {
+		t.Fatal("expected tracked change for merge.go")
+	}
+
+	g.Expect(changes[0].path).To(Equal("merge.go"))
+	g.Expect(changes[0].change).To(BeNil())
+}
+
+func TestBulkPrewarm_UpgradesMetadataCacheForLineStats(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+
+	resetService()
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	paths := map[string]bool{"churn.go": true}
+	metadata := newMetricRequirements([]metric.Name{CommitCount})
+	g.Expect(s.bulkPrewarm(paths, metadata, nil)).To(Succeed())
+
+	s.commitMu.RLock()
+	cached := s.commitCache["churn.go"]
+	s.commitMu.RUnlock()
+	g.Expect(cached).NotTo(BeNil())
+
+	if cached == nil {
+		t.Fatal("expected cached metadata")
+	}
+
+	g.Expect(cached.hasLineStats).To(BeFalse())
+
+	lineStats := newMetricRequirements([]metric.Name{TotalLinesAdded, TotalLinesRemoved})
+	g.Expect(s.bulkPrewarm(paths, lineStats, nil)).To(Succeed())
+
+	s.commitMu.RLock()
+	cached = s.commitCache["churn.go"]
+	s.commitMu.RUnlock()
+	g.Expect(cached).NotTo(BeNil())
+
+	if cached == nil {
+		t.Fatal("expected cached line statistics")
+	}
+
+	g.Expect(cached.hasLineStats).To(BeTrue())
+	g.Expect(cached.linesAdded).To(Equal(int64(3)))
+	g.Expect(cached.linesRemoved).To(Equal(int64(1)))
+}
+
+func TestBulkPrewarm_PreservesLineStatsDuringMetadataPrewarm(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+
+	resetService()
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	paths := map[string]bool{"churn.go": true}
+	lineStats := newMetricRequirements([]metric.Name{TotalLinesAdded, TotalLinesRemoved})
+	g.Expect(s.bulkPrewarm(paths, lineStats, nil)).To(Succeed())
+
+	metadata := newMetricRequirements([]metric.Name{CommitCount})
+	g.Expect(s.bulkPrewarm(paths, metadata, nil)).To(Succeed())
+
+	s.commitMu.RLock()
+	cached := s.commitCache["churn.go"]
+	s.commitMu.RUnlock()
+	g.Expect(cached).NotTo(BeNil())
+
+	if cached == nil {
+		t.Fatal("expected cached line statistics")
+	}
+
+	g.Expect(cached.hasLineStats).To(BeTrue())
+	g.Expect(cached.linesAdded).To(Equal(int64(3)))
+	g.Expect(cached.linesRemoved).To(Equal(int64(1)))
 }
 
 func TestTotalLinesAddedProvider(t *testing.T) {
