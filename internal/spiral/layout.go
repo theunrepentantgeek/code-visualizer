@@ -42,7 +42,7 @@ func Layout(
 	}
 
 	nodes := make([]SpiralNode, len(buckets))
-	params := computeSpiralParams(len(buckets), width, height, resolution)
+	params := computeSpiralParams(len(buckets), width, height, resolution.SpotsPerLap())
 
 	for i, b := range buckets {
 		nodes[i] = positionNode(i, b, params)
@@ -70,12 +70,12 @@ type spiralParams struct {
 	a           float64 // innerRadius (starting radius)
 	b           float64 // radial growth per radian
 	spotsPerLap int
+	totalAngle  float64
 	maxDisc     float64 // maximum disc radius before overlap
 }
 
 // computeSpiralParams derives spiral geometry from canvas dimensions and bucket count.
-func computeSpiralParams(n, width, height int, resolution Resolution) spiralParams {
-	spotsPerLap := resolution.SpotsPerLap()
+func computeSpiralParams(n, width, height, spotsPerLap int) spiralParams {
 	canvasRadius := math.Min(float64(width), float64(height))/2 - margin
 	outerRadius := canvasRadius
 	innerRadius := outerRadius * innerRadiusFraction
@@ -95,6 +95,7 @@ func computeSpiralParams(n, width, height int, resolution Resolution) spiralPara
 		a:           innerRadius,
 		b:           b,
 		spotsPerLap: spotsPerLap,
+		totalAngle:  totalAngle,
 		maxDisc:     maxDisc,
 	}
 }
@@ -120,7 +121,7 @@ func MaxDiscRadius(
 		return defaultDiscRadius
 	}
 
-	params := computeSpiralParams(bucketCount, width, height, resolution)
+	params := computeSpiralParams(bucketCount, width, height, resolution.SpotsPerLap())
 
 	return params.maxDisc
 }
