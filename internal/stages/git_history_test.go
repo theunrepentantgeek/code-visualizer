@@ -1,6 +1,8 @@
 package stages
 
 import (
+	"bytes"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -78,6 +80,23 @@ func buildHistoryState(dir string) *CommonState {
 		Root:       root,
 		Flags:      &Flags{Config: &config.Config{}},
 	}
+}
+
+//nolint:paralleltest // mutates global slog default logger
+func TestLoadGitHistory_ReportsInitialProgressInDefaultMode(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+
+	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading git history"`))
 }
 
 func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {

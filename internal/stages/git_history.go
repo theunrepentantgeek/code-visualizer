@@ -1,6 +1,7 @@
 package stages
 
 import (
+	"log/slog"
 	"path/filepath"
 	"time"
 
@@ -28,6 +29,10 @@ type TimeRange struct {
 // It returns an error when no commits touch any tracked file — visualizations
 // that depend on git history cannot proceed in that case.
 func LoadGitHistory(c *CommonState) error {
+	if !c.Flags.Quiet {
+		slog.Info("Loading git history")
+	}
+
 	repoRoot, err := git.RepoRootFor(c.Root.Path)
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")

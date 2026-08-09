@@ -110,27 +110,20 @@ func TestBulkCommitHistoryAndPrewarm_ReturnsHistoryAndWarmsCommitCount(t *testin
 }
 
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
-func TestBulkCommitHistoryAndPrewarm_NormalizesTrackedPaths(t *testing.T) {
+func TestBulkCommitHistoryAndPrewarm_WarmsEquivalentChurnData(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	dir := setupSubdirRepo(t)
-	trackedPath := filepath.ToSlash(filepath.Join(filepath.Base(dir), "code.go"))
+	dir := setupDiffRepo(t)
 
 	resetService()
 
-	commits, err := BulkCommitHistoryAndPrewarm(
+	_, err := BulkCommitHistoryAndPrewarm(
 		dir,
-		map[string]bool{"subdir\\code.go": true},
-		[]metric.Name{CommitCount},
+		map[string]bool{"churn.go": true},
+		[]metric.Name{TotalLinesAdded, TotalLinesRemoved},
 		nil,
 	)
 	g.Expect(err).NotTo(HaveOccurred())
-
-	if len(commits) != 1 {
-		t.Fatalf("got %d commits, want 1", len(commits))
-	}
-
-	g.Expect(commits[0].ChangedPaths).To(ConsistOf(trackedPath))
 
 	s, err := getService(dir)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -139,7 +132,50 @@ func TestBulkCommitHistoryAndPrewarm_NormalizesTrackedPaths(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	g.Expect(s.cachedCommitData(trackedPath)).NotTo(BeNil())
+	cached := s.cachedCommitData("churn.go")
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
+
+	expected, err := s.fetchCommitData("churn.go")
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if expected == nil {
+		t.Fatal("expected direct commit data")
+	}
+
+	g.Expect(cached.hasLineStats).To(BeTrue())
+	g.Expect(cached.linesAdded).To(Equal(expected.linesAdded))
+	g.Expect(cached.linesRemoved).To(Equal(expected.linesRemoved))
+	g.Expect(cached.linesAdded).To(Equal(int64(3)))
+	g.Expect(cached.linesRemoved).To(Equal(int64(1)))
+}
+
+func TestNormalizeTrackedPaths_UsesNativeSeparators(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	normalized := normalizeTrackedPaths(map[string]bool{
+		"subdir" + string(filepath.Separator) + "code.go": true,
+	})
+
+	g.Expect(normalized).To(HaveKey("subdir/code.go"))
+}
+
+func TestNormalizeTrackedPaths_PreservesBackslashesInPOSIXFilenames(t *testing.T) {
+	t.Parallel()
+
+	if filepath.Separator == '\\' {
+		t.Skip("backslash is a path separator on Windows")
+	}
+
+	g := NewGomegaWithT(t)
+	path := `legal\filename.go`
+
+	normalized := normalizeTrackedPaths(map[string]bool{path: true})
+
+	g.Expect(normalized).To(HaveKey(path))
+	g.Expect(normalized).NotTo(HaveKey("legal/filename.go"))
 }
 
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.

@@ -1,7 +1,7 @@
 package git
 
 import (
-	"strings"
+	"path/filepath"
 	"time"
 
 	gogit "github.com/go-git/go-git/v5"
@@ -117,10 +117,10 @@ func BulkCommitHistoryAndPrewarm(
 
 func normalizeTrackedPaths(tracked map[string]bool) map[string]bool {
 	for path := range tracked {
-		if strings.Contains(path, `\`) {
+		if filepath.ToSlash(path) != path {
 			normalized := make(map[string]bool, len(tracked))
 			for path, included := range tracked {
-				normalized[strings.ReplaceAll(path, `\`, `/`)] = included
+				normalized[filepath.ToSlash(path)] = included
 			}
 
 			return normalized
