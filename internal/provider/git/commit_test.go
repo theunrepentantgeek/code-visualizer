@@ -81,6 +81,34 @@ func TestBulkCommitHistory_InvokesProgressCallback(t *testing.T) {
 }
 
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestBulkCommitHistoryAndPrewarm_PreservesHistoryAndWarmsCache(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	tracked := map[string]bool{"shared.go": true}
+
+	resetService()
+
+	historyOnly, err := BulkCommitHistory(dir, tracked, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	resetService()
+
+	historyAndPrewarm, err := BulkCommitHistoryAndPrewarm(dir, tracked, []metric.Name{CommitCount}, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(historyAndPrewarm).To(Equal(historyOnly))
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	g.Expect(s.cachedCommitData("shared.go")).NotTo(BeNil())
+}
+
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestBulkCommitHistoryAndPrewarm_ReturnsHistoryAndWarmsCommitCount(t *testing.T) {
 	g := NewGomegaWithT(t)
 

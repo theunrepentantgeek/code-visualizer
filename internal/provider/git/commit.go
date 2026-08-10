@@ -53,43 +53,13 @@ func BulkCommitHistory(
 		return nil, eris.Wrap(err, "failed to open git repository")
 	}
 
-	head, err := s.repo.Head()
-	if err != nil {
-		return nil, eris.Wrap(err, "failed to get HEAD")
-	}
-
-	iter, err := s.repo.Log(&gogit.LogOptions{From: head.Hash()})
-	if err != nil {
-		return nil, eris.Wrap(err, "failed to start log iteration")
-	}
-	defer iter.Close()
-
 	var commits []Commit
 
-	err = iter.ForEach(func(c *object.Commit) error {
-		changed := changedFilesInCommit(c, tracked)
-
-		if onCommitProcessed != nil {
-			onCommitProcessed()
-		}
-
-		if len(changed) == 0 {
-			return nil
-		}
-
-		commits = append(commits, Commit{
-			Hash:         c.Hash.String(),
-			Author:       toSignature(c.Author),
-			Committer:    toSignature(c.Committer),
-			Message:      c.Message,
-			ParentHashes: parentHashes(c),
-			ChangedPaths: changed,
-		})
-
-		return nil
+	err = s.walkTrackedHistory(tracked, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
+		appendTrackedCommit(&commits, c, changed)
 	})
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to iterate commits")
+		return nil, err
 	}
 
 	return commits, nil
@@ -135,32 +105,16 @@ func (s *repoService) bulkCommitHistoryAndPrewarm(
 	requirements metricRequirements,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
-	iter, err := s.commitIterator()
-	if err != nil {
-		return nil, err
-	}
-	defer iter.Close()
-
 	cache := newBulkPrewarmCache(tracked, requirements)
 
 	var commits []Commit
 
-	err = iter.ForEach(func(c *object.Commit) error {
-		commit, include := processBulkCommit(
-			c,
-			tracked,
-			cache,
-			requirements,
-			onCommitProcessed,
-		)
-		if include {
-			commits = append(commits, commit)
-		}
-
-		return nil
+	err := s.walkTrackedHistory(tracked, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
+		prewarmTrackedChanges(cache, c, changed, requirements, nil)
+		appendTrackedCommit(&commits, c, changed)
 	})
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to iterate commits")
+		return nil, err
 	}
 
 	s.publishBulkPrewarmCache(cache, requirements)
@@ -210,33 +164,12 @@ func (s *repoService) publishBulkPrewarmCache(
 	}
 }
 
-func processBulkCommit(
-	c *object.Commit,
-	tracked map[string]bool,
-	cache map[string]*commitData,
-	requirements metricRequirements,
-	onCommitProcessed func(),
-) (Commit, bool) {
-	changed := trackedChangesInCommit(c, tracked)
-
-	if onCommitProcessed != nil {
-		onCommitProcessed()
-	}
-
-	prewarmTrackedChanges(cache, c, changed, requirements)
-
-	if len(changed) == 0 {
-		return Commit{}, false
-	}
-
-	return commitFromTrackedChanges(c, changed), true
-}
-
 func prewarmTrackedChanges(
 	cache map[string]*commitData,
 	c *object.Commit,
 	changed []trackedChange,
 	requirements metricRequirements,
+	onFileProcessed func(),
 ) {
 	if cache == nil {
 		return
@@ -253,23 +186,60 @@ func prewarmTrackedChanges(
 		if requirements.needsLineStats {
 			data.updateChangeStats(entry.change)
 		}
+
+		if onFileProcessed != nil {
+			onFileProcessed()
+		}
 	}
 }
 
-func commitFromTrackedChanges(c *object.Commit, changed []trackedChange) Commit {
+func appendTrackedCommit(commits *[]Commit, c *object.Commit, changed []trackedChange) {
+	if len(changed) == 0 {
+		return
+	}
+
 	changedPaths := make([]string, 0, len(changed))
 	for _, entry := range changed {
 		changedPaths = append(changedPaths, entry.path)
 	}
 
-	return Commit{
+	*commits = append(*commits, Commit{
 		Hash:         c.Hash.String(),
 		Author:       toSignature(c.Author),
 		Committer:    toSignature(c.Committer),
 		Message:      c.Message,
 		ParentHashes: parentHashes(c),
 		ChangedPaths: changedPaths,
+	})
+}
+
+func (s *repoService) walkTrackedHistory(
+	tracked map[string]bool,
+	onCommitProcessed func(),
+	visit func(*object.Commit, []trackedChange),
+) error {
+	iter, err := s.commitIterator()
+	if err != nil {
+		return err
 	}
+	defer iter.Close()
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		changed := trackedChangesInCommit(c, tracked)
+
+		if onCommitProcessed != nil {
+			onCommitProcessed()
+		}
+
+		visit(c, changed)
+
+		return nil
+	})
+	if err != nil {
+		return eris.Wrap(err, "failed to iterate commits")
+	}
+
+	return nil
 }
 
 func toSignature(s object.Signature) Signature {

@@ -562,30 +562,12 @@ func (s *repoService) doBulkPrewarm(
 	requirements metricRequirements,
 	onFileProcessed func(),
 ) error {
-	// Initialise empty commitData for all tracked paths so that untracked files
-	// get a count=0 entry in the cache (avoids re-fetching them individually).
-	cache := make(map[string]*commitData, len(paths))
-	for p := range paths {
-		cache[p] = &commitData{
-			authors:      make(map[string]bool),
-			hasLineStats: requirements.needsLineStats,
-		}
-	}
+	cache := newBulkPrewarmCache(paths, requirements)
 
-	head, err := s.repo.Head()
-	if err != nil {
-		return eris.Wrap(err, "bulk prewarm: failed to get HEAD")
-	}
-
-	iter, err := s.repo.Log(&gogit.LogOptions{From: head.Hash()})
-	if err != nil {
-		return eris.Wrap(err, "bulk prewarm: failed to start git log")
-	}
-	defer iter.Close()
-
-	err = iter.ForEach(s.prewarmCommit(cache, paths, requirements, onFileProcessed))
-	if err != nil {
-		return eris.Wrap(err, "bulk prewarm: failed to iterate commits")
+	if err := s.walkTrackedHistory(paths, nil, func(c *object.Commit, changed []trackedChange) {
+		prewarmTrackedChanges(cache, c, changed, requirements, onFileProcessed)
+	}); err != nil {
+		return eris.Wrap(err, "bulk prewarm")
 	}
 
 	s.mergeBulkPrewarmCache(cache, requirements)
@@ -614,32 +596,6 @@ func (s *repoService) mergeBulkPrewarmCache(
 		}
 
 		s.commitCache[p] = data
-	}
-}
-
-func (*repoService) prewarmCommit(
-	cache map[string]*commitData,
-	paths map[string]bool,
-	requirements metricRequirements,
-	onFileProcessed func(),
-) func(c *object.Commit) error {
-	return func(c *object.Commit) error {
-		changed := trackedChangesInCommit(c, paths)
-
-		for _, entry := range changed {
-			data := cache[entry.path]
-			data.updateMetadata(c)
-
-			if requirements.needsLineStats {
-				data.updateChangeStats(entry.change)
-			}
-
-			if onFileProcessed != nil {
-				onFileProcessed()
-			}
-		}
-
-		return nil
 	}
 }
 
