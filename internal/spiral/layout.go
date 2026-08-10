@@ -37,12 +37,23 @@ func Layout(
 	height int,
 	resolution Resolution,
 ) SpiralLayout {
+	return LayoutWithCadence(buckets, width, height, resolution.SpotsPerLap())
+}
+
+// LayoutWithCadence positions time buckets along an Archimedean spiral using
+// the supplied spots-per-lap cadence.
+func LayoutWithCadence(
+	buckets []TimeBucket,
+	width int,
+	height int,
+	spotsPerLap int,
+) SpiralLayout {
 	if len(buckets) == 0 {
 		return SpiralLayout{}
 	}
 
 	nodes := make([]SpiralNode, len(buckets))
-	params := computeSpiralParams(len(buckets), width, height, resolution)
+	params := computeSpiralParams(len(buckets), width, height, spotsPerLap)
 
 	for i, b := range buckets {
 		nodes[i] = positionNode(i, b, params)
@@ -70,12 +81,12 @@ type spiralParams struct {
 	a           float64 // innerRadius (starting radius)
 	b           float64 // radial growth per radian
 	spotsPerLap int
+	totalAngle  float64
 	maxDisc     float64 // maximum disc radius before overlap
 }
 
 // computeSpiralParams derives spiral geometry from canvas dimensions and bucket count.
-func computeSpiralParams(n, width, height int, resolution Resolution) spiralParams {
-	spotsPerLap := resolution.SpotsPerLap()
+func computeSpiralParams(n, width, height, spotsPerLap int) spiralParams {
 	canvasRadius := math.Min(float64(width), float64(height))/2 - margin
 	outerRadius := canvasRadius
 	innerRadius := outerRadius * innerRadiusFraction
@@ -95,6 +106,7 @@ func computeSpiralParams(n, width, height int, resolution Resolution) spiralPara
 		a:           innerRadius,
 		b:           b,
 		spotsPerLap: spotsPerLap,
+		totalAngle:  totalAngle,
 		maxDisc:     maxDisc,
 	}
 }
@@ -116,11 +128,22 @@ func MaxDiscRadius(
 	height int,
 	resolution Resolution,
 ) float64 {
+	return MaxDiscRadiusWithCadence(bucketCount, width, height, resolution.SpotsPerLap())
+}
+
+// MaxDiscRadiusWithCadence returns the maximum disc radius that avoids overlap
+// for the given layout parameters and spots-per-lap cadence.
+func MaxDiscRadiusWithCadence(
+	bucketCount int,
+	width int,
+	height int,
+	spotsPerLap int,
+) float64 {
 	if bucketCount == 0 {
 		return defaultDiscRadius
 	}
 
-	params := computeSpiralParams(bucketCount, width, height, resolution)
+	params := computeSpiralParams(bucketCount, width, height, spotsPerLap)
 
 	return params.maxDisc
 }
