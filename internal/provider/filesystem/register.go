@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
@@ -11,17 +12,23 @@ func Register() {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{FileSize},
-		Load:    FileSizeProvider{}.Load,
+		Load: func(root *model.Directory, _ []metric.Name) error {
+			return FileSizeProvider{}.Load(root)
+		},
 	})
 
 	fileLinesProvider := &FileLinesProvider{}
 	provider.RegisterLoader(provider.BaseMetricLoader{
-		Metrics:  []metric.Name{FileLines},
-		Load:     fileLinesProvider.Load,
+		Metrics: []metric.Name{FileLines},
+		Load: func(root *model.Directory, _ []metric.Name) error {
+			return fileLinesProvider.Load(root)
+		},
 		Reporter: fileLinesProvider,
 	})
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{FileType},
-		Load:    FileTypeProvider{}.Load,
+		Load: func(root *model.Directory, _ []metric.Name) error {
+			return FileTypeProvider{}.Load(root)
+		},
 	})
 }

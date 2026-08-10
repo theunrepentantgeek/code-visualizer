@@ -39,7 +39,7 @@ func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricP
 	}
 
 	for _, level := range levels {
-		if err := runLoaderLevel(root, level, progress); err != nil {
+		if err := runLoaderLevel(root, level, requested, progress); err != nil {
 			return err
 		}
 	}
@@ -47,12 +47,17 @@ func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricP
 	return nil
 }
 
-func runLoaderLevel(root *model.Directory, level []BaseMetricLoader, progress MetricProgress) error {
+func runLoaderLevel(
+	root *model.Directory,
+	level []BaseMetricLoader,
+	requested []metric.Name,
+	progress MetricProgress,
+) error {
 	g := new(errgroup.Group)
 
 	for _, loader := range level {
 		g.Go(func() error {
-			return runSingleLoader(root, loader, progress)
+			return runSingleLoader(root, loader, requested, progress)
 		})
 	}
 
@@ -63,8 +68,15 @@ func runLoaderLevel(root *model.Directory, level []BaseMetricLoader, progress Me
 	return nil
 }
 
-func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress MetricProgress) error {
-	notifyStarted(loader, progress)
+func runSingleLoader(
+	root *model.Directory,
+	loader BaseMetricLoader,
+	requested []metric.Name,
+	progress MetricProgress,
+) error {
+	// LoadersFor supplies only loaders owning a requested metric, so selected is nonempty.
+	selected := requestedMetricsForLoader(loader, requested)
+	notifyStarted(selected, progress)
 
 	if loader.Reporter != nil {
 		mu := loader.Reporter.FileProgressMutex()
@@ -72,44 +84,60 @@ func runSingleLoader(root *model.Directory, loader BaseMetricLoader, progress Me
 		defer mu.Unlock()
 	}
 
-	wireFileProgress(loader, progress)
+	wireFileProgress(loader, selected, progress)
 
-	if err := loader.Load(root); err != nil {
-		return eris.Wrapf(err, "loader failed for metrics %v", loader.Metrics)
+	if err := loader.Load(root, selected); err != nil {
+		return eris.Wrapf(err, "loader failed for metrics %v", selected)
 	}
 
-	notifyFinished(loader, progress)
+	notifyFinished(selected, progress)
 
 	return nil
 }
 
-func notifyStarted(loader BaseMetricLoader, progress MetricProgress) {
+func requestedMetricsForLoader(loader BaseMetricLoader, requested []metric.Name) []metric.Name {
+	wanted := make(map[metric.Name]struct{}, len(requested))
+	for _, name := range requested {
+		wanted[name] = struct{}{}
+	}
+
+	selected := make([]metric.Name, 0, len(loader.Metrics))
+	for _, name := range loader.Metrics {
+		if _, ok := wanted[name]; ok {
+			selected = append(selected, name)
+		}
+	}
+
+	return selected
+}
+
+func notifyStarted(selected []metric.Name, progress MetricProgress) {
 	if progress == nil {
 		return
 	}
 
-	for _, m := range loader.Metrics {
+	for _, m := range selected {
 		progress.OnMetricStarted(m)
 	}
 }
 
-func notifyFinished(loader BaseMetricLoader, progress MetricProgress) {
+func notifyFinished(selected []metric.Name, progress MetricProgress) {
 	if progress == nil {
 		return
 	}
 
-	for _, m := range loader.Metrics {
+	for _, m := range selected {
 		progress.OnMetricFinished(m)
 	}
 }
 
-func wireFileProgress(loader BaseMetricLoader, progress MetricProgress) {
+func wireFileProgress(loader BaseMetricLoader, selected []metric.Name, progress MetricProgress) {
 	if loader.Reporter == nil || progress == nil {
 		return
 	}
 
 	loader.Reporter.SetOnFileProcessed(func() {
-		for _, m := range loader.Metrics {
+		for _, m := range selected {
 			progress.OnFileProcessed(m)
 		}
 	})

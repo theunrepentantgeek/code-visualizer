@@ -1,6 +1,8 @@
 package stages
 
 import (
+	"bytes"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,7 +12,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
 // setupHistoryRepo creates a temp git repo with three commits touching two files.
@@ -78,6 +82,23 @@ func buildHistoryState(dir string) *CommonState {
 	}
 }
 
+//nolint:paralleltest // mutates global slog default logger
+func TestLoadGitHistory_ReportsInitialProgressInDefaultMode(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+
+	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading git history"`))
+}
+
 func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -92,6 +113,37 @@ func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
 		g.Expect(c.Author.When.IsZero()).To(BeFalse())
 		g.Expect(c.ChangedPaths).NotTo(BeEmpty())
 	}
+}
+
+func TestLoadGitHistory_PrewarmsRequestedGitMetricsForRunProviders(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
+
+	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(RunProviders(state)).To(Succeed())
+
+	var bFile *model.File
+
+	for _, file := range state.Root.Files {
+		if file.Name == "b.go" {
+			bFile = file
+
+			break
+		}
+	}
+
+	g.Expect(bFile).NotTo(BeNil())
+
+	if bFile == nil {
+		t.Fatal("expected b.go in file tree")
+	}
+
+	count, ok := bFile.Quantity(git.CommitCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(2)))
 }
 
 func TestGroupGitHistoryByFile_PointsBackIntoGitHistory(t *testing.T) {

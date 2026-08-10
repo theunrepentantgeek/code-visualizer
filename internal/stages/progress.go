@@ -124,7 +124,7 @@ func logMetricProgress(tracker *metricProgressTracker) {
 // ticker goroutine that logs commit history loading progress every second.
 // The caller must invoke the returned stop function when loading completes.
 func BuildHistoryProgress(flags *Flags) (onCommit func(), stop func()) {
-	if !flags.Verbose && !flags.Debug {
+	if flags.Quiet {
 		return nil, func() {}
 	}
 
@@ -136,6 +136,10 @@ func BuildHistoryProgress(flags *Flags) (onCommit func(), stop func()) {
 
 func startHistoryTicker(counter *atomic.Int64) (stop func()) {
 	return startProgressTicker(func() {
-		slog.Debug("Loading history...", "commits", counter.Load())
+		logHistoryProgress(counter)
 	})
+}
+
+func logHistoryProgress(counter *atomic.Int64) {
+	slog.Info("Loading history...", "commits", counter.Load())
 }

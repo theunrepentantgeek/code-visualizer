@@ -46,15 +46,7 @@ func TestRegisterBase_MatchesProviderDefsMetadata(t *testing.T) {
 
 	RegisterBase()
 
-	for _, name := range []metric.Name{
-		FileAge,
-		FileFreshness,
-		AuthorCount,
-		CommitCount,
-		TotalLinesAdded,
-		TotalLinesRemoved,
-		CommitDensity,
-	} {
+	for _, name := range fileMetricNames {
 		baseMetric, ok := provider.GetBase(name)
 		g.Expect(ok).To(BeTrue(), string(name))
 
@@ -93,25 +85,9 @@ func TestRegister_RegistersConsolidatedGitLoader(t *testing.T) {
 
 	Register()
 
-	loaders := provider.LoadersFor([]metric.Name{
-		FileAge,
-		FileFreshness,
-		AuthorCount,
-		CommitCount,
-		TotalLinesAdded,
-		TotalLinesRemoved,
-		CommitDensity,
-	})
+	loaders := provider.LoadersFor(fileMetricNames)
 
 	g.Expect(loaders).To(HaveLen(1))
-	g.Expect(loaders[0].Metrics).To(ConsistOf(
-		FileAge,
-		FileFreshness,
-		AuthorCount,
-		CommitCount,
-		TotalLinesAdded,
-		TotalLinesRemoved,
-		CommitDensity,
-	))
+	g.Expect(loaders[0].Metrics).To(Equal(fileMetricNames))
 	g.Expect(loaders[0].Load).ToNot(BeNil())
 }

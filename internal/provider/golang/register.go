@@ -2,6 +2,7 @@ package golang
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
@@ -17,6 +18,8 @@ func Register() {
 			externalImportsMetric,
 			internalImportsMetric,
 		},
-		Load: loadFileMetrics,
+		Load: func(root *model.Directory, _ []metric.Name) error {
+			return loadFileMetrics(root)
+		},
 	})
 }

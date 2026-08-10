@@ -1,7 +1,6 @@
 package git
 
 import (
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
@@ -11,15 +10,7 @@ func Register() {
 
 	loader := &metricsLoader{}
 	provider.RegisterLoader(provider.BaseMetricLoader{
-		Metrics: []metric.Name{
-			FileAge,
-			FileFreshness,
-			AuthorCount,
-			CommitCount,
-			TotalLinesAdded,
-			TotalLinesRemoved,
-			CommitDensity,
-		},
+		Metrics:  fileMetricNames,
 		Load:     loader.Load,
 		Reporter: loader,
 	})

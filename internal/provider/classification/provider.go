@@ -45,7 +45,9 @@ func Register(cfg config.SelectionMetric) {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{name},
-		Load:    l.Load,
+		Load: func(root *model.Directory, _ []metric.Name) error {
+			return l.Load(root)
+		},
 	})
 }
 

@@ -12,11 +12,12 @@ type BaseMetricLoader struct {
 	Metrics []metric.Name
 	// Dependencies lists base metrics callers must schedule before this loader runs.
 	Dependencies []metric.Name
-	// Load populates the directory tree with metric values.
+	// Load populates the requested metric values in the directory tree.
 	Load LoadFunc
 	// Reporter optionally receives per-file progress callbacks during loading.
 	Reporter FileProgressReporter
 }
 
-// LoadFunc is the function signature for metric loading.
-type LoadFunc func(root *model.Directory) error
+// LoadFunc loads requested metrics into root. requested contains only metrics
+// declared by the loader, in the order they appear in its Metrics field.
+type LoadFunc func(root *model.Directory, requested []metric.Name) error
