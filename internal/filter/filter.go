@@ -54,11 +54,11 @@ func IsIncluded(relativePath string, rules []Rule) bool {
 func MatchPattern(pattern, relativePath string) (bool, error) {
 	matched, err := doublestar.Match(pattern, relativePath)
 	if err != nil {
-		return false, eris.Wrap(err, "Failed to match pattern")
+		return false, eris.Wrap(err, "failed to match pattern")
 	}
 
 	if matched {
-		return matched, nil
+		return true, nil
 	}
 
 	if strings.HasPrefix(pattern, "/") || strings.HasPrefix(pattern, "**/") {
