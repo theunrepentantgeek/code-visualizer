@@ -12,8 +12,8 @@ func TestDailySpotsPerLapReturnsAllowedCadence(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	for _, bucketCount := range []int{1, 14, 28, 100, 365, 730} {
-		g.Expect(DailySpotsPerLap(bucketCount, 1920, 1080)).To(
-			BeElementOf(14, 28, 42, 56),
+		g.Expect(dailyCadences).To(
+			ContainElement(DailySpotsPerLap(bucketCount, 1920, 1080)),
 			"bucket count %d", bucketCount,
 		)
 	}
@@ -86,12 +86,12 @@ func TestSelectDailyCadencePrefers28OnEqualScore(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(selectDailyCadence(map[int]float64{
-		14: 1,
-		28: 1,
-		42: 2,
-		56: 3,
-	})).To(Equal(28))
+	scores := make(map[int]float64, len(dailyCadences))
+	for _, candidate := range dailyCadences {
+		scores[candidate] = 1
+	}
+
+	g.Expect(selectDailyCadence(scores)).To(Equal(28))
 }
 
 func TestSpotsPerLapKeepsHourlyCadence(t *testing.T) {
