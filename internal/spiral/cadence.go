@@ -2,7 +2,7 @@ package spiral
 
 import "math"
 
-var dailyCadences = []int{14, 28, 42, 56}
+var dailyCadences = []int{14, 28, 42, 56, 84, 112, 168}
 
 // SpotsPerLap returns the cadence for a layout at the given resolution.
 func SpotsPerLap(resolution Resolution, bucketCount, width, height int) int {
