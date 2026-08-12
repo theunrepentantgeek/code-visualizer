@@ -58,7 +58,10 @@ func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) erro
 		SizeMetric: t.Size,
 	}.Build()
 	if t.LegendConfig != nil {
-		t.LegendConfig.LabelSample = labelSampleLines(labelMetricsFor(t, cfg))
+		t.LegendConfig.LabelSample = legend.LabelSample{
+			Shape: legend.LabelSampleSquare,
+			Lines: labelSampleLines(labelMetricsFor(t, cfg)),
+		}
 	}
 
 	return nil

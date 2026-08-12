@@ -11,6 +11,8 @@ const (
 	defaultDiscRadius = 4.0
 	// innerRadiusFraction controls the inner/outer radius ratio (~1:3).
 	innerRadiusFraction = 1.0 / 3.0
+	// discRadiusSafetyFactor absorbs floating-point error in adjacent-lap distances.
+	discRadiusSafetyFactor = 1 - 1e-12
 )
 
 // SpiralLayout holds the positioned nodes and the Archimedean spiral parameters
@@ -34,17 +36,27 @@ func Layout(
 	width int,
 	height int,
 	resolution Resolution,
-	labels LabelMode,
+) SpiralLayout {
+	return LayoutWithCadence(buckets, width, height, resolution.SpotsPerLap())
+}
+
+// LayoutWithCadence positions time buckets along an Archimedean spiral using
+// the supplied spots-per-lap cadence.
+func LayoutWithCadence(
+	buckets []TimeBucket,
+	width int,
+	height int,
+	spotsPerLap int,
 ) SpiralLayout {
 	if len(buckets) == 0 {
 		return SpiralLayout{}
 	}
 
 	nodes := make([]SpiralNode, len(buckets))
-	params := computeSpiralParams(len(buckets), width, height, resolution)
+	params := computeSpiralParams(len(buckets), width, height, spotsPerLap)
 
 	for i, b := range buckets {
-		nodes[i] = positionNode(i, b, params, resolution, labels)
+		nodes[i] = positionNode(i, b, params)
 	}
 
 	var maxTheta float64
@@ -69,12 +81,12 @@ type spiralParams struct {
 	a           float64 // innerRadius (starting radius)
 	b           float64 // radial growth per radian
 	spotsPerLap int
+	totalAngle  float64
 	maxDisc     float64 // maximum disc radius before overlap
 }
 
 // computeSpiralParams derives spiral geometry from canvas dimensions and bucket count.
-func computeSpiralParams(n, width, height int, resolution Resolution) spiralParams {
-	spotsPerLap := resolution.SpotsPerLap()
+func computeSpiralParams(n, width, height, spotsPerLap int) spiralParams {
 	canvasRadius := math.Min(float64(width), float64(height))/2 - margin
 	outerRadius := canvasRadius
 	innerRadius := outerRadius * innerRadiusFraction
@@ -94,6 +106,7 @@ func computeSpiralParams(n, width, height int, resolution Resolution) spiralPara
 		a:           innerRadius,
 		b:           b,
 		spotsPerLap: spotsPerLap,
+		totalAngle:  totalAngle,
 		maxDisc:     maxDisc,
 	}
 }
@@ -115,42 +128,51 @@ func MaxDiscRadius(
 	height int,
 	resolution Resolution,
 ) float64 {
+	return MaxDiscRadiusWithCadence(bucketCount, width, height, resolution.SpotsPerLap())
+}
+
+// MaxDiscRadiusWithCadence returns the maximum disc radius that avoids overlap
+// for the given layout parameters and spots-per-lap cadence.
+func MaxDiscRadiusWithCadence(
+	bucketCount int,
+	width int,
+	height int,
+	spotsPerLap int,
+) float64 {
 	if bucketCount == 0 {
 		return defaultDiscRadius
 	}
 
-	params := computeSpiralParams(bucketCount, width, height, resolution)
+	params := computeSpiralParams(bucketCount, width, height, spotsPerLap)
 
 	return params.maxDisc
 }
 
 // computeMaxDisc calculates the maximum disc radius that avoids overlap.
 func computeMaxDisc(innerRadius, outerRadius float64, spotsPerLap int, totalAngle float64) float64 {
+	if totalAngle == 0 {
+		maxR := min(innerRadius, outerRadius-innerRadius)
+		maxR = max(0, maxR-borderWidth(maxR)/2)
+
+		return maxR * discRadiusSafetyFactor
+	}
+
 	angularStep := 2 * math.Pi / float64(spotsPerLap)
 	gapAngular := innerRadius * angularStep // arc at inner radius (worst case)
 
-	var gapRadial float64
-	if totalAngle > 0 {
-		gapRadial = (outerRadius - innerRadius) / (totalAngle / (2 * math.Pi))
-	} else {
-		gapRadial = outerRadius - innerRadius
-	}
+	gapRadial := (outerRadius - innerRadius) / (totalAngle / (2 * math.Pi))
 
 	maxR := math.Min(gapAngular, gapRadial) / 2
-	if maxR < defaultDiscRadius {
-		maxR = defaultDiscRadius
-	}
+	maxR = max(0, maxR-borderWidth(maxR)/2)
 
-	return maxR
+	return maxR * discRadiusSafetyFactor
 }
 
-// positionNode places bucket i on the spiral and assigns label visibility.
+// positionNode places bucket i on the spiral.
 func positionNode(
 	i int,
 	bucket TimeBucket,
 	params spiralParams,
-	resolution Resolution,
-	labels LabelMode,
 ) SpiralNode {
 	theta := float64(i) * (2 * math.Pi / float64(params.spotsPerLap))
 	r := params.a + params.b*theta
@@ -158,9 +180,6 @@ func positionNode(
 	// Clockwise from north: x = cx + r*sin(θ), y = cy - r*cos(θ)
 	x := params.centreX + r*math.Sin(theta)
 	y := params.centreY - r*math.Cos(theta)
-
-	showLabel := computeLabelVisibility(i, params.spotsPerLap, labels)
-	label := formatBucketLabel(bucket, resolution)
 
 	return SpiralNode{
 		X:            x,
@@ -170,29 +189,5 @@ func positionNode(
 		SpiralRadius: r,
 		TimeStart:    bucket.Start,
 		TimeEnd:      bucket.End,
-		Label:        label,
-		ShowLabel:    showLabel,
-	}
-}
-
-// computeLabelVisibility determines whether a node at index i should show its label.
-func computeLabelVisibility(i, spotsPerLap int, labels LabelMode) bool {
-	switch labels {
-	case LabelAll:
-		return true
-	case LabelLaps:
-		return i%spotsPerLap == 0
-	default:
-		return false
-	}
-}
-
-// formatBucketLabel generates a human-readable label for a time bucket.
-func formatBucketLabel(bucket TimeBucket, resolution Resolution) string {
-	switch resolution {
-	case Hourly:
-		return bucket.Start.Format("3pm")
-	default:
-		return bucket.Start.Format("Jan 2")
 	}
 }

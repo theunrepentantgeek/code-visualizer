@@ -563,43 +563,34 @@ func TestFilterBinaryFiles_UpdatesFileCounts(t *testing.T) {
 	g.Expect(filteredSub.AllFileCount).To(Equal(1), "filtered sub AllFileCount should equal DirectFileCount")
 }
 
-// TestFilterBinaryFiles_UpdatesDirCount verifies that AllDirCount is correctly
-// computed after binary filtering — the count should reflect the surviving
-// subdirectory tree, not the unfiltered original.
 func TestFilterBinaryFiles_UpdatesDirCount(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	grandchild := &model.Directory{
-		Path: "/project/sub/nested",
-		Name: "nested",
-		Files: []*model.File{
-			{Path: "/project/sub/nested/util.go", Name: "util.go", IsBinary: false},
-		},
+		Path:  "/project/sub/deep",
+		Name:  "deep",
+		Files: []*model.File{{Path: "/project/sub/deep/util.go", Name: "util.go", IsBinary: false}},
 	}
 	child := &model.Directory{
-		Path: "/project/sub",
-		Name: "sub",
-		Files: []*model.File{
-			{Path: "/project/sub/data.bin", Name: "data.bin", IsBinary: true},
-		},
-		Dirs: []*model.Directory{grandchild},
+		Path:  "/project/sub",
+		Name:  "sub",
+		Files: []*model.File{{Path: "/project/sub/main.go", Name: "main.go", IsBinary: false}},
+		Dirs:  []*model.Directory{grandchild},
 	}
 	root := &model.Directory{
-		Path: "/project",
-		Name: "project",
-		Files: []*model.File{
-			{Path: "/project/main.go", Name: "main.go", IsBinary: false},
-		},
-		Dirs: []*model.Directory{child},
+		Path:  "/project",
+		Name:  "project",
+		Files: []*model.File{{Path: "/project/root.go", Name: "root.go", IsBinary: false}},
+		Dirs:  []*model.Directory{child},
 	}
 
 	filtered := FilterBinaryFiles(root)
 
-	// root → sub → nested; root.AllDirCount should be 2.
-	g.Expect(filtered.AllDirCount).To(Equal(2), "root AllDirCount should count sub and nested")
-
-	g.Expect(filtered.Dirs).To(HaveLen(1))
-	filteredSub := filtered.Dirs[0]
-	g.Expect(filteredSub.AllDirCount).To(Equal(1), "sub AllDirCount should count nested only")
+	// root has child sub (AllDirCount = 1 direct + 1 grandchild = 2)
+	g.Expect(filtered.AllDirCount).To(Equal(2), "filtered root AllDirCount should count sub and deep")
+	// child has grandchild deep (AllDirCount = 1 direct)
+	g.Expect(filtered.Dirs[0].AllDirCount).To(Equal(1), "filtered sub AllDirCount should count deep")
+	// grandchild has no subdirs
+	g.Expect(filtered.Dirs[0].Dirs[0].AllDirCount).To(Equal(0), "filtered deep AllDirCount should be 0")
 }

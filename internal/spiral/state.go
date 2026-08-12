@@ -1,6 +1,7 @@
 package spiral
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -19,11 +20,12 @@ type State struct {
 	SurfaceMetric  metric.Name
 	SurfacePalette palette.PaletteName
 	Resolution     Resolution
-	Labels         LabelMode
+	SpotsPerLap    int
 
 	Buckets      []TimeBucket
 	Inks         Inks
 	SurfaceInk   inks.Ink
 	Layout       SpiralLayout
+	DiscLabels   []canvas.BlockLabel
 	LegendConfig *legend.Config
 }

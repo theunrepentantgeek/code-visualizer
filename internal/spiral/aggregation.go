@@ -30,16 +30,17 @@ func aggregateBucket(
 	sizeMetric, fillMetric, borderMetric, surfaceMetric metric.Name,
 ) {
 	if sizeMetric != "" {
-		b.SizeValue = bucketNumericValue(b.Files, sizeMetric)
+		b.SizeValue, b.SizeValueAvailable = bucketNumericMetricValue(b.Files, sizeMetric)
 	} else {
 		b.SizeValue = float64(len(b.Files))
+		b.SizeValueAvailable = true
 	}
 
-	aggregateColourMetric(b.Files, fillMetric, requested, &b.FillValue, &b.FillLabel)
-	aggregateColourMetric(b.Files, borderMetric, requested, &b.BorderValue, &b.BorderLabel)
+	aggregateColourMetric(b.Files, fillMetric, requested, &b.FillValue, &b.FillValueAvailable, &b.FillLabel)
+	aggregateColourMetric(b.Files, borderMetric, requested, &b.BorderValue, &b.BorderValueAvailable, &b.BorderLabel)
 
 	if surfaceMetric != "" {
-		b.SurfaceValue = bucketNumericValue(b.Files, surfaceMetric)
+		b.SurfaceValue, b.SurfaceValueAvailable = bucketNumericMetricValue(b.Files, surfaceMetric)
 	}
 }
 
@@ -48,6 +49,7 @@ func aggregateColourMetric(
 	m metric.Name,
 	requested stages.RequestedMetrics,
 	numVal *float64,
+	numAvailable *bool,
 	catLabel *string,
 ) {
 	if m == "" {
@@ -60,7 +62,7 @@ func aggregateColourMetric(
 	}
 
 	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
-		*numVal = bucketNumericValue(files, m)
+		*numVal, *numAvailable = bucketNumericMetricValue(files, m)
 	} else {
 		*catLabel = modeCategory(files, m)
 	}
@@ -72,17 +74,26 @@ func aggregateColourMetric(
 // represents one commit, so summing per-file lifetime totals would be wrong.
 // For all other numeric metrics, values are summed across unique files.
 func bucketNumericValue(files []*model.File, m metric.Name) float64 {
+	value, _ := bucketNumericMetricValue(files, m)
+
+	return value
+}
+
+func bucketNumericMetricValue(files []*model.File, m metric.Name) (float64, bool) {
 	if m == commitCountMetric {
-		return float64(len(files))
+		return float64(len(files)), true
 	}
 
 	return sumUniqueNumericMetric(files, m)
 }
 
-func sumUniqueNumericMetric(files []*model.File, m metric.Name) float64 {
+func sumUniqueNumericMetric(files []*model.File, m metric.Name) (float64, bool) {
 	seen := map[*model.File]bool{}
 
-	var total float64
+	var (
+		total     float64
+		available bool
+	)
 
 	for _, f := range files {
 		if seen[f] {
@@ -93,16 +104,18 @@ func sumUniqueNumericMetric(files []*model.File, m metric.Name) float64 {
 
 		if v, ok := f.Quantity(m); ok {
 			total += float64(v)
+			available = true
 
 			continue
 		}
 
 		if v, ok := f.Measure(m); ok {
 			total += v
+			available = true
 		}
 	}
 
-	return total
+	return total, available
 }
 
 func modeCategory(files []*model.File, m metric.Name) string {

@@ -332,7 +332,8 @@ func ContentOffsetV(data *model.LegendData) float64 {
 	return max(0, offset)
 }
 
-// MeasureLabelSample returns the width and height for a label sample square.
+// MeasureLabelSample returns equal width and height for a square or circular
+// label sample.
 func MeasureLabelSample(sample *model.LegendLabelSample) (width, height float64) {
 	return measureLabelSampleImpl(NewBasicMeasurer(), sample)
 }

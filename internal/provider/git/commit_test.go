@@ -1,9 +1,12 @@
 package git
 
 import (
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 func TestBulkCommitHistory_ReturnsCommitsForTrackedFiles(t *testing.T) {
@@ -75,4 +78,204 @@ func TestBulkCommitHistory_InvokesProgressCallback(t *testing.T) {
 	_, err := BulkCommitHistory(dir, tracked, func() { count++ })
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(count).To(BeNumerically(">=", 1))
+}
+
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestBulkCommitHistoryAndPrewarm_PreservesHistoryAndWarmsCache(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	tracked := map[string]bool{"shared.go": true}
+
+	resetService()
+
+	historyOnly, err := BulkCommitHistory(dir, tracked, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	resetService()
+
+	historyAndPrewarm, err := BulkCommitHistoryAndPrewarm(dir, tracked, []metric.Name{CommitCount}, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(historyAndPrewarm).To(Equal(historyOnly))
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	g.Expect(s.cachedCommitData("shared.go")).NotTo(BeNil())
+}
+
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestBulkCommitHistoryAndPrewarm_ReturnsHistoryAndWarmsCommitCount(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	tracked := map[string]bool{"shared.go": true}
+
+	resetService()
+
+	commits, err := BulkCommitHistoryAndPrewarm(dir, tracked, []metric.Name{CommitCount}, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(commits).To(HaveLen(2))
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	cached := s.cachedCommitData("shared.go")
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
+
+	g.Expect(cached.count).To(Equal(int64(2)))
+	g.Expect(cached.hasLineStats).To(BeFalse())
+}
+
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestBulkCommitHistoryAndPrewarm_WarmsEquivalentChurnData(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	dir := setupDiffRepo(t)
+
+	resetService()
+
+	_, err := BulkCommitHistoryAndPrewarm(
+		dir,
+		map[string]bool{"churn.go": true},
+		[]metric.Name{TotalLinesAdded, TotalLinesRemoved},
+		nil,
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	cached := s.cachedCommitData("churn.go")
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
+
+	expected, err := s.fetchCommitData("churn.go")
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if expected == nil {
+		t.Fatal("expected direct commit data")
+	}
+
+	g.Expect(cached.hasLineStats).To(BeTrue())
+	g.Expect(cached.linesAdded).To(Equal(expected.linesAdded))
+	g.Expect(cached.linesRemoved).To(Equal(expected.linesRemoved))
+	g.Expect(cached.linesAdded).To(Equal(int64(3)))
+	g.Expect(cached.linesRemoved).To(Equal(int64(1)))
+}
+
+func TestNormalizeTrackedPaths_UsesNativeSeparators(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	normalized := normalizeTrackedPaths(map[string]bool{
+		"subdir" + string(filepath.Separator) + "code.go": true,
+	})
+
+	g.Expect(normalized).To(HaveKey("subdir/code.go"))
+}
+
+func TestNormalizeTrackedPaths_PreservesBackslashesInPOSIXFilenames(t *testing.T) {
+	t.Parallel()
+
+	if filepath.Separator == '\\' {
+		t.Skip("backslash is a path separator on Windows")
+	}
+
+	g := NewGomegaWithT(t)
+	path := `legal\filename.go`
+
+	normalized := normalizeTrackedPaths(map[string]bool{path: true})
+
+	g.Expect(normalized).To(HaveKey(path))
+	g.Expect(normalized).NotTo(HaveKey("legal/filename.go"))
+}
+
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestLoadGitMetrics_ReusesCombinedPrewarmCache(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+	tracked := map[string]bool{"shared.go": true}
+
+	resetService()
+
+	_, err := BulkCommitHistoryAndPrewarm(dir, tracked, []metric.Name{CommitCount}, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	cached := s.cachedCommitData("shared.go")
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
+
+	root := buildTree(dir, "shared.go")
+	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
+	g.Expect(s.cachedCommitData("shared.go")).To(BeIdenticalTo(cached))
+
+	count, ok := root.Files[0].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(2)))
+}
+
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestLoadGitMetrics_ReusesCombinedPrewarmCacheForSubdirectoryTarget(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	subdir := setupSubdirRepo(t)
+	trackedPath := filepath.ToSlash(filepath.Join(filepath.Base(subdir), "code.go"))
+
+	resetService()
+
+	repoRoot, err := RepoRootFor(subdir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	s, err := getService(subdir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	_, err = BulkCommitHistoryAndPrewarm(
+		repoRoot,
+		map[string]bool{trackedPath: true},
+		[]metric.Name{CommitCount},
+		nil,
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	cached := s.cachedCommitData(trackedPath)
+	if cached == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
+
+	root := buildTree(subdir, "code.go")
+	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
+	g.Expect(s.cachedCommitData(trackedPath)).To(BeIdenticalTo(cached))
+
+	count, ok := root.Files[0].Quantity(CommitCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(1)))
 }

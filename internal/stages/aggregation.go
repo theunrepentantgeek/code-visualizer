@@ -48,6 +48,10 @@ func computeOneAggregation(root *model.Directory, resolved provider.ResolvedMetr
 	}
 }
 
+// aggregateDirectory computes the aggregated metric value for dir by walking
+// ALL descendant files directly (source-grounded). It does NOT aggregate from
+// child directory values, which avoids the aggregate-of-aggregates problem for
+// derived metrics such as ratios. See also: issue #551.
 func aggregateDirectory(dir *model.Directory, resolved provider.ResolvedMetric) error {
 	for _, child := range dir.Dirs {
 		if err := aggregateDirectory(child, resolved); err != nil {

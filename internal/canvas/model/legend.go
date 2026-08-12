@@ -48,9 +48,21 @@ type LegendData struct {
 	Entries     []LegendEntryData
 }
 
+// LegendLabelSampleShape specifies the backing shape for a legend label sample.
+type LegendLabelSampleShape int
+
+const (
+	// LegendLabelSampleSquare renders the label sample in a square.
+	LegendLabelSampleSquare LegendLabelSampleShape = iota
+	// LegendLabelSampleCircle renders the label sample in a circle.
+	LegendLabelSampleCircle
+)
+
 // LegendLabelSample describes the multi-line label preview rendered
 // before legend entries when a visualization displays inline shape labels.
 type LegendLabelSample struct {
+	// Shape defaults to LegendLabelSampleSquare for backwards compatibility.
+	Shape LegendLabelSampleShape
 	Lines []string
 }
 

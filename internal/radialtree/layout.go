@@ -190,8 +190,26 @@ func layoutDir(
 	childRadius := float64(depth+1) * opts.ringSpacing
 	fileSweep := contentSweep / float64(allocationUnits)
 
-	// Files first: each file occupies one allocation unit of the padded sweep.
-	for _, f := range visibleFiles(dir, opts.grain) {
+	// Pre-allocate with the exact child count to avoid incremental slice growth.
+	files := visibleFiles(dir, opts.grain)
+	node.Children = make([]RadialNode, 0, len(files)+len(dir.Dirs))
+
+	childStart = layoutFiles(&node, files, childRadius, childStart, fileSweep, opts)
+	layoutSubdirs(&node, dir.Dirs, depth, childStart, contentSweep, allocationUnits, opts)
+
+	return node
+}
+
+// layoutFiles appends the file children of a directory to node, placing each
+// file at one allocation unit of the padded sweep starting at childStart.
+// It returns the angle immediately after the last placed file.
+func layoutFiles(
+	node *RadialNode,
+	files []*model.File,
+	childRadius, childStart, fileSweep float64,
+	opts layoutOptions,
+) float64 {
+	for _, f := range files {
 		childAngle := childStart + fileSweep/2
 
 		fileNode := RadialNode{
@@ -208,17 +226,27 @@ func layoutDir(
 		childStart += fileSweep
 	}
 
-	// Subdirs: each gets a proportional slice of the padded sweep based on its
-	// file-leaf weight, with empty directories still reserving one unit.
-	for _, d := range dir.Dirs {
+	return childStart
+}
+
+// layoutSubdirs appends the subdirectory children of a directory to node,
+// each gets a proportional slice of contentSweep based on its file-leaf
+// weight, with empty directories still reserving one allocation unit.
+func layoutSubdirs(
+	node *RadialNode,
+	dirs []*model.Directory,
+	depth int,
+	childStart, contentSweep float64,
+	allocationUnits int,
+	opts layoutOptions,
+) {
+	for _, d := range dirs {
 		weight := childWeight(d, opts.grain)
 		childSweep := float64(weight) / float64(allocationUnits) * contentSweep
 		child := layoutDir(d, depth+1, childStart, childSweep, opts)
 		node.Children = append(node.Children, child)
 		childStart += childSweep
 	}
-
-	return node
 }
 
 // fileDiscRadius returns the disc pixel radius for f, scaled by the disc metric.
