@@ -43,6 +43,9 @@ type AuthorshipParams struct {
 	// receive distinct colours in identity-metric legends; contributors beyond
 	// this rank are bucketed into OtherContributor. Default: 11.
 	IdentityTopK int
+	// HonorMailmap, when true, normalises author email and name through the
+	// repository's .mailmap file before aggregating contributions. Default: true.
+	HonorMailmap bool
 }
 
 // DefaultAuthorshipParams returns AuthorshipParams with the defaults from the
@@ -55,6 +58,7 @@ func DefaultAuthorshipParams() AuthorshipParams {
 		SignificantShareThreshold: 0.10,
 		BusFactorThreshold:        0.50,
 		IdentityTopK:              11,
+		HonorMailmap:              true,
 	}
 }
 
@@ -346,8 +350,11 @@ func knowledgeHandoff(
 
 	recentFrom := headDate.AddDate(0, 0, -recentWindowDays)
 
-	// No meaningful split when the early window covers the recent window.
-	if !cutoff.Before(recentFrom) {
+	// No meaningful split when the early window strictly overlaps the recent
+	// window (cutoff > recentFrom). When they are exactly equal, the boundary
+	// is shared and contributions at that instant fall into both windows, which
+	// is a valid computable state — do not short-circuit.
+	if cutoff.After(recentFrom) {
 		return 0
 	}
 
