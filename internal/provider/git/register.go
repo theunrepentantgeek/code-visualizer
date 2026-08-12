@@ -8,10 +8,19 @@ import (
 func Register() {
 	RegisterBase()
 
+	// Existing single-pass file-metadata loader.
 	loader := &metricsLoader{}
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics:  fileMetricNames,
 		Load:     loader.Load,
 		Reporter: loader,
+	})
+
+	// Authorship loader: separate BulkAuthorHistory walk for the nine
+	// authorship metrics.
+	al := newAuthorshipLoader()
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: authorshipMetricNames,
+		Load:    al.Load,
 	})
 }

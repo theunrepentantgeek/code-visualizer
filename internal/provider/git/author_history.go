@@ -9,16 +9,27 @@ import (
 	"github.com/rotisserie/eris"
 )
 
+// ContributionPoint records the contribution of one author in a single commit
+// that touched a particular file.  Slices of these are retained on AuthorRecord
+// so that window-based authorship metrics (initial-developer, current-maintainer,
+// orphan-risk, knowledge-handoff) can filter contributions by calendar time.
+type ContributionPoint struct {
+	When    time.Time
+	Added   int64
+	Removed int64
+}
+
 // AuthorRecord holds one author's aggregate contribution to a single file.
 // Contribution weight Wa = Added + Removed (removals count equally; rewards
 // improving/deleting code, not just adding volume).
 type AuthorRecord struct {
-	Email     string
-	Name      string
-	Added     int64
-	Removed   int64
-	FirstSeen time.Time // earliest commit by this author touching this file
-	LastSeen  time.Time // most recent commit by this author touching this file
+	Email         string
+	Name          string
+	Added         int64
+	Removed       int64
+	FirstSeen     time.Time           // earliest commit by this author touching this file
+	LastSeen      time.Time           // most recent commit by this author touching this file
+	Contributions []ContributionPoint // per-commit records for window-based metric calculations
 }
 
 type fileDiffStats struct {
@@ -82,11 +93,12 @@ func BulkAuthorHistory(
 
 	// per-file accumulator: path → (authorEmail → *authorAccum)
 	type authorAccum struct {
-		name      string
-		added     int64
-		removed   int64
-		firstSeen time.Time
-		lastSeen  time.Time
+		name          string
+		added         int64
+		removed       int64
+		firstSeen     time.Time
+		lastSeen      time.Time
+		contributions []ContributionPoint
 	}
 
 	fileAccum := make(map[string]map[string]*authorAccum)
@@ -137,13 +149,23 @@ func BulkAuthorHistory(
 			}
 
 			// Count line contributions.
+			var lineAdded, lineRemoved int64
+
 			if c.NumParents() == 0 {
 				// Root commit: credit lines in the file at this point.
-				accum.added += linesInBlob(c, path)
+				lineAdded = linesInBlob(c, path)
 			} else if stats, ok := lineStats[path]; ok {
-				accum.added += stats.added
-				accum.removed += stats.removed
+				lineAdded = stats.added
+				lineRemoved = stats.removed
 			}
+
+			accum.added += lineAdded
+			accum.removed += lineRemoved
+			accum.contributions = append(accum.contributions, ContributionPoint{
+				When:    when,
+				Added:   lineAdded,
+				Removed: lineRemoved,
+			})
 
 			// Update time windows.
 			if accum.firstSeen.IsZero() || when.Before(accum.firstSeen) {
@@ -169,12 +191,13 @@ func BulkAuthorHistory(
 
 		for email, accum := range authors {
 			records = append(records, AuthorRecord{
-				Email:     email,
-				Name:      accum.name,
-				Added:     accum.added,
-				Removed:   accum.removed,
-				FirstSeen: accum.firstSeen,
-				LastSeen:  accum.lastSeen,
+				Email:         email,
+				Name:          accum.name,
+				Added:         accum.added,
+				Removed:       accum.removed,
+				FirstSeen:     accum.firstSeen,
+				LastSeen:      accum.lastSeen,
+				Contributions: accum.contributions,
 			})
 		}
 

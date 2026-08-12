@@ -53,6 +53,11 @@ type Config struct {
 	// See SelectionMetric for the full type, and SelectionMetricsList for an ordered slice view.
 	SelectionMetrics selectionMetricsRaw `yaml:"selectionMetrics,omitempty" json:"selectionMetrics,omitempty"`
 
+	// Authorship configures the thresholds for the authorship metric family
+	// (issue #550). All fields are optional; defaults are applied by the
+	// metric computation layer.
+	Authorship *AuthorshipConfig `yaml:"authorship,omitempty" json:"authorship,omitempty"`
+
 	// Source is the path of the config file from which this Config was loaded, or nil if it was not loaded from a file.
 	Source *string `yaml:"-" json:"-"`
 }
@@ -166,6 +171,7 @@ func (c *Config) ForExport(vizName string) *Config {
 		ImageSize:  c.ImageSize,
 		Legend:     c.Legend,
 		FileFilter: c.FileFilter,
+		Authorship: c.Authorship,
 		Source:     c.Source,
 	}
 
