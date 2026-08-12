@@ -903,3 +903,87 @@ func fileSizeMeasureResolved(agg metric.AggregationName, resultName metric.Name)
 		NeedsAggregation: true,
 	}
 }
+
+func TestComputeAggregations_UnsupportedSourceLevel(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{fileWithQuantity("a.go", 100)},
+	}
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{Base: "file-size", Aggregation: metric.AggSum},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "file-size",
+			Kind:  metric.Quantity,
+			Level: metric.MetricLevel(99),
+		},
+		SourceLevel:      metric.MetricLevel(99),
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "file-size.sum",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(MatchError(ContainSubstring("aggregation of")))
+	g.Expect(err).To(MatchError(ContainSubstring("is not supported")))
+}
+
+func TestComputeAggregations_UnsupportedDescriptorKind(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{fileWithQuantity("a.go", 100)},
+	}
+	root.AllFileCount = 1
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{Base: "file-size", Aggregation: metric.AggSum},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "file-size",
+			Kind:  metric.Kind(99),
+			Level: metric.LevelFile,
+		},
+		SourceLevel:      metric.LevelFile,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "file-size.sum",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(MatchError(ContainSubstring("unsupported source kind")))
+}
+
+func TestComputeAggregations_UnsupportedNumericAggregation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{fileWithQuantity("a.go", 100)},
+	}
+	root.AllFileCount = 1
+
+	resolved := provider.ResolvedMetric{
+		Expression: metric.MetricExpression{Base: "file-size", Aggregation: metric.AggregationName("unsupported")},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "file-size",
+			Kind:  metric.Quantity,
+			Level: metric.LevelFile,
+		},
+		SourceLevel:      metric.LevelFile,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "file-size.unsupported",
+		NeedsAggregation: true,
+	}
+
+	err := stages.ComputeAggregations(root, []provider.ResolvedMetric{resolved})
+	g.Expect(err).To(MatchError(ContainSubstring(`numeric aggregation "unsupported" is unsupported`)))
+}
