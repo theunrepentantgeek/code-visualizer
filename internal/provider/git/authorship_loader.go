@@ -36,7 +36,7 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 	repoRoot := s.RepoRoot()
 	pathSet := buildRelPathSet(s, root)
 
-	result, err := BulkAuthorHistory(repoRoot, pathSet, nil)
+	result, err := BulkAuthorHistory(repoRoot, pathSet, al.params.HonorMailmap, nil)
 	if err != nil {
 		return eris.Wrap(err, "authorship loader failed to walk git history")
 	}
@@ -83,9 +83,9 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 // metricNode is satisfied by both *model.File and *model.Directory because
 // both embed model.MetricContainer.
 type metricNode interface {
-	SetQuantity(metric.Name, int64)
-	SetMeasure(metric.Name, float64)
-	SetClassification(metric.Name, string)
+	SetQuantity(name metric.Name, value int64)
+	SetMeasure(name metric.Name, value float64)
+	SetClassification(name metric.Name, value string)
 }
 
 // applyAuthorshipToNode computes and stores all nine authorship metrics on node.
@@ -97,7 +97,8 @@ func applyAuthorshipToNode(
 ) {
 	node.SetClassification(CodeOwnerMetric, codeOwner(records))
 	node.SetClassification(InitialDeveloperMetric, initialDeveloper(records, params.EarlyWindowFraction))
-	node.SetClassification(CurrentMaintainerMetric, currentMaintainer(records, result.HeadDate, params.RecentWindowDays))
+	node.SetClassification(CurrentMaintainerMetric,
+		currentMaintainer(records, result.HeadDate, params.RecentWindowDays))
 
 	node.SetQuantity(SignificantContributorCountMetric, significantContributorCount(records, params.SignificantShareThreshold))
 	node.SetQuantity(BusFactorMetric, busFactor(records, params.BusFactorThreshold))

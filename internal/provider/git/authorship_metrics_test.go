@@ -104,6 +104,7 @@ func TestDefaultAuthorshipParams(t *testing.T) {
 	g.Expect(p.SignificantShareThreshold).To(BeNumerically("~", 0.10, 1e-9))
 	g.Expect(p.BusFactorThreshold).To(BeNumerically("~", 0.50, 1e-9))
 	g.Expect(p.IdentityTopK).To(Equal(11))
+	g.Expect(p.HonorMailmap).To(BeTrue())
 }
 
 func TestSortedShares_TieBreakByFirstSeen(t *testing.T) {
@@ -204,6 +205,31 @@ func TestKnowledgeHandoff_YoungNode_Is0(t *testing.T) {
 
 	g.Expect(knowledgeHandoff([]AuthorRecord{alice, bob}, head, 365, 0.25)).
 		To(BeNumerically("~", 0.0, 1e-9))
+}
+
+// TestKnowledgeHandoff_EqualCutoffIsComputable verifies that when the early
+// window cutoff equals the recent window start (boundary case), the function
+// computes a result rather than returning 0 via the short-circuit guard.
+// Alice contributed only in the early window; Bob only in the recent window.
+// Bob is 100% of the recent window and has no early contributions → handoff = 1.
+func TestKnowledgeHandoff_EqualCutoffIsComputable(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// oldest = 2024-01-01, newest = 2024-01-21 → lifetime = 20 days
+	// earlyFraction = 0.5 → cutoff = oldest + 10d = 2024-01-11
+	// recentWindowDays = 10 → recentFrom = head(2024-01-21) - 10d = 2024-01-11
+	// → cutoff == recentFrom: equal-boundary case; must NOT short-circuit.
+	//
+	// Alice's contribution (2024-01-01) is early-only (not in recent window).
+	// Bob's contribution (2024-01-21) is recent-only (not in early window).
+	// newWeight = Bob's weight = 50; recentTotal = 50 → handoff = 1.0.
+	head := mustTime("2024-01-21T00:00:00Z")
+	alice := recFrom("alice@x.com", "Alice", []ContributionPoint{cpAt("2024-01-01T00:00:00Z", 50, 0)})
+	bob := recFrom("bob@x.com", "Bob", []ContributionPoint{cpAt("2024-01-21T00:00:00Z", 50, 0)})
+
+	result := knowledgeHandoff([]AuthorRecord{alice, bob}, head, 10, 0.5)
+	g.Expect(result).To(BeNumerically("~", 1.0, 1e-9))
 }
 
 func TestCollectSubtreeRecords_MergesAcrossFiles(t *testing.T) {

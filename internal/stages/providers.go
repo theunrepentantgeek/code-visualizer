@@ -74,6 +74,9 @@ func authorshipParams(cfg *config.Config) git.AuthorshipParams {
 	if authorship.IdentityTopK != nil {
 		params.IdentityTopK = *authorship.IdentityTopK
 	}
+	if authorship.HonorMailmap != nil {
+		params.HonorMailmap = *authorship.HonorMailmap
+	}
 
 	return params
 }

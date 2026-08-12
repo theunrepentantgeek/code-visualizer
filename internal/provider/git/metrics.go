@@ -24,7 +24,7 @@ const (
 	LinesRemoved metric.Name = "lines-removed"
 	LinesChanged metric.Name = "lines-changed"
 
-	// Authorship metrics (issue #550) ─────────────────────────────────────
+	// Authorship metrics (issue #550).
 
 	// InitialDeveloperMetric (Classification) is the greatest-weight author
 	// within the early window (first earlyWindowFraction of the node's life).
@@ -94,18 +94,7 @@ func IsAuthorshipMetric(name metric.Name) bool {
 
 // IsGitMetric reports whether name is a metric that requires a git repository.
 func IsGitMetric(name metric.Name) bool {
-	switch name {
-	case FileAge, FileFreshness, AuthorCount, CommitCount,
-		TotalLinesAdded, TotalLinesRemoved, CommitDensity:
-		return true
-	case InitialDeveloperMetric, CurrentMaintainerMetric, CodeOwnerMetric,
-		SignificantContributorCountMetric, BusFactorMetric,
-		OwnershipDominanceMetric, ContributorEntropyMetric,
-		OrphanRiskMetric, KnowledgeHandoffMetric:
-		return true
-	default:
-		return false
-	}
+	return slices.Contains(fileMetricNames, name) || IsAuthorshipMetric(name)
 }
 
 // buildRelPathSet returns the set of relative paths (relative to the git

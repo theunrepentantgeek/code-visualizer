@@ -73,6 +73,7 @@ type AuthorHistoryResult struct {
 func BulkAuthorHistory(
 	repoPath string,
 	filePaths map[string]bool,
+	honorMailmap bool,
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
 	s, err := getService(repoPath)
@@ -91,6 +92,11 @@ func BulkAuthorHistory(
 	}
 	defer iter.Close()
 
+	var mm mailmap
+	if honorMailmap {
+		mm = loadMailmap(s.RepoRoot())
+	}
+
 	// per-file accumulator: path → (authorEmail → *authorAccum)
 	type authorAccum struct {
 		name          string
@@ -107,8 +113,7 @@ func BulkAuthorHistory(
 
 	err = iter.ForEach(func(c *object.Commit) error {
 		when := c.Author.When
-		email := c.Author.Email
-		name := c.Author.Name
+		email, name := mm.apply(c.Author.Email, c.Author.Name)
 
 		// HEAD date is the very first commit we see (log is reverse-chronological).
 		if headDate.IsZero() {

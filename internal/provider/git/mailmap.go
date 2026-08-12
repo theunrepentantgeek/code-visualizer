@@ -2,13 +2,13 @@ package git
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// mailmapEntry maps an old (email, name) pair to canonical (email, name).
-// Both fields may be empty to mean "keep original".
+// mailmapEntry maps an old email to canonical (email, name).
 type mailmapEntry struct {
 	properEmail string
 	properName  string
@@ -36,19 +36,16 @@ func loadMailmap(repoRoot string) mailmap {
 // parseMailmap parses a .mailmap reader into a lookup table keyed by old email.
 // Supported line forms (# comments and blank lines are skipped):
 //
-//	Proper Name <proper@email.com>                        — rename; keep old email
-//	<proper@email.com> <old@email.com>                    — re-email; keep name
-//	Proper Name <proper@email.com> <old@email.com>        — rename + re-email by old email
-//	Proper Name <proper@email.com> Old Name <old@email.com> — rename + re-email by old email+name
+//	Proper Name <proper@email.com>                          — rename; key = proper email
+//	<proper@email.com> <old@email.com>                      — re-email; keep name
+//	Proper Name <proper@email.com> <old@email.com>          — rename + re-email by old email
+//	Proper Name <proper@email.com> Old Name <old@email.com> — rename + re-email by old email
 //
-// Only old-email keying is implemented (old-name matching is not needed for
-// the authorship metric use-case and is expensive to maintain separately).
-func parseMailmap(r interface{ Read([]byte) (int, error) }) mailmap {
+// Only old-email keying is implemented; old-name disambiguation is not needed
+// for the authorship metric use-case.
+func parseMailmap(r io.Reader) mailmap {
 	mm := mailmap{}
-
-	sc := bufio.NewScanner(r.(interface {
-		Read([]byte) (int, error)
-	}))
+	sc := bufio.NewScanner(r)
 
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
@@ -62,7 +59,7 @@ func parseMailmap(r interface{ Read([]byte) (int, error) }) mailmap {
 		}
 
 		properName, properEmail, oldEmail := parseMailmapLine(line)
-		if oldEmail == "" && properEmail == "" {
+		if properEmail == "" {
 			continue
 		}
 
@@ -71,9 +68,7 @@ func parseMailmap(r interface{ Read([]byte) (int, error) }) mailmap {
 			key = properEmail
 		}
 
-		key = strings.ToLower(key)
-
-		mm[key] = mailmapEntry{
+		mm[strings.ToLower(key)] = mailmapEntry{
 			properEmail: properEmail,
 			properName:  properName,
 		}
@@ -83,40 +78,28 @@ func parseMailmap(r interface{ Read([]byte) (int, error) }) mailmap {
 }
 
 // parseMailmapLine extracts (properName, properEmail, oldEmail) from one line.
-// oldEmail is empty when the line only specifies a proper identity (no old email).
+// oldEmail is empty when the line only specifies a proper identity with no
+// explicit old-email override.
 func parseMailmapLine(line string) (properName, properEmail, oldEmail string) {
-	// Each <...> is an email field. The line has 1 or 2 angle-bracket groups.
-	emails, remainder := extractEmails(line)
+	emails, _ := extractEmails(line)
 
 	switch len(emails) {
 	case 1:
-		// Form: "Proper Name <proper@email>" — only proper email, no old email.
+		// "Proper Name <proper@email>" — proper email only; key = proper email.
 		properEmail = emails[0]
-		properName = strings.TrimSpace(remainder)
+		properName = strings.TrimSpace(textBefore(line, "<"))
 	case 2:
-		// Could be:
-		//   "<proper@email> <old@email>"
-		//   "Proper Name <proper@email> <old@email>"
-		//   "Proper Name <proper@email> Old Name <old@email>"
-		//
-		// emails[0] is always the PROPER email (leftmost <...>).
-		// emails[1] is always the OLD email (rightmost <...>).
+		// "<proper@email> <old@email>" or "Name <proper@email> <old@email>" or
+		// "Name <proper@email> OldName <old@email>".
 		properEmail = emails[0]
 		oldEmail = emails[1]
-
-		// The remainder (text between/around the angle brackets) may contain
-		// the proper name (before the first <...>) and an old name (between
-		// the two <...> groups), both of which we ignore for old-email keying.
 		properName = strings.TrimSpace(textBefore(line, "<"))
-	default:
-		// Malformed or unsupported; skip.
 	}
 
 	return
 }
 
-// extractEmails returns all <...> contents found in line (in order) and the
-// line with those angle-bracket groups removed.
+// extractEmails returns all <...> contents found in line (in order).
 func extractEmails(line string) (emails []string, remainder string) {
 	rest := line
 
@@ -134,8 +117,7 @@ func extractEmails(line string) (emails []string, remainder string) {
 		}
 
 		remainder += rest[:open]
-		email := rest[open+1 : open+close]
-		emails = append(emails, strings.TrimSpace(email))
+		emails = append(emails, strings.TrimSpace(rest[open+1:open+close]))
 		rest = rest[open+close+1:]
 	}
 
@@ -144,17 +126,15 @@ func extractEmails(line string) (emails []string, remainder string) {
 
 // textBefore returns the text in s before the first occurrence of sep.
 func textBefore(s, sep string) string {
-	idx := strings.Index(s, sep)
-	if idx < 0 {
-		return s
+	if idx := strings.Index(s, sep); idx >= 0 {
+		return s[:idx]
 	}
 
-	return s[:idx]
+	return s
 }
 
 // apply returns the canonical (email, name) for (oldEmail, oldName) by
-// looking up oldEmail in the map. If no entry is found, the originals
-// are returned unchanged.
+// looking up oldEmail in the map. Originals are returned when no entry exists.
 func (mm mailmap) apply(email, name string) (string, string) {
 	if len(mm) == 0 {
 		return email, name
