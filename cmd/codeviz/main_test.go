@@ -115,8 +115,12 @@ func TestCLI_ParsesRadialFileAndFolderMetricFlags(t *testing.T) {
 	g.Expect(cli.RadialTree.FileFill).To(Equal(config.MetricSpec{Metric: "file-type", Palette: "categorization"}))
 	g.Expect(cli.RadialTree.FileBorder).To(Equal(config.MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
 	g.Expect(cli.RadialTree.FolderDiscSize).To(Equal(metric.Name("file-size.sum")))
-	g.Expect(cli.RadialTree.FolderFill).To(Equal(config.MetricSpec{Metric: "file-type.mode", Palette: "categorization"}))
-	g.Expect(cli.RadialTree.FolderBorder).To(Equal(config.MetricSpec{Metric: "file-freshness.mean", Palette: "good-bad"}))
+	g.Expect(cli.RadialTree.FolderFill).To(Equal(config.MetricSpec{
+		Metric: "file-type.mode", Palette: "categorization",
+	}))
+	g.Expect(cli.RadialTree.FolderBorder).To(Equal(config.MetricSpec{
+		Metric: "file-freshness.mean", Palette: "good-bad",
+	}))
 }
 
 func TestCLI_SpiralLabelsFlagIsUnknown(t *testing.T) {
