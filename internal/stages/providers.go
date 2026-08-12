@@ -5,6 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
 
@@ -12,7 +13,7 @@ import (
 func RunProviders(c *CommonState) error {
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags)
+	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
 	defer stopMetricTicker()
 
 	return eris.Wrap(

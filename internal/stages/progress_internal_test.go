@@ -21,7 +21,7 @@ func TestLogMetricProgress_LogsAggregateLoadedObservations(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
 	defer slog.SetDefault(oldDefault)
 
-	tracker := &metricProgressTracker{}
+	tracker := &metricProgressTracker{total: 4}
 	tracker.OnMetricStarted("first")
 	tracker.OnMetricStarted("second")
 	tracker.OnFileProcessed("first")
@@ -30,7 +30,7 @@ func TestLogMetricProgress_LogsAggregateLoadedObservations(t *testing.T) {
 
 	logMetricProgress(tracker)
 
-	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading metrics." loaded=3`))
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading metrics." loaded=3 total=4 percentage=75`))
 	g.Expect(buf.String()).NotTo(ContainSubstring("metric="))
 	g.Expect(buf.String()).To(HavePrefix("time="))
 	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
