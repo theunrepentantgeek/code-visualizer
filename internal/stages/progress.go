@@ -120,6 +120,7 @@ func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
 func logMetricProgress(tracker *metricProgressTracker) {
 	loaded := tracker.loaded.Load()
 	percentage := int64(0)
+
 	if tracker.total > 0 {
 		percentage = min(loaded*100/tracker.total, 100)
 	}
