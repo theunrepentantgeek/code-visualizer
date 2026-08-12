@@ -2,6 +2,7 @@ package stages
 
 import (
 	"log/slog"
+	"slices"
 
 	"github.com/rotisserie/eris"
 
@@ -34,13 +35,7 @@ func RunProviders(c *CommonState) error {
 }
 
 func hasAuthorshipMetric(names []metric.Name) bool {
-	for _, name := range names {
-		if git.IsAuthorshipMetric(name) {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(names, git.IsAuthorshipMetric)
 }
 
 func withoutAuthorshipMetrics(names []metric.Name) []metric.Name {

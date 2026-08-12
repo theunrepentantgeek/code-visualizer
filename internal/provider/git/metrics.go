@@ -2,6 +2,7 @@ package git
 
 import (
 	"path/filepath"
+	"slices"
 
 	"github.com/rotisserie/eris"
 
@@ -88,13 +89,7 @@ var authorshipMetricNames = []metric.Name{
 // IsAuthorshipMetric reports whether name belongs to the authorship metric
 // family, whose configured loader is run by the shared pipeline stage.
 func IsAuthorshipMetric(name metric.Name) bool {
-	for _, authorshipMetric := range authorshipMetricNames {
-		if name == authorshipMetric {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(authorshipMetricNames, name)
 }
 
 // IsGitMetric reports whether name is a metric that requires a git repository.
