@@ -87,6 +87,23 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.TreeMap.Flat).To(BeTrue())
 }
 
+func TestCLI_SpiralLabelsFlagIsUnknown(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{"spiral", ".", "-o", "out.png", "--labels", "all"})
+	g.Expect(err).To(MatchError(ContainSubstring("unknown flag --labels")))
+}
+
 func TestCLI_BubbletreeLegendFlags_UseKongEnumValidation(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

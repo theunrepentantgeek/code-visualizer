@@ -26,11 +26,27 @@ type Entry struct {
 	Ink        inks.Ink
 }
 
+// LabelSampleShape specifies the backing shape for a label sample.
+type LabelSampleShape int
+
+const (
+	// LabelSampleSquare renders the label sample in a square.
+	LabelSampleSquare LabelSampleShape = iota
+	// LabelSampleCircle renders the label sample in a circle.
+	LabelSampleCircle
+)
+
+// LabelSample describes the inline label preview displayed before legend entries.
+type LabelSample struct {
+	Shape LabelSampleShape
+	Lines []string
+}
+
 // Config holds everything needed to render a legend.
 type Config struct {
 	Position    model.LegendPosition
 	Orientation model.LegendOrientation
-	LabelSample []string
+	LabelSample LabelSample
 	Entries     []Entry
 }
 
@@ -87,13 +103,13 @@ func (cfg *Config) toLegendData() *model.LegendData {
 	}
 }
 
-func labelSampleData(lines []string) *model.LegendLabelSample {
-	if len(lines) == 0 {
+func labelSampleData(labelSample LabelSample) *model.LegendLabelSample {
+	if len(labelSample.Lines) == 0 {
 		return nil
 	}
 
-	sample := make([]string, 0, len(lines))
-	for _, line := range lines {
+	sample := make([]string, 0, len(labelSample.Lines))
+	for _, line := range labelSample.Lines {
 		if line == "" {
 			continue
 		}
@@ -105,5 +121,8 @@ func labelSampleData(lines []string) *model.LegendLabelSample {
 		return nil
 	}
 
-	return &model.LegendLabelSample{Lines: sample}
+	return &model.LegendLabelSample{
+		Shape: model.LegendLabelSampleShape(labelSample.Shape),
+		Lines: sample,
+	}
 }

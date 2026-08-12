@@ -3,6 +3,8 @@ package git
 import (
 	"path/filepath"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -22,6 +24,16 @@ const (
 	LinesChanged metric.Name = "lines-changed"
 )
 
+var fileMetricNames = []metric.Name{
+	FileAge,
+	FileFreshness,
+	AuthorCount,
+	CommitCount,
+	TotalLinesAdded,
+	TotalLinesRemoved,
+	CommitDensity,
+}
+
 // IsGitMetric reports whether name is a metric that requires a git repository.
 func IsGitMetric(name metric.Name) bool {
 	switch name {
@@ -39,11 +51,20 @@ func buildRelPathSet(s *repoService, root *model.Directory) map[string]bool {
 	paths := make(map[string]bool)
 
 	model.WalkFiles(root, func(f *model.File) {
-		relPath, err := filepath.Rel(s.RepoRoot(), f.Path)
+		relPath, err := repoRelativePath(s.RepoRoot(), f.Path)
 		if err == nil {
 			paths[relPath] = true
 		}
 	})
 
 	return paths
+}
+
+func repoRelativePath(repoRoot, path string) (string, error) {
+	relPath, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		return "", eris.Wrap(err, "failed to compute repository-relative path")
+	}
+
+	return filepath.ToSlash(relPath), nil
 }

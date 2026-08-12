@@ -15,9 +15,10 @@ const (
 
 // BlockLabel is a centered multi-line label constrained to a rectangular area.
 type BlockLabel struct {
-	X, Y, W, H float64
-	Lines      []string
-	Ink        color.RGBA
+	X, Y, W, H   float64
+	Lines        []string
+	Ink          color.RGBA
+	PreserveText bool
 }
 
 // AddBlockLabel adds a centered multi-line label sized to fit the given bounds.
@@ -32,7 +33,7 @@ func (c *Canvas) AddBlockLabel(layer Layer, label BlockLabel, format ImageFormat
 		return
 	}
 
-	if format != FormatSVG {
+	if format != FormatSVG && !label.PreserveText {
 		switch {
 		case layout.lineHeight <= omittedLineHeight:
 			return

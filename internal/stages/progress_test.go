@@ -148,6 +148,16 @@ func TestBuildScanProgress_DebugMode_ReturnsProgress(t *testing.T) {
 // BuildHistoryProgress — flag-based gating
 // ---------------------------------------------------------------------------
 
+func TestBuildHistoryProgress_DefaultMode_ReturnsCallback(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	onCommit, stop := stages.BuildHistoryProgress(&stages.Flags{})
+	defer stop()
+
+	g.Expect(onCommit).NotTo(BeNil())
+}
+
 func TestBuildHistoryProgress_VerboseMode_ReturnsCallback(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

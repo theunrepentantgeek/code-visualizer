@@ -3,13 +3,14 @@ package spiral
 import "math"
 
 // minDiscRadius is the minimum visible disc radius for active time buckets.
-const minDiscRadius = 3.0
+const minDiscRadius = 12.0
 
 // ApplyDiscSizes sets disc radii on nodes proportional to their bucket
 // SizeValue. Empty buckets get zero radius (not drawn). Active buckets are
-// clamped between minDiscRadius and maxDisc.
+// scaled between the readable floor (when geometry permits) and maxDisc.
 func ApplyDiscSizes(nodes []SpiralNode, buckets []TimeBucket, maxDisc float64) {
 	maxSize := 0.0
+	effectiveMin := min(minDiscRadius, maxDisc)
 
 	for _, b := range buckets {
 		if b.SizeValue > maxSize {
@@ -25,13 +26,15 @@ func ApplyDiscSizes(nodes []SpiralNode, buckets []TimeBucket, maxDisc float64) {
 		}
 
 		if maxSize == 0 {
-			nodes[i].DiscRadius = minDiscRadius
+			nodes[i].DiscRadius = effectiveMin
 
 			continue
 		}
 
 		ratio := buckets[i].SizeValue / maxSize
-		scaled := maxDisc * math.Sqrt(ratio)
-		nodes[i].DiscRadius = max(minDiscRadius, scaled)
+		nodes[i].DiscRadius = min(
+			maxDisc,
+			max(effectiveMin, effectiveMin+(maxDisc-effectiveMin)*math.Sqrt(ratio)),
+		)
 	}
 }

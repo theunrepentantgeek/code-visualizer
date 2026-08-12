@@ -65,4 +65,10 @@ type CommonState struct {
 	GitHistory    []git.Commit
 	FileHistory   map[*model.File][]CommitRef
 	FileTimeRange map[*model.File]TimeRange
+
+	// Authorship history (populated by LoadAuthorHistory).
+	// AuthorHistory holds per-file per-author contribution records, the
+	// repo-wide last-active map, and the HEAD commit date used as the global
+	// clock for all authorship window calculations.
+	AuthorHistory git.AuthorHistoryResult
 }

@@ -85,7 +85,6 @@ func New() *Config {
 		},
 		Spiral: &Spiral{
 			Resolution: new("daily"),
-			Labels:     new("laps"),
 		},
 		Scatter: &Scatter{},
 		FileFilter: []filter.Rule{

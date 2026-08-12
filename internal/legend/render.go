@@ -22,21 +22,52 @@ func RenderInto(cv *canvas.Canvas, cfg *Config) {
 		return
 	}
 
-	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
-	ox, oy := legendOrigin(cv, data.Position, w, h)
+	layout := fitLegendToCanvas(cv, data)
+	ox, oy := legendOrigin(cv, layout.data.Position, layout.width, layout.height)
 
-	lb := newLegendBuilder(cv)
-	lb.addBackground(ox, oy, w, h)
+	lb := newLegendBuilder(cv, layout.scale)
+	lb.addBackground(ox, oy, layout.width, layout.height)
 
-	px := ox + model.LegendPadding
-	py := oy + model.LegendPadding
+	px := ox + lb.scaleValue(model.LegendPadding)
+	py := oy + lb.scaleValue(model.LegendPadding)
 
-	if data.Orientation == model.LegendOrientationHorizontal {
-		lb.addEntriesH(data, px, py)
+	if layout.data.Orientation == model.LegendOrientationHorizontal {
+		lb.addEntriesH(layout.data, px, py)
 	} else {
-		contentAreaW := w - 2*model.LegendPadding
-		lb.addEntriesV(data, px, py, contentAreaW)
+		contentAreaW := layout.width - 2*lb.scaleValue(model.LegendPadding)
+		lb.addEntriesV(layout.data, px, py, contentAreaW)
 	}
+}
+
+type legendLayout struct {
+	data          *model.LegendData
+	width, height float64
+	scale         float64
+}
+
+// fitLegendToCanvas scales oversized legends to keep them fully visible while
+// preserving their configured orientation.
+func fitLegendToCanvas(cv *canvas.Canvas, data *model.LegendData) legendLayout {
+	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
+	if legendFits(cv, w, h) ||
+		data.LabelSample == nil ||
+		data.LabelSample.Shape != model.LegendLabelSampleCircle {
+		return legendLayout{data: data, width: w, height: h, scale: 1}
+	}
+
+	scale := min(
+		float64(cv.Width())/w,
+		float64(cv.DrawingMaxY()-cv.DrawingMinY())/h,
+	)
+
+	return legendLayout{
+		data: data, width: w * scale, height: h * scale, scale: scale,
+	}
+}
+
+func legendFits(cv *canvas.Canvas, legendW, legendH float64) bool {
+	return legendW <= float64(cv.Width()) &&
+		legendH <= float64(cv.DrawingMaxY()-cv.DrawingMinY())
 }
 
 // legendOrigin computes the top-left (x, y) of the legend, respecting the
@@ -51,12 +82,25 @@ func legendOrigin(
 
 	switch position {
 	case model.LegendPositionTopCenter:
-		return (cw - legendW) / 2, float64(cv.DrawingMinY()) + m
+		ox, oy = (cw-legendW)/2, float64(cv.DrawingMinY())+m
 	case model.LegendPositionBottomCenter:
-		return (cw - legendW) / 2, float64(cv.DrawingMaxY()) - legendH - m
+		ox, oy = (cw-legendW)/2, float64(cv.DrawingMaxY())-legendH-m
 	default:
-		return legendlayout.LegendOrigin(position, cw, ch, legendW, legendH)
+		ox, oy = legendlayout.LegendOrigin(position, cw, ch, legendW, legendH)
 	}
+
+	if legendW <= cw {
+		ox = min(max(ox, 0), cw-legendW)
+	}
+
+	drawingMinY := float64(cv.DrawingMinY())
+
+	drawingMaxY := float64(cv.DrawingMaxY())
+	if legendH <= drawingMaxY-drawingMinY {
+		oy = min(max(oy, drawingMinY), drawingMaxY-legendH)
+	}
+
+	return ox, oy
 }
 
 // Default colours used by legendBuilder. They are copied into each
@@ -76,6 +120,7 @@ var (
 // the canvas at LayerOverlay.
 type legendBuilder struct {
 	cv       *canvas.Canvas
+	scale    float64
 	bgFill   color.RGBA
 	bgBorder color.RGBA
 	swBorder color.RGBA
@@ -83,15 +128,20 @@ type legendBuilder struct {
 	labelInk color.RGBA
 }
 
-func newLegendBuilder(cv *canvas.Canvas) *legendBuilder {
+func newLegendBuilder(cv *canvas.Canvas, scale float64) *legendBuilder {
 	return &legendBuilder{
 		cv:       cv,
+		scale:    scale,
 		bgFill:   defaultBgFill,
 		bgBorder: defaultBgBorder,
 		swBorder: defaultSwBorder,
 		titleInk: defaultTitleInk,
 		labelInk: defaultLabelInk,
 	}
+}
+
+func (lb *legendBuilder) scaleValue(value float64) float64 {
+	return value * lb.scale
 }
 
 func (lb *legendBuilder) addBackground(x, y, w, h float64) {
@@ -105,19 +155,19 @@ func (lb *legendBuilder) addEntriesV(
 
 	if data.LabelSample != nil {
 		sampleW, _ := legendlayout.MeasureLabelSample(data.LabelSample)
-		sampleX := x + (contentAreaW-sampleW)/2
+		sampleX := x + (contentAreaW-lb.scaleValue(sampleW))/2
 		cy = lb.addLabelSample(data.LabelSample, sampleX, cy)
 
 		if len(data.Entries) > 0 {
-			cy += model.EntryGap
+			cy += lb.scaleValue(model.EntryGap)
 		}
 	}
 
-	entryX := x + legendlayout.ContentOffsetV(data)
+	entryX := x + lb.scaleValue(legendlayout.ContentOffsetV(data))
 
 	for i, entry := range data.Entries {
 		if i > 0 {
-			cy += model.EntryGap
+			cy += lb.scaleValue(model.EntryGap)
 		}
 
 		cy = lb.addEntry(data.Orientation, entry, entryX, cy)
@@ -133,20 +183,20 @@ func (lb *legendBuilder) addEntriesH(
 		sampleW, _ := legendlayout.MeasureLabelSample(data.LabelSample)
 		lb.addLabelSample(data.LabelSample, cx, y)
 
-		cx += sampleW
+		cx += lb.scaleValue(sampleW)
 		if len(data.Entries) > 0 {
-			cx += model.EntryGap
+			cx += lb.scaleValue(model.EntryGap)
 		}
 	}
 
 	for i, entry := range data.Entries {
 		if i > 0 {
-			cx += model.EntryGap
+			cx += lb.scaleValue(model.EntryGap)
 		}
 
 		ew := legendlayout.MeasureEntryHWidth(entry)
 		lb.addEntry(data.Orientation, entry, cx, y)
-		cx += ew
+		cx += lb.scaleValue(ew)
 	}
 }
 
@@ -160,18 +210,18 @@ func (lb *legendBuilder) addEntry(
 		contentW = legendlayout.MeasureEntryVContentWidth(entry)
 	}
 
-	centerX := x + contentW/2
+	centerX := x + lb.scaleValue(contentW)/2
 
 	lb.addTextShape(
-		centerX, y+model.LegendLineHeight/2,
-		entry.Label, lb.titleInk, model.TitleFontSize, canvas.AnchorMiddle,
+		centerX, y+lb.scaleValue(model.LegendLineHeight)/2,
+		entry.Label, lb.titleInk, lb.scaleValue(model.TitleFontSize), canvas.AnchorMiddle,
 	)
 	lb.addTextShape(
-		centerX, y+model.LegendLineHeight+model.LegendLineHeight/2,
-		entry.Metric, lb.titleInk, model.TitleFontSize, canvas.AnchorMiddle,
+		centerX, y+lb.scaleValue(model.LegendLineHeight)+lb.scaleValue(model.LegendLineHeight)/2,
+		entry.Metric, lb.titleInk, lb.scaleValue(model.TitleFontSize), canvas.AnchorMiddle,
 	)
 
-	y += 2*model.LegendLineHeight + model.LabelGap
+	y += lb.scaleValue(2*model.LegendLineHeight + model.LabelGap)
 
 	if entry.Kind == model.LegendEntryCategorical {
 		return lb.addCategorySwatches(orientation, entry, x, y)
@@ -185,6 +235,7 @@ func (lb *legendBuilder) addEntry(
 type swatchCursor struct {
 	x, y       float64
 	horizontal bool
+	scale      float64
 }
 
 // swatchPos returns the top-left corner of the current swatch.
@@ -194,10 +245,14 @@ func (c *swatchCursor) swatchPos() (x, y float64) { return c.x, c.y }
 // Vertical: to the right of the swatch. Horizontal: below the swatch.
 func (c *swatchCursor) numericLabelPos() (x, y float64, anchor canvas.TextAnchor) {
 	if c.horizontal {
-		return c.x + model.SwatchSize, c.y + model.SwatchSize + model.LegendLineHeight, canvas.AnchorMiddle
+		return c.x + c.scale*model.SwatchSize,
+			c.y + c.scale*(model.SwatchSize+model.LegendLineHeight),
+			canvas.AnchorMiddle
 	}
 
-	return c.x + model.SwatchSize + model.LabelGap, c.y + model.SwatchSize, canvas.AnchorStart
+	return c.x + c.scale*(model.SwatchSize+model.LabelGap),
+		c.y + c.scale*model.SwatchSize,
+		canvas.AnchorStart
 }
 
 // catLabelPos returns the position and anchor for a categorical swatch label.
@@ -205,10 +260,14 @@ func (c *swatchCursor) numericLabelPos() (x, y float64, anchor canvas.TextAnchor
 // Horizontal: below the swatch, centred horizontally.
 func (c *swatchCursor) catLabelPos() (x, y float64, anchor canvas.TextAnchor) {
 	if c.horizontal {
-		return c.x + model.SwatchSize/2, c.y + model.SwatchSize + model.LegendLineHeight, canvas.AnchorMiddle
+		return c.x + c.scale*model.SwatchSize/2,
+			c.y + c.scale*(model.SwatchSize+model.LegendLineHeight),
+			canvas.AnchorMiddle
 	}
 
-	return c.x + model.SwatchSize + model.LabelGap, c.y + model.SwatchSize/2, canvas.AnchorStart
+	return c.x + c.scale*(model.SwatchSize+model.LabelGap),
+		c.y + c.scale*model.SwatchSize/2,
+		canvas.AnchorStart
 }
 
 // advance moves the cursor by delta along the main axis.
@@ -225,7 +284,7 @@ func (c *swatchCursor) advance(delta float64) {
 // Horizontal: startY plus the fixed block height (swatches don't change Y).
 func (c *swatchCursor) endY(startY float64) float64 {
 	if c.horizontal {
-		return startY + model.SwatchSize + model.LegendLineHeight + model.LabelGap
+		return startY + c.scale*(model.SwatchSize+model.LegendLineHeight+model.LabelGap)
 	}
 
 	return c.y
@@ -238,12 +297,12 @@ func (lb *legendBuilder) addNumericSwatches(
 		return y
 	}
 
-	step := model.SwatchSize
+	step := lb.scaleValue(model.SwatchSize)
 	if entry.IsBorder {
-		step += model.BorderSwatchOutlineWidth
+		step += lb.scaleValue(model.BorderSwatchOutlineWidth)
 	}
 
-	cur := swatchCursor{x: x, y: y, horizontal: orientation == model.LegendOrientationHorizontal}
+	cur := swatchCursor{x: x, y: y, horizontal: orientation == model.LegendOrientationHorizontal, scale: lb.scale}
 
 	for _, sw := range entry.Swatches {
 		sx, sy := cur.swatchPos()
@@ -255,7 +314,7 @@ func (lb *legendBuilder) addNumericSwatches(
 
 		if sw.Label != "" {
 			lx, ly, anchor := cur.numericLabelPos()
-			lb.addTextShape(lx, ly, sw.Label, lb.labelInk, model.LegendFontSize, anchor)
+			lb.addTextShape(lx, ly, sw.Label, lb.labelInk, lb.scaleValue(model.LegendFontSize), anchor)
 		}
 
 		cur.advance(step)
@@ -271,12 +330,12 @@ func (lb *legendBuilder) addCategorySwatches(
 		return y
 	}
 
-	gap := model.SwatchGap
+	gap := lb.scaleValue(model.SwatchGap)
 	if entry.IsBorder {
-		gap = model.BorderSwatchOutlineWidth
+		gap = lb.scaleValue(model.BorderSwatchOutlineWidth)
 	}
 
-	cur := swatchCursor{x: x, y: y, horizontal: orientation == model.LegendOrientationHorizontal}
+	cur := swatchCursor{x: x, y: y, horizontal: orientation == model.LegendOrientationHorizontal, scale: lb.scale}
 
 	for _, sw := range entry.Swatches {
 		sx, sy := cur.swatchPos()
@@ -287,12 +346,12 @@ func (lb *legendBuilder) addCategorySwatches(
 		}
 
 		lx, ly, anchor := cur.catLabelPos()
-		lb.addTextShape(lx, ly, sw.Label, lb.labelInk, model.LegendFontSize, anchor)
+		lb.addTextShape(lx, ly, sw.Label, lb.labelInk, lb.scaleValue(model.LegendFontSize), anchor)
 
 		if cur.horizontal {
-			cur.advance(legendlayout.MeasureCatSwatchColumnWidth(sw.Label))
+			cur.advance(lb.scaleValue(legendlayout.MeasureCatSwatchColumnWidth(sw.Label)))
 		} else {
-			cur.advance(model.SwatchSize + gap)
+			cur.advance(lb.scaleValue(model.SwatchSize) + gap)
 		}
 	}
 
@@ -309,19 +368,35 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 		return y
 	}
 
-	lb.addRect(x, y, w, h, palette.White, lb.swBorder, 0.5)
+	w = lb.scaleValue(w)
+	h = lb.scaleValue(h)
+
+	if sample.Shape == model.LegendLabelSampleCircle {
+		spec := &canvas.DiscSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        inks.FixedInk(palette.White),
+				Border:      inks.FixedInk(lb.swBorder),
+				BorderWidth: lb.scaleValue(0.5),
+			},
+		}
+		lb.cv.AddDisc(canvas.LayerOverlay, canvas.Disc{
+			Spec: spec, X: x + w/2, Y: y + h/2, Radius: min(w, h) / 2,
+		})
+	} else {
+		lb.addRect(x, y, w, h, palette.White, lb.swBorder, lb.scaleValue(0.5))
+	}
 
 	centerX := x + w/2
-	totalH := float64(len(sample.Lines)) * model.LegendLineHeight
-	startY := y + (h-totalH)/2 + model.LegendLineHeight/2
+	totalH := float64(len(sample.Lines)) * lb.scaleValue(model.LegendLineHeight)
+	startY := y + (h-totalH)/2 + lb.scaleValue(model.LegendLineHeight)/2
 
 	for i, line := range sample.Lines {
 		lb.addTextShape(
 			centerX,
-			startY+float64(i)*model.LegendLineHeight,
+			startY+float64(i)*lb.scaleValue(model.LegendLineHeight),
 			line,
 			lb.labelInk,
-			model.LegendFontSize,
+			lb.scaleValue(model.LegendFontSize),
 			canvas.AnchorMiddle,
 		)
 	}
@@ -330,13 +405,15 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 }
 
 func (lb *legendBuilder) addSwatch(x, y float64, fill color.RGBA) {
-	lb.addRect(x, y, model.SwatchSize, model.SwatchSize, fill, lb.swBorder, 0.5)
+	size := lb.scaleValue(model.SwatchSize)
+	lb.addRect(x, y, size, size, fill, lb.swBorder, lb.scaleValue(0.5))
 }
 
 // addOutlineSwatch renders a swatch as a coloured outline with a white interior,
 // to represent a border metric rather than a fill metric.
 func (lb *legendBuilder) addOutlineSwatch(x, y float64, borderColour color.RGBA) {
-	lb.addRect(x, y, model.SwatchSize, model.SwatchSize, palette.White, borderColour, model.BorderSwatchOutlineWidth)
+	size := lb.scaleValue(model.SwatchSize)
+	lb.addRect(x, y, size, size, palette.White, borderColour, lb.scaleValue(model.BorderSwatchOutlineWidth))
 }
 
 func (lb *legendBuilder) addRect(

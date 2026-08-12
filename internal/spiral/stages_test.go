@@ -1,6 +1,7 @@
 package spiral_test
 
 import (
+	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -108,33 +109,6 @@ func TestResolveMetrics_HourlyResolution(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Resolution).To(Equal(spiral.Hourly))
-}
-
-func TestResolveMetrics_DefaultsLabelsToLaps(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	sizeStr := "file-size"
-	common := &stages.CommonState{}
-	viz := &spiral.State{}
-	cfg := &config.Spiral{Size: &sizeStr}
-
-	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.Labels).To(Equal(spiral.LabelLaps))
-}
-
-func TestResolveMetrics_LabelsAllCanBeSet(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	sizeStr := "file-size"
-	lblStr := "all"
-	common := &stages.CommonState{}
-	viz := &spiral.State{}
-	cfg := &config.Spiral{Size: &sizeStr, Labels: &lblStr}
-
-	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.Labels).To(Equal(spiral.LabelAll))
 }
 
 func TestResolveMetrics_SurfaceDefaultsToFill(t *testing.T) {
@@ -322,9 +296,9 @@ func TestBuildLegendStage_AddsDistinctSurfaceMetric(t *testing.T) {
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
-	g.Expect(viz.LegendConfig.Entries[1].Role).To(Equal(legend.RoleSurface))
-	g.Expect(viz.LegendConfig.Entries[1].MetricName).To(Equal("file-size"))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(3))
+	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
+	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-size"))
 }
 
 func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
@@ -342,7 +316,7 @@ func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(1))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
 	g.Expect(viz.LegendConfig.Entries[0].Role).To(Equal(legend.RoleFill))
 }
 
@@ -361,7 +335,74 @@ func TestBuildLegendStage_AddsSurfaceForSameMetricWithDifferentPalette(t *testin
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
-	g.Expect(viz.LegendConfig.Entries).To(HaveLen(2))
-	g.Expect(viz.LegendConfig.Entries[1].Role).To(Equal(legend.RoleSurface))
-	g.Expect(viz.LegendConfig.Entries[1].MetricName).To(Equal("file-lines"))
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(3))
+	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
+	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-lines"))
+}
+
+func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const bucketCount = 730
+
+	common := &stages.CommonState{
+		Width:  1920,
+		Height: 1080,
+		DrawingBounds: stages.DrawingBounds{
+			MaxX: 1920,
+			MaxY: 1080,
+		},
+	}
+	buckets := make([]spiral.TimeBucket, bucketCount)
+
+	for i := range buckets {
+		buckets[i] = spiral.TimeBucket{
+			Files:              []*model.File{{Name: "file.go"}},
+			SizeValue:          float64(i + 1),
+			SizeValueAvailable: true,
+		}
+	}
+
+	viz := &spiral.State{
+		Resolution: spiral.Daily,
+		Buckets:    buckets,
+		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
+	}
+
+	g.Expect(spiral.LayoutStage(common, viz)).To(Succeed())
+	g.Expect(viz.SpotsPerLap).To(Equal(spiral.DailySpotsPerLap(bucketCount, 1920, 1080)))
+	g.Expect(viz.SpotsPerLap).NotTo(Equal(28))
+	g.Expect(viz.Layout.Nodes[1].Angle).To(
+		BeNumerically("~", 2*math.Pi/float64(viz.SpotsPerLap), 1e-9),
+	)
+	g.Expect(viz.Layout.Nodes[bucketCount-1].DiscRadius).To(
+		BeNumerically(
+			"~",
+			spiral.MaxDiscRadiusWithCadence(bucketCount, 1920, 1080, viz.SpotsPerLap),
+			1e-9,
+		),
+	)
+}
+
+func TestLayoutStageKeepsHourlyCadence(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{
+		Width:  1920,
+		Height: 1080,
+		DrawingBounds: stages.DrawingBounds{
+			MaxX: 1920,
+			MaxY: 1080,
+		},
+	}
+	viz := &spiral.State{
+		Resolution: spiral.Hourly,
+		Buckets:    make([]spiral.TimeBucket, 720),
+		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
+	}
+
+	g.Expect(spiral.LayoutStage(common, viz)).To(Succeed())
+	g.Expect(viz.SpotsPerLap).To(Equal(24))
 }

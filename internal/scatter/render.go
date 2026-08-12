@@ -92,7 +92,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 		})
 	}
 
-	for _, band := range layout.XAxis.CategoricalBands() {
+	xBands := layout.XAxis.CategoricalBands()
+	for _, band := range xBands {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
 			X1:   band.Start,
@@ -102,8 +103,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 		})
 	}
 
-	if bands := layout.XAxis.CategoricalBands(); len(bands) > 0 {
-		last := bands[len(bands)-1]
+	if len(xBands) > 0 {
+		last := xBands[len(xBands)-1]
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
 			X1:   last.End,
@@ -113,7 +114,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 		})
 	}
 
-	for _, band := range layout.YAxis.CategoricalBands() {
+	yBands := layout.YAxis.CategoricalBands()
+	for _, band := range yBands {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
 			X1:   layout.Plot.X,
@@ -123,8 +125,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 		})
 	}
 
-	if bands := layout.YAxis.CategoricalBands(); len(bands) > 0 {
-		last := bands[len(bands)-1]
+	if len(yBands) > 0 {
+		last := yBands[len(yBands)-1]
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
 			X1:   layout.Plot.X,

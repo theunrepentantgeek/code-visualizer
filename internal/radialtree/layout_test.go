@@ -615,3 +615,53 @@ func TestLayoutDirectoryDiscsAreUniformWithoutMetric(t *testing.T) {
 	g.Expect(node.Children[0].DiscRadius).To(BeNumerically("==", node.Children[1].DiscRadius))
 	g.Expect(node.Children[0].DiscRadius).To(BeNumerically("==", node.DiscRadius))
 }
+
+func TestDirectoryMetricValue_ReturnsMeasureValue(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const testMetric = metric.Name("comment-ratio")
+
+	dir := &model.Directory{Name: "pkg"}
+	dir.SetMeasure(testMetric, 0.42)
+
+	got := directoryMetricValue(dir, testMetric)
+
+	g.Expect(got).To(BeNumerically("~", 0.42, 1e-9))
+}
+
+func TestDirectoryMetricValue_ReturnsZeroWhenNoMetricSet(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := &model.Directory{Name: "pkg"}
+
+	got := directoryMetricValue(dir, "missing-metric")
+
+	g.Expect(got).To(BeNumerically("==", 0))
+}
+
+func TestFileMetricValue_ReturnsMeasureValue(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const testMetric = metric.Name("comment-ratio")
+
+	f := &model.File{Name: "main.go"}
+	f.SetMeasure(testMetric, 0.75)
+
+	got := fileMetricValue(f, testMetric)
+
+	g.Expect(got).To(BeNumerically("~", 0.75, 1e-9))
+}
+
+func TestFileMetricValue_ReturnsZeroWhenNoMetricSet(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	f := &model.File{Name: "main.go"}
+
+	got := fileMetricValue(f, "missing-metric")
+
+	g.Expect(got).To(BeNumerically("==", 0))
+}

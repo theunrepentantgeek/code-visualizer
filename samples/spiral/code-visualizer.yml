@@ -13,7 +13,6 @@ spiral:
         metric: commit-count
         palette: foliage
     surface: true
-    labels: laps
     x-axis: log
 fileFilter:
     - pattern: .*

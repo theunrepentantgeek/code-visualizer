@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # pinned to 7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pinned to 7.0.1
 
       - name: Install gh-aw extension
-        uses: github/gh-aw-actions/setup-cli@99d9d888952ee25fce70c6b3120ca490d7d8da95 # v0.82.8
+        uses: github/gh-aw-actions/setup-cli@b078ca291c0c4d3f7bfb88b0f9a01dfb718671e3 # v0.85.1
         with:
           version: v0.81.6
 

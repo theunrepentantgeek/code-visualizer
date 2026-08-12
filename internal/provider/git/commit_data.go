@@ -1,6 +1,7 @@
 package git
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -14,12 +15,10 @@ type commitData struct {
 	authors      map[string]bool
 	linesAdded   int64
 	linesRemoved int64
+	hasLineStats bool
 }
 
-func (data *commitData) updateFrom(
-	c *object.Commit,
-	relPath string,
-) {
+func (data *commitData) updateMetadata(c *object.Commit) {
 	when := c.Author.When
 
 	if data.oldest.IsZero() || when.Before(data.oldest) {
@@ -32,10 +31,22 @@ func (data *commitData) updateFrom(
 
 	data.authors[c.Author.Email] = true
 	data.count++
+}
 
-	if c.NumParents() > 0 {
-		added, removed := computeFileDiffStats(c, relPath)
-		data.linesAdded += added
-		data.linesRemoved += removed
+func (data *commitData) updateChangeStats(change *object.Change) {
+	if change == nil || change.From.Name == "" {
+		return
+	}
+
+	patch, err := object.Changes{change}.Patch()
+	if err != nil {
+		slog.Debug("could not get git change stats", "path", changeName(change), "error", err)
+
+		return
+	}
+
+	for _, stat := range patch.Stats() {
+		data.linesAdded += int64(stat.Addition)
+		data.linesRemoved += int64(stat.Deletion)
 	}
 }
