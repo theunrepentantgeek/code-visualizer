@@ -33,6 +33,64 @@ var (
 	dirBorderLineInk = inks.FixedInk(structuralBorder)
 )
 
+// dynBorderWidths lists every value DynBorderWidth can return, in ascending order.
+// The index maps directly to specIndex().
+//
+//nolint:gochecknoglobals // read-only lookup table for DynBorderWidth results
+var dynBorderWidths = [4]float64{0.5, 1.0, 2.0, 3.0}
+
+// specIndex returns the pre-allocation table index for a DynBorderWidth result.
+// Returns -1 for unexpected values.
+func specIndex(bw float64) int {
+	for i, w := range dynBorderWidths {
+		if bw == w {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// dirBorderSpecs holds one pre-allocated RectangleSpec per possible border width
+// (indices 0–3 correspond to dynBorderWidths). Avoids a per-directory allocation.
+// Built once per render pass in buildDirBorderSpecs.
+type dirBorderSpecs [4]*canvas.RectangleSpec
+
+func buildDirBorderSpecs() dirBorderSpecs {
+	var table dirBorderSpecs
+	for i, bw := range dynBorderWidths {
+		table[i] = &canvas.RectangleSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        dirBorderFillInk,
+				Border:      dirBorderLineInk,
+				BorderWidth: bw,
+			},
+		}
+	}
+
+	return table
+}
+
+// fileRectSpecs holds one pre-allocated RectangleSpec per possible border width,
+// sharing a single set of Fill and Border inks across the whole render pass.
+// Built once per render pass in buildFileRectSpecs.
+type fileRectSpecs [4]*canvas.RectangleSpec
+
+func buildFileRectSpecs(is Inks) fileRectSpecs {
+	var table fileRectSpecs
+	for i, bw := range dynBorderWidths {
+		table[i] = &canvas.RectangleSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        is.Fill,
+				Border:      is.Border,
+				BorderWidth: bw,
+			},
+		}
+	}
+
+	return table
+}
+
 // RenderToCanvas walks the layout tree and model tree in parallel,
 // adding shapes to the canvas. Returns the populated canvas.
 func RenderToCanvas(
@@ -61,7 +119,9 @@ func RenderToCanvas(
 		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
 	})
 
-	addRect(cv, rects, root, is, sizeMetric)
+	dirSpecs := buildDirBorderSpecs()
+	fileSpecs := buildFileRectSpecs(is)
+	addRect(cv, rects, root, is, sizeMetric, dirSpecs, fileSpecs)
 
 	return cv
 }
@@ -73,14 +133,16 @@ func addRect(
 	node *model.Directory,
 	is Inks,
 	sizeMetric metric.Name,
+	dirSpecs dirBorderSpecs,
+	fileSpecs fileRectSpecs,
 ) {
 	if !rect.IsDirectory {
-		addFileRectForFile(cv, rect, nil, is, rect, 0)
+		addFileRectForFile(cv, rect, nil, is, rect, 0, fileSpecs)
 
 		return
 	}
 
-	addDirectoryShapes(cv, rect)
+	addDirectoryShapes(cv, rect, dirSpecs)
 
 	dirTotal := directoryTotalWeight(node, sizeMetric)
 	fileIdx := 0
@@ -89,11 +151,11 @@ func addRect(
 	for i := range rect.Children {
 		child := rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			addRect(cv, child, node.Dirs[dirIdx], is, sizeMetric)
+			addRect(cv, child, node.Dirs[dirIdx], is, sizeMetric, dirSpecs, fileSpecs)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			fileWeight := fileMetricWeight(node.Files[fileIdx], sizeMetric)
-			addFileRectForFile(cv, child, node.Files[fileIdx], is, rect, fileWeight/dirTotal)
+			addFileRectForFile(cv, child, node.Files[fileIdx], is, rect, fileWeight/dirTotal, fileSpecs)
 			fileIdx++
 		}
 	}
@@ -102,6 +164,7 @@ func addRect(
 func addDirectoryShapes(
 	cv *canvas.Canvas,
 	rect TreemapRectangle,
+	dirSpecs dirBorderSpecs,
 ) {
 	// Header bar fill - spec is constant across all directories in this render pass.
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
@@ -123,14 +186,22 @@ func addDirectoryShapes(
 		})
 	}
 
-	// Directory border - BorderWidth varies per directory, so only the inks are shared.
-	borderSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        dirBorderFillInk,
-			Border:      dirBorderLineInk,
-			BorderWidth: DynBorderWidth(rect.W, rect.H, inks.KindNumeric),
-		},
+	// Directory border - BorderWidth varies per directory; look up the pre-allocated spec.
+	bw := DynBorderWidth(rect.W, rect.H, inks.KindNumeric)
+	idx := specIndex(bw)
+	var borderSpec *canvas.RectangleSpec
+	if idx >= 0 {
+		borderSpec = dirSpecs[idx]
+	} else {
+		borderSpec = &canvas.RectangleSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        dirBorderFillInk,
+				Border:      dirBorderLineInk,
+				BorderWidth: bw,
+			},
+		}
 	}
+
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
 		Spec:  borderSpec,
 		X:     rect.X,
@@ -148,6 +219,7 @@ func addFileRectForFile(
 	is Inks,
 	parentDir TreemapRectangle,
 	weightFraction float64,
+	fileSpecs fileRectSpecs,
 ) {
 	if rect.W <= 0 || rect.H <= 0 {
 		return
@@ -158,12 +230,19 @@ func addFileRectForFile(
 	fillMV := inks.MetricValueForFile(file, is.Fill)
 	borderMV := inks.MetricValueForFile(file, is.Border)
 
-	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        is.Fill,
-			Border:      is.Border,
-			BorderWidth: DynBorderWidth(rect.W, rect.H, hasBorder),
-		},
+	bw := DynBorderWidth(rect.W, rect.H, hasBorder)
+	idx := specIndex(bw)
+	var spec *canvas.RectangleSpec
+	if idx >= 0 {
+		spec = fileSpecs[idx]
+	} else {
+		spec = &canvas.RectangleSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        is.Fill,
+				Border:      is.Border,
+				BorderWidth: bw,
+			},
+		}
 	}
 
 	cv.AddRectangle(canvas.LayerContent, canvas.Rectangle{
