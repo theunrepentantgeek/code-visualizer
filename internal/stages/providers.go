@@ -71,6 +71,9 @@ func authorshipParams(cfg *config.Config) git.AuthorshipParams {
 	if authorship.BusFactorThreshold != nil {
 		params.BusFactorThreshold = *authorship.BusFactorThreshold
 	}
+	if authorship.IdentityTopK != nil {
+		params.IdentityTopK = *authorship.IdentityTopK
+	}
 
 	return params
 }

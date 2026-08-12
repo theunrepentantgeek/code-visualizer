@@ -12,6 +12,10 @@ const (
 	// Unmaintained is the classification returned by CurrentMaintainer (and
 	// other identity metrics) when no qualifying author is found.
 	Unmaintained = "«unmaintained»"
+
+	// OtherContributor is the classification assigned to contributors ranked
+	// beyond identity-top-k in the global contribution ranking.
+	OtherContributor = "«other»"
 )
 
 // AuthorshipParams holds the configurable thresholds for the nine authorship
@@ -35,6 +39,10 @@ type AuthorshipParams struct {
 	// BusFactorThreshold is the combined-share target for bus-factor.
 	// Default: 0.50.
 	BusFactorThreshold float64
+	// IdentityTopK is the number of top contributors (by global weight) that
+	// receive distinct colours in identity-metric legends; contributors beyond
+	// this rank are bucketed into OtherContributor. Default: 11.
+	IdentityTopK int
 }
 
 // DefaultAuthorshipParams returns AuthorshipParams with the defaults from the
@@ -46,6 +54,7 @@ func DefaultAuthorshipParams() AuthorshipParams {
 		EarlyWindowFraction:       0.25,
 		SignificantShareThreshold: 0.10,
 		BusFactorThreshold:        0.50,
+		IdentityTopK:              11,
 	}
 }
 

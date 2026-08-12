@@ -1,7 +1,9 @@
 package git
 
 import (
+	"cmp"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/rotisserie/eris"
@@ -15,11 +17,6 @@ import (
 // file and directory node in the tree.
 type authorshipLoader struct {
 	params AuthorshipParams
-}
-
-// newAuthorshipLoader returns an authorshipLoader with spec-default params.
-func newAuthorshipLoader() *authorshipLoader {
-	return &authorshipLoader{params: DefaultAuthorshipParams()}
 }
 
 // LoadAuthorshipMetrics applies authorship metrics using params. It is used by
@@ -72,6 +69,13 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 
 		applyAuthorshipToNode(records, result, al.params, d)
 	})
+
+	// Bucket identity metrics: replace contributors ranked beyond IdentityTopK
+	// in the global weight ranking with the OtherContributor sentinel so that
+	// colour legends have at most IdentityTopK+2 entries.
+	if al.params.IdentityTopK > 0 {
+		bucketIdentityMetrics(root, result.ByFile, al.params.IdentityTopK)
+	}
 
 	return nil
 }
@@ -180,4 +184,80 @@ func collectSubtreeRecords(
 	}
 
 	return result
+}
+
+// globalEmailRanking returns a set of the top-K author emails ranked by total
+// contribution weight (Added+Removed) across all files in byFile.
+func globalEmailRanking(byFile FileAuthorRecords, topK int) map[string]bool {
+	weights := make(map[string]int64)
+
+	for _, records := range byFile {
+		for _, r := range records {
+			weights[r.Email] += r.Added + r.Removed
+		}
+	}
+
+	emails := make([]string, 0, len(weights))
+	for email := range weights {
+		emails = append(emails, email)
+	}
+
+	slices.SortStableFunc(emails, func(a, b string) int {
+		if c := cmp.Compare(weights[b], weights[a]); c != 0 {
+			return c
+		}
+
+		return cmp.Compare(a, b)
+	})
+
+	top := make(map[string]bool, topK)
+	for i, email := range emails {
+		if i >= topK {
+			break
+		}
+
+		top[email] = true
+	}
+
+	return top
+}
+
+// identityMetricNames lists the three Classification metrics that use author
+// email as their value and need top-K bucketing.
+var identityMetricNames = []metric.Name{
+	CodeOwnerMetric,
+	InitialDeveloperMetric,
+	CurrentMaintainerMetric,
+}
+
+// bucketIdentityMetrics replaces classification values for identity metrics
+// that are not in the global top-K email set with OtherContributor.  This caps
+// the legend to at most topK+2 distinct colours (top-K + «other» +
+// «unmaintained»).
+func bucketIdentityMetrics(root *model.Directory, byFile FileAuthorRecords, topK int) {
+	top := globalEmailRanking(byFile, topK)
+
+	replace := func(val string) string {
+		if val == Unmaintained || top[val] {
+			return val
+		}
+
+		return OtherContributor
+	}
+
+	model.WalkFiles(root, func(f *model.File) {
+		for _, m := range identityMetricNames {
+			if val, ok := f.Classification(m); ok {
+				f.SetClassification(m, replace(val))
+			}
+		}
+	})
+
+	model.WalkDirectories(root, func(d *model.Directory) {
+		for _, m := range identityMetricNames {
+			if val, ok := d.Classification(m); ok {
+				d.SetClassification(m, replace(val))
+			}
+		}
+	})
 }

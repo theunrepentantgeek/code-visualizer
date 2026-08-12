@@ -103,6 +103,7 @@ func TestDefaultAuthorshipParams(t *testing.T) {
 	g.Expect(p.EarlyWindowFraction).To(BeNumerically("~", 0.25, 1e-9))
 	g.Expect(p.SignificantShareThreshold).To(BeNumerically("~", 0.10, 1e-9))
 	g.Expect(p.BusFactorThreshold).To(BeNumerically("~", 0.50, 1e-9))
+	g.Expect(p.IdentityTopK).To(Equal(11))
 }
 
 func TestSortedShares_TieBreakByFirstSeen(t *testing.T) {
