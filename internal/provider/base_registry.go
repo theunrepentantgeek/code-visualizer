@@ -22,7 +22,14 @@ func newBaseRegistry() *baseRegistry {
 	return &baseRegistry{
 		descriptors: make(map[metric.Name]BaseMetricDescriptor),
 		providers:   make(map[metric.Name]ProviderDescriptor),
-		loaders:     nil,
+	}
+}
+
+// assertNotRegistered panics if name is already in the descriptor map.
+// Must be called with r.mu held.
+func (r *baseRegistry) assertNotRegistered(name metric.Name) {
+	if _, exists := r.descriptors[name]; exists {
+		panic(fmt.Sprintf("base metric %q already registered", name))
 	}
 }
 
@@ -30,9 +37,7 @@ func (r *baseRegistry) register(desc BaseMetricDescriptor) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.descriptors[desc.Name]; exists {
-		panic(fmt.Sprintf("base metric %q already registered", desc.Name))
-	}
+	r.assertNotRegistered(desc.Name)
 
 	r.descriptors[desc.Name] = desc
 }
@@ -41,9 +46,7 @@ func (r *baseRegistry) registerWithProvider(desc BaseMetricDescriptor, pd Provid
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.descriptors[desc.Name]; exists {
-		panic(fmt.Sprintf("base metric %q already registered", desc.Name))
-	}
+	r.assertNotRegistered(desc.Name)
 
 	r.descriptors[desc.Name] = desc
 	r.providers[desc.Name] = pd
