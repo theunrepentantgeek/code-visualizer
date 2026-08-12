@@ -6,12 +6,19 @@ legend:
     orientation: horizontal
 tree-map: {}
 radial-tree:
-    discSize: file-lines
-    fill:
+    fileDiscSize: file-lines
+    fileFill:
         metric: file-type
         palette: categorization
-    border:
+    fileBorder:
         metric: file-freshness
+        palette: good-bad
+    folderDiscSize: file-lines.sum
+    folderFill:
+        metric: file-type.mode
+        palette: categorization
+    folderBorder:
+        metric: file-freshness.mean
         palette: good-bad
     labels: folders
 bubble-tree:

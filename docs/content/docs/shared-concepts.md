@@ -8,7 +8,7 @@ filters. This page collects the concepts that apply across all of the commands.
 
 ## Metric values
 
-| Metric                 | Valid for `--size`/`--disc-size` | Valid for `--fill`/`--border` | Description                                         |
+| Metric                 | Valid for `--size`/`--file-disc-size` | Valid for `--fill`/`--border`/`--file-fill`/`--file-border` | Description                                         |
 | ---------------------- | :------------------------------: | :---------------------------: | --------------------------------------------------- |
 | `file-size`            |                ✓                 |               ✓               | File size in bytes                                  |
 | `file-lines`           |                ✓                 |               ✓               | Number of non-binary lines                          |

@@ -110,12 +110,20 @@ func TestConfig_OverrideLegendOrientation_SetsWhenNonEmpty(t *testing.T) {
 
 // Radial overrides
 
-func TestRadial_OverrideDiscSize_SetsWhenNonEmpty(t *testing.T) {
+func TestRadial_OverrideFileDiscSize_SetsWhenNonEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	r := &Radial{}
-	r.OverrideDiscSize("commit-count")
-	g.Expect(*r.DiscSize).To(Equal("commit-count"))
+	r.OverrideFileDiscSize("commit-count")
+	g.Expect(*r.FileDiscSize).To(Equal("commit-count"))
+}
+
+func TestRadial_OverrideFolderDiscSize_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	r := &Radial{}
+	r.OverrideFolderDiscSize("file-size.sum")
+	g.Expect(*r.FolderDiscSize).To(Equal("file-size.sum"))
 }
 
 func TestRadial_OverrideLabels_SetsWhenNonEmpty(t *testing.T) {
@@ -313,40 +321,54 @@ func TestSpiral_OverrideSurfaceMetric_SkipsZero(t *testing.T) {
 
 // Radial overrides (fill/border)
 
-func TestRadial_OverrideFill_SetsWhenNonZero(t *testing.T) {
+func TestRadial_OverrideFileFill_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	r := &Radial{}
 	spec := MetricSpec{Metric: metric.Name("file-lines"), Palette: palette.PaletteName("foliage")}
-	r.OverrideFill(spec)
-	g.Expect(*r.Fill).To(Equal(spec))
+	r.OverrideFileFill(spec)
+	g.Expect(*r.FileFill).To(Equal(spec))
 }
 
-func TestRadial_OverrideFill_SkipsWhenZero(t *testing.T) {
+func TestRadial_OverrideFileFill_SkipsWhenZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	existing := MetricSpec{Metric: metric.Name("file-age")}
-	r := &Radial{Fill: &existing}
-	r.OverrideFill(MetricSpec{})
-	g.Expect(*r.Fill).To(Equal(existing))
+	r := &Radial{FileFill: &existing}
+	r.OverrideFileFill(MetricSpec{})
+	g.Expect(*r.FileFill).To(Equal(existing))
 }
 
-func TestRadial_OverrideBorder_SetsWhenNonZero(t *testing.T) {
+func TestRadial_OverrideFileBorder_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	r := &Radial{}
 	spec := MetricSpec{Metric: metric.Name("commit-count"), Palette: palette.Temperature}
-	r.OverrideBorder(spec)
-	g.Expect(*r.Border).To(Equal(spec))
+	r.OverrideFileBorder(spec)
+	g.Expect(*r.FileBorder).To(Equal(spec))
 }
 
-func TestRadial_OverrideBorder_SkipsWhenZero(t *testing.T) {
+func TestRadial_OverrideFileBorder_SkipsWhenZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	existing := MetricSpec{Metric: metric.Name("file-age")}
-	r := &Radial{Border: &existing}
-	r.OverrideBorder(MetricSpec{})
-	g.Expect(*r.Border).To(Equal(existing))
+	r := &Radial{FileBorder: &existing}
+	r.OverrideFileBorder(MetricSpec{})
+	g.Expect(*r.FileBorder).To(Equal(existing))
+}
+
+func TestRadial_OverrideFolderFillAndBorder_SetWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	r := &Radial{}
+	fill := MetricSpec{Metric: metric.Name("file-type.mode"), Palette: palette.PaletteName("categorization")}
+	border := MetricSpec{Metric: metric.Name("file-freshness.mean"), Palette: palette.PaletteName("good-bad")}
+
+	r.OverrideFolderFill(fill)
+	r.OverrideFolderBorder(border)
+
+	g.Expect(*r.FolderFill).To(Equal(fill))
+	g.Expect(*r.FolderBorder).To(Equal(border))
 }
 
 // Treemap override (border)

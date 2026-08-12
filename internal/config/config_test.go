@@ -122,6 +122,32 @@ func TestLoad_YAMLImageSize_OverridesWidth(t *testing.T) {
 	g.Expect(*cfg.ImageSize.Height).To(Equal(1080)) // default preserved
 }
 
+func TestLoad_YAMLRadialTree_ParsesFileAndFolderMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "radial-tree:\n" +
+		"  fileDiscSize: file-size\n" +
+		"  fileFill: file-type,categorization\n" +
+		"  fileBorder: file-freshness,good-bad\n" +
+		"  folderDiscSize: file-size.sum\n" +
+		"  folderFill: file-type.mode,categorization\n" +
+		"  folderBorder: file-freshness.mean,good-bad\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	g.Expect(cfg.Load(path)).To(Succeed())
+	g.Expect(*cfg.Radial.FileDiscSize).To(Equal("file-size"))
+	g.Expect(*cfg.Radial.FileFill).To(Equal(MetricSpec{Metric: "file-type", Palette: "categorization"}))
+	g.Expect(*cfg.Radial.FileBorder).To(Equal(MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
+	g.Expect(*cfg.Radial.FolderDiscSize).To(Equal("file-size.sum"))
+	g.Expect(*cfg.Radial.FolderFill).To(Equal(MetricSpec{Metric: "file-type.mode", Palette: "categorization"}))
+	g.Expect(*cfg.Radial.FolderBorder).To(Equal(MetricSpec{Metric: "file-freshness.mean", Palette: "good-bad"}))
+}
+
 func TestLoad_YAMLLegacyWidth_ParsesIntoImageSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
