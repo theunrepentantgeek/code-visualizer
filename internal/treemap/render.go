@@ -35,6 +35,8 @@ var (
 
 // dynBorderWidths lists every value DynBorderWidth can return, in ascending order.
 // The index maps directly to specIndex().
+//
+//nolint:gochecknoglobals // read-only lookup table for DynBorderWidth results
 var dynBorderWidths = [4]float64{0.5, 1.0, 2.0, 3.0}
 
 // specIndex returns the pre-allocation table index for a DynBorderWidth result.
