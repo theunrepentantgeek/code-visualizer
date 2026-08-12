@@ -1,5 +1,57 @@
 package config
 
+// defaultAuthorshipActivityWindowDays is the default look-back window for
+// orphan-risk (days from HEAD an author must have committed to be "active").
+const defaultAuthorshipActivityWindowDays = 180
+
+// defaultAuthorshipRecentWindowDays is the default look-back window for
+// current-maintainer (days from HEAD).
+const defaultAuthorshipRecentWindowDays = 180
+
+// defaultAuthorshipEarlyWindowFraction is the default fraction of a node's
+// calendar lifetime that defines the "early" contribution window.
+const defaultAuthorshipEarlyWindowFraction = 0.25
+
+// defaultAuthorshipSignificantShareThreshold is the minimum author share
+// required to count toward significant-contributor-count.
+const defaultAuthorshipSignificantShareThreshold = 0.10
+
+// defaultAuthorshipBusFactorThreshold is the cumulative-share target for
+// bus-factor calculation.
+const defaultAuthorshipBusFactorThreshold = 0.50
+
+// defaultAuthorshipIdentityTopK is the number of top contributors that receive
+// distinct legend colours; contributors beyond this rank become «other».
+const defaultAuthorshipIdentityTopK = 11
+
+// defaultAuthorshipHonorMailmap controls whether .mailmap normalisation is
+// applied to author identities before aggregating contributions.
+const defaultAuthorshipHonorMailmap = true
+
+// DefaultAuthorshipConfig returns an *AuthorshipConfig with every field set to
+// the spec-mandated default value.  config.New() embeds this so that
+// --export-config always emits an authorship section, making all thresholds
+// discoverable without any git://issue#550 documentation lookup.
+func DefaultAuthorshipConfig() *AuthorshipConfig {
+	activityWindow := defaultAuthorshipActivityWindowDays
+	recentWindow := defaultAuthorshipRecentWindowDays
+	earlyFraction := defaultAuthorshipEarlyWindowFraction
+	sigThreshold := defaultAuthorshipSignificantShareThreshold
+	busThreshold := defaultAuthorshipBusFactorThreshold
+	topK := defaultAuthorshipIdentityTopK
+	honorMailmap := defaultAuthorshipHonorMailmap
+
+	return &AuthorshipConfig{
+		ActivityWindowDays:        &activityWindow,
+		RecentWindowDays:          &recentWindow,
+		EarlyWindowFraction:       &earlyFraction,
+		SignificantShareThreshold: &sigThreshold,
+		BusFactorThreshold:        &busThreshold,
+		IdentityTopK:              &topK,
+		HonorMailmap:              &honorMailmap,
+	}
+}
+
 // AuthorshipConfig holds the configurable thresholds for the authorship
 // metric family defined in issue #550. All fields are optional; when nil the
 // metric computation uses the spec-mandated defaults (see
