@@ -60,9 +60,5 @@ func hasUTF16BOM(buf []byte) bool {
 	}
 
 	// UTF-16 BE: FE FF
-	if buf[0] == 0xFE && buf[1] == 0xFF {
-		return true
-	}
-
-	return false
+	return buf[0] == 0xFE && buf[1] == 0xFF
 }
