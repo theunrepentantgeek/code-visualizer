@@ -11,6 +11,18 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
+// bgSpec is constant across every RenderToCanvas call. Pre-allocating it avoids
+// a heap allocation per render pass.
+//
+//nolint:gochecknoglobals // pre-allocated render-phase spec
+var bgSpec = &canvas.RectangleSpec{
+	ShapeStyle: canvas.ShapeStyle{
+		Fill:        inks.FixedInk(palette.White),
+		Border:      inks.FixedInk(palette.White),
+		BorderWidth: 0,
+	},
+}
+
 // dirHeaderSpec and dirLabelSpec are constant across every directory node in a
 // render pass. Pre-allocating them avoids repeated heap allocations in the
 // recursive walk.
@@ -103,13 +115,6 @@ func RenderToCanvas(
 	cv := canvas.NewCanvas(width, height)
 
 	// Background
-	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(palette.White),
-			Border:      inks.FixedInk(palette.White),
-			BorderWidth: 0,
-		},
-	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec:  bgSpec,
 		X:     0,
