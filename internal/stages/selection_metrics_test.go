@@ -27,8 +27,6 @@ func configWithSelectionMetrics(t *testing.T, yamlSnippet string) *config.Config
 }
 
 func TestRegisterSelectionMetrics_RegistersConfiguredMetrics(t *testing.T) {
-	t.Parallel()
-
 	g := NewGomegaWithT(t)
 
 	cfg := configWithSelectionMetrics(t, `
@@ -53,8 +51,6 @@ selectionMetrics:
 }
 
 func TestRegisterSelectionMetrics_IdempotentOnRepeat(t *testing.T) {
-	t.Parallel()
-
 	g := NewGomegaWithT(t)
 
 	cfg := configWithSelectionMetrics(t, `
@@ -74,8 +70,6 @@ selectionMetrics:
 }
 
 func TestRegisterSelectionMetrics_NoopWhenNoMetrics(t *testing.T) {
-	t.Parallel()
-
 	g := NewGomegaWithT(t)
 
 	beforeCount := len(provider.BaseNames())
