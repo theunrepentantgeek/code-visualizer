@@ -115,6 +115,10 @@ func TestSortedShares_TieBreakByFirstSeen(t *testing.T) {
 	bob := recFrom("bob@x.com", "Bob", []ContributionPoint{cpAt("2024-01-01T00:00:00Z", 5, 0)})
 
 	shares, _ := sortedShares([]AuthorRecord{bob, alice})
+	if len(shares) == 0 {
+		t.Fatal("expected author shares")
+	}
+
 	g.Expect(shares[0].email).To(Equal("alice@x.com"), "earlier first-seen wins the tie")
 }
 
@@ -127,7 +131,11 @@ func TestSortedShares_TieBreakByEmail(t *testing.T) {
 	b := recFrom("b@x.com", "B", []ContributionPoint{cpAt(ts, 5, 0)})
 
 	shares, _ := sortedShares([]AuthorRecord{b, a})
-	g.Expect(shares[0].email).To(Equal("a@x.com"), "lex-earlier email wins the tie")
+	for index, share := range shares {
+		if index == 0 {
+			g.Expect(share.email).To(Equal("a@x.com"), "lex-earlier email wins the tie")
+		}
+	}
 }
 
 func TestCodeOwner_NoRecords_ReturnsUnmaintained(t *testing.T) {
@@ -237,7 +245,11 @@ func TestCollectSubtreeRecords_MergesAcrossFiles(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()
+
 	root := buildTree(dir, "a.go", "b.go")
+	if root == nil {
+		t.Fatal("expected a source tree")
+	}
 
 	byFile := FileAuthorRecords{
 		"a.go": {recFrom("alice@x.com", "Alice", []ContributionPoint{cpAt("2024-01-01T00:00:00Z", 10, 0)})},
@@ -247,10 +259,13 @@ func TestCollectSubtreeRecords_MergesAcrossFiles(t *testing.T) {
 	records := collectSubtreeRecords(root, byFile, dir)
 
 	g.Expect(records).To(HaveLen(1))
-	g.Expect(records[0].Email).To(Equal("alice@x.com"))
-	g.Expect(records[0].Added).To(Equal(int64(30)))
-	g.Expect(records[0].Removed).To(Equal(int64(5)))
-	g.Expect(records[0].Contributions).To(HaveLen(2))
+
+	for _, record := range records {
+		g.Expect(record.Email).To(Equal("alice@x.com"))
+		g.Expect(record.Added).To(Equal(int64(30)))
+		g.Expect(record.Removed).To(Equal(int64(5)))
+		g.Expect(record.Contributions).To(HaveLen(2))
+	}
 }
 
 func TestCollectSubtreeRecords_EmptyByFile_ReturnsNil(t *testing.T) {

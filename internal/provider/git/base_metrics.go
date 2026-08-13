@@ -116,19 +116,21 @@ func registerCommitMetrics() {
 //nolint:funlen // Nine metrics, each with a brief descriptor; splitting would obscure the structure.
 func registerAuthorshipMetrics() {
 	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
-		Name:           InitialDeveloperMetric,
-		Kind:           metric.Classification,
-		Level:          metric.LevelFile,
-		Description:    "Greatest-weight author within the early window (first earlyWindowFraction of the node's lifetime). Who started it.",
+		Name:  InitialDeveloperMetric,
+		Kind:  metric.Classification,
+		Level: metric.LevelFile,
+		Description: "Greatest-weight author within the early window " +
+			"(first earlyWindowFraction of the node's lifetime). Who started it.",
 		Aggregations:   []metric.AggregationName{metric.AggMode},
 		DefaultPalette: palette.Categorization,
 	}, GitProvider)
 
 	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
-		Name:           CurrentMaintainerMetric,
-		Kind:           metric.Classification,
-		Level:          metric.LevelFile,
-		Description:    "Greatest-weight author within the recent window (recentWindowDays before HEAD); «unmaintained» if none. Who tends it now.",
+		Name:  CurrentMaintainerMetric,
+		Kind:  metric.Classification,
+		Level: metric.LevelFile,
+		Description: "Greatest-weight author within the recent window " +
+			"(recentWindowDays before HEAD); «unmaintained» if none. Who tends it now.",
 		Aggregations:   []metric.AggregationName{metric.AggMode},
 		DefaultPalette: palette.Categorization,
 	}, GitProvider)
@@ -152,10 +154,11 @@ func registerAuthorshipMetrics() {
 	}, GitProvider)
 
 	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
-		Name:           BusFactorMetric,
-		Kind:           metric.Quantity,
-		Level:          metric.LevelFile,
-		Description:    "Smallest number of top authors whose combined share reaches busFactorThreshold; 1 = single point of knowledge.",
+		Name:  BusFactorMetric,
+		Kind:  metric.Quantity,
+		Level: metric.LevelFile,
+		Description: "Smallest number of top authors whose combined share reaches " +
+			"busFactorThreshold; 1 = single point of knowledge.",
 		Aggregations:   []metric.AggregationName{metric.AggSum, metric.AggMin, metric.AggMax, metric.AggMean},
 		DefaultPalette: palette.GoodBad,
 	}, GitProvider)
@@ -188,10 +191,11 @@ func registerAuthorshipMetrics() {
 	}, GitProvider)
 
 	provider.RegisterBaseWithProvider(provider.BaseMetricDescriptor{
-		Name:           KnowledgeHandoffMetric,
-		Kind:           metric.Measure,
-		Level:          metric.LevelFile,
-		Description:    "Share of recent-window contribution from authors absent in the early window; 0 for young nodes.",
+		Name:  KnowledgeHandoffMetric,
+		Kind:  metric.Measure,
+		Level: metric.LevelFile,
+		Description: "Share of recent-window contribution from authors absent " +
+			"in the early window; 0 for young nodes.",
 		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
 		DefaultPalette: palette.Temperature,
 	}, GitProvider)

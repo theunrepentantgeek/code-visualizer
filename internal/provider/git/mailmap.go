@@ -82,52 +82,57 @@ func parseMailmap(r io.Reader) mailmap {
 // explicit old-email override.
 func parseMailmapLine(line string) (properName, properEmail, oldEmail string) {
 	emails, _ := extractEmails(line)
-
-	switch len(emails) {
-	case 1:
-		// "Proper Name <proper@email>" — proper email only; key = proper email.
-		properEmail = emails[0]
-		properName = strings.TrimSpace(textBefore(line, "<"))
-	case 2:
-		// "<proper@email> <old@email>" or "Name <proper@email> <old@email>" or
-		// "Name <proper@email> OldName <old@email>".
-		properEmail = emails[0]
-		oldEmail = emails[1]
-		properName = strings.TrimSpace(textBefore(line, "<"))
+	if len(emails) == 0 {
+		return "", "", ""
 	}
 
-	return
+	properName = strings.TrimSpace(textBefore(line, "<"))
+
+	properEmail = emails[0]
+	if len(emails) == 1 {
+		return properName, properEmail, ""
+	}
+
+	return properName, properEmail, emails[1]
 }
 
 // extractEmails returns all <...> contents found in line (in order).
-func extractEmails(line string) (emails []string, remainder string) {
+func extractEmails(line string) ([]string, string) {
 	rest := line
+
+	var emails []string
+
+	var remainder strings.Builder
 
 	for {
 		open := strings.Index(rest, "<")
 		if open < 0 {
-			remainder += rest
-			break
+			remainder.WriteString(rest)
+
+			return emails, remainder.String()
 		}
 
-		close := strings.Index(rest[open:], ">")
-		if close < 0 {
-			remainder += rest
-			break
+		emailAndRest := rest[open+1:]
+
+		email, remaining, found := strings.Cut(emailAndRest, ">")
+		if !found {
+			remainder.WriteString(rest)
+
+			return emails, remainder.String()
 		}
 
-		remainder += rest[:open]
-		emails = append(emails, strings.TrimSpace(rest[open+1:open+close]))
-		rest = rest[open+close+1:]
+		remainder.WriteString(rest[:open])
+
+		emails = append(emails, strings.TrimSpace(email))
+		rest = remaining
 	}
-
-	return
 }
 
 // textBefore returns the text in s before the first occurrence of sep.
 func textBefore(s, sep string) string {
-	if idx := strings.Index(s, sep); idx >= 0 {
-		return s[:idx]
+	before, _, found := strings.Cut(s, sep)
+	if found {
+		return before
 	}
 
 	return s
@@ -135,7 +140,7 @@ func textBefore(s, sep string) string {
 
 // apply returns the canonical (email, name) for (oldEmail, oldName) by
 // looking up oldEmail in the map. Originals are returned when no entry exists.
-func (mm mailmap) apply(email, name string) (string, string) {
+func (mm mailmap) apply(email, name string) (outEmail, outName string) {
 	if len(mm) == 0 {
 		return email, name
 	}
@@ -145,12 +150,12 @@ func (mm mailmap) apply(email, name string) (string, string) {
 		return email, name
 	}
 
-	outEmail := email
+	outEmail = email
 	if entry.properEmail != "" {
 		outEmail = entry.properEmail
 	}
 
-	outName := name
+	outName = name
 	if entry.properName != "" {
 		outName = entry.properName
 	}

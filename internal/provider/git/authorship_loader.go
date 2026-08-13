@@ -86,6 +86,7 @@ type metricNode interface {
 	SetQuantity(name metric.Name, value int64)
 	SetMeasure(name metric.Name, value float64)
 	SetClassification(name metric.Name, value string)
+	Classification(name metric.Name) (string, bool)
 }
 
 // applyAuthorshipToNode computes and stores all nine authorship metrics on node.
@@ -100,13 +101,22 @@ func applyAuthorshipToNode(
 	node.SetClassification(CurrentMaintainerMetric,
 		currentMaintainer(records, result.HeadDate, params.RecentWindowDays))
 
-	node.SetQuantity(SignificantContributorCountMetric, significantContributorCount(records, params.SignificantShareThreshold))
+	node.SetQuantity(
+		SignificantContributorCountMetric,
+		significantContributorCount(records, params.SignificantShareThreshold),
+	)
 	node.SetQuantity(BusFactorMetric, busFactor(records, params.BusFactorThreshold))
 
 	node.SetMeasure(OwnershipDominanceMetric, ownershipDominance(records))
 	node.SetMeasure(ContributorEntropyMetric, contributorEntropy(records))
-	node.SetMeasure(OrphanRiskMetric, orphanRisk(records, result.LastActive, result.HeadDate, params.ActivityWindowDays))
-	node.SetMeasure(KnowledgeHandoffMetric, knowledgeHandoff(records, result.HeadDate, params.RecentWindowDays, params.EarlyWindowFraction))
+	node.SetMeasure(
+		OrphanRiskMetric,
+		orphanRisk(records, result.LastActive, result.HeadDate, params.ActivityWindowDays),
+	)
+	node.SetMeasure(
+		KnowledgeHandoffMetric,
+		knowledgeHandoff(records, result.HeadDate, params.RecentWindowDays, params.EarlyWindowFraction),
+	)
 }
 
 // subtreeAccum accumulates per-author data across files in a directory subtree.
@@ -146,25 +156,7 @@ func collectSubtreeRecords(
 	merged := make(map[string]*subtreeAccum)
 
 	model.WalkFiles(dir, func(f *model.File) {
-		relPath, err := repoRelativePath(repoRoot, f.Path)
-		if err != nil {
-			return
-		}
-
-		records, ok := byFile[relPath]
-		if !ok {
-			return
-		}
-
-		for _, r := range records {
-			a, exists := merged[r.Email]
-			if !exists {
-				a = &subtreeAccum{name: r.Name}
-				merged[r.Email] = a
-			}
-
-			a.merge(r)
-		}
+		mergeSubtreeFileRecords(merged, byFile, repoRoot, f)
 	})
 
 	if len(merged) == 0 {
@@ -185,6 +177,28 @@ func collectSubtreeRecords(
 	}
 
 	return result
+}
+
+func mergeSubtreeFileRecords(
+	merged map[string]*subtreeAccum,
+	byFile FileAuthorRecords,
+	repoRoot string,
+	file *model.File,
+) {
+	relPath, err := repoRelativePath(repoRoot, file.Path)
+	if err != nil {
+		return
+	}
+
+	for _, record := range byFile[relPath] {
+		accumulator, exists := merged[record.Email]
+		if !exists {
+			accumulator = &subtreeAccum{name: record.Name}
+			merged[record.Email] = accumulator
+		}
+
+		accumulator.merge(record)
+	}
 }
 
 // globalEmailRanking returns a set of the top-K author emails ranked by total
@@ -238,27 +252,22 @@ var identityMetricNames = []metric.Name{
 func bucketIdentityMetrics(root *model.Directory, byFile FileAuthorRecords, topK int) {
 	top := globalEmailRanking(byFile, topK)
 
-	replace := func(val string) string {
-		if val == Unmaintained || top[val] {
-			return val
-		}
-
-		return OtherContributor
-	}
-
 	model.WalkFiles(root, func(f *model.File) {
-		for _, m := range identityMetricNames {
-			if val, ok := f.Classification(m); ok {
-				f.SetClassification(m, replace(val))
-			}
-		}
+		bucketNodeIdentityMetrics(f, top)
 	})
 
 	model.WalkDirectories(root, func(d *model.Directory) {
-		for _, m := range identityMetricNames {
-			if val, ok := d.Classification(m); ok {
-				d.SetClassification(m, replace(val))
-			}
-		}
+		bucketNodeIdentityMetrics(d, top)
 	})
+}
+
+func bucketNodeIdentityMetrics(node metricNode, top map[string]bool) {
+	for _, name := range identityMetricNames {
+		value, ok := node.Classification(name)
+		if !ok || value == Unmaintained || top[value] {
+			continue
+		}
+
+		node.SetClassification(name, OtherContributor)
+	}
 }

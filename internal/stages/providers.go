@@ -56,24 +56,31 @@ func authorshipParams(cfg *config.Config) git.AuthorshipParams {
 	}
 
 	authorship := cfg.Authorship
+
 	if authorship.ActivityWindowDays != nil {
 		params.ActivityWindowDays = *authorship.ActivityWindowDays
 	}
+
 	if authorship.RecentWindowDays != nil {
 		params.RecentWindowDays = *authorship.RecentWindowDays
 	}
+
 	if authorship.EarlyWindowFraction != nil {
 		params.EarlyWindowFraction = *authorship.EarlyWindowFraction
 	}
+
 	if authorship.SignificantShareThreshold != nil {
 		params.SignificantShareThreshold = *authorship.SignificantShareThreshold
 	}
+
 	if authorship.BusFactorThreshold != nil {
 		params.BusFactorThreshold = *authorship.BusFactorThreshold
 	}
+
 	if authorship.IdentityTopK != nil {
 		params.IdentityTopK = *authorship.IdentityTopK
 	}
+
 	if authorship.HonorMailmap != nil {
 		params.HonorMailmap = *authorship.HonorMailmap
 	}

@@ -87,9 +87,11 @@ func TestMailmap_ApplyOnEmpty(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	var mm mailmap // nil map
+
 	email, name := mm.apply("a@b.com", "Alice")
 
 	g.Expect(email).To(Equal("a@b.com"))
+
 	g.Expect(name).To(Equal("Alice"))
 }
 

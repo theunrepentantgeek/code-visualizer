@@ -189,6 +189,7 @@ func addDirectoryShapes(
 	// Directory border - BorderWidth varies per directory; look up the pre-allocated spec.
 	bw := DynBorderWidth(rect.W, rect.H, inks.KindNumeric)
 	idx := specIndex(bw)
+
 	var borderSpec *canvas.RectangleSpec
 	if idx >= 0 {
 		borderSpec = dirSpecs[idx]
@@ -232,6 +233,7 @@ func addFileRectForFile(
 
 	bw := DynBorderWidth(rect.W, rect.H, hasBorder)
 	idx := specIndex(bw)
+
 	var spec *canvas.RectangleSpec
 	if idx >= 0 {
 		spec = fileSpecs[idx]

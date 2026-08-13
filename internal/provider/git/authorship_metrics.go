@@ -131,7 +131,7 @@ func nodeSpan(records []AuthorRecord) (oldest, newest time.Time) {
 		}
 	}
 
-	return
+	return oldest, newest
 }
 
 // earlyWindowCutoff returns the timestamp that separates the early window from
@@ -150,34 +150,15 @@ func earlyWindowCutoff(oldest, newest time.Time, fraction float64) time.Time {
 // no earlier than from and no later than to. A zero from means "no lower
 // bound"; a zero to means "no upper bound".
 func windowedShares(records []AuthorRecord, from, to time.Time) []authorShare {
-	type accum struct {
-		weight int64
-		first  time.Time
-	}
-
-	totals := make(map[string]*accum, len(records))
+	totals := make(windowedAccums, len(records))
 
 	for _, r := range records {
 		for _, cp := range r.Contributions {
-			if !from.IsZero() && cp.When.Before(from) {
+			if !contributionInWindow(cp, from, to) {
 				continue
 			}
 
-			if !to.IsZero() && cp.When.After(to) {
-				continue
-			}
-
-			a := totals[r.Email]
-			if a == nil {
-				a = &accum{}
-				totals[r.Email] = a
-			}
-
-			a.weight += cp.Added + cp.Removed
-
-			if a.first.IsZero() || cp.When.Before(a.first) {
-				a.first = cp.When
-			}
+			totals.add(r.Email, cp)
 		}
 	}
 
@@ -203,6 +184,31 @@ func windowedShares(records []AuthorRecord, from, to time.Time) []authorShare {
 	sortAuthorShares(shares)
 
 	return shares
+}
+
+type windowedAccum struct {
+	weight int64
+	first  time.Time
+}
+
+type windowedAccums map[string]*windowedAccum
+
+func contributionInWindow(point ContributionPoint, from, to time.Time) bool {
+	return (from.IsZero() || !point.When.Before(from)) &&
+		(to.IsZero() || !point.When.After(to))
+}
+
+func (totals windowedAccums) add(email string, point ContributionPoint) {
+	accumulator := totals[email]
+	if accumulator == nil {
+		accumulator = &windowedAccum{}
+		totals[email] = accumulator
+	}
+
+	accumulator.weight += point.Added + point.Removed
+	if accumulator.first.IsZero() || point.When.Before(accumulator.first) {
+		accumulator.first = point.When
+	}
 }
 
 // ─── Nine metric computations ────────────────────────────────────────────────
@@ -251,6 +257,7 @@ func significantContributorCount(records []AuthorRecord, threshold float64) int6
 	shares, _ := sortedShares(records)
 
 	count := int64(0)
+
 	for _, s := range shares {
 		if s.share >= threshold {
 			count++
@@ -301,6 +308,7 @@ func contributorEntropy(records []AuthorRecord) float64 {
 	}
 
 	h := 0.0
+
 	for _, s := range shares {
 		if s.share > 0 {
 			h -= s.share * math.Log(s.share)
@@ -326,6 +334,7 @@ func orphanRisk(
 	activeCutoff := headDate.AddDate(0, 0, -activityWindowDays)
 
 	orphanWeight := int64(0)
+
 	for _, s := range shares {
 		last, seen := lastActive[s.email]
 		if !seen || last.Before(activeCutoff) {
@@ -358,37 +367,52 @@ func knowledgeHandoff(
 		return 0
 	}
 
-	earlyAuthors := make(map[string]bool, len(records))
-	for _, r := range records {
-		for _, cp := range r.Contributions {
-			if !cp.When.After(cutoff) {
-				earlyAuthors[r.Email] = true
-				break
-			}
-		}
-	}
-
-	recentTotal := int64(0)
-	newWeight := int64(0)
-
-	for _, r := range records {
-		for _, cp := range r.Contributions {
-			if cp.When.Before(recentFrom) {
-				continue
-			}
-
-			w := cp.Added + cp.Removed
-			recentTotal += w
-
-			if !earlyAuthors[r.Email] {
-				newWeight += w
-			}
-		}
-	}
+	earlyAuthors := earlyAuthors(records, cutoff)
+	recentTotal, newWeight := recentContributionWeights(records, recentFrom, earlyAuthors)
 
 	if recentTotal == 0 {
 		return 0
 	}
 
 	return float64(newWeight) / float64(recentTotal)
+}
+
+func earlyAuthors(records []AuthorRecord, cutoff time.Time) map[string]bool {
+	authors := make(map[string]bool, len(records))
+	for _, record := range records {
+		for _, point := range record.Contributions {
+			if point.When.After(cutoff) {
+				continue
+			}
+
+			authors[record.Email] = true
+
+			break
+		}
+	}
+
+	return authors
+}
+
+func recentContributionWeights(
+	records []AuthorRecord,
+	recentFrom time.Time,
+	earlyAuthors map[string]bool,
+) (recentTotal, newWeight int64) {
+	for _, record := range records {
+		for _, point := range record.Contributions {
+			if point.When.Before(recentFrom) {
+				continue
+			}
+
+			weight := point.Added + point.Removed
+
+			recentTotal += weight
+			if !earlyAuthors[record.Email] {
+				newWeight += weight
+			}
+		}
+	}
+
+	return recentTotal, newWeight
 }
