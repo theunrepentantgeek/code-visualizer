@@ -26,6 +26,7 @@ func configWithSelectionMetrics(t *testing.T, yamlSnippet string) *config.Config
 	return cfg
 }
 
+//nolint:paralleltest // mutates global base registry
 func TestRegisterSelectionMetrics_RegistersConfiguredMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -50,6 +51,7 @@ selectionMetrics:
 	g.Expect(desc.Kind).To(Equal(metric.Classification))
 }
 
+//nolint:paralleltest // mutates global base registry
 func TestRegisterSelectionMetrics_IdempotentOnRepeat(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -69,6 +71,7 @@ selectionMetrics:
 	g.Expect(stages.RegisterSelectionMetrics(s)).To(Succeed())
 }
 
+//nolint:paralleltest // mutates global base registry
 func TestRegisterSelectionMetrics_NoopWhenNoMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
