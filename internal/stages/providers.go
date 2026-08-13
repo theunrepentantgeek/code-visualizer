@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
@@ -16,7 +17,7 @@ import (
 func RunProviders(c *CommonState) error {
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags)
+	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
 	defer stopMetricTicker()
 
 	requested := c.Requested.BaseMetrics

@@ -27,12 +27,12 @@ func BuildScanProgress(flags *Flags) (scan.Progress, func()) {
 // BuildMetricProgress creates a provider.MetricProgress adapter that logs periodic
 // progress during metric calculation.
 // The caller must invoke the returned stop function when metric calculation completes.
-func BuildMetricProgress(flags *Flags) (provider.MetricProgress, func()) {
+func BuildMetricProgress(flags *Flags, totalFiles int) (provider.MetricProgress, func()) {
 	if flags.Quiet {
 		return nil, func() {}
 	}
 
-	tracker := &metricProgressTracker{}
+	tracker := &metricProgressTracker{total: int64(totalFiles)}
 	stop := startMetricTicker(tracker)
 
 	return tracker, stop
@@ -96,6 +96,7 @@ func startScanTicker(counter *scanCounter) (stop func()) {
 // It tracks the number of metric observations loaded by file-based loaders.
 type metricProgressTracker struct {
 	loaded atomic.Int64
+	total  int64
 }
 
 func (*metricProgressTracker) OnMetricStarted(name metric.Name) {
@@ -117,7 +118,19 @@ func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
 }
 
 func logMetricProgress(tracker *metricProgressTracker) {
-	slog.Info("Loading metrics.", "loaded", tracker.loaded.Load())
+	loaded := tracker.loaded.Load()
+	percentage := int64(0)
+
+	if tracker.total > 0 {
+		percentage = min(loaded*100/tracker.total, 100)
+	}
+
+	slog.Info(
+		"Loading metrics.",
+		"loaded", loaded,
+		"total", tracker.total,
+		"percentage", percentage,
+	)
 }
 
 // BuildHistoryProgress creates a per-commit callback and (if applicable) starts a
