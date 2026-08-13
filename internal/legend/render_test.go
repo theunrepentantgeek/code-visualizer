@@ -103,7 +103,11 @@ func TestRenderInto_CategoricalEntry_RendersSwatchPerCategory(t *testing.T) {
 
 	cv := canvas.NewCanvas(800, 600)
 
-	catInk := inks.CategoricalInk("file-type", []string{"go", "json", "yaml"}, palette.GetPalette(palette.Categorization))
+	catInk := inks.CategoricalInk(
+		"file-type",
+		[]string{"go", "json", "yaml"},
+		palette.GetPalette(palette.Categorization),
+	)
 
 	cfg := &legend.Config{
 		Position:    model.LegendPositionBottomRight,
