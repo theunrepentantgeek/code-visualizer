@@ -87,7 +87,7 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.TreeMap.Flat).To(BeTrue())
 }
 
-func TestCLI_ParsesRadialFileAndFolderMetricFlags(t *testing.T) {
+func TestCLI_ParsesRadialFileAndDirectoryMetricFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -105,20 +105,20 @@ func TestCLI_ParsesRadialFileAndFolderMetricFlags(t *testing.T) {
 		"--file-disc-size", "file-size",
 		"--file-fill", "file-type,categorization",
 		"--file-border", "file-freshness,good-bad",
-		"--folder-disc-size", "file-size.sum",
-		"--folder-fill", "file-type.mode,categorization",
-		"--folder-border", "file-freshness.mean,good-bad",
+		"--directory-disc-size", "file-size.sum",
+		"--directory-fill", "file-type.mode,categorization",
+		"--directory-border", "file-freshness.mean,good-bad",
 	})
 
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cli.RadialTree.FileDiscSize).To(Equal(metric.Name("file-size")))
 	g.Expect(cli.RadialTree.FileFill).To(Equal(config.MetricSpec{Metric: "file-type", Palette: "categorization"}))
 	g.Expect(cli.RadialTree.FileBorder).To(Equal(config.MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
-	g.Expect(cli.RadialTree.FolderDiscSize).To(Equal(metric.Name("file-size.sum")))
-	g.Expect(cli.RadialTree.FolderFill).To(Equal(config.MetricSpec{
+	g.Expect(cli.RadialTree.DirectoryDiscSize).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(cli.RadialTree.DirectoryFill).To(Equal(config.MetricSpec{
 		Metric: "file-type.mode", Palette: "categorization",
 	}))
-	g.Expect(cli.RadialTree.FolderBorder).To(Equal(config.MetricSpec{
+	g.Expect(cli.RadialTree.DirectoryBorder).To(Equal(config.MetricSpec{
 		Metric: "file-freshness.mean", Palette: "good-bad",
 	}))
 }

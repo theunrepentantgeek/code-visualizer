@@ -118,12 +118,12 @@ func TestRadial_OverrideFileDiscSize_SetsWhenNonEmpty(t *testing.T) {
 	g.Expect(*r.FileDiscSize).To(Equal("commit-count"))
 }
 
-func TestRadial_OverrideFolderDiscSize_SetsWhenNonEmpty(t *testing.T) {
+func TestRadial_OverrideDirectoryDiscSize_SetsWhenNonEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	r := &Radial{}
-	r.OverrideFolderDiscSize("file-size.sum")
-	g.Expect(*r.FolderDiscSize).To(Equal("file-size.sum"))
+	r.OverrideDirectoryDiscSize("file-size.sum")
+	g.Expect(*r.DirectoryDiscSize).To(Equal("file-size.sum"))
 }
 
 func TestRadial_OverrideLabels_SetsWhenNonEmpty(t *testing.T) {
@@ -357,18 +357,18 @@ func TestRadial_OverrideFileBorder_SkipsWhenZero(t *testing.T) {
 	g.Expect(*r.FileBorder).To(Equal(existing))
 }
 
-func TestRadial_OverrideFolderFillAndBorder_SetWhenNonZero(t *testing.T) {
+func TestRadial_OverrideDirectoryFillAndBorder_SetWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	r := &Radial{}
 	fill := MetricSpec{Metric: metric.Name("file-type.mode"), Palette: palette.PaletteName("categorization")}
 	border := MetricSpec{Metric: metric.Name("file-freshness.mean"), Palette: palette.PaletteName("good-bad")}
 
-	r.OverrideFolderFill(fill)
-	r.OverrideFolderBorder(border)
+	r.OverrideDirectoryFill(fill)
+	r.OverrideDirectoryBorder(border)
 
-	g.Expect(*r.FolderFill).To(Equal(fill))
-	g.Expect(*r.FolderBorder).To(Equal(border))
+	g.Expect(*r.DirectoryFill).To(Equal(fill))
+	g.Expect(*r.DirectoryBorder).To(Equal(border))
 }
 
 // Treemap override (border)

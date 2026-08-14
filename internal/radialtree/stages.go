@@ -17,19 +17,19 @@ import (
 // fills c.Requested.
 func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 	r.DiscSize = metric.Name(stages.PtrString(cfg.FileDiscSize))
-	folderDiscSize := &config.MetricSpec{Metric: metric.Name(stages.PtrString(cfg.FolderDiscSize))}
-	r.DirectoryDiscSize = resolveDirectoryMetric(folderDiscSize, r.DiscSize)
+	directoryDiscSize := &config.MetricSpec{Metric: metric.Name(stages.PtrString(cfg.DirectoryDiscSize))}
+	r.DirectoryDiscSize = resolveDirectoryMetric(directoryDiscSize, r.DiscSize)
 	r.FillMetric = resolveFillMetric(cfg, r.DiscSize)
 	r.FillPalette = stages.ResolveFillPalette(cfg.FileFill, r.FillMetric)
 	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.FileBorder)
-	r.DirectoryFillMetric = resolveDirectoryMetric(cfg.FolderFill, r.FillMetric)
+	r.DirectoryFillMetric = resolveDirectoryMetric(cfg.DirectoryFill, r.FillMetric)
 	r.DirectoryFillPalette = stages.ResolveFillPalette(
-		directoryMetricSpec(cfg.FolderFill, r.DirectoryFillMetric),
+		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
 		r.DirectoryFillMetric,
 	)
-	r.DirectoryBorderMetric = resolveDirectoryMetric(cfg.FolderBorder, r.BorderMetric)
+	r.DirectoryBorderMetric = resolveDirectoryMetric(cfg.DirectoryBorder, r.BorderMetric)
 	r.DirectoryBorderPalette = stages.ResolveFillPalette(
-		directoryMetricSpec(cfg.FolderBorder, r.DirectoryBorderMetric),
+		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
 		r.DirectoryBorderMetric,
 	)
 	r.Labels = resolveLabels(cfg)
@@ -39,9 +39,9 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 		r.DiscSize,
 		cfg.FileFill,
 		cfg.FileBorder,
-		directoryMetricSpec(folderDiscSize, r.DirectoryDiscSize),
-		directoryMetricSpec(cfg.FolderFill, r.DirectoryFillMetric),
-		directoryMetricSpec(cfg.FolderBorder, r.DirectoryBorderMetric),
+		directoryMetricSpec(directoryDiscSize, r.DirectoryDiscSize),
+		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
+		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
 	)
 
 	return nil

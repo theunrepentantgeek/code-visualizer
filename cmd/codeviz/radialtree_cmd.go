@@ -20,9 +20,9 @@ type RadialCmd struct {
 	FileFill   config.MetricSpec `help:"File fill colour: metric[,palette] (e.g. file-type,categorization)." name:"file-fill" optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	FileBorder config.MetricSpec `help:"File border colour: metric[,palette] (e.g. file-lines,foliage)." name:"file-border" optional:"" short:"b"`   //nolint:revive,nolintlint // kong struct tags require long lines
 
-	FolderDiscSize metric.Name       `default:"" help:"Metric for folder disc size; run 'codeviz help metrics' for available metrics." name:"folder-disc-size"` //nolint:revive,nolintlint // kong struct tags require long lines
-	FolderFill     config.MetricSpec `help:"Folder fill colour: metric[,palette] (defaults to aggregated file fill)." name:"folder-fill" optional:""`           //nolint:revive,nolintlint // kong struct tags require long lines
-	FolderBorder   config.MetricSpec `help:"Folder border colour: metric[,palette] (defaults to aggregated file border)." name:"folder-border" optional:""`     //nolint:revive,nolintlint // kong struct tags require long lines
+	DirectoryDiscSize metric.Name       `default:"" help:"Metric for directory disc size; run 'codeviz help metrics' for available metrics." name:"directory-disc-size"` //nolint:revive,nolintlint // kong struct tags require long lines
+	DirectoryFill     config.MetricSpec `help:"Directory fill colour: metric[,palette] (defaults to aggregated file fill)." name:"directory-fill" optional:""`           //nolint:revive,nolintlint // kong struct tags require long lines
+	DirectoryBorder   config.MetricSpec `help:"Directory border colour: metric[,palette] (defaults to aggregated file border)." name:"directory-border" optional:""`     //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
@@ -58,8 +58,8 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 		return err
 	}
 
-	if cfg.FolderDiscSize != nil {
-		if err := validateNumericMetric("folder-disc-size", metric.Name(ptrString(cfg.FolderDiscSize))); err != nil {
+	if cfg.DirectoryDiscSize != nil {
+		if err := validateNumericMetric("directory-disc-size", metric.Name(ptrString(cfg.DirectoryDiscSize))); err != nil {
 			return err
 		}
 	}
@@ -72,12 +72,12 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 		return eris.Wrap(err, "invalid file border spec")
 	}
 
-	if err := cfg.FolderFill.Validate("folder fill"); err != nil {
-		return eris.Wrap(err, "invalid folder fill spec")
+	if err := cfg.DirectoryFill.Validate("directory fill"); err != nil {
+		return eris.Wrap(err, "invalid directory fill spec")
 	}
 
-	if err := cfg.FolderBorder.Validate("folder border"); err != nil {
-		return eris.Wrap(err, "invalid folder border spec")
+	if err := cfg.DirectoryBorder.Validate("directory border"); err != nil {
+		return eris.Wrap(err, "invalid directory border spec")
 	}
 
 	return nil
@@ -143,9 +143,9 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideFileDiscSize(string(c.FileDiscSize))
 	cfg.Radial.OverrideFileFill(c.FileFill)
 	cfg.Radial.OverrideFileBorder(c.FileBorder)
-	cfg.Radial.OverrideFolderDiscSize(string(c.FolderDiscSize))
-	cfg.Radial.OverrideFolderFill(c.FolderFill)
-	cfg.Radial.OverrideFolderBorder(c.FolderBorder)
+	cfg.Radial.OverrideDirectoryDiscSize(string(c.DirectoryDiscSize))
+	cfg.Radial.OverrideDirectoryFill(c.DirectoryFill)
+	cfg.Radial.OverrideDirectoryBorder(c.DirectoryBorder)
 	cfg.Radial.OverrideLabels(c.Labels)
 	cfg.Radial.OverrideGrain(c.Grain)
 	cfg.OverrideLegendPosition(c.Legend)

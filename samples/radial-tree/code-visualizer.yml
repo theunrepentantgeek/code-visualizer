@@ -13,11 +13,11 @@ radial-tree:
     fileBorder:
         metric: file-freshness
         palette: good-bad
-    folderDiscSize: file-lines.sum
-    folderFill:
+    directoryDiscSize: file-lines.sum
+    directoryFill:
         metric: file-type.mode
         palette: categorization
-    folderBorder:
+    directoryBorder:
         metric: file-freshness.mean
         palette: good-bad
     labels: folders

@@ -28,9 +28,9 @@ codeviz radial-tree [flags] <target-path>
 | ---------------------- | ----- | -------------- | ----------------------------------------------------------------- |
 | `--file-fill`          | `-f`  | none           | File fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
 | `--file-border`        | `-b`  | none           | File border colour: `metric[,palette]` (e.g. `file-lines,foliage`) |
-| `--folder-disc-size`   |       | none           | Numeric metric for folder disc size                                |
-| `--folder-fill`        |       | none           | Folder fill colour: `metric[,palette]` (e.g. `file-type.mode,categorization`) |
-| `--folder-border`      |       | none           | Folder border colour: `metric[,palette]` (e.g. `file-freshness.mean,good-bad`) |
+| `--directory-disc-size` |       | none           | Numeric metric for directory disc size                             |
+| `--directory-fill`      |       | none           | Directory fill colour: `metric[,palette]` (e.g. `file-type.mode,categorization`) |
+| `--directory-border`    |       | none           | Directory border colour: `metric[,palette]` (e.g. `file-freshness.mean,good-bad`) |
 | `--labels`             |       | `none`         | Labels to display: `all`, `folders`, or `none`                    |
 | `--grain`              |       | `file`         | Granularity of nodes shown: `file` or `directory`                 |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |

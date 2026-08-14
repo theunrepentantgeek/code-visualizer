@@ -75,17 +75,17 @@ func TestResolveRadialMetrics_DirectoryDiscSizeAggregatesDiscSize(t *testing.T) 
 	))
 }
 
-func TestResolveRadialMetrics_FolderDiscSizeOverridesFileDiscSize(t *testing.T) {
+func TestResolveRadialMetrics_DirectoryDiscSizeOverridesFileDiscSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	fileDiscSize := "file-size"
-	folderDiscSize := "file-lines.sum"
+	directoryDiscSize := "file-lines.sum"
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
 	cfg := &config.Radial{
-		FileDiscSize:   &fileDiscSize,
-		FolderDiscSize: &folderDiscSize,
+		FileDiscSize:      &fileDiscSize,
+		DirectoryDiscSize: &directoryDiscSize,
 	}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
@@ -104,8 +104,8 @@ func TestResolveRadialMetrics_ExplicitDirectoryBorder(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
 	cfg := &config.Radial{
-		FileDiscSize: &discSizeStr,
-		FolderBorder: &config.MetricSpec{Metric: "file-type.mode"},
+		FileDiscSize:    &discSizeStr,
+		DirectoryBorder: &config.MetricSpec{Metric: "file-type.mode"},
 	}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
