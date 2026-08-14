@@ -80,26 +80,26 @@ func TestNewInterpolationModel_RejectsCoincidentOnlyObservations(t *testing.T) {
 	g.Expect(ok).To(gomega.BeFalse())
 }
 
-func TestInterpolationModelInterpolate_ExcludesExactAndOutsideRadiusSupport(t *testing.T) {
+func TestInterpolationModelInterpolate_AssignsZeroWeightAtSupportRadiusBoundary(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
 	model := interpolationModel{
-		observations: []Point{
-			{X: 0, Y: 0, Value: 0},
-			{X: 2, Y: 0, Value: 10},
-			{X: 5, Y: 0, Value: 100},
-		},
-		radius: 4,
+		observations: []Point{{X: 0, Y: 0, Value: 10}},
+		radius:       4,
 	}
 
-	inside, ok := model.interpolate(Point{X: 1, Y: 0})
+	inside, ok := model.interpolate(Point{X: 3, Y: 0})
 	g.Expect(ok).To(gomega.BeTrue())
-	g.Expect(inside).To(gomega.Equal(5.0))
+	g.Expect(inside).To(gomega.Equal(10.0))
+
+	boundary, ok := model.interpolate(Point{X: 4, Y: 0})
+	g.Expect(ok).To(gomega.BeFalse())
+	g.Expect(boundary).To(gomega.Equal(0.0))
 
 	outside, ok := model.interpolate(Point{X: 7, Y: 0})
-	g.Expect(ok).To(gomega.BeTrue())
-	g.Expect(outside).To(gomega.Equal(100.0))
+	g.Expect(ok).To(gomega.BeFalse())
+	g.Expect(outside).To(gomega.Equal(0.0))
 }
 
 func TestInterpolationModelInterpolate_ReturnsUnsupportedWithoutPositiveWeights(t *testing.T) {

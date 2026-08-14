@@ -19,12 +19,12 @@ func Build(region Region, originals []Point, seed uint64) []Triangle {
 		return nil
 	}
 
-	observed := observedPoints(originals)
-	if len(observed) < 3 {
+	model, ok := newInterpolationModel(originals)
+	if !ok || len(model.observations) < 3 {
 		return nil
 	}
 
-	points, complete := meshPoints(region, observed, seed)
+	points, complete := meshPoints(region, model, seed)
 	if !complete || len(points) < 3 {
 		return nil
 	}
@@ -56,26 +56,27 @@ func observedPoints(originals []Point) []Point {
 	return observed
 }
 
-func meshPoints(region Region, observed []Point, seed uint64) ([]Point, bool) {
-	boundary := boundarySamples(region, observed)
+func meshPoints(region Region, model interpolationModel, seed uint64) ([]Point, bool) {
+	boundary := boundarySamples(region, model.observations)
 	for index := range boundary {
-		boundary[index].Value = Interpolate(boundary[index], observed)
+		value, _ := model.interpolate(boundary[index])
+		boundary[index].Value = value
 	}
 
-	points := append([]Point(nil), observed...)
+	points := append([]Point(nil), model.observations...)
 	points = append(points, boundary...)
 	samplingSources := append([]Point(nil), points...)
 
 	infill := Sample(region, samplingSources, PoissonMinDistance, seed)
 	for _, point := range infill {
-		point.Value = Interpolate(point, observed)
+		point.Value, _ = model.interpolate(point)
 		points = append(points, point)
 	}
 
-	return refineMeshPoints(region, points, observed)
+	return refineMeshPoints(region, points, model)
 }
 
-func refineMeshPoints(region Region, points, observed []Point) ([]Point, bool) {
+func refineMeshPoints(region Region, points []Point, model interpolationModel) ([]Point, bool) {
 	limit := refinementPointLimit(region, len(points))
 
 	for {
@@ -94,7 +95,7 @@ func refineMeshPoints(region Region, points, observed []Point) ([]Point, bool) {
 		}
 
 		for _, candidate := range candidates {
-			candidate.Value = Interpolate(candidate, observed)
+			candidate.Value, _ = model.interpolate(candidate)
 			points = append(points, candidate)
 		}
 	}
