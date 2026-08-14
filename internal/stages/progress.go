@@ -141,5 +141,5 @@ func startHistoryTicker(counter *atomic.Int64) (stop func()) {
 }
 
 func logHistoryProgress(counter *atomic.Int64) {
-	slog.Info("Loading history...", "commits", counter.Load())
+	slog.Info("Loading history.", "commits", counter.Load())
 }
