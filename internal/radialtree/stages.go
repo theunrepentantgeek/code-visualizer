@@ -16,11 +16,12 @@ import (
 // ResolveMetrics resolves disc-size, fill, and border metrics + palettes and
 // fills c.Requested.
 func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
-	r.DiscSize = metric.Name(stages.PtrString(cfg.DiscSize))
-	r.DirectoryDiscSize = resolveDirectoryMetric(nil, r.DiscSize)
+	r.DiscSize = metric.Name(stages.PtrString(cfg.FileDiscSize))
+	directoryDiscSize := &config.MetricSpec{Metric: metric.Name(stages.PtrString(cfg.DirectoryDiscSize))}
+	r.DirectoryDiscSize = resolveDirectoryMetric(directoryDiscSize, r.DiscSize)
 	r.FillMetric = resolveFillMetric(cfg, r.DiscSize)
-	r.FillPalette = stages.ResolveFillPalette(cfg.Fill, r.FillMetric)
-	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	r.FillPalette = stages.ResolveFillPalette(cfg.FileFill, r.FillMetric)
+	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.FileBorder)
 	r.DirectoryFillMetric = resolveDirectoryMetric(cfg.DirectoryFill, r.FillMetric)
 	r.DirectoryFillPalette = stages.ResolveFillPalette(
 		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
@@ -36,9 +37,9 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 
 	c.Requested = stages.CollectRequestedMetrics(
 		r.DiscSize,
-		cfg.Fill,
-		cfg.Border,
-		directoryMetricSpec(nil, r.DirectoryDiscSize),
+		cfg.FileFill,
+		cfg.FileBorder,
+		directoryMetricSpec(directoryDiscSize, r.DirectoryDiscSize),
 		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
 		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
 	)
@@ -47,7 +48,7 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 }
 
 func resolveFillMetric(cfg *config.Radial, discSize metric.Name) metric.Name {
-	if fill := cfg.Fill.MetricName(); fill != "" {
+	if fill := cfg.FileFill.MetricName(); fill != "" {
 		return fill
 	}
 

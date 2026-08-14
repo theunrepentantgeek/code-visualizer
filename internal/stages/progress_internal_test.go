@@ -52,7 +52,7 @@ func TestLogHistoryProgress_LogsAggregateProcessedCommits(t *testing.T) {
 
 	logHistoryProgress(counter)
 
-	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading history..." commits=3`))
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading history." commits=3`))
 	g.Expect(buf.String()).To(HavePrefix("time="))
 	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
 }

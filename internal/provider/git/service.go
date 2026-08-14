@@ -19,6 +19,7 @@ import (
 type repoService struct {
 	repo              *gogit.Repository
 	rootPath          string // git worktree root (absolute path)
+	repoMu            sync.Mutex
 	commitGroup       singleflight.Group
 	commitMu          sync.RWMutex
 	commitCache       map[string]*commitData
@@ -337,6 +338,9 @@ func (s *repoService) cacheFetchedCommitData(relPath string, data *commitData) *
 }
 
 func (s *repoService) fetchCommitData(relPath string) (*commitData, error) {
+	s.repoMu.Lock()
+	defer s.repoMu.Unlock()
+
 	log, err := s.repo.Log(&gogit.LogOptions{FileName: &relPath})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to get git log")
@@ -445,6 +449,9 @@ func RepoRootFor(repoPath string) (string, error) {
 }
 
 func (s *repoService) fetchCommitTimestamps(relPath string) ([]time.Time, error) {
+	s.repoMu.Lock()
+	defer s.repoMu.Unlock()
+
 	log, err := s.repo.Log(&gogit.LogOptions{FileName: &relPath})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to get git log")

@@ -101,8 +101,8 @@ func renderRadial(common *stages.CommonState) error {
 		cfg.Radial = &config.Radial{}
 	}
 
-	cfg.Radial.DiscSize = &discSize
-	cfg.Radial.Fill = &config.MetricSpec{Metric: "file-type"}
+	cfg.Radial.FileDiscSize = &discSize
+	cfg.Radial.FileFill = &config.MetricSpec{Metric: "file-type"}
 
 	viz := &radialtree.State{}
 	s := pipeline.NewState(common, cfg.Radial, viz)

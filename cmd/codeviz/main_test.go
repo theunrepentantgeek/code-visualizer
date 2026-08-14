@@ -87,6 +87,42 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.TreeMap.Flat).To(BeTrue())
 }
 
+func TestCLI_ParsesRadialFileAndDirectoryMetricFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"radial-tree", ".", "-o", "out.png",
+		"--file-disc-size", "file-size",
+		"--file-fill", "file-type,categorization",
+		"--file-border", "file-freshness,good-bad",
+		"--directory-disc-size", "file-size.sum",
+		"--directory-fill", "file-type.mode,categorization",
+		"--directory-border", "file-freshness.mean,good-bad",
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.RadialTree.FileDiscSize).To(Equal(metric.Name("file-size")))
+	g.Expect(cli.RadialTree.FileFill).To(Equal(config.MetricSpec{Metric: "file-type", Palette: "categorization"}))
+	g.Expect(cli.RadialTree.FileBorder).To(Equal(config.MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
+	g.Expect(cli.RadialTree.DirectoryDiscSize).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(cli.RadialTree.DirectoryFill).To(Equal(config.MetricSpec{
+		Metric: "file-type.mode", Palette: "categorization",
+	}))
+	g.Expect(cli.RadialTree.DirectoryBorder).To(Equal(config.MetricSpec{
+		Metric: "file-freshness.mean", Palette: "good-bad",
+	}))
+}
+
 func TestCLI_SpiralLabelsFlagIsUnknown(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -349,14 +385,14 @@ func TestTreemapCmd_Validate_EmptySize_Passes(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
-func TestRadialCmd_Validate_EmptyDiscSize_Passes(t *testing.T) {
+func TestRadialCmd_Validate_EmptyFileDiscSize_Passes(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	cmd := &RadialCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		DiscSize:   "", // will be supplied by config file later in Run()
+		TargetPath:   ".",
+		Output:       "out.png",
+		FileDiscSize: "", // will be supplied by config file later in Run()
 	}
 
 	err := cmd.Validate()

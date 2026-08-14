@@ -20,14 +20,17 @@ codeviz radial-tree [flags] <target-path>
 | Flag          | Short | Values                          | Description                  |
 | ------------- | ----- | ------------------------------- | ---------------------------- |
 | `--output`    | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path       |
-| `--disc-size` | `-d`  | see `codeviz help metrics`      | Numeric metric for disc size |
+| `--file-disc-size` | `-d`  | see `codeviz help metrics`      | Numeric metric for file disc size |
 
 ## Optional flags
 
 | Flag                   | Short | Default        | Description                                                        |
 | ---------------------- | ----- | -------------- | ----------------------------------------------------------------- |
-| `--fill`               | `-f`  | none           | Fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
-| `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
+| `--file-fill`          | `-f`  | none           | File fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
+| `--file-border`        | `-b`  | none           | File border colour: `metric[,palette]` (e.g. `file-lines,foliage`) |
+| `--directory-disc-size` |       | none           | Numeric metric for directory disc size                             |
+| `--directory-fill`      |       | none           | Directory fill colour: `metric[,palette]` (e.g. `file-type.mode,categorization`) |
+| `--directory-border`    |       | none           | Directory border colour: `metric[,palette]` (e.g. `file-freshness.mean,good-bad`) |
 | `--labels`             |       | `none`         | Labels to display: `all`, `folders`, or `none`                    |
 | `--grain`              |       | `file`         | Granularity of nodes shown: `file` or `directory`                 |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
@@ -49,19 +52,19 @@ palettes, and the include and exclude filter rules.
 Size discs by file size:
 
 ```sh
-codeviz radial-tree ./src -o radial.png -d file-size
+codeviz radial-tree ./src -o radial.png --file-disc-size file-size
 ```
 
 Colour by file type and label the folders:
 
 ```sh
-codeviz radial-tree ./src -o radial.png -d file-lines -f file-type --labels folders
+codeviz radial-tree ./src -o radial.png --file-disc-size file-lines --file-fill file-type --labels folders
 ```
 
 Show the folder structure only, leaving out the files — useful for large codebases:
 
 ```sh
-codeviz radial-tree ./src -o radial.png -d file-lines --grain directory
+codeviz radial-tree ./src -o radial.png --file-disc-size file-lines --grain directory
 ```
 
 With `--grain directory` every folder is drawn (and named), and no file discs are

@@ -18,7 +18,7 @@ func TestResolveRadialMetrics_DiscSizeOnly(t *testing.T) {
 	discSizeStr := "file-size"
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
-	cfg := &config.Radial{DiscSize: &discSizeStr}
+	cfg := &config.Radial{FileDiscSize: &discSizeStr}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.DiscSize).To(Equal(metric.Name("file-size")))
@@ -35,8 +35,8 @@ func TestResolveRadialMetrics_FillOverridesDiscSizeAsFillMetric(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
 	cfg := &config.Radial{
-		DiscSize: &discSizeStr,
-		Fill:     &config.MetricSpec{Metric: "file-type"},
+		FileDiscSize: &discSizeStr,
+		FileFill:     &config.MetricSpec{Metric: "file-type"},
 	}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
@@ -51,7 +51,7 @@ func TestResolveRadialMetrics_DefaultDirectoryFillAggregatesFileFill(t *testing.
 	discSizeStr := "file-size"
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
-	cfg := &config.Radial{DiscSize: &discSizeStr}
+	cfg := &config.Radial{FileDiscSize: &discSizeStr}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.DirectoryFillMetric).To(Equal(metric.Name("file-size.sum")))
@@ -66,12 +66,33 @@ func TestResolveRadialMetrics_DirectoryDiscSizeAggregatesDiscSize(t *testing.T) 
 	discSizeStr := "file-size"
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
-	cfg := &config.Radial{DiscSize: &discSizeStr}
+	cfg := &config.Radial{FileDiscSize: &discSizeStr}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.DirectoryDiscSize).To(Equal(metric.Name("file-size.sum")))
 	g.Expect(common.Requested.Expressions).To(ContainElement(
 		HaveField("ResultName", metric.Name("file-size.sum")),
+	))
+}
+
+func TestResolveRadialMetrics_DirectoryDiscSizeOverridesFileDiscSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	fileDiscSize := "file-size"
+	directoryDiscSize := "file-lines.sum"
+	common := &stages.CommonState{}
+	viz := &radialtree.State{}
+	cfg := &config.Radial{
+		FileDiscSize:      &fileDiscSize,
+		DirectoryDiscSize: &directoryDiscSize,
+	}
+
+	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.DiscSize).To(Equal(metric.Name("file-size")))
+	g.Expect(viz.DirectoryDiscSize).To(Equal(metric.Name("file-lines.sum")))
+	g.Expect(common.Requested.Expressions).To(ContainElement(
+		HaveField("ResultName", metric.Name("file-lines.sum")),
 	))
 }
 
@@ -83,7 +104,7 @@ func TestResolveRadialMetrics_ExplicitDirectoryBorder(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
 	cfg := &config.Radial{
-		DiscSize:        &discSizeStr,
+		FileDiscSize:    &discSizeStr,
 		DirectoryBorder: &config.MetricSpec{Metric: "file-type.mode"},
 	}
 
@@ -101,7 +122,7 @@ func TestResolveRadialMetrics_LabelsDefaultToFolders(t *testing.T) {
 	discSizeStr := "file-size"
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
-	cfg := &config.Radial{DiscSize: &discSizeStr}
+	cfg := &config.Radial{FileDiscSize: &discSizeStr}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Labels).To(Equal(radialtree.LabelFoldersOnly))
@@ -116,8 +137,8 @@ func TestResolveRadialMetrics_LabelsNoneExplicit(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
 	cfg := &config.Radial{
-		DiscSize: &discSizeStr,
-		Labels:   &labelStr,
+		FileDiscSize: &discSizeStr,
+		Labels:       &labelStr,
 	}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
@@ -131,7 +152,7 @@ func TestResolveRadialMetrics_GrainDefaultsToFile(t *testing.T) {
 	discSizeStr := "file-size"
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
-	cfg := &config.Radial{DiscSize: &discSizeStr}
+	cfg := &config.Radial{FileDiscSize: &discSizeStr}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Grain).To(Equal(radialtree.GrainFile))
@@ -146,8 +167,8 @@ func TestResolveRadialMetrics_GrainDirectoryExplicit(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &radialtree.State{}
 	cfg := &config.Radial{
-		DiscSize: &discSizeStr,
-		Grain:    &grainStr,
+		FileDiscSize: &discSizeStr,
+		Grain:        &grainStr,
 	}
 
 	g.Expect(radialtree.ResolveMetrics(common, viz, cfg)).To(Succeed())

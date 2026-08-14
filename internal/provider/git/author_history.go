@@ -69,6 +69,9 @@ func BulkAuthorHistory(
 		return AuthorHistoryResult{}, eris.Wrap(err, "failed to open git repository")
 	}
 
+	s.repoMu.Lock()
+	defer s.repoMu.Unlock()
+
 	head, err := s.repo.Head()
 	if err != nil {
 		return AuthorHistoryResult{}, eris.Wrap(err, "failed to get HEAD")

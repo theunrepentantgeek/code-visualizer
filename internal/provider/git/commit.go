@@ -218,6 +218,9 @@ func (s *repoService) walkTrackedHistory(
 	onCommitProcessed func(),
 	visit func(*object.Commit, []trackedChange),
 ) error {
+	s.repoMu.Lock()
+	defer s.repoMu.Unlock()
+
 	iter, err := s.commitIterator()
 	if err != nil {
 		return err
