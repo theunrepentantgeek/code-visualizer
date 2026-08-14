@@ -139,6 +139,10 @@ func inRegionDelaunayTriangles(t *testing.T, region Region, points []Point) []Tr
 			continue
 		}
 
+		if triangleIsUnsupported(triangle) {
+			continue
+		}
+
 		triangle.Value = (triangle.Points[0].Value +
 			triangle.Points[1].Value +
 			triangle.Points[2].Value) / 3

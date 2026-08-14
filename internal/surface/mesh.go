@@ -59,8 +59,7 @@ func observedPoints(originals []Point) []Point {
 func meshPoints(region Region, model interpolationModel, seed uint64) ([]Point, bool) {
 	boundary := boundarySamples(region, model.observations)
 	for index := range boundary {
-		value, _ := model.interpolate(boundary[index])
-		boundary[index].Value = value
+		boundary[index] = model.assign(boundary[index])
 	}
 
 	points := append([]Point(nil), model.observations...)
@@ -69,8 +68,7 @@ func meshPoints(region Region, model interpolationModel, seed uint64) ([]Point, 
 
 	infill := Sample(region, samplingSources, PoissonMinDistance, seed)
 	for _, point := range infill {
-		point.Value, _ = model.interpolate(point)
-		points = append(points, point)
+		points = append(points, model.assign(point))
 	}
 
 	return refineMeshPoints(region, points, model)
@@ -95,8 +93,7 @@ func refineMeshPoints(region Region, points []Point, model interpolationModel) (
 		}
 
 		for _, candidate := range candidates {
-			candidate.Value, _ = model.interpolate(candidate)
-			points = append(points, candidate)
+			points = append(points, model.assign(candidate))
 		}
 	}
 }
@@ -194,6 +191,10 @@ func regionTriangles(region Region, points []Point, indexes []int) ([]Triangle, 
 			continue
 		}
 
+		if triangleIsUnsupported(triangle) {
+			continue
+		}
+
 		triangle.Value = (triangle.Points[0].Value + triangle.Points[1].Value + triangle.Points[2].Value) / 3
 		if triangleInRegion(region, triangle) {
 			if LongestEdge(triangle) > MaxTriangleEdge {
@@ -205,6 +206,16 @@ func regionTriangles(region Region, points []Point, indexes []int) ([]Triangle, 
 	}
 
 	return triangles, true
+}
+
+func triangleIsUnsupported(triangle Triangle) bool {
+	for _, point := range triangle.Points {
+		if point.unsupported {
+			return true
+		}
+	}
+
+	return false
 }
 
 func triangleAt(points []Point, indexes [3]int) (Triangle, bool) {

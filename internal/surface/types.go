@@ -10,10 +10,11 @@ const (
 )
 
 type Point struct {
-	X        float64
-	Y        float64
-	Value    float64
-	Original bool
+	X           float64
+	Y           float64
+	Value       float64
+	unsupported bool
+	Original    bool
 }
 
 type Rect struct {
