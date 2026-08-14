@@ -145,3 +145,24 @@ func TestInterpolate_ReturnsZeroForUnsupportedInterpolation(t *testing.T) {
 
 	g.Expect(value).To(gomega.Equal(0.0))
 }
+
+func TestInterpolationModelAssign_SetsUnsupportedFromSupportState(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	model := interpolationModel{
+		observations: []Point{
+			{X: 0, Y: 0, Value: 0},
+			{X: 2, Y: 0, Value: 0},
+		},
+		radius: 2,
+	}
+
+	supported := model.assign(Point{X: 1, Y: 0})
+	g.Expect(supported.Value).To(gomega.Equal(0.0))
+	g.Expect(supported.unsupported).To(gomega.BeFalse())
+
+	unsupported := model.assign(Point{X: 4, Y: 0})
+	g.Expect(unsupported.Value).To(gomega.Equal(0.0))
+	g.Expect(unsupported.unsupported).To(gomega.BeTrue())
+}

@@ -147,3 +147,11 @@ func (model interpolationModel) interpolate(point Point) (float64, bool) {
 
 	return value, true
 }
+
+func (model interpolationModel) assign(point Point) Point {
+	value, supported := model.interpolate(point)
+	point.Value = value
+	point.unsupported = !supported
+
+	return point
+}
