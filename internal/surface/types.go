@@ -7,7 +7,6 @@ const (
 	MaxTriangleEdge          = 8.0
 	MaxBoundarySegmentLength = 1.0
 	PoissonMinDistance       = 4.0
-	IDWPower                 = 2.0
 )
 
 type Point struct {
