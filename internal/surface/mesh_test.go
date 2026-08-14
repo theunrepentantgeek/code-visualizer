@@ -9,17 +9,17 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
-func TestInterpolate_UsesInverseDistanceWeighting(t *testing.T) {
+func TestInterpolate_InterpolatesMidpointWithCompactKernel(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
 	originals := []surface.Point{
-		{X: 0, Y: 0, Value: 0, Original: true},
-		{X: 4, Y: 0, Value: 8, Original: true},
+		{X: 0, Y: 0, Value: 0},
+		{X: 4, Y: 0, Value: 8},
 	}
 
-	g.Expect(surface.Interpolate(surface.Point{X: 1, Y: 0}, originals)).To(
-		gomega.BeNumerically("~", 0.8),
+	g.Expect(surface.Interpolate(surface.Point{X: 2, Y: 0}, originals)).To(
+		gomega.Equal(4.0),
 	)
 }
 
@@ -28,11 +28,11 @@ func TestInterpolate_ReturnsObservedValueAtOriginalLocation(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	originals := []surface.Point{
-		{X: 0, Y: 0, Value: 3, Original: true},
-		{X: 4, Y: 0, Value: 8, Original: true},
+		{X: 0, Y: 0, Value: 3},
+		{X: 4, Y: 0, Value: 8},
 	}
 
-	g.Expect(surface.Interpolate(originals[0], originals)).To(
+	g.Expect(surface.Interpolate(surface.Point{X: 0, Y: 0}, originals)).To(
 		gomega.Equal(3.0),
 	)
 	g.Expect(surface.Interpolate(surface.Point{X: 4, Y: 0}, originals)).To(gomega.Equal(8.0))
@@ -82,7 +82,7 @@ func TestBuildAndSample_RejectTypedNilAnnulusRegion(t *testing.T) {
 	g.Expect(samples).To(gomega.BeEmpty())
 }
 
-func TestBuild_IgnoresNonFiniteOriginalCoordinates(t *testing.T) {
+func TestBuild_IgnoresNonFiniteOriginalCoordinatesAndValues(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
@@ -93,6 +93,9 @@ func TestBuild_IgnoresNonFiniteOriginalCoordinates(t *testing.T) {
 		{X: math.NaN(), Y: 5, Value: 4},
 		{X: 5, Y: math.Inf(1), Value: 5},
 		{X: math.Inf(-1), Y: 5, Value: 6},
+		{X: 5, Y: 5, Value: math.NaN()},
+		{X: 6, Y: 6, Value: math.Inf(1)},
+		{X: 7, Y: 7, Value: math.Inf(-1)},
 	}
 
 	var triangles []surface.Triangle
@@ -111,6 +114,7 @@ func TestBuild_IgnoresNonFiniteOriginalCoordinates(t *testing.T) {
 		for _, point := range triangle.Points {
 			g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(gomega.BeFalse())
 			g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(gomega.BeFalse())
+			g.Expect(math.IsNaN(point.Value) || math.IsInf(point.Value, 0)).To(gomega.BeFalse())
 		}
 	}
 }

@@ -13,35 +13,6 @@ import (
 // them and leaving a ragged edge.
 const radiusTolerance = 1e-9
 
-// Interpolate estimates a point's value from observed points using inverse-distance weighting.
-func Interpolate(point Point, originals []Point) float64 {
-	if len(originals) == 0 {
-		return 0
-	}
-
-	if point.Original {
-		return point.Value
-	}
-
-	var (
-		weightedValue float64
-		totalWeight   float64
-	)
-
-	for _, original := range originals {
-		distance := Distance(point, original)
-		if distance == 0 {
-			return original.Value
-		}
-
-		weight := 1 / math.Pow(distance, IDWPower)
-		weightedValue += original.Value * weight
-		totalWeight += weight
-	}
-
-	return weightedValue / totalWeight
-}
-
 // Build creates an interpolated Delaunay triangle mesh restricted to region.
 func Build(region Region, originals []Point, seed uint64) []Triangle {
 	if !isValidRegion(region) {
@@ -74,7 +45,7 @@ func Build(region Region, originals []Point, seed uint64) []Triangle {
 func observedPoints(originals []Point) []Point {
 	observed := make([]Point, 0, len(originals))
 	for _, original := range originals {
-		if !isFinitePoint(original) {
+		if !isFinitePoint(original) || !isFinite(original.Value) {
 			continue
 		}
 
