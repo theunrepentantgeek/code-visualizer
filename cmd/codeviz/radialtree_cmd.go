@@ -59,7 +59,10 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 	}
 
 	if cfg.DirectoryDiscSize != nil {
-		if err := validateNumericMetric("directory-disc-size", metric.Name(ptrString(cfg.DirectoryDiscSize))); err != nil {
+		if err := validateNumericMetric(
+			"directory-disc-size",
+			metric.Name(ptrString(cfg.DirectoryDiscSize)),
+		); err != nil {
 			return err
 		}
 	}
