@@ -2,7 +2,7 @@ package surface
 
 import (
 	"math"
-	"sort"
+	"slices"
 )
 
 const (
@@ -52,23 +52,7 @@ func interpolationSupportRadius(observations []Point) (float64, bool) {
 			continue
 		}
 
-		nearestDistance := math.Inf(1)
-		for otherIndex, other := range observations {
-			if otherIndex == index {
-				continue
-			}
-
-			distance := Distance(observation, other)
-			if !isFinite(distance) || distance <= 0 {
-				continue
-			}
-
-			if distance < nearestDistance {
-				nearestDistance = distance
-			}
-		}
-
-		if isFinite(nearestDistance) && nearestDistance > 0 {
+		if nearestDistance, found := nearestPositiveDistance(observations, index); found {
 			nearestPositiveDistances = append(nearestPositiveDistances, nearestDistance)
 		}
 	}
@@ -77,14 +61,9 @@ func interpolationSupportRadius(observations []Point) (float64, bool) {
 		return 0, false
 	}
 
-	sort.Float64s(nearestPositiveDistances)
+	slices.Sort(nearestPositiveDistances)
+
 	index := int(math.Ceil(supportRadiusPercentile*float64(len(nearestPositiveDistances)))) - 1
-	if index < 0 {
-		index = 0
-	}
-	if index >= len(nearestPositiveDistances) {
-		index = len(nearestPositiveDistances) - 1
-	}
 
 	radius := nearestPositiveDistances[index] * supportRadiusMultiplier
 	if !isFinite(radius) || radius <= 0 {
@@ -94,10 +73,28 @@ func interpolationSupportRadius(observations []Point) (float64, bool) {
 	return radius, true
 }
 
+func nearestPositiveDistance(observations []Point, observationIndex int) (float64, bool) {
+	nearestDistance := math.Inf(1)
+
+	for otherIndex, other := range observations {
+		if otherIndex == observationIndex {
+			continue
+		}
+
+		distance := Distance(observations[observationIndex], other)
+		if isFinite(distance) && distance > 0 {
+			nearestDistance = min(nearestDistance, distance)
+		}
+	}
+
+	return nearestDistance, isFinite(nearestDistance)
+}
+
 func smootherstepWeight(t float64) float64 {
 	if !isFinite(t) || t >= 1 {
 		return 0
 	}
+
 	if t <= 0 {
 		return 1
 	}
@@ -110,12 +107,24 @@ func (model interpolationModel) interpolate(point Point) (float64, bool) {
 		return 0, false
 	}
 
-	for _, observation := range model.observations {
+	if value, found := observedValueAt(point, model.observations); found {
+		return value, true
+	}
+
+	return model.weightedValue(point)
+}
+
+func observedValueAt(point Point, observations []Point) (float64, bool) {
+	for _, observation := range observations {
 		if point.X == observation.X && point.Y == observation.Y {
 			return observation.Value, true
 		}
 	}
 
+	return 0, false
+}
+
+func (model interpolationModel) weightedValue(point Point) (float64, bool) {
 	var (
 		weightedValue float64
 		totalWeight   float64
@@ -136,7 +145,7 @@ func (model interpolationModel) interpolate(point Point) (float64, bool) {
 		totalWeight += weight
 	}
 
-	if !isFinite(totalWeight) || totalWeight <= 0 || !isFinite(weightedValue) {
+	if totalWeight <= 0 || !isFinite(totalWeight) || !isFinite(weightedValue) {
 		return 0, false
 	}
 

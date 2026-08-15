@@ -187,22 +187,19 @@ func regionTriangles(region Region, points []Point, indexes []int) ([]Triangle, 
 			indexes[index+1],
 			indexes[index+2],
 		})
-		if !ok || isDegenerateTriangle(triangle) {
-			continue
-		}
-
-		if triangleIsUnsupported(triangle) {
+		if !ok ||
+			isDegenerateTriangle(triangle) ||
+			triangleIsUnsupported(triangle) ||
+			!triangleInRegion(region, triangle) {
 			continue
 		}
 
 		triangle.Value = (triangle.Points[0].Value + triangle.Points[1].Value + triangle.Points[2].Value) / 3
-		if triangleInRegion(region, triangle) {
-			if LongestEdge(triangle) > MaxTriangleEdge {
-				return nil, false
-			}
-
-			triangles = append(triangles, triangle)
+		if LongestEdge(triangle) > MaxTriangleEdge {
+			return nil, false
 		}
+
+		triangles = append(triangles, triangle)
 	}
 
 	return triangles, true

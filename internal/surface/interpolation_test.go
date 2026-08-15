@@ -22,6 +22,7 @@ func TestSmootherstepWeight_IsFlatAtEndpoints(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
+
 	const epsilon = 1e-4
 
 	g.Expect(math.Abs(1 - smootherstepWeight(epsilon))).To(gomega.BeNumerically("<", 1e-9))
@@ -33,6 +34,7 @@ func TestInterpolationSupportRadius_UsesNinetiethPercentileNearestPositiveDistan
 
 	g := gomega.NewWithT(t)
 	observations := make([]Point, 0, 20)
+
 	for gap := range 10 {
 		base := float64((gap + 1) * 100)
 		delta := float64(gap + 1)
@@ -63,6 +65,7 @@ func TestNewInterpolationModel_FiltersNonFiniteAndKeepsCoincidentPoints(t *testi
 	g.Expect(ok).To(gomega.BeTrue())
 	g.Expect(model.observations).To(gomega.HaveLen(3))
 	g.Expect(model.radius).To(gomega.Equal(8.0))
+
 	for _, observation := range model.observations {
 		g.Expect(observation.Original).To(gomega.BeTrue())
 	}
