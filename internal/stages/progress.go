@@ -27,12 +27,12 @@ func BuildScanProgress(flags *Flags) (scan.Progress, func()) {
 // BuildMetricProgress creates a provider.MetricProgress adapter that logs periodic
 // progress during metric calculation.
 // The caller must invoke the returned stop function when metric calculation completes.
-func BuildMetricProgress(flags *Flags, totalFiles int) (provider.MetricProgress, func()) {
+func BuildMetricProgress(flags *Flags, total int64) (provider.MetricProgress, func()) {
 	if flags.Quiet {
 		return nil, func() {}
 	}
 
-	tracker := &metricProgressTracker{total: int64(totalFiles)}
+	tracker := &metricProgressTracker{total: total}
 	stop := startMetricTicker(tracker)
 
 	return tracker, stop

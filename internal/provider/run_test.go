@@ -324,6 +324,29 @@ func TestRunLoadersReportsSelectedMetricsForFileProgress(t *testing.T) {
 	g.Expect(progress.fileProcessed).To(Equal([]metric.Name{"c", "c"}))
 }
 
+//nolint:paralleltest // mutates global base registry
+func TestFileProgressTotalMatchesReportedMetricObservations(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resetBaseRegistry(t)
+
+	progress := &fileProgressTracker{}
+	loader := &fileProgressLoader{}
+
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:  []metric.Name{"a", "b", "c"},
+		Load:     loader.Load,
+		Reporter: loader,
+	})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics: []metric.Name{"not-reported"},
+		Load:    func(_ *model.Directory, _ []metric.Name) error { return nil },
+	})
+
+	requested := []metric.Name{"a", "c", "not-reported"}
+	g.Expect(provider.RunLoaders(nil, requested, progress)).To(Succeed())
+	g.Expect(progress.fileProcessed).To(HaveLen(int(provider.FileProgressTotal(requested, 2))))
+}
+
 type blockingFileProgressLoader struct {
 	onFile        func()
 	mu            sync.Mutex
