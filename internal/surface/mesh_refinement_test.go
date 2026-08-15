@@ -60,6 +60,7 @@ func TestMeshPoints_RefinesInRegionTrianglesToMaximumEdge(t *testing.T) {
 	t.Parallel()
 
 	region, originals := refinementTestMesh()
+
 	model, ok := newInterpolationModel(originals)
 	if !ok {
 		t.Fatal("expected interpolation model")
@@ -84,6 +85,7 @@ func TestBuild_CoversEveryInRegionDelaunayFaceAfterRefinement(t *testing.T) {
 	t.Parallel()
 
 	region, originals := refinementTestMesh()
+
 	model, ok := newInterpolationModel(originals)
 	if !ok {
 		t.Fatal("expected interpolation model")
