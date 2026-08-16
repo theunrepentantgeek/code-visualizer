@@ -11,6 +11,13 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups:
+      experimental:
+        patterns:
+          - "golang.org/x/*"
+      external:
+        patterns:
+          - "*/*"
 
   # Enable version updates for Docker
   - package-ecosystem: "docker"
@@ -27,8 +34,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "github/gh-aw-actions/*"
     groups:
       # codeql actions need to be updated together
       codeql-action:
         patterns:
           - "github/codeql-action/*"
+      github-actions:
+        patterns:
+          - "*"
