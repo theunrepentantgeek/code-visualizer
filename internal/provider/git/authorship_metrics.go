@@ -384,11 +384,13 @@ func earlyAuthors(records []AuthorRecord, cutoff time.Time) map[string]bool {
 			if point.When.After(cutoff) {
 				continue
 			}
+
 			if point.Added+point.Removed == 0 {
 				continue
 			}
 
 			authors[record.Email] = true
+
 			break
 		}
 	}
