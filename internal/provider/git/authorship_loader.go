@@ -204,6 +204,28 @@ func mergeSubtreeFileRecords(
 // globalEmailRanking returns a set of the top-K author emails ranked by total
 // contribution weight (Added+Removed) across all files in byFile.
 func globalEmailRanking(byFile FileAuthorRecords, topK int) map[string]bool {
+	weights, firstSeen := globalAuthorStats(byFile)
+
+	emails := make([]string, 0, len(weights))
+	for email := range weights {
+		emails = append(emails, email)
+	}
+
+	slices.SortStableFunc(emails, compareRankedEmails(weights, firstSeen))
+
+	top := make(map[string]bool, topK)
+	for i, email := range emails {
+		if i >= topK {
+			break
+		}
+
+		top[email] = true
+	}
+
+	return top
+}
+
+func globalAuthorStats(byFile FileAuthorRecords) (map[string]int64, map[string]time.Time) {
 	weights := make(map[string]int64)
 	firstSeen := make(map[string]time.Time)
 
@@ -216,12 +238,11 @@ func globalEmailRanking(byFile FileAuthorRecords, topK int) map[string]bool {
 		}
 	}
 
-	emails := make([]string, 0, len(weights))
-	for email := range weights {
-		emails = append(emails, email)
-	}
+	return weights, firstSeen
+}
 
-	slices.SortStableFunc(emails, func(a, b string) int {
+func compareRankedEmails(weights map[string]int64, firstSeen map[string]time.Time) func(string, string) int {
+	return func(a, b string) int {
 		if c := cmp.Compare(weights[b], weights[a]); c != 0 {
 			return c
 		}
@@ -231,22 +252,12 @@ func globalEmailRanking(byFile FileAuthorRecords, topK int) map[string]bool {
 			if af.Before(bf) {
 				return -1
 			}
+
 			return 1
 		}
 
 		return cmp.Compare(a, b)
-	})
-
-	top := make(map[string]bool, topK)
-	for i, email := range emails {
-		if i >= topK {
-			break
-		}
-
-		top[email] = true
 	}
-
-	return top
 }
 
 // identityMetricNames lists the three Classification metrics that use author

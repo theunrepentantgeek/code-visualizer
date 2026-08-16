@@ -48,30 +48,7 @@ func parseMailmap(r io.Reader) mailmap {
 	sc := bufio.NewScanner(r)
 
 	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		// Strip inline comments.
-		if idx := strings.Index(line, " #"); idx >= 0 {
-			line = strings.TrimSpace(line[:idx])
-		}
-
-		properName, properEmail, oldEmail := parseMailmapLine(line)
-		if properEmail == "" {
-			continue
-		}
-
-		key := oldEmail
-		if key == "" {
-			key = properEmail
-		}
-
-		mm[strings.ToLower(key)] = mailmapEntry{
-			properEmail: properEmail,
-			properName:  properName,
-		}
+		addMailmapLine(mm, sc.Text())
 	}
 
 	if err := sc.Err(); err != nil {
@@ -79,6 +56,32 @@ func parseMailmap(r io.Reader) mailmap {
 	}
 
 	return mm
+}
+
+func addMailmapLine(mm mailmap, rawLine string) {
+	line := strings.TrimSpace(rawLine)
+	if line == "" || strings.HasPrefix(line, "#") {
+		return
+	}
+
+	if idx := strings.Index(line, " #"); idx >= 0 {
+		line = strings.TrimSpace(line[:idx])
+	}
+
+	properName, properEmail, oldEmail := parseMailmapLine(line)
+	if properEmail == "" {
+		return
+	}
+
+	key := oldEmail
+	if key == "" {
+		key = properEmail
+	}
+
+	mm[strings.ToLower(key)] = mailmapEntry{
+		properEmail: properEmail,
+		properName:  properName,
+	}
 }
 
 // parseMailmapLine extracts (properName, properEmail, oldEmail) from one line.
