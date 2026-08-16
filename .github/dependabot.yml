@@ -27,6 +27,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "github/gh-aw-actions/*"
     groups:
       # codeql actions need to be updated together
       codeql-action:
