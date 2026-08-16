@@ -37,6 +37,36 @@ type Commit struct {
 	ChangedPaths []string // slash-separated, repo-relative
 }
 
+// CommitTotal returns the number of commits reachable from HEAD.
+func CommitTotal(repoPath string) (int64, error) {
+	s, err := getService(repoPath)
+	if err != nil {
+		return 0, eris.Wrap(err, "failed to open git repository")
+	}
+
+	s.repoMu.Lock()
+	defer s.repoMu.Unlock()
+
+	iter, err := s.commitIterator()
+	if err != nil {
+		return 0, err
+	}
+	defer iter.Close()
+
+	var total int64
+
+	err = iter.ForEach(func(*object.Commit) error {
+		total++
+
+		return nil
+	})
+	if err != nil {
+		return 0, eris.Wrap(err, "failed to iterate commits")
+	}
+
+	return total, nil
+}
+
 // BulkCommitHistory walks the commit graph once and returns one Commit per
 // commit reachable from HEAD that touches at least one path in `tracked`.
 // Commits that change no tracked path are omitted.

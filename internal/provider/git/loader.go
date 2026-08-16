@@ -101,19 +101,8 @@ func newFileProgressCallbacks(onFile func()) fileProgressCallbacks {
 		return fileProgressCallbacks{}
 	}
 
-	prewarmProgressReported := false
-
 	return fileProgressCallbacks{
-		onPrewarm: func() {
-			prewarmProgressReported = true
-
-			onFile()
-		},
-		onFile: func() {
-			if !prewarmProgressReported {
-				onFile()
-			}
-		},
+		onFile: onFile,
 	}
 }
 

@@ -80,6 +80,16 @@ func TestBulkCommitHistory_InvokesProgressCallback(t *testing.T) {
 	g.Expect(count).To(BeNumerically(">=", 1))
 }
 
+func TestCommitTotal_ReturnsReachableCommitCount(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	total, err := CommitTotal(setupTestGitRepo(t))
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(total).To(Equal(int64(3)))
+}
+
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestBulkCommitHistoryAndPrewarm_PreservesHistoryAndWarmsCache(t *testing.T) {
 	g := NewGomegaWithT(t)

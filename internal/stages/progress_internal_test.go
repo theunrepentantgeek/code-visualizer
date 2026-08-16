@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"log/slog"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -47,12 +46,12 @@ func TestLogHistoryProgress_LogsAggregateProcessedCommits(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
 	defer slog.SetDefault(oldDefault)
 
-	counter := &atomic.Int64{}
-	counter.Store(3)
+	tracker := &historyProgressTracker{total: 4}
+	tracker.loaded.Store(3)
 
-	logHistoryProgress(counter)
+	logHistoryProgress(tracker)
 
-	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading history." commits=3`))
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading history." commits=3 total=4 percentage=75`))
 	g.Expect(buf.String()).To(HavePrefix("time="))
 	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
 }

@@ -136,23 +136,40 @@ func logMetricProgress(tracker *metricProgressTracker) {
 // BuildHistoryProgress creates a per-commit callback and (if applicable) starts a
 // ticker goroutine that logs commit history loading progress every second.
 // The caller must invoke the returned stop function when loading completes.
-func BuildHistoryProgress(flags *Flags) (onCommit func(), stop func()) {
+func BuildHistoryProgress(flags *Flags, total int64) (onCommit func(), stop func()) {
 	if flags.Quiet {
 		return nil, func() {}
 	}
 
-	counter := &atomic.Int64{}
-	stop = startHistoryTicker(counter)
+	tracker := &historyProgressTracker{total: total}
+	stop = startHistoryTicker(tracker)
 
-	return func() { counter.Add(1) }, stop
+	return func() { tracker.loaded.Add(1) }, stop
 }
 
-func startHistoryTicker(counter *atomic.Int64) (stop func()) {
+type historyProgressTracker struct {
+	loaded atomic.Int64
+	total  int64
+}
+
+func startHistoryTicker(tracker *historyProgressTracker) (stop func()) {
 	return startProgressTicker(func() {
-		logHistoryProgress(counter)
+		logHistoryProgress(tracker)
 	})
 }
 
-func logHistoryProgress(counter *atomic.Int64) {
-	slog.Info("Loading history.", "commits", counter.Load())
+func logHistoryProgress(tracker *historyProgressTracker) {
+	loaded := tracker.loaded.Load()
+	percentage := int64(0)
+
+	if tracker.total > 0 {
+		percentage = min(loaded*100/tracker.total, 100)
+	}
+
+	slog.Info(
+		"Loading history.",
+		"commits", loaded,
+		"total", tracker.total,
+		"percentage", percentage,
+	)
 }

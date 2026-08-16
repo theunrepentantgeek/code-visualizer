@@ -152,7 +152,7 @@ func TestBuildHistoryProgress_DefaultMode_ReturnsCallback(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	onCommit, stop := stages.BuildHistoryProgress(&stages.Flags{})
+	onCommit, stop := stages.BuildHistoryProgress(&stages.Flags{}, 1)
 	defer stop()
 
 	g.Expect(onCommit).NotTo(BeNil())
@@ -164,7 +164,7 @@ func TestBuildHistoryProgress_VerboseMode_ReturnsCallback(t *testing.T) {
 
 	flags := &stages.Flags{Verbose: true}
 
-	onCommit, stop := stages.BuildHistoryProgress(flags)
+	onCommit, stop := stages.BuildHistoryProgress(flags, 1)
 	defer stop()
 
 	g.Expect(onCommit).NotTo(BeNil())
@@ -176,7 +176,7 @@ func TestBuildHistoryProgress_DebugMode_ReturnsCallback(t *testing.T) {
 
 	flags := &stages.Flags{Debug: true}
 
-	onCommit, stop := stages.BuildHistoryProgress(flags)
+	onCommit, stop := stages.BuildHistoryProgress(flags, 1)
 	defer stop()
 
 	g.Expect(onCommit).NotTo(BeNil())
@@ -188,7 +188,7 @@ func TestBuildHistoryProgress_QuietMode_ReturnsNil(t *testing.T) {
 
 	flags := &stages.Flags{Quiet: true}
 
-	onCommit, stop := stages.BuildHistoryProgress(flags)
+	onCommit, stop := stages.BuildHistoryProgress(flags, 1)
 	defer stop()
 
 	g.Expect(onCommit).To(BeNil())
@@ -199,7 +199,7 @@ func TestBuildHistoryProgress_Callback_IsCallable(t *testing.T) {
 
 	flags := &stages.Flags{Verbose: true}
 
-	onCommit, stop := stages.BuildHistoryProgress(flags)
+	onCommit, stop := stages.BuildHistoryProgress(flags, 1)
 	defer stop()
 
 	// The callback should not panic when invoked.
