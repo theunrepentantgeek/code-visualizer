@@ -1,6 +1,7 @@
 package stages
 
 import (
+	"fmt"
 	"log/slog"
 	"sync/atomic"
 	"time"
@@ -119,17 +120,16 @@ func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
 
 func logMetricProgress(tracker *metricProgressTracker) {
 	loaded := tracker.loaded.Load()
-	percentage := int64(0)
+	percentage := float64(0)
 
 	if tracker.total > 0 {
-		percentage = min(loaded*100/tracker.total, 100)
+		percentage = min(float64(loaded)*100.0/float64(tracker.total), 100.0)
 	}
 
 	slog.Info(
 		"Loading metrics.",
-		"loaded", loaded,
-		"total", tracker.total,
-		"percentage", percentage,
+		"loaded", fmt.Sprintf("%d/%d", loaded, tracker.total),
+		"percentage", fmt.Sprintf("%.1f", percentage),
 	)
 }
 
@@ -160,16 +160,15 @@ func startHistoryTicker(tracker *historyProgressTracker) (stop func()) {
 
 func logHistoryProgress(tracker *historyProgressTracker) {
 	loaded := tracker.loaded.Load()
-	percentage := int64(0)
+	percentage := float64(0)
 
 	if tracker.total > 0 {
-		percentage = min(loaded*100/tracker.total, 100)
+		percentage = min(float64(loaded)*100.0/float64(tracker.total), 100.0)
 	}
 
 	slog.Info(
 		"Loading history.",
-		"commits", loaded,
-		"total", tracker.total,
-		"percentage", percentage,
+		"commits", fmt.Sprintf("%d/%d", loaded, tracker.total),
+		"percentage", fmt.Sprintf("%.1f", percentage),
 	)
 }
