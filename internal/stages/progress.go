@@ -122,16 +122,11 @@ func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
 
 func logMetricProgress(tracker *metricProgressTracker) {
 	loaded := tracker.loaded.Load()
-	percentage := float64(0)
-
-	if tracker.total > 0 {
-		percentage = min(float64(loaded)*100.0/float64(tracker.total), 100.0)
-	}
 
 	slog.Info(
 		"Loading metrics.",
 		"loaded", fmt.Sprintf("%d/%d", loaded, tracker.total),
-		"percentage", fmt.Sprintf("%.1f", percentage),
+		"percentage", fmt.Sprintf("%.1f", loadPercentage(loaded, tracker.total)),
 	)
 }
 
@@ -162,15 +157,20 @@ func startHistoryTicker(tracker *historyProgressTracker) (stop func()) {
 
 func logHistoryProgress(tracker *historyProgressTracker) {
 	loaded := tracker.loaded.Load()
-	percentage := float64(0)
-
-	if tracker.total > 0 {
-		percentage = min(float64(loaded)*100.0/float64(tracker.total), 100.0)
-	}
 
 	slog.Info(
 		"Loading history.",
 		"commits", fmt.Sprintf("%d/%d", loaded, tracker.total),
-		"percentage", fmt.Sprintf("%.1f", percentage),
+		"percentage", fmt.Sprintf("%.1f", loadPercentage(loaded, tracker.total)),
 	)
+}
+
+// loadPercentage returns a clamped [0, 100] percentage for loaded/total progress.
+// Returns 0 when total is zero to avoid division by zero.
+func loadPercentage(loaded, total int64) float64 {
+	if total <= 0 {
+		return 0
+	}
+
+	return min(float64(loaded)*100.0/float64(total), 100.0)
 }
