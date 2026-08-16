@@ -10,6 +10,7 @@
         "isBinary": false,
         "quantities": {
           "author-count": 713,
+          "bus-factor": 156,
           "commit-count": 151,
           "constants.count": 1,
           "cyclomatic-complexity.max": 849,
@@ -48,6 +49,7 @@
           "public.functions.count": 1,
           "public.methods.count": 1,
           "public.types.count": 1,
+          "significant-contributor-count": 55,
           "stdlib.imports": 8,
           "total-lines-added": 329,
           "total-lines-removed": 371,
@@ -56,15 +58,22 @@
         "measures": {
           "comment-ratio": 82.64,
           "commit-density": 94.37,
+          "contributor-entropy": 72.54,
           "cyclomatic-complexity.mean": 570,
           "function-length.mean": 814.666667,
+          "knowledge-handoff": 60.12,
+          "orphan-risk": 40.73,
+          "ownership-dominance": 15.39,
           "private.cyclomatic-complexity.mean": 849,
           "private.function-length.mean": 739,
           "public.cyclomatic-complexity.mean": 430.5,
           "public.function-length.mean": 852.5
         },
         "classifications": {
-          "file-type": "gamma"
+          "code-owner": "gamma",
+          "current-maintainer": "delta",
+          "file-type": "gamma",
+          "initial-developer": "alpha"
         }
       },
       {
@@ -74,6 +83,7 @@
         "isBinary": false,
         "quantities": {
           "author-count": 676,
+          "bus-factor": 225,
           "commit-count": 678,
           "constants.count": 1,
           "cyclomatic-complexity.max": 422,
@@ -112,6 +122,7 @@
           "public.functions.count": 1,
           "public.methods.count": 1,
           "public.types.count": 1,
+          "significant-contributor-count": 894,
           "stdlib.imports": 247,
           "total-lines-added": 860,
           "total-lines-removed": 346,
@@ -120,15 +131,22 @@
         "measures": {
           "comment-ratio": 28.43,
           "commit-density": 19.1,
+          "contributor-entropy": 8.93,
           "cyclomatic-complexity.mean": 353.666667,
           "function-length.mean": 722.333333,
+          "knowledge-handoff": 17.75,
+          "orphan-risk": 71.22,
+          "ownership-dominance": 99.2,
           "private.cyclomatic-complexity.mean": 288,
           "private.function-length.mean": 950,
           "public.cyclomatic-complexity.mean": 386.5,
           "public.function-length.mean": 608.5
         },
         "classifications": {
-          "file-type": "beta"
+          "code-owner": "beta",
+          "current-maintainer": "alpha",
+          "file-type": "beta",
+          "initial-developer": "delta"
         }
       }
     ],
@@ -144,6 +162,7 @@
             "isBinary": false,
             "quantities": {
               "author-count": 374,
+              "bus-factor": 147,
               "commit-count": 244,
               "constants.count": 1,
               "cyclomatic-complexity.max": 990,
@@ -182,6 +201,7 @@
               "public.functions.count": 1,
               "public.methods.count": 1,
               "public.types.count": 1,
+              "significant-contributor-count": 468,
               "stdlib.imports": 105,
               "total-lines-added": 406,
               "total-lines-removed": 960,
@@ -190,15 +210,22 @@
             "measures": {
               "comment-ratio": 82.13,
               "commit-density": 83.24,
+              "contributor-entropy": 86.11,
               "cyclomatic-complexity.mean": 677,
               "function-length.mean": 479,
+              "knowledge-handoff": 96.41,
+              "orphan-risk": 40.96,
+              "ownership-dominance": 72.18,
               "private.cyclomatic-complexity.mean": 990,
               "private.function-length.mean": 40,
               "public.cyclomatic-complexity.mean": 520.5,
               "public.function-length.mean": 698.5
             },
             "classifications": {
-              "file-type": "delta"
+              "code-owner": "delta",
+              "current-maintainer": "gamma",
+              "file-type": "delta",
+              "initial-developer": "beta"
             }
           }
         ],
@@ -214,6 +241,7 @@
                 "isBinary": false,
                 "quantities": {
                   "author-count": 526,
+                  "bus-factor": 901,
                   "commit-count": 840,
                   "constants.count": 1,
                   "cyclomatic-complexity.max": 709,
@@ -252,6 +280,7 @@
                   "public.functions.count": 1,
                   "public.methods.count": 1,
                   "public.types.count": 1,
+                  "significant-contributor-count": 32,
                   "stdlib.imports": 491,
                   "total-lines-added": 678,
                   "total-lines-removed": 804,
@@ -260,15 +289,22 @@
                 "measures": {
                   "comment-ratio": 26.69,
                   "commit-density": 33.3,
+                  "contributor-entropy": 92.63,
                   "cyclomatic-complexity.mean": 505,
                   "function-length.mean": 407,
+                  "knowledge-handoff": 20.33,
+                  "orphan-risk": 96.14,
+                  "ownership-dominance": 26.44,
                   "private.cyclomatic-complexity.mean": 170,
                   "private.function-length.mean": 320,
                   "public.cyclomatic-complexity.mean": 672.5,
                   "public.function-length.mean": 450.5
                 },
                 "classifications": {
-                  "file-type": "delta"
+                  "code-owner": "delta",
+                  "current-maintainer": "alpha",
+                  "file-type": "delta",
+                  "initial-developer": "beta"
                 }
               }
             ],
@@ -276,6 +312,9 @@
               "author-count.max": 526,
               "author-count.min": 526,
               "author-count.sum": 526,
+              "bus-factor.max": 901,
+              "bus-factor.min": 901,
+              "bus-factor.sum": 901,
               "commit-count.max": 840,
               "commit-count.min": 840,
               "commit-count.sum": 840,
@@ -340,6 +379,9 @@
               "public.functions.count": 1,
               "public.methods.count": 1,
               "public.types.count": 1,
+              "significant-contributor-count.max": 32,
+              "significant-contributor-count.min": 32,
+              "significant-contributor-count.sum": 32,
               "stdlib.imports.max": 491,
               "stdlib.imports.min": 491,
               "stdlib.imports.sum": 491,
@@ -353,12 +395,15 @@
             },
             "measures": {
               "author-count.mean": 526,
+              "bus-factor.mean": 901,
               "comment-ratio.max": 26.69,
               "comment-ratio.mean": 26.69,
               "comment-ratio.min": 26.69,
               "commit-count.mean": 840,
               "commit-density.max": 33.3,
               "commit-density.min": 33.3,
+              "contributor-entropy.max": 92.63,
+              "contributor-entropy.min": 92.63,
               "cyclomatic-complexity.mean": 505,
               "external.imports.mean": 738,
               "file-age.mean": 427,
@@ -368,19 +413,29 @@
               "function-length.mean": 407,
               "imports.mean": 419,
               "internal.imports.mean": 32,
+              "knowledge-handoff.max": 20.33,
+              "knowledge-handoff.min": 20.33,
               "lines-added.mean": 782.5,
               "lines-changed.mean": 644.5,
               "lines-removed.mean": 408.5,
+              "orphan-risk.max": 96.14,
+              "orphan-risk.min": 96.14,
+              "ownership-dominance.max": 26.44,
+              "ownership-dominance.min": 26.44,
               "private.cyclomatic-complexity.mean": 170,
               "private.function-length.mean": 320,
               "public.cyclomatic-complexity.mean": 672.5,
               "public.function-length.mean": 450.5,
+              "significant-contributor-count.mean": 32,
               "stdlib.imports.mean": 491,
               "total-lines-added.mean": 678,
               "total-lines-removed.mean": 804
             },
             "classifications": {
-              "file-type.mode": "delta"
+              "code-owner.mode": "delta",
+              "current-maintainer.mode": "alpha",
+              "file-type.mode": "delta",
+              "initial-developer.mode": "beta"
             }
           }
         ],
@@ -388,6 +443,9 @@
           "author-count.max": 526,
           "author-count.min": 374,
           "author-count.sum": 900,
+          "bus-factor.max": 901,
+          "bus-factor.min": 147,
+          "bus-factor.sum": 1048,
           "commit-count.max": 840,
           "commit-count.min": 244,
           "commit-count.sum": 1084,
@@ -452,6 +510,9 @@
           "public.functions.count": 2,
           "public.methods.count": 2,
           "public.types.count": 2,
+          "significant-contributor-count.max": 468,
+          "significant-contributor-count.min": 32,
+          "significant-contributor-count.sum": 500,
           "stdlib.imports.max": 491,
           "stdlib.imports.min": 105,
           "stdlib.imports.sum": 596,
@@ -465,12 +526,15 @@
         },
         "measures": {
           "author-count.mean": 450,
+          "bus-factor.mean": 524,
           "comment-ratio.max": 82.13,
           "comment-ratio.mean": 54.41,
           "comment-ratio.min": 26.69,
           "commit-count.mean": 542,
           "commit-density.max": 83.24,
           "commit-density.min": 33.3,
+          "contributor-entropy.max": 92.63,
+          "contributor-entropy.min": 86.11,
           "cyclomatic-complexity.mean": 591,
           "external.imports.mean": 821,
           "file-age.mean": 268,
@@ -480,19 +544,29 @@
           "function-length.mean": 443,
           "imports.mean": 636,
           "internal.imports.mean": 409,
+          "knowledge-handoff.max": 96.41,
+          "knowledge-handoff.min": 20.33,
           "lines-added.mean": 511.5,
           "lines-changed.mean": 561.5,
           "lines-removed.mean": 409.5,
+          "orphan-risk.max": 96.14,
+          "orphan-risk.min": 40.96,
+          "ownership-dominance.max": 72.18,
+          "ownership-dominance.min": 26.44,
           "private.cyclomatic-complexity.mean": 580,
           "private.function-length.mean": 180,
           "public.cyclomatic-complexity.mean": 596.5,
           "public.function-length.mean": 574.5,
+          "significant-contributor-count.mean": 250,
           "stdlib.imports.mean": 298,
           "total-lines-added.mean": 542,
           "total-lines-removed.mean": 882
         },
         "classifications": {
-          "file-type.mode": "delta"
+          "code-owner.mode": "delta",
+          "current-maintainer.mode": "alpha",
+          "file-type.mode": "delta",
+          "initial-developer.mode": "beta"
         }
       }
     ],
@@ -500,6 +574,9 @@
       "author-count.max": 713,
       "author-count.min": 374,
       "author-count.sum": 2289,
+      "bus-factor.max": 901,
+      "bus-factor.min": 147,
+      "bus-factor.sum": 1429,
       "commit-count.max": 840,
       "commit-count.min": 151,
       "commit-count.sum": 1913,
@@ -564,6 +641,9 @@
       "public.functions.count": 4,
       "public.methods.count": 4,
       "public.types.count": 4,
+      "significant-contributor-count.max": 894,
+      "significant-contributor-count.min": 32,
+      "significant-contributor-count.sum": 1449,
       "stdlib.imports.max": 491,
       "stdlib.imports.min": 8,
       "stdlib.imports.sum": 851,
@@ -577,12 +657,15 @@
     },
     "measures": {
       "author-count.mean": 572.25,
+      "bus-factor.mean": 357.25,
       "comment-ratio.max": 82.64,
       "comment-ratio.mean": 54.9725,
       "comment-ratio.min": 26.69,
       "commit-count.mean": 478.25,
       "commit-density.max": 94.37,
       "commit-density.min": 19.1,
+      "contributor-entropy.max": 92.63,
+      "contributor-entropy.min": 8.93,
       "cyclomatic-complexity.mean": 526.416667,
       "external.imports.mean": 722.25,
       "file-age.mean": 401.25,
@@ -592,19 +675,29 @@
       "function-length.mean": 605.75,
       "imports.mean": 495.25,
       "internal.imports.mean": 266.25,
+      "knowledge-handoff.max": 96.41,
+      "knowledge-handoff.min": 17.75,
       "lines-added.mean": 474.5,
       "lines-changed.mean": 556.5,
       "lines-removed.mean": 545.5,
+      "orphan-risk.max": 96.14,
+      "orphan-risk.min": 40.73,
+      "ownership-dominance.max": 99.2,
+      "ownership-dominance.min": 15.39,
       "private.cyclomatic-complexity.mean": 574.25,
       "private.function-length.mean": 512.25,
       "public.cyclomatic-complexity.mean": 502.5,
       "public.function-length.mean": 652.5,
+      "significant-contributor-count.mean": 362.25,
       "stdlib.imports.mean": 212.75,
       "total-lines-added.mean": 568.25,
       "total-lines-removed.mean": 620.25
     },
     "classifications": {
-      "file-type.mode": "delta"
+      "code-owner.mode": "delta",
+      "current-maintainer.mode": "alpha",
+      "file-type.mode": "delta",
+      "initial-developer.mode": "beta"
     }
   }
 }

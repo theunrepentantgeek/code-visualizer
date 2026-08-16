@@ -43,7 +43,7 @@ func TestBulkAuthorHistory_ReturnsNonEmptyResult(t *testing.T) {
 
 	tracked := buildTrackedSet(t, root, scanned)
 
-	result, err := git.BulkAuthorHistory(root, tracked, nil)
+	result, err := git.BulkAuthorHistory(root, tracked, false, nil)
 
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(result.HeadDate.IsZero()).To(BeFalse(), "HeadDate should not be zero")
@@ -65,7 +65,7 @@ func TestBulkAuthorHistory_EachFileHasAtLeastOneAuthor(t *testing.T) {
 
 	tracked := buildTrackedSet(t, root, scanned)
 
-	result, err := git.BulkAuthorHistory(root, tracked, nil)
+	result, err := git.BulkAuthorHistory(root, tracked, false, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	for path, records := range result.ByFile {
@@ -87,7 +87,7 @@ func TestBulkAuthorHistory_AuthorRecordsHaveNonEmptyEmail(t *testing.T) {
 
 	tracked := buildTrackedSet(t, root, scanned)
 
-	result, err := git.BulkAuthorHistory(root, tracked, nil)
+	result, err := git.BulkAuthorHistory(root, tracked, false, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	for path, records := range result.ByFile {
@@ -111,7 +111,7 @@ func TestBulkAuthorHistory_TimeWindowsAreConsistent(t *testing.T) {
 
 	tracked := buildTrackedSet(t, root, scanned)
 
-	result, err := git.BulkAuthorHistory(root, tracked, nil)
+	result, err := git.BulkAuthorHistory(root, tracked, false, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	for path, records := range result.ByFile {
@@ -136,7 +136,7 @@ func TestBulkAuthorHistory_LastActiveContainsKnownAuthor(t *testing.T) {
 
 	tracked := buildTrackedSet(t, root, scanned)
 
-	result, err := git.BulkAuthorHistory(root, tracked, nil)
+	result, err := git.BulkAuthorHistory(root, tracked, false, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	// The repo always has at least one committer; just verify the map is populated.
@@ -159,7 +159,7 @@ func TestBulkAuthorHistory_EmptyTrackedSet_ReturnsEmptyByFile(t *testing.T) {
 	root := repoRoot(t)
 	tracked := map[string]bool{}
 
-	result, err := git.BulkAuthorHistory(root, tracked, nil)
+	result, err := git.BulkAuthorHistory(root, tracked, false, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(result.ByFile).To(BeEmpty())
 	// LastActive is populated from all commits, not just tracked files.
@@ -181,7 +181,7 @@ func TestBulkAuthorHistory_ContributionWeightNonNegative(t *testing.T) {
 
 	tracked := buildTrackedSet(t, root, scanned)
 
-	result, err := git.BulkAuthorHistory(root, tracked, nil)
+	result, err := git.BulkAuthorHistory(root, tracked, false, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	for path, records := range result.ByFile {

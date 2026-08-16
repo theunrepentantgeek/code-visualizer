@@ -22,7 +22,7 @@ func LoadAuthorHistory(c *CommonState) error {
 
 	onCommit, stop := BuildHistoryProgress(c.Flags)
 
-	result, err := git.BulkAuthorHistory(repoRoot, tracked, onCommit)
+	result, err := git.BulkAuthorHistory(repoRoot, tracked, false, onCommit)
 
 	stop()
 
