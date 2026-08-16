@@ -11,6 +11,13 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups:
+      experimental:
+        patterns:
+          - "golang.org/x/*"
+      external:
+        patterns:
+          - "*/*"
 
   # Enable version updates for Docker
   - package-ecosystem: "docker"
