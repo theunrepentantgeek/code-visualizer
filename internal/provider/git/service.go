@@ -487,7 +487,7 @@ func (s *repoService) fetchCommitTimestamps(relPath string) ([]time.Time, error)
 func (s *repoService) bulkPrewarm(
 	paths map[string]bool,
 	requirements metricRequirements,
-	onFileProcessed func(),
+	onCommitProcessed func(),
 ) error {
 	missing, groupKey := s.bulkPrewarmWork(paths, requirements)
 	if len(missing) == 0 {
@@ -500,7 +500,7 @@ func (s *repoService) bulkPrewarm(
 			return struct{}{}, nil
 		}
 
-		return nil, s.doBulkPrewarm(missing, requirements, onFileProcessed)
+		return nil, s.doBulkPrewarm(missing, requirements, onCommitProcessed)
 	})
 	if err != nil {
 		return eris.Wrap(err, "bulk prewarm")
@@ -567,12 +567,12 @@ func bulkPrewarmGroupKey(paths map[string]bool, requirement string) string {
 func (s *repoService) doBulkPrewarm(
 	paths map[string]bool,
 	requirements metricRequirements,
-	onFileProcessed func(),
+	onCommitProcessed func(),
 ) error {
 	cache := newBulkPrewarmCache(paths, requirements)
 
-	if err := s.walkTrackedHistory(paths, nil, func(c *object.Commit, changed []trackedChange) {
-		prewarmTrackedChanges(cache, c, changed, requirements, onFileProcessed)
+	if err := s.walkTrackedHistory(paths, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
+		prewarmTrackedChanges(cache, c, changed, requirements)
 	}); err != nil {
 		return eris.Wrap(err, "bulk prewarm")
 	}

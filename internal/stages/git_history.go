@@ -40,7 +40,12 @@ func LoadGitHistory(c *CommonState) error {
 
 	tracked := buildTrackedPathSet(c.Root, repoRoot)
 
-	onCommit, stop := BuildHistoryProgress(c.Flags)
+	total, err := git.CommitTotal(repoRoot)
+	if err != nil {
+		return eris.Wrap(err, "failed to count git commits")
+	}
+
+	onCommit, stop := BuildHistoryProgress(c.Flags, total)
 
 	commits, err := git.BulkCommitHistoryAndPrewarm(repoRoot, tracked, c.Requested.BaseMetrics, onCommit)
 

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"log/slog"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -30,9 +29,27 @@ func TestLogMetricProgress_LogsAggregateLoadedObservations(t *testing.T) {
 
 	logMetricProgress(tracker)
 
-	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading metrics." loaded=3 total=4 percentage=75`))
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading metrics." loaded=3/4 percentage=75.0`))
 	g.Expect(buf.String()).NotTo(ContainSubstring("metric="))
 	g.Expect(buf.String()).To(HavePrefix("time="))
+	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
+}
+
+//nolint:paralleltest // mutates global slog default logger
+func TestBuildMetricProgressLogsInitialZeroProgress(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	_, stop := BuildMetricProgress(&Flags{}, 4)
+	stop()
+
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading metrics." loaded=0/4 percentage=0.0`))
 	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
 }
 
@@ -47,12 +64,12 @@ func TestLogHistoryProgress_LogsAggregateProcessedCommits(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
 	defer slog.SetDefault(oldDefault)
 
-	counter := &atomic.Int64{}
-	counter.Store(3)
+	tracker := &historyProgressTracker{total: 4}
+	tracker.loaded.Store(3)
 
-	logHistoryProgress(counter)
+	logHistoryProgress(tracker)
 
-	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading history." commits=3`))
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading history." commits=3/4 percentage=75.0`))
 	g.Expect(buf.String()).To(HavePrefix("time="))
 	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
 }

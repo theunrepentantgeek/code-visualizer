@@ -37,6 +37,40 @@ type Commit struct {
 	ChangedPaths []string // slash-separated, repo-relative
 }
 
+// CommitTotal returns the number of commits reachable from HEAD.
+func CommitTotal(repoPath string) (int64, error) {
+	s, err := getService(repoPath)
+	if err != nil {
+		return 0, eris.Wrap(err, "failed to open git repository")
+	}
+
+	return s.commitTotal()
+}
+
+func (s *repoService) commitTotal() (int64, error) {
+	s.repoMu.Lock()
+	defer s.repoMu.Unlock()
+
+	iter, err := s.commitIterator()
+	if err != nil {
+		return 0, err
+	}
+	defer iter.Close()
+
+	var total int64
+
+	err = iter.ForEach(func(*object.Commit) error {
+		total++
+
+		return nil
+	})
+	if err != nil {
+		return 0, eris.Wrap(err, "failed to iterate commits")
+	}
+
+	return total, nil
+}
+
 // BulkCommitHistory walks the commit graph once and returns one Commit per
 // commit reachable from HEAD that touches at least one path in `tracked`.
 // Commits that change no tracked path are omitted.
@@ -110,7 +144,7 @@ func (s *repoService) bulkCommitHistoryAndPrewarm(
 	var commits []Commit
 
 	err := s.walkTrackedHistory(tracked, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
-		prewarmTrackedChanges(cache, c, changed, requirements, nil)
+		prewarmTrackedChanges(cache, c, changed, requirements)
 		appendTrackedCommit(&commits, c, changed)
 	})
 	if err != nil {
@@ -169,7 +203,6 @@ func prewarmTrackedChanges(
 	c *object.Commit,
 	changed []trackedChange,
 	requirements metricRequirements,
-	onFileProcessed func(),
 ) {
 	if cache == nil {
 		return
@@ -185,10 +218,6 @@ func prewarmTrackedChanges(
 
 		if requirements.needsLineStats {
 			data.updateChangeStats(entry.change)
-		}
-
-		if onFileProcessed != nil {
-			onFileProcessed()
 		}
 	}
 }

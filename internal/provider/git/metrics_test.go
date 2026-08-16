@@ -149,7 +149,7 @@ func TestFileAgeProvider(t *testing.T) {
 	g.Expect(ageOld).To(BeNumerically(">", ageNew))
 }
 
-func TestMetricsLoaderReportsFileProgress(t *testing.T) {
+func TestMetricsLoaderReportsFileProgressThroughoutPrewarm(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -158,16 +158,47 @@ func TestMetricsLoaderReportsFileProgress(t *testing.T) {
 
 	var processed atomic.Int64
 
+	firstProgressBeforeMetrics := false
+
 	resetService()
 
 	loader := &metricsLoader{
 		onFile: func() {
-			processed.Add(1)
+			if processed.Add(1) == 1 {
+				_, metricApplied := root.Files[0].Quantity(CommitCount)
+				firstProgressBeforeMetrics = !metricApplied
+			}
 		},
 	}
 
 	g.Expect(loader.Load(root, []metric.Name{CommitCount})).To(Succeed())
 	g.Expect(processed.Load()).To(Equal(int64(2)))
+	g.Expect(firstProgressBeforeMetrics).To(BeTrue())
+}
+
+func TestFileProgressCallbacksScaleCommitsAcrossFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var processed int64
+
+	callbacks := newFileProgressCallbacks(func() {
+		processed++
+	}, 10, 4)
+
+	callbacks.onPrewarm()
+	g.Expect(processed).To(Equal(int64(2)))
+	callbacks.onPrewarm()
+	g.Expect(processed).To(Equal(int64(4)))
+	callbacks.onPrewarm()
+	g.Expect(processed).To(Equal(int64(6)))
+	callbacks.onPrewarm()
+	g.Expect(processed).To(Equal(int64(9)))
+	callbacks.onPrewarm()
+	g.Expect(processed).To(Equal(int64(9)))
+
+	callbacks.onFinish()
+	g.Expect(processed).To(Equal(int64(10)))
 }
 
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.

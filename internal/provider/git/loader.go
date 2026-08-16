@@ -38,7 +38,7 @@ type metricRequirements struct {
 
 type fileProgressCallbacks struct {
 	onPrewarm func()
-	onFile    func()
+	onFinish  func()
 }
 
 func newMetricRequirements(requested []metric.Name) metricRequirements {
@@ -85,34 +85,67 @@ func (s *repoService) loadGitMetrics(
 	requirements := newMetricRequirements(requested)
 
 	pathSet := buildRelPathSet(s, root)
-	progressCallbacks := newFileProgressCallbacks(onFile)
+	commitTotal := int64(0)
+
+	if onFile != nil {
+		missing, _ := s.bulkPrewarmWork(pathSet, requirements)
+		if len(missing) > 0 {
+			total, err := s.commitTotal()
+			if err != nil {
+				return eris.Wrap(err, "failed to count git commits")
+			}
+
+			commitTotal = total
+		}
+	}
+
+	progressCallbacks := newFileProgressCallbacks(onFile, int64(model.CountFiles(root)), commitTotal)
 
 	if err := s.bulkPrewarm(pathSet, requirements, progressCallbacks.onPrewarm); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
-	s.applySelectedFileMetrics(root, requirements, progressCallbacks.onFile)
+	s.applySelectedFileMetrics(root, requirements)
 
-	return s.requireGitHistory(pathSet)
+	if err := s.requireGitHistory(pathSet); err != nil {
+		return err
+	}
+
+	if progressCallbacks.onFinish != nil {
+		progressCallbacks.onFinish()
+	}
+
+	return nil
 }
 
-func newFileProgressCallbacks(onFile func()) fileProgressCallbacks {
-	if onFile == nil {
+func newFileProgressCallbacks(onFile func(), fileTotal int64, commitTotal int64) fileProgressCallbacks {
+	if onFile == nil || fileTotal == 0 {
 		return fileProgressCallbacks{}
 	}
 
-	prewarmProgressReported := false
+	var (
+		commitsProcessed int64
+		filesReported    int64
+	)
+
+	reportThrough := func(target int64) {
+		for filesReported < target {
+			onFile()
+
+			filesReported++
+		}
+	}
 
 	return fileProgressCallbacks{
 		onPrewarm: func() {
-			prewarmProgressReported = true
-
-			onFile()
-		},
-		onFile: func() {
-			if !prewarmProgressReported {
-				onFile()
+			commitsProcessed++
+			if commitTotal > 0 {
+				target := commitsProcessed * (fileTotal - 1) / commitTotal
+				reportThrough(min(target, fileTotal-1))
 			}
+		},
+		onFinish: func() {
+			reportThrough(fileTotal)
 		},
 	}
 }
@@ -120,7 +153,6 @@ func newFileProgressCallbacks(onFile func()) fileProgressCallbacks {
 func (s *repoService) applySelectedFileMetrics(
 	root *model.Directory,
 	requirements metricRequirements,
-	onFile func(),
 ) {
 	model.WalkFiles(root, func(f *model.File) {
 		relPath, relErr := repoRelativePath(s.RepoRoot(), f.Path)
@@ -132,10 +164,6 @@ func (s *repoService) applySelectedFileMetrics(
 
 		for _, def := range requirements.processors {
 			def.process(s, f, relPath)
-		}
-
-		if onFile != nil {
-			onFile()
 		}
 	})
 }
