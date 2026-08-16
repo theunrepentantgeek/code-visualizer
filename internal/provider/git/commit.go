@@ -44,6 +44,10 @@ func CommitTotal(repoPath string) (int64, error) {
 		return 0, eris.Wrap(err, "failed to open git repository")
 	}
 
+	return s.commitTotal()
+}
+
+func (s *repoService) commitTotal() (int64, error) {
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
@@ -140,7 +144,7 @@ func (s *repoService) bulkCommitHistoryAndPrewarm(
 	var commits []Commit
 
 	err := s.walkTrackedHistory(tracked, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
-		prewarmTrackedChanges(cache, c, changed, requirements, nil)
+		prewarmTrackedChanges(cache, c, changed, requirements)
 		appendTrackedCommit(&commits, c, changed)
 	})
 	if err != nil {
@@ -199,7 +203,6 @@ func prewarmTrackedChanges(
 	c *object.Commit,
 	changed []trackedChange,
 	requirements metricRequirements,
-	onFileProcessed func(),
 ) {
 	if cache == nil {
 		return
@@ -215,10 +218,6 @@ func prewarmTrackedChanges(
 
 		if requirements.needsLineStats {
 			data.updateChangeStats(entry.change)
-		}
-
-		if onFileProcessed != nil {
-			onFileProcessed()
 		}
 	}
 }
