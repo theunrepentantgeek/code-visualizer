@@ -25,8 +25,8 @@ func LoadAuthorshipMetrics(root *model.Directory, params AuthorshipParams) error
 	return (&authorshipLoader{params: params}).Load(root, authorshipMetricNames)
 }
 
-// Load satisfies provider.LoadFunc.  requested must be a subset of
-// authorshipMetricNames; names not in that set are silently skipped.
+// Load computes and stores all nine authorship metrics on every file and directory node.
+// The requested slice is ignored because the metrics share a single source history walk.
 func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 	s, err := getService(root.Path)
 	if err != nil {
@@ -205,10 +205,14 @@ func mergeSubtreeFileRecords(
 // contribution weight (Added+Removed) across all files in byFile.
 func globalEmailRanking(byFile FileAuthorRecords, topK int) map[string]bool {
 	weights := make(map[string]int64)
+	firstSeen := make(map[string]time.Time)
 
 	for _, records := range byFile {
 		for _, r := range records {
 			weights[r.Email] += r.Added + r.Removed
+			if fs, ok := firstSeen[r.Email]; !ok || (!r.FirstSeen.IsZero() && r.FirstSeen.Before(fs)) {
+				firstSeen[r.Email] = r.FirstSeen
+			}
 		}
 	}
 
@@ -220,6 +224,14 @@ func globalEmailRanking(byFile FileAuthorRecords, topK int) map[string]bool {
 	slices.SortStableFunc(emails, func(a, b string) int {
 		if c := cmp.Compare(weights[b], weights[a]); c != 0 {
 			return c
+		}
+
+		af, bf := firstSeen[a], firstSeen[b]
+		if !af.Equal(bf) {
+			if af.Before(bf) {
+				return -1
+			}
+			return 1
 		}
 
 		return cmp.Compare(a, b)

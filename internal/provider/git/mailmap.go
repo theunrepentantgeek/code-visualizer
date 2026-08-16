@@ -72,10 +72,11 @@ func parseMailmap(r io.Reader) mailmap {
 			properEmail: properEmail,
 			properName:  properName,
 		}
+	if err := sc.Err(); err != nil {
+		return mailmap{}
 	}
 
 	return mm
-}
 
 // parseMailmapLine extracts (properName, properEmail, oldEmail) from one line.
 // oldEmail is empty when the line only specifies a proper identity with no
