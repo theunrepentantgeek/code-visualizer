@@ -131,6 +131,7 @@ func newFileProgressCallbacks(onFile func(), fileTotal int64, commitTotal int64)
 	reportThrough := func(target int64) {
 		for filesReported < target {
 			onFile()
+
 			filesReported++
 		}
 	}

@@ -157,6 +157,7 @@ func TestMetricsLoaderReportsFileProgressThroughoutPrewarm(t *testing.T) {
 	root := buildTree(dir, "old.go", "new.go")
 
 	var processed atomic.Int64
+
 	firstProgressBeforeMetrics := false
 
 	resetService()
@@ -180,6 +181,7 @@ func TestFileProgressCallbacksScaleCommitsAcrossFiles(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	var processed int64
+
 	callbacks := newFileProgressCallbacks(func() {
 		processed++
 	}, 10, 4)
