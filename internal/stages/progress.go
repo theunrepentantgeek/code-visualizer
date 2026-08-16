@@ -113,6 +113,8 @@ func (t *metricProgressTracker) OnFileProcessed(metric.Name) { t.loaded.Add(1) }
 // startMetricTicker starts a goroutine that logs metric calculation progress every second.
 // Call the returned stop function when metric calculation is done.
 func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
+	logMetricProgress(tracker)
+
 	return startProgressTicker(func() {
 		logMetricProgress(tracker)
 	})
