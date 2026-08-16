@@ -13,7 +13,10 @@ import (
 func RunProviders(c *CommonState) error {
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, model.CountFiles(c.Root))
+	metricProg, stopMetricTicker := BuildMetricProgress(
+		c.Flags,
+		provider.FileProgressTotal(c.Requested.BaseMetrics, model.CountFiles(c.Root)),
+	)
 	defer stopMetricTicker()
 
 	return eris.Wrap(

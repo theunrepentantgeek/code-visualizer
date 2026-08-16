@@ -25,6 +25,21 @@ type FileProgressReporter interface {
 	FileProgressMutex() *sync.Mutex
 }
 
+// FileProgressTotal returns the number of file metric observations expected
+// when each file progress reporter processes fileCount files. A loader reports
+// an observation for every selected metric it provides.
+func FileProgressTotal(requested []metric.Name, fileCount int) int64 {
+	var selectedMetricCount int64
+
+	for _, loader := range LoadersFor(requested) {
+		if loader.Reporter != nil {
+			selectedMetricCount += int64(len(requestedMetricsForLoader(loader, requested)))
+		}
+	}
+
+	return int64(fileCount) * selectedMetricCount
+}
+
 // RunLoaders loads the requested base metrics using registered loaders.
 // Loaders run in parallel where dependency ordering allows.
 func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricProgress) error {
