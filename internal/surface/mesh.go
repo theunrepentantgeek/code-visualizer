@@ -13,47 +13,18 @@ import (
 // them and leaving a ragged edge.
 const radiusTolerance = 1e-9
 
-// Interpolate estimates a point's value from observed points using inverse-distance weighting.
-func Interpolate(point Point, originals []Point) float64 {
-	if len(originals) == 0 {
-		return 0
-	}
-
-	if point.Original {
-		return point.Value
-	}
-
-	var (
-		weightedValue float64
-		totalWeight   float64
-	)
-
-	for _, original := range originals {
-		distance := Distance(point, original)
-		if distance == 0 {
-			return original.Value
-		}
-
-		weight := 1 / math.Pow(distance, IDWPower)
-		weightedValue += original.Value * weight
-		totalWeight += weight
-	}
-
-	return weightedValue / totalWeight
-}
-
 // Build creates an interpolated Delaunay triangle mesh restricted to region.
 func Build(region Region, originals []Point, seed uint64) []Triangle {
 	if !isValidRegion(region) {
 		return nil
 	}
 
-	observed := observedPoints(originals)
-	if len(observed) < 3 {
+	model, ok := newInterpolationModel(originals)
+	if !ok || len(model.observations) < 3 {
 		return nil
 	}
 
-	points, complete := meshPoints(region, observed, seed)
+	points, complete := meshPoints(region, model, seed)
 	if !complete || len(points) < 3 {
 		return nil
 	}
@@ -74,7 +45,7 @@ func Build(region Region, originals []Point, seed uint64) []Triangle {
 func observedPoints(originals []Point) []Point {
 	observed := make([]Point, 0, len(originals))
 	for _, original := range originals {
-		if !isFinitePoint(original) {
+		if !isFinitePoint(original) || !isFinite(original.Value) {
 			continue
 		}
 
@@ -85,26 +56,25 @@ func observedPoints(originals []Point) []Point {
 	return observed
 }
 
-func meshPoints(region Region, observed []Point, seed uint64) ([]Point, bool) {
-	boundary := boundarySamples(region, observed)
+func meshPoints(region Region, model interpolationModel, seed uint64) ([]Point, bool) {
+	boundary := boundarySamples(region, model.observations)
 	for index := range boundary {
-		boundary[index].Value = Interpolate(boundary[index], observed)
+		boundary[index] = model.assign(boundary[index])
 	}
 
-	points := append([]Point(nil), observed...)
+	points := append([]Point(nil), model.observations...)
 	points = append(points, boundary...)
 	samplingSources := append([]Point(nil), points...)
 
 	infill := Sample(region, samplingSources, PoissonMinDistance, seed)
 	for _, point := range infill {
-		point.Value = Interpolate(point, observed)
-		points = append(points, point)
+		points = append(points, model.assign(point))
 	}
 
-	return refineMeshPoints(region, points, observed)
+	return refineMeshPoints(region, points, model)
 }
 
-func refineMeshPoints(region Region, points, observed []Point) ([]Point, bool) {
+func refineMeshPoints(region Region, points []Point, model interpolationModel) ([]Point, bool) {
 	limit := refinementPointLimit(region, len(points))
 
 	for {
@@ -123,8 +93,7 @@ func refineMeshPoints(region Region, points, observed []Point) ([]Point, bool) {
 		}
 
 		for _, candidate := range candidates {
-			candidate.Value = Interpolate(candidate, observed)
-			points = append(points, candidate)
+			points = append(points, model.assign(candidate))
 		}
 	}
 }
@@ -218,21 +187,32 @@ func regionTriangles(region Region, points []Point, indexes []int) ([]Triangle, 
 			indexes[index+1],
 			indexes[index+2],
 		})
-		if !ok || isDegenerateTriangle(triangle) {
+		if !ok ||
+			isDegenerateTriangle(triangle) ||
+			triangleIsUnsupported(triangle) ||
+			!triangleInRegion(region, triangle) {
 			continue
 		}
 
 		triangle.Value = (triangle.Points[0].Value + triangle.Points[1].Value + triangle.Points[2].Value) / 3
-		if triangleInRegion(region, triangle) {
-			if LongestEdge(triangle) > MaxTriangleEdge {
-				return nil, false
-			}
-
-			triangles = append(triangles, triangle)
+		if LongestEdge(triangle) > MaxTriangleEdge {
+			return nil, false
 		}
+
+		triangles = append(triangles, triangle)
 	}
 
 	return triangles, true
+}
+
+func triangleIsUnsupported(triangle Triangle) bool {
+	for _, point := range triangle.Points {
+		if point.unsupported {
+			return true
+		}
+	}
+
+	return false
 }
 
 func triangleAt(points []Point, indexes [3]int) (Triangle, bool) {

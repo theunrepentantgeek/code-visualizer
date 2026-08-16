@@ -61,7 +61,12 @@ func TestMeshPoints_RefinesInRegionTrianglesToMaximumEdge(t *testing.T) {
 
 	region, originals := refinementTestMesh()
 
-	points, complete := meshPoints(region, observedPoints(originals), 42)
+	model, ok := newInterpolationModel(originals)
+	if !ok {
+		t.Fatal("expected interpolation model")
+	}
+
+	points, complete := meshPoints(region, model, 42)
 	if !complete {
 		t.Fatal("mesh refinement did not complete")
 	}
@@ -80,9 +85,13 @@ func TestBuild_CoversEveryInRegionDelaunayFaceAfterRefinement(t *testing.T) {
 	t.Parallel()
 
 	region, originals := refinementTestMesh()
-	observed := observedPoints(originals)
 
-	points, complete := meshPoints(region, observed, 42)
+	model, ok := newInterpolationModel(originals)
+	if !ok {
+		t.Fatal("expected interpolation model")
+	}
+
+	points, complete := meshPoints(region, model, 42)
 	if !complete {
 		t.Fatal("mesh refinement did not complete")
 	}
@@ -129,6 +138,10 @@ func inRegionDelaunayTriangles(t *testing.T, region Region, points []Point) []Tr
 		}
 
 		if !triangleInRegion(region, triangle) {
+			continue
+		}
+
+		if triangleIsUnsupported(triangle) {
 			continue
 		}
 

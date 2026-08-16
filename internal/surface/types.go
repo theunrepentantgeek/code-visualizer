@@ -7,14 +7,14 @@ const (
 	MaxTriangleEdge          = 8.0
 	MaxBoundarySegmentLength = 1.0
 	PoissonMinDistance       = 4.0
-	IDWPower                 = 2.0
 )
 
 type Point struct {
-	X        float64
-	Y        float64
-	Value    float64
-	Original bool
+	X           float64
+	Y           float64
+	Value       float64
+	unsupported bool
+	Original    bool
 }
 
 type Rect struct {

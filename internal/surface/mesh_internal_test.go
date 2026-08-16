@@ -200,6 +200,22 @@ func TestBoundaryLoops_ReturnsNilForTypedNilBoundaryProvider(t *testing.T) {
 	g.Expect(BoundaryLoops(region, MaxBoundarySegmentLength)).To(gomega.BeNil())
 }
 
+func TestRegionTriangles_OmitsTriangleWithUnsupportedVertex(t *testing.T) {
+	t.Parallel()
+
+	g := gomega.NewWithT(t)
+	region := Rect{MinX: -2, MinY: -2, MaxX: 2, MaxY: 2}
+	points := []Point{
+		{X: 0, Y: 0, Value: 1},
+		{X: 1, Y: 0, Value: 2, unsupported: true},
+		{X: 0, Y: 1, Value: 3},
+	}
+
+	triangles, complete := regionTriangles(region, points, []int{0, 1, 2})
+	g.Expect(complete).To(gomega.BeTrue())
+	g.Expect(triangles).To(gomega.BeEmpty())
+}
+
 func (*typedNilBoundaryProvider) Bounds() Rect {
 	panic("typed-nil provider Bounds should not be called")
 }
