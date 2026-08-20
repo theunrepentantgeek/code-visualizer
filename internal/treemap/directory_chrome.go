@@ -96,6 +96,7 @@ func fitDirectoryLabel(name string, maxWidth float64) (string, bool) {
 	if maxWidth <= 0 {
 		return "", false
 	}
+
 	if name == "" {
 		return "", false
 	}
@@ -103,6 +104,7 @@ func fitDirectoryLabel(name string, maxWidth float64) (string, bool) {
 	runes := []rune(name)
 	candidates := make([]string, 0, 1)
 	candidates = append(candidates, name)
+
 	if len(runes) >= minTruncatedRunes {
 		for truncated := len(runes) - 1; truncated >= minTruncatedRunes; truncated-- {
 			candidates = append(candidates, string(runes[:truncated])+directoryLabelEllipsis)
