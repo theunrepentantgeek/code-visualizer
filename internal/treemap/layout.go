@@ -10,31 +10,42 @@ import (
 )
 
 const (
-	HeaderHeight = 20.0
-	padding      = 4.0
-	siblingGap   = 2.0
-	minFileSize  = 1.0
+	siblingGap  = 2.0
+	minFileSize = 1.0
 )
+
+const HeaderHeight = directoryRailThickness
 
 // Layout computes a squarified treemap layout from a Directory tree.
 func Layout(root *model.Directory, width, height int, sizeMetric metric.Name) TreemapRectangle {
 	box := layout.Box{X: 0, Y: 0, W: float64(width), H: float64(height)}
 
-	return layoutDir(root, box, sizeMetric)
+	return layoutDir(root, box, sizeMetric, true)
 }
 
-func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name) TreemapRectangle {
+func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name, isRoot bool) TreemapRectangle {
 	rect := TreemapRectangle{
 		X: box.X, Y: box.Y, W: box.W, H: box.H,
 		Label: dir.Name, IsDirectory: true,
 	}
+	rect.Chrome = resolveDirectoryChrome(RectangleBounds{
+		X: rect.X,
+		Y: rect.Y,
+		W: rect.W,
+		H: rect.H,
+	}, dir.Name, isRoot)
 
 	children := collectChildren(dir, sizeMetric)
 	if len(children) == 0 {
 		return rect
 	}
 
-	contentBox := contentArea(box)
+	contentBox := layout.Box{
+		X: rect.Chrome.Content.X,
+		Y: rect.Chrome.Content.Y,
+		W: rect.Chrome.Content.W,
+		H: rect.Chrome.Content.H,
+	}
 	if contentBox.W <= 0 || contentBox.H <= 0 {
 		return rect
 	}
@@ -100,18 +111,9 @@ func fileSize(f *model.File, sizeMetric metric.Name) float64 {
 	return 0
 }
 
-func contentArea(box layout.Box) layout.Box {
-	return layout.Box{
-		X: box.X + padding,
-		Y: box.Y + HeaderHeight,
-		W: box.W - 2*padding,
-		H: box.H - HeaderHeight - padding,
-	}
-}
-
 func layoutChild(dir *model.Directory, c child, b layout.Box, sizeMetric metric.Name) TreemapRectangle {
 	if c.isDir {
-		return layoutDir(dir.Dirs[c.dirIdx], b, sizeMetric)
+		return layoutDir(dir.Dirs[c.dirIdx], b, sizeMetric, false)
 	}
 
 	f := dir.Files[c.fileIdx]
@@ -138,6 +140,15 @@ func insetBox(b layout.Box, inset float64) layout.Box {
 func OffsetRects(rect *TreemapRectangle, dx, dy float64) {
 	rect.X += dx
 	rect.Y += dy
+	if rect.IsDirectory {
+		if rect.Chrome.Orientation != DirectoryLabelNone {
+			rect.Chrome.Rail.X += dx
+			rect.Chrome.Rail.Y += dy
+		}
+
+		rect.Chrome.Content.X += dx
+		rect.Chrome.Content.Y += dy
+	}
 
 	for i := range rect.Children {
 		OffsetRects(&rect.Children[i], dx, dy)

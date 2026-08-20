@@ -9,7 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
 
-func TestDirectoryHeaderBar(t *testing.T) {
+func TestSmallDirectoryChromeKeepsInsetContentWithoutRail(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -17,18 +17,18 @@ func TestDirectoryHeaderBar(t *testing.T) {
 		Name: "root",
 		Dirs: []*model.Directory{
 			{
-				Name:  "mydir",
+				Name:  "my-super-long-directory-name",
 				Files: []*model.File{makeFile("file.go", 100)},
 			},
 		},
 	}
 
-	rects := Layout(root, 1920, 1080, filesystem.FileSize)
+	rects := Layout(root, 50, 50, filesystem.FileSize)
 
 	var dirRect *TreemapRectangle
 
 	for i, c := range rects.Children {
-		if c.IsDirectory && c.Label == "mydir" {
+		if c.IsDirectory && c.Label == "my-super-long-directory-name" {
 			dirRect = &rects.Children[i]
 
 			break
@@ -42,7 +42,10 @@ func TestDirectoryHeaderBar(t *testing.T) {
 	}
 
 	g.Expect(dirRect.IsDirectory).To(BeTrue())
-	g.Expect(dirRect.Label).To(Equal("mydir"))
+	g.Expect(dirRect.Label).To(Equal("my-super-long-directory-name"))
+	g.Expect(dirRect.Chrome.Orientation).To(Equal(DirectoryLabelNone))
+	g.Expect(dirRect.Chrome.Content.X).To(BeNumerically(">", dirRect.X))
+	g.Expect(dirRect.Chrome.Content.Y).To(BeNumerically(">", dirRect.Y))
 }
 
 func TestDirectoryPaddingSeparatesGroups(t *testing.T) {
