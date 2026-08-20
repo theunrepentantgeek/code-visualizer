@@ -84,6 +84,16 @@ func TestResolveDirectoryChrome(t *testing.T) {
 func TestFitDirectoryLabel(t *testing.T) {
 	t.Parallel()
 
+	t.Run("rejects an empty name", func(t *testing.T) {
+		t.Parallel()
+		g := NewGomegaWithT(t)
+
+		text, ok := fitDirectoryLabel("", 10)
+
+		g.Expect(ok).To(BeFalse())
+		g.Expect(text).To(BeEmpty())
+	})
+
 	t.Run("retains a short complete name", func(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)

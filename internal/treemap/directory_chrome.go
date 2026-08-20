@@ -9,7 +9,7 @@ const (
 	minDirectoryContentSize   = 20.0
 	minTruncatedRunes         = 4
 	directoryLabelEllipsis    = "…"
-	directoryLabelEndpointPad = 8.0
+	directoryLabelEndpointPad = 2 * directoryPadding
 )
 
 func resolveDirectoryChrome(rect RectangleBounds, name string, isRoot bool) DirectoryChrome {
@@ -96,20 +96,23 @@ func fitDirectoryLabel(name string, maxWidth float64) (string, bool) {
 	if maxWidth <= 0 {
 		return "", false
 	}
-
-	if width, _ := textlayout.MeasureString(name, directoryLabelFontSize); width <= maxWidth {
-		return name, true
-	}
-
-	runes := []rune(name)
-	if len(runes) < minTruncatedRunes {
+	if name == "" {
 		return "", false
 	}
 
-	for truncated := len(runes) - 1; truncated >= minTruncatedRunes; truncated-- {
-		candidate := string(runes[:truncated]) + directoryLabelEllipsis
-		if width, _ := textlayout.MeasureString(candidate, directoryLabelFontSize); width <= maxWidth {
-			return candidate, true
+	runes := []rune(name)
+	candidates := make([]string, 0, 1)
+	candidates = append(candidates, name)
+	if len(runes) >= minTruncatedRunes {
+		for truncated := len(runes) - 1; truncated >= minTruncatedRunes; truncated-- {
+			candidates = append(candidates, string(runes[:truncated])+directoryLabelEllipsis)
+		}
+	}
+
+	widths, _ := textlayout.MeasureStrings(candidates, directoryLabelFontSize)
+	for i, width := range widths {
+		if width <= maxWidth {
+			return candidates[i], true
 		}
 	}
 
