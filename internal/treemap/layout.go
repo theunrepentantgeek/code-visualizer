@@ -14,8 +14,6 @@ const (
 	minFileSize = 1.0
 )
 
-const HeaderHeight = directoryRailThickness
-
 // Layout computes a squarified treemap layout from a Directory tree.
 func Layout(root *model.Directory, width, height int, sizeMetric metric.Name) TreemapRectangle {
 	box := layout.Box{X: 0, Y: 0, W: float64(width), H: float64(height)}

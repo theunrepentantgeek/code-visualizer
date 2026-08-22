@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	headerHeight = HeaderHeight
 	minBorderDim = 20.0
 	midBorderDim = 100.0
 )

@@ -20,8 +20,17 @@ type rectangleCall struct {
 	fill canvasmodel.Fill
 }
 
+type textCall struct {
+	pos      canvas.Position
+	text     string
+	fontSize float64
+	anchor   canvas.TextAnchor
+	rotation float64
+}
+
 type captureBackend struct {
 	rectangles []rectangleCall
+	texts      []textCall
 }
 
 func (b *captureBackend) DrawRectangle(
@@ -41,9 +50,16 @@ func (*captureBackend) DrawLine(canvas.Position, canvas.Position, color.RGBA, fl
 
 func (*captureBackend) DrawPath([]canvas.Position, color.RGBA, float64) {}
 
-func (*captureBackend) DrawText(
-	canvas.Position, string, color.RGBA, float64, canvas.TextAnchor, float64,
+func (b *captureBackend) DrawText(
+	pos canvas.Position, text string, _ color.RGBA, fontSize float64, anchor canvas.TextAnchor, rotation float64,
 ) {
+	b.texts = append(b.texts, textCall{
+		pos:      pos,
+		text:     text,
+		fontSize: fontSize,
+		anchor:   anchor,
+		rotation: rotation,
+	})
 }
 
 func (*captureBackend) DrawArcText(canvas.Position, float64, string, color.RGBA, float64) {}

@@ -2,6 +2,7 @@ package treemap
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
@@ -11,9 +12,9 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
-// dirHeaderSpec and dirLabelSpec are constant across every directory node in a
-// render pass. Pre-allocating them avoids repeated heap allocations in the
-// recursive walk.
+// Directory chrome specs are constant across every directory node in a render
+// pass. Pre-allocating them avoids repeated heap allocations in the recursive
+// walk.
 //
 //nolint:gochecknoglobals // pre-allocated render-phase specs
 var (
@@ -24,10 +25,17 @@ var (
 			BorderWidth: 0,
 		},
 	}
-	dirLabelSpec = &canvas.TextSpec{
+	dirTopLabelSpec = &canvas.TextSpec{
 		Ink:      inks.FixedInk(palette.White),
-		FontSize: 0,
+		FontSize: directoryLabelFontSize,
 		Anchor:   canvas.AnchorStart,
+		Rotation: 0,
+	}
+	dirLeftLabelSpec = &canvas.TextSpec{
+		Ink:      inks.FixedInk(palette.White),
+		FontSize: directoryLabelFontSize,
+		Anchor:   canvas.AnchorStart,
+		Rotation: -math.Pi / 2,
 	}
 	dirBorderFillInk = inks.FixedInk(color.RGBA{A: 0})
 	dirBorderLineInk = inks.FixedInk(structuralBorder)
@@ -166,23 +174,34 @@ func addDirectoryShapes(
 	rect TreemapRectangle,
 	dirSpecs dirBorderSpecs,
 ) {
-	// Header bar fill - spec is constant across all directories in this render pass.
-	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec:  dirHeaderSpec,
-		X:     rect.X,
-		Y:     rect.Y,
-		W:     rect.W,
-		H:     headerHeight,
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
-	})
+	if rect.Chrome.Orientation != DirectoryLabelNone {
+		rail := rect.Chrome.Rail
+		cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
+			Spec:  dirHeaderSpec,
+			X:     rail.X,
+			Y:     rail.Y,
+			W:     rail.W,
+			H:     rail.H,
+			Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		})
+	}
 
-	// Header label - spec is constant; only position and content vary.
-	if rect.Label != "" {
+	if rect.Chrome.Text != "" {
+		spec := dirTopLabelSpec
+		x := rect.Chrome.Rail.X + directoryPadding
+		y := rect.Chrome.Rail.Y + rect.Chrome.Rail.H/2
+
+		if rect.Chrome.Orientation == DirectoryLabelLeft {
+			spec = dirLeftLabelSpec
+			x = rect.Chrome.Rail.X + rect.Chrome.Rail.W/2
+			y = rect.Chrome.Rail.Y + rect.Chrome.Rail.H - directoryPadding
+		}
+
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec:    dirLabelSpec,
-			X:       rect.X + 4,
-			Y:       rect.Y + headerHeight/2,
-			Content: rect.Label,
+			Spec:    spec,
+			X:       x,
+			Y:       y,
+			Content: rect.Chrome.Text,
 		})
 	}
 
