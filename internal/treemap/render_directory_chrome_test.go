@@ -26,7 +26,11 @@ func TestRenderToCanvas_DrawsTopDirectoryChrome(t *testing.T) {
 		Content:     treemap.RectangleBounds{X: 14, Y: 30, W: 72, H: 56},
 	})
 
-	g.Expect(hasRectangle(backend.rectangles, canvas.Position{X: 10, Y: 10}, canvas.Size{Width: 80, Height: 20})).To(BeTrue())
+	g.Expect(hasRectangle(
+		backend.rectangles,
+		canvas.Position{X: 10, Y: 10},
+		canvas.Size{Width: 80, Height: 20},
+	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
 		pos:      canvas.Position{X: 14, Y: 20},
 		text:     "source",
@@ -47,7 +51,11 @@ func TestRenderToCanvas_DrawsLeftDirectoryChrome(t *testing.T) {
 		Content:     treemap.RectangleBounds{X: 30, Y: 14, W: 56, H: 72},
 	})
 
-	g.Expect(hasRectangle(backend.rectangles, canvas.Position{X: 10, Y: 10}, canvas.Size{Width: 20, Height: 80})).To(BeTrue())
+	g.Expect(hasRectangle(
+		backend.rectangles,
+		canvas.Position{X: 10, Y: 10},
+		canvas.Size{Width: 20, Height: 80},
+	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
 		pos:      canvas.Position{X: 20, Y: 86},
 		text:     "source",
@@ -67,9 +75,21 @@ func TestRenderToCanvas_OmitsDirectoryChromeWhenOrientationIsNone(t *testing.T) 
 	})
 
 	g.Expect(backend.texts).To(BeEmpty())
-	g.Expect(hasRectangle(backend.rectangles, canvas.Position{X: 10, Y: 10}, canvas.Size{Width: 80, Height: 20})).To(BeFalse())
-	g.Expect(hasRectangle(backend.rectangles, canvas.Position{X: 10, Y: 10}, canvas.Size{Width: 20, Height: 80})).To(BeFalse())
-	g.Expect(hasRectangle(backend.rectangles, canvas.Position{X: 10, Y: 10}, canvas.Size{Width: 80, Height: 80})).To(BeTrue())
+	g.Expect(hasRectangle(
+		backend.rectangles,
+		canvas.Position{X: 10, Y: 10},
+		canvas.Size{Width: 80, Height: 20},
+	)).To(BeFalse())
+	g.Expect(hasRectangle(
+		backend.rectangles,
+		canvas.Position{X: 10, Y: 10},
+		canvas.Size{Width: 20, Height: 80},
+	)).To(BeFalse())
+	g.Expect(hasRectangle(
+		backend.rectangles,
+		canvas.Position{X: 10, Y: 10},
+		canvas.Size{Width: 80, Height: 80},
+	)).To(BeTrue())
 }
 
 func renderDirectoryChrome(t *testing.T, chrome treemap.DirectoryChrome) *captureBackend {
