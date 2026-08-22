@@ -3,6 +3,7 @@ package treemap_test
 import (
 	"image/color"
 	"math"
+	"slices"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -136,11 +137,5 @@ func hasRectangle(rectangles []rectangleCall, pos canvas.Position, size canvas.S
 }
 
 func hasText(texts []textCall, want textCall) bool {
-	for _, text := range texts {
-		if text == want {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(texts, want)
 }
