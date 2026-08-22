@@ -58,6 +58,7 @@ func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name, isR
 	boxes := layout.Squarify(contentBox, areas)
 
 	rect.Children = make([]TreemapRectangle, 0, len(children))
+
 	for i, c := range children {
 		b := insetBox(boxes[i], siblingGap/2)
 		rect.Children = append(rect.Children, layoutChild(dir, c, b, sizeMetric))
@@ -140,6 +141,7 @@ func insetBox(b layout.Box, inset float64) layout.Box {
 func OffsetRects(rect *TreemapRectangle, dx, dy float64) {
 	rect.X += dx
 	rect.Y += dy
+
 	if rect.IsDirectory {
 		if rect.Chrome.Orientation != DirectoryLabelNone {
 			rect.Chrome.Rail.X += dx
