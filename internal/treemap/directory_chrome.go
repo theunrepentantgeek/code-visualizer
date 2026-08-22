@@ -12,8 +12,8 @@ const (
 	directoryLabelEndpointPad = 2 * directoryPadding
 )
 
-func resolveDirectoryChrome(rect RectangleBounds, name string, isRoot bool) DirectoryChrome {
-	if isRoot || name == "" {
+func resolveDirectoryChrome(rect RectangleBounds, name string) DirectoryChrome {
+	if name == "" {
 		return directoryChromeBorderOnly(rect)
 	}
 

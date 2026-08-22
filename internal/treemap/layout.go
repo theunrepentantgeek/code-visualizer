@@ -18,20 +18,38 @@ const (
 func Layout(root *model.Directory, width, height int, sizeMetric metric.Name) TreemapRectangle {
 	box := layout.Box{X: 0, Y: 0, W: float64(width), H: float64(height)}
 
-	return layoutDir(root, box, sizeMetric, true)
+	return layoutRoot(root, box, sizeMetric)
 }
 
-func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name, isRoot bool) TreemapRectangle {
+func layoutRoot(root *model.Directory, box layout.Box, sizeMetric metric.Name) TreemapRectangle {
+	return layoutDirectory(root, box, sizeMetric, directoryChromeBorderOnly(RectangleBounds{
+		X: box.X,
+		Y: box.Y,
+		W: box.W,
+		H: box.H,
+	}))
+}
+
+func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name) TreemapRectangle {
+	return layoutDirectory(dir, box, sizeMetric, resolveDirectoryChrome(RectangleBounds{
+		X: box.X,
+		Y: box.Y,
+		W: box.W,
+		H: box.H,
+	}, dir.Name))
+}
+
+func layoutDirectory(
+	dir *model.Directory,
+	box layout.Box,
+	sizeMetric metric.Name,
+	chrome DirectoryChrome,
+) TreemapRectangle {
 	rect := TreemapRectangle{
 		X: box.X, Y: box.Y, W: box.W, H: box.H,
 		Label: dir.Name, IsDirectory: true,
 	}
-	rect.Chrome = resolveDirectoryChrome(RectangleBounds{
-		X: rect.X,
-		Y: rect.Y,
-		W: rect.W,
-		H: rect.H,
-	}, dir.Name, isRoot)
+	rect.Chrome = chrome
 
 	children := collectChildren(dir, sizeMetric)
 	if len(children) == 0 {
@@ -112,7 +130,7 @@ func fileSize(f *model.File, sizeMetric metric.Name) float64 {
 
 func layoutChild(dir *model.Directory, c child, b layout.Box, sizeMetric metric.Name) TreemapRectangle {
 	if c.isDir {
-		return layoutDir(dir.Dirs[c.dirIdx], b, sizeMetric, false)
+		return layoutDir(dir.Dirs[c.dirIdx], b, sizeMetric)
 	}
 
 	f := dir.Files[c.fileIdx]

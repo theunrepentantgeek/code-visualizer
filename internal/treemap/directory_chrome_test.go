@@ -11,11 +11,11 @@ import (
 func TestResolveDirectoryChrome(t *testing.T) {
 	t.Parallel()
 
-	t.Run("root has no rail and border-only content", func(t *testing.T) {
+	t.Run("empty name has no rail and border-only content", func(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 10, Y: 20, W: 100, H: 60}, "root", true)
+		chrome := resolveDirectoryChrome(RectangleBounds{X: 10, Y: 20, W: 100, H: 60}, "")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
@@ -27,7 +27,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 120, H: 60}, "alpha", false)
+		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 120, H: 60}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
 		g.Expect(chrome.Rail).To(Equal(RectangleBounds{X: 0, Y: 0, W: 120, H: 20}))
@@ -38,7 +38,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 5, Y: 6, W: 60, H: 60}, "alpha", false)
+		chrome := resolveDirectoryChrome(RectangleBounds{X: 5, Y: 6, W: 60, H: 60}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
 		g.Expect(chrome.Rail).To(Equal(RectangleBounds{X: 5, Y: 6, W: 60, H: 20}))
@@ -49,7 +49,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 3, Y: 7, W: 60, H: 120}, "alpha", false)
+		chrome := resolveDirectoryChrome(RectangleBounds{X: 3, Y: 7, W: 60, H: 120}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelLeft))
 		g.Expect(chrome.Rail).To(Equal(RectangleBounds{X: 3, Y: 7, W: 20, H: 120}))
@@ -60,7 +60,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 100, H: 39}, "alpha", false)
+		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 100, H: 39}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
@@ -72,7 +72,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 39, H: 100}, "alpha", false)
+		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 39, H: 100}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
