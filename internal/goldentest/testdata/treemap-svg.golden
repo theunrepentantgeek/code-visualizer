@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="320" height="240">
 <rect x="0.00" y="0.00" width="320.00" height="240.00" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="0.0"/>
 <rect x="0.00" y="0.00" width="174.00" height="213.00" fill="rgba(0,0,0,0.000)" stroke="rgb(51,51,51)" stroke-width="3.0"/>
-<rect x="5.00" y="5.00" width="164.00" height="20.00" fill="rgb(68,68,68)" stroke="rgb(68,68,68)" stroke-width="0.0"/>
+<rect x="5.00" y="5.00" width="164.00" height="20.00" fill="rgb(32,38,49)" stroke="rgb(32,38,49)" stroke-width="0.0"/>
 <rect x="5.00" y="5.00" width="164.00" height="145.42" fill="rgba(0,0,0,0.000)" stroke="rgb(51,51,51)" stroke-width="3.0"/>
-<rect x="10.00" y="26.00" width="20.00" height="119.42" fill="rgb(68,68,68)" stroke="rgb(68,68,68)" stroke-width="0.0"/>
+<rect x="10.00" y="26.00" width="20.00" height="119.42" fill="rgb(47,59,77)" stroke="rgb(47,59,77)" stroke-width="0.0"/>
 <rect x="10.00" y="26.00" width="75.88" height="119.42" fill="rgba(0,0,0,0.000)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
-<rect x="85.32" y="152.42" width="56.90" height="20.00" fill="rgb(68,68,68)" stroke="rgb(68,68,68)" stroke-width="0.0"/>
+<rect x="85.32" y="152.42" width="56.90" height="20.00" fill="rgb(32,38,49)" stroke="rgb(32,38,49)" stroke-width="0.0"/>
 <rect x="85.32" y="152.42" width="56.90" height="55.58" fill="rgba(0,0,0,0.000)" stroke="rgb(51,51,51)" stroke-width="2.0"/>
 <defs><radialGradient id="rg1" cx="50%" cy="50%" r="70%" fx="-20.2%" fy="16.8%"><stop offset="0%" stop-color="rgb(178,223,138)"/><stop offset="100%" stop-color="rgb(106,133,82)"/></radialGradient></defs>
 <rect x="144.23" y="152.42" width="24.77" height="55.58" fill="url(#rg1)" stroke="rgb(51,51,51)" stroke-width="0.5"/>
