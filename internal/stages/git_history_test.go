@@ -83,7 +83,7 @@ func buildHistoryState(dir string) *CommonState {
 }
 
 //nolint:paralleltest // mutates global slog default logger
-func TestLoadGitHistory_ReportsInitialProgressInDefaultMode(t *testing.T) {
+func TestLoadGitHistory_ReportsProgressAndCompletionInDefaultMode(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	var buf bytes.Buffer
@@ -97,6 +97,25 @@ func TestLoadGitHistory_ReportsInitialProgressInDefaultMode(t *testing.T) {
 
 	g.Expect(LoadGitHistory(state)).To(Succeed())
 	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading git history"`))
+	g.Expect(buf.String()).To(ContainSubstring(`msg="History loaded" commits=3`))
+}
+
+//nolint:paralleltest // mutates global slog default logger
+func TestLoadGitHistory_QuietModeOmitsCompletion(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.Flags.Quiet = true
+
+	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(buf.String()).NotTo(ContainSubstring("History loaded"))
 }
 
 func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
