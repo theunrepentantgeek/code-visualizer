@@ -41,8 +41,8 @@ func TestSVGBackend_DrawRectangle_WithRadialGradientFill_EmitsGradient(t *testin
 
 	svg := string(data)
 	g.Expect(svg).To(ContainSubstring("<radialGradient"))
-	g.Expect(svg).To(ContainSubstring(`fx="35.0%"`))
-	g.Expect(svg).To(ContainSubstring(`fy="35.0%"`))
+	g.Expect(svg).To(ContainSubstring(`fx="35.000%"`))
+	g.Expect(svg).To(ContainSubstring(`fy="35.000%"`))
 	g.Expect(svg).To(ContainSubstring(`fill="url(#`))
 	g.Expect(strings.Count(svg, "<stop")).To(BeNumerically(">=", 2))
 }

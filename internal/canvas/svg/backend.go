@@ -58,7 +58,7 @@ func (s *svgBackend) DrawRectangle(
 
 	fmt.Fprintf(
 		&s.buf,
-		`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
+		`<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="%s" stroke="%s" stroke-width="%.3f"/>`+"\n",
 		pos.X, pos.Y, size.Width, size.Height,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
@@ -73,7 +73,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 	edgeCSS := s.colourCSS(grad.Edge)
 
 	key := fmt.Sprintf(
-		"%s|%s|%.1f|%.1f",
+		"%s|%s|%.3f|%.3f",
 		centerCSS, edgeCSS,
 		grad.Focus.X*100, grad.Focus.Y*100,
 	)
@@ -89,7 +89,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 	// A 70% radius reaches the rectangle edges while avoiding corner emphasis.
 	fmt.Fprintf(
 		&s.buf,
-		`<defs><radialGradient id="%s" cx="50%%" cy="50%%" r="70%%" fx="%.1f%%" fy="%.1f%%">`+
+		`<defs><radialGradient id="%s" cx="50%%" cy="50%%" r="70%%" fx="%.3f%%" fy="%.3f%%">`+
 			`<stop offset="0%%" stop-color="%s"/>`+
 			`<stop offset="100%%" stop-color="%s"/>`+
 			`</radialGradient></defs>`+"\n",
@@ -111,7 +111,7 @@ func (s *svgBackend) DrawDisc(
 
 	fmt.Fprintf(
 		&s.buf,
-		`<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="%.1f"/>`+"\n",
+		`<circle cx="%.3f" cy="%.3f" r="%.3f" fill="%s" stroke="%s" stroke-width="%.3f"/>`+"\n",
 		center.X, center.Y, radius,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
@@ -131,13 +131,13 @@ func (s *svgBackend) DrawPolygon(
 			pointPairs.WriteByte(' ')
 		}
 
-		fmt.Fprintf(&pointPairs, "%.2f,%.2f", point.X, point.Y)
+		fmt.Fprintf(&pointPairs, "%.3f,%.3f", point.X, point.Y)
 	}
 
 	fmt.Fprintf(&s.buf, `<polygon points="%s" fill="%s"`, pointPairs.String(), s.svgFillAttr(fill))
 
 	if borderWidth > 0 {
-		fmt.Fprintf(&s.buf, ` stroke="%s" stroke-width="%.1f"`, s.colourCSS(model.SolidColor(border)), borderWidth)
+		fmt.Fprintf(&s.buf, ` stroke="%s" stroke-width="%.3f"`, s.colourCSS(model.SolidColor(border)), borderWidth)
 	}
 
 	s.buf.WriteString("/>\n")
@@ -156,10 +156,10 @@ func (s *svgBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
 			pathData.WriteByte(' ')
 		}
 
-		fmt.Fprintf(&pathData, "M %.2f %.2f", loop[0].X, loop[0].Y)
+		fmt.Fprintf(&pathData, "M %.3f %.3f", loop[0].X, loop[0].Y)
 
 		for _, point := range loop[1:] {
-			fmt.Fprintf(&pathData, " L %.2f %.2f", point.X, point.Y)
+			fmt.Fprintf(&pathData, " L %.3f %.3f", point.X, point.Y)
 		}
 
 		pathData.WriteString(" Z")
@@ -179,7 +179,7 @@ func (s *svgBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
 func (s *svgBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
 	fmt.Fprintf(
 		&s.buf,
-		`<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="%s" stroke-width="%.1f"/>`+"\n",
+		`<line x1="%.3f" y1="%.3f" x2="%.3f" y2="%.3f" stroke="%s" stroke-width="%.3f"/>`+"\n",
 		from.X, from.Y, to.X, to.Y,
 		s.colourCSS(stroke), strokeWidth,
 	)
@@ -193,13 +193,13 @@ func (s *svgBackend) DrawPath(points []model.Position, stroke color.RGBA, stroke
 	// Write the path data directly into s.buf to avoid an intermediate
 	// strings.Builder allocation and the subsequent copy into s.buf.
 	// For spiral tracks (500–1500+ points) this saves ~6–22 KB of allocation.
-	fmt.Fprintf(&s.buf, `<path d="M %.1f %.1f`, points[0].X, points[0].Y)
+	fmt.Fprintf(&s.buf, `<path d="M %.3f %.3f`, points[0].X, points[0].Y)
 
 	for _, p := range points[1:] {
-		fmt.Fprintf(&s.buf, ` L %.1f %.1f`, p.X, p.Y)
+		fmt.Fprintf(&s.buf, ` L %.3f %.3f`, p.X, p.Y)
 	}
 
-	fmt.Fprintf(&s.buf, `" fill="none" stroke="%s" stroke-width="%.1f"/>`+"\n",
+	fmt.Fprintf(&s.buf, `" fill="none" stroke="%s" stroke-width="%.3f"/>`+"\n",
 		s.colourCSS(stroke), strokeWidth)
 }
 
@@ -223,9 +223,9 @@ func (s *svgBackend) DrawText(
 
 		fmt.Fprintf(
 			&s.buf,
-			`<text x="%.2f" y="%.2f" fill="%s" font-size="%.1f" font-family="sans-serif" `+
+			`<text x="%.3f" y="%.3f" fill="%s" font-size="%.3f" font-family="sans-serif" `+
 				`text-anchor="%s" dominant-baseline="central" `+
-				`transform="rotate(%.2f %.2f %.2f)">%s</text>`+"\n",
+				`transform="rotate(%.3f %.3f %.3f)">%s</text>`+"\n",
 			pos.X, pos.Y, s.colourCSS(ink), fontSize,
 			anchorStr, deg, pos.X, pos.Y, escaped,
 		)
@@ -235,7 +235,7 @@ func (s *svgBackend) DrawText(
 
 	fmt.Fprintf(
 		&s.buf,
-		`<text x="%.2f" y="%.2f" fill="%s" font-size="%.1f" font-family="sans-serif" `+
+		`<text x="%.3f" y="%.3f" fill="%s" font-size="%.3f" font-family="sans-serif" `+
 			`text-anchor="%s" dominant-baseline="central">%s</text>`+"\n",
 		pos.X, pos.Y, s.colourCSS(ink), fontSize, anchorStr, escaped,
 	)
@@ -268,9 +268,8 @@ func (s *svgBackend) DrawArcText(
 	// With startOffset="50%" and text-anchor="middle", the text is
 	// centred at the top.
 	fmt.Fprintf(
-
 		&s.buf,
-		`<defs><path id="%s" d="M%.2f,%.2f A%.2f,%.2f 0 0,1 %.2f,%.2f" fill="none"/></defs>`+"\n",
+		`<defs><path id="%s" d="M%.3f,%.3f A%.3f,%.3f 0 0,1 %.3f,%.3f" fill="none"/></defs>`+"\n",
 		pathID,
 		center.X-arcR, center.Y,
 		arcR, arcR,
@@ -279,7 +278,7 @@ func (s *svgBackend) DrawArcText(
 
 	fmt.Fprintf(
 		&s.buf,
-		`<text fill="%s" font-size="%.1f" font-family="sans-serif" dominant-baseline="middle">`+
+		`<text fill="%s" font-size="%.3f" font-family="sans-serif" dominant-baseline="middle">`+
 			`<textPath href="#%s" startOffset="50%%" text-anchor="middle">%s</textPath></text>`+"\n",
 		s.colourCSS(ink), fontSize, pathID, html.EscapeString(text),
 	)
