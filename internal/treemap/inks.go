@@ -11,16 +11,30 @@ import (
 )
 
 const (
-	headerHeight = HeaderHeight
 	minBorderDim = 20.0
 	midBorderDim = 100.0
 )
 
 var (
 	structuralBorder = color.RGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xFF}
-	headerFill       = color.RGBA{R: 0x44, G: 0x44, B: 0x44, A: 0xFF}
 	defaultFill      = color.RGBA{R: 0xCC, G: 0xCC, B: 0xCC, A: 0xFF}
 )
+
+// headerFills is the private depth palette for directory rails, darkest to
+// lightest. Directories select a fill by VisibleDepth % len(headerFills), so
+// root-immediate children (depth 0) get index 0 and nested directories cycle
+// back to the darkest shade every 5 levels. Every entry meets the WCAG 4.5:1
+// minimum contrast ratio against palette.White for the white label text
+// painted over it.
+//
+//nolint:gochecknoglobals // read-only palette table, private to treemap headers
+var headerFills = [5]color.RGBA{
+	{R: 0x20, G: 0x26, B: 0x31, A: 0xFF},
+	{R: 0x2F, G: 0x3B, B: 0x4D, A: 0xFF},
+	{R: 0x3D, G: 0x52, B: 0x68, A: 0xFF},
+	{R: 0x51, G: 0x6A, B: 0x7D, A: 0xFF},
+	{R: 0x5F, G: 0x78, B: 0x88, A: 0xFF},
+}
 
 // Inks pairs the fill and border Ink instances for a treemap render pass.
 // Alias for inks.ShapeInks so other viz packages share the same struct.

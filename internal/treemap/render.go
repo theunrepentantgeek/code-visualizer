@@ -2,6 +2,7 @@ package treemap
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
@@ -11,23 +12,23 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
-// dirHeaderSpec and dirLabelSpec are constant across every directory node in a
-// render pass. Pre-allocating them avoids repeated heap allocations in the
-// recursive walk.
+// Directory chrome specs are constant across every directory node in a render
+// pass. Pre-allocating them avoids repeated heap allocations in the recursive
+// walk.
 //
 //nolint:gochecknoglobals // pre-allocated render-phase specs
 var (
-	dirHeaderSpec = &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(headerFill),
-			Border:      inks.FixedInk(headerFill),
-			BorderWidth: 0,
-		},
-	}
-	dirLabelSpec = &canvas.TextSpec{
+	dirTopLabelSpec = &canvas.TextSpec{
 		Ink:      inks.FixedInk(palette.White),
-		FontSize: 0,
-		Anchor:   canvas.AnchorStart,
+		FontSize: directoryLabelFontSize,
+		Anchor:   canvas.AnchorMiddle,
+		Rotation: 0,
+	}
+	dirLeftLabelSpec = &canvas.TextSpec{
+		Ink:      inks.FixedInk(palette.White),
+		FontSize: directoryLabelFontSize,
+		Anchor:   canvas.AnchorMiddle,
+		Rotation: -math.Pi / 2,
 	}
 	dirBorderFillInk = inks.FixedInk(color.RGBA{A: 0})
 	dirBorderLineInk = inks.FixedInk(structuralBorder)
@@ -69,6 +70,41 @@ func buildDirBorderSpecs() dirBorderSpecs {
 	}
 
 	return table
+}
+
+// dirRailSpecs holds one pre-allocated RectangleSpec per depth-palette colour
+// (indices 0-len(headerFills)-1). Avoids a per-directory allocation.
+// Built once per render pass in buildDirRailSpecs.
+type dirRailSpecs [len(headerFills)]*canvas.RectangleSpec
+
+func buildDirRailSpecs() dirRailSpecs {
+	var table dirRailSpecs
+
+	for i, fill := range headerFills {
+		ink := inks.FixedInk(fill)
+		table[i] = &canvas.RectangleSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        ink,
+				Border:      ink,
+				BorderWidth: 0,
+			},
+		}
+	}
+
+	return table
+}
+
+// dirRailSpecForDepth selects the pre-allocated rail spec for a directory's
+// VisibleDepth, wrapping around the palette every len(specs) levels. Total
+// over all ints: negative depths (notably the root's VisibleDepth of -1)
+// clamp to specs[0], the darkest fill, rather than panicking or wrapping via
+// Go's negative-operand modulo.
+func dirRailSpecForDepth(specs dirRailSpecs, visibleDepth int) *canvas.RectangleSpec {
+	if visibleDepth < 0 {
+		return specs[0]
+	}
+
+	return specs[visibleDepth%len(specs)]
 }
 
 // fileRectSpecs holds one pre-allocated RectangleSpec per possible border width,
@@ -121,7 +157,8 @@ func RenderToCanvas(
 
 	dirSpecs := buildDirBorderSpecs()
 	fileSpecs := buildFileRectSpecs(is)
-	addRect(cv, rects, root, is, sizeMetric, dirSpecs, fileSpecs)
+	railSpecs := buildDirRailSpecs()
+	addRect(cv, rects, root, is, sizeMetric, dirSpecs, fileSpecs, railSpecs)
 
 	return cv
 }
@@ -135,6 +172,7 @@ func addRect(
 	sizeMetric metric.Name,
 	dirSpecs dirBorderSpecs,
 	fileSpecs fileRectSpecs,
+	railSpecs dirRailSpecs,
 ) {
 	if !rect.IsDirectory {
 		addFileRectForFile(cv, rect, nil, is, rect, 0, fileSpecs)
@@ -142,7 +180,7 @@ func addRect(
 		return
 	}
 
-	addDirectoryShapes(cv, rect, dirSpecs)
+	addDirectoryShapes(cv, rect, dirSpecs, railSpecs)
 
 	dirTotal := directoryTotalWeight(node, sizeMetric)
 	fileIdx := 0
@@ -151,7 +189,7 @@ func addRect(
 	for i := range rect.Children {
 		child := rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			addRect(cv, child, node.Dirs[dirIdx], is, sizeMetric, dirSpecs, fileSpecs)
+			addRect(cv, child, node.Dirs[dirIdx], is, sizeMetric, dirSpecs, fileSpecs, railSpecs)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			fileWeight := fileMetricWeight(node.Files[fileIdx], sizeMetric)
@@ -165,24 +203,35 @@ func addDirectoryShapes(
 	cv *canvas.Canvas,
 	rect TreemapRectangle,
 	dirSpecs dirBorderSpecs,
+	railSpecs dirRailSpecs,
 ) {
-	// Header bar fill - spec is constant across all directories in this render pass.
-	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec:  dirHeaderSpec,
-		X:     rect.X,
-		Y:     rect.Y,
-		W:     rect.W,
-		H:     headerHeight,
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
-	})
+	if rect.Chrome.Orientation != DirectoryLabelNone {
+		rail := rect.Chrome.Rail
+		cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
+			Spec:  dirRailSpecForDepth(railSpecs, rect.VisibleDepth),
+			X:     rail.X,
+			Y:     rail.Y,
+			W:     rail.W,
+			H:     rail.H,
+			Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		})
+	}
 
-	// Header label - spec is constant; only position and content vary.
-	if rect.Label != "" {
+	if rect.Chrome.Orientation != DirectoryLabelNone && rect.Chrome.Text != "" {
+		spec := dirTopLabelSpec
+		rail := rect.Chrome.Rail
+		x := rail.X + rail.W/2
+		y := rail.Y + rail.H/2
+
+		if rect.Chrome.Orientation == DirectoryLabelLeft {
+			spec = dirLeftLabelSpec
+		}
+
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec:    dirLabelSpec,
-			X:       rect.X + 4,
-			Y:       rect.Y + headerHeight/2,
-			Content: rect.Label,
+			Spec:    spec,
+			X:       x,
+			Y:       y,
+			Content: rect.Chrome.Text,
 		})
 	}
 

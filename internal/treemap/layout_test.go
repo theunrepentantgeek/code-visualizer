@@ -32,6 +32,24 @@ func TestLayoutSingleFile(t *testing.T) {
 	g.Expect(rects.Children[0].H).To(BeNumerically(">", 0))
 }
 
+func TestLayoutRootUsesBorderOnlyChrome(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{makeFile("only.go", 100)},
+	}
+
+	rects := Layout(root, 200, 100, filesystem.FileSize)
+
+	g.Expect(rects.Chrome.Orientation).To(Equal(DirectoryLabelNone))
+	g.Expect(rects.Chrome.Content).To(Equal(RectangleBounds{X: 4, Y: 4, W: 192, H: 92}))
+	g.Expect(rects.Children).To(HaveLen(1))
+	g.Expect(rects.Children[0].Y).To(BeNumerically(">=", 4.0))
+	g.Expect(rects.Children[0].Y).To(BeNumerically("<", directoryRailThickness))
+}
+
 func TestLayoutProportionalAreas(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -100,6 +118,205 @@ func TestLayoutNestedDirs(t *testing.T) {
 	g.Expect(dirRect.Children).NotTo(BeEmpty())
 }
 
+func TestLayoutAssignsVisibleDepthToDirectoriesAndFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Files: []*model.File{
+			makeFile("root.go", 100),
+		},
+		Dirs: []*model.Directory{
+			{
+				Name: "src",
+				Dirs: []*model.Directory{
+					{
+						Name:  "internal",
+						Files: []*model.File{makeFile("internal.go", 50)},
+					},
+				},
+			},
+			{
+				Name:  "cmd",
+				Files: []*model.File{makeFile("main.go", 75)},
+			},
+		},
+	}
+
+	rects := Layout(root, 800, 600, filesystem.FileSize)
+	g.Expect(rects.VisibleDepth).To(Equal(-1))
+
+	src := findDirRect(rects, "src")
+	cmd := findDirRect(rects, "cmd")
+
+	g.Expect(src).NotTo(BeNil())
+	g.Expect(cmd).NotTo(BeNil())
+
+	if src == nil || cmd == nil {
+		return
+	}
+
+	internal := findDirRect(*src, "internal")
+	g.Expect(internal).NotTo(BeNil())
+
+	if internal == nil {
+		return
+	}
+
+	g.Expect(src.VisibleDepth).To(Equal(0))
+	g.Expect(cmd.VisibleDepth).To(Equal(0))
+	g.Expect(internal.VisibleDepth).To(Equal(1))
+
+	rootFile := func() *TreemapRectangle {
+		for i := range rects.Children {
+			if !rects.Children[i].IsDirectory && rects.Children[i].Label == "root.go" {
+				return &rects.Children[i]
+			}
+		}
+
+		return nil
+	}()
+
+	g.Expect(rootFile).NotTo(BeNil())
+
+	if rootFile == nil {
+		return
+	}
+
+	g.Expect(rootFile.VisibleDepth).To(Equal(0))
+}
+
+//nolint:dupl // similar structure, different axis config and assertions
+func TestLayoutNestedDirectoryChrome_WideUsesTopChrome(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{
+			{
+				Name:  "source",
+				Files: []*model.File{makeFile("main.go", 100)},
+			},
+		},
+	}
+
+	rects := Layout(root, 200, 100, filesystem.FileSize)
+	dirRect := findDirRect(rects, "source")
+
+	g.Expect(dirRect).NotTo(BeNil())
+
+	if dirRect == nil {
+		return
+	}
+
+	g.Expect(dirRect.Chrome.Orientation).To(Equal(DirectoryLabelTop))
+	g.Expect(dirRect.Chrome.Text).To(Equal("source"))
+	g.Expect(dirRect.Children).To(HaveLen(1))
+	g.Expect(dirRect.Children[0].Y).To(BeNumerically(">=", dirRect.Y+directoryRailThickness))
+}
+
+//nolint:dupl // similar structure, different axis config and assertions
+func TestLayoutNestedDirectoryChrome_TallUsesLeftChrome(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{
+			{
+				Name:  "source",
+				Files: []*model.File{makeFile("main.go", 100)},
+			},
+		},
+	}
+
+	rects := Layout(root, 100, 200, filesystem.FileSize)
+	dirRect := findDirRect(rects, "source")
+
+	g.Expect(dirRect).NotTo(BeNil())
+
+	if dirRect == nil {
+		return
+	}
+
+	g.Expect(dirRect.Chrome.Orientation).To(Equal(DirectoryLabelLeft))
+	g.Expect(dirRect.Chrome.Text).To(Equal("source"))
+	g.Expect(dirRect.Children).To(HaveLen(1))
+	g.Expect(dirRect.Children[0].X).To(BeNumerically(">=", dirRect.X+directoryRailThickness))
+}
+
+func TestLayoutNestedDirectoryChrome_OmittedRailReclaimsSpace(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{
+			{
+				Name:  "source",
+				Files: []*model.File{makeFile("main.go", 100)},
+			},
+		},
+	}
+
+	rects := Layout(root, 50, 50, filesystem.FileSize)
+	dirRect := findDirRect(rects, "source")
+
+	g.Expect(dirRect).NotTo(BeNil())
+
+	if dirRect == nil {
+		return
+	}
+
+	g.Expect(dirRect.Chrome.Orientation).To(Equal(DirectoryLabelNone))
+	g.Expect(dirRect.Children).To(HaveLen(1))
+	g.Expect(dirRect.Children[0].Y).To(BeNumerically("<", dirRect.Y+directoryRailThickness))
+}
+
+func TestLayoutNestedDirectoryChrome_ChildrenInsideContent(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{
+			{
+				Name: "source",
+				Files: []*model.File{
+					makeFile("main.go", 100),
+					makeFile("util.go", 100),
+				},
+			},
+		},
+	}
+
+	rects := Layout(root, 200, 100, filesystem.FileSize)
+	dirRect := findDirRect(rects, "source")
+
+	g.Expect(dirRect).NotTo(BeNil())
+
+	if dirRect == nil {
+		return
+	}
+
+	content := dirRect.Chrome.Content
+	g.Expect(dirRect.Chrome.Orientation).To(Equal(DirectoryLabelTop))
+	g.Expect(dirRect.Children).To(HaveLen(2))
+
+	for _, child := range dirRect.Children {
+		g.Expect(child.X).To(BeNumerically(">=", content.X))
+		g.Expect(child.Y).To(BeNumerically(">=", content.Y))
+		g.Expect(child.X + child.W).To(BeNumerically("<=", content.X+content.W))
+		g.Expect(child.Y + child.H).To(BeNumerically("<=", content.Y+content.H))
+	}
+}
+
 func TestLayoutZeroSizeFile(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -138,12 +355,23 @@ func TestOffsetRects_ShiftsCoordinates(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	rect := TreemapRectangle{X: 10, Y: 20, W: 100, H: 50}
+	rect := TreemapRectangle{
+		X: 10, Y: 20, W: 100, H: 50,
+		IsDirectory: true,
+		Chrome: DirectoryChrome{
+			Orientation: DirectoryLabelTop,
+			Rail:        RectangleBounds{X: 10, Y: 20, W: 100, H: 20},
+			Content:     RectangleBounds{X: 14, Y: 40, W: 92, H: 26},
+		},
+	}
 	OffsetRects(&rect, 30, 40)
 	g.Expect(rect.X).To(Equal(40.0))
 	g.Expect(rect.Y).To(Equal(60.0))
 	g.Expect(rect.W).To(Equal(100.0))
 	g.Expect(rect.H).To(Equal(50.0))
+	g.Expect(rect.VisibleDepth).To(Equal(0))
+	g.Expect(rect.Chrome.Rail).To(Equal(RectangleBounds{X: 40, Y: 60, W: 100, H: 20}))
+	g.Expect(rect.Chrome.Content).To(Equal(RectangleBounds{X: 44, Y: 80, W: 92, H: 26}))
 }
 
 func TestOffsetRects_ShiftsChildrenRecursively(t *testing.T) {
@@ -182,6 +410,30 @@ func TestOffsetRects_ZeroOffset_NoChange(t *testing.T) {
 	OffsetRects(&rect, 0, 0)
 	g.Expect(rect.X).To(Equal(10.0))
 	g.Expect(rect.Y).To(Equal(20.0))
+}
+
+func TestOffsetRects_PreservesVisibleDepth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rect := TreemapRectangle{
+		X: 10, Y: 20, W: 100, H: 50,
+		IsDirectory:  true,
+		VisibleDepth: 3,
+		Chrome: DirectoryChrome{
+			Orientation: DirectoryLabelTop,
+			Rail:        RectangleBounds{X: 10, Y: 20, W: 100, H: 20},
+			Content:     RectangleBounds{X: 14, Y: 40, W: 92, H: 26},
+		},
+		Children: []TreemapRectangle{
+			{VisibleDepth: 0},
+		},
+	}
+
+	OffsetRects(&rect, 30, 40)
+
+	g.Expect(rect.VisibleDepth).To(Equal(3))
+	g.Expect(rect.Children[0].VisibleDepth).To(Equal(0))
 }
 
 const testMeasureMetric metric.Name = "test-measure"
