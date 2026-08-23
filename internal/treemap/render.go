@@ -217,7 +217,7 @@ func addDirectoryShapes(
 		})
 	}
 
-	if rect.Chrome.Text != "" {
+	if rect.Chrome.Orientation != DirectoryLabelNone && rect.Chrome.Text != "" {
 		spec := dirTopLabelSpec
 		rail := rect.Chrome.Rail
 		x := rail.X + rail.W/2
