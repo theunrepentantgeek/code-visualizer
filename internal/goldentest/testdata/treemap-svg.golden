@@ -23,9 +23,9 @@
 <rect x="31.00" y="138.21" width="49.88" height="2.22" fill="url(#rg7)" stroke="rgb(51,51,51)" stroke-width="0.5"/>
 <defs><radialGradient id="rg8" cx="50%" cy="50%" r="70%" fx="50.0%" fy="23.0%"><stop offset="0%" stop-color="rgb(178,223,138)"/><stop offset="100%" stop-color="rgb(106,133,82)"/></radialGradient></defs>
 <rect x="90.32" y="173.42" width="46.90" height="29.58" fill="url(#rg8)" stroke="rgb(51,51,51)" stroke-width="0.5"/>
-<text x="9.00" y="15.00" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">src</text>
-<text x="20.00" y="141.42" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central" transform="rotate(-90.00 20.00 141.42)">deep</text>
-<text x="89.32" y="162.42" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="start" dominant-baseline="central">docs</text>
+<text x="87.00" y="15.00" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">src</text>
+<text x="20.00" y="85.71" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" transform="rotate(-90.00 20.00 85.71)">deep</text>
+<text x="113.77" y="162.42" fill="rgb(255,255,255)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">docs</text>
 <rect x="190.00" y="-114.00" width="114.00" height="338.00" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.0"/>
 <rect x="206.00" y="-102.00" width="82.00" height="82.00" fill="rgb(255,255,255)" stroke="rgb(102,102,102)" stroke-width="0.5"/>
 <text x="247.00" y="-77.00" fill="rgb(51,51,51)" font-size="12.0" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-name</text>
