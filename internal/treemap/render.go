@@ -21,13 +21,13 @@ var (
 	dirTopLabelSpec = &canvas.TextSpec{
 		Ink:      inks.FixedInk(palette.White),
 		FontSize: directoryLabelFontSize,
-		Anchor:   canvas.AnchorStart,
+		Anchor:   canvas.AnchorMiddle,
 		Rotation: 0,
 	}
 	dirLeftLabelSpec = &canvas.TextSpec{
 		Ink:      inks.FixedInk(palette.White),
 		FontSize: directoryLabelFontSize,
-		Anchor:   canvas.AnchorStart,
+		Anchor:   canvas.AnchorMiddle,
 		Rotation: -math.Pi / 2,
 	}
 	dirBorderFillInk = inks.FixedInk(color.RGBA{A: 0})
@@ -219,13 +219,12 @@ func addDirectoryShapes(
 
 	if rect.Chrome.Text != "" {
 		spec := dirTopLabelSpec
-		x := rect.Chrome.Rail.X + directoryPadding
-		y := rect.Chrome.Rail.Y + rect.Chrome.Rail.H/2
+		rail := rect.Chrome.Rail
+		x := rail.X + rail.W/2
+		y := rail.Y + rail.H/2
 
 		if rect.Chrome.Orientation == DirectoryLabelLeft {
 			spec = dirLeftLabelSpec
-			x = rect.Chrome.Rail.X + rect.Chrome.Rail.W/2
-			y = rect.Chrome.Rail.Y + rect.Chrome.Rail.H - directoryPadding
 		}
 
 		cv.AddText(canvas.LayerOverlay, canvas.Text{

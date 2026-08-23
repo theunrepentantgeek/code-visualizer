@@ -46,10 +46,10 @@ func TestRenderToCanvas_DrawsTopDirectoryChrome(t *testing.T) {
 		canvas.Size{Width: 80, Height: 20},
 	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
-		pos:      canvas.Position{X: 14, Y: 20},
+		pos:      canvas.Position{X: 50, Y: 20},
 		text:     "source",
 		fontSize: 12,
-		anchor:   canvas.AnchorStart,
+		anchor:   canvas.AnchorMiddle,
 		rotation: 0,
 	})).To(BeTrue())
 }
@@ -71,10 +71,10 @@ func TestRenderToCanvas_DrawsLeftDirectoryChrome(t *testing.T) {
 		canvas.Size{Width: 20, Height: 80},
 	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
-		pos:      canvas.Position{X: 20, Y: 86},
+		pos:      canvas.Position{X: 20, Y: 50},
 		text:     "source",
 		fontSize: 12,
-		anchor:   canvas.AnchorStart,
+		anchor:   canvas.AnchorMiddle,
 		rotation: -math.Pi / 2,
 	})).To(BeTrue())
 }
