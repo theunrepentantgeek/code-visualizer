@@ -118,6 +118,75 @@ func TestLayoutNestedDirs(t *testing.T) {
 	g.Expect(dirRect.Children).NotTo(BeEmpty())
 }
 
+func TestLayoutAssignsVisibleDepthToDirectoriesAndFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name: "root",
+		Files: []*model.File{
+			makeFile("root.go", 100),
+		},
+		Dirs: []*model.Directory{
+			{
+				Name: "src",
+				Dirs: []*model.Directory{
+					{
+						Name:  "internal",
+						Files: []*model.File{makeFile("internal.go", 50)},
+					},
+				},
+			},
+			{
+				Name:  "cmd",
+				Files: []*model.File{makeFile("main.go", 75)},
+			},
+		},
+	}
+
+	rects := Layout(root, 800, 600, filesystem.FileSize)
+	g.Expect(rects.VisibleDepth).To(Equal(-1))
+
+	src := findDirRect(rects, "src")
+	cmd := findDirRect(rects, "cmd")
+
+	g.Expect(src).NotTo(BeNil())
+	g.Expect(cmd).NotTo(BeNil())
+
+	if src == nil || cmd == nil {
+		return
+	}
+
+	internal := findDirRect(*src, "internal")
+	g.Expect(internal).NotTo(BeNil())
+
+	if internal == nil {
+		return
+	}
+
+	g.Expect(src.VisibleDepth).To(Equal(0))
+	g.Expect(cmd.VisibleDepth).To(Equal(0))
+	g.Expect(internal.VisibleDepth).To(Equal(1))
+
+	rootFile := func() *TreemapRectangle {
+		for i := range rects.Children {
+			if !rects.Children[i].IsDirectory && rects.Children[i].Label == "root.go" {
+				return &rects.Children[i]
+			}
+		}
+
+		return nil
+	}()
+
+	g.Expect(rootFile).NotTo(BeNil())
+
+	if rootFile == nil {
+		return
+	}
+
+	g.Expect(rootFile.VisibleDepth).To(Equal(0))
+}
+
 //nolint:dupl // similar structure, different axis config and assertions
 func TestLayoutNestedDirectoryChrome_WideUsesTopChrome(t *testing.T) {
 	t.Parallel()
@@ -300,6 +369,7 @@ func TestOffsetRects_ShiftsCoordinates(t *testing.T) {
 	g.Expect(rect.Y).To(Equal(60.0))
 	g.Expect(rect.W).To(Equal(100.0))
 	g.Expect(rect.H).To(Equal(50.0))
+	g.Expect(rect.VisibleDepth).To(Equal(0))
 	g.Expect(rect.Chrome.Rail).To(Equal(RectangleBounds{X: 40, Y: 60, W: 100, H: 20}))
 	g.Expect(rect.Chrome.Content).To(Equal(RectangleBounds{X: 44, Y: 80, W: 92, H: 26}))
 }
@@ -340,6 +410,30 @@ func TestOffsetRects_ZeroOffset_NoChange(t *testing.T) {
 	OffsetRects(&rect, 0, 0)
 	g.Expect(rect.X).To(Equal(10.0))
 	g.Expect(rect.Y).To(Equal(20.0))
+}
+
+func TestOffsetRects_PreservesVisibleDepth(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	rect := TreemapRectangle{
+		X: 10, Y: 20, W: 100, H: 50,
+		IsDirectory:  true,
+		VisibleDepth: 3,
+		Chrome: DirectoryChrome{
+			Orientation: DirectoryLabelTop,
+			Rail:        RectangleBounds{X: 10, Y: 20, W: 100, H: 20},
+			Content:     RectangleBounds{X: 14, Y: 40, W: 92, H: 26},
+		},
+		Children: []TreemapRectangle{
+			{VisibleDepth: 0},
+		},
+	}
+
+	OffsetRects(&rect, 30, 40)
+
+	g.Expect(rect.VisibleDepth).To(Equal(3))
+	g.Expect(rect.Children[0].VisibleDepth).To(Equal(0))
 }
 
 const testMeasureMetric metric.Name = "test-measure"

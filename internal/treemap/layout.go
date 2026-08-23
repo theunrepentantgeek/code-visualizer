@@ -22,7 +22,7 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name) Tr
 }
 
 func layoutRoot(root *model.Directory, box layout.Box, sizeMetric metric.Name) TreemapRectangle {
-	return layoutDirectory(root, box, sizeMetric, directoryChromeBorderOnly(RectangleBounds{
+	return layoutDirectory(root, box, sizeMetric, -1, directoryChromeBorderOnly(RectangleBounds{
 		X: box.X,
 		Y: box.Y,
 		W: box.W,
@@ -30,8 +30,8 @@ func layoutRoot(root *model.Directory, box layout.Box, sizeMetric metric.Name) T
 	}))
 }
 
-func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name) TreemapRectangle {
-	return layoutDirectory(dir, box, sizeMetric, resolveDirectoryChrome(RectangleBounds{
+func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name, visibleDepth int) TreemapRectangle {
+	return layoutDirectory(dir, box, sizeMetric, visibleDepth, resolveDirectoryChrome(RectangleBounds{
 		X: box.X,
 		Y: box.Y,
 		W: box.W,
@@ -43,11 +43,13 @@ func layoutDirectory(
 	dir *model.Directory,
 	box layout.Box,
 	sizeMetric metric.Name,
+	visibleDepth int,
 	chrome DirectoryChrome,
 ) TreemapRectangle {
 	rect := TreemapRectangle{
 		X: box.X, Y: box.Y, W: box.W, H: box.H,
 		Label: dir.Name, IsDirectory: true,
+		VisibleDepth: visibleDepth,
 	}
 	rect.Chrome = chrome
 
@@ -77,7 +79,7 @@ func layoutDirectory(
 
 	for i, c := range children {
 		b := insetBox(boxes[i], siblingGap/2)
-		rect.Children = append(rect.Children, layoutChild(dir, c, b, sizeMetric))
+		rect.Children = append(rect.Children, layoutChild(dir, c, b, sizeMetric, visibleDepth))
 	}
 
 	return rect
@@ -128,9 +130,15 @@ func fileSize(f *model.File, sizeMetric metric.Name) float64 {
 	return 0
 }
 
-func layoutChild(dir *model.Directory, c child, b layout.Box, sizeMetric metric.Name) TreemapRectangle {
+func layoutChild(
+	dir *model.Directory,
+	c child,
+	b layout.Box,
+	sizeMetric metric.Name,
+	parentVisibleDepth int,
+) TreemapRectangle {
 	if c.isDir {
-		return layoutDir(dir.Dirs[c.dirIdx], b, sizeMetric)
+		return layoutDir(dir.Dirs[c.dirIdx], b, sizeMetric, parentVisibleDepth+1)
 	}
 
 	f := dir.Files[c.fileIdx]
