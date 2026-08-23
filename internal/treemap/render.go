@@ -18,13 +18,6 @@ import (
 //
 //nolint:gochecknoglobals // pre-allocated render-phase specs
 var (
-	dirHeaderSpec = &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(headerFill),
-			Border:      inks.FixedInk(headerFill),
-			BorderWidth: 0,
-		},
-	}
 	dirTopLabelSpec = &canvas.TextSpec{
 		Ink:      inks.FixedInk(palette.White),
 		FontSize: directoryLabelFontSize,
@@ -79,6 +72,33 @@ func buildDirBorderSpecs() dirBorderSpecs {
 	return table
 }
 
+// dirRailSpecs holds one pre-allocated RectangleSpec per depth-palette colour
+// (indices 0-len(headerFills)-1). Avoids a per-directory allocation.
+// Built once per render pass in buildDirRailSpecs.
+type dirRailSpecs [len(headerFills)]*canvas.RectangleSpec
+
+func buildDirRailSpecs() dirRailSpecs {
+	var table dirRailSpecs
+	for i, fill := range headerFills {
+		ink := inks.FixedInk(fill)
+		table[i] = &canvas.RectangleSpec{
+			ShapeStyle: canvas.ShapeStyle{
+				Fill:        ink,
+				Border:      ink,
+				BorderWidth: 0,
+			},
+		}
+	}
+
+	return table
+}
+
+// dirRailSpecForDepth selects the pre-allocated rail spec for a directory's
+// VisibleDepth, wrapping around the palette every len(specs) levels.
+func dirRailSpecForDepth(specs dirRailSpecs, visibleDepth int) *canvas.RectangleSpec {
+	return specs[visibleDepth%len(specs)]
+}
+
 // fileRectSpecs holds one pre-allocated RectangleSpec per possible border width,
 // sharing a single set of Fill and Border inks across the whole render pass.
 // Built once per render pass in buildFileRectSpecs.
@@ -129,7 +149,8 @@ func RenderToCanvas(
 
 	dirSpecs := buildDirBorderSpecs()
 	fileSpecs := buildFileRectSpecs(is)
-	addRect(cv, rects, root, is, sizeMetric, dirSpecs, fileSpecs)
+	railSpecs := buildDirRailSpecs()
+	addRect(cv, rects, root, is, sizeMetric, dirSpecs, fileSpecs, railSpecs)
 
 	return cv
 }
@@ -143,6 +164,7 @@ func addRect(
 	sizeMetric metric.Name,
 	dirSpecs dirBorderSpecs,
 	fileSpecs fileRectSpecs,
+	railSpecs dirRailSpecs,
 ) {
 	if !rect.IsDirectory {
 		addFileRectForFile(cv, rect, nil, is, rect, 0, fileSpecs)
@@ -150,7 +172,7 @@ func addRect(
 		return
 	}
 
-	addDirectoryShapes(cv, rect, dirSpecs)
+	addDirectoryShapes(cv, rect, dirSpecs, railSpecs)
 
 	dirTotal := directoryTotalWeight(node, sizeMetric)
 	fileIdx := 0
@@ -159,7 +181,7 @@ func addRect(
 	for i := range rect.Children {
 		child := rect.Children[i]
 		if child.IsDirectory && dirIdx < len(node.Dirs) {
-			addRect(cv, child, node.Dirs[dirIdx], is, sizeMetric, dirSpecs, fileSpecs)
+			addRect(cv, child, node.Dirs[dirIdx], is, sizeMetric, dirSpecs, fileSpecs, railSpecs)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(node.Files) {
 			fileWeight := fileMetricWeight(node.Files[fileIdx], sizeMetric)
@@ -173,11 +195,12 @@ func addDirectoryShapes(
 	cv *canvas.Canvas,
 	rect TreemapRectangle,
 	dirSpecs dirBorderSpecs,
+	railSpecs dirRailSpecs,
 ) {
 	if rect.Chrome.Orientation != DirectoryLabelNone {
 		rail := rect.Chrome.Rail
 		cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-			Spec:  dirHeaderSpec,
+			Spec:  dirRailSpecForDepth(railSpecs, rect.VisibleDepth),
 			X:     rail.X,
 			Y:     rail.Y,
 			W:     rail.W,
