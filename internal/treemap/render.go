@@ -79,6 +79,7 @@ type dirRailSpecs [len(headerFills)]*canvas.RectangleSpec
 
 func buildDirRailSpecs() dirRailSpecs {
 	var table dirRailSpecs
+
 	for i, fill := range headerFills {
 		ink := inks.FixedInk(fill)
 		table[i] = &canvas.RectangleSpec{
@@ -94,8 +95,15 @@ func buildDirRailSpecs() dirRailSpecs {
 }
 
 // dirRailSpecForDepth selects the pre-allocated rail spec for a directory's
-// VisibleDepth, wrapping around the palette every len(specs) levels.
+// VisibleDepth, wrapping around the palette every len(specs) levels. Total
+// over all ints: negative depths (notably the root's VisibleDepth of -1)
+// clamp to specs[0], the darkest fill, rather than panicking or wrapping via
+// Go's negative-operand modulo.
 func dirRailSpecForDepth(specs dirRailSpecs, visibleDepth int) *canvas.RectangleSpec {
+	if visibleDepth < 0 {
+		return specs[0]
+	}
+
 	return specs[visibleDepth%len(specs)]
 }
 

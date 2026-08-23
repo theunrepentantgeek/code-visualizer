@@ -17,11 +17,11 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
 
-// depthPalette lists the exact rail fill colours, darkest to lightest, in the
-// order selected by VisibleDepth % len(depthPalette). Kept in sync with the
-// private treemap.headerFills table so these black-box tests can assert on
-// depth-selected colours without importing internal state.
-var depthPalette = [5]color.RGBA{ //nolint:gochecknoglobals // test fixture data
+// expectedHeaderFills lists the exact rail fill colours, darkest to lightest,
+// in the order selected by VisibleDepth % len(expectedHeaderFills). Kept in
+// sync with the private treemap.headerFills table so these black-box tests
+// can assert on depth-selected colours without importing internal state.
+var expectedHeaderFills = [5]color.RGBA{ //nolint:gochecknoglobals // test fixture data
 	{R: 0x20, G: 0x26, B: 0x31, A: 0xFF},
 	{R: 0x2F, G: 0x3B, B: 0x4D, A: 0xFF},
 	{R: 0x3D, G: 0x52, B: 0x68, A: 0xFF},
@@ -106,10 +106,10 @@ func TestRenderToCanvas_OmitsDirectoryChromeWhenOrientationIsNone(t *testing.T) 
 	)).To(BeTrue())
 }
 
-func TestRenderToCanvas_TopRailUsesDepthPaletteForDepthsZeroThroughFour(t *testing.T) {
+func TestRenderToCanvas_TopRailUsesDepthPaletteAcrossAllPaletteDepths(t *testing.T) {
 	t.Parallel()
 
-	for depth := range 5 {
+	for depth := range expectedHeaderFills {
 		t.Run(fmt.Sprintf("depth=%d", depth), func(t *testing.T) {
 			t.Parallel()
 
@@ -127,12 +127,12 @@ func TestRenderToCanvas_TopRailUsesDepthPaletteForDepthsZeroThroughFour(t *testi
 				canvas.Size{Width: 80, Height: 20},
 			)
 			g.Expect(ok).To(BeTrue())
-			g.Expect(fill).To(Equal(depthPalette[depth]))
+			g.Expect(fill).To(Equal(expectedHeaderFills[depth]))
 		})
 	}
 }
 
-func TestRenderToCanvas_LeftRailWrapsPaletteAtDepthFive(t *testing.T) {
+func TestRenderToCanvas_LeftRailWrapsPaletteAtPaletteLength(t *testing.T) {
 	t.Parallel()
 
 	g := NewGomegaWithT(t)
@@ -141,7 +141,7 @@ func TestRenderToCanvas_LeftRailWrapsPaletteAtDepthFive(t *testing.T) {
 		Text:        "source",
 		Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 20, H: 80},
 		Content:     treemap.RectangleBounds{X: 30, Y: 14, W: 56, H: 72},
-	}, 5)
+	}, len(expectedHeaderFills))
 
 	fill, ok := railFillAt(
 		backend.rectangles,
@@ -149,7 +149,35 @@ func TestRenderToCanvas_LeftRailWrapsPaletteAtDepthFive(t *testing.T) {
 		canvas.Size{Width: 20, Height: 80},
 	)
 	g.Expect(ok).To(BeTrue())
-	g.Expect(fill).To(Equal(depthPalette[0]))
+	g.Expect(fill).To(Equal(expectedHeaderFills[0]))
+}
+
+// TestRenderToCanvas_TopRailAtNegativeDepthUsesDarkestFillWithoutPanicking is
+// a regression test: dirRailSpecForDepth must be total over negative
+// VisibleDepth values (Go's % operator can return negative results for a
+// negative dividend, which previously panicked on out-of-range index).
+// VisibleDepth -1 identifies the synthetic root directory, but a rail-bearing
+// directory can also carry a negative VisibleDepth if layout logic changes;
+// either way, rendering must clamp to the darkest fill rather than panic. A
+// regression here fails this test with a panic, since nothing recovers it.
+func TestRenderToCanvas_TopRailAtNegativeDepthUsesDarkestFillWithoutPanicking(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
+		Orientation: treemap.DirectoryLabelTop,
+		Text:        "source",
+		Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 80, H: 20},
+		Content:     treemap.RectangleBounds{X: 14, Y: 30, W: 72, H: 56},
+	}, -1)
+
+	fill, ok := railFillAt(
+		backend.rectangles,
+		canvas.Position{X: 10, Y: 10},
+		canvas.Size{Width: 80, Height: 20},
+	)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(fill).To(Equal(expectedHeaderFills[0]))
 }
 
 func TestRenderToCanvas_SameDepthSiblingRailsShareFill(t *testing.T) {
@@ -163,8 +191,8 @@ func TestRenderToCanvas_SameDepthSiblingRailsShareFill(t *testing.T) {
 	second, ok := railFillAt(backend.rectangles, canvas.Position{X: 55, Y: 10}, canvas.Size{Width: 35, Height: 20})
 	g.Expect(ok).To(BeTrue())
 
-	g.Expect(first).To(Equal(depthPalette[0]))
-	g.Expect(second).To(Equal(depthPalette[0]))
+	g.Expect(first).To(Equal(expectedHeaderFills[0]))
+	g.Expect(second).To(Equal(expectedHeaderFills[0]))
 }
 
 // renderDirectoryChrome renders a root directory with a single "source" child
