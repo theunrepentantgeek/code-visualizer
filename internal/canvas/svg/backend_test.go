@@ -128,6 +128,7 @@ func TestSVGBackend_UsesThreeDecimalPrecisionAcrossPrimitives(t *testing.T) {
 	} {
 		g.Expect(content).To(ContainSubstring(want))
 	}
+
 	g.Expect(strings.Count(content, "33.333%")).To(Equal(1))
 }
 
