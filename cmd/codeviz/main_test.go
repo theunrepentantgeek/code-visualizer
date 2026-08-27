@@ -547,6 +547,46 @@ func TestDonutTreeCmd_ConfigSuppliesSizeAndCLIOverridesIt(t *testing.T) {
 	g.Expect(*cfg.DonutTree.Size).To(Equal("file-lines"))
 }
 
+func TestDonutTreeCmd_OmittedDimensionsPreserveConfigValues(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{"donut-tree", ".", "-o", "out.png", "-s", "file-lines"})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	cfg := config.New()
+	*cfg.ImageSize.Width = 800
+	*cfg.ImageSize.Height = 600
+
+	cli.DonutTree.applyOverrides(cfg)
+
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(600))
+}
+
+func TestDonutTreeCmd_ExplicitDimensionsOverrideConfigValues(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	*cfg.ImageSize.Width = 800
+	*cfg.ImageSize.Height = 600
+
+	(&DonutTreeCmd{Width: 2560, Height: 1440}).applyOverrides(cfg)
+
+	g.Expect(*cfg.ImageSize.Width).To(Equal(2560))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1440))
+}
+
 func TestDonutTreeCmd_ValidateConfig_MissingSizeFails(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
