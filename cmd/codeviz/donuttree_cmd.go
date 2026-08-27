@@ -4,15 +4,18 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/donuttree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type DonutTreeCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
-	Size metric.Name `default:"" help:"Metric for folder sector size; run 'codeviz help metrics' for available metrics." short:"s"`
+	Size metric.Name `default:"" help:"Metric for folder sector size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Fill   config.MetricSpec `help:"Folder fill colour: metric[,palette] (defaults to size)." optional:"" short:"f"`
 	Border config.MetricSpec `help:"Folder border colour: metric[,palette]." optional:"" short:"b"`
@@ -40,7 +43,7 @@ func (*DonutTreeCmd) Validate() error {
 	return nil
 }
 
-func (c *DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
+func (*DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
 	if err := validateNumericMetric("size", metric.Name(ptrString(cfg.Size))); err != nil {
 		return err
 	}
@@ -66,13 +69,36 @@ func (c *DonutTreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.DonutTree)
 }
 
+//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
 func (c *DonutTreeCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
 	}
 
-	// Task 3 replaces this with the donut-tree rendering pipeline.
-	return eris.New("donut-tree visualization is not yet available")
+	common := &stages.CommonState{
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              toStagesFlags(flags),
+		RootConfig:         flags.Config,
+		VizName:            "donut-tree",
+		CLIFilters:         c.Filters(),
+		IncludeBinaryFiles: c.IncludeBinaryFiles,
+	}
+	cfg := flags.Config.DonutTree
+	viz := &donuttree.State{}
+
+	s := pipeline.NewState(common, cfg, viz)
+
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
+
+	donuttree.AcquireData(s)
+	donuttree.RenderPipeline(s)
+
+	return eris.Wrap(s.Err(), "donut-tree pipeline failed")
 }
 
 func (c *DonutTreeCmd) applyOverrides(cfg *config.Config) {
