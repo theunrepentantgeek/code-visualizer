@@ -52,13 +52,9 @@ func layoutChildren(
 	outerRadius := innerRadius + ringWidth
 	children := make([]DonutNode, 0, len(dirs))
 	childStart := startAngle
-	parentEnd := startAngle + sweepAngle
 
 	for i, dir := range dirs {
 		childSweep := childSweep(values[i], sumPositive, minimum, remaining, sweepAngle, len(dirs))
-		if i == len(dirs)-1 {
-			childSweep = parentEnd - childStart
-		}
 
 		child := DonutNode{
 			Directory:   dir,

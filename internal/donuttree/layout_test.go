@@ -67,15 +67,16 @@ func TestLayoutZeroValueSiblingsSplitParentEvenly(t *testing.T) {
 	layout := Layout(root, 800, filesystem.FileLines)
 	g.Expect(layout.Children).To(HaveLen(3))
 
+	expectedSweep := (2 * math.Pi) / float64(len(root.Dirs))
 	for i, child := range layout.Children {
 		g.Expect(child.SweepAngle).To(BeNumerically(">", 0))
-		g.Expect(child.SweepAngle).To(BeNumerically("~", 2*math.Pi/3, 1e-12))
+		g.Expect(child.SweepAngle).To(BeNumerically("==", expectedSweep))
 		if i > 0 {
 			g.Expect(child.StartAngle).To(BeNumerically("==", layout.Children[i-1].EndAngle()))
 		}
 	}
 
-	g.Expect(layout.Children[2].EndAngle()).To(BeNumerically("==", -math.Pi/2+2*math.Pi))
+	g.Expect(layout.Children[2].EndAngle()).To(BeNumerically("~", -math.Pi/2+2*math.Pi, 1e-12))
 }
 
 func TestLayoutReservesPositiveSectorsForZeroValueSiblings(t *testing.T) {
@@ -94,6 +95,8 @@ func TestLayoutReservesPositiveSectorsForZeroValueSiblings(t *testing.T) {
 	layout := Layout(root, 800, filesystem.FileLines)
 	g.Expect(layout.Children).To(HaveLen(3))
 
+	minimum := math.Min(math.Pi/180, (2*math.Pi)/float64(len(root.Dirs)))
+	remaining := 2*math.Pi - minimum*float64(len(root.Dirs))
 	for i, child := range layout.Children {
 		g.Expect(child.SweepAngle).To(BeNumerically(">", 0))
 		if i > 0 {
@@ -101,9 +104,12 @@ func TestLayoutReservesPositiveSectorsForZeroValueSiblings(t *testing.T) {
 		}
 	}
 
+	g.Expect(layout.Children[0].SweepAngle).To(BeNumerically("==", minimum+remaining))
+	g.Expect(layout.Children[1].SweepAngle).To(BeNumerically("==", minimum))
+	g.Expect(layout.Children[2].SweepAngle).To(BeNumerically("==", minimum))
 	g.Expect(layout.Children[0].SweepAngle).To(BeNumerically(">", layout.Children[1].SweepAngle))
 	g.Expect(layout.Children[1].SweepAngle).To(BeNumerically("~", layout.Children[2].SweepAngle, 1e-12))
-	g.Expect(layout.Children[2].EndAngle()).To(BeNumerically("==", -math.Pi/2+2*math.Pi))
+	g.Expect(layout.Children[2].EndAngle()).To(BeNumerically("~", -math.Pi/2+2*math.Pi, 1e-12))
 }
 
 func TestLayoutDoesNotCreateSectorsForFiles(t *testing.T) {
@@ -124,6 +130,20 @@ func TestLayoutDoesNotCreateSectorsForFiles(t *testing.T) {
 
 	g.Expect(layout.Children).To(HaveLen(1))
 	g.Expect(layout.Children[0].Children).To(BeEmpty())
+}
+
+func TestLayoutWithFilesOnlyAtRootHasNoSectors(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{
+		Name:  "root",
+		Files: []*model.File{{Name: "main.go"}},
+	}
+
+	layout := Layout(root, 800, filesystem.FileLines)
+
+	g.Expect(layout.Children).To(BeEmpty())
 }
 
 func TestDirectoryMetricValuePrefersQuantityThenMeasure(t *testing.T) {
