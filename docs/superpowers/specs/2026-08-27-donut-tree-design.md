@@ -9,7 +9,7 @@ are not rendered, but their metrics contribute to folder aggregates.
 
 ## Command and Configuration
 
-Add a `donut-tree` CLI command and a matching `donutTree` configuration section
+Add a `donut-tree` CLI command and a matching `donut-tree` configuration section
 with YAML and JSON support. It accepts the common rendering, filtering, title,
 footer, and legend options used by other visualizations, plus:
 
