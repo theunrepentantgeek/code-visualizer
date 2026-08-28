@@ -26,7 +26,7 @@ func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := labelDirectory()
-	node := DonutNode{SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 140}
+	node := DonutNode{StartAngle: math.Pi, SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 140}
 	center := canvas.Position{X: 200, Y: 200}
 	cases := []struct {
 		name     string
@@ -101,11 +101,11 @@ func TestAddSectorLabel_CentersGlyphsOnMidpointRadius(t *testing.T) {
 	}
 }
 
-func TestAddSectorLabel_InvertsLowerHalfGlyphOrderAndRotation(t *testing.T) {
+func TestAddSectorLabel_InvertsLowerRightGlyphOrderAndRotation(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	node := DonutNode{
-		StartAngle:  math.Pi / 2,
+		StartAngle:  0,
 		SweepAngle:  math.Pi / 2,
 		InnerRadius: 100,
 		OuterRadius: 140,
@@ -121,6 +121,28 @@ func TestAddSectorLabel_InvertsLowerHalfGlyphOrderAndRotation(t *testing.T) {
 	g.Expect(strings.Join([]string{glyphs[0].Text, glyphs[1].Text, glyphs[2].Text}, "")).To(Equal("cba"))
 	angle := math.Atan2(glyphs[0].Pos.Y-center.Y, glyphs[0].Pos.X-center.X)
 	g.Expect(glyphs[0].Rotation).To(BeNumerically("~", angle+3*math.Pi/2, 0.001))
+}
+
+func TestAddSectorLabel_DoesNotInvertUpperLeftGlyphOrderOrRotation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	node := DonutNode{
+		StartAngle:  math.Pi,
+		SweepAngle:  math.Pi / 2,
+		InnerRadius: 100,
+		OuterRadius: 140,
+	}
+	center := canvas.Position{X: 200, Y: 200}
+	cv := canvas.NewCanvas(400, 400)
+	addSectorLabel(cv, node, center, "abc", inks.FixedInk(donutLabelColour))
+
+	backend := mock.NewBackend()
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+	glyphs := callsNamed(backend.Calls, "DrawText")
+
+	g.Expect(strings.Join([]string{glyphs[0].Text, glyphs[1].Text, glyphs[2].Text}, "")).To(Equal("abc"))
+	angle := math.Atan2(glyphs[0].Pos.Y-center.Y, glyphs[0].Pos.X-center.X)
+	g.Expect(math.Mod(glyphs[0].Rotation-(angle+math.Pi/2), 2*math.Pi)).To(BeNumerically("~", 0, 0.001))
 }
 
 func TestSectorLabelFontSize_FitsMediumArcsAndRejectsTinyArcs(t *testing.T) {

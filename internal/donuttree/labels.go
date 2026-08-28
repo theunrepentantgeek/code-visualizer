@@ -154,7 +154,7 @@ func isLowerHalf(angle float64) bool {
 		angle += 2 * math.Pi
 	}
 
-	return angle > math.Pi/2 && angle < 3*math.Pi/2
+	return angle > 0 && angle < math.Pi
 }
 
 func reverseStrings(values []string) {
