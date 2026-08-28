@@ -148,6 +148,26 @@ func TestLoad_YAMLRadialTree_ParsesFileAndDirectoryMetrics(t *testing.T) {
 	g.Expect(*cfg.Radial.DirectoryBorder).To(Equal(MetricSpec{Metric: "file-freshness.mean", Palette: "good-bad"}))
 }
 
+func TestLoad_YAMLDonutTree_ParsesMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "donut-tree:\n" +
+		"  size: file-lines\n" +
+		"  fill: file-type,categorization\n" +
+		"  border: file-freshness,good-bad\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	g.Expect(cfg.Load(path)).To(Succeed())
+	g.Expect(*cfg.DonutTree.Size).To(Equal("file-lines"))
+	g.Expect(*cfg.DonutTree.Fill).To(Equal(MetricSpec{Metric: "file-type", Palette: "categorization"}))
+	g.Expect(*cfg.DonutTree.Border).To(Equal(MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
+}
+
 func TestLoad_YAMLLegacyWidth_ParsesIntoImageSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -447,6 +467,22 @@ func TestForExport_OnlyIncludesRelevantViz(t *testing.T) {
 	exported := cfg.ForExport("tree-map")
 
 	g.Expect(exported.Treemap).To(BeIdenticalTo(cfg.Treemap))
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_DonutTree_OnlyIncludesDonutTreeSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("donut-tree")
+
+	g.Expect(exported.DonutTree).To(BeIdenticalTo(cfg.DonutTree))
+	g.Expect(exported.Treemap).To(BeNil())
 	g.Expect(exported.Radial).To(BeNil())
 	g.Expect(exported.Bubbletree).To(BeNil())
 	g.Expect(exported.Spiral).To(BeNil())

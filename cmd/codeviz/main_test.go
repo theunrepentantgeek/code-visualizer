@@ -123,6 +123,32 @@ func TestCLI_ParsesRadialFileAndDirectoryMetricFlags(t *testing.T) {
 	}))
 }
 
+func TestCLI_ParsesDonutTreeMetricFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"donut-tree", ".", "-o", "out.png",
+		"--size", "file-size",
+		"--fill", "file-type,categorization",
+		"--border", "file-freshness,good-bad",
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.DonutTree.Size).To(Equal(metric.Name("file-size")))
+	g.Expect(cli.DonutTree.Fill).To(Equal(config.MetricSpec{Metric: "file-type", Palette: "categorization"}))
+	g.Expect(cli.DonutTree.Border).To(Equal(config.MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
+}
+
 func TestCLI_SpiralLabelsFlagIsUnknown(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -507,6 +533,118 @@ func TestTreemapCmd_Run_WritesFileLabelsIntoSVG(t *testing.T) {
 }
 
 // validateConfig validates the merged config (single source of truth).
+
+func TestDonutTreeCmd_ConfigSuppliesSizeAndCLIOverridesIt(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.DonutTree.Size = new("file-size")
+
+	cmd := &DonutTreeCmd{Size: "file-lines"}
+	cmd.applyOverrides(cfg)
+
+	g.Expect(*cfg.DonutTree.Size).To(Equal("file-lines"))
+}
+
+func TestDonutTreeCmd_OmittedDimensionsPreserveConfigValues(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{"donut-tree", ".", "-o", "out.png", "-s", "file-lines"})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	cfg := config.New()
+	*cfg.ImageSize.Width = 800
+	*cfg.ImageSize.Height = 600
+
+	cli.DonutTree.applyOverrides(cfg)
+
+	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(600))
+}
+
+func TestDonutTreeCmd_ExplicitDimensionsOverrideConfigValues(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	*cfg.ImageSize.Width = 800
+	*cfg.ImageSize.Height = 600
+
+	(&DonutTreeCmd{Width: 2560, Height: 1440}).applyOverrides(cfg)
+
+	g.Expect(*cfg.ImageSize.Width).To(Equal(2560))
+	g.Expect(*cfg.ImageSize.Height).To(Equal(1440))
+}
+
+func TestDonutTreeCmd_ValidateConfig_MissingSizeFails(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	err := (&DonutTreeCmd{}).validateConfig(config.New().DonutTree)
+
+	g.Expect(err).To(MatchError(ContainSubstring(`unknown size metric ""`)))
+}
+
+func TestDonutTreeCmd_ValidateConfig_ClassificationSizeFails(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.DonutTree.Size = new("file-type")
+
+	err := (&DonutTreeCmd{}).validateConfig(cfg.DonutTree)
+
+	g.Expect(err).To(MatchError(ContainSubstring("size metric must be numeric")))
+}
+
+func TestDonutTreeCmd_ValidateConfig_OmittedFillAndBorderPass(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.DonutTree.Size = new("file-size")
+
+	err := (&DonutTreeCmd{}).validateConfig(cfg.DonutTree)
+
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestDonutTreeCmd_ValidateConfig_InvalidFillFailsWithContext(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.DonutTree.Size = new("file-size")
+	cfg.DonutTree.Fill = &config.MetricSpec{Metric: "not-a-real-metric"}
+
+	err := (&DonutTreeCmd{}).validateConfig(cfg.DonutTree)
+
+	g.Expect(err).To(MatchError(ContainSubstring("invalid fill spec: invalid fill metric")))
+}
+
+func TestDonutTreeCmd_ValidateConfig_InvalidBorderFailsWithContext(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.DonutTree.Size = new("file-size")
+	cfg.DonutTree.Border = &config.MetricSpec{Metric: "not-a-real-metric"}
+
+	err := (&DonutTreeCmd{}).validateConfig(cfg.DonutTree)
+
+	g.Expect(err).To(MatchError(ContainSubstring("invalid border spec: invalid border metric")))
+}
 
 func TestTreemapCmd_ValidateConfig_ConfigSuppliesFillAndPalette(t *testing.T) {
 	t.Parallel()

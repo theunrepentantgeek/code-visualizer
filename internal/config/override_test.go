@@ -49,6 +49,61 @@ func TestConfig_OverrideHeight_SkipsWhenZero(t *testing.T) {
 
 // Treemap overrides
 
+// DonutTree overrides
+
+func TestDonutTree_OverrideSize_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	d := &DonutTree{}
+	d.OverrideSize("file-lines")
+	g.Expect(*d.Size).To(Equal("file-lines"))
+}
+
+func TestDonutTree_OverrideSize_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "file-size"
+	d := &DonutTree{Size: &existing}
+	d.OverrideSize("")
+	g.Expect(*d.Size).To(Equal(existing))
+}
+
+func TestDonutTree_OverrideFill_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	d := &DonutTree{}
+	spec := MetricSpec{Metric: metric.Name("file-type"), Palette: palette.PaletteName("categorization")}
+	d.OverrideFill(spec)
+	g.Expect(*d.Fill).To(Equal(spec))
+}
+
+func TestDonutTree_OverrideFill_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-type")}
+	d := &DonutTree{Fill: &existing}
+	d.OverrideFill(MetricSpec{})
+	g.Expect(*d.Fill).To(Equal(existing))
+}
+
+func TestDonutTree_OverrideBorder_SetsWhenNonZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	d := &DonutTree{}
+	spec := MetricSpec{Metric: metric.Name("file-freshness"), Palette: palette.PaletteName("good-bad")}
+	d.OverrideBorder(spec)
+	g.Expect(*d.Border).To(Equal(spec))
+}
+
+func TestDonutTree_OverrideBorder_SkipsWhenZero(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := MetricSpec{Metric: metric.Name("file-freshness")}
+	d := &DonutTree{Border: &existing}
+	d.OverrideBorder(MetricSpec{})
+	g.Expect(*d.Border).To(Equal(existing))
+}
+
 func TestTreemap_OverrideSize_SetsWhenNonEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

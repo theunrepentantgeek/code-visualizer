@@ -27,6 +27,7 @@ type CLI struct {
 
 	TreeMap    TreemapCmd    `cmd:"" name:"tree-map"    help:"Generate a tree-map visualization."`
 	RadialTree RadialCmd     `cmd:"" name:"radial-tree" help:"Generate a radial tree visualization."`
+	DonutTree  DonutTreeCmd  `cmd:"" name:"donut-tree"  help:"Generate a hierarchical donut visualization."`
 	BubbleTree BubbletreeCmd `cmd:"" name:"bubble-tree" help:"Generate a bubble tree visualization."`
 	Spiral     SpiralCmd     `cmd:""                    help:"Generate a spiral timeline visualization."`
 	Scatter    ScatterCmd    `cmd:""                    help:"Generate a scatter plot visualization."`

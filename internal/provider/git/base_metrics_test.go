@@ -34,7 +34,7 @@ func TestRegisterBase_GitMetrics(t *testing.T) {
 	g.Expect(cd.SupportsAggregation(metric.AggMin)).To(BeTrue())
 	g.Expect(cd.SupportsAggregation(metric.AggMax)).To(BeTrue())
 	g.Expect(cd.SupportsAggregation(metric.AggSum)).To(BeFalse())
-	g.Expect(cd.SupportsAggregation(metric.AggMean)).To(BeFalse())
+	g.Expect(cd.SupportsAggregation(metric.AggMean)).To(BeTrue())
 }
 
 //nolint:paralleltest // mutates global base registry

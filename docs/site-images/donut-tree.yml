@@ -1,0 +1,18 @@
+imageSize:
+  width: 1920
+  height: 1920
+legend:
+  visible: false
+  position: bottom-center
+  orientation: horizontal
+donut-tree:
+  size: file-lines
+  fill:
+    metric: file-type
+    palette: categorization
+  border:
+    metric: file-freshness
+    palette: good-bad
+fileFilter:
+  - pattern: .*
+    mode: exclude
