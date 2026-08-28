@@ -14,6 +14,8 @@ import (
 type RadialCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD or RFC3339)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD or RFC3339)." name:"until" optional:""`
 
 	FileDiscSize metric.Name `default:"" help:"Metric for file disc size; run 'codeviz help metrics' for available metrics." name:"file-disc-size" short:"d"` //nolint:revive,nolintlint // kong struct tags require long lines
 
@@ -47,8 +49,9 @@ func (c *RadialCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*RadialCmd) Validate() error {
-	return nil
+func (c *RadialCmd) Validate() error {
+	_, _, err := parseDateRange(c.From, c.Until)
+	return err
 }
 
 // validateConfig checks the effective configuration after all sources have been
@@ -104,10 +107,15 @@ func (c *RadialCmd) Run(flags *Flags) error {
 		return err
 	}
 
+	stagesFlags, err := stagesFlagsForCommand(flags, c.From, c.Until)
+	if err != nil {
+		return err
+	}
+
 	common := &stages.CommonState{
 		TargetPath:         c.TargetPath,
 		Output:             c.Output,
-		Flags:              toStagesFlags(flags),
+		Flags:              stagesFlags,
 		RootConfig:         flags.Config,
 		VizName:            "radial-tree",
 		CLIFilters:         c.Filters(),

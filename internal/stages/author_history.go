@@ -20,14 +20,14 @@ func LoadAuthorHistory(c *CommonState) error {
 
 	tracked := buildTrackedPathSet(c.Root, repoRoot)
 
-	total, err := git.CommitTotal(repoRoot)
+	total, err := git.CommitTotalInRange(repoRoot, c.Flags.From, c.Flags.Until)
 	if err != nil {
 		return eris.Wrap(err, "failed to count git commits")
 	}
 
 	onCommit, stop := BuildHistoryProgress(c.Flags, total)
 
-	result, err := git.BulkAuthorHistory(repoRoot, tracked, false, onCommit)
+	result, err := git.BulkAuthorHistoryInRange(repoRoot, tracked, false, c.Flags.From, c.Flags.Until, onCommit)
 
 	stop()
 

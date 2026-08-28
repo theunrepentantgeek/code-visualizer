@@ -87,6 +87,29 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.TreeMap.Flat).To(BeTrue())
 }
 
+func TestCLI_ParsesDateRangeFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("codeviz"),
+		filterMapperOption(),
+		kong.Exit(func(int) {}),
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"tree-map", ".", "-o", "out.png",
+		"--from", "2024-01-02",
+		"--until", "2024-03-04",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.TreeMap.From).To(Equal("2024-01-02"))
+	g.Expect(cli.TreeMap.Until).To(Equal("2024-03-04"))
+}
+
 func TestCLI_ParsesRadialFileAndDirectoryMetricFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

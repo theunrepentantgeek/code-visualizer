@@ -4,6 +4,8 @@
 package stages
 
 import (
+	"time"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
@@ -35,6 +37,8 @@ type Flags struct {
 	ExportConfig string
 	ExportData   string
 	Config       *config.Config
+	From         time.Time
+	Until        time.Time
 }
 
 // CommonState contains fields used by shared stages. Each viz pipeline

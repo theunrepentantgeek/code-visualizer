@@ -76,6 +76,18 @@ func BulkAuthorHistory(
 	honorMailmap bool,
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
+	return BulkAuthorHistoryInRange(repoPath, filePaths, honorMailmap, time.Time{}, time.Time{}, onCommitProcessed)
+}
+
+// BulkAuthorHistoryInRange applies the same aggregation but only considers commits
+// whose author timestamps fall within the supplied date window.
+func BulkAuthorHistoryInRange(
+	repoPath string,
+	filePaths map[string]bool,
+	honorMailmap bool,
+	from, until time.Time,
+	onCommitProcessed func(),
+) (AuthorHistoryResult, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return AuthorHistoryResult{}, eris.Wrap(err, "failed to open git repository")
@@ -115,6 +127,13 @@ func BulkAuthorHistory(
 	headDate := time.Time{}
 
 	err = iter.ForEach(func(c *object.Commit) error {
+		if !from.IsZero() && c.Author.When.Before(from) {
+			return nil
+		}
+		if !until.IsZero() && c.Author.When.After(until) {
+			return nil
+		}
+
 		when := c.Author.When
 		email, name := mm.apply(c.Author.Email, c.Author.Name)
 

@@ -24,6 +24,8 @@ type RenderCmd struct {
 	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to render; omit to list available presets."`
 	TargetPath string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD or RFC3339)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD or RFC3339)." name:"until" optional:""`
 
 	Title      string `help:"Override the preset's default title." optional:""`
 	Width      int    `default:"1920" help:"Image width in pixels."`
@@ -112,6 +114,10 @@ func (r *RenderCmd) Validate() error {
 		return eris.Errorf("output path (-o) is required when a preset is specified")
 	}
 
+	if _, _, err := parseDateRange(r.From, r.Until); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -198,6 +204,8 @@ func (r *RenderCmd) structureTreemap(title string) *TreemapCmd {
 		Height:     r.Height,
 		HideFooter: r.HideFooter,
 		Title:      title,
+		From:       r.From,
+		Until:      r.Until,
 	}
 }
 
@@ -211,6 +219,8 @@ func (r *RenderCmd) structureBubbletree(title string) *BubbletreeCmd {
 		Height:     r.Height,
 		HideFooter: r.HideFooter,
 		Title:      title,
+		From:       r.From,
+		Until:      r.Until,
 	}
 }
 
@@ -224,6 +234,8 @@ func (r *RenderCmd) historyTreemap(title string) *TreemapCmd {
 		Height:     r.Height,
 		HideFooter: r.HideFooter,
 		Title:      title,
+		From:       r.From,
+		Until:      r.Until,
 	}
 }
 
@@ -237,6 +249,8 @@ func (r *RenderCmd) ageTreemap(title string) *TreemapCmd {
 		Height:     r.Height,
 		HideFooter: r.HideFooter,
 		Title:      title,
+		From:       r.From,
+		Until:      r.Until,
 	}
 }
 
@@ -250,5 +264,7 @@ func (r *RenderCmd) contributorsTreemap(title string) *TreemapCmd {
 		Height:     r.Height,
 		HideFooter: r.HideFooter,
 		Title:      title,
+		From:       r.From,
+		Until:      r.Until,
 	}
 }

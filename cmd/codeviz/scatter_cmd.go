@@ -14,6 +14,8 @@ import (
 type ScatterCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD or RFC3339)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD or RFC3339)." name:"until" optional:""`
 
 	XAxis metric.Name `default:"" help:"Metric for X-axis position; run 'codeviz help metrics' for available metrics." name:"x-axis" short:"x"` //nolint:revive,nolintlint // kong struct tags require long lines
 	YAxis metric.Name `default:"" help:"Metric for Y-axis position; run 'codeviz help metrics' for available metrics." name:"y-axis" short:"y"` //nolint:revive,nolintlint // kong struct tags require long lines
@@ -44,8 +46,9 @@ func (c *ScatterCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*ScatterCmd) Validate() error {
-	return nil
+func (c *ScatterCmd) Validate() error {
+	_, _, err := parseDateRange(c.From, c.Until)
+	return err
 }
 
 func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
@@ -92,10 +95,15 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 		return err
 	}
 
+	stagesFlags, err := stagesFlagsForCommand(flags, c.From, c.Until)
+	if err != nil {
+		return err
+	}
+
 	common := &stages.CommonState{
 		TargetPath:         c.TargetPath,
 		Output:             c.Output,
-		Flags:              toStagesFlags(flags),
+		Flags:              stagesFlags,
 		RootConfig:         flags.Config,
 		VizName:            "scatter",
 		CLIFilters:         c.Filters(),
