@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"image"
 	_ "image/png"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -81,7 +82,7 @@ func TestRenderToCanvas_RendersOneSectorPerDirectoryAndOneRootAnchor(t *testing.
 	layout := Layout(root, 600, filesystem.FileLines)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
 
-	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is))
+	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{Size: filesystem.FileLines}))
 
 	g.Expect(callsNamed(calls, "DrawPolygon")).To(HaveLen(2))
 	g.Expect(callsNamed(calls, "DrawDisc")).To(HaveLen(1))
@@ -97,6 +98,7 @@ func TestRenderToCanvas_UsesNoBorderUnlessConfigured(t *testing.T) {
 	withoutBorder := renderCalls(t, RenderToCanvas(
 		layout, root, 600, 600,
 		BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", ""),
+		LabelMetrics{Size: filesystem.FileLines},
 	))
 	for _, call := range callsNamed(withoutBorder, "DrawPolygon") {
 		g.Expect(call.BorderWidth).To(BeZero())
@@ -113,9 +115,49 @@ func TestRenderToCanvas_UsesNoBorderUnlessConfigured(t *testing.T) {
 			filesystem.FileLines, palette.Neutral,
 			"file-freshness.sum", palette.GoodBad,
 		),
+		LabelMetrics{Size: filesystem.FileLines},
 	))
 	for _, call := range callsNamed(withBorder, "DrawPolygon") {
 		g.Expect(call.BorderWidth).To(Equal(1.0))
+	}
+}
+
+func TestSectorPoints_FollowsAnnularBoundarySampling(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	node := DonutNode{
+		StartAngle:  0.2,
+		SweepAngle:  math.Pi / 3,
+		InnerRadius: 40,
+		OuterRadius: 80,
+	}
+	center := canvas.Position{X: 120, Y: 160}
+
+	steps := max(2, int(math.Ceil(node.SweepAngle/(2*math.Pi)*64)))
+	boundarySamples := steps + 1
+	points := sectorPoints(node, center)
+
+	g.Expect(points).To(HaveLen(2*boundarySamples + 1))
+	g.Expect(points[:len(points)-1]).To(HaveLen(2 * boundarySamples))
+	g.Expect(points[len(points)-1].X).To(BeNumerically("~", points[0].X, 0.000001))
+	g.Expect(points[len(points)-1].Y).To(BeNumerically("~", points[0].Y, 0.000001))
+
+	minimumSweep := node
+	minimumSweep.SweepAngle = math.Pi / 128
+	minimumSteps := max(2, int(math.Ceil(minimumSweep.SweepAngle/(2*math.Pi)*64)))
+	g.Expect(sectorPoints(minimumSweep, center)).To(HaveLen(2*(minimumSteps+1) + 1))
+
+	for step := range boundarySamples {
+		outerAngle := node.StartAngle + node.SweepAngle*float64(step)/float64(steps)
+		outerExpected := polarPosition(center, node.OuterRadius, outerAngle)
+		g.Expect(points[step].X).To(BeNumerically("~", outerExpected.X, 0.000001))
+		g.Expect(points[step].Y).To(BeNumerically("~", outerExpected.Y, 0.000001))
+
+		innerAngle := node.EndAngle() - node.SweepAngle*float64(step)/float64(steps)
+		innerExpected := polarPosition(center, node.InnerRadius, innerAngle)
+		innerPoint := points[boundarySamples+step]
+		g.Expect(innerPoint.X).To(BeNumerically("~", innerExpected.X, 0.000001))
+		g.Expect(innerPoint.Y).To(BeNumerically("~", innerExpected.Y, 0.000001))
 	}
 }
 
@@ -125,7 +167,7 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	root := donutRoot()
 	layout := Layout(root, 360, filesystem.FileLines)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
-	cv := RenderToCanvas(layout, root, 360, 360, is)
+	cv := RenderToCanvas(layout, root, 360, 360, is, LabelMetrics{Size: filesystem.FileLines})
 	outputDir := donutOutputDir(t)
 
 	pngPath := filepath.Join(outputDir, "donut.png")
@@ -151,6 +193,64 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	start, ok := token.(xml.StartElement)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(start.Name.Local).To(Equal("svg"))
+}
+
+func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	root := donutRoot()
+	cfg := config.New()
+	width, height := 800, 480
+	cfg.ImageSize.Width = &width
+	cfg.ImageSize.Height = &height
+	size := "file-lines"
+	cfg.DonutTree.Size = &size
+	cfg.Title = &config.Title{Text: new("Donut")}
+	cfg.Legend = &config.Legend{Position: new("bottom-center")}
+	common := &stages.CommonState{
+		Root:       root,
+		RootConfig: cfg,
+		Width:      width,
+		Height:     height,
+	}
+	g.Expect(stages.InitDrawingBounds(common)).To(Succeed())
+	g.Expect(stages.ReserveTitleBounds(common)).To(Succeed())
+	g.Expect(stages.ReserveFooterBounds(common)).To(Succeed())
+
+	state := &State{
+		SizeMetric:  filesystem.FileLines,
+		FillMetric:  filesystem.FileLines,
+		FillPalette: palette.Neutral,
+	}
+
+	g.Expect(BuildInksStage(common, state)).To(Succeed())
+	g.Expect(BuildLegendStage(common, state)).To(Succeed())
+	g.Expect(LayoutStage(common, state)).To(Succeed())
+	g.Expect(RenderStage(common, state)).To(Succeed())
+
+	g.Expect(common.Canvas.DrawingMinY()).To(Equal(common.DrawingBounds.MinY))
+	g.Expect(common.Canvas.DrawingMaxY()).To(Equal(common.DrawingBounds.MaxY))
+
+	calls := renderCalls(t, common.Canvas)
+
+	var legendBackground *mock.Call
+
+	for index := range calls {
+		call := &calls[index]
+		if call.Method == "DrawRectangle" && call.BorderWidth == 1 {
+			legendBackground = call
+
+			break
+		}
+	}
+
+	if legendBackground == nil {
+		t.Fatal("expected legend background")
+	}
+
+	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.MinY))
+	g.Expect(legendBackground.Pos.Y + legendBackground.Size.Height).
+		To(BeNumerically("<=", common.DrawingBounds.MaxY))
 }
 
 func TestRenderStage_KeepsConfiguredDimensionsAfterTitleAndFooterReservation(t *testing.T) {

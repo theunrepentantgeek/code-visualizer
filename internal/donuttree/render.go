@@ -18,11 +18,17 @@ var (
 )
 
 // RenderToCanvas renders directory sectors and the fixed root anchor.
-func RenderToCanvas(layout LayoutResult, root *model.Directory, width, height int, is Inks) *canvas.Canvas {
+func RenderToCanvas(
+	layout LayoutResult,
+	root *model.Directory,
+	width, height int,
+	is Inks,
+	labelMetrics LabelMetrics,
+) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 	addDonutBackground(cv, width, height)
 	addRootAnchor(cv, layout, root)
-	addDonutSectors(cv, layout.Children, layout.Center, is)
+	addDonutSectors(cv, layout.Children, layout.Center, is, labelMetrics)
 
 	return cv
 }
@@ -66,7 +72,13 @@ func addRootAnchor(cv *canvas.Canvas, layout LayoutResult, root *model.Directory
 	})
 }
 
-func addDonutSectors(cv *canvas.Canvas, nodes []DonutNode, center canvas.Position, is Inks) {
+func addDonutSectors(
+	cv *canvas.Canvas,
+	nodes []DonutNode,
+	center canvas.Position,
+	is Inks,
+	labelMetrics LabelMetrics,
+) {
 	borderWidth := 0.0
 	if is.HasBorderMetric {
 		borderWidth = 1
@@ -87,8 +99,8 @@ func addDonutSectors(cv *canvas.Canvas, nodes []DonutNode, center canvas.Positio
 			Fill:   inks.MetricValueForDirectory(node.Directory, is.Fill),
 			Border: inks.MetricValueForDirectory(node.Directory, is.Border),
 		})
-		addSectorLabel(cv, node, center, buildDirectoryLabel(node.Directory, is.LabelMetrics), labelInk)
-		addDonutSectors(cv, node.Children, center, is)
+		addSectorLabel(cv, node, center, buildDirectoryLabel(node.Directory, labelMetrics), labelInk)
+		addDonutSectors(cv, node.Children, center, is, labelMetrics)
 	}
 }
 

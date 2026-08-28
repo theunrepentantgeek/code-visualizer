@@ -19,7 +19,6 @@ var (
 type Inks struct {
 	inks.ShapeInks
 	HasBorderMetric bool
-	LabelMetrics    LabelMetrics
 }
 
 // BuildInks creates directory metric inks from the effective configuration.
@@ -32,8 +31,7 @@ func BuildInks(
 	borderPaletteName palette.PaletteName,
 ) Inks {
 	result := Inks{
-		ShapeInks:    inks.ShapeInks{Border: inks.FixedInk(donutFallbackBorder)},
-		LabelMetrics: LabelMetrics{Size: fillMetric},
+		ShapeInks: inks.ShapeInks{Border: inks.FixedInk(donutFallbackBorder)},
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fillMetric)

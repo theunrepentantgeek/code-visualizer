@@ -17,7 +17,7 @@ func labelDirectory() *model.Directory {
 	dir := &model.Directory{Name: "src"}
 	dir.SetQuantity("file-lines.sum", 120)
 	dir.SetClassification("file-type.mode", "go")
-	dir.SetMeasure("file-freshness.sum", 0.5)
+	dir.SetQuantity("file-freshness.sum", 1)
 
 	return dir
 }
@@ -33,7 +33,7 @@ func TestBuildDirectoryLabel_UsesExplicitMetricConfiguration(t *testing.T) {
 		Border:        "file-freshness.sum",
 		IncludeFill:   true,
 		IncludeBorder: true,
-	})).To(Equal("src | file-lines.sum: 120 | file-type.mode: go | file-freshness.sum: 0.5"))
+	})).To(Equal("src | file-lines.sum: 120 | file-type.mode: go | file-freshness.sum: 1"))
 	g.Expect(buildDirectoryLabel(dir, LabelMetrics{Size: "file-lines.sum"})).
 		To(Equal("src | file-lines.sum: 120"))
 }

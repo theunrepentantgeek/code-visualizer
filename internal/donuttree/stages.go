@@ -106,13 +106,6 @@ func BuildInksStage(c *stages.CommonState, d *State) error {
 		d.BorderPalette,
 	)
 
-	var cfg *config.DonutTree
-	if c.RootConfig != nil {
-		cfg = c.RootConfig.DonutTree
-	}
-
-	d.Inks.LabelMetrics = labelMetricsFor(d, cfg)
-
 	return nil
 }
 
@@ -154,7 +147,17 @@ func RenderStage(c *stages.CommonState, d *State) error {
 		X: float64(c.Width) / 2,
 		Y: float64(c.DrawingBounds.MinY) + float64(size)/2,
 	}
-	cv := RenderToCanvas(d.Layout, c.Root, c.Width, c.Height, d.Inks)
+
+	var cfg *config.DonutTree
+	if c.RootConfig != nil {
+		cfg = c.RootConfig.DonutTree
+	}
+
+	cv := RenderToCanvas(d.Layout, c.Root, c.Width, c.Height, d.Inks, labelMetricsFor(d, cfg))
+	if c.DrawingBounds.MaxY > 0 {
+		cv.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)
+	}
+
 	legend.RenderInto(cv, d.LegendConfig)
 	c.Canvas = cv
 
