@@ -24,7 +24,7 @@ func labelDirectory() *model.Directory {
 
 func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
+
 	dir := labelDirectory()
 	node := DonutNode{StartAngle: math.Pi, SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 140}
 	center := canvas.Position{X: 200, Y: 200}
@@ -53,6 +53,8 @@ func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 			cv := canvas.NewCanvas(400, 400)
 			addSectorLabel(
 				cv, node, center, buildDirectoryLabel(dir, testCase.metrics),
@@ -62,10 +64,12 @@ func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 			backend := mock.NewBackend()
 			g.Expect(cv.RenderTo(backend)).To(Succeed())
 			glyphs := callsNamed(backend.Calls, "DrawText")
+
 			text := make([]string, len(glyphs))
 			for index, glyph := range glyphs {
 				text[index] = glyph.Text
 			}
+
 			g.Expect(strings.Join(text, "")).To(Equal(testCase.expected))
 		})
 	}

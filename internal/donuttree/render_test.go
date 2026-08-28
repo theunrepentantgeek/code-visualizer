@@ -128,11 +128,15 @@ func TestRenderToCanvas_UsesNoBorderUnlessConfigured(t *testing.T) {
 func TestRenderToCanvas_UsesContrastSafeSectorLabelInks(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+
 	const fillMetric = metric.Name("label-contrast")
+
 	dark := donutDirectory("dark", 100)
 	dark.SetQuantity(fillMetric, 0)
+
 	light := donutDirectory("light", 100)
 	light.SetQuantity(fillMetric, 100)
+
 	root := donutDirectory("root", 200)
 	root.Dirs = []*model.Directory{dark, light}
 	fill := inks.NumericInk(fillMetric, []float64{0, 100}, palette.GetPalette(palette.Neutral))
@@ -145,6 +149,7 @@ func TestRenderToCanvas_UsesContrastSafeSectorLabelInks(t *testing.T) {
 		Layout(root, 600, filesystem.FileLines), root, 600, 600, is, LabelMetrics{},
 	))
 	glyphColours := make(map[string]color.RGBA)
+
 	for _, call := range callsNamed(calls, "DrawText") {
 		if call.Text == "d" || call.Text == "l" {
 			glyphColours[call.Text] = call.Fill
@@ -153,6 +158,7 @@ func TestRenderToCanvas_UsesContrastSafeSectorLabelInks(t *testing.T) {
 
 	darkExpected := canvas.TextColourFor(is.Fill.Dip(inks.MetricValueForDirectory(dark, is.Fill)))
 	lightExpected := canvas.TextColourFor(is.Fill.Dip(inks.MetricValueForDirectory(light, is.Fill)))
+
 	g.Expect(glyphColours).To(HaveKeyWithValue("d", darkExpected))
 	g.Expect(glyphColours).To(HaveKeyWithValue("l", lightExpected))
 	g.Expect(darkExpected).NotTo(Equal(lightExpected))
@@ -200,7 +206,9 @@ func TestSectorPoints_FollowsAnnularBoundarySampling(t *testing.T) {
 func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+
 	const width, height = 360, 240
+
 	root := donutRoot()
 	layout := Layout(root, width, filesystem.FileLines)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
@@ -209,8 +217,13 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 
 	pngPath := filepath.Join(outputDir, "donut.png")
 	g.Expect(cv.Render(pngPath)).To(Succeed())
+
 	png, err := os.Open(pngPath)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if err != nil {
+		return
+	}
 
 	defer png.Close()
 
@@ -219,8 +232,14 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	g.Expect(format).To(Equal("png"))
 	g.Expect(pngInfo.Width).To(Equal(width))
 	g.Expect(pngInfo.Height).To(Equal(height))
+
 	pngStat, err := png.Stat()
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if err != nil {
+		return
+	}
+
 	g.Expect(pngStat.Size()).To(BeNumerically(">", 0))
 
 	svgPath := filepath.Join(outputDir, "donut.svg")
@@ -236,10 +255,12 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	start, ok := token.(xml.StartElement)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(start.Name.Local).To(Equal("svg"))
+
 	attributes := make(map[string]string, len(start.Attr))
 	for _, attribute := range start.Attr {
 		attributes[attribute.Name.Local] = attribute.Value
 	}
+
 	g.Expect(attributes).To(HaveKeyWithValue("width", strconv.Itoa(width)))
 	g.Expect(attributes).To(HaveKeyWithValue("height", strconv.Itoa(height)))
 }
