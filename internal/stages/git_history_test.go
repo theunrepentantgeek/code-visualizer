@@ -87,6 +87,7 @@ func setupHistoryRepoWithIgnoredCommit(t *testing.T) string {
 	}
 
 	_ = os.WriteFile(filepath.Join(dir, "ignored.go"), []byte("package ignored\n"), 0o600)
+
 	runAs("Alice", "alice@example.com", "git", "add", "ignored.go")
 	runAs("Alice", "alice@example.com", "git", "commit", "-m", "ignored change")
 
