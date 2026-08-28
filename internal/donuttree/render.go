@@ -90,15 +90,15 @@ func addDonutSectors(
 		},
 	}
 
-	labelInk := inks.FixedInk(donutLabelColour)
-
 	for _, node := range nodes {
+		fillValue := inks.MetricValueForDirectory(node.Directory, is.Fill)
 		cv.AddPolygon(canvas.LayerContent, canvas.Polygon{
 			Spec:   spec,
 			Points: sectorPoints(node, center),
-			Fill:   inks.MetricValueForDirectory(node.Directory, is.Fill),
+			Fill:   fillValue,
 			Border: inks.MetricValueForDirectory(node.Directory, is.Border),
 		})
+		labelInk := inks.FixedInk(canvas.TextColourFor(is.Fill.Dip(fillValue)))
 		addSectorLabel(cv, node, center, buildDirectoryLabel(node.Directory, labelMetrics), labelInk)
 		addDonutSectors(cv, node.Children, center, is, labelMetrics)
 	}
