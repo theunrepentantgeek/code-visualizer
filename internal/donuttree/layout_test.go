@@ -68,9 +68,11 @@ func TestLayoutZeroValueSiblingsSplitParentEvenly(t *testing.T) {
 	g.Expect(layout.Children).To(HaveLen(3))
 
 	expectedSweep := (2 * math.Pi) / float64(len(root.Dirs))
+
 	for i, child := range layout.Children {
 		g.Expect(child.SweepAngle).To(BeNumerically(">", 0))
 		g.Expect(child.SweepAngle).To(BeNumerically("==", expectedSweep))
+
 		if i > 0 {
 			g.Expect(child.StartAngle).To(BeNumerically("==", layout.Children[i-1].EndAngle()))
 		}
@@ -97,8 +99,10 @@ func TestLayoutReservesPositiveSectorsForZeroValueSiblings(t *testing.T) {
 
 	minimum := math.Min(math.Pi/180, (2*math.Pi)/float64(len(root.Dirs)))
 	remaining := 2*math.Pi - minimum*float64(len(root.Dirs))
+
 	for i, child := range layout.Children {
 		g.Expect(child.SweepAngle).To(BeNumerically(">", 0))
+
 		if i > 0 {
 			g.Expect(child.StartAngle).To(BeNumerically("==", layout.Children[i-1].EndAngle()))
 		}
@@ -151,8 +155,10 @@ func TestDirectoryMetricValuePrefersQuantityThenMeasure(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	const name = metric.Name("test")
+
 	dir := &model.Directory{}
 	dir.SetMeasure(name, 0.5)
+
 	g.Expect(directoryMetricValue(dir, name)).To(BeNumerically("==", 0.5))
 
 	dir.SetQuantity(name, 2)

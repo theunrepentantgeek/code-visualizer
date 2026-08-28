@@ -16,12 +16,14 @@ func Layout(root *model.Directory, canvasSize int, sizeMetric metric.Name) Layou
 	result := LayoutResult{
 		Center: canvasmodel.Position{X: center, Y: center},
 	}
+
 	if root == nil {
 		return result
 	}
 
 	result.RootName = root.Name
 	maxDepth := maxDirectoryDepth(root)
+
 	if maxDepth == 0 {
 		result.AnchorRadius = math.Max(center, 0)
 
@@ -84,10 +86,12 @@ func layoutChildren(
 
 func allocationValues(dirs []*model.Directory, sizeMetric metric.Name) ([]float64, float64) {
 	values := make([]float64, len(dirs))
+
 	var sumPositive float64
 
 	for i, dir := range dirs {
 		value := directoryMetricValue(dir, sizeMetric)
+
 		if value > 0 {
 			values[i] = value
 			sumPositive += value
@@ -136,6 +140,7 @@ func maxDirectoryDepth(dir *model.Directory) int {
 	}
 
 	maxDepth := 0
+
 	for _, child := range dir.Dirs {
 		depth := 1 + maxDirectoryDepth(child)
 		if depth > maxDepth {

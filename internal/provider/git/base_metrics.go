@@ -79,7 +79,7 @@ func registerFileMetrics() {
 		Kind:           metric.Measure,
 		Level:          metric.LevelFile,
 		Description:    "Commits per month of file lifetime; frequently changed files score higher.",
-		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
+		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean},
 		DefaultPalette: palette.Temperature,
 	}, GitProvider)
 }
@@ -168,7 +168,7 @@ func registerAuthorshipMetrics() {
 		Kind:           metric.Measure,
 		Level:          metric.LevelFile,
 		Description:    "Maximum per-author share max(Sₐ); 1.0 = one owner.",
-		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
+		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean},
 		DefaultPalette: palette.Temperature,
 	}, GitProvider)
 
@@ -177,7 +177,7 @@ func registerAuthorshipMetrics() {
 		Kind:           metric.Measure,
 		Level:          metric.LevelFile,
 		Description:    "Normalised Shannon entropy of per-author shares; 0 = one owner, →1 = evenly shared.",
-		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
+		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean},
 		DefaultPalette: palette.GoodBad,
 	}, GitProvider)
 
@@ -186,7 +186,7 @@ func registerAuthorshipMetrics() {
 		Kind:           metric.Measure,
 		Level:          metric.LevelFile,
 		Description:    "Summed share of authors not active repo-wide within activityWindowDays of HEAD.",
-		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
+		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean},
 		DefaultPalette: palette.Temperature,
 	}, GitProvider)
 
@@ -196,7 +196,7 @@ func registerAuthorshipMetrics() {
 		Level: metric.LevelFile,
 		Description: "Share of recent-window contribution from authors absent " +
 			"in the early window; 0 for young nodes.",
-		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax},
+		Aggregations:   []metric.AggregationName{metric.AggMin, metric.AggMax, metric.AggMean},
 		DefaultPalette: palette.Temperature,
 	}, GitProvider)
 }

@@ -30,6 +30,25 @@ func TestResolveMetrics_AggregatesSizeAndDefaultFill(t *testing.T) {
 	))
 }
 
+func TestResolveMetrics_AggregatesBareMeasure(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	size := "commit-density"
+	common := &stages.CommonState{}
+	state := &donuttree.State{}
+	cfg := &config.DonutTree{Size: &size}
+
+	g.Expect(donuttree.ResolveMetrics(common, state, cfg)).To(Succeed())
+	g.Expect(state.SizeMetric).To(Equal(metric.Name("commit-density.mean")))
+	g.Expect(state.FillMetric).To(Equal(metric.Name("commit-density.mean")))
+
+	desc, ok := common.Requested.DescriptorFor(state.SizeMetric)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(desc.Name).To(Equal(metric.Name("commit-density.mean")))
+	g.Expect(desc.Kind).To(Equal(metric.Measure))
+}
+
 func TestResolveMetrics_AggregatesExplicitFillAndBorder(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
