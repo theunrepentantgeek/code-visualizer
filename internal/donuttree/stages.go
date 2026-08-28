@@ -5,6 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -105,6 +106,13 @@ func BuildInksStage(c *stages.CommonState, d *State) error {
 		d.BorderPalette,
 	)
 
+	var cfg *config.DonutTree
+	if c.RootConfig != nil {
+		cfg = c.RootConfig.DonutTree
+	}
+
+	d.Inks.LabelMetrics = labelMetricsFor(d, cfg)
+
 	return nil
 }
 
@@ -139,9 +147,38 @@ func donutCanvasSize(c *stages.CommonState) int {
 	return min(c.Width, c.DrawingBounds.Height())
 }
 
-// RenderStage is replaced by the donut tree renderer in Task 4.
-func RenderStage(*stages.CommonState, *State) error {
-	return eris.New("donut-tree rendering is not yet available")
+// RenderStage renders the donut tree into its reserved drawing bounds.
+func RenderStage(c *stages.CommonState, d *State) error {
+	size := donutCanvasSize(c)
+	d.Layout.Center = canvas.Position{
+		X: float64(c.Width) / 2,
+		Y: float64(c.DrawingBounds.MinY) + float64(size)/2,
+	}
+	cv := RenderToCanvas(d.Layout, c.Root, c.Width, c.Height, d.Inks)
+	legend.RenderInto(cv, d.LegendConfig)
+	c.Canvas = cv
+
+	return nil
+}
+
+func labelMetricsFor(d *State, cfg *config.DonutTree) LabelMetrics {
+	metrics := LabelMetrics{Size: d.SizeMetric}
+
+	if cfg == nil {
+		return metrics
+	}
+
+	if cfg.Fill != nil && cfg.Fill.MetricName() != "" {
+		metrics.Fill = d.FillMetric
+		metrics.IncludeFill = true
+	}
+
+	if cfg.Border != nil && cfg.Border.MetricName() != "" {
+		metrics.Border = d.BorderMetric
+		metrics.IncludeBorder = true
+	}
+
+	return metrics
 }
 
 // LogResult logs the final donut tree summary.
