@@ -12,6 +12,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/donuttree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
@@ -173,6 +174,27 @@ func TestGolden_Bubbletree(t *testing.T) { runVizGolden(t, "bubbletree", renderB
 
 //nolint:paralleltest // mutates the global metric registry
 func TestGolden_Scatter(t *testing.T) { runVizGolden(t, "scatter", renderScatter) }
+
+// renderDonutTree: size=file-lines, fill=file-type.
+func renderDonutTree(common *stages.CommonState) error {
+	size := "file-lines"
+	common.RootConfig.DonutTree = &config.DonutTree{
+		Size: &size,
+		Fill: &config.MetricSpec{Metric: "file-type"},
+	}
+
+	viz := &donuttree.State{}
+	s := pipeline.NewState(common, common.RootConfig.DonutTree, viz)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
+	donuttree.RenderPipeline(s)
+
+	return eris.Wrap(s.Err(), "donut tree render failed")
+}
+
+//nolint:paralleltest // mutates the global metric registry
+func TestGolden_DonutTree(t *testing.T) { runVizGolden(t, "donut-tree", renderDonutTree) }
 
 // renderSpiral uses size=file-lines and fill=file-type.
 func renderSpiral(common *stages.CommonState) error {
