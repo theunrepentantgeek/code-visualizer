@@ -65,6 +65,34 @@ func setupHistoryRepo(t *testing.T) string {
 	return dir
 }
 
+func setupHistoryRepoWithIgnoredCommit(t *testing.T) string {
+	t.Helper()
+	dir := setupHistoryRepo(t)
+
+	runAs := func(name, email string, args ...string) {
+		t.Helper()
+
+		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // test helper
+		cmd.Dir = dir
+
+		cmd.Env = append(
+			os.Environ(),
+			"GIT_AUTHOR_NAME="+name, "GIT_AUTHOR_EMAIL="+email,
+			"GIT_COMMITTER_NAME="+name, "GIT_COMMITTER_EMAIL="+email,
+		)
+
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("command %v failed: %s\n%s", args, err, out)
+		}
+	}
+
+	_ = os.WriteFile(filepath.Join(dir, "ignored.go"), []byte("package ignored\n"), 0o600)
+	runAs("Alice", "alice@example.com", "git", "add", "ignored.go")
+	runAs("Alice", "alice@example.com", "git", "commit", "-m", "ignored change")
+
+	return dir
+}
+
 func buildHistoryState(dir string) *CommonState {
 	root := &model.Directory{Path: dir, Name: filepath.Base(dir)}
 
@@ -116,6 +144,24 @@ func TestLoadGitHistory_QuietModeOmitsCompletion(t *testing.T) {
 
 	g.Expect(LoadGitHistory(state)).To(Succeed())
 	g.Expect(buf.String()).NotTo(ContainSubstring("History loaded"))
+}
+
+//nolint:paralleltest // mutates global slog default logger
+func TestLoadGitHistory_ReportsTotalRepoCommits(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	state := buildHistoryState(setupHistoryRepoWithIgnoredCommit(t))
+
+	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(state.GitHistory).To(HaveLen(3))
+	g.Expect(buf.String()).To(ContainSubstring(`msg="History loaded" commits=4`))
 }
 
 func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
