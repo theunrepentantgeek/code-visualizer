@@ -11,6 +11,7 @@ type Radial struct {
 	DirectoryBorder   *MetricSpec `yaml:"directoryBorder,omitempty"   json:"directoryBorder,omitempty"`
 	Labels            *string     `yaml:"labels,omitempty"            json:"labels,omitempty"`
 	Grain             *string     `yaml:"grain,omitempty"             json:"grain,omitempty"`
+	MaxLayers         *int        `yaml:"maxLayers,omitempty"         json:"maxLayers,omitempty"`
 }
 
 // OverrideFileDiscSize sets FileDiscSize to v if v is non-empty.
@@ -36,3 +37,6 @@ func (r *Radial) OverrideLabels(v string) { overrideString(&r.Labels, v) }
 
 // OverrideGrain sets Grain to v if v is non-empty.
 func (r *Radial) OverrideGrain(v string) { overrideString(&r.Grain, v) }
+
+// OverrideMaxLayers sets MaxLayers to v if v is non-zero.
+func (r *Radial) OverrideMaxLayers(v int) { overrideInt(&r.MaxLayers, v) }

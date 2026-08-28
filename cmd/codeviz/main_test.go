@@ -149,6 +149,40 @@ func TestCLI_ParsesDonutTreeMetricFlags(t *testing.T) {
 	g.Expect(cli.DonutTree.Border).To(Equal(config.MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
 }
 
+func TestCLI_ParsesMaxLayersFlags(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		name string
+		args []string
+		want int
+	}{
+		{name: "radial", args: []string{"radial-tree", ".", "-o", "out.png", "--max-layers", "2"}, want: 2},
+		{name: "donut", args: []string{"donut-tree", ".", "-o", "out.png", "--max-layers", "3"}, want: 3},
+	}
+
+	for _, tc := range cases {
+		cli := CLI{}
+		parser, err := kong.New(
+			&cli,
+			kong.Name("codeviz"),
+			filterMapperOption(),
+			kong.Exit(func(int) {}),
+		)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		_, err = parser.Parse(tc.args)
+		g.Expect(err).NotTo(HaveOccurred(), tc.name)
+
+		if tc.name == "radial" {
+			g.Expect(cli.RadialTree.MaxLayers).To(Equal(tc.want), tc.name)
+		} else {
+			g.Expect(cli.DonutTree.MaxLayers).To(Equal(tc.want), tc.name)
+		}
+	}
+}
+
 func TestCLI_SpiralLabelsFlagIsUnknown(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

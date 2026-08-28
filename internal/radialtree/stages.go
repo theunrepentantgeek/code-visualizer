@@ -188,8 +188,17 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 // and the drawing height); the surrounding canvas may be non-square.
 func LayoutStage(c *stages.CommonState, r *State) error {
 	canvasSize := radialCanvasSize(c)
+	root := c.Root
 
-	r.Nodes = Layout(c.Root, canvasSize, r.DiscSize, r.DirectoryDiscSize, r.Labels, r.Grain)
+	if c.RootConfig != nil &&
+		c.RootConfig.Radial != nil &&
+		c.RootConfig.Radial.MaxLayers != nil &&
+		*c.RootConfig.Radial.MaxLayers > 0 {
+		root = model.PruneLayers(c.Root, *c.RootConfig.Radial.MaxLayers)
+	}
+
+	r.DisplayRoot = root
+	r.Nodes = Layout(root, canvasSize, r.DiscSize, r.DirectoryDiscSize, r.Labels, r.Grain)
 
 	return nil
 }
@@ -199,8 +208,13 @@ func RenderStage(c *stages.CommonState, r *State) error {
 	size := radialCanvasSize(c)
 	cx := float64(c.Width) / 2.0
 	cy := float64(size)/2.0 + float64(c.DrawingBounds.MinY)
+	root := c.Root
 
-	cv := RenderToCanvas(&r.Nodes, c.Root, c.Width, c.Height, cx, cy, r.Inks)
+	if r.DisplayRoot != nil {
+		root = r.DisplayRoot
+	}
+
+	cv := RenderToCanvas(&r.Nodes, root, c.Width, c.Height, cx, cy, r.Inks)
 	legend.RenderInto(cv, r.LegendConfig)
 
 	c.Canvas = cv
