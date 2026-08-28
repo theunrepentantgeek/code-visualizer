@@ -1,11 +1,5 @@
 package model
 
-import (
-	"maps"
-
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-)
-
 // WalkFiles calls fn for every file in the tree, depth-first.
 func WalkFiles(dir *Directory, fn func(*File)) {
 	if dir == nil {
@@ -68,7 +62,9 @@ func pruneDirectoryLayers(dir *Directory, depth, maxLayers int) *Directory {
 		AllFileCount:    dir.AllFileCount,
 		AllDirCount:     dir.AllDirCount,
 	}
-	cloneMetricContainer(&dir.MetricContainer, &pruned.MetricContainer)
+	if cloned := dir.MetricContainer.Clone(); cloned != nil {
+		pruned.MetricContainer = *cloned
+	}
 
 	if maxLayers > 0 && depth >= maxLayers {
 		pruned.Dirs = nil
@@ -88,30 +84,6 @@ func pruneDirectoryLayers(dir *Directory, depth, maxLayers int) *Directory {
 	}
 
 	return pruned
-}
-
-func cloneMetricContainer(src *MetricContainer, dst *MetricContainer) {
-	if src == nil || dst == nil {
-		return
-	}
-
-	src.mu.RLock()
-	defer src.mu.RUnlock()
-
-	if src.quantities != nil {
-		dst.quantities = make(map[metric.Name]int64, len(src.quantities))
-		maps.Copy(dst.quantities, src.quantities)
-	}
-
-	if src.measures != nil {
-		dst.measures = make(map[metric.Name]float64, len(src.measures))
-		maps.Copy(dst.measures, src.measures)
-	}
-
-	if src.classifications != nil {
-		dst.classifications = make(map[metric.Name]string, len(src.classifications))
-		maps.Copy(dst.classifications, src.classifications)
-	}
 }
 
 // WalkDirectories calls fn for every directory in the tree, in post-order
