@@ -16,12 +16,12 @@ Files contribute their metrics to their directories but are never drawn.
 codeviz donut-tree [flags] <target-path>
 ```
 
-## Required flags
+## Required settings
 
-| Flag       | Short | Values                          | Description                         |
-| ---------- | ----- | ------------------------------- | ----------------------------------- |
-| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path              |
-| `--size`   | `-s`  | see `codeviz help metrics`      | Numeric metric for folder sector size |
+| Flag       | Short | Values                          | Description                                                             |
+| ---------- | ----- | ------------------------------- | ----------------------------------------------------------------------- |
+| `--output` | `-o`  | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path                                                  |
+| `--size`   | `-s`  | see `codeviz help metrics`      | Required numeric metric for folder sector size; also settable by `donut-tree.size` in configuration |
 
 ## Optional flags
 

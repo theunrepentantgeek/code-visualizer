@@ -29,6 +29,13 @@ immediately legible.
 
 ![Radial-tree visualisation](radial-tree.png)
 
+## Donut Tree
+
+Nested annular sectors that show the directory hierarchy and relative folder
+sizes at each depth.
+
+![Donut Tree visualisation](donut-tree.png)
+
 ## Spiral
 
 Project activity plotted along a spiral of time — each spot is a time bucket
