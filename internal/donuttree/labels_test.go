@@ -17,25 +17,58 @@ func labelDirectory() *model.Directory {
 	dir := &model.Directory{Name: "src"}
 	dir.SetQuantity("file-lines.sum", 120)
 	dir.SetClassification("file-type.mode", "go")
-	dir.SetQuantity("file-freshness.sum", 1)
+	dir.SetQuantity("file-freshness.sum", 5)
 
 	return dir
 }
 
-func TestBuildDirectoryLabel_UsesExplicitMetricConfiguration(t *testing.T) {
+func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	dir := labelDirectory()
+	node := DonutNode{SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 140}
+	center := canvas.Position{X: 200, Y: 200}
+	cases := []struct {
+		name     string
+		metrics  LabelMetrics
+		expected string
+	}{
+		{
+			name: "explicit metrics",
+			metrics: LabelMetrics{
+				Size:          "file-lines.sum",
+				Fill:          "file-type.mode",
+				Border:        "file-freshness.sum",
+				IncludeFill:   true,
+				IncludeBorder: true,
+			},
+			expected: "src | file-lines.sum: 120 | file-type.mode: go | file-freshness.sum: 5",
+		},
+		{
+			name:     "default size metric",
+			metrics:  LabelMetrics{Size: "file-lines.sum"},
+			expected: "src | file-lines.sum: 120",
+		},
+	}
 
-	g.Expect(buildDirectoryLabel(dir, LabelMetrics{
-		Size:          "file-lines.sum",
-		Fill:          "file-type.mode",
-		Border:        "file-freshness.sum",
-		IncludeFill:   true,
-		IncludeBorder: true,
-	})).To(Equal("src | file-lines.sum: 120 | file-type.mode: go | file-freshness.sum: 1"))
-	g.Expect(buildDirectoryLabel(dir, LabelMetrics{Size: "file-lines.sum"})).
-		To(Equal("src | file-lines.sum: 120"))
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			cv := canvas.NewCanvas(400, 400)
+			addSectorLabel(
+				cv, node, center, buildDirectoryLabel(dir, testCase.metrics),
+				inks.FixedInk(donutLabelColour),
+			)
+
+			backend := mock.NewBackend()
+			g.Expect(cv.RenderTo(backend)).To(Succeed())
+			glyphs := callsNamed(backend.Calls, "DrawText")
+			text := make([]string, len(glyphs))
+			for index, glyph := range glyphs {
+				text[index] = glyph.Text
+			}
+			g.Expect(strings.Join(text, "")).To(Equal(testCase.expected))
+		})
+	}
 }
 
 func TestAddSectorLabel_CentersGlyphsOnMidpointRadius(t *testing.T) {
@@ -93,10 +126,10 @@ func TestAddSectorLabel_InvertsLowerHalfGlyphOrderAndRotation(t *testing.T) {
 func TestSectorLabelFontSize_FitsMediumArcsAndRejectsTinyArcs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	medium := DonutNode{SweepAngle: math.Pi / 2, InnerRadius: 40, OuterRadius: 60}
+	medium := DonutNode{SweepAngle: math.Pi / 3, InnerRadius: 40, OuterRadius: 60}
 	tiny := DonutNode{SweepAngle: 0.01, InnerRadius: 10, OuterRadius: 12}
 
 	g.Expect(sectorLabelFontSize(medium, "medium label")).To(BeNumerically(">=", 6))
-	g.Expect(sectorLabelFontSize(medium, "medium label")).To(BeNumerically("<=", 14))
+	g.Expect(sectorLabelFontSize(medium, "medium label")).To(BeNumerically("<", 14))
 	g.Expect(sectorLabelFontSize(tiny, "too small")).To(BeZero())
 }

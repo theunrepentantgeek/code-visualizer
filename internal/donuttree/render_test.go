@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -164,10 +165,11 @@ func TestSectorPoints_FollowsAnnularBoundarySampling(t *testing.T) {
 func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+	const width, height = 360, 240
 	root := donutRoot()
-	layout := Layout(root, 360, filesystem.FileLines)
+	layout := Layout(root, width, filesystem.FileLines)
 	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
-	cv := RenderToCanvas(layout, root, 360, 360, is, LabelMetrics{Size: filesystem.FileLines})
+	cv := RenderToCanvas(layout, root, width, height, is, LabelMetrics{Size: filesystem.FileLines})
 	outputDir := donutOutputDir(t)
 
 	pngPath := filepath.Join(outputDir, "donut.png")
@@ -177,14 +179,20 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 
 	defer png.Close()
 
-	_, format, err := image.DecodeConfig(png)
+	pngInfo, format, err := image.DecodeConfig(png)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(format).To(Equal("png"))
+	g.Expect(pngInfo.Width).To(Equal(width))
+	g.Expect(pngInfo.Height).To(Equal(height))
+	pngStat, err := png.Stat()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(pngStat.Size()).To(BeNumerically(">", 0))
 
 	svgPath := filepath.Join(outputDir, "donut.svg")
 	g.Expect(cv.Render(svgPath)).To(Succeed())
 	data, err := os.ReadFile(svgPath)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data).NotTo(BeEmpty())
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	token, err := decoder.Token()
@@ -193,6 +201,12 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	start, ok := token.(xml.StartElement)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(start.Name.Local).To(Equal("svg"))
+	attributes := make(map[string]string, len(start.Attr))
+	for _, attribute := range start.Attr {
+		attributes[attribute.Name.Local] = attribute.Value
+	}
+	g.Expect(attributes).To(HaveKeyWithValue("width", strconv.Itoa(width)))
+	g.Expect(attributes).To(HaveKeyWithValue("height", strconv.Itoa(height)))
 }
 
 func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
