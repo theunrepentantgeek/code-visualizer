@@ -61,7 +61,7 @@ func LoadGitHistory(c *CommonState) error {
 
 	c.GitHistory = commits
 	if !c.Flags.Quiet {
-		slog.Info("History loaded", "commits", len(commits))
+		slog.Info("History loaded", "commits", total)
 	}
 
 	return nil
