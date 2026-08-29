@@ -116,19 +116,23 @@ func sectorLabelFontSize(node DonutNode, lines []string) float64 {
 		return 0
 	}
 
-	rowSpacing := (node.OuterRadius - node.InnerRadius) / float64(len(lines))
-	fontSize := min(donutDefaultLabelFontSize, donutDefaultLabelFontSize*rowSpacing/lineHeight)
-
-	for index, width := range widths {
-		if width <= 0 {
-			continue
-		}
-
-		radius := node.InnerRadius + rowSpacing*(float64(index)+0.5)
-		availableArcLength := radius * node.SweepAngle
-		fontSize = min(fontSize, donutDefaultLabelFontSize*availableArcLength/width)
+	maxWidth := 0.0
+	for _, width := range widths {
+		maxWidth = max(maxWidth, width)
+	}
+	if maxWidth <= 0 {
+		return 0
 	}
 
+	ringWidth := node.OuterRadius - node.InnerRadius
+	midRadius := (node.InnerRadius + node.OuterRadius) / 2
+	availableArcLength := midRadius * node.SweepAngle
+	blockHeight := lineHeight * float64(len(lines))
+	fontSize := min(
+		donutDefaultLabelFontSize,
+		donutDefaultLabelFontSize*ringWidth/maxWidth,
+		donutDefaultLabelFontSize*availableArcLength/blockHeight,
+	)
 	if fontSize < donutMinimumLabelFontSize {
 		return 0
 	}

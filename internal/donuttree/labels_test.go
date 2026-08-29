@@ -118,13 +118,15 @@ func TestAddSectorLabel_FlipsRadialBaselineOnLeftHalf(t *testing.T) {
 	}
 }
 
-func TestSectorLabelFontSize_FitsAllRowsAndRejectsInsufficientRadialSpace(t *testing.T) {
+func TestSectorLabelFontSize_FitsRotatedBlockInBothDimensions(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	medium := DonutNode{SweepAngle: math.Pi / 3, InnerRadius: 40, OuterRadius: 60}
-	tooThin := DonutNode{SweepAngle: math.Pi, InnerRadius: 10, OuterRadius: 12}
+	wideLine := DonutNode{SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 120}
+	narrowArc := DonutNode{SweepAngle: 0.1, InnerRadius: 100, OuterRadius: 140}
+	roomy := DonutNode{SweepAngle: math.Pi / 2, InnerRadius: 100, OuterRadius: 140}
 
-	g.Expect(sectorLabelFontSize(medium, []string{"medium", "label"})).To(BeNumerically(">=", 6))
-	g.Expect(sectorLabelFontSize(medium, []string{"medium", "label"})).To(BeNumerically("<", 14))
-	g.Expect(sectorLabelFontSize(tooThin, []string{"one", "two"})).To(BeZero())
+	g.Expect(sectorLabelFontSize(wideLine, []string{"wide"})).To(BeNumerically(">=", donutMinimumLabelFontSize))
+	g.Expect(sectorLabelFontSize(wideLine, []string{"wide"})).To(BeNumerically("<", donutDefaultLabelFontSize))
+	g.Expect(sectorLabelFontSize(narrowArc, []string{"a", "b", "c", "d"})).To(BeZero())
+	g.Expect(sectorLabelFontSize(roomy, []string{"src", "120"})).To(Equal(donutDefaultLabelFontSize))
 }
