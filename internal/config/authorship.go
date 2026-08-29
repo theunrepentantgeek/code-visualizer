@@ -75,8 +75,8 @@ type AuthorshipConfig struct {
 
 	// SignificantShareThreshold is the minimum share (Sₐ = Wₐ/W) an author
 	// must hold to count toward significant-contributor-count. Default: 0.10.
-	//nolint:tagliatelle,lll // External config keys use hyphens.
-	SignificantShareThreshold *float64 `yaml:"significant-share-threshold,omitempty" json:"significant-share-threshold,omitempty"` //nolint:revive // Schema-defined config keys.
+	//nolint:tagliatelle,revive // External config keys use hyphens; schema field exceeds the line limit.
+	SignificantShareThreshold *float64 `yaml:"significant-share-threshold,omitempty" json:"significant-share-threshold,omitempty"`
 
 	// BusFactorThreshold is the minimum combined share that bus-factor authors
 	// must cover. Default: 0.50.

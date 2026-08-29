@@ -62,9 +62,7 @@ func pruneDirectoryLayers(dir *Directory, depth, maxLayers int) *Directory {
 		AllFileCount:    dir.AllFileCount,
 		AllDirCount:     dir.AllDirCount,
 	}
-	if cloned := dir.MetricContainer.Clone(); cloned != nil {
-		pruned.MetricContainer = *cloned
-	}
+	dir.cloneInto(&pruned.MetricContainer)
 
 	if maxLayers > 0 && depth >= maxLayers {
 		pruned.Dirs = nil

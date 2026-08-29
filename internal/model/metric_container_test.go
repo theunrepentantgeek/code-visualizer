@@ -220,7 +220,7 @@ func TestMetricContainer_Clone_DeepCopiesMetrics(t *testing.T) {
 
 	clone := f.Clone()
 	g.Expect(clone).NotTo(BeNil())
-	g.Expect(clone).NotTo(BeIdenticalTo(f))
+	g.Expect(clone).NotTo(BeIdenticalTo(&f.MetricContainer))
 
 	clone.SetQuantity(metric.Name("lines"), 99)
 	clone.SetMeasure(metric.Name("coverage"), 0.9)
@@ -240,6 +240,7 @@ func TestMetricContainer_Clone_DeepCopiesMetrics(t *testing.T) {
 	q, okQ = clone.Quantity(metric.Name("lines"))
 	m, okM = clone.Measure(metric.Name("coverage"))
 	c, okC = clone.Classification(metric.Name("kind"))
+
 	g.Expect(okQ).To(BeTrue())
 	g.Expect(q).To(Equal(int64(99)))
 	g.Expect(okM).To(BeTrue())
