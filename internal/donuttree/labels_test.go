@@ -22,16 +22,13 @@ func labelDirectory() *model.Directory {
 	return dir
 }
 
-func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
+func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 	t.Parallel()
-
-	dir := labelDirectory()
-	node := DonutNode{StartAngle: math.Pi, SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 140}
-	center := canvas.Position{X: 200, Y: 200}
+	g := NewGomegaWithT(t)
 	cases := []struct {
 		name     string
 		metrics  LabelMetrics
-		expected string
+		expected []string
 	}{
 		{
 			name: "explicit metrics",
@@ -42,40 +39,24 @@ func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 				IncludeFill:   true,
 				IncludeBorder: true,
 			},
-			expected: "src | file-lines.sum: 120 | file-type.mode: go | file-freshness.sum: 5",
+			expected: []string{"src", "120", "go", "5"},
 		},
 		{
 			name:     "default size metric",
 			metrics:  LabelMetrics{Size: "file-lines.sum"},
-			expected: "src | file-lines.sum: 120",
+			expected: []string{"src", "120"},
 		},
 	}
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			g := NewGomegaWithT(t)
-			cv := canvas.NewCanvas(400, 400)
-			addSectorLabel(
-				cv, node, center, buildDirectoryLabel(dir, testCase.metrics),
-				inks.FixedInk(donutLabelColour),
-			)
-
-			backend := mock.NewBackend()
-			g.Expect(cv.RenderTo(backend)).To(Succeed())
-			glyphs := callsNamed(backend.Calls, "DrawText")
-
-			text := make([]string, len(glyphs))
-			for index, glyph := range glyphs {
-				text[index] = glyph.Text
-			}
-
-			g.Expect(strings.Join(text, "")).To(Equal(testCase.expected))
+			g.Expect(buildDirectoryLabel(labelDirectory(), testCase.metrics)).To(Equal(testCase.expected))
 		})
 	}
 }
 
-func TestAddSectorLabel_CentersGlyphsOnMidpointRadius(t *testing.T) {
+func TestAddSectorLabel_RendersLinesOnConcentricArcsWithCommonMidpoint(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	node := DonutNode{
@@ -86,23 +67,27 @@ func TestAddSectorLabel_CentersGlyphsOnMidpointRadius(t *testing.T) {
 	}
 	center := canvas.Position{X: 200, Y: 200}
 	cv := canvas.NewCanvas(400, 400)
-	addSectorLabel(cv, node, center, "unicode: \u65e5", inks.FixedInk(donutLabelColour))
+	addSectorLabel(cv, node, center, []string{"src", "120", "go"}, inks.FixedInk(donutLabelColour))
 
 	backend := mock.NewBackend()
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 	glyphs := callsNamed(backend.Calls, "DrawText")
-	g.Expect(glyphs).NotTo(BeEmpty())
+	g.Expect(glyphs).To(HaveLen(8))
 
-	expectedRadius := (node.InnerRadius + node.OuterRadius) / 2
 	midpoint := node.StartAngle + node.SweepAngle/2
-	firstAngle := math.Atan2(glyphs[0].Pos.Y-center.Y, glyphs[0].Pos.X-center.X)
-	lastAngle := math.Atan2(glyphs[len(glyphs)-1].Pos.Y-center.Y, glyphs[len(glyphs)-1].Pos.X-center.X)
-	g.Expect((firstAngle + lastAngle) / 2).To(BeNumerically("~", midpoint, 0.02))
-
-	for _, glyph := range glyphs {
-		radius := math.Hypot(glyph.Pos.X-center.X, glyph.Pos.Y-center.Y)
-		g.Expect(radius).To(BeNumerically("~", expectedRadius, 0.001))
+	for _, row := range [][]mock.Call{glyphs[:3], glyphs[3:6], glyphs[6:]} {
+		firstAngle := math.Atan2(row[0].Pos.Y-center.Y, row[0].Pos.X-center.X)
+		lastAngle := math.Atan2(row[len(row)-1].Pos.Y-center.Y, row[len(row)-1].Pos.X-center.X)
+		g.Expect((firstAngle + lastAngle) / 2).To(BeNumerically("~", midpoint, 0.02))
 	}
+
+	radii := []float64{
+		math.Hypot(glyphs[0].Pos.X-center.X, glyphs[0].Pos.Y-center.Y),
+		math.Hypot(glyphs[3].Pos.X-center.X, glyphs[3].Pos.Y-center.Y),
+		math.Hypot(glyphs[6].Pos.X-center.X, glyphs[6].Pos.Y-center.Y),
+	}
+	g.Expect(radii[0]).To(BeNumerically("<", radii[1]))
+	g.Expect(radii[1]).To(BeNumerically("<", radii[2]))
 }
 
 func TestAddSectorLabel_InvertsLowerRightGlyphOrderAndRotation(t *testing.T) {
@@ -116,7 +101,7 @@ func TestAddSectorLabel_InvertsLowerRightGlyphOrderAndRotation(t *testing.T) {
 	}
 	center := canvas.Position{X: 200, Y: 200}
 	cv := canvas.NewCanvas(400, 400)
-	addSectorLabel(cv, node, center, "abc", inks.FixedInk(donutLabelColour))
+	addSectorLabel(cv, node, center, []string{"abc"}, inks.FixedInk(donutLabelColour))
 
 	backend := mock.NewBackend()
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
@@ -138,7 +123,7 @@ func TestAddSectorLabel_DoesNotInvertUpperLeftGlyphOrderOrRotation(t *testing.T)
 	}
 	center := canvas.Position{X: 200, Y: 200}
 	cv := canvas.NewCanvas(400, 400)
-	addSectorLabel(cv, node, center, "abc", inks.FixedInk(donutLabelColour))
+	addSectorLabel(cv, node, center, []string{"abc"}, inks.FixedInk(donutLabelColour))
 
 	backend := mock.NewBackend()
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
@@ -149,13 +134,13 @@ func TestAddSectorLabel_DoesNotInvertUpperLeftGlyphOrderOrRotation(t *testing.T)
 	g.Expect(math.Mod(glyphs[0].Rotation-(angle+math.Pi/2), 2*math.Pi)).To(BeNumerically("~", 0, 0.001))
 }
 
-func TestSectorLabelFontSize_FitsMediumArcsAndRejectsTinyArcs(t *testing.T) {
+func TestSectorLabelFontSize_FitsAllRowsAndRejectsInsufficientRadialSpace(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	medium := DonutNode{SweepAngle: math.Pi / 3, InnerRadius: 40, OuterRadius: 60}
-	tiny := DonutNode{SweepAngle: 0.01, InnerRadius: 10, OuterRadius: 12}
+	tooThin := DonutNode{SweepAngle: math.Pi, InnerRadius: 10, OuterRadius: 12}
 
-	g.Expect(sectorLabelFontSize(medium, "medium label")).To(BeNumerically(">=", 6))
-	g.Expect(sectorLabelFontSize(medium, "medium label")).To(BeNumerically("<", 14))
-	g.Expect(sectorLabelFontSize(tiny, "too small")).To(BeZero())
+	g.Expect(sectorLabelFontSize(medium, []string{"medium", "label"})).To(BeNumerically(">=", 6))
+	g.Expect(sectorLabelFontSize(medium, []string{"medium", "label"})).To(BeNumerically("<", 14))
+	g.Expect(sectorLabelFontSize(tooThin, []string{"one", "two"})).To(BeZero())
 }

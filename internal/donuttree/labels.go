@@ -3,7 +3,6 @@ package donuttree
 import (
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
@@ -26,29 +25,29 @@ type LabelMetrics struct {
 	IncludeBorder bool
 }
 
-func buildDirectoryLabel(dir *model.Directory, metrics LabelMetrics) string {
+func buildDirectoryLabel(dir *model.Directory, metrics LabelMetrics) []string {
 	if dir == nil {
-		return ""
+		return nil
 	}
 
-	components := []string{dir.Name}
+	lines := []string{dir.Name}
 	if component, ok := directoryMetricLabel(metrics.Size, dir); ok {
-		components = append(components, string(metrics.Size)+": "+component)
+		lines = append(lines, component)
 	}
 
 	if metrics.IncludeFill {
 		if component, ok := directoryMetricLabel(metrics.Fill, dir); ok {
-			components = append(components, string(metrics.Fill)+": "+component)
+			lines = append(lines, component)
 		}
 	}
 
 	if metrics.IncludeBorder {
 		if component, ok := directoryMetricLabel(metrics.Border, dir); ok {
-			components = append(components, string(metrics.Border)+": "+component)
+			lines = append(lines, component)
 		}
 	}
 
-	return strings.Join(components, " | ")
+	return lines
 }
 
 func directoryMetricLabel(name metric.Name, dir *model.Directory) (string, bool) {
@@ -71,14 +70,29 @@ func directoryMetricLabel(name metric.Name, dir *model.Directory) (string, bool)
 	return "", false
 }
 
-func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, label string, ink inks.Ink) {
-	fontSize := sectorLabelFontSize(node, label)
+func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, lines []string, ink inks.Ink) {
+	fontSize := sectorLabelFontSize(node, lines)
 	if fontSize == 0 {
 		return
 	}
 
-	radius := (node.InnerRadius + node.OuterRadius) / 2
-	glyphs := stringsToRunes(label)
+	rowSpacing := (node.OuterRadius - node.InnerRadius) / float64(len(lines))
+	for index, line := range lines {
+		radius := node.InnerRadius + rowSpacing*(float64(index)+0.5)
+		addSectorLabelLine(cv, node, center, radius, line, fontSize, ink)
+	}
+}
+
+func addSectorLabelLine(
+	cv *canvas.Canvas,
+	node DonutNode,
+	center canvas.Position,
+	radius float64,
+	line string,
+	fontSize float64,
+	ink inks.Ink,
+) {
+	glyphs := stringsToRunes(line)
 	midpoint := node.StartAngle + node.SweepAngle/2
 
 	lowerHalf := isLowerHalf(midpoint)
@@ -114,24 +128,29 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 	}
 }
 
-func sectorLabelFontSize(node DonutNode, label string) float64 {
-	if label == "" || node.SweepAngle <= 0 {
+func sectorLabelFontSize(node DonutNode, lines []string) float64 {
+	if len(lines) == 0 || node.SweepAngle <= 0 || node.OuterRadius <= node.InnerRadius {
 		return 0
 	}
 
-	radius := (node.InnerRadius + node.OuterRadius) / 2
-	if radius <= 0 {
+	widths, lineHeight := textlayout.MeasureStrings(lines, donutDefaultLabelFontSize)
+	if lineHeight <= 0 {
 		return 0
 	}
 
-	textWidth, _ := textlayout.MeasureString(label, donutDefaultLabelFontSize)
-	if textWidth <= 0 {
-		return 0
+	rowSpacing := (node.OuterRadius - node.InnerRadius) / float64(len(lines))
+	fontSize := min(donutDefaultLabelFontSize, donutDefaultLabelFontSize*rowSpacing/lineHeight)
+
+	for index, width := range widths {
+		if width <= 0 {
+			continue
+		}
+
+		radius := node.InnerRadius + rowSpacing*(float64(index)+0.5)
+		availableArcLength := radius * node.SweepAngle
+		fontSize = min(fontSize, donutDefaultLabelFontSize*availableArcLength/width)
 	}
 
-	availableArcLength := radius * node.SweepAngle
-
-	fontSize := min(donutDefaultLabelFontSize, donutDefaultLabelFontSize*availableArcLength/textWidth)
 	if fontSize < donutMinimumLabelFontSize {
 		return 0
 	}
