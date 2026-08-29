@@ -46,10 +46,21 @@ tasks:
 
   lint:
     desc: Run golangci-lint
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - .golangci.yml
+      - .custom-gcl.yml
     cmds:
       - golangci-lint-custom version
       - golangci-lint-custom cache clean
       - golangci-lint-custom run --verbose
+    preconditions:
+       - sh: test -f ./.golangci.yml
+         msg: "Required configuration file .golangci.yml not found."     
+       - sh: test -f ./.custom-gcl.yml
+         msg: "Required customization file .custom-gcl.yml not found."
 
   fmt:
     desc: Format all Go source files
