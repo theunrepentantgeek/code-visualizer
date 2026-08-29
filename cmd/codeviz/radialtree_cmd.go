@@ -26,7 +26,8 @@ type RadialCmd struct {
 
 	Labels string `enum:",all,folders,none" default:"" help:"Labels to display: all, folders, or none."`
 
-	Grain string `enum:",file,directory" default:"" help:"Granularity of nodes shown: file (default) or directory."` //nolint:revive,nolintlint // kong struct tags require long lines
+	Grain     string `enum:",file,directory" default:"" help:"Granularity of nodes shown: file (default) or directory."`      //nolint:revive,nolintlint // kong struct tags require long lines
+	MaxLayers int    `default:"0" help:"Maximum number of directory layers to display; 0 means unlimited." name:"max-layers"` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive,nolintlint // kong struct tags require long lines
@@ -81,6 +82,10 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 
 	if err := cfg.DirectoryBorder.Validate("directory border"); err != nil {
 		return eris.Wrap(err, "invalid directory border spec")
+	}
+
+	if cfg.MaxLayers != nil && *cfg.MaxLayers < 0 {
+		return eris.Errorf("max layers must be >= 0")
 	}
 
 	return nil
@@ -151,6 +156,7 @@ func (c *RadialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Radial.OverrideDirectoryBorder(c.DirectoryBorder)
 	cfg.Radial.OverrideLabels(c.Labels)
 	cfg.Radial.OverrideGrain(c.Grain)
+	cfg.Radial.OverrideMaxLayers(c.MaxLayers)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

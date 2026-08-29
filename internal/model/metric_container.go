@@ -1,6 +1,7 @@
 package model
 
 import (
+	"maps"
 	"sync"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -51,6 +52,32 @@ func (mc *MetricContainer) Classification(name metric.Name) (string, bool) {
 	v, ok := mc.classifications[name]
 
 	return v, ok
+}
+
+// Clone returns a deep copy of the container's metric maps.
+func (mc *MetricContainer) Clone() *MetricContainer {
+	if mc == nil {
+		return nil
+	}
+
+	mc.mu.RLock()
+	defer mc.mu.RUnlock()
+
+	clone := &MetricContainer{}
+	if mc.quantities != nil {
+		clone.quantities = make(map[metric.Name]int64, len(mc.quantities))
+		maps.Copy(clone.quantities, mc.quantities)
+	}
+	if mc.measures != nil {
+		clone.measures = make(map[metric.Name]float64, len(mc.measures))
+		maps.Copy(clone.measures, mc.measures)
+	}
+	if mc.classifications != nil {
+		clone.classifications = make(map[metric.Name]string, len(mc.classifications))
+		maps.Copy(clone.classifications, mc.classifications)
+	}
+
+	return clone
 }
 
 // SetQuantity stores an int64 metric value identified by name.

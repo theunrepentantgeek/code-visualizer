@@ -3,6 +3,7 @@ package radialtree
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -21,6 +22,7 @@ type State struct {
 	DirectoryBorderPalette palette.PaletteName
 	Labels                 LabelMode
 	Grain                  Grain
+	DisplayRoot            *model.Directory
 	Inks                   Inks
 	Nodes                  RadialNode
 	LegendConfig           *legend.Config

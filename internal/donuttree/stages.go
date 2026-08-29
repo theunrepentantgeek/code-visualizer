@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -131,7 +132,17 @@ func BuildLegendStage(c *stages.CommonState, d *State) error {
 
 // LayoutStage lays out directory sectors within the square drawing area.
 func LayoutStage(c *stages.CommonState, d *State) error {
-	d.Layout = Layout(c.Root, donutCanvasSize(c), d.SizeMetric)
+	root := c.Root
+
+	if c.RootConfig != nil &&
+		c.RootConfig.DonutTree != nil &&
+		c.RootConfig.DonutTree.MaxLayers != nil &&
+		*c.RootConfig.DonutTree.MaxLayers > 0 {
+		root = model.PruneLayers(c.Root, *c.RootConfig.DonutTree.MaxLayers)
+	}
+
+	d.DisplayRoot = root
+	d.Layout = Layout(root, donutCanvasSize(c), d.SizeMetric)
 
 	return nil
 }
@@ -153,7 +164,13 @@ func RenderStage(c *stages.CommonState, d *State) error {
 		cfg = c.RootConfig.DonutTree
 	}
 
-	cv := RenderToCanvas(d.Layout, c.Root, c.Width, c.Height, d.Inks, labelMetricsFor(d, cfg))
+	root := c.Root
+
+	if d.DisplayRoot != nil {
+		root = d.DisplayRoot
+	}
+
+	cv := RenderToCanvas(d.Layout, root, c.Width, c.Height, d.Inks, labelMetricsFor(d, cfg))
 	if c.DrawingBounds.MaxY > 0 {
 		cv.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)
 	}

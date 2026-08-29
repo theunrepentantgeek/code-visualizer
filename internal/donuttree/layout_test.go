@@ -51,6 +51,19 @@ func TestLayoutNilAndEmptyRootsHaveNoSectors(t *testing.T) {
 	g.Expect(Layout(&model.Directory{Name: "empty"}, 800, filesystem.FileLines).Children).To(BeEmpty())
 }
 
+func TestLayoutRespectsMaxLayers(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	leaf := &model.Directory{Name: "leaf"}
+	inner := &model.Directory{Name: "inner", Dirs: []*model.Directory{leaf}}
+	root := &model.Directory{Name: "root", Dirs: []*model.Directory{inner}}
+
+	layout := Layout(model.PruneLayers(root, 1), 800, filesystem.FileLines)
+	g.Expect(layout.Children).To(HaveLen(1))
+	g.Expect(layout.Children[0].Children).To(BeEmpty())
+}
+
 func TestLayoutZeroValueSiblingsSplitParentEvenly(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

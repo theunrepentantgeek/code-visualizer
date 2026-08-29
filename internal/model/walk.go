@@ -38,6 +38,54 @@ func CountDirs(dir *Directory) int {
 	return count
 }
 
+// PruneLayers returns a shallow copy of dir with every directory deeper than
+// maxLayers pruned from the render tree. A value of 0 keeps the original tree
+// unchanged; a value of 1 keeps the root and its immediate children.
+func PruneLayers(dir *Directory, maxLayers int) *Directory {
+	if dir == nil || maxLayers <= 0 {
+		return dir
+	}
+
+	return pruneDirectoryLayers(dir, 0, maxLayers)
+}
+
+func pruneDirectoryLayers(dir *Directory, depth, maxLayers int) *Directory {
+	if dir == nil {
+		return nil
+	}
+
+	pruned := &Directory{
+		Path:            dir.Path,
+		Name:            dir.Name,
+		Files:           dir.Files,
+		DirectFileCount: dir.DirectFileCount,
+		AllFileCount:    dir.AllFileCount,
+		AllDirCount:     dir.AllDirCount,
+	}
+	if cloned := dir.MetricContainer.Clone(); cloned != nil {
+		pruned.MetricContainer = *cloned
+	}
+
+	if maxLayers > 0 && depth >= maxLayers {
+		pruned.Dirs = nil
+
+		return pruned
+	}
+
+	pruned.Dirs = make([]*Directory, 0, len(dir.Dirs))
+	for _, child := range dir.Dirs {
+		if child == nil {
+			continue
+		}
+
+		if limited := pruneDirectoryLayers(child, depth+1, maxLayers); limited != nil {
+			pruned.Dirs = append(pruned.Dirs, limited)
+		}
+	}
+
+	return pruned
+}
+
 // WalkDirectories calls fn for every directory in the tree, in post-order
 // (children before parents). The root directory itself is included as the
 // final call. Post-order guarantees that child metrics are fully populated
