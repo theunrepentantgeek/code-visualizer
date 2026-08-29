@@ -75,6 +75,7 @@ func TestAddSectorLabel_RendersLinesOnConcentricArcsWithCommonMidpoint(t *testin
 	g.Expect(glyphs).To(HaveLen(8))
 
 	midpoint := node.StartAngle + node.SweepAngle/2
+
 	for _, row := range [][]mock.Call{glyphs[:3], glyphs[3:6], glyphs[6:]} {
 		firstAngle := math.Atan2(row[0].Pos.Y-center.Y, row[0].Pos.X-center.X)
 		lastAngle := math.Atan2(row[len(row)-1].Pos.Y-center.Y, row[len(row)-1].Pos.X-center.X)
