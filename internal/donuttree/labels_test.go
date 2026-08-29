@@ -24,6 +24,7 @@ func labelDirectory() *model.Directory {
 
 func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 	t.Parallel()
+
 	cases := []struct {
 		name     string
 		metrics  LabelMetrics
