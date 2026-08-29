@@ -56,11 +56,11 @@ func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 	}
 }
 
-func TestAddSectorLabel_RendersCompactRadialLinesCenteredOnSector(t *testing.T) {
+func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	node := DonutNode{
-		StartAngle:  0,
+		StartAngle:  math.Pi,
 		SweepAngle:  math.Pi / 2,
 		InnerRadius: 100,
 		OuterRadius: 140,
@@ -88,17 +88,17 @@ func TestAddSectorLabel_RendersCompactRadialLinesCenteredOnSector(t *testing.T) 
 		offset := (float64(index) - float64(len(lines)-1)/2) * measuredLineHeight
 		g.Expect(call.Text).To(Equal(lines[index]))
 		g.Expect(call.Anchor).To(Equal(canvas.AnchorMiddle))
-		g.Expect(call.Rotation).To(BeNumerically("~", midpoint, 0.001))
-		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X-offset*math.Sin(midpoint), 0.001))
-		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Cos(midpoint), 0.001))
+		g.Expect(call.Rotation).To(BeNumerically("~", midpoint+math.Pi/2, 0.001))
+		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X+offset*math.Cos(midpoint), 0.001))
+		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Sin(midpoint), 0.001))
 	}
 }
 
-func TestAddSectorLabel_FlipsRadialBaselineOnLeftHalf(t *testing.T) {
+func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	node := DonutNode{
-		StartAngle:  math.Pi / 2,
+		StartAngle:  0,
 		SweepAngle:  math.Pi / 2,
 		InnerRadius: 100,
 		OuterRadius: 140,
@@ -114,7 +114,7 @@ func TestAddSectorLabel_FlipsRadialBaselineOnLeftHalf(t *testing.T) {
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	for _, call := range calls {
-		g.Expect(call.Rotation).To(BeNumerically("~", midpoint+math.Pi, 0.001))
+		g.Expect(call.Rotation).To(BeNumerically("~", midpoint+3*math.Pi/2, 0.001))
 	}
 }
 

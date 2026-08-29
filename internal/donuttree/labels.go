@@ -83,8 +83,8 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 		Y: center.Y + midRadius*math.Sin(midpoint),
 	}
 
-	rotation := midpoint
-	if math.Cos(midpoint) < 0 {
+	rotation := midpoint + math.Pi/2
+	if isLowerHalf(midpoint) {
 		rotation += math.Pi
 	}
 
@@ -100,11 +100,20 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    spec,
-			X:       blockCenter.X - offset*math.Sin(rotation),
-			Y:       blockCenter.Y + offset*math.Cos(rotation),
+			X:       blockCenter.X + offset*math.Cos(midpoint),
+			Y:       blockCenter.Y + offset*math.Sin(midpoint),
 			Content: line,
 		})
 	}
+}
+
+func isLowerHalf(angle float64) bool {
+	angle = math.Mod(angle, 2*math.Pi)
+	if angle < 0 {
+		angle += 2 * math.Pi
+	}
+
+	return angle > 0 && angle < math.Pi
 }
 
 func sectorLabelFontSize(node DonutNode, lines []string) float64 {
