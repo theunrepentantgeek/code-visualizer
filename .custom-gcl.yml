@@ -1,8 +1,0 @@
-# DO NOT DELETE: This file defines the custom golangci-lint build used by this repository.
-version: v2.12.2
-name: golangci-lint-custom
-destination: /home/runner/work/code-visualizer/code-visualizer/tools
-plugins:
-  - module: "go.uber.org/nilaway"
-    import: "go.uber.org/nilaway/cmd/gclplugin"
-    version: latest
