@@ -76,55 +76,33 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 		return
 	}
 
-	rowSpacing := (node.OuterRadius - node.InnerRadius) / float64(len(lines))
-	for index, line := range lines {
-		radius := node.InnerRadius + rowSpacing*(float64(index)+0.5)
-		addSectorLabelLine(cv, node, center, radius, line, fontSize, ink)
-	}
-}
-
-func addSectorLabelLine(
-	cv *canvas.Canvas,
-	node DonutNode,
-	center canvas.Position,
-	radius float64,
-	line string,
-	fontSize float64,
-	ink inks.Ink,
-) {
-	glyphs := stringsToRunes(line)
 	midpoint := node.StartAngle + node.SweepAngle/2
-
-	lowerHalf := isLowerHalf(midpoint)
-	if lowerHalf {
-		reverseStrings(glyphs)
+	midRadius := (node.InnerRadius + node.OuterRadius) / 2
+	blockCenter := canvas.Position{
+		X: center.X + midRadius*math.Cos(midpoint),
+		Y: center.Y + midRadius*math.Sin(midpoint),
 	}
 
-	widths, _ := textlayout.MeasureStrings(glyphs, fontSize)
-
-	totalWidth := 0.0
-	for _, width := range widths {
-		totalWidth += width
+	rotation := midpoint
+	if math.Cos(midpoint) < 0 {
+		rotation += math.Pi
 	}
 
-	cursor := midpoint - totalWidth/(2*radius)
-	spec := &canvas.TextSpec{Ink: ink, FontSize: fontSize, Anchor: canvas.AnchorMiddle}
-
-	for index, glyph := range glyphs {
-		angle := cursor + widths[index]/(2*radius)
-
-		rotation := angle + math.Pi/2
-		if lowerHalf {
-			rotation += math.Pi
-		}
-
+	_, lineHeight := textlayout.MeasureStrings(lines, fontSize)
+	spec := &canvas.TextSpec{
+		Ink:      ink,
+		FontSize: fontSize,
+		Anchor:   canvas.AnchorMiddle,
+		Rotation: rotation,
+	}
+	for index, line := range lines {
+		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec:    &canvas.TextSpec{Ink: spec.Ink, FontSize: spec.FontSize, Anchor: spec.Anchor, Rotation: rotation},
-			X:       center.X + radius*math.Cos(angle),
-			Y:       center.Y + radius*math.Sin(angle),
-			Content: glyph,
+			Spec:    spec,
+			X:       blockCenter.X - offset*math.Sin(rotation),
+			Y:       blockCenter.Y + offset*math.Cos(rotation),
+			Content: line,
 		})
-		cursor += widths[index] / radius
 	}
 }
 
@@ -156,28 +134,4 @@ func sectorLabelFontSize(node DonutNode, lines []string) float64 {
 	}
 
 	return fontSize
-}
-
-func stringsToRunes(text string) []string {
-	glyphs := make([]string, 0, len(text))
-	for _, glyph := range text {
-		glyphs = append(glyphs, string(glyph))
-	}
-
-	return glyphs
-}
-
-func isLowerHalf(angle float64) bool {
-	angle = math.Mod(angle, 2*math.Pi)
-	if angle < 0 {
-		angle += 2 * math.Pi
-	}
-
-	return angle > 0 && angle < math.Pi
-}
-
-func reverseStrings(values []string) {
-	for left, right := 0, len(values)-1; left < right; left, right = left+1, right-1 {
-		values[left], values[right] = values[right], values[left]
-	}
 }
