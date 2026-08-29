@@ -1,6 +1,7 @@
 package git
 
 import (
+	"errors"
 	"io"
 	"path/filepath"
 	"time"
@@ -109,9 +110,10 @@ func BulkCommitHistoryInRange(
 
 	var commits []Commit
 
-	err = s.walkTrackedHistoryInRange(tracked, from, until, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
-		appendTrackedCommit(&commits, c, changed)
-	})
+	err = s.walkTrackedHistoryInRange(tracked, from, until, onCommitProcessed,
+		func(c *object.Commit, changed []trackedChange) {
+			appendTrackedCommit(&commits, c, changed)
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -177,10 +179,11 @@ func (s *repoService) bulkCommitHistoryAndPrewarmInRange(
 
 	var commits []Commit
 
-	err := s.walkTrackedHistoryInRange(tracked, from, until, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
-		prewarmTrackedChanges(cache, c, changed, requirements)
-		appendTrackedCommit(&commits, c, changed)
-	})
+	err := s.walkTrackedHistoryInRange(tracked, from, until, onCommitProcessed,
+		func(c *object.Commit, changed []trackedChange) {
+			prewarmTrackedChanges(cache, c, changed, requirements)
+			appendTrackedCommit(&commits, c, changed)
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -203,6 +206,7 @@ func (s *repoService) commitIterator(from, until time.Time) (object.CommitIter, 
 
 	if !from.IsZero() || !until.IsZero() {
 		filtered := &filteredCommitIter{iter: iter, from: from, until: until}
+
 		return filtered, nil
 	}
 
@@ -220,11 +224,15 @@ func (f *filteredCommitIter) Next() (*object.Commit, error) {
 	for {
 		c, err := f.iter.Next()
 		if err != nil {
-			return nil, err
+			// Passed through unwrapped: callers (e.g. ForEach below) rely on
+			// detecting io.EOF as the sentinel end-of-iteration value.
+			return nil, err //nolint:wrapcheck // sentinel io.EOF must pass through unwrapped
 		}
+
 		if !f.from.IsZero() && c.Author.When.Before(f.from) {
 			continue
 		}
+
 		if !f.until.IsZero() && c.Author.When.After(f.until) {
 			continue
 		}
@@ -236,12 +244,14 @@ func (f *filteredCommitIter) Next() (*object.Commit, error) {
 func (f *filteredCommitIter) ForEach(cb func(*object.Commit) error) error {
 	for {
 		c, err := f.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
+
 		if err != nil {
 			return err
 		}
+
 		if err := cb(c); err != nil {
 			return err
 		}
@@ -252,6 +262,7 @@ func (f *filteredCommitIter) Close() {
 	if f.closed {
 		return
 	}
+
 	f.closed = true
 	f.iter.Close()
 }

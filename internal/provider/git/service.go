@@ -571,23 +571,16 @@ func (s *repoService) doBulkPrewarm(
 ) error {
 	cache := newBulkPrewarmCache(paths, requirements)
 
-	if err := s.walkTrackedHistoryInRange(paths, time.Time{}, time.Time{}, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
+	visit := func(c *object.Commit, changed []trackedChange) {
 		prewarmTrackedChanges(cache, c, changed, requirements)
-	}); err != nil {
+	}
+	if err := s.walkTrackedHistoryInRange(paths, time.Time{}, time.Time{}, onCommitProcessed, visit); err != nil {
 		return eris.Wrap(err, "bulk prewarm")
 	}
 
 	s.mergeBulkPrewarmCache(cache, requirements)
 
 	return nil
-}
-
-func (s *repoService) walkTrackedHistory(
-	tracked map[string]bool,
-	onCommitProcessed func(),
-	visit func(*object.Commit, []trackedChange),
-) error {
-	return s.walkTrackedHistoryInRange(tracked, time.Time{}, time.Time{}, onCommitProcessed, visit)
 }
 
 // mergeBulkPrewarmCache atomically stores results without allowing a

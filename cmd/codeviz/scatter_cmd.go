@@ -48,6 +48,7 @@ func (c *ScatterCmd) Filters() []filter.Rule {
 
 func (c *ScatterCmd) Validate() error {
 	_, _, err := parseDateRange(c.From, c.Until)
+
 	return err
 }
 

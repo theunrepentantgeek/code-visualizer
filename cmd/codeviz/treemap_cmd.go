@@ -44,6 +44,7 @@ func (c *TreemapCmd) Filters() []filter.Rule {
 
 func (c *TreemapCmd) Validate() error {
 	_, _, err := parseDateRange(c.From, c.Until)
+
 	return err
 }
 

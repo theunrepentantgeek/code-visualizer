@@ -68,8 +68,6 @@ type AuthorHistoryResult struct {
 // For non-root commits, a single tree diff is performed per commit and stats
 // for all tracked changed files are extracted from that diff in one pass,
 // avoiding O(N) repeated DiffTree calls for commits touching many files.
-//
-//nolint:cyclop,funlen,maintidx,revive // A single-pass history walk keeps the accumulators local and coherent.
 func BulkAuthorHistory(
 	repoPath string,
 	filePaths map[string]bool,
@@ -81,6 +79,8 @@ func BulkAuthorHistory(
 
 // BulkAuthorHistoryInRange applies the same aggregation but only considers commits
 // whose author timestamps fall within the supplied date window.
+//
+//nolint:cyclop,funlen,maintidx,revive // A single-pass history walk keeps the accumulators local and coherent.
 func BulkAuthorHistoryInRange(
 	repoPath string,
 	filePaths map[string]bool,
@@ -130,6 +130,7 @@ func BulkAuthorHistoryInRange(
 		if !from.IsZero() && c.Author.When.Before(from) {
 			return nil
 		}
+
 		if !until.IsZero() && c.Author.When.After(until) {
 			return nil
 		}

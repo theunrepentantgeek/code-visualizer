@@ -48,6 +48,7 @@ func (c *SpiralCmd) Filters() []filter.Rule {
 
 func (c *SpiralCmd) Validate() error {
 	_, _, err := parseDateRange(c.From, c.Until)
+
 	return err
 }
 

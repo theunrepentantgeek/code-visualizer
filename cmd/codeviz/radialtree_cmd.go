@@ -51,6 +51,7 @@ func (c *RadialCmd) Filters() []filter.Rule {
 
 func (c *RadialCmd) Validate() error {
 	_, _, err := parseDateRange(c.From, c.Until)
+
 	return err
 }
 
