@@ -22,6 +22,7 @@ type DonutTreeCmd struct {
 
 	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive,nolintlint // kong struct tags require long lines
+	MaxLayers         int    `default:"0" help:"Maximum number of directory layers to display; 0 means unlimited." name:"max-layers"`                                                                            //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Width  int `help:"Image width in pixels."`
 	Height int `help:"Image height in pixels."`
@@ -54,6 +55,10 @@ func (*DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
 
 	if err := cfg.Border.Validate("border"); err != nil {
 		return eris.Wrap(err, "invalid border spec")
+	}
+
+	if cfg.MaxLayers != nil && *cfg.MaxLayers < 0 {
+		return eris.Errorf("max layers must be >= 0")
 	}
 
 	return nil
@@ -115,6 +120,7 @@ func (c *DonutTreeCmd) applyOverrides(cfg *config.Config) {
 	cfg.DonutTree.OverrideSize(string(c.Size))
 	cfg.DonutTree.OverrideFill(c.Fill)
 	cfg.DonutTree.OverrideBorder(c.Border)
+	cfg.DonutTree.OverrideMaxLayers(c.MaxLayers)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

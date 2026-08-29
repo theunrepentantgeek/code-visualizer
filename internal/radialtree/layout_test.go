@@ -203,6 +203,28 @@ func TestLayoutNestedDepth(t *testing.T) {
 	g.Expect(fileRadius).To(BeNumerically(">", subRadius))
 }
 
+func TestLayoutRespectsMaxLayers(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	leaf := &model.Directory{
+		Name:  "leaf",
+		Files: []*model.File{makeFile("inner.go", 200)},
+	}
+	inner := &model.Directory{
+		Name: "inner",
+		Dirs: []*model.Directory{leaf},
+	}
+	root := &model.Directory{
+		Name: "root",
+		Dirs: []*model.Directory{inner},
+	}
+
+	node := Layout(model.PruneLayers(root, 1), 800, filesystem.FileSize, "", LabelAll, GrainFile)
+	g.Expect(node.Children).To(HaveLen(1))
+	g.Expect(node.Children[0].Children).To(BeEmpty())
+}
+
 func TestLayoutDiscSizeScalesWithMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

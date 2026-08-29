@@ -3,6 +3,7 @@ package donuttree
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -13,6 +14,7 @@ type State struct {
 	FillPalette   palette.PaletteName
 	BorderMetric  metric.Name
 	BorderPalette palette.PaletteName
+	DisplayRoot   *model.Directory
 	Inks          Inks
 	Layout        LayoutResult
 	LegendConfig  *legend.Config

@@ -209,6 +209,46 @@ func TestMetricContainer_DifferentKindsDoNotInterfere(t *testing.T) {
 	g.Expect(c).To(Equal("alpha"))
 }
 
+func TestMetricContainer_Clone_DeepCopiesMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	f := newContainer()
+	f.SetQuantity(metric.Name("lines"), 12)
+	f.SetMeasure(metric.Name("coverage"), 0.75)
+	f.SetClassification(metric.Name("kind"), "go")
+
+	clone := f.Clone()
+	g.Expect(clone).NotTo(BeNil())
+	g.Expect(clone).NotTo(BeIdenticalTo(&f.MetricContainer))
+
+	clone.SetQuantity(metric.Name("lines"), 99)
+	clone.SetMeasure(metric.Name("coverage"), 0.9)
+	clone.SetClassification(metric.Name("kind"), "ts")
+
+	q, okQ := f.Quantity(metric.Name("lines"))
+	m, okM := f.Measure(metric.Name("coverage"))
+	c, okC := f.Classification(metric.Name("kind"))
+
+	g.Expect(okQ).To(BeTrue())
+	g.Expect(q).To(Equal(int64(12)))
+	g.Expect(okM).To(BeTrue())
+	g.Expect(m).To(BeNumerically("~", 0.75, 1e-9))
+	g.Expect(okC).To(BeTrue())
+	g.Expect(c).To(Equal("go"))
+
+	q, okQ = clone.Quantity(metric.Name("lines"))
+	m, okM = clone.Measure(metric.Name("coverage"))
+	c, okC = clone.Classification(metric.Name("kind"))
+
+	g.Expect(okQ).To(BeTrue())
+	g.Expect(q).To(Equal(int64(99)))
+	g.Expect(okM).To(BeTrue())
+	g.Expect(m).To(BeNumerically("~", 0.9, 1e-9))
+	g.Expect(okC).To(BeTrue())
+	g.Expect(c).To(Equal("ts"))
+}
+
 // ---------------------------------------------------------------------------
 // Concurrent access (race detector)
 // ---------------------------------------------------------------------------

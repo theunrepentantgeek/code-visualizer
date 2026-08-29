@@ -34,6 +34,10 @@ func Layout(
 	labels LabelMode,
 	grain Grain,
 ) RadialNode {
+	if root == nil {
+		return RadialNode{}
+	}
+
 	maxDepth := computeMaxDepth(root, grain)
 
 	var ringSpacing float64
