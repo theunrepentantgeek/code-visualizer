@@ -24,7 +24,6 @@ func labelDirectory() *model.Directory {
 
 func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 	cases := []struct {
 		name     string
 		metrics  LabelMetrics
@@ -51,6 +50,7 @@ func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewGomegaWithT(t)
 			g.Expect(buildDirectoryLabel(labelDirectory(), testCase.metrics)).To(Equal(testCase.expected))
 		})
 	}
