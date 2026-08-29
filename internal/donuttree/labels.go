@@ -95,6 +95,7 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 		Anchor:   canvas.AnchorMiddle,
 		Rotation: rotation,
 	}
+
 	for index, line := range lines {
 		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
@@ -120,6 +121,7 @@ func sectorLabelFontSize(node DonutNode, lines []string) float64 {
 	for _, width := range widths {
 		maxWidth = max(maxWidth, width)
 	}
+
 	if maxWidth <= 0 {
 		return 0
 	}
@@ -128,6 +130,7 @@ func sectorLabelFontSize(node DonutNode, lines []string) float64 {
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
 	availableArcLength := midRadius * node.SweepAngle
 	blockHeight := lineHeight * float64(len(lines))
+
 	fontSize := min(
 		donutDefaultLabelFontSize,
 		donutDefaultLabelFontSize*ringWidth/maxWidth,
