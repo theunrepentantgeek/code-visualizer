@@ -9,25 +9,31 @@ import (
 )
 
 var dateFormats = []string{
-	time.RFC3339,
-	"2006-01-02T15:04:05",
-	"2006-01-02 15:04:05",
 	"2006-01-02",
 }
 
-func parseDateRange(fromValue, untilValue string) (time.Time, time.Time, error) {
-	from, err := parseDate(fromValue)
+func parseDateRange(fromValue, untilValue string) (from, until time.Time, err error) {
+	from, err = parseDate(fromValue)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
 
-	until, err := parseDate(untilValue)
+	until, err = parseDate(untilValue)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
 
-	if !until.IsZero() && isDateOnly(untilValue) {
-		until = until.Add(24*time.Hour - time.Nanosecond)
+	if !until.IsZero() {
+		until = time.Date(
+			until.Year(),
+			until.Month(),
+			until.Day()+1,
+			0,
+			0,
+			0,
+			0,
+			until.Location(),
+		).Add(-time.Nanosecond)
 	}
 
 	if !from.IsZero() && !until.IsZero() && from.After(until) {
@@ -37,39 +43,29 @@ func parseDateRange(fromValue, untilValue string) (time.Time, time.Time, error) 
 	return from, until, nil
 }
 
-func isDateOnly(value string) bool {
-	if value == "" {
-		return false
-	}
-
-	_, err := time.Parse("2006-01-02", value)
-	return err == nil
-}
-
 func parseDate(value string) (time.Time, error) {
 	if value == "" {
 		return time.Time{}, nil
 	}
 
 	for _, layout := range dateFormats {
-		if t, err := time.Parse(layout, value); err == nil {
-			if layout == "2006-01-02" {
-				return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC), nil
-			}
-
+		//nolint:gosmopolitan // --from/--until are explicitly interpreted in local time.
+		if t, err := time.ParseInLocation(layout, value, time.Local); err == nil {
 			return t, nil
 		}
 	}
 
-	return time.Time{}, eris.Errorf("invalid date %q: expected YYYY-MM-DD or RFC3339 timestamp", value)
+	return time.Time{}, eris.Errorf("invalid date %q: expected YYYY-MM-DD", value)
 }
 
 func stagesFlagsForCommand(flags *Flags, fromValue, untilValue string) (*stages.Flags, error) {
 	parsedFlags := toStagesFlags(flags)
+
 	from, until, err := parseDateRange(fromValue, untilValue)
 	if err != nil {
 		return nil, err
 	}
+
 	parsedFlags.From = from
 	parsedFlags.Until = until
 

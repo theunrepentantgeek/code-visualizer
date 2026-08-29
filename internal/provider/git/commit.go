@@ -361,14 +361,6 @@ func (s *repoService) walkTrackedHistoryInRange(
 	return nil
 }
 
-func datePointer(t time.Time) *time.Time {
-	if t.IsZero() {
-		return nil
-	}
-
-	return &t
-}
-
 func toSignature(s object.Signature) Signature {
 	return Signature{Name: s.Name, Email: s.Email, When: s.When}
 }
