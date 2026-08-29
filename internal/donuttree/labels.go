@@ -142,8 +142,8 @@ func sectorLabelFontSize(node DonutNode, lines []string) float64 {
 
 	fontSize := min(
 		donutDefaultLabelFontSize,
-		donutDefaultLabelFontSize*ringWidth/maxWidth,
-		donutDefaultLabelFontSize*availableArcLength/blockHeight,
+		donutDefaultLabelFontSize*availableArcLength/maxWidth,
+		donutDefaultLabelFontSize*ringWidth/blockHeight,
 	)
 	if fontSize < donutMinimumLabelFontSize {
 		return 0
