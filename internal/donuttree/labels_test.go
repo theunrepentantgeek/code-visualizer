@@ -83,14 +83,15 @@ func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {
 	}
 	fontSize := sectorLabelFontSize(node, lines)
 	_, measuredLineHeight := textlayout.MeasureStrings(lines, fontSize)
+	rotation := midpoint + math.Pi/2
 
 	for index, call := range calls {
 		offset := (float64(index) - float64(len(lines)-1)/2) * measuredLineHeight
 		g.Expect(call.Text).To(Equal(lines[index]))
 		g.Expect(call.Anchor).To(Equal(canvas.AnchorMiddle))
-		g.Expect(call.Rotation).To(BeNumerically("~", midpoint+math.Pi/2, 0.001))
-		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X+offset*math.Cos(midpoint), 0.001))
-		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Sin(midpoint), 0.001))
+		g.Expect(call.Rotation).To(BeNumerically("~", rotation, 0.001))
+		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X-offset*math.Sin(rotation), 0.001))
+		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Cos(rotation), 0.001))
 	}
 }
 
@@ -104,17 +105,30 @@ func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 		OuterRadius: 140,
 	}
 	center := canvas.Position{X: 200, Y: 200}
+	lines := []string{"src", "120"}
 	cv := canvas.NewCanvas(400, 400)
-	addSectorLabel(cv, node, center, []string{"src", "120"}, inks.FixedInk(donutLabelColour))
+	addSectorLabel(cv, node, center, lines, inks.FixedInk(donutLabelColour))
 
 	backend := mock.NewBackend()
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 	calls := callsNamed(backend.Calls, "DrawText")
-	g.Expect(calls).To(HaveLen(2))
+	g.Expect(calls).To(HaveLen(len(lines)))
 
 	midpoint := node.StartAngle + node.SweepAngle/2
-	for _, call := range calls {
-		g.Expect(call.Rotation).To(BeNumerically("~", midpoint+3*math.Pi/2, 0.001))
+	midRadius := (node.InnerRadius + node.OuterRadius) / 2
+	blockCenter := canvas.Position{
+		X: center.X + midRadius*math.Cos(midpoint),
+		Y: center.Y + midRadius*math.Sin(midpoint),
+	}
+	rotation := midpoint + 3*math.Pi/2
+	_, lineHeight := textlayout.MeasureStrings(lines, calls[0].FontSize)
+
+	for index, call := range calls {
+		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
+		g.Expect(call.Text).To(Equal(lines[index]))
+		g.Expect(call.Rotation).To(BeNumerically("~", rotation, 0.001))
+		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X-offset*math.Sin(rotation), 0.001))
+		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Cos(rotation), 0.001))
 	}
 }
 

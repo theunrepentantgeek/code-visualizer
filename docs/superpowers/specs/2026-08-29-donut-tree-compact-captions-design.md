@@ -26,6 +26,8 @@ and midpoint radius define the center of the complete multiline block. Lines
 use the measured font line height as their center-to-center spacing and are
 offset along the sector midpoint radius, leaving the complete block centered on
 the sector midpoint. The radius is therefore the centerline through the stack.
+The source line order is always the visual top-to-bottom order, so the directory
+name remains at the top even when the baseline is flipped for readability.
 
 Each text baseline is perpendicular to that centerline and tangent to the ring:
 

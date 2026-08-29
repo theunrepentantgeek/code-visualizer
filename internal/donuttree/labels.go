@@ -100,8 +100,8 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:    spec,
-			X:       blockCenter.X + offset*math.Cos(midpoint),
-			Y:       blockCenter.Y + offset*math.Sin(midpoint),
+			X:       blockCenter.X - offset*math.Sin(rotation),
+			Y:       blockCenter.Y + offset*math.Cos(rotation),
 			Content: line,
 		})
 	}
