@@ -401,7 +401,7 @@ func expectRuleSliceField(g *WithT, cmd any, fieldName string, want []filter.Rul
 	g.Expect(field.IsValid()).To(BeTrue())
 	g.Expect(field.Type()).To(Equal(reflect.TypeFor[[]filter.Rule]()))
 
-	got, ok := field.Interface().([]filter.Rule)
+	got, ok := reflect.TypeAssert[[]filter.Rule](field)
 	g.Expect(ok).To(BeTrue())
 	expectRuleSlice(g, got, want)
 }

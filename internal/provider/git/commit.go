@@ -214,23 +214,27 @@ func (s *repoService) commitIterator(
 
 func commitSequence(commitIter object.CommitIter) iter.Seq2[*object.Commit, error] {
 	return func(yield func(*object.Commit, error) bool) {
-		defer commitIter.Close()
+		yieldCommits(commitIter, yield)
+	}
+}
 
-		for {
-			commit, done, iterationErr := nextCommit(commitIter)
-			if done {
-				return
-			}
+func yieldCommits(commitIter object.CommitIter, yield func(*object.Commit, error) bool) {
+	defer commitIter.Close()
 
-			if iterationErr != nil {
-				yield(nil, iterationErr)
+	for {
+		commit, done, iterationErr := nextCommit(commitIter)
+		if done {
+			return
+		}
 
-				return
-			}
+		if iterationErr != nil {
+			yield(nil, iterationErr)
 
-			if !yield(commit, nil) {
-				return
-			}
+			return
+		}
+
+		if !yield(commit, nil) {
+			return
 		}
 	}
 }
@@ -241,7 +245,7 @@ func nextCommit(commitIter object.CommitIter) (*object.Commit, bool, error) {
 		return nil, true, nil
 	}
 
-	return commit, false, err
+	return commit, false, eris.Wrap(err, "failed to read commit")
 }
 
 func filterCommitsInRange(
