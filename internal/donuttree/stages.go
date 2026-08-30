@@ -126,6 +126,17 @@ func BuildLegendStage(c *stages.CommonState, d *State) error {
 		BorderMetric: d.BorderMetric,
 		SizeMetric:   d.SizeMetric,
 	}.Build()
+	if d.LegendConfig != nil {
+		var cfg *config.DonutTree
+		if c.RootConfig != nil {
+			cfg = c.RootConfig.DonutTree
+		}
+
+		d.LegendConfig.LabelSample = legend.LabelSample{
+			Shape: legend.LabelSampleArc,
+			Lines: labelSampleLines(labelMetricsFor(d, cfg)),
+		}
+	}
 
 	return nil
 }

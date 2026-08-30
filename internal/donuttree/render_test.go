@@ -19,6 +19,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -90,6 +91,63 @@ func TestRenderToCanvas_RendersOneSectorPerDirectoryAndOneRootAnchor(t *testing.
 	g.Expect(callsNamed(calls, "DrawPolygon")).To(HaveLen(2))
 	g.Expect(callsNamed(calls, "DrawDisc")).To(HaveLen(1))
 	g.Expect(callsNamed(calls, "DrawText")).To(ContainElement(HaveField("Text", "project")))
+}
+
+func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Legend = &config.Legend{Position: new("bottom-right")}
+	cfg.DonutTree.Fill = &config.MetricSpec{Metric: "file-type"}
+	cfg.DonutTree.Border = &config.MetricSpec{Metric: "file-size"}
+	state := &State{
+		SizeMetric:   "file-lines.sum",
+		FillMetric:   "file-type.mode",
+		BorderMetric: "file-size.sum",
+		Inks: Inks{ShapeInks: inks.ShapeInks{
+			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
+			Border: inks.FixedInk(color.RGBA{A: 255}),
+		}},
+	}
+
+	g.Expect(BuildLegendStage(&stages.CommonState{RootConfig: cfg}, state)).To(Succeed())
+	g.Expect(state.LegendConfig).NotTo(BeNil())
+
+	if state.LegendConfig == nil {
+		t.Fatal("expected legend config")
+	}
+
+	g.Expect(state.LegendConfig.LabelSample).To(Equal(legend.LabelSample{
+		Shape: legend.LabelSampleArc,
+		Lines: []string{"directory-name", "file-lines.sum", "file-type.mode", "file-size.sum"},
+	}))
+}
+
+func TestBuildLegendStage_OmitsDerivedMetricsFromLabelSample(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Legend = &config.Legend{Position: new("bottom-right")}
+	state := &State{
+		SizeMetric:   "file-lines.sum",
+		FillMetric:   "file-lines.sum",
+		BorderMetric: "file-size.sum",
+		Inks: Inks{ShapeInks: inks.ShapeInks{
+			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
+			Border: inks.FixedInk(color.RGBA{A: 255}),
+		}},
+	}
+
+	g.Expect(BuildLegendStage(&stages.CommonState{RootConfig: cfg}, state)).To(Succeed())
+	g.Expect(state.LegendConfig).NotTo(BeNil())
+
+	if state.LegendConfig == nil {
+		t.Fatal("expected legend config")
+	}
+
+	g.Expect(state.LegendConfig.LabelSample.Lines).To(Equal([]string{"directory-name", "file-lines.sum"}))
 }
 
 func TestRenderToCanvas_UsesNoBorderUnlessConfigured(t *testing.T) {

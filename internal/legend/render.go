@@ -51,7 +51,8 @@ func fitLegendToCanvas(cv *canvas.Canvas, data *model.LegendData) legendLayout {
 	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
 	if legendFits(cv, w, h) ||
 		data.LabelSample == nil ||
-		data.LabelSample.Shape != model.LegendLabelSampleCircle {
+		(data.LabelSample.Shape != model.LegendLabelSampleCircle &&
+			data.LabelSample.Shape != model.LegendLabelSampleArc) {
 		return legendLayout{data: data, width: w, height: h, scale: 1}
 	}
 
@@ -371,7 +372,8 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 	w = lb.scaleValue(w)
 	h = lb.scaleValue(h)
 
-	if sample.Shape == model.LegendLabelSampleCircle {
+	switch sample.Shape {
+	case model.LegendLabelSampleCircle:
 		spec := &canvas.DiscSpec{
 			ShapeStyle: canvas.ShapeStyle{
 				Fill:        inks.FixedInk(palette.White),
@@ -382,7 +384,9 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 		lb.cv.AddDisc(canvas.LayerOverlay, canvas.Disc{
 			Spec: spec, X: x + w/2, Y: y + h/2, Radius: min(w, h) / 2,
 		})
-	} else {
+	case model.LegendLabelSampleArc:
+		lb.addArcLabelSample(x, y, w, h)
+	default:
 		lb.addRect(x, y, w, h, palette.White, lb.swBorder, lb.scaleValue(0.5))
 	}
 
@@ -402,6 +406,40 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 	}
 
 	return y + h
+}
+
+func (lb *legendBuilder) addArcLabelSample(x, y, w, h float64) {
+	spec := &canvas.PolygonSpec{
+		ShapeStyle: canvas.ShapeStyle{
+			Fill:        inks.FixedInk(palette.White),
+			Border:      inks.FixedInk(lb.swBorder),
+			BorderWidth: lb.scaleValue(0.5),
+		},
+	}
+	lb.cv.AddPolygon(canvas.LayerOverlay, canvas.Polygon{
+		Spec: spec, Points: arcLabelSamplePoints(x, y, w, h),
+	})
+}
+
+// arcLabelSamplePoints approximates a curved annular segment whose top edge is
+// narrower than its base, matching a small slice of the donut visualization.
+func arcLabelSamplePoints(x, y, w, h float64) []canvas.Position {
+	return []canvas.Position{
+		{X: x + 0.26*w, Y: y + 0.12*h},
+		{X: x + 0.40*w, Y: y + 0.03*h},
+		{X: x + 0.60*w, Y: y + 0.03*h},
+		{X: x + 0.74*w, Y: y + 0.12*h},
+		{X: x + 0.89*w, Y: y + 0.33*h},
+		{X: x + 0.97*w, Y: y + 0.58*h},
+		{X: x + 0.95*w, Y: y + 0.82*h},
+		{X: x + 0.84*w, Y: y + 0.96*h},
+		{X: x + 0.50*w, Y: y + h},
+		{X: x + 0.16*w, Y: y + 0.96*h},
+		{X: x + 0.05*w, Y: y + 0.82*h},
+		{X: x + 0.03*w, Y: y + 0.58*h},
+		{X: x + 0.11*w, Y: y + 0.33*h},
+		{X: x + 0.26*w, Y: y + 0.12*h},
+	}
 }
 
 func (lb *legendBuilder) addSwatch(x, y float64, fill color.RGBA) {

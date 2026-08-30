@@ -34,6 +34,8 @@ const (
 	LabelSampleSquare LabelSampleShape = iota
 	// LabelSampleCircle renders the label sample in a circle.
 	LabelSampleCircle
+	// LabelSampleArc renders the label sample in a curved annular segment.
+	LabelSampleArc
 )
 
 // LabelSample describes the inline label preview displayed before legend entries.
