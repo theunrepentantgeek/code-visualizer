@@ -217,8 +217,8 @@ func commitSequence(commitIter object.CommitIter) iter.Seq2[*object.Commit, erro
 		defer commitIter.Close()
 
 		for {
-			commit, iterationErr := commitIter.Next()
-			if errors.Is(iterationErr, io.EOF) {
+			commit, done, iterationErr := nextCommit(commitIter)
+			if done {
 				return
 			}
 
@@ -233,6 +233,15 @@ func commitSequence(commitIter object.CommitIter) iter.Seq2[*object.Commit, erro
 			}
 		}
 	}
+}
+
+func nextCommit(commitIter object.CommitIter) (*object.Commit, bool, error) {
+	commit, err := commitIter.Next()
+	if errors.Is(err, io.EOF) {
+		return nil, true, nil
+	}
+
+	return commit, false, err
 }
 
 func filterCommitsInRange(
