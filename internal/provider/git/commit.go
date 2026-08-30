@@ -209,6 +209,10 @@ func (s *repoService) commitIterator(
 		return nil, eris.Wrap(err, "failed to start log iteration")
 	}
 
+	return filterCommitsInRange(commitSequence(commitIter), from, until), nil
+}
+
+func commitSequence(commitIter object.CommitIter) iter.Seq2[*object.Commit, error] {
 	return func(yield func(*object.Commit, error) bool) {
 		defer commitIter.Close()
 
@@ -224,15 +228,31 @@ func (s *repoService) commitIterator(
 				return
 			}
 
-			if !commitInRange(commit, from, until) {
-				continue
-			}
-
 			if !yield(commit, nil) {
 				return
 			}
 		}
-	}, nil
+	}
+}
+
+func filterCommitsInRange(
+	commits iter.Seq2[*object.Commit, error],
+	from time.Time,
+	until time.Time,
+) iter.Seq2[*object.Commit, error] {
+	return func(yield func(*object.Commit, error) bool) {
+		for commit, iterationErr := range commits {
+			if iterationErr != nil {
+				yield(nil, iterationErr)
+
+				return
+			}
+
+			if commitInRange(commit, from, until) && !yield(commit, nil) {
+				return
+			}
+		}
+	}
 }
 
 func commitInRange(commit *object.Commit, from time.Time, until time.Time) bool {
