@@ -19,11 +19,12 @@ const (
 
 // ScatterPoint is one fully laid-out disc.
 type ScatterPoint struct {
-	File   *model.File
-	X      float64
-	Y      float64
-	Radius float64
-	Label  string
+	File      *model.File
+	Directory *model.Directory
+	X         float64
+	Y         float64
+	Radius    float64
+	Label     string
 }
 
 // ScatterLayout is the rendered geometry for a scatter plot.
@@ -56,11 +57,12 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 	layout.Points = make([]ScatterPoint, 0, len(dataset.Points))
 	for _, point := range dataset.Points {
 		layout.Points = append(layout.Points, ScatterPoint{
-			File:   point.File,
-			X:      positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
-			Y:      positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
-			Radius: scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
-			Label:  point.File.Name,
+			File:      point.File,
+			Directory: point.Directory,
+			X:         positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
+			Y:         positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
+			Radius:    scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
+			Label:     point.Name(),
 		})
 	}
 

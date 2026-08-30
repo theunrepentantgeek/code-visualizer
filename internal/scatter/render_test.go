@@ -16,6 +16,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func renderScatterFile(name, category string, lines, size int64) *model.File {
@@ -37,6 +38,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 	}}
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,
@@ -74,6 +76,7 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 	}}
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,

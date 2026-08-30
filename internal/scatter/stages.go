@@ -159,7 +159,7 @@ func metricLevelForGrain(grain viz.Grain) metric.MetricLevel {
 
 // BuildInksStage collects plottable files and creates point inks.
 func BuildInksStage(c *stages.CommonState, x *State) error {
-	x.Dataset = CollectDataset(c.Root, x.XAxis, x.YAxis, x.Size)
+	x.Dataset = CollectDataset(c.Root, x.Grain, x.XAxis, x.YAxis, x.Size)
 
 	if err := ValidateLogScale(x.Dataset, x.XAxis, x.YAxis); err != nil {
 		return err
