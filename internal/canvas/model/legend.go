@@ -56,6 +56,8 @@ const (
 	LegendLabelSampleSquare LegendLabelSampleShape = iota
 	// LegendLabelSampleCircle renders the label sample in a circle.
 	LegendLabelSampleCircle
+	// LegendLabelSampleArc renders the label sample in a curved annular segment.
+	LegendLabelSampleArc
 )
 
 // LegendLabelSample describes the multi-line label preview rendered

@@ -25,6 +25,23 @@ type LabelMetrics struct {
 	IncludeBorder bool
 }
 
+func labelSampleLines(metrics LabelMetrics) []string {
+	lines := []string{"directory-name"}
+	if metrics.Size != "" {
+		lines = append(lines, string(metrics.Size))
+	}
+
+	if metrics.IncludeFill && metrics.Fill != "" {
+		lines = append(lines, string(metrics.Fill))
+	}
+
+	if metrics.IncludeBorder && metrics.Border != "" {
+		lines = append(lines, string(metrics.Border))
+	}
+
+	return lines
+}
+
 func buildDirectoryLabel(dir *model.Directory, metrics LabelMetrics) []string {
 	if dir == nil {
 		return nil
