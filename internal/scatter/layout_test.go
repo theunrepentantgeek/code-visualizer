@@ -111,6 +111,21 @@ func TestDataset_Files_EmptyDataset_ReturnsEmpty(t *testing.T) {
 	g.Expect(Dataset{}.Files()).To(BeEmpty())
 }
 
+func TestDataset_Files_OmitsDirectoryPoints(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	file := scatterTestFile("main.go")
+	dataset := Dataset{
+		Points: []PointDatum{
+			{Directory: &model.Directory{Name: "src"}},
+			{File: file},
+		},
+	}
+
+	g.Expect(dataset.Files()).To(Equal([]*model.File{file}))
+}
+
 func TestSkipCounts_Total_SumsAllFields(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

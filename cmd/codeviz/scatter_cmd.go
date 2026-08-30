@@ -132,12 +132,21 @@ func resolveScatterMetric(
 }
 
 func validateScatterAxisMetric(label string, name *string, level metric.MetricLevel) error {
-	_, err := resolveScatterMetric(label, metric.Name(ptrString(name)), level)
+	metricName := metric.Name(ptrString(name))
+	if metricName == "" {
+		return eris.Errorf("%s metric is required", label)
+	}
+
+	_, err := resolveScatterMetric(label, metricName, level)
 
 	return err
 }
 
 func validateScatterNumericMetric(label string, name metric.Name, level metric.MetricLevel) error {
+	if name == "" {
+		return eris.Errorf("%s metric is required", label)
+	}
+
 	resolved, err := resolveScatterMetric(label, name, level)
 	if err != nil {
 		return err

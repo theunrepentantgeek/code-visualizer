@@ -1028,6 +1028,42 @@ func TestScatterCmd_ValidateConfig_CategoricalAxesAreAccepted(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
+func TestScatterCmd_ValidateConfig_XAxisIsRequired(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := config.New()
+	cfg.Scatter.YAxis = new("file-lines")
+	cfg.Scatter.Size = new("file-size")
+
+	err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
+
+	g.Expect(err).To(MatchError("x-axis metric is required"))
+}
+
+func TestScatterCmd_ValidateConfig_YAxisIsRequired(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := config.New()
+	cfg.Scatter.XAxis = new("file-type")
+	cfg.Scatter.Size = new("file-size")
+
+	err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
+
+	g.Expect(err).To(MatchError("y-axis metric is required"))
+}
+
+func TestScatterCmd_ValidateConfig_SizeIsRequired(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := config.New()
+	cfg.Scatter.XAxis = new("file-type")
+	cfg.Scatter.YAxis = new("file-lines")
+
+	err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
+
+	g.Expect(err).To(MatchError("size metric is required"))
+}
+
 func TestScatterCmd_ValidateConfig_SizeMustBeNumeric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

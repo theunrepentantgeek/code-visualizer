@@ -46,22 +46,22 @@ func (p PointDatum) metricContainer() *model.MetricContainer {
 	return nil
 }
 
-// SkipCounts records how many files were excluded for missing required values.
+// SkipCounts records how many nodes were excluded for missing required values.
 type SkipCounts struct {
 	MissingX    int
 	MissingY    int
 	MissingSize int
 }
 
-// Total returns the total number of files skipped for any reason.
-// Note: a single file may be counted in multiple fields if it is missing
+// Total returns the total number of nodes skipped for any reason.
+// Note: a single node may be counted in multiple fields if it is missing
 // more than one required value, so Total may exceed the number of distinct
 // skipped files.
 func (s SkipCounts) Total() int {
 	return s.MissingX + s.MissingY + s.MissingSize
 }
 
-// Dataset is the subset of files that can be plotted, plus skip statistics.
+// Dataset is the subset of nodes that can be plotted, plus skip statistics.
 type Dataset struct {
 	Points  []PointDatum
 	Skipped SkipCounts
@@ -71,7 +71,9 @@ type Dataset struct {
 func (d Dataset) Files() []*model.File {
 	files := make([]*model.File, 0, len(d.Points))
 	for _, point := range d.Points {
-		files = append(files, point.File)
+		if point.File != nil {
+			files = append(files, point.File)
+		}
 	}
 
 	return files
