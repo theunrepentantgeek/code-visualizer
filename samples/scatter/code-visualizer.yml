@@ -1,19 +1,12 @@
 imageSize:
     width: 1920
     height: 1080
-tree-map: {}
-radial-tree:
-    labels: all
-bubble-tree:
-    labels: folders
-spiral:
-    resolution: daily
-    labels: laps
 scatter:
-    xAxis: file-size
+    xAxis: file-size.sum
     xScale: log
-    yAxis: comment-ratio
+    yAxis: comment-ratio.mean
     size: declarations.count
+    grain: directory
     fill:
         metric: declarations.count
         palette: foliage
