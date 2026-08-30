@@ -9,14 +9,15 @@ a pair of metric axes — ideal for spotting correlations and outliers.
 
 | Visual property | Metric | Palette |
 | --------------- | ------ | ------- |
-| X axis          | `file-size` | — |
+| X axis          | `file-size` (log scale) | — |
 | Y axis          | `comment-ratio` | — |
 | Point size      | `declarations.count` | — |
 | Fill colour     | `declarations.count` | `foliage` |
 | Border colour   | `public.declarations.count` | `foliage` |
 
-Each point is one file: its position compares raw size against comment ratio,
-while size and colour surface how many declarations (and public declarations)
+Each point is one file: its position compares file size on a logarithmic scale
+against comment ratio, spreading files according to their order of magnitude.
+Point size and colour surface how many declarations (and public declarations)
 the file contains.
 
 ## Try it yourself

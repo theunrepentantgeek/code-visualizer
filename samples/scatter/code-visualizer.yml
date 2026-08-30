@@ -11,6 +11,7 @@ spiral:
     labels: laps
 scatter:
     xAxis: file-size
+    xScale: log
     yAxis: comment-ratio
     size: declarations.count
     fill:
