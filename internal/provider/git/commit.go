@@ -63,13 +63,14 @@ func (s *repoService) commitTotalInRange(from time.Time, until time.Time) (int64
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	iter, err := s.commitIterator(from, until)
+	commits, err := s.commitIterator(from, until)
 	if err != nil {
 		return 0, err
 	}
+
 	var total int64
 
-	for _, iterationErr := range iter {
+	for _, iterationErr := range commits {
 		if iterationErr != nil {
 			return 0, eris.Wrap(iterationErr, "failed to iterate commits")
 		}
@@ -223,11 +224,7 @@ func (s *repoService) commitIterator(
 				return
 			}
 
-			if !from.IsZero() && commit.Author.When.Before(from) {
-				continue
-			}
-
-			if !until.IsZero() && commit.Author.When.After(until) {
+			if !commitInRange(commit, from, until) {
 				continue
 			}
 
@@ -236,6 +233,11 @@ func (s *repoService) commitIterator(
 			}
 		}
 	}, nil
+}
+
+func commitInRange(commit *object.Commit, from time.Time, until time.Time) bool {
+	return (from.IsZero() || !commit.Author.When.Before(from)) &&
+		(until.IsZero() || !commit.Author.When.After(until))
 }
 
 func newBulkPrewarmCache(
@@ -320,11 +322,12 @@ func (s *repoService) walkTrackedHistoryInRange(
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	iter, err := s.commitIterator(from, until)
+	commits, err := s.commitIterator(from, until)
 	if err != nil {
 		return err
 	}
-	for c, iterationErr := range iter {
+
+	for c, iterationErr := range commits {
 		if iterationErr != nil {
 			return eris.Wrap(iterationErr, "failed to iterate commits")
 		}

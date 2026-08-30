@@ -112,6 +112,10 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 	s, err := getService(setupTestGitRepo(t))
 	g.Expect(err).NotTo(HaveOccurred())
 
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
 	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
 	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
 
@@ -119,8 +123,10 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var count int
+
 	for _, iterationErr := range commits {
 		g.Expect(iterationErr).NotTo(HaveOccurred())
+
 		count++
 	}
 
