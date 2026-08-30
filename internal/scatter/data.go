@@ -7,9 +7,9 @@ import (
 )
 
 type metricSource interface {
-	Quantity(metric.Name) (int64, bool)
-	Measure(metric.Name) (float64, bool)
-	Classification(metric.Name) (string, bool)
+	Quantity(name metric.Name) (int64, bool)
+	Measure(name metric.Name) (float64, bool)
+	Classification(name metric.Name) (string, bool)
 }
 
 // PointDatum holds the resolved metric values for one plottable node.
@@ -102,52 +102,55 @@ func CollectDataset(
 		return dataset
 	}
 
-	capacity := root.AllFileCount
-	if grain == viz.GrainDirectory {
-		capacity = root.AllDirCount + 1
-	}
-
-	dataset.Points = make([]PointDatum, 0, capacity)
-
-	collect := func(point PointDatum) {
-		container := point.metricContainer()
-		x, okX := axisValueForContainer(container, xAxis)
-		y, okY := axisValueForContainer(container, yAxis)
-		size, okSize := numericValueForContainer(container, sizeMetric)
-
-		if !okX {
-			dataset.Skipped.MissingX++
-		}
-
-		if !okY {
-			dataset.Skipped.MissingY++
-		}
-
-		if !okSize {
-			dataset.Skipped.MissingSize++
-		}
-
-		if !okX || !okY || !okSize {
-			return
-		}
-
-		point.X = x
-		point.Y = y
-		point.Size = size
-		dataset.Points = append(dataset.Points, point)
-	}
+	dataset.Points = make([]PointDatum, 0, datasetCapacity(root, grain))
 
 	if grain == viz.GrainDirectory {
 		model.WalkDirectories(root, func(dir *model.Directory) {
-			collect(PointDatum{Directory: dir})
+			collectPoint(&dataset, PointDatum{Directory: dir}, xAxis, yAxis, sizeMetric)
 		})
 	} else {
 		model.WalkFiles(root, func(file *model.File) {
-			collect(PointDatum{File: file})
+			collectPoint(&dataset, PointDatum{File: file}, xAxis, yAxis, sizeMetric)
 		})
 	}
 
 	return dataset
+}
+
+func datasetCapacity(root *model.Directory, grain viz.Grain) int {
+	if grain == viz.GrainDirectory {
+		return root.AllDirCount + 1
+	}
+
+	return root.AllFileCount
+}
+
+func collectPoint(d *Dataset, point PointDatum, xAxis, yAxis AxisSpec, sizeMetric metric.Name) {
+	container := point.metricContainer()
+	x, okX := axisValueForContainer(container, xAxis)
+	y, okY := axisValueForContainer(container, yAxis)
+	size, okSize := numericValueForContainer(container, sizeMetric)
+
+	if !okX {
+		d.Skipped.MissingX++
+	}
+
+	if !okY {
+		d.Skipped.MissingY++
+	}
+
+	if !okSize {
+		d.Skipped.MissingSize++
+	}
+
+	if !okX || !okY || !okSize {
+		return
+	}
+
+	point.X = x
+	point.Y = y
+	point.Size = size
+	d.Points = append(d.Points, point)
 }
 
 func axisValueForContainer(container *model.MetricContainer, axis AxisSpec) (AxisValue, bool) {
@@ -171,14 +174,6 @@ func axisValueForContainer(container *model.MetricContainer, axis AxisSpec) (Axi
 	}
 
 	return AxisValue{}, false
-}
-
-func numericValueForFile(file *model.File, name metric.Name) (float64, bool) {
-	if file == nil {
-		return 0, false
-	}
-
-	return numericValueForContainer(&file.MetricContainer, name)
 }
 
 func numericValueForContainer(container *model.MetricContainer, name metric.Name) (float64, bool) {

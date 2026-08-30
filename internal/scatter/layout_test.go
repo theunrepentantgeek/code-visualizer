@@ -58,10 +58,12 @@ func TestCollectDataset_SkipsFilesMissingAxisOrSize(t *testing.T) {
 func TestCollectDataset_DirectoryGrainIncludesRootAndDescendants(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+
 	const (
 		xMetric = metric.Name("file-lines.sum")
 		yMetric = metric.Name("file-size.sum")
 	)
+
 	root := &model.Directory{Name: "root"}
 	child := &model.Directory{Name: "child"}
 	root.Dirs = []*model.Directory{child}

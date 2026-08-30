@@ -24,49 +24,23 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 	x.Grain = grain
 	level := metricLevelForGrain(grain)
 
-	if stages.PtrString(cfg.XAxis) == "" {
-		return eris.New("x-axis metric is required")
-	}
-
-	xAxis, err := resolveAxisSpec(cfg.XAxis, cfg.XScale, level)
+	xAxis, err := resolveRequiredAxis("x-axis", cfg.XAxis, cfg.XScale, level)
 	if err != nil {
-		return eris.Wrap(err, "invalid x-axis configuration")
+		return err
 	}
 
-	if stages.PtrString(cfg.YAxis) == "" {
-		return eris.New("y-axis metric is required")
-	}
-
-	yAxis, err := resolveAxisSpec(cfg.YAxis, cfg.YScale, level)
+	yAxis, err := resolveRequiredAxis("y-axis", cfg.YAxis, cfg.YScale, level)
 	if err != nil {
-		return eris.Wrap(err, "invalid y-axis configuration")
+		return err
 	}
 
-	size := metric.Name(stages.PtrString(cfg.Size))
-	if size == "" {
-		return eris.New("size metric is required")
-	}
-
-	sizeResolved, err := provider.ResolveName(size, level)
+	size, err := resolveSizeMetric(cfg.Size, level)
 	if err != nil {
-		return eris.Wrapf(err, "invalid size metric %q", size)
+		return err
 	}
 
-	if sizeResolved.ResultKind != metric.Quantity && sizeResolved.ResultKind != metric.Measure {
-		return eris.Errorf("size metric must be numeric, got %q", size)
-	}
-
-	for label, name := range map[string]metric.Name{
-		"fill":   cfg.Fill.MetricName(),
-		"border": cfg.Border.MetricName(),
-	} {
-		if name == "" {
-			continue
-		}
-
-		if _, resolveErr := provider.ResolveName(name, level); resolveErr != nil {
-			return eris.Wrapf(resolveErr, "invalid %s metric %q", label, name)
-		}
+	if err := validateColourMetrics(cfg, level); err != nil {
+		return err
 	}
 
 	x.XAxis = xAxis
@@ -76,6 +50,63 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 	x.FillPalette = stages.ResolveFillPalette(cfg.Fill, x.FillMetric)
 	x.BorderMetric, x.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
 	c.Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border, level)
+
+	return nil
+}
+
+func resolveRequiredAxis(
+	label string,
+	name, scale *string,
+	level metric.MetricLevel,
+) (AxisSpec, error) {
+	if stages.PtrString(name) == "" {
+		return AxisSpec{}, eris.Errorf("%s metric is required", label)
+	}
+
+	axis, err := resolveAxisSpec(name, scale, level)
+	if err != nil {
+		return AxisSpec{}, eris.Wrapf(err, "invalid %s configuration", label)
+	}
+
+	return axis, nil
+}
+
+func resolveSizeMetric(name *string, level metric.MetricLevel) (metric.Name, error) {
+	size := metric.Name(stages.PtrString(name))
+	if size == "" {
+		return "", eris.New("size metric is required")
+	}
+
+	resolved, err := provider.ResolveName(size, level)
+	if err != nil {
+		return "", eris.Wrapf(err, "invalid size metric %q", size)
+	}
+
+	if resolved.ResultKind != metric.Quantity && resolved.ResultKind != metric.Measure {
+		return "", eris.Errorf("size metric must be numeric, got %q", size)
+	}
+
+	return size, nil
+}
+
+func validateColourMetrics(cfg *config.Scatter, level metric.MetricLevel) error {
+	specs := []struct {
+		label string
+		name  metric.Name
+	}{
+		{label: "fill", name: cfg.Fill.MetricName()},
+		{label: "border", name: cfg.Border.MetricName()},
+	}
+
+	for _, spec := range specs {
+		if spec.name == "" {
+			continue
+		}
+
+		if _, err := provider.ResolveName(spec.name, level); err != nil {
+			return eris.Wrapf(err, "invalid %s metric %q", spec.label, spec.name)
+		}
+	}
 
 	return nil
 }

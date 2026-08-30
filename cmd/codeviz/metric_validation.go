@@ -57,15 +57,6 @@ func validateNumericMetric(label string, name metric.Name) error {
 	return nil
 }
 
-// validateMetricExists validates that name refers to a known metric of any
-// kind, accepting both base metrics and aggregation expressions. Used for
-// fields (such as scatter axes) that accept classification and numeric metrics.
-func validateMetricExists(label string, name metric.Name) error {
-	_, err := resolveMetricKind(label, name)
-
-	return err
-}
-
 // formatMetricNames returns a comma-separated list of all registered base
 // metric names, used in "available metrics" error messages.
 func formatMetricNames() string {

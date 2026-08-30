@@ -10,8 +10,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -91,7 +91,9 @@ func TestBuildCategoricalInk_WithCategories_ReturnsCategoricalInk(t *testing.T) 
 func TestBuildInks_DirectoryPointsUseDirectoryMetrics(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+
 	const sizeMetric = metric.Name("file-size.sum")
+
 	dir := &model.Directory{Name: "src"}
 	dir.SetQuantity(sizeMetric, 300)
 	dataset := Dataset{Points: []PointDatum{{Directory: dir, Size: 300}}}

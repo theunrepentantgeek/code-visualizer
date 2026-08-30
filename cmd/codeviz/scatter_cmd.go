@@ -10,7 +10,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
-	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
+	vizpkg "github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 type ScatterCmd struct {
@@ -74,6 +74,10 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 		return err
 	}
 
+	return validateScatterColours(cfg, level)
+}
+
+func validateScatterColours(cfg *config.Scatter, level metric.MetricLevel) error {
 	if err := cfg.Fill.Validate("fill"); err != nil {
 		return eris.Wrap(err, "invalid fill spec")
 	}
@@ -82,16 +86,21 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 		return eris.Wrap(err, "invalid border spec")
 	}
 
-	for label, name := range map[string]metric.Name{
-		"fill":   cfg.Fill.MetricName(),
-		"border": cfg.Border.MetricName(),
-	} {
-		if name == "" {
+	specs := []struct {
+		label string
+		name  metric.Name
+	}{
+		{label: "fill", name: cfg.Fill.MetricName()},
+		{label: "border", name: cfg.Border.MetricName()},
+	}
+
+	for _, spec := range specs {
+		if spec.name == "" {
 			continue
 		}
 
-		if _, resolveErr := resolveScatterMetric(label, name, level); resolveErr != nil {
-			return resolveErr
+		if _, err := resolveScatterMetric(spec.label, spec.name, level); err != nil {
+			return err
 		}
 	}
 
@@ -100,9 +109,9 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 
 func scatterMetricLevel(grain *string) (metric.MetricLevel, error) {
 	switch value := ptrString(grain); value {
-	case "", string(viz.GrainFile):
+	case "", string(vizpkg.GrainFile):
 		return metric.LevelFile, nil
-	case string(viz.GrainDirectory):
+	case string(vizpkg.GrainDirectory):
 		return metric.LevelDirectory, nil
 	default:
 		return 0, eris.Errorf("unknown grain %q; must be \"file\" or \"directory\"", value)
