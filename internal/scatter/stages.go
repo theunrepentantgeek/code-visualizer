@@ -11,15 +11,24 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // ResolveMetrics resolves scatter axes, size, fill, and border settings.
 func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error {
+	grain, err := resolveGrain(cfg)
+	if err != nil {
+		return err
+	}
+
+	x.Grain = grain
+	level := metricLevelForGrain(grain)
+
 	if stages.PtrString(cfg.XAxis) == "" {
 		return eris.New("x-axis metric is required")
 	}
 
-	xAxis, err := resolveAxisSpec(cfg.XAxis, cfg.XScale)
+	xAxis, err := resolveAxisSpec(cfg.XAxis, cfg.XScale, level)
 	if err != nil {
 		return eris.Wrap(err, "invalid x-axis configuration")
 	}
@@ -28,7 +37,7 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 		return eris.New("y-axis metric is required")
 	}
 
-	yAxis, err := resolveAxisSpec(cfg.YAxis, cfg.YScale)
+	yAxis, err := resolveAxisSpec(cfg.YAxis, cfg.YScale, level)
 	if err != nil {
 		return eris.Wrap(err, "invalid y-axis configuration")
 	}
@@ -38,21 +47,43 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 		return eris.New("size metric is required")
 	}
 
+	sizeResolved, err := provider.ResolveName(size, level)
+	if err != nil {
+		return eris.Wrapf(err, "invalid size metric %q", size)
+	}
+
+	if sizeResolved.ResultKind != metric.Quantity && sizeResolved.ResultKind != metric.Measure {
+		return eris.Errorf("size metric must be numeric, got %q", size)
+	}
+
+	for label, name := range map[string]metric.Name{
+		"fill":   cfg.Fill.MetricName(),
+		"border": cfg.Border.MetricName(),
+	} {
+		if name == "" {
+			continue
+		}
+
+		if _, resolveErr := provider.ResolveName(name, level); resolveErr != nil {
+			return eris.Wrapf(resolveErr, "invalid %s metric %q", label, name)
+		}
+	}
+
 	x.XAxis = xAxis
 	x.YAxis = yAxis
 	x.Size = size
 	x.FillMetric = resolveFillMetric(cfg, size)
 	x.FillPalette = stages.ResolveFillPalette(cfg.Fill, x.FillMetric)
 	x.BorderMetric, x.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
-	c.Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border)
+	c.Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border, level)
 
 	return nil
 }
 
-func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
+func resolveAxisSpec(name *string, scale *string, level metric.MetricLevel) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
 
-	resolved, err := provider.ResolveName(metricName, metric.LevelFile)
+	resolved, err := provider.ResolveName(metricName, level)
 	if err != nil {
 		return AxisSpec{}, eris.Wrapf(err, "invalid axis metric %q", metricName)
 	}
@@ -87,7 +118,11 @@ func resolveFillMetric(cfg *config.Scatter, size metric.Name) metric.Name {
 	return size
 }
 
-func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *config.MetricSpec) stages.RequestedMetrics {
+func collectRequestedMetrics(
+	xAxis, yAxis, size metric.Name,
+	fill, border *config.MetricSpec,
+	level metric.MetricLevel,
+) stages.RequestedMetrics {
 	seen := map[metric.Name]bool{}
 	names := make([]metric.Name, 0, 5)
 
@@ -100,7 +135,26 @@ func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *confi
 		names = append(names, name)
 	}
 
-	return stages.ClassifyRequestedMetrics(names, metric.LevelDirectory)
+	return stages.ClassifyRequestedMetrics(names, level)
+}
+
+func resolveGrain(cfg *config.Scatter) (viz.Grain, error) {
+	switch grain := stages.PtrString(cfg.Grain); grain {
+	case "", string(viz.GrainFile):
+		return viz.GrainFile, nil
+	case string(viz.GrainDirectory):
+		return viz.GrainDirectory, nil
+	default:
+		return "", eris.Errorf("unknown grain %q; must be \"file\" or \"directory\"", grain)
+	}
+}
+
+func metricLevelForGrain(grain viz.Grain) metric.MetricLevel {
+	if grain == viz.GrainDirectory {
+		return metric.LevelDirectory
+	}
+
+	return metric.LevelFile
 }
 
 // BuildInksStage collects plottable files and creates point inks.

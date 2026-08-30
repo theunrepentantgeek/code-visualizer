@@ -14,6 +14,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
@@ -39,6 +40,58 @@ func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 		filesystem.FileLines,
 		filesystem.FileSize,
 	}))
+}
+
+func TestResolveMetrics_GrainDefaultsToFile(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	common := &stages.CommonState{}
+	vizState := &scatter.State{}
+	cfg := &config.Scatter{
+		XAxis: new("file-lines"),
+		YAxis: new("file-size"),
+		Size:  new("file-size"),
+	}
+
+	err := scatter.ResolveMetrics(common, vizState, cfg)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(vizState.Grain).To(Equal(viz.GrainFile))
+}
+
+func TestResolveMetrics_DirectoryGrainResolvesAggregations(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	common := &stages.CommonState{}
+	vizState := &scatter.State{}
+	cfg := &config.Scatter{
+		Grain: new("directory"),
+		XAxis: new("file-lines.sum"),
+		YAxis: new("file-size.sum"),
+		Size:  new("file-size.sum"),
+	}
+
+	err := scatter.ResolveMetrics(common, vizState, cfg)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(vizState.Grain).To(Equal(viz.GrainDirectory))
+	g.Expect(vizState.XAxis.Kind).To(Equal(metric.Quantity))
+	g.Expect(common.Requested.Expressions).To(HaveLen(2))
+}
+
+func TestResolveMetrics_DirectoryGrainRejectsUnaggregatedFileMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := &config.Scatter{
+		Grain: new("directory"),
+		XAxis: new("file-lines"),
+		YAxis: new("file-size.sum"),
+		Size:  new("file-size.sum"),
+	}
+
+	err := scatter.ResolveMetrics(&stages.CommonState{}, &scatter.State{}, cfg)
+
+	g.Expect(err).To(MatchError(ContainSubstring("requires aggregation at directory level")))
 }
 
 func TestResolveMetrics_ParsesLogScale(t *testing.T) {

@@ -1042,6 +1042,48 @@ func TestScatterCmd_ValidateConfig_SizeMustBeNumeric(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("size metric must be numeric")))
 }
 
+func TestScatterCmd_ValidateConfig_DirectoryGrainAcceptsAggregatedMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := config.New()
+	cfg.Scatter.Grain = new("directory")
+	cfg.Scatter.XAxis = new("file-lines.sum")
+	cfg.Scatter.YAxis = new("file-size.sum")
+	cfg.Scatter.Size = new("file-size.sum")
+
+	err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
+
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestScatterCmd_ValidateConfig_DirectoryGrainRejectsBareFileMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := config.New()
+	cfg.Scatter.Grain = new("directory")
+	cfg.Scatter.XAxis = new("file-lines")
+	cfg.Scatter.YAxis = new("file-size.sum")
+	cfg.Scatter.Size = new("file-size.sum")
+
+	err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
+
+	g.Expect(err).To(MatchError(ContainSubstring("requires aggregation at directory level")))
+}
+
+func TestScatterCmd_ValidateConfig_RejectsUnknownGrain(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := config.New()
+	cfg.Scatter.Grain = new("package")
+	cfg.Scatter.XAxis = new("file-lines")
+	cfg.Scatter.YAxis = new("file-size")
+	cfg.Scatter.Size = new("file-size")
+
+	err := (&ScatterCmd{}).validateConfig(cfg.Scatter)
+
+	g.Expect(err).To(MatchError(ContainSubstring(`unknown grain "package"`)))
+}
+
 func TestScatterCmd_ConfigSuppliesAxesAndSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
