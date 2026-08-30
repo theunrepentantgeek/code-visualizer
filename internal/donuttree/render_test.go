@@ -292,6 +292,55 @@ func TestSectorPoints_FollowsAnnularBoundarySampling(t *testing.T) {
 	}
 }
 
+func TestInsetSectorPoints_KeepsBorderStrokeInsideSector(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	node := DonutNode{
+		StartAngle:  0,
+		SweepAngle:  math.Pi / 3,
+		InnerRadius: 40,
+		OuterRadius: 80,
+	}
+	center := canvas.Position{X: 120, Y: 160}
+	points := insetSectorPoints(node, center, donutSectorBorderWidth)
+	halfWidth := donutSectorBorderWidth / 2
+	outerCount := sectorSteps(node.SweepAngle) + 1
+
+	for _, point := range points {
+		g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(BeFalse())
+		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
+	}
+
+	g.Expect(math.Hypot(points[0].X-center.X, points[0].Y-center.Y)).
+		To(BeNumerically("~", node.OuterRadius-halfWidth, 0.000001))
+	g.Expect(math.Hypot(points[outerCount].X-center.X, points[outerCount].Y-center.Y)).
+		To(BeNumerically("~", node.InnerRadius+halfWidth, 0.000001))
+	g.Expect(math.Abs(points[0].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
+	g.Expect(math.Abs(points[len(points)-2].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
+}
+
+func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	node := DonutNode{
+		StartAngle:  0,
+		SweepAngle:  math.Pi / 10000,
+		InnerRadius: 40,
+		OuterRadius: 80,
+	}
+
+	points := insetSectorPoints(node, canvas.Position{X: 120, Y: 160}, donutSectorBorderWidth)
+	for _, point := range points {
+		g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(BeFalse())
+		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
+	}
+
+	g.Expect(math.Hypot(
+		points[0].X-points[sectorSteps(node.SweepAngle)].X,
+		points[0].Y-points[sectorSteps(node.SweepAngle)].Y,
+	)).To(BeNumerically(">", 0))
+}
+
 func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
