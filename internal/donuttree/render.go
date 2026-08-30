@@ -101,6 +101,7 @@ func addDonutSectors(
 			Fill:   fillValue,
 			Border: inks.MetricValueForDirectory(node.Directory, is.Border),
 		})
+
 		if is.HasBorderMetric {
 			cv.AddPolygon(canvas.LayerContent, canvas.Polygon{
 				Spec:   borderSpec,

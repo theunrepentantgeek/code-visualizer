@@ -163,6 +163,7 @@ func TestRenderToCanvas_OmitsBorderPolygonsUnlessConfigured(t *testing.T) {
 	)), "DrawPolygon")
 
 	g.Expect(polygons).To(HaveLen(2))
+
 	for _, call := range polygons {
 		g.Expect(call.BorderWidth).To(BeZero())
 	}
@@ -197,9 +198,11 @@ func TestRenderToCanvas_InsetsMetricBordersInsideAdjacentSectors(t *testing.T) {
 	)), "DrawPolygon")
 
 	g.Expect(polygons).To(HaveLen(4))
+
 	for index := 0; index < len(polygons); index += 2 {
 		fill := polygons[index]
 		border := polygons[index+1]
+
 		g.Expect(fill.BorderWidth).To(BeZero())
 		g.Expect(fill.Points).To(Equal(sectorPoints(layout.Children[index/2], layout.Center)))
 		g.Expect(border.Fill.A).To(BeZero())
@@ -345,8 +348,10 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	const width, height = 360, 240
-	const borderMetric = metric.Name("file-freshness.sum")
+	const (
+		width, height = 360, 240
+		borderMetric  = metric.Name("file-freshness.sum")
+	)
 
 	root := donutRoot()
 	root.SetQuantity(borderMetric, 1)
