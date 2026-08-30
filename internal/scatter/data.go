@@ -105,9 +105,15 @@ func CollectDataset(
 	dataset.Points = make([]PointDatum, 0, datasetCapacity(root, grain))
 
 	if grain == viz.GrainDirectory {
-		model.WalkDirectories(root, func(dir *model.Directory) {
-			collectPoint(&dataset, PointDatum{Directory: dir}, xAxis, yAxis, sizeMetric)
-		})
+		for _, child := range root.Dirs {
+			if child == nil {
+				continue
+			}
+
+			model.WalkDirectories(child, func(dir *model.Directory) {
+				collectPoint(&dataset, PointDatum{Directory: dir}, xAxis, yAxis, sizeMetric)
+			})
+		}
 	} else {
 		model.WalkFiles(root, func(file *model.File) {
 			collectPoint(&dataset, PointDatum{File: file}, xAxis, yAxis, sizeMetric)
@@ -119,7 +125,7 @@ func CollectDataset(
 
 func datasetCapacity(root *model.Directory, grain viz.Grain) int {
 	if grain == viz.GrainDirectory {
-		return root.AllDirCount + 1
+		return root.AllDirCount
 	}
 
 	return root.AllFileCount

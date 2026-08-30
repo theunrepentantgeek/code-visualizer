@@ -55,7 +55,7 @@ func TestCollectDataset_SkipsFilesMissingAxisOrSize(t *testing.T) {
 	g.Expect(dataset.Skipped.MissingSize).To(Equal(1))
 }
 
-func TestCollectDataset_DirectoryGrainIncludesRootAndDescendants(t *testing.T) {
+func TestCollectDataset_DirectoryGrainExcludesRootAndIncludesDescendants(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -66,9 +66,11 @@ func TestCollectDataset_DirectoryGrainIncludesRootAndDescendants(t *testing.T) {
 
 	root := &model.Directory{Name: "root"}
 	child := &model.Directory{Name: "child"}
+	grandchild := &model.Directory{Name: "grandchild"}
 	root.Dirs = []*model.Directory{child}
+	child.Dirs = []*model.Directory{grandchild}
 
-	for i, dir := range []*model.Directory{root, child} {
+	for i, dir := range []*model.Directory{root, child, grandchild} {
 		dir.SetQuantity(xMetric, int64(i+1))
 		dir.SetQuantity(yMetric, int64((i+1)*10))
 	}
@@ -83,7 +85,7 @@ func TestCollectDataset_DirectoryGrainIncludesRootAndDescendants(t *testing.T) {
 
 	g.Expect(dataset.Points).To(HaveLen(2))
 	g.Expect([]string{dataset.Points[0].Name(), dataset.Points[1].Name()}).
-		To(ConsistOf("root", "child"))
+		To(ConsistOf("child", "grandchild"))
 }
 
 func TestDataset_Files_ReturnsFilesInOrder(t *testing.T) {
