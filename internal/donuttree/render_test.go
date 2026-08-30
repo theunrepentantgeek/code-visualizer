@@ -148,19 +148,19 @@ func TestRenderToCanvas_UsesContrastSafeSectorLabelInks(t *testing.T) {
 	calls := renderCalls(t, RenderToCanvas(
 		Layout(root, 600, filesystem.FileLines), root, 600, 600, is, LabelMetrics{},
 	))
-	glyphColours := make(map[string]color.RGBA)
+	labelColours := make(map[string]color.RGBA)
 
 	for _, call := range callsNamed(calls, "DrawText") {
-		if call.Text == "d" || call.Text == "l" {
-			glyphColours[call.Text] = call.Fill
+		if call.Text == "dark" || call.Text == "light" {
+			labelColours[call.Text] = call.Fill
 		}
 	}
 
 	darkExpected := canvas.TextColourFor(is.Fill.Dip(inks.MetricValueForDirectory(dark, is.Fill)))
 	lightExpected := canvas.TextColourFor(is.Fill.Dip(inks.MetricValueForDirectory(light, is.Fill)))
 
-	g.Expect(glyphColours).To(HaveKeyWithValue("d", darkExpected))
-	g.Expect(glyphColours).To(HaveKeyWithValue("l", lightExpected))
+	g.Expect(labelColours).To(HaveKeyWithValue("dark", darkExpected))
+	g.Expect(labelColours).To(HaveKeyWithValue("light", lightExpected))
 	g.Expect(darkExpected).NotTo(Equal(lightExpected))
 }
 

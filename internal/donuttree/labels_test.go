@@ -2,13 +2,13 @@ package donuttree
 
 import (
 	"math"
-	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -22,16 +22,13 @@ func labelDirectory() *model.Directory {
 	return dir
 }
 
-func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
+func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 	t.Parallel()
 
-	dir := labelDirectory()
-	node := DonutNode{StartAngle: math.Pi, SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 140}
-	center := canvas.Position{X: 200, Y: 200}
 	cases := []struct {
 		name     string
 		metrics  LabelMetrics
-		expected string
+		expected []string
 	}{
 		{
 			name: "explicit metrics",
@@ -42,12 +39,12 @@ func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 				IncludeFill:   true,
 				IncludeBorder: true,
 			},
-			expected: "src | file-lines.sum: 120 | file-type.mode: go | file-freshness.sum: 5",
+			expected: []string{"src", "120", "go", "5"},
 		},
 		{
 			name:     "default size metric",
 			metrics:  LabelMetrics{Size: "file-lines.sum"},
-			expected: "src | file-lines.sum: 120",
+			expected: []string{"src", "120"},
 		},
 	}
 
@@ -55,79 +52,12 @@ func TestAddSectorLabel_RendersConfiguredDirectoryLabelGlyphs(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			cv := canvas.NewCanvas(400, 400)
-			addSectorLabel(
-				cv, node, center, buildDirectoryLabel(dir, testCase.metrics),
-				inks.FixedInk(donutLabelColour),
-			)
-
-			backend := mock.NewBackend()
-			g.Expect(cv.RenderTo(backend)).To(Succeed())
-			glyphs := callsNamed(backend.Calls, "DrawText")
-
-			text := make([]string, len(glyphs))
-			for index, glyph := range glyphs {
-				text[index] = glyph.Text
-			}
-
-			g.Expect(strings.Join(text, "")).To(Equal(testCase.expected))
+			g.Expect(buildDirectoryLabel(labelDirectory(), testCase.metrics)).To(Equal(testCase.expected))
 		})
 	}
 }
 
-func TestAddSectorLabel_CentersGlyphsOnMidpointRadius(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-	node := DonutNode{
-		StartAngle:  0,
-		SweepAngle:  math.Pi / 2,
-		InnerRadius: 100,
-		OuterRadius: 140,
-	}
-	center := canvas.Position{X: 200, Y: 200}
-	cv := canvas.NewCanvas(400, 400)
-	addSectorLabel(cv, node, center, "unicode: \u65e5", inks.FixedInk(donutLabelColour))
-
-	backend := mock.NewBackend()
-	g.Expect(cv.RenderTo(backend)).To(Succeed())
-	glyphs := callsNamed(backend.Calls, "DrawText")
-	g.Expect(glyphs).NotTo(BeEmpty())
-
-	expectedRadius := (node.InnerRadius + node.OuterRadius) / 2
-	midpoint := node.StartAngle + node.SweepAngle/2
-	firstAngle := math.Atan2(glyphs[0].Pos.Y-center.Y, glyphs[0].Pos.X-center.X)
-	lastAngle := math.Atan2(glyphs[len(glyphs)-1].Pos.Y-center.Y, glyphs[len(glyphs)-1].Pos.X-center.X)
-	g.Expect((firstAngle + lastAngle) / 2).To(BeNumerically("~", midpoint, 0.02))
-
-	for _, glyph := range glyphs {
-		radius := math.Hypot(glyph.Pos.X-center.X, glyph.Pos.Y-center.Y)
-		g.Expect(radius).To(BeNumerically("~", expectedRadius, 0.001))
-	}
-}
-
-func TestAddSectorLabel_InvertsLowerRightGlyphOrderAndRotation(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-	node := DonutNode{
-		StartAngle:  0,
-		SweepAngle:  math.Pi / 2,
-		InnerRadius: 100,
-		OuterRadius: 140,
-	}
-	center := canvas.Position{X: 200, Y: 200}
-	cv := canvas.NewCanvas(400, 400)
-	addSectorLabel(cv, node, center, "abc", inks.FixedInk(donutLabelColour))
-
-	backend := mock.NewBackend()
-	g.Expect(cv.RenderTo(backend)).To(Succeed())
-	glyphs := callsNamed(backend.Calls, "DrawText")
-
-	g.Expect(strings.Join([]string{glyphs[0].Text, glyphs[1].Text, glyphs[2].Text}, "")).To(Equal("cba"))
-	angle := math.Atan2(glyphs[0].Pos.Y-center.Y, glyphs[0].Pos.X-center.X)
-	g.Expect(glyphs[0].Rotation).To(BeNumerically("~", angle+3*math.Pi/2, 0.001))
-}
-
-func TestAddSectorLabel_DoesNotInvertUpperLeftGlyphOrderOrRotation(t *testing.T) {
+func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	node := DonutNode{
@@ -138,24 +68,80 @@ func TestAddSectorLabel_DoesNotInvertUpperLeftGlyphOrderOrRotation(t *testing.T)
 	}
 	center := canvas.Position{X: 200, Y: 200}
 	cv := canvas.NewCanvas(400, 400)
-	addSectorLabel(cv, node, center, "abc", inks.FixedInk(donutLabelColour))
+	addSectorLabel(cv, node, center, []string{"src", "120", "go"}, inks.FixedInk(donutLabelColour))
 
 	backend := mock.NewBackend()
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
-	glyphs := callsNamed(backend.Calls, "DrawText")
+	calls := callsNamed(backend.Calls, "DrawText")
+	lines := []string{"src", "120", "go"}
+	g.Expect(calls).To(HaveLen(len(lines)))
 
-	g.Expect(strings.Join([]string{glyphs[0].Text, glyphs[1].Text, glyphs[2].Text}, "")).To(Equal("abc"))
-	angle := math.Atan2(glyphs[0].Pos.Y-center.Y, glyphs[0].Pos.X-center.X)
-	g.Expect(math.Mod(glyphs[0].Rotation-(angle+math.Pi/2), 2*math.Pi)).To(BeNumerically("~", 0, 0.001))
+	midpoint := node.StartAngle + node.SweepAngle/2
+	midRadius := (node.InnerRadius + node.OuterRadius) / 2
+	blockCenter := canvas.Position{
+		X: center.X + midRadius*math.Cos(midpoint),
+		Y: center.Y + midRadius*math.Sin(midpoint),
+	}
+	fontSize := sectorLabelFontSize(node, lines)
+	_, measuredLineHeight := textlayout.MeasureStrings(lines, fontSize)
+	rotation := midpoint + math.Pi/2
+
+	for index, call := range calls {
+		offset := (float64(index) - float64(len(lines)-1)/2) * measuredLineHeight
+		g.Expect(call.Text).To(Equal(lines[index]))
+		g.Expect(call.Anchor).To(Equal(canvas.AnchorMiddle))
+		g.Expect(call.Rotation).To(BeNumerically("~", rotation, 0.001))
+		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X-offset*math.Sin(rotation), 0.001))
+		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Cos(rotation), 0.001))
+	}
 }
 
-func TestSectorLabelFontSize_FitsMediumArcsAndRejectsTinyArcs(t *testing.T) {
+func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	medium := DonutNode{SweepAngle: math.Pi / 3, InnerRadius: 40, OuterRadius: 60}
-	tiny := DonutNode{SweepAngle: 0.01, InnerRadius: 10, OuterRadius: 12}
+	node := DonutNode{
+		StartAngle:  0,
+		SweepAngle:  math.Pi / 2,
+		InnerRadius: 100,
+		OuterRadius: 140,
+	}
+	center := canvas.Position{X: 200, Y: 200}
+	lines := []string{"src", "120"}
+	cv := canvas.NewCanvas(400, 400)
+	addSectorLabel(cv, node, center, lines, inks.FixedInk(donutLabelColour))
 
-	g.Expect(sectorLabelFontSize(medium, "medium label")).To(BeNumerically(">=", 6))
-	g.Expect(sectorLabelFontSize(medium, "medium label")).To(BeNumerically("<", 14))
-	g.Expect(sectorLabelFontSize(tiny, "too small")).To(BeZero())
+	backend := mock.NewBackend()
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+	calls := callsNamed(backend.Calls, "DrawText")
+	g.Expect(calls).To(HaveLen(len(lines)))
+
+	midpoint := node.StartAngle + node.SweepAngle/2
+	midRadius := (node.InnerRadius + node.OuterRadius) / 2
+	blockCenter := canvas.Position{
+		X: center.X + midRadius*math.Cos(midpoint),
+		Y: center.Y + midRadius*math.Sin(midpoint),
+	}
+	rotation := midpoint + 3*math.Pi/2
+	_, lineHeight := textlayout.MeasureStrings(lines, calls[0].FontSize)
+
+	for index, call := range calls {
+		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
+		g.Expect(call.Text).To(Equal(lines[index]))
+		g.Expect(call.Rotation).To(BeNumerically("~", rotation, 0.001))
+		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X-offset*math.Sin(rotation), 0.001))
+		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Cos(rotation), 0.001))
+	}
+}
+
+func TestSectorLabelFontSize_FitsRadialCaptionBlockInBothDimensions(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	thinRing := DonutNode{SweepAngle: math.Pi, InnerRadius: 100, OuterRadius: 120}
+	narrowArc := DonutNode{SweepAngle: 0.05, InnerRadius: 100, OuterRadius: 140}
+	roomy := DonutNode{SweepAngle: math.Pi / 2, InnerRadius: 100, OuterRadius: 140}
+
+	g.Expect(sectorLabelFontSize(thinRing, []string{"a", "b"})).To(BeNumerically(">=", donutMinimumLabelFontSize))
+	g.Expect(sectorLabelFontSize(thinRing, []string{"a", "b"})).To(BeNumerically("<", donutDefaultLabelFontSize))
+	g.Expect(sectorLabelFontSize(narrowArc, []string{"wide label"})).To(BeZero())
+	g.Expect(sectorLabelFontSize(roomy, []string{"src", "120"})).To(Equal(donutDefaultLabelFontSize))
 }
