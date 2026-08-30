@@ -14,8 +14,8 @@ import (
 type BubbletreeCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
-	From       string `help:"Filter git activity from this date (YYYY-MM-DD or RFC3339)." name:"from" optional:""`
-	Until      string `help:"Filter git activity until this date (YYYY-MM-DD or RFC3339)." name:"until" optional:""`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD)." name:"until" optional:""`
 
 	Size metric.Name `default:"" help:"Metric for circle size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
 

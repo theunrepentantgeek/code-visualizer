@@ -24,8 +24,8 @@ type RenderCmd struct {
 	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to render; omit to list available presets."`
 	TargetPath string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
-	From       string `help:"Filter git activity from this date (YYYY-MM-DD or RFC3339)." name:"from" optional:""`
-	Until      string `help:"Filter git activity until this date (YYYY-MM-DD or RFC3339)." name:"until" optional:""`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD)." name:"until" optional:""`
 
 	Title      string `help:"Override the preset's default title." optional:""`
 	Width      int    `default:"1920" help:"Image width in pixels."`

@@ -15,8 +15,8 @@ import (
 type SpiralCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
-	From       string `help:"Filter git activity from this date (YYYY-MM-DD or RFC3339)." name:"from" optional:""`
-	Until      string `help:"Filter git activity until this date (YYYY-MM-DD or RFC3339)." name:"until" optional:""`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD)." name:"until" optional:""`
 
 	Resolution string `short:"r" help:"Time resolution (hourly or daily)." enum:",hourly,daily" default:""`
 

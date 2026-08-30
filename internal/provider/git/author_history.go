@@ -85,7 +85,8 @@ func BulkAuthorHistoryInRange(
 	repoPath string,
 	filePaths map[string]bool,
 	honorMailmap bool,
-	from, until time.Time,
+	from time.Time,
+	until time.Time,
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
 	s, err := getService(repoPath)
