@@ -14,6 +14,8 @@ import (
 type TreemapCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD)." name:"until" optional:""`
 
 	Size metric.Name `default:"" help:"Metric for rectangle area; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
 
@@ -40,8 +42,10 @@ func (c *TreemapCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*TreemapCmd) Validate() error {
-	return nil
+func (c *TreemapCmd) Validate() error {
+	_, _, err := parseDateRange(c.From, c.Until)
+
+	return err
 }
 
 // validateConfig checks the effective configuration after all sources have been
@@ -80,10 +84,15 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 		return err
 	}
 
+	stagesFlags, err := stagesFlagsForCommand(flags, c.From, c.Until)
+	if err != nil {
+		return err
+	}
+
 	common := &stages.CommonState{
 		TargetPath:         c.TargetPath,
 		Output:             c.Output,
-		Flags:              toStagesFlags(flags),
+		Flags:              stagesFlags,
 		RootConfig:         flags.Config,
 		VizName:            "tree-map",
 		CLIFilters:         c.Filters(),

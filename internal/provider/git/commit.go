@@ -1,6 +1,9 @@
 package git
 
 import (
+	"errors"
+	"io"
+	"iter"
 	"path/filepath"
 	"time"
 
@@ -39,33 +42,40 @@ type Commit struct {
 
 // CommitTotal returns the number of commits reachable from HEAD.
 func CommitTotal(repoPath string) (int64, error) {
+	return CommitTotalInRange(repoPath, time.Time{}, time.Time{})
+}
+
+// CommitTotalInRange returns the number of reachable commits within the supplied window.
+func CommitTotalInRange(repoPath string, from time.Time, until time.Time) (int64, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return 0, eris.Wrap(err, "failed to open git repository")
 	}
 
-	return s.commitTotal()
+	return s.commitTotalInRange(from, until)
 }
 
 func (s *repoService) commitTotal() (int64, error) {
+	return s.commitTotalInRange(time.Time{}, time.Time{})
+}
+
+func (s *repoService) commitTotalInRange(from time.Time, until time.Time) (int64, error) {
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	iter, err := s.commitIterator()
+	commits, err := s.commitIterator(from, until)
 	if err != nil {
 		return 0, err
 	}
-	defer iter.Close()
 
 	var total int64
 
-	err = iter.ForEach(func(*object.Commit) error {
-		total++
+	for _, iterationErr := range commits {
+		if iterationErr != nil {
+			return 0, eris.Wrap(iterationErr, "failed to iterate commits")
+		}
 
-		return nil
-	})
-	if err != nil {
-		return 0, eris.Wrap(err, "failed to iterate commits")
+		total++
 	}
 
 	return total, nil
@@ -82,6 +92,17 @@ func BulkCommitHistory(
 	tracked map[string]bool,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
+	return BulkCommitHistoryInRange(repoPath, tracked, time.Time{}, time.Time{}, onCommitProcessed)
+}
+
+// BulkCommitHistoryInRange filters traversed commits to the supplied date window.
+func BulkCommitHistoryInRange(
+	repoPath string,
+	tracked map[string]bool,
+	from time.Time,
+	until time.Time,
+	onCommitProcessed func(),
+) ([]Commit, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to open git repository")
@@ -89,9 +110,10 @@ func BulkCommitHistory(
 
 	var commits []Commit
 
-	err = s.walkTrackedHistory(tracked, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
-		appendTrackedCommit(&commits, c, changed)
-	})
+	err = s.walkTrackedHistoryInRange(tracked, from, until, onCommitProcessed,
+		func(c *object.Commit, changed []trackedChange) {
+			appendTrackedCommit(&commits, c, changed)
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +129,28 @@ func BulkCommitHistoryAndPrewarm(
 	requested []metric.Name,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
+	return BulkCommitHistoryAndPrewarmInRange(repoPath, tracked, requested, time.Time{}, time.Time{}, onCommitProcessed)
+}
+
+// BulkCommitHistoryAndPrewarmInRange filters traversed commits to the supplied date window.
+func BulkCommitHistoryAndPrewarmInRange(
+	repoPath string,
+	tracked map[string]bool,
+	requested []metric.Name,
+	from time.Time,
+	until time.Time,
+	onCommitProcessed func(),
+) ([]Commit, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to open git repository")
 	}
 
-	return s.bulkCommitHistoryAndPrewarm(
+	return s.bulkCommitHistoryAndPrewarmInRange(
 		normalizeTrackedPaths(tracked),
 		newMetricRequirements(requested),
+		from,
+		until,
 		onCommitProcessed,
 	)
 }
@@ -134,19 +170,22 @@ func normalizeTrackedPaths(tracked map[string]bool) map[string]bool {
 	return tracked
 }
 
-func (s *repoService) bulkCommitHistoryAndPrewarm(
+func (s *repoService) bulkCommitHistoryAndPrewarmInRange(
 	tracked map[string]bool,
 	requirements metricRequirements,
+	from time.Time,
+	until time.Time,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
 	cache := newBulkPrewarmCache(tracked, requirements)
 
 	var commits []Commit
 
-	err := s.walkTrackedHistory(tracked, onCommitProcessed, func(c *object.Commit, changed []trackedChange) {
-		prewarmTrackedChanges(cache, c, changed, requirements)
-		appendTrackedCommit(&commits, c, changed)
-	})
+	err := s.walkTrackedHistoryInRange(tracked, from, until, onCommitProcessed,
+		func(c *object.Commit, changed []trackedChange) {
+			prewarmTrackedChanges(cache, c, changed, requirements)
+			appendTrackedCommit(&commits, c, changed)
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -156,18 +195,82 @@ func (s *repoService) bulkCommitHistoryAndPrewarm(
 	return commits, nil
 }
 
-func (s *repoService) commitIterator() (object.CommitIter, error) {
+func (s *repoService) commitIterator(
+	from time.Time,
+	until time.Time,
+) (iter.Seq2[*object.Commit, error], error) {
 	head, err := s.repo.Head()
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to get HEAD")
 	}
 
-	iter, err := s.repo.Log(&gogit.LogOptions{From: head.Hash()})
+	commitIter, err := s.repo.Log(&gogit.LogOptions{From: head.Hash()})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to start log iteration")
 	}
 
-	return iter, nil
+	return filterCommitsInRange(commitSequence(commitIter), from, until), nil
+}
+
+func commitSequence(commitIter object.CommitIter) iter.Seq2[*object.Commit, error] {
+	return func(yield func(*object.Commit, error) bool) {
+		yieldCommits(commitIter, yield)
+	}
+}
+
+func yieldCommits(commitIter object.CommitIter, yield func(*object.Commit, error) bool) {
+	defer commitIter.Close()
+
+	for {
+		commit, done, iterationErr := nextCommit(commitIter)
+		if done {
+			return
+		}
+
+		if iterationErr != nil {
+			yield(nil, iterationErr)
+
+			return
+		}
+
+		if !yield(commit, nil) {
+			return
+		}
+	}
+}
+
+func nextCommit(commitIter object.CommitIter) (*object.Commit, bool, error) {
+	commit, err := commitIter.Next()
+	if errors.Is(err, io.EOF) {
+		return nil, true, nil
+	}
+
+	return commit, false, eris.Wrap(err, "failed to read commit")
+}
+
+func filterCommitsInRange(
+	commits iter.Seq2[*object.Commit, error],
+	from time.Time,
+	until time.Time,
+) iter.Seq2[*object.Commit, error] {
+	return func(yield func(*object.Commit, error) bool) {
+		for commit, iterationErr := range commits {
+			if iterationErr != nil {
+				yield(nil, iterationErr)
+
+				return
+			}
+
+			if commitInRange(commit, from, until) && !yield(commit, nil) {
+				return
+			}
+		}
+	}
+}
+
+func commitInRange(commit *object.Commit, from time.Time, until time.Time) bool {
+	return (from.IsZero() || !commit.Author.When.Before(from)) &&
+		(until.IsZero() || !commit.Author.When.After(until))
 }
 
 func newBulkPrewarmCache(
@@ -242,21 +345,26 @@ func appendTrackedCommit(commits *[]Commit, c *object.Commit, changed []trackedC
 	})
 }
 
-func (s *repoService) walkTrackedHistory(
+func (s *repoService) walkTrackedHistoryInRange(
 	tracked map[string]bool,
+	from time.Time,
+	until time.Time,
 	onCommitProcessed func(),
 	visit func(*object.Commit, []trackedChange),
 ) error {
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	iter, err := s.commitIterator()
+	commits, err := s.commitIterator(from, until)
 	if err != nil {
 		return err
 	}
-	defer iter.Close()
 
-	err = iter.ForEach(func(c *object.Commit) error {
+	for c, iterationErr := range commits {
+		if iterationErr != nil {
+			return eris.Wrap(iterationErr, "failed to iterate commits")
+		}
+
 		changed := trackedChangesInCommit(c, tracked)
 
 		if onCommitProcessed != nil {
@@ -264,11 +372,6 @@ func (s *repoService) walkTrackedHistory(
 		}
 
 		visit(c, changed)
-
-		return nil
-	})
-	if err != nil {
-		return eris.Wrap(err, "failed to iterate commits")
 	}
 
 	return nil

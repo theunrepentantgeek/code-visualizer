@@ -3,6 +3,7 @@ package git
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -88,6 +89,48 @@ func TestCommitTotal_ReturnsReachableCommitCount(t *testing.T) {
 
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(total).To(Equal(int64(3)))
+}
+
+func TestCommitTotalInRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := setupTestGitRepo(t)
+
+	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
+
+	total, err := CommitTotalInRange(dir, from, until)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(total).To(Equal(int64(1)))
+}
+
+func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	s, err := getService(setupTestGitRepo(t))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
+
+	commits, err := s.commitIterator(from, until)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	var count int
+
+	for _, iterationErr := range commits {
+		g.Expect(iterationErr).NotTo(HaveOccurred())
+
+		count++
+	}
+
+	g.Expect(count).To(Equal(1))
 }
 
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.

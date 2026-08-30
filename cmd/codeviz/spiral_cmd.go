@@ -15,6 +15,8 @@ import (
 type SpiralCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
+	From       string `help:"Filter git activity from this date (YYYY-MM-DD)." name:"from" optional:""`
+	Until      string `help:"Filter git activity until this date (YYYY-MM-DD)." name:"until" optional:""`
 
 	Resolution string `short:"r" help:"Time resolution (hourly or daily)." enum:",hourly,daily" default:""`
 
@@ -44,8 +46,10 @@ func (c *SpiralCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*SpiralCmd) Validate() error {
-	return nil
+func (c *SpiralCmd) Validate() error {
+	_, _, err := parseDateRange(c.From, c.Until)
+
+	return err
 }
 
 // validateConfig checks the effective configuration after all sources have been
@@ -131,10 +135,15 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 		return err
 	}
 
+	stagesFlags, err := stagesFlagsForCommand(flags, c.From, c.Until)
+	if err != nil {
+		return err
+	}
+
 	common := &stages.CommonState{
 		TargetPath:         c.TargetPath,
 		Output:             c.Output,
-		Flags:              toStagesFlags(flags),
+		Flags:              stagesFlags,
 		RootConfig:         flags.Config,
 		VizName:            "spiral",
 		CLIFilters:         c.Filters(),
