@@ -10,8 +10,8 @@ radial visualization's `--grain file|directory` command-line flag. Persist the
 same choice as `scatter.grain` in YAML and JSON configuration.
 
 The default remains `file`, preserving current scatter output. Directory grain
-plots the scan root and every descendant directory using directory-level
-metrics.
+plots every descendant directory using directory-level metrics, excluding the
+scan root because its repository-wide aggregates distort the scatter scale.
 
 ## Command and Configuration Surface
 
@@ -73,8 +73,8 @@ fill and border values through the existing file or directory ink helpers.
 Dataset collection selects one traversal based on grain:
 
 - File grain uses the current depth-first file traversal.
-- Directory grain uses the existing directory traversal and includes the scan
-  root as well as every descendant directory.
+- Directory grain traverses each immediate child with the existing directory
+  walker, including every descendant while excluding the scan root.
 
 Both modes use the same missing-value checks, axis resolution, radius scaling,
 sorting, labels, legend construction, and canvas rendering. Log-scale errors
@@ -99,8 +99,8 @@ Add focused coverage for:
 2. Scatter config deserialization, export, and CLI-over-config precedence.
 3. Default file grain and explicit directory grain resolution.
 4. Directory-level metric validation and aggregation requests.
-5. Directory dataset collection, including the scan root and missing-value
-   skip counts.
+5. Directory dataset collection, excluding the scan root while retaining all
+   descendants and missing-value skip counts.
 6. File-mode regression behavior.
 7. Directory metric colour lookup, layout labels, and rendering.
 8. Grain-aware log-scale errors and result metadata where directly testable.
