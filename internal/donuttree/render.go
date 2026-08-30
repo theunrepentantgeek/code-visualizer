@@ -164,14 +164,35 @@ func insetSectorPoints(node DonutNode, center canvas.Position, borderWidth float
 }
 
 func sectorBorderWidth(node DonutNode) float64 {
-	sine := math.Sin(node.SweepAngle / 2)
-	if sine >= 1 {
+	if node.SweepAngle >= 2*math.Pi-1e-9 {
 		return donutSectorBorderWidth
 	}
 
-	maxWidth := 2 * node.InnerRadius * sine / (1 - sine)
+	if radialEdgesFit(node, donutSectorBorderWidth) {
+		return donutSectorBorderWidth
+	}
 
-	return math.Min(donutSectorBorderWidth, maxWidth)
+	low, high := 0.0, donutSectorBorderWidth
+	for range 32 {
+		candidate := (low + high) / 2
+		if radialEdgesFit(node, candidate) {
+			low = candidate
+		} else {
+			high = candidate
+		}
+	}
+
+	return low
+}
+
+func radialEdgesFit(node DonutNode, borderWidth float64) bool {
+	halfWidth := borderWidth / 2
+	radius := node.InnerRadius + halfWidth
+	inset := radialEdgeInset(radius, halfWidth, node.SweepAngle/2)
+	centerlineSweep := node.SweepAngle - 2*inset
+	separation := 2 * radius * math.Sin(centerlineSweep/2)
+
+	return separation >= borderWidth
 }
 
 func radialEdgeInset(radius, halfWidth, maxInset float64) float64 {

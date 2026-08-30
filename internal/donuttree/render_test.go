@@ -366,6 +366,24 @@ func TestInsetSectorPoints_ScalesNarrowAdjacentBordersToRemainDisjoint(t *testin
 	g.Expect(borderWidth).To(BeNumerically("<", donutSectorBorderWidth))
 	g.Expect(math.Hypot(leftEnd.X-rightStart.X, leftEnd.Y-rightStart.Y)).
 		To(BeNumerically("~", borderWidth, 0.000001))
+
+	leftStartInner := leftPoints[len(leftPoints)-2]
+	leftEndInner := leftPoints[sectorSteps(left.SweepAngle)+1]
+	g.Expect(math.Hypot(
+		leftStartInner.X-leftEndInner.X,
+		leftStartInner.Y-leftEndInner.Y,
+	)).To(BeNumerically(">=", borderWidth-0.000001))
+}
+
+func TestSectorBorderWidth_PreservesFullCircleBorders(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(sectorBorderWidth(DonutNode{
+		SweepAngle:  2 * math.Pi,
+		InnerRadius: 50,
+		OuterRadius: 100,
+	})).To(Equal(donutSectorBorderWidth))
 }
 
 func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
