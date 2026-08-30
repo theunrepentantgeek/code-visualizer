@@ -156,6 +156,47 @@ func TestRenderInto_CircleLabelSample_RendersDiscBeforeEntryHeading(t *testing.T
 	}
 }
 
+func TestRenderInto_ArcLabelSample_RendersCurvedAnnularSwatchBeforeEntryHeading(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := canvas.NewCanvas(800, 600)
+	fillInk := inks.NumericInk("file-size", []float64{10, 50, 100}, palette.GetPalette(palette.Temperature))
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomRight,
+		Orientation: model.LegendOrientationVertical,
+		LabelSample: legend.LabelSample{
+			Shape: legend.LabelSampleArc,
+			Lines: []string{"directory-name", "file-lines"},
+		},
+		Entries: []legend.Entry{
+			{Role: legend.RoleFill, MetricName: "file-size", Ink: fillInk},
+		},
+	}
+
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	arcIndex := -1
+	entryHeadingIndex := -1
+
+	for i, call := range mb.Calls {
+		switch {
+		case call.Method == "DrawPolygon" && len(call.Points) > 5:
+			arcIndex = i
+		case call.Method == "DrawText" && call.Text == "Fill":
+			entryHeadingIndex = i
+		default:
+			continue
+		}
+	}
+
+	g.Expect(arcIndex).To(BeNumerically(">=", 0))
+	g.Expect(arcIndex).To(BeNumerically("<", entryHeadingIndex))
+}
+
 func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
