@@ -346,10 +346,21 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	const width, height = 360, 240
+	const borderMetric = metric.Name("file-freshness.sum")
 
 	root := donutRoot()
+	root.SetQuantity(borderMetric, 1)
+	root.Dirs[0].SetQuantity(borderMetric, 2)
+	root.Dirs[0].Dirs[0].SetQuantity(borderMetric, 3)
 	layout := Layout(root, width, filesystem.FileLines)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := BuildInks(
+		root,
+		stages.CollectRequestedMetrics(borderMetric),
+		filesystem.FileLines,
+		palette.Neutral,
+		borderMetric,
+		palette.GoodBad,
+	)
 	cv := RenderToCanvas(layout, root, width, height, is, LabelMetrics{Size: filesystem.FileLines})
 	outputDir := donutOutputDir(t)
 
@@ -385,6 +396,8 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	data, err := os.ReadFile(svgPath)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(data).NotTo(BeEmpty())
+	g.Expect(string(data)).To(ContainSubstring(`fill="rgba(0,0,0,0.000)"`))
+	g.Expect(string(data)).To(ContainSubstring(`stroke-width="1.000"`))
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	token, err := decoder.Token()
