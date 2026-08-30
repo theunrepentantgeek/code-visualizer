@@ -989,11 +989,13 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 		"--x-axis", "file-type",
 		"--y-axis", "file-lines",
 		"-s", "file-size",
+		"--grain", "directory",
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cli.Scatter.XAxis).To(Equal(metric.Name("file-type")))
 	g.Expect(cli.Scatter.YAxis).To(Equal(metric.Name("file-lines")))
 	g.Expect(cli.Scatter.Size).To(Equal(metric.Name("file-size")))
+	g.Expect(cli.Scatter.Grain).To(Equal("directory"))
 }
 
 func TestScatterCmd_Validate_EmptyAxesPass(t *testing.T) {
@@ -1089,6 +1091,17 @@ func TestScatterCmd_CLIAxesOverrideConfig(t *testing.T) {
 	g.Expect(*cfg.Scatter.XAxis).To(Equal("file-type"))
 	g.Expect(*cfg.Scatter.YAxis).To(Equal("file-lines"))
 	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
+}
+
+func TestScatterCmd_CLIGrainOverridesConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cfg := config.New()
+	cfg.Scatter.Grain = new("file")
+
+	(&ScatterCmd{Grain: "directory"}).applyOverrides(cfg)
+
+	g.Expect(*cfg.Scatter.Grain).To(Equal("directory"))
 }
 
 func TestScatterCmd_MergeConfigAndValidate_LoadsScatterConfig(t *testing.T) {

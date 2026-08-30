@@ -27,6 +27,8 @@ type ScatterCmd struct {
 	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
 
+	Grain string `enum:",file,directory" default:"" help:"Granularity of nodes shown: file (default) or directory."`
+
 	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive,nolintlint // kong struct tags require long lines
 
@@ -145,6 +147,7 @@ func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
 	cfg.Scatter.OverrideYScale(c.YScale)
 	cfg.Scatter.OverrideFill(c.Fill)
 	cfg.Scatter.OverrideBorder(c.Border)
+	cfg.Scatter.OverrideGrain(c.Grain)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

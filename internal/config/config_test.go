@@ -795,6 +795,7 @@ func TestLoad_ScatterConfig_ParsesAxesAndSize(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 	content := `scatter:
+  grain: directory
   xAxis: file-type
   yAxis: file-lines
   size: file-size
@@ -806,12 +807,27 @@ func TestLoad_ScatterConfig_ParsesAxesAndSize(t *testing.T) {
 
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cfg.Scatter).NotTo(BeNil())
+	g.Expect(cfg.Scatter.Grain).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.Grain).To(Equal("directory"))
 	g.Expect(cfg.Scatter.XAxis).NotTo(BeNil())
 	g.Expect(*cfg.Scatter.XAxis).To(Equal("file-type"))
 	g.Expect(cfg.Scatter.YAxis).NotTo(BeNil())
 	g.Expect(*cfg.Scatter.YAxis).To(Equal("file-lines"))
 	g.Expect(cfg.Scatter.Size).NotTo(BeNil())
 	g.Expect(*cfg.Scatter.Size).To(Equal("file-size"))
+}
+
+func TestLoad_JSONScatterConfig_ParsesGrain(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	g.Expect(os.WriteFile(path, []byte(`{"scatter":{"grain":"directory"}}`), 0o600)).To(Succeed())
+
+	cfg := New()
+	g.Expect(cfg.Load(path)).To(Succeed())
+	g.Expect(cfg.Scatter.Grain).NotTo(BeNil())
+	g.Expect(*cfg.Scatter.Grain).To(Equal("directory"))
 }
 
 // LegendPositionStr tests

@@ -448,6 +448,27 @@ func TestTreemap_OverrideBorder_SkipsWhenZero(t *testing.T) {
 
 // Scatter overrides
 
+func TestScatter_OverrideGrain_SetsWhenNonEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	s := &Scatter{}
+
+	s.OverrideGrain("directory")
+
+	g.Expect(*s.Grain).To(Equal("directory"))
+}
+
+func TestScatter_OverrideGrain_SkipsWhenEmpty(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	existing := "directory"
+	s := &Scatter{Grain: &existing}
+
+	s.OverrideGrain("")
+
+	g.Expect(*s.Grain).To(Equal("directory"))
+}
+
 func TestScatter_OverrideXAxis_SetsWhenNonEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
