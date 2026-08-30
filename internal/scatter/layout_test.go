@@ -476,6 +476,26 @@ func TestValidateLogScale_ErrorsOnZeroValue(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("zero.go")))
 }
 
+func TestValidateLogScale_DirectoryErrorNamesNode(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := &model.Directory{Name: "empty"}
+	dataset := Dataset{Points: []PointDatum{{
+		Directory: dir,
+		X:         AxisValue{Numeric: 0},
+		Y:         AxisValue{Numeric: 1},
+		Size:      1,
+	}}}
+
+	err := ValidateLogScale(
+		dataset,
+		AxisSpec{Metric: "file-lines.sum", Kind: metric.Quantity, Scale: Log},
+		AxisSpec{Metric: "file-size.sum", Kind: metric.Quantity, Scale: Linear},
+	)
+
+	g.Expect(err).To(MatchError(ContainSubstring(`node "empty" has value 0`)))
+}
+
 func TestValidateLogScale_PassesWhenAllPositive(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

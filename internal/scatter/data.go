@@ -6,6 +6,12 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
+type metricSource interface {
+	Quantity(metric.Name) (int64, bool)
+	Measure(metric.Name) (float64, bool)
+	Classification(metric.Name) (string, bool)
+}
+
 // PointDatum holds the resolved metric values for one plottable node.
 type PointDatum struct {
 	File      *model.File
@@ -69,6 +75,19 @@ func (d Dataset) Files() []*model.File {
 	}
 
 	return files
+}
+
+func (d Dataset) metricSources() []metricSource {
+	sources := make([]metricSource, 0, len(d.Points))
+	for _, point := range d.Points {
+		if point.Directory != nil {
+			sources = append(sources, point.Directory)
+		} else if point.File != nil {
+			sources = append(sources, point.File)
+		}
+	}
+
+	return sources
 }
 
 // CollectDataset walks nodes at the selected grain and keeps those with X, Y, and size values.

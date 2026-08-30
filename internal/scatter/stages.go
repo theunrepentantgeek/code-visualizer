@@ -192,8 +192,8 @@ func validateAxisPositive(points []PointDatum, axis AxisSpec, label string, valu
 	for _, point := range points {
 		if value(point) <= 0 {
 			return eris.Errorf(
-				"log scale on %s requires all values to be positive; file %q has value %g",
-				label, point.File.Name, value(point),
+				"log scale on %s requires all values to be positive; node %q has value %g",
+				label, point.Name(), value(point),
 			)
 		}
 	}
@@ -259,7 +259,8 @@ func LogResult(c *stages.CommonState, x *State) error {
 
 	slog.Info(
 		"Rendered scatter plot",
-		"files", len(x.Dataset.Points),
+		"nodes", len(x.Dataset.Points),
+		"grain", string(x.Grain),
 		"skipped_missing_x", x.Dataset.Skipped.MissingX,
 		"skipped_missing_y", x.Dataset.Skipped.MissingY,
 		"skipped_missing_size", x.Dataset.Skipped.MissingSize,

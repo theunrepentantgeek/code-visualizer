@@ -7,7 +7,6 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -39,21 +38,27 @@ func BuildInks(
 ) Inks {
 	is := Inks{
 		ShapeInks: inks.ShapeInks{
-			Fill:   buildMetricInk(dataset.Files(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
+			Fill:   buildMetricInk(dataset.metricSources(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
 			Border: inks.FixedInk(scatterDefaultBorder),
 		},
 	}
 
 	if borderMetric != "" {
-		is.Border = buildMetricInk(dataset.Files(), requested, borderMetric, borderPaletteName, scatterDefaultBorder)
+		is.Border = buildMetricInk(
+			dataset.metricSources(),
+			requested,
+			borderMetric,
+			borderPaletteName,
+			scatterDefaultBorder,
+		)
 		is.HasBorderMetric = true
 	}
 
 	return is
 }
 
-func buildMetricInk(
-	files []*model.File,
+func buildMetricInk[T metricSource](
+	sources []T,
 	requested stages.RequestedMetrics,
 	name metric.Name,
 	paletteName palette.PaletteName,
@@ -71,21 +76,21 @@ func buildMetricInk(
 	pal := palette.GetPalette(paletteName)
 
 	if descriptor.Kind == metric.Quantity || descriptor.Kind == metric.Measure {
-		return buildNumericInk(files, name, pal, fallback)
+		return buildNumericInk(sources, name, pal, fallback)
 	}
 
-	return buildCategoricalInk(files, name, pal, fallback)
+	return buildCategoricalInk(sources, name, pal, fallback)
 }
 
-func buildNumericInk(
-	files []*model.File,
+func buildNumericInk[T metricSource](
+	sources []T,
 	name metric.Name,
 	pal palette.ColourPalette,
 	fallback color.RGBA,
 ) inks.Ink {
-	values := make([]float64, 0, len(files))
-	for _, file := range files {
-		if value, ok := numericValueForFile(file, name); ok {
+	values := make([]float64, 0, len(sources))
+	for _, source := range sources {
+		if value, ok := numericValueForSource(source, name); ok {
 			values = append(values, value)
 		}
 	}
@@ -97,13 +102,13 @@ func buildNumericInk(
 	return inks.NumericInk(name, values, pal)
 }
 
-func buildCategoricalInk(
-	files []*model.File,
+func buildCategoricalInk[T metricSource](
+	sources []T,
 	name metric.Name,
 	pal palette.ColourPalette,
 	fallback color.RGBA,
 ) inks.Ink {
-	categories := uniqueCategories(files, name)
+	categories := uniqueCategories(sources, name)
 	if len(categories) == 0 {
 		return inks.FixedInk(fallback)
 	}
@@ -111,14 +116,26 @@ func buildCategoricalInk(
 	return inks.CategoricalInk(name, categories, pal)
 }
 
-func uniqueCategories(files []*model.File, name metric.Name) []string {
+func uniqueCategories[T metricSource](sources []T, name metric.Name) []string {
 	seen := map[string]struct{}{}
 
-	for _, file := range files {
-		if value, ok := file.Classification(name); ok {
+	for _, source := range sources {
+		if value, ok := source.Classification(name); ok {
 			seen[value] = struct{}{}
 		}
 	}
 
 	return slices.Sorted(maps.Keys(seen))
+}
+
+func numericValueForSource(source metricSource, name metric.Name) (float64, bool) {
+	if value, ok := source.Quantity(name); ok {
+		return float64(value), true
+	}
+
+	if value, ok := source.Measure(name); ok {
+		return value, true
+	}
+
+	return 0, false
 }

@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -118,4 +119,17 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 	}
 
 	g.Expect(rootElement).To(Equal("svg"))
+}
+
+func TestMetricValueForPoint_DirectoryUsesDirectoryMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	const sizeMetric = metric.Name("file-size.sum")
+	dir := &model.Directory{Name: "src"}
+	dir.SetQuantity(sizeMetric, 300)
+	ink := inks.NumericInk(sizeMetric, []float64{100, 300}, palette.GetPalette(palette.Temperature))
+
+	value := metricValueForPoint(ScatterPoint{Directory: dir}, ink)
+
+	g.Expect(value).To(Equal(inks.QuantityValue(300)))
 }
