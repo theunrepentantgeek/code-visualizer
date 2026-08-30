@@ -10,11 +10,14 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
+const donutSectorBorderWidth = 1.0
+
 var (
 	donutBackgroundColour = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 	donutAnchorFillColour = color.RGBA{R: 0xE5, G: 0xE7, B: 0xEB, A: 0xFF}
 	donutAnchorBorder     = color.RGBA{R: 0x4B, G: 0x55, B: 0x63, A: 0xFF}
 	donutLabelColour      = color.RGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xFF}
+	transparentInk        = inks.FixedInk(color.RGBA{})
 )
 
 // RenderToCanvas renders directory sectors and the fixed root anchor.
@@ -79,25 +82,34 @@ func addDonutSectors(
 	is Inks,
 	labelMetrics LabelMetrics,
 ) {
-	borderWidth := 0.0
-	if is.HasBorderMetric {
-		borderWidth = 1
-	}
-
-	spec := &canvas.PolygonSpec{
+	fillSpec := &canvas.PolygonSpec{
 		ShapeStyle: canvas.ShapeStyle{
-			Fill: is.Fill, Border: is.Border, BorderWidth: borderWidth,
+			Fill: is.Fill, Border: is.Border,
 		},
 	}
-
 	for _, node := range nodes {
 		fillValue := inks.MetricValueForDirectory(node.Directory, is.Fill)
 		cv.AddPolygon(canvas.LayerContent, canvas.Polygon{
-			Spec:   spec,
+			Spec:   fillSpec,
 			Points: sectorPoints(node, center),
 			Fill:   fillValue,
 			Border: inks.MetricValueForDirectory(node.Directory, is.Border),
 		})
+
+		if is.HasBorderMetric {
+			borderWidth := sectorBorderWidth(node)
+			borderSpec := &canvas.PolygonSpec{
+				ShapeStyle: canvas.ShapeStyle{
+					Fill: transparentInk, Border: is.Border, BorderWidth: borderWidth,
+				},
+			}
+			cv.AddPolygon(canvas.LayerContent, canvas.Polygon{
+				Spec:   borderSpec,
+				Points: insetSectorPoints(node, center, borderWidth),
+				Border: inks.MetricValueForDirectory(node.Directory, is.Border),
+			})
+		}
+
 		labelInk := inks.FixedInk(canvas.TextColourFor(is.Fill.Dip(fillValue)))
 		addSectorLabel(cv, node, center, buildDirectoryLabel(node.Directory, labelMetrics), labelInk)
 		addDonutSectors(cv, node.Children, center, is, labelMetrics)
@@ -105,7 +117,7 @@ func addDonutSectors(
 }
 
 func sectorPoints(node DonutNode, center canvas.Position) []canvas.Position {
-	steps := max(2, int(math.Ceil(node.SweepAngle/(2*math.Pi)*64)))
+	steps := sectorSteps(node.SweepAngle)
 	points := make([]canvas.Position, 0, 2*steps+3)
 
 	for step := range steps + 1 {
@@ -121,6 +133,78 @@ func sectorPoints(node DonutNode, center canvas.Position) []canvas.Position {
 	points = append(points, points[0])
 
 	return points
+}
+
+func insetSectorPoints(node DonutNode, center canvas.Position, borderWidth float64) []canvas.Position {
+	halfWidth := borderWidth / 2
+	innerRadius := node.InnerRadius + halfWidth
+	outerRadius := node.OuterRadius - halfWidth
+	halfSweep := node.SweepAngle / 2
+	maxInset := halfSweep * (1 - 1e-9)
+	innerInset := radialEdgeInset(innerRadius, halfWidth, maxInset)
+	outerInset := radialEdgeInset(outerRadius, halfWidth, maxInset)
+	steps := sectorSteps(node.SweepAngle)
+	points := make([]canvas.Position, 0, 2*steps+3)
+
+	for step := range steps + 1 {
+		angle := node.StartAngle + outerInset +
+			(node.SweepAngle-2*outerInset)*float64(step)/float64(steps)
+		points = append(points, polarPosition(center, outerRadius, angle))
+	}
+
+	for step := range steps + 1 {
+		angle := node.EndAngle() - innerInset -
+			(node.SweepAngle-2*innerInset)*float64(step)/float64(steps)
+		points = append(points, polarPosition(center, innerRadius, angle))
+	}
+
+	points = append(points, points[0])
+
+	return points
+}
+
+func sectorBorderWidth(node DonutNode) float64 {
+	if node.SweepAngle >= 2*math.Pi-1e-9 {
+		return donutSectorBorderWidth
+	}
+
+	if radialEdgesFit(node, donutSectorBorderWidth) {
+		return donutSectorBorderWidth
+	}
+
+	low, high := 0.0, donutSectorBorderWidth
+	for range 32 {
+		candidate := (low + high) / 2
+		if radialEdgesFit(node, candidate) {
+			low = candidate
+		} else {
+			high = candidate
+		}
+	}
+
+	return low
+}
+
+func radialEdgesFit(node DonutNode, borderWidth float64) bool {
+	halfWidth := borderWidth / 2
+	radius := node.InnerRadius + halfWidth
+	inset := radialEdgeInset(radius, halfWidth, node.SweepAngle/2)
+	centerlineSweep := node.SweepAngle - 2*inset
+	separation := 2 * radius * math.Sin(centerlineSweep/2)
+
+	return separation >= borderWidth
+}
+
+func radialEdgeInset(radius, halfWidth, maxInset float64) float64 {
+	if radius <= 0 || halfWidth <= 0 || maxInset <= 0 {
+		return 0
+	}
+
+	return math.Min(math.Asin(math.Min(halfWidth/radius, 1)), maxInset)
+}
+
+func sectorSteps(sweepAngle float64) int {
+	return max(2, int(math.Ceil(sweepAngle/(2*math.Pi)*64)))
 }
 
 func polarPosition(center canvas.Position, radius, angle float64) canvas.Position {

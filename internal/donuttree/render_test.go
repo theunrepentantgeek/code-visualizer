@@ -150,37 +150,71 @@ func TestBuildLegendStage_OmitsDerivedMetricsFromLabelSample(t *testing.T) {
 	g.Expect(state.LegendConfig.LabelSample.Lines).To(Equal([]string{"directory-name", "file-lines.sum"}))
 }
 
-func TestRenderToCanvas_UsesNoBorderUnlessConfigured(t *testing.T) {
+func TestRenderToCanvas_OmitsBorderPolygonsUnlessConfigured(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	root := donutRoot()
 	layout := Layout(root, 600, filesystem.FileLines)
 
-	withoutBorder := renderCalls(t, RenderToCanvas(
+	polygons := callsNamed(renderCalls(t, RenderToCanvas(
 		layout, root, 600, 600,
 		BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", ""),
 		LabelMetrics{Size: filesystem.FileLines},
-	))
-	for _, call := range callsNamed(withoutBorder, "DrawPolygon") {
+	)), "DrawPolygon")
+
+	g.Expect(polygons).To(HaveLen(2))
+
+	for _, call := range polygons {
 		g.Expect(call.BorderWidth).To(BeZero())
 	}
+}
 
-	root.SetQuantity(metric.Name("file-freshness.sum"), 1)
-	root.Dirs[0].SetQuantity(metric.Name("file-freshness.sum"), 1)
-	root.Dirs[0].Dirs[0].SetQuantity(metric.Name("file-freshness.sum"), 1)
+func TestRenderToCanvas_InsetsMetricBordersInsideAdjacentSectors(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
 
-	withBorder := renderCalls(t, RenderToCanvas(
+	left := donutDirectory("left", 100)
+	right := donutDirectory("right", 100)
+	root := donutDirectory("root", 200)
+	root.Dirs = []*model.Directory{left, right}
+
+	const borderMetric = metric.Name("file-freshness.sum")
+	left.SetQuantity(borderMetric, 1)
+	right.SetQuantity(borderMetric, 2)
+
+	layout := Layout(root, 600, filesystem.FileLines)
+	is := BuildInks(
+		root,
+		stages.CollectRequestedMetrics(borderMetric),
+		filesystem.FileLines,
+		palette.Neutral,
+		borderMetric,
+		palette.GoodBad,
+	)
+	polygons := callsNamed(renderCalls(t, RenderToCanvas(
 		layout, root, 600, 600,
-		BuildInks(
-			root, stages.CollectRequestedMetrics(metric.Name("file-freshness.sum")),
-			filesystem.FileLines, palette.Neutral,
-			"file-freshness.sum", palette.GoodBad,
-		),
+		is,
 		LabelMetrics{Size: filesystem.FileLines},
-	))
-	for _, call := range callsNamed(withBorder, "DrawPolygon") {
-		g.Expect(call.BorderWidth).To(Equal(1.0))
+	)), "DrawPolygon")
+
+	g.Expect(polygons).To(HaveLen(4))
+
+	for index := 0; index < len(polygons); index += 2 {
+		fill := polygons[index]
+		border := polygons[index+1]
+
+		g.Expect(fill.BorderWidth).To(BeZero())
+		g.Expect(fill.Points).To(Equal(sectorPoints(layout.Children[index/2], layout.Center)))
+		g.Expect(border.Fill.A).To(BeZero())
+		g.Expect(border.BorderWidth).To(Equal(donutSectorBorderWidth))
 	}
+
+	leftBorder := polygons[1].Points
+	rightBorder := polygons[3].Points
+	leftEnd := leftBorder[len(leftBorder)/2-1]
+	rightStart := rightBorder[0]
+	g.Expect(math.Hypot(leftEnd.X-rightStart.X, leftEnd.Y-rightStart.Y)).
+		To(BeNumerically("~", donutSectorBorderWidth, 0.000001))
 }
 
 func TestRenderToCanvas_UsesContrastSafeSectorLabelInks(t *testing.T) {
@@ -261,15 +295,119 @@ func TestSectorPoints_FollowsAnnularBoundarySampling(t *testing.T) {
 	}
 }
 
+func TestInsetSectorPoints_KeepsBorderStrokeInsideSector(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	node := DonutNode{
+		StartAngle:  0,
+		SweepAngle:  math.Pi / 3,
+		InnerRadius: 40,
+		OuterRadius: 80,
+	}
+	center := canvas.Position{X: 120, Y: 160}
+	points := insetSectorPoints(node, center, donutSectorBorderWidth)
+	halfWidth := donutSectorBorderWidth / 2
+	outerCount := sectorSteps(node.SweepAngle) + 1
+
+	for _, point := range points {
+		g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(BeFalse())
+		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
+	}
+
+	g.Expect(math.Hypot(points[0].X-center.X, points[0].Y-center.Y)).
+		To(BeNumerically("~", node.OuterRadius-halfWidth, 0.000001))
+	g.Expect(math.Hypot(points[outerCount].X-center.X, points[outerCount].Y-center.Y)).
+		To(BeNumerically("~", node.InnerRadius+halfWidth, 0.000001))
+	g.Expect(math.Abs(points[0].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
+	g.Expect(math.Abs(points[len(points)-2].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
+}
+
+func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	node := DonutNode{
+		StartAngle:  0,
+		SweepAngle:  math.Pi / 10000,
+		InnerRadius: 40,
+		OuterRadius: 80,
+	}
+
+	points := insetSectorPoints(node, canvas.Position{X: 120, Y: 160}, donutSectorBorderWidth)
+	for _, point := range points {
+		g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(BeFalse())
+		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
+	}
+
+	g.Expect(math.Hypot(
+		points[0].X-points[sectorSteps(node.SweepAngle)].X,
+		points[0].Y-points[sectorSteps(node.SweepAngle)].Y,
+	)).To(BeNumerically(">", 0))
+}
+
+func TestInsetSectorPoints_ScalesNarrowAdjacentBordersToRemainDisjoint(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	center := canvas.Position{X: 120, Y: 160}
+	left := DonutNode{
+		StartAngle:  0,
+		SweepAngle:  math.Pi / 180,
+		InnerRadius: 50,
+		OuterRadius: 100,
+	}
+	right := left
+	right.StartAngle = left.EndAngle()
+
+	borderWidth := sectorBorderWidth(left)
+	leftPoints := insetSectorPoints(left, center, borderWidth)
+	rightPoints := insetSectorPoints(right, center, borderWidth)
+	leftEnd := leftPoints[sectorSteps(left.SweepAngle)]
+	rightStart := rightPoints[0]
+
+	g.Expect(borderWidth).To(BeNumerically("<", donutSectorBorderWidth))
+	g.Expect(math.Hypot(leftEnd.X-rightStart.X, leftEnd.Y-rightStart.Y)).
+		To(BeNumerically("~", borderWidth, 0.000001))
+
+	leftStartInner := leftPoints[len(leftPoints)-2]
+	leftEndInner := leftPoints[sectorSteps(left.SweepAngle)+1]
+	g.Expect(math.Hypot(
+		leftStartInner.X-leftEndInner.X,
+		leftStartInner.Y-leftEndInner.Y,
+	)).To(BeNumerically(">=", borderWidth-0.000001))
+}
+
+func TestSectorBorderWidth_PreservesFullCircleBorders(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(sectorBorderWidth(DonutNode{
+		SweepAngle:  2 * math.Pi,
+		InnerRadius: 50,
+		OuterRadius: 100,
+	})).To(Equal(donutSectorBorderWidth))
+}
+
 func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	const width, height = 360, 240
+	const (
+		width, height = 360, 240
+		borderMetric  = metric.Name("file-freshness.sum")
+	)
 
 	root := donutRoot()
+	root.SetQuantity(borderMetric, 1)
+	root.Dirs[0].SetQuantity(borderMetric, 2)
+	root.Dirs[0].Dirs[0].SetQuantity(borderMetric, 3)
 	layout := Layout(root, width, filesystem.FileLines)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := BuildInks(
+		root,
+		stages.CollectRequestedMetrics(borderMetric),
+		filesystem.FileLines,
+		palette.Neutral,
+		borderMetric,
+		palette.GoodBad,
+	)
 	cv := RenderToCanvas(layout, root, width, height, is, LabelMetrics{Size: filesystem.FileLines})
 	outputDir := donutOutputDir(t)
 
@@ -305,6 +443,8 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	data, err := os.ReadFile(svgPath)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(data).NotTo(BeEmpty())
+	g.Expect(string(data)).To(ContainSubstring(`fill="rgba(0,0,0,0.000)"`))
+	g.Expect(string(data)).To(ContainSubstring(`stroke-width="1.000"`))
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	token, err := decoder.Token()
