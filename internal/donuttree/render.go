@@ -87,12 +87,6 @@ func addDonutSectors(
 			Fill: is.Fill, Border: is.Border,
 		},
 	}
-	borderSpec := &canvas.PolygonSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill: transparentInk, Border: is.Border, BorderWidth: donutSectorBorderWidth,
-		},
-	}
-
 	for _, node := range nodes {
 		fillValue := inks.MetricValueForDirectory(node.Directory, is.Fill)
 		cv.AddPolygon(canvas.LayerContent, canvas.Polygon{
@@ -103,9 +97,15 @@ func addDonutSectors(
 		})
 
 		if is.HasBorderMetric {
+			borderWidth := sectorBorderWidth(node)
+			borderSpec := &canvas.PolygonSpec{
+				ShapeStyle: canvas.ShapeStyle{
+					Fill: transparentInk, Border: is.Border, BorderWidth: borderWidth,
+				},
+			}
 			cv.AddPolygon(canvas.LayerContent, canvas.Polygon{
 				Spec:   borderSpec,
-				Points: insetSectorPoints(node, center, donutSectorBorderWidth),
+				Points: insetSectorPoints(node, center, borderWidth),
 				Border: inks.MetricValueForDirectory(node.Directory, is.Border),
 			})
 		}
@@ -161,6 +161,17 @@ func insetSectorPoints(node DonutNode, center canvas.Position, borderWidth float
 	points = append(points, points[0])
 
 	return points
+}
+
+func sectorBorderWidth(node DonutNode) float64 {
+	sine := math.Sin(node.SweepAngle / 2)
+	if sine >= 1 {
+		return donutSectorBorderWidth
+	}
+
+	maxWidth := 2 * node.InnerRadius * sine / (1 - sine)
+
+	return math.Min(donutSectorBorderWidth, maxWidth)
 }
 
 func radialEdgeInset(radius, halfWidth, maxInset float64) float64 {

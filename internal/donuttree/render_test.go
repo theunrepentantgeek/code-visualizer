@@ -344,6 +344,30 @@ func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
 	)).To(BeNumerically(">", 0))
 }
 
+func TestInsetSectorPoints_ScalesNarrowAdjacentBordersToRemainDisjoint(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	center := canvas.Position{X: 120, Y: 160}
+	left := DonutNode{
+		StartAngle:  0,
+		SweepAngle:  math.Pi / 180,
+		InnerRadius: 50,
+		OuterRadius: 100,
+	}
+	right := left
+	right.StartAngle = left.EndAngle()
+
+	borderWidth := sectorBorderWidth(left)
+	leftPoints := insetSectorPoints(left, center, borderWidth)
+	rightPoints := insetSectorPoints(right, center, borderWidth)
+	leftEnd := leftPoints[sectorSteps(left.SweepAngle)]
+	rightStart := rightPoints[0]
+
+	g.Expect(borderWidth).To(BeNumerically("<", donutSectorBorderWidth))
+	g.Expect(math.Hypot(leftEnd.X-rightStart.X, leftEnd.Y-rightStart.Y)).
+		To(BeNumerically("~", borderWidth, 0.000001))
+}
+
 func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
