@@ -3,32 +3,65 @@ package scatter
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
-// PointDatum holds the resolved metric values for one plottable file.
-type PointDatum struct {
-	File *model.File
-	X    AxisValue
-	Y    AxisValue
-	Size float64
+type metricSource interface {
+	Quantity(name metric.Name) (int64, bool)
+	Measure(name metric.Name) (float64, bool)
+	Classification(name metric.Name) (string, bool)
 }
 
-// SkipCounts records how many files were excluded for missing required values.
+// PointDatum holds the resolved metric values for one plottable node.
+type PointDatum struct {
+	File      *model.File
+	Directory *model.Directory
+	X         AxisValue
+	Y         AxisValue
+	Size      float64
+}
+
+// Name returns the display name of the point's file or directory.
+func (p PointDatum) Name() string {
+	if p.Directory != nil {
+		return p.Directory.Name
+	}
+
+	if p.File != nil {
+		return p.File.Name
+	}
+
+	return ""
+}
+
+func (p PointDatum) metricContainer() *model.MetricContainer {
+	if p.Directory != nil {
+		return &p.Directory.MetricContainer
+	}
+
+	if p.File != nil {
+		return &p.File.MetricContainer
+	}
+
+	return nil
+}
+
+// SkipCounts records how many nodes were excluded for missing required values.
 type SkipCounts struct {
 	MissingX    int
 	MissingY    int
 	MissingSize int
 }
 
-// Total returns the total number of files skipped for any reason.
-// Note: a single file may be counted in multiple fields if it is missing
+// Total returns the total number of nodes skipped for any reason.
+// Note: a single node may be counted in multiple fields if it is missing
 // more than one required value, so Total may exceed the number of distinct
 // skipped files.
 func (s SkipCounts) Total() int {
 	return s.MissingX + s.MissingY + s.MissingSize
 }
 
-// Dataset is the subset of files that can be plotted, plus skip statistics.
+// Dataset is the subset of nodes that can be plotted, plus skip statistics.
 type Dataset struct {
 	Points  []PointDatum
 	Skipped SkipCounts
@@ -38,67 +71,112 @@ type Dataset struct {
 func (d Dataset) Files() []*model.File {
 	files := make([]*model.File, 0, len(d.Points))
 	for _, point := range d.Points {
-		files = append(files, point.File)
+		if point.File != nil {
+			files = append(files, point.File)
+		}
 	}
 
 	return files
 }
 
-// CollectDataset walks the tree and keeps only files with X, Y, and size values.
-func CollectDataset(root *model.Directory, xAxis, yAxis AxisSpec, sizeMetric metric.Name) Dataset {
+func (d Dataset) metricSources() []metricSource {
+	sources := make([]metricSource, 0, len(d.Points))
+	for _, point := range d.Points {
+		if point.Directory != nil {
+			sources = append(sources, point.Directory)
+		} else if point.File != nil {
+			sources = append(sources, point.File)
+		}
+	}
+
+	return sources
+}
+
+// CollectDataset walks nodes at the selected grain and keeps those with X, Y, and size values.
+func CollectDataset(
+	root *model.Directory,
+	grain viz.Grain,
+	xAxis, yAxis AxisSpec,
+	sizeMetric metric.Name,
+) Dataset {
 	dataset := Dataset{}
 	if root == nil {
 		return dataset
 	}
 
-	// Pre-size to avoid repeated slice reallocations. AllFileCount is zero
-	// for manually-constructed trees (tests), which is harmless.
-	dataset.Points = make([]PointDatum, 0, root.AllFileCount)
+	dataset.Points = make([]PointDatum, 0, datasetCapacity(root, grain))
 
-	model.WalkFiles(root, func(file *model.File) {
-		x, okX := axisValueForFile(file, xAxis)
-		y, okY := axisValueForFile(file, yAxis)
-		size, okSize := numericValueForFile(file, sizeMetric)
+	if grain == viz.GrainDirectory {
+		for _, child := range root.Dirs {
+			if child == nil {
+				continue
+			}
 
-		if !okX {
-			dataset.Skipped.MissingX++
+			model.WalkDirectories(child, func(dir *model.Directory) {
+				collectPoint(&dataset, PointDatum{Directory: dir}, xAxis, yAxis, sizeMetric)
+			})
 		}
-
-		if !okY {
-			dataset.Skipped.MissingY++
-		}
-
-		if !okSize {
-			dataset.Skipped.MissingSize++
-		}
-
-		if !okX || !okY || !okSize {
-			return
-		}
-
-		dataset.Points = append(dataset.Points, PointDatum{
-			File: file,
-			X:    x,
-			Y:    y,
-			Size: size,
+	} else {
+		model.WalkFiles(root, func(file *model.File) {
+			collectPoint(&dataset, PointDatum{File: file}, xAxis, yAxis, sizeMetric)
 		})
-	})
+	}
 
 	return dataset
 }
 
-func axisValueForFile(file *model.File, axis AxisSpec) (AxisValue, bool) {
+func datasetCapacity(root *model.Directory, grain viz.Grain) int {
+	if grain == viz.GrainDirectory {
+		return root.AllDirCount
+	}
+
+	return root.AllFileCount
+}
+
+func collectPoint(d *Dataset, point PointDatum, xAxis, yAxis AxisSpec, sizeMetric metric.Name) {
+	container := point.metricContainer()
+	x, okX := axisValueForContainer(container, xAxis)
+	y, okY := axisValueForContainer(container, yAxis)
+	size, okSize := numericValueForContainer(container, sizeMetric)
+
+	if !okX {
+		d.Skipped.MissingX++
+	}
+
+	if !okY {
+		d.Skipped.MissingY++
+	}
+
+	if !okSize {
+		d.Skipped.MissingSize++
+	}
+
+	if !okX || !okY || !okSize {
+		return
+	}
+
+	point.X = x
+	point.Y = y
+	point.Size = size
+	d.Points = append(d.Points, point)
+}
+
+func axisValueForContainer(container *model.MetricContainer, axis AxisSpec) (AxisValue, bool) {
+	if container == nil {
+		return AxisValue{}, false
+	}
+
 	switch axis.Kind {
 	case metric.Classification:
-		if value, ok := file.Classification(axis.Metric); ok {
+		if value, ok := container.Classification(axis.Metric); ok {
 			return AxisValue{Category: value}, true
 		}
 	default:
-		if value, ok := file.Quantity(axis.Metric); ok {
+		if value, ok := container.Quantity(axis.Metric); ok {
 			return AxisValue{Numeric: float64(value)}, true
 		}
 
-		if value, ok := file.Measure(axis.Metric); ok {
+		if value, ok := container.Measure(axis.Metric); ok {
 			return AxisValue{Numeric: value}, true
 		}
 	}
@@ -106,12 +184,16 @@ func axisValueForFile(file *model.File, axis AxisSpec) (AxisValue, bool) {
 	return AxisValue{}, false
 }
 
-func numericValueForFile(file *model.File, name metric.Name) (float64, bool) {
-	if value, ok := file.Quantity(name); ok {
+func numericValueForContainer(container *model.MetricContainer, name metric.Name) (float64, bool) {
+	if container == nil {
+		return 0, false
+	}
+
+	if value, ok := container.Quantity(name); ok {
 		return float64(value), true
 	}
 
-	if value, ok := file.Measure(name); ok {
+	if value, ok := container.Measure(name); ok {
 		return value, true
 	}
 

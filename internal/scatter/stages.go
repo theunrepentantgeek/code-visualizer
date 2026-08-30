@@ -11,31 +11,36 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // ResolveMetrics resolves scatter axes, size, fill, and border settings.
 func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error {
-	if stages.PtrString(cfg.XAxis) == "" {
-		return eris.New("x-axis metric is required")
-	}
-
-	xAxis, err := resolveAxisSpec(cfg.XAxis, cfg.XScale)
+	grain, err := resolveGrain(cfg)
 	if err != nil {
-		return eris.Wrap(err, "invalid x-axis configuration")
+		return err
 	}
 
-	if stages.PtrString(cfg.YAxis) == "" {
-		return eris.New("y-axis metric is required")
-	}
+	x.Grain = grain
+	level := metricLevelForGrain(grain)
 
-	yAxis, err := resolveAxisSpec(cfg.YAxis, cfg.YScale)
+	xAxis, err := resolveRequiredAxis("x-axis", cfg.XAxis, cfg.XScale, level)
 	if err != nil {
-		return eris.Wrap(err, "invalid y-axis configuration")
+		return err
 	}
 
-	size := metric.Name(stages.PtrString(cfg.Size))
-	if size == "" {
-		return eris.New("size metric is required")
+	yAxis, err := resolveRequiredAxis("y-axis", cfg.YAxis, cfg.YScale, level)
+	if err != nil {
+		return err
+	}
+
+	size, err := resolveSizeMetric(cfg.Size, level)
+	if err != nil {
+		return err
+	}
+
+	if err := validateColourMetrics(cfg, level); err != nil {
+		return err
 	}
 
 	x.XAxis = xAxis
@@ -44,15 +49,72 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 	x.FillMetric = resolveFillMetric(cfg, size)
 	x.FillPalette = stages.ResolveFillPalette(cfg.Fill, x.FillMetric)
 	x.BorderMetric, x.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
-	c.Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border)
+	c.Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border, level)
 
 	return nil
 }
 
-func resolveAxisSpec(name *string, scale *string) (AxisSpec, error) {
+func resolveRequiredAxis(
+	label string,
+	name, scale *string,
+	level metric.MetricLevel,
+) (AxisSpec, error) {
+	if stages.PtrString(name) == "" {
+		return AxisSpec{}, eris.Errorf("%s metric is required", label)
+	}
+
+	axis, err := resolveAxisSpec(name, scale, level)
+	if err != nil {
+		return AxisSpec{}, eris.Wrapf(err, "invalid %s configuration", label)
+	}
+
+	return axis, nil
+}
+
+func resolveSizeMetric(name *string, level metric.MetricLevel) (metric.Name, error) {
+	size := metric.Name(stages.PtrString(name))
+	if size == "" {
+		return "", eris.New("size metric is required")
+	}
+
+	resolved, err := provider.ResolveName(size, level)
+	if err != nil {
+		return "", eris.Wrapf(err, "invalid size metric %q", size)
+	}
+
+	if resolved.ResultKind != metric.Quantity && resolved.ResultKind != metric.Measure {
+		return "", eris.Errorf("size metric must be numeric, got %q", size)
+	}
+
+	return size, nil
+}
+
+func validateColourMetrics(cfg *config.Scatter, level metric.MetricLevel) error {
+	specs := []struct {
+		label string
+		name  metric.Name
+	}{
+		{label: "fill", name: cfg.Fill.MetricName()},
+		{label: "border", name: cfg.Border.MetricName()},
+	}
+
+	for _, spec := range specs {
+		if spec.name == "" {
+			continue
+		}
+
+		if _, err := provider.ResolveName(spec.name, level); err != nil {
+			return eris.Wrapf(err, "invalid %s metric %q", spec.label, spec.name)
+		}
+	}
+
+	return nil
+}
+
+func resolveAxisSpec(name *string, scale *string, level metric.MetricLevel) (AxisSpec, error) {
 	metricName := metric.Name(stages.PtrString(name))
 
-	resolved, err := provider.ResolveName(metricName, metric.LevelFile)
+	resolved, err := provider.ResolveName(metricName, level)
 	if err != nil {
 		return AxisSpec{}, eris.Wrapf(err, "invalid axis metric %q", metricName)
 	}
@@ -87,7 +149,11 @@ func resolveFillMetric(cfg *config.Scatter, size metric.Name) metric.Name {
 	return size
 }
 
-func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *config.MetricSpec) stages.RequestedMetrics {
+func collectRequestedMetrics(
+	xAxis, yAxis, size metric.Name,
+	fill, border *config.MetricSpec,
+	level metric.MetricLevel,
+) stages.RequestedMetrics {
 	seen := map[metric.Name]bool{}
 	names := make([]metric.Name, 0, 5)
 
@@ -100,12 +166,31 @@ func collectRequestedMetrics(xAxis, yAxis, size metric.Name, fill, border *confi
 		names = append(names, name)
 	}
 
-	return stages.ClassifyRequestedMetrics(names, metric.LevelDirectory)
+	return stages.ClassifyRequestedMetrics(names, level)
+}
+
+func resolveGrain(cfg *config.Scatter) (viz.Grain, error) {
+	switch grain := stages.PtrString(cfg.Grain); grain {
+	case "", string(viz.GrainFile):
+		return viz.GrainFile, nil
+	case string(viz.GrainDirectory):
+		return viz.GrainDirectory, nil
+	default:
+		return "", eris.Errorf("unknown grain %q; must be \"file\" or \"directory\"", grain)
+	}
+}
+
+func metricLevelForGrain(grain viz.Grain) metric.MetricLevel {
+	if grain == viz.GrainDirectory {
+		return metric.LevelDirectory
+	}
+
+	return metric.LevelFile
 }
 
 // BuildInksStage collects plottable files and creates point inks.
 func BuildInksStage(c *stages.CommonState, x *State) error {
-	x.Dataset = CollectDataset(c.Root, x.XAxis, x.YAxis, x.Size)
+	x.Dataset = CollectDataset(c.Root, x.Grain, x.XAxis, x.YAxis, x.Size)
 
 	if err := ValidateLogScale(x.Dataset, x.XAxis, x.YAxis); err != nil {
 		return err
@@ -138,8 +223,8 @@ func validateAxisPositive(points []PointDatum, axis AxisSpec, label string, valu
 	for _, point := range points {
 		if value(point) <= 0 {
 			return eris.Errorf(
-				"log scale on %s requires all values to be positive; file %q has value %g",
-				label, point.File.Name, value(point),
+				"log scale on %s requires all values to be positive; node %q has value %g",
+				label, point.Name(), value(point),
 			)
 		}
 	}
@@ -205,7 +290,8 @@ func LogResult(c *stages.CommonState, x *State) error {
 
 	slog.Info(
 		"Rendered scatter plot",
-		"files", len(x.Dataset.Points),
+		"nodes", len(x.Dataset.Points),
+		"grain", string(x.Grain),
 		"skipped_missing_x", x.Dataset.Skipped.MissingX,
 		"skipped_missing_y", x.Dataset.Skipped.MissingY,
 		"skipped_missing_size", x.Dataset.Skipped.MissingSize,

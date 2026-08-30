@@ -11,11 +11,13 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func renderScatterFile(name, category string, lines, size int64) *model.File {
@@ -37,6 +39,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 	}}
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,
@@ -48,8 +51,8 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 	)
-	inks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(layout, 800, 600, inks)
+	pointInks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := RenderToCanvas(layout, 800, 600, pointInks)
 
 	out := filepath.Join(t.TempDir(), "scatter.png")
 	g.Expect(cv.Render(out)).To(Succeed())
@@ -74,6 +77,7 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 	}}
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,
@@ -85,8 +89,8 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 	)
-	inks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
-	cv := RenderToCanvas(layout, 800, 600, inks)
+	pointInks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	cv := RenderToCanvas(layout, 800, 600, pointInks)
 
 	out := filepath.Join(t.TempDir(), "scatter.svg")
 	g.Expect(cv.Render(out)).To(Succeed())
@@ -115,4 +119,19 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 	}
 
 	g.Expect(rootElement).To(Equal("svg"))
+}
+
+func TestMetricValueForPoint_DirectoryUsesDirectoryMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const sizeMetric = metric.Name("file-size.sum")
+
+	dir := &model.Directory{Name: "src"}
+	dir.SetQuantity(sizeMetric, 300)
+	ink := inks.NumericInk(sizeMetric, []float64{100, 300}, palette.GetPalette(palette.Temperature))
+
+	value := metricValueForPoint(ScatterPoint{Directory: dir}, ink)
+
+	g.Expect(value).To(Equal(inks.QuantityValue(300)))
 }

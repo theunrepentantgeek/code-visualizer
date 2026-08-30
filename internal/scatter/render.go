@@ -217,8 +217,8 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 	lightLabelInk := inks.FixedInk(canvas.TextColourFor(darkLabelColour))
 
 	for _, point := range points {
-		fillValue := inks.MetricValueForFile(point.File, is.Fill)
-		borderValue := inks.MetricValueForFile(point.File, is.Border)
+		fillValue := metricValueForPoint(point, is.Fill)
+		borderValue := metricValueForPoint(point, is.Border)
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   discSpec,
 			X:      point.X,
@@ -250,6 +250,14 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 			Content: label,
 		})
 	}
+}
+
+func metricValueForPoint(point ScatterPoint, ink inks.Ink) inks.MetricValue {
+	if point.Directory != nil {
+		return inks.MetricValueForDirectory(point.Directory, ink)
+	}
+
+	return inks.MetricValueForFile(point.File, ink)
 }
 
 func scatterLabel(label string, radius float64) (string, float64) {

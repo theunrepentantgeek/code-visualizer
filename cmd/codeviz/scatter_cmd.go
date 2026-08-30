@@ -7,8 +7,10 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	vizpkg "github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 type ScatterCmd struct {
@@ -26,6 +28,8 @@ type ScatterCmd struct {
 
 	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
+
+	Grain string `enum:",file,directory" default:"" help:"Granularity of nodes shown: file (default) or directory."`
 
 	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive,nolintlint // kong struct tags require long lines
@@ -53,18 +57,27 @@ func (c *ScatterCmd) Validate() error {
 }
 
 func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
-	if err := validateScatterAxisMetric("x-axis", cfg.XAxis); err != nil {
+	level, err := scatterMetricLevel(cfg.Grain)
+	if err != nil {
 		return err
 	}
 
-	if err := validateScatterAxisMetric("y-axis", cfg.YAxis); err != nil {
+	if err := validateScatterAxisMetric("x-axis", cfg.XAxis, level); err != nil {
 		return err
 	}
 
-	if err := validateNumericMetric("size", metric.Name(ptrString(cfg.Size))); err != nil {
+	if err := validateScatterAxisMetric("y-axis", cfg.YAxis, level); err != nil {
 		return err
 	}
 
+	if err := validateScatterNumericMetric("size", metric.Name(ptrString(cfg.Size)), level); err != nil {
+		return err
+	}
+
+	return validateScatterColours(cfg, level)
+}
+
+func validateScatterColours(cfg *config.Scatter, level metric.MetricLevel) error {
 	if err := cfg.Fill.Validate("fill"); err != nil {
 		return eris.Wrap(err, "invalid fill spec")
 	}
@@ -73,11 +86,77 @@ func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 		return eris.Wrap(err, "invalid border spec")
 	}
 
+	specs := []struct {
+		label string
+		name  metric.Name
+	}{
+		{label: "fill", name: cfg.Fill.MetricName()},
+		{label: "border", name: cfg.Border.MetricName()},
+	}
+
+	for _, spec := range specs {
+		if spec.name == "" {
+			continue
+		}
+
+		if _, err := resolveScatterMetric(spec.label, spec.name, level); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func validateScatterAxisMetric(label string, name *string) error {
-	return validateMetricExists(label, metric.Name(ptrString(name)))
+func scatterMetricLevel(grain *string) (metric.MetricLevel, error) {
+	switch value := ptrString(grain); value {
+	case "", string(vizpkg.GrainFile):
+		return metric.LevelFile, nil
+	case string(vizpkg.GrainDirectory):
+		return metric.LevelDirectory, nil
+	default:
+		return 0, eris.Errorf("unknown grain %q; must be \"file\" or \"directory\"", value)
+	}
+}
+
+func resolveScatterMetric(
+	label string,
+	name metric.Name,
+	level metric.MetricLevel,
+) (provider.ResolvedMetric, error) {
+	resolved, err := provider.ResolveName(name, level)
+	if err != nil {
+		return provider.ResolvedMetric{}, friendlyMetricError(label, name, err)
+	}
+
+	return resolved, nil
+}
+
+func validateScatterAxisMetric(label string, name *string, level metric.MetricLevel) error {
+	metricName := metric.Name(ptrString(name))
+	if metricName == "" {
+		return eris.Errorf("%s metric is required", label)
+	}
+
+	_, err := resolveScatterMetric(label, metricName, level)
+
+	return err
+}
+
+func validateScatterNumericMetric(label string, name metric.Name, level metric.MetricLevel) error {
+	if name == "" {
+		return eris.Errorf("%s metric is required", label)
+	}
+
+	resolved, err := resolveScatterMetric(label, name, level)
+	if err != nil {
+		return err
+	}
+
+	if resolved.ResultKind != metric.Quantity && resolved.ResultKind != metric.Measure {
+		return eris.Errorf("%s metric must be numeric, got %q (kind: %d)", label, name, resolved.ResultKind)
+	}
+
+	return nil
 }
 
 func (c *ScatterCmd) mergeConfigAndValidate(flags *Flags) error {
@@ -145,6 +224,7 @@ func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
 	cfg.Scatter.OverrideYScale(c.YScale)
 	cfg.Scatter.OverrideFill(c.Fill)
 	cfg.Scatter.OverrideBorder(c.Border)
+	cfg.Scatter.OverrideGrain(c.Grain)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

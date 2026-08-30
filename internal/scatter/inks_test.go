@@ -10,7 +10,9 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 // uniqueCategories
@@ -84,6 +86,28 @@ func TestBuildCategoricalInk_WithCategories_ReturnsCategoricalInk(t *testing.T) 
 	)
 
 	g.Expect(ink.Info().Kind).To(Equal(inks.KindCategorical))
+}
+
+func TestBuildInks_DirectoryPointsUseDirectoryMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const sizeMetric = metric.Name("file-size.sum")
+
+	dir := &model.Directory{Name: "src"}
+	dir.SetQuantity(sizeMetric, 300)
+	dataset := Dataset{Points: []PointDatum{{Directory: dir, Size: 300}}}
+	requested := stages.RequestedMetrics{
+		Expressions: []provider.ResolvedMetric{{
+			ResultName: sizeMetric,
+			ResultKind: metric.Quantity,
+		}},
+	}
+
+	result := BuildInks(dataset, requested, sizeMetric, palette.Temperature, "", "")
+
+	g.Expect(result.Fill.Info().Kind).To(Equal(inks.KindNumeric))
+	g.Expect(result.Fill.Info().MetricName).To(Equal(sizeMetric))
 }
 
 // categoricalPosition

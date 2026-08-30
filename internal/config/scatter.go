@@ -4,6 +4,7 @@ package config
 // All fields are pointers: nil means the field was not configured, non-nil
 // means it was explicitly set (by a config file or by a CLI flag override).
 type Scatter struct {
+	Grain  *string     `yaml:"grain,omitempty"             json:"grain,omitempty"`
 	XAxis  *string     `yaml:"xAxis,omitempty"             json:"xAxis,omitempty"`
 	YAxis  *string     `yaml:"yAxis,omitempty"             json:"yAxis,omitempty"`
 	Size   *string     `yaml:"size,omitempty"              json:"size,omitempty"`
@@ -12,6 +13,9 @@ type Scatter struct {
 	XScale *string     `yaml:"xScale,omitempty"            json:"xScale,omitempty"`
 	YScale *string     `yaml:"yScale,omitempty"            json:"yScale,omitempty"`
 }
+
+// OverrideGrain sets Grain to v if v is non-empty.
+func (s *Scatter) OverrideGrain(v string) { overrideString(&s.Grain, v) }
 
 // OverrideXAxis sets XAxis to v if v is non-empty.
 func (s *Scatter) OverrideXAxis(v string) { overrideString(&s.XAxis, v) }

@@ -10,6 +10,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func scatterTestFile(name string) *model.File {
@@ -41,6 +42,7 @@ func TestCollectDataset_SkipsFilesMissingAxisOrSize(t *testing.T) {
 
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,
@@ -51,6 +53,39 @@ func TestCollectDataset_SkipsFilesMissingAxisOrSize(t *testing.T) {
 	g.Expect(dataset.Skipped.MissingX).To(Equal(1))
 	g.Expect(dataset.Skipped.MissingY).To(Equal(1))
 	g.Expect(dataset.Skipped.MissingSize).To(Equal(1))
+}
+
+func TestCollectDataset_DirectoryGrainExcludesRootAndIncludesDescendants(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const (
+		xMetric = metric.Name("file-lines.sum")
+		yMetric = metric.Name("file-size.sum")
+	)
+
+	root := &model.Directory{Name: "root"}
+	child := &model.Directory{Name: "child"}
+	grandchild := &model.Directory{Name: "grandchild"}
+	root.Dirs = []*model.Directory{child}
+	child.Dirs = []*model.Directory{grandchild}
+
+	for i, dir := range []*model.Directory{root, child, grandchild} {
+		dir.SetQuantity(xMetric, int64(i+1))
+		dir.SetQuantity(yMetric, int64((i+1)*10))
+	}
+
+	dataset := CollectDataset(
+		root,
+		viz.GrainDirectory,
+		AxisSpec{Metric: xMetric, Kind: metric.Quantity},
+		AxisSpec{Metric: yMetric, Kind: metric.Quantity},
+		yMetric,
+	)
+
+	g.Expect(dataset.Points).To(HaveLen(2))
+	g.Expect([]string{dataset.Points[0].Name(), dataset.Points[1].Name()}).
+		To(ConsistOf("child", "grandchild"))
 }
 
 func TestDataset_Files_ReturnsFilesInOrder(t *testing.T) {
@@ -74,6 +109,21 @@ func TestDataset_Files_EmptyDataset_ReturnsEmpty(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	g.Expect(Dataset{}.Files()).To(BeEmpty())
+}
+
+func TestDataset_Files_OmitsDirectoryPoints(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	file := scatterTestFile("main.go")
+	dataset := Dataset{
+		Points: []PointDatum{
+			{Directory: &model.Directory{Name: "src"}},
+			{File: file},
+		},
+	}
+
+	g.Expect(dataset.Files()).To(Equal([]*model.File{file}))
 }
 
 func TestSkipCounts_Total_SumsAllFields(t *testing.T) {
@@ -111,6 +161,7 @@ func TestCollectDataset_SkipCountsReflectMissingValues(t *testing.T) {
 
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,
@@ -139,6 +190,7 @@ func TestLayout_CategoricalAxesUseAlphabeticalBands(t *testing.T) {
 	root := &model.Directory{Files: []*model.File{alpha, zeta}}
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: metric.Name("y-cat"), Kind: metric.Classification},
 		filesystem.FileSize,
@@ -178,6 +230,7 @@ func TestLayout_NumericYAxisPlacesHigherValuesHigherOnCanvas(t *testing.T) {
 	root := &model.Directory{Files: []*model.File{low, high}}
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,
@@ -217,6 +270,7 @@ func TestLayout_CrowdedPlotKeepsMinimumDiscRadius(t *testing.T) {
 	root := &model.Directory{Files: files}
 	dataset := CollectDataset(
 		root,
+		viz.GrainFile,
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 		filesystem.FileSize,
@@ -397,7 +451,7 @@ func TestLayout_LogScalePositionsPointsLogarithmically(t *testing.T) {
 	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
 	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
 
-	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	dataset := CollectDataset(root, viz.GrainFile, xAxis, yAxis, filesystem.FileSize)
 	layout := Layout(dataset, 800, 600, xAxis, yAxis)
 
 	points := map[string]ScatterPoint{}
@@ -432,13 +486,33 @@ func TestValidateLogScale_ErrorsOnZeroValue(t *testing.T) {
 	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
 	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
 
-	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	dataset := CollectDataset(root, viz.GrainFile, xAxis, yAxis, filesystem.FileSize)
 
 	err := ValidateLogScale(dataset, xAxis, yAxis)
 	g.Expect(err).To(HaveOccurred())
 	//nolint:nilaway,nolintlint // guarded by HaveOccurred above
 	g.Expect(err).To(MatchError(ContainSubstring("x-axis")))
 	g.Expect(err).To(MatchError(ContainSubstring("zero.go")))
+}
+
+func TestValidateLogScale_DirectoryErrorNamesNode(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := &model.Directory{Name: "empty"}
+	dataset := Dataset{Points: []PointDatum{{
+		Directory: dir,
+		X:         AxisValue{Numeric: 0},
+		Y:         AxisValue{Numeric: 1},
+		Size:      1,
+	}}}
+
+	err := ValidateLogScale(
+		dataset,
+		AxisSpec{Metric: "file-lines.sum", Kind: metric.Quantity, Scale: Log},
+		AxisSpec{Metric: "file-size.sum", Kind: metric.Quantity, Scale: Linear},
+	)
+
+	g.Expect(err).To(MatchError(ContainSubstring(`node "empty" has value 0`)))
 }
 
 func TestValidateLogScale_PassesWhenAllPositive(t *testing.T) {
@@ -457,7 +531,7 @@ func TestValidateLogScale_PassesWhenAllPositive(t *testing.T) {
 	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
 	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Log}
 
-	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	dataset := CollectDataset(root, viz.GrainFile, xAxis, yAxis, filesystem.FileSize)
 
 	err := ValidateLogScale(dataset, xAxis, yAxis)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -475,7 +549,7 @@ func TestValidateLogScale_SkipsLinearAxes(t *testing.T) {
 	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Linear}
 	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Linear}
 
-	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	dataset := CollectDataset(root, viz.GrainFile, xAxis, yAxis, filesystem.FileSize)
 
 	err := ValidateLogScale(dataset, xAxis, yAxis)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -494,7 +568,7 @@ func TestValidateLogScale_ErrorsOnYAxisNonPositive(t *testing.T) {
 	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Linear}
 	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Log}
 
-	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	dataset := CollectDataset(root, viz.GrainFile, xAxis, yAxis, filesystem.FileSize)
 
 	err := ValidateLogScale(dataset, xAxis, yAxis)
 	g.Expect(err).To(HaveOccurred())
@@ -516,7 +590,7 @@ func TestValidateLogScale_ReportsBothAxesWhenBothInvalid(t *testing.T) {
 	xAxis := AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: Log}
 	yAxis := AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: Log}
 
-	dataset := CollectDataset(root, xAxis, yAxis, filesystem.FileSize)
+	dataset := CollectDataset(root, viz.GrainFile, xAxis, yAxis, filesystem.FileSize)
 
 	err := ValidateLogScale(dataset, xAxis, yAxis)
 	g.Expect(err).To(HaveOccurred())
