@@ -44,8 +44,7 @@ func BenchmarkDrawRadialGradientDisc(b *testing.B) {
 	for range b.N {
 		be := New(200, 200)
 		be.DrawDisc(
-			geometry.Point{X: 100, Y: 100},
-			80,
+			geometry.Circle{Center: geometry.Point{X: 100, Y: 100}, Radius: 80},
 			grad, border, 1.0,
 		)
 	}

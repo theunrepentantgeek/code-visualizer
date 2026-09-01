@@ -61,7 +61,11 @@ func addRootAnchor(cv *canvas.Canvas, layout LayoutResult, root *model.Directory
 		},
 	}
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{
-		Spec: discSpec, X: layout.Center.X, Y: layout.Center.Y, Radius: layout.AnchorRadius,
+		Spec: discSpec,
+		Geometry: geometry.Circle{
+			Center: layout.Center,
+			Radius: layout.AnchorRadius,
+		},
 	})
 
 	labelSpec := &canvas.TextSpec{

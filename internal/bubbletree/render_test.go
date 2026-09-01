@@ -41,13 +41,12 @@ type captureBackend struct {
 func (*captureBackend) DrawRectangle(geometry.Rect, canvasmodel.Fill, canvasmodel.Fill, float64) {}
 
 func (c *captureBackend) DrawDisc(
-	_ geometry.Point,
-	radius float64,
+	circle geometry.Circle,
 	_ canvasmodel.Fill,
 	_ canvasmodel.Fill,
 	_ float64,
 ) {
-	c.discs = append(c.discs, capturedDisc{radius: radius})
+	c.discs = append(c.discs, capturedDisc{radius: circle.Radius})
 }
 
 func (*captureBackend) DrawPolygon([]geometry.Point, canvasmodel.Fill, canvasmodel.Fill, float64) {}

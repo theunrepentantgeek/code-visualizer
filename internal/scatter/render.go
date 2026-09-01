@@ -199,10 +199,11 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 		fillValue := metricValueForPoint(point, is.Fill)
 		borderValue := metricValueForPoint(point, is.Border)
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   discSpec,
-			X:      point.Position.X,
-			Y:      point.Position.Y,
-			Radius: point.Radius,
+			Spec: discSpec,
+			Geometry: geometry.Circle{
+				Center: point.Position,
+				Radius: point.Radius,
+			},
 			Fill:   fillValue,
 			Border: borderValue,
 		})

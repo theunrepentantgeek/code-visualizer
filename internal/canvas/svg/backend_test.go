@@ -57,8 +57,7 @@ func TestSVGBackend_UsesThreeDecimalPrecisionAcrossPrimitives(t *testing.T) {
 		0.4567,
 	)
 	b.DrawDisc(
-		geometry.Point{X: 50.1234, Y: 60.5678},
-		7.8912,
+		geometry.Circle{Center: geometry.Point{X: 50.1234, Y: 60.5678}, Radius: 7.8912},
 		model.SolidFill{Color: color.RGBA{R: 200, G: 100, B: 50, A: 255}},
 		model.SolidFill{Color: blk},
 		0.4567,
@@ -143,8 +142,8 @@ func TestSVGBackend_DrawDisc_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawDisc(
-		geometry.Point{X: 100, Y: 100},
-		50, model.SolidFill{Color: blue}, model.SolidFill{Color: blk}, 1.0,
+		geometry.Circle{Center: geometry.Point{X: 100, Y: 100}, Radius: 50},
+		model.SolidFill{Color: blue}, model.SolidFill{Color: blk}, 1.0,
 	)
 
 	out := filepath.Join(t.TempDir(), "disc.svg")

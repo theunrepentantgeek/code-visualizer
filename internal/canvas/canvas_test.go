@@ -97,10 +97,11 @@ func TestCanvas_AddDisc_DispatchesToBackend(t *testing.T) {
 	}
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
-		Spec:   spec,
-		X:      400,
-		Y:      300,
-		Radius: 50,
+		Spec: spec,
+		Geometry: geometry.Circle{
+			Center: geometry.Point{X: 400, Y: 300},
+			Radius: 50,
+		},
 	})
 
 	mb := mock.NewBackend()
@@ -551,7 +552,10 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
 		Spec: discSpec,
-		X:    650, Y: 125, Radius: 60,
+		Geometry: geometry.Circle{
+			Center: geometry.Point{X: 650, Y: 125},
+			Radius: 60,
+		},
 	})
 
 	textSpec := &canvas.TextSpec{
@@ -634,7 +638,10 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
 		Spec: discSpec,
-		X:    400, Y: 300, Radius: 100,
+		Geometry: geometry.Circle{
+			Center: geometry.Point{X: 400, Y: 300},
+			Radius: 100,
+		},
 	})
 
 	textSpec := &canvas.TextSpec{

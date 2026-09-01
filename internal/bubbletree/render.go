@@ -91,10 +91,11 @@ func addBubbleDirDiscs(
 
 	for _, e := range entries {
 		cv.AddDisc(canvas.LayerStructure, canvas.Disc{
-			Spec:   dirSpec,
-			X:      e.node.Position.X,
-			Y:      e.node.Position.Y,
-			Radius: bubbleDirDiscRadius(*e.node),
+			Spec: dirSpec,
+			Geometry: geometry.Circle{
+				Center: e.node.Position,
+				Radius: bubbleDirDiscRadius(*e.node),
+			},
 		})
 	}
 }
@@ -157,10 +158,11 @@ func addBubbleFileDiscsWalk(
 		borderMV := inks.MetricValueForFile(f, is.Border)
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   fileSpec,
-			X:      bn.Position.X,
-			Y:      bn.Position.Y,
-			Radius: bn.Radius,
+			Spec: fileSpec,
+			Geometry: geometry.Circle{
+				Center: bn.Position,
+				Radius: bn.Radius,
+			},
 			Fill:   fillMV,
 			Border: borderMV,
 		})

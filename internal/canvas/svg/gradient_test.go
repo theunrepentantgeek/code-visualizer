@@ -53,8 +53,7 @@ func TestSVGBackend_DrawDisc_WithRadialGradientFill_EmitsGradient(t *testing.T) 
 
 	backend := svgbackend.New(200, 200)
 	backend.DrawDisc(
-		geometry.Point{X: 100, Y: 100},
-		80,
+		geometry.Circle{Center: geometry.Point{X: 100, Y: 100}, Radius: 80},
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 			Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
@@ -142,8 +141,7 @@ func TestSVGBackend_DeduplicatesGradientAcrossRectAndDisc(t *testing.T) {
 		fill, border, 1.0,
 	)
 	backend.DrawDisc(
-		geometry.Point{X: 200, Y: 100},
-		80,
+		geometry.Circle{Center: geometry.Point{X: 200, Y: 100}, Radius: 80},
 		fill, border, 0,
 	)
 

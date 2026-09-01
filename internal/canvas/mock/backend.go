@@ -55,10 +55,10 @@ func (m *Backend) DrawRectangle(bounds geometry.Rect, fill, border model.Fill, b
 	})
 }
 
-func (m *Backend) DrawDisc(center geometry.Point, _ float64, fill, border model.Fill, borderWidth float64) {
+func (m *Backend) DrawDisc(circle geometry.Circle, fill, border model.Fill, borderWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawDisc",
-		Pos:         center,
+		Pos:         circle.Center,
 		Fill:        model.SolidColor(fill),
 		Border:      model.SolidColor(border),
 		RawFill:     fill,

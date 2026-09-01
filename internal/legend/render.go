@@ -401,7 +401,11 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 			},
 		}
 		lb.cv.AddDisc(canvas.LayerOverlay, canvas.Disc{
-			Spec: spec, X: x + w/2, Y: y + h/2, Radius: min(w, h) / 2,
+			Spec: spec,
+			Geometry: geometry.Circle{
+				Center: geometry.Point{X: x + w/2, Y: y + h/2},
+				Radius: min(w, h) / 2,
+			},
 		})
 	case model.LegendLabelSampleArc:
 		lb.addArcLabelSample(x, y, w, h)

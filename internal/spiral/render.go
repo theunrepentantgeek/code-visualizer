@@ -225,10 +225,11 @@ func addDiscs(
 		}
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   spec,
-			X:      n.Position.X,
-			Y:      n.Position.Y,
-			Radius: n.DiscRadius,
+			Spec: spec,
+			Geometry: geometry.Circle{
+				Center: n.Position,
+				Radius: n.DiscRadius,
+			},
 			Angle:  n.Angle,
 			Fill:   fillMV,
 			Border: borderMV,

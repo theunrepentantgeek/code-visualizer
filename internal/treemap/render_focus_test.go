@@ -40,7 +40,7 @@ func (b *captureBackend) DrawRectangle(
 	b.rectangles = append(b.rectangles, rectangleCall{pos: bounds.Min, size: bounds.Size(), fill: fill})
 }
 
-func (*captureBackend) DrawDisc(geometry.Point, float64, canvasmodel.Fill, canvasmodel.Fill, float64) {
+func (*captureBackend) DrawDisc(geometry.Circle, canvasmodel.Fill, canvasmodel.Fill, float64) {
 }
 
 func (*captureBackend) DrawPolygon([]geometry.Point, canvasmodel.Fill, canvasmodel.Fill, float64) {}

@@ -106,8 +106,7 @@ func TestRasterBackend_DrawDisc_WithRadialGradientFill(t *testing.T) {
 
 	backend := raster.New(200, 200)
 	backend.DrawDisc(
-		geometry.Point{X: 100, Y: 100},
-		80,
+		geometry.Circle{Center: geometry.Point{X: 100, Y: 100}, Radius: 80},
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 			Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},

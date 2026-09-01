@@ -107,7 +107,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 }
 
 func (s *svgBackend) DrawDisc(
-	center geometry.Point, radius float64, fill, border model.Fill, borderWidth float64,
+	circle geometry.Circle, fill, border model.Fill, borderWidth float64,
 ) {
 	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)
@@ -115,7 +115,7 @@ func (s *svgBackend) DrawDisc(
 	fmt.Fprintf(
 		&s.buf,
 		`<circle cx="%.3f" cy="%.3f" r="%.3f" fill="%s" stroke="%s" stroke-width="%.3f"/>`+"\n",
-		center.X, center.Y, radius,
+		circle.Center.X, circle.Center.Y, circle.Radius,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
 }

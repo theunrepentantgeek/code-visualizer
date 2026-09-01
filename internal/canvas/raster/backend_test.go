@@ -46,8 +46,8 @@ func TestRasterBackend_DrawDisc_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawDisc(
-		geometry.Point{X: 100, Y: 100},
-		50, model.SolidFill{Color: blue}, model.SolidFill{Color: blk}, 1.0,
+		geometry.Circle{Center: geometry.Point{X: 100, Y: 100}, Radius: 50},
+		model.SolidFill{Color: blue}, model.SolidFill{Color: blk}, 1.0,
 	)
 
 	out := filepath.Join(t.TempDir(), "disc.png")
@@ -419,8 +419,8 @@ func TestRasterBackend_DrawDisc_SemiTransparentOverWhite_ProducesCorrectBlend(t 
 	)
 
 	b.DrawDisc(
-		geometry.Point{X: 50, Y: 50},
-		40, model.SolidFill{Color: semiBlue}, model.SolidFill{Color: semiBlue}, 0,
+		geometry.Circle{Center: geometry.Point{X: 50, Y: 50}, Radius: 40},
+		model.SolidFill{Color: semiBlue}, model.SolidFill{Color: semiBlue}, 0,
 	)
 
 	out := filepath.Join(t.TempDir(), "semi-transparent.png")
