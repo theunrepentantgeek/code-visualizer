@@ -6,6 +6,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
@@ -423,8 +424,8 @@ func (lb *legendBuilder) addArcLabelSample(x, y, w, h float64) {
 
 // arcLabelSamplePoints approximates a curved annular segment whose top edge is
 // narrower than its base, matching a small slice of the donut visualization.
-func arcLabelSamplePoints(x, y, w, h float64) []canvas.Position {
-	return []canvas.Position{
+func arcLabelSamplePoints(x, y, w, h float64) []geometry.Point {
+	return []geometry.Point{
 		{X: x + 0.26*w, Y: y + 0.12*h},
 		{X: x + 0.40*w, Y: y + 0.03*h},
 		{X: x + 0.60*w, Y: y + 0.03*h},
@@ -466,7 +467,7 @@ func (lb *legendBuilder) addRect(
 	}
 
 	lb.cv.AddRectangle(canvas.LayerOverlay, canvas.Rectangle{
-		Spec: spec, X: x, Y: y, W: w, H: h, Focus: model.Point{X: 0.5, Y: 0.5},
+		Spec: spec, X: x, Y: y, W: w, H: h, Focus: model.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -481,6 +482,6 @@ func (lb *legendBuilder) addTextShape(
 	}
 
 	lb.cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec: spec, X: x, Y: y, Content: content,
+		Spec: spec, Position: geometry.Point{X: x, Y: y}, Content: content,
 	})
 }

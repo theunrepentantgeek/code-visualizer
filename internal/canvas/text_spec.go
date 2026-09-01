@@ -2,6 +2,7 @@ package canvas
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
@@ -35,17 +36,17 @@ type ArcTextSpec struct {
 
 // ArcText carries position and content for text curved along a circle arc.
 type ArcText struct {
-	Spec   *ArcTextSpec
-	X, Y   float64 // circle centre
-	Radius float64 // reference arc radius; backends apply their fixed inset from this value
-	Text   string
+	Spec     *ArcTextSpec
+	Position geometry.Point
+	Radius   float64 // reference arc radius; backends apply their fixed inset from this value
+	Text     string
 }
 
 func (a *ArcText) drawTo(b Backend) {
 	ink := a.Spec.Ink.Dip(inks.MetricValue{})
 
 	b.DrawArcText(
-		Position{X: a.X, Y: a.Y},
+		a.Position,
 		a.Radius,
 		a.Text,
 		ink,

@@ -17,6 +17,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -37,11 +38,11 @@ type captureBackend struct {
 	arcTexts []capturedArcText
 }
 
-func (*captureBackend) DrawRectangle(canvas.Position, canvas.Size, canvasmodel.Fill, canvasmodel.Fill, float64) {
+func (*captureBackend) DrawRectangle(geometry.Point, canvas.Size, canvasmodel.Fill, canvasmodel.Fill, float64) {
 }
 
 func (c *captureBackend) DrawDisc(
-	_ canvas.Position,
+	_ geometry.Point,
 	radius float64,
 	_ canvasmodel.Fill,
 	_ canvasmodel.Fill,
@@ -50,19 +51,19 @@ func (c *captureBackend) DrawDisc(
 	c.discs = append(c.discs, capturedDisc{radius: radius})
 }
 
-func (*captureBackend) DrawPolygon([]canvas.Position, canvasmodel.Fill, canvasmodel.Fill, float64) {}
+func (*captureBackend) DrawPolygon([]geometry.Point, canvasmodel.Fill, canvasmodel.Fill, float64) {}
 
-func (*captureBackend) DrawFilledPath([][]canvas.Position, color.RGBA) {}
+func (*captureBackend) DrawFilledPath([][]geometry.Point, color.RGBA) {}
 
-func (*captureBackend) DrawLine(canvas.Position, canvas.Position, color.RGBA, float64) {}
+func (*captureBackend) DrawLine(geometry.Point, geometry.Point, color.RGBA, float64) {}
 
-func (*captureBackend) DrawPath([]canvas.Position, color.RGBA, float64) {}
+func (*captureBackend) DrawPath([]geometry.Point, color.RGBA, float64) {}
 
-func (*captureBackend) DrawText(canvas.Position, string, color.RGBA, float64, canvas.TextAnchor, float64) {
+func (*captureBackend) DrawText(geometry.Point, string, color.RGBA, float64, canvas.TextAnchor, float64) {
 }
 
 func (c *captureBackend) DrawArcText(
-	_ canvas.Position,
+	_ geometry.Point,
 	radius float64,
 	text string,
 	_ color.RGBA,

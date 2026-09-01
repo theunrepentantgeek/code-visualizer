@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
@@ -135,9 +136,11 @@ func (c *Canvas) addTextBlockLabel(
 
 	for i, line := range lines {
 		c.AddText(layer, Text{
-			Spec:    spec,
-			X:       centerX,
-			Y:       top + lineHeight*(float64(i)+0.5),
+			Spec: spec,
+			Position: geometry.Point{
+				X: centerX,
+				Y: top + lineHeight*(float64(i)+0.5),
+			},
 			Content: line,
 		})
 	}
@@ -161,10 +164,8 @@ func (c *Canvas) addGreekedBlockLabel(
 		y := top + lineHeight*(float64(i)+0.5)
 		c.AddLine(layer, Line{
 			Spec: spec,
-			X1:   centerX - lineWidth/2.0,
-			Y1:   y,
-			X2:   centerX + lineWidth/2.0,
-			Y2:   y,
+			From: geometry.Point{X: centerX - lineWidth/2.0, Y: y},
+			To:   geometry.Point{X: centerX + lineWidth/2.0, Y: y},
 		})
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -56,7 +57,7 @@ func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 		Spec:  bgSpec,
 		W:     float64(width),
 		H:     float64(height),
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -236,21 +237,19 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 	}
 
 	cv.AddArcText(canvas.LayerOverlay, canvas.ArcText{
-		Spec:   arcSpec,
-		X:      node.X,
-		Y:      node.Y,
-		Radius: bubbleDirLabelRadius(node, fontSize),
-		Text:   node.Label,
+		Spec:     arcSpec,
+		Position: geometry.Point{X: node.X, Y: node.Y},
+		Radius:   bubbleDirLabelRadius(node, fontSize),
+		Text:     node.Label,
 	})
 }
 
 // addBubbleFileLabel adds a centred text label on a file circle.
 func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode, spec *canvas.TextSpec) {
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    spec,
-		X:       node.X,
-		Y:       node.Y,
-		Content: node.Label,
+		Spec:     spec,
+		Position: geometry.Point{X: node.X, Y: node.Y},
+		Content:  node.Label,
 	})
 }
 

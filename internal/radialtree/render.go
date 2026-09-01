@@ -7,6 +7,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -53,7 +54,7 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 		Spec:  bgSpec,
 		W:     float64(canvasWidth),
 		H:     float64(canvasHeight),
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -78,8 +79,8 @@ func addEdgesInner(cv *canvas.Canvas, node RadialNode, cx, cy float64, edgeSpec 
 
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: edgeSpec,
-			X1:   px, Y1: py,
-			X2: chx, Y2: chy,
+			From: geometry.Point{X: px, Y: py},
+			To:   geometry.Point{X: chx, Y: chy},
 		})
 
 		addEdgesInner(cv, child, cx, cy, edgeSpec)
@@ -305,10 +306,9 @@ func addRootLabel(
 	}
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    labelSpec,
-		X:       cx + node.Position.X,
-		Y:       cy + node.Position.Y,
-		Content: node.Label,
+		Spec:     labelSpec,
+		Position: geometry.Point{X: cx + node.Position.X, Y: cy + node.Position.Y},
+		Content:  node.Label,
 	})
 }
 
@@ -354,9 +354,8 @@ func addExternalLabel(
 	}
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    labelSpec,
-		X:       lx,
-		Y:       ly,
-		Content: node.Label,
+		Spec:     labelSpec,
+		Position: geometry.Point{X: lx, Y: ly},
+		Content:  node.Label,
 	})
 }
