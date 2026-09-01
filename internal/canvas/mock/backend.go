@@ -15,6 +15,7 @@ import (
 type Call struct {
 	Method      string
 	Pos         geometry.Point
+	From        geometry.Point
 	To          geometry.Point
 	Size        model.Size
 	Points      []geometry.Point
@@ -102,7 +103,7 @@ func (m *Backend) DrawFilledPath(loops [][]geometry.Point, fill color.RGBA) {
 func (m *Backend) DrawLine(from, to geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawLine",
-		Pos:         from,
+		From:        from,
 		To:          to,
 		Fill:        stroke,
 		StrokeWidth: strokeWidth,

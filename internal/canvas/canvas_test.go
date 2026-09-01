@@ -161,7 +161,7 @@ func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawLine"))
-	g.Expect(mb.Calls[0].Pos).To(Equal(geometry.Point{X: 0, Y: 0}))
+	g.Expect(mb.Calls[0].From).To(Equal(geometry.Point{X: 0, Y: 0}))
 	g.Expect(mb.Calls[0].To).To(Equal(geometry.Point{X: 100, Y: 100}))
 }
 
@@ -189,6 +189,11 @@ func TestCanvas_AddPath_DispatchesToBackend(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawPath"))
+	g.Expect(mb.Calls[0].Points).To(Equal([]geometry.Point{
+		{X: 0, Y: 0},
+		{X: 50, Y: 50},
+		{X: 100, Y: 0},
+	}))
 }
 
 func TestCanvas_AddPolygon_DispatchesBeforeStructurePath(t *testing.T) {
@@ -229,8 +234,56 @@ func TestCanvas_AddPolygon_DispatchesBeforeStructurePath(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(HaveLen(2))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawPolygon"))
+	g.Expect(mb.Calls[0].Points).To(Equal([]geometry.Point{
+		{X: 1, Y: 1},
+		{X: 9, Y: 1},
+		{X: 1, Y: 9},
+	}))
 	g.Expect(mb.Calls[0].Fill).To(Equal(red))
 	g.Expect(mb.Calls[1].Method).To(Equal("DrawPath"))
+}
+
+func TestCanvas_AddFilledPath_DefensivelyClonesLoops(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(800, 600)
+	loops := [][]geometry.Point{
+		{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+		{
+			{X: 3, Y: 3},
+			{X: 4, Y: 3},
+			{X: 3, Y: 4},
+		},
+	}
+	c.AddFilledPath(canvas.LayerSurface, canvas.FilledPath{
+		Loops: loops,
+		Fill:  black,
+	})
+
+	loops[0][0] = geometry.Point{X: 100, Y: 100}
+	loops[1] = []geometry.Point{{X: 200, Y: 200}}
+
+	mb := mock.NewBackend()
+	err := c.RenderTo(mb)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(mb.Calls).To(HaveLen(1))
+	g.Expect(mb.Calls[0].Loops).To(Equal([][]geometry.Point{
+		{
+			{X: 1, Y: 1},
+			{X: 9, Y: 1},
+			{X: 1, Y: 9},
+		},
+		{
+			{X: 3, Y: 3},
+			{X: 4, Y: 3},
+			{X: 3, Y: 4},
+		},
+	}))
 }
 
 func TestAddArcText_DispatchesToBackend(t *testing.T) {
