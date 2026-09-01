@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // WriteCanvas writes c.Canvas to c.Output.
@@ -15,8 +16,8 @@ func WriteCanvas(c *CommonState) error {
 	// Only override the canvas drawing bounds when they have been explicitly set
 	// via InitDrawingBounds. If the pipeline skipped that stage (e.g., in tests),
 	// the canvas keeps its constructor default (full dimensions).
-	if c.DrawingBounds.MaxY > 0 {
-		c.Canvas.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)
+	if c.DrawingBounds.Max.Y > 0 {
+		c.Canvas.SetDrawingBounds(int(c.DrawingBounds.Min.Y), int(c.DrawingBounds.Max.Y))
 	}
 
 	if err := c.Canvas.Render(c.Output); err != nil {
@@ -101,31 +102,33 @@ func EffectiveTitleHeight(cfg *config.Config) int {
 // InitDrawingBounds initializes c.DrawingBounds to the full canvas dimensions.
 // Run this immediately after ResolveDimensions, before any Reserve* stages.
 func InitDrawingBounds(c *CommonState) error {
-	c.DrawingBounds = DrawingBounds{MaxX: c.Width, MaxY: c.Height}
+	c.DrawingBounds = geometry.Rect{
+		Max: geometry.Point{X: float64(c.Width), Y: float64(c.Height)},
+	}
 
 	return nil
 }
 
-// ReserveTitleBounds shrinks DrawingBounds.MinY to reserve space for the title.
+// ReserveTitleBounds shrinks DrawingBounds.Min.Y to reserve space for the title.
 // Must run after InitDrawingBounds. No-op when no title is configured or shown.
 func ReserveTitleBounds(c *CommonState) error {
 	if c.RootConfig == nil || !c.RootConfig.Title.ShowTitle() {
 		return nil
 	}
 
-	c.DrawingBounds.MinY = int(canvas.TitleReservedHeight)
+	c.DrawingBounds.Min.Y = canvas.TitleReservedHeight
 
 	return nil
 }
 
-// ReserveFooterBounds shrinks DrawingBounds.MaxY to reserve space for the footer.
+// ReserveFooterBounds shrinks DrawingBounds.Max.Y to reserve space for the footer.
 // Must run after InitDrawingBounds. No-op when no footer is configured or shown.
 func ReserveFooterBounds(c *CommonState) error {
 	if c.RootConfig == nil || !c.RootConfig.Footer.ShowFooter() {
 		return nil
 	}
 
-	c.DrawingBounds.MaxY -= int(canvas.FooterReservedHeight)
+	c.DrawingBounds.Max.Y -= canvas.FooterReservedHeight
 
 	return nil
 }

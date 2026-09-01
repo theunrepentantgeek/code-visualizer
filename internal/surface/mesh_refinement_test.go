@@ -12,7 +12,7 @@ import (
 func TestRefinementPointLimitReservesHalfEdgeGrid(t *testing.T) {
 	t.Parallel()
 
-	region := Rect{MinX: 0, MinY: 0, MaxX: 16, MaxY: 16}
+	region := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 16, Y: 16}}
 
 	got := refinementPointLimit(region, 3)
 
@@ -32,7 +32,7 @@ func TestRefinementPoints_IgnoresDegenerateOversizedFace(t *testing.T) {
 	}
 
 	candidates, oversized := refinementPoints(
-		Rect{MinX: 0, MinY: -1, MaxX: 12, MaxY: 1},
+		geometry.Rect{Min: geometry.Point{X: 0, Y: -1}, Max: geometry.Point{X: 12, Y: 1}},
 		points,
 		[]int{0, 1, 2},
 	)

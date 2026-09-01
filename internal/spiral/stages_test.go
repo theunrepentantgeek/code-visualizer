@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -349,9 +350,8 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 	common := &stages.CommonState{
 		Width:  1920,
 		Height: 1080,
-		DrawingBounds: stages.DrawingBounds{
-			MaxX: 1920,
-			MaxY: 1080,
+		DrawingBounds: geometry.Rect{
+			Max: geometry.Point{X: 1920, Y: 1080},
 		},
 	}
 	buckets := make([]spiral.TimeBucket, bucketCount)
@@ -392,9 +392,8 @@ func TestLayoutStageKeepsHourlyCadence(t *testing.T) {
 	common := &stages.CommonState{
 		Width:  1920,
 		Height: 1080,
-		DrawingBounds: stages.DrawingBounds{
-			MaxX: 1920,
-			MaxY: 1080,
+		DrawingBounds: geometry.Rect{
+			Max: geometry.Point{X: 1920, Y: 1080},
 		},
 	}
 	viz := &spiral.State{

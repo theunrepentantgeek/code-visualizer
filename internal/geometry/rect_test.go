@@ -88,6 +88,17 @@ func TestRectEmpty(t *testing.T) {
 	}
 }
 
+// TestRectBounds documents that Rect stands in for its own bounding box,
+// mirroring image.Rectangle.Bounds(), so it can satisfy boundable-region
+// interfaces (such as surface.Region) directly.
+func TestRectBounds(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	rect := Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}
+
+	g.Expect(rect.Bounds()).To(Equal(rect))
+}
+
 func TestRectDimensions(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

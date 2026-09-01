@@ -14,6 +14,12 @@ func RectFromPositionSize(position Point, size Size) Rect {
 	}
 }
 
+// Bounds returns r unchanged. It lets Rect stand in for its own bounding
+// box wherever a boundable region is expected, mirroring image.Rectangle.
+func (r Rect) Bounds() Rect {
+	return r
+}
+
 func (r Rect) Valid() bool {
 	return r.Min.Valid() && r.Max.Valid() &&
 		r.Min.X <= r.Max.X && r.Min.Y <= r.Max.Y

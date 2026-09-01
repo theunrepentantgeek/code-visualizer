@@ -23,7 +23,7 @@ func TestTriangleInRegion_RejectsAnnulusHoleCrossingEdge(t *testing.T) {
 	}
 
 	for _, point := range triangle.Points {
-		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
+		g.Expect(region.Contains(point.Position)).To(gomega.BeTrue())
 	}
 
 	centroid := Sample{
@@ -32,7 +32,7 @@ func TestTriangleInRegion_RejectsAnnulusHoleCrossingEdge(t *testing.T) {
 			Y: (triangle.Points[0].Position.Y + triangle.Points[1].Position.Y + triangle.Points[2].Position.Y) / 3,
 		},
 	}
-	g.Expect(region.Contains(centroid.Position.X, centroid.Position.Y)).To(gomega.BeTrue())
+	g.Expect(region.Contains(centroid.Position)).To(gomega.BeTrue())
 
 	g.Expect(triangleInRegion(region, triangle)).To(gomega.BeFalse())
 }
@@ -55,7 +55,7 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 	)).To(gomega.BeTrue())
 
 	for _, point := range triangle.Points {
-		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
+		g.Expect(region.Contains(point.Position)).To(gomega.BeTrue())
 	}
 
 	for index, start := range triangle.Points {
@@ -136,7 +136,7 @@ func TestBoundaryLoops_ReturnsDenseClosedRectPerimeter(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	loops := BoundaryLoops(
-		Rect{MinX: 1, MinY: 2, MaxX: 3, MaxY: 3},
+		geometry.Rect{Min: geometry.Point{X: 1, Y: 2}, Max: geometry.Point{X: 3, Y: 3}},
 		MaxBoundarySegmentLength,
 	)
 	if len(loops) != 1 {
@@ -190,11 +190,11 @@ type unsupportedRegion struct{}
 
 type typedNilBoundaryProvider struct{}
 
-func (unsupportedRegion) Bounds() Rect {
-	return Rect{MaxX: 1, MaxY: 1}
+func (unsupportedRegion) Bounds() geometry.Rect {
+	return geometry.Rect{Max: geometry.Point{X: 1, Y: 1}}
 }
 
-func (unsupportedRegion) Contains(float64, float64) bool {
+func (unsupportedRegion) Contains(geometry.Point) bool {
 	return true
 }
 
@@ -215,7 +215,7 @@ func TestRegionTriangles_OmitsTriangleWithUnsupportedVertex(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
-	region := Rect{MinX: -2, MinY: -2, MaxX: 2, MaxY: 2}
+	region := geometry.Rect{Min: geometry.Point{X: -2, Y: -2}, Max: geometry.Point{X: 2, Y: 2}}
 	points := []Sample{
 		{Position: geometry.Point{X: 0, Y: 0}, Value: 1},
 		{Position: geometry.Point{X: 1, Y: 0}, Value: 2, unsupported: true},
@@ -227,11 +227,11 @@ func TestRegionTriangles_OmitsTriangleWithUnsupportedVertex(t *testing.T) {
 	g.Expect(triangles).To(gomega.BeEmpty())
 }
 
-func (*typedNilBoundaryProvider) Bounds() Rect {
+func (*typedNilBoundaryProvider) Bounds() geometry.Rect {
 	panic("typed-nil provider Bounds should not be called")
 }
 
-func (*typedNilBoundaryProvider) Contains(float64, float64) bool {
+func (*typedNilBoundaryProvider) Contains(geometry.Point) bool {
 	panic("typed-nil provider Contains should not be called")
 }
 

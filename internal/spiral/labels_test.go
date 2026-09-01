@@ -293,9 +293,9 @@ func TestLayoutStage_StoresDiscLabelsAfterVerticalOffset(t *testing.T) {
 	}
 	common := &stages.CommonState{
 		Width: 200,
-		DrawingBounds: stages.DrawingBounds{
-			MinY: 25,
-			MaxY: 200,
+		DrawingBounds: geometry.Rect{
+			Min: geometry.Point{Y: 25},
+			Max: geometry.Point{Y: 200},
 		},
 	}
 

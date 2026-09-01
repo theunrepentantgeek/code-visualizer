@@ -159,7 +159,7 @@ func LayoutStage(c *stages.CommonState, d *State) error {
 }
 
 func donutCanvasSize(c *stages.CommonState) int {
-	return min(c.Width, c.DrawingBounds.Height())
+	return min(c.Width, int(c.DrawingBounds.Height()))
 }
 
 // RenderStage renders the donut tree into its reserved drawing bounds.
@@ -167,7 +167,7 @@ func RenderStage(c *stages.CommonState, d *State) error {
 	size := donutCanvasSize(c)
 	d.Layout.Center = geometry.NewPoint(
 		float64(c.Width)/2,
-		float64(c.DrawingBounds.MinY)+float64(size)/2,
+		c.DrawingBounds.Min.Y+float64(size)/2,
 	)
 
 	var cfg *config.DonutTree
@@ -182,8 +182,8 @@ func RenderStage(c *stages.CommonState, d *State) error {
 	}
 
 	cv := RenderToCanvas(d.Layout, root, c.Width, c.Height, d.Inks, labelMetricsFor(d, cfg))
-	if c.DrawingBounds.MaxY > 0 {
-		cv.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)
+	if c.DrawingBounds.Max.Y > 0 {
+		cv.SetDrawingBounds(int(c.DrawingBounds.Min.Y), int(c.DrawingBounds.Max.Y))
 	}
 
 	legend.RenderInto(cv, d.LegendConfig)

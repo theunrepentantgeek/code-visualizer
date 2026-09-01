@@ -243,12 +243,12 @@ func TestInitDrawingBounds_SetsFullCanvas(t *testing.T) {
 
 	c := &stages.CommonState{Width: 1920, Height: 1080}
 	g.Expect(stages.InitDrawingBounds(c)).To(Succeed())
-	g.Expect(c.DrawingBounds.MinX).To(Equal(0))
-	g.Expect(c.DrawingBounds.MinY).To(Equal(0))
-	g.Expect(c.DrawingBounds.MaxX).To(Equal(1920))
-	g.Expect(c.DrawingBounds.MaxY).To(Equal(1080))
-	g.Expect(c.DrawingBounds.Width()).To(Equal(1920))
-	g.Expect(c.DrawingBounds.Height()).To(Equal(1080))
+	g.Expect(c.DrawingBounds.Min.X).To(Equal(0.0))
+	g.Expect(c.DrawingBounds.Min.Y).To(Equal(0.0))
+	g.Expect(c.DrawingBounds.Max.X).To(Equal(1920.0))
+	g.Expect(c.DrawingBounds.Max.Y).To(Equal(1080.0))
+	g.Expect(c.DrawingBounds.Width()).To(Equal(1920.0))
+	g.Expect(c.DrawingBounds.Height()).To(Equal(1080.0))
 }
 
 func TestReserveTitleBounds_NilConfig_NoChange(t *testing.T) {
@@ -258,7 +258,7 @@ func TestReserveTitleBounds_NilConfig_NoChange(t *testing.T) {
 	c := &stages.CommonState{Width: 800, Height: 600}
 	g.Expect(stages.InitDrawingBounds(c)).To(Succeed())
 	g.Expect(stages.ReserveTitleBounds(c)).To(Succeed())
-	g.Expect(c.DrawingBounds.MinY).To(Equal(0))
+	g.Expect(c.DrawingBounds.Min.Y).To(Equal(0.0))
 }
 
 func TestReserveTitleBounds_NoTitle_NoChange(t *testing.T) {
@@ -269,7 +269,7 @@ func TestReserveTitleBounds_NoTitle_NoChange(t *testing.T) {
 	// Default config has no title text; ShowTitle() returns false.
 	g.Expect(stages.InitDrawingBounds(c)).To(Succeed())
 	g.Expect(stages.ReserveTitleBounds(c)).To(Succeed())
-	g.Expect(c.DrawingBounds.MinY).To(Equal(0))
+	g.Expect(c.DrawingBounds.Min.Y).To(Equal(0.0))
 }
 
 func TestReserveTitleBounds_WithTitle_RaisesMinY(t *testing.T) {
@@ -282,8 +282,8 @@ func TestReserveTitleBounds_WithTitle_RaisesMinY(t *testing.T) {
 	c := &stages.CommonState{Width: 800, Height: 600, RootConfig: cfg}
 	g.Expect(stages.InitDrawingBounds(c)).To(Succeed())
 	g.Expect(stages.ReserveTitleBounds(c)).To(Succeed())
-	g.Expect(c.DrawingBounds.MinY).To(Equal(int(canvas.TitleReservedHeight)))
-	g.Expect(c.DrawingBounds.MaxY).To(Equal(600)) // footer unchanged
+	g.Expect(c.DrawingBounds.Min.Y).To(Equal(canvas.TitleReservedHeight))
+	g.Expect(c.DrawingBounds.Max.Y).To(Equal(600.0)) // footer unchanged
 }
 
 func TestReserveFooterBounds_NilConfig_NoChange(t *testing.T) {
@@ -293,7 +293,7 @@ func TestReserveFooterBounds_NilConfig_NoChange(t *testing.T) {
 	c := &stages.CommonState{Width: 800, Height: 600}
 	g.Expect(stages.InitDrawingBounds(c)).To(Succeed())
 	g.Expect(stages.ReserveFooterBounds(c)).To(Succeed())
-	g.Expect(c.DrawingBounds.MaxY).To(Equal(600))
+	g.Expect(c.DrawingBounds.Max.Y).To(Equal(600.0))
 }
 
 func TestReserveFooterBounds_FooterHidden_NoChange(t *testing.T) {
@@ -306,7 +306,7 @@ func TestReserveFooterBounds_FooterHidden_NoChange(t *testing.T) {
 	c := &stages.CommonState{Width: 800, Height: 600, RootConfig: cfg}
 	g.Expect(stages.InitDrawingBounds(c)).To(Succeed())
 	g.Expect(stages.ReserveFooterBounds(c)).To(Succeed())
-	g.Expect(c.DrawingBounds.MaxY).To(Equal(600))
+	g.Expect(c.DrawingBounds.Max.Y).To(Equal(600.0))
 }
 
 func TestReserveFooterBounds_FooterShown_LowersMaxY(t *testing.T) {
@@ -317,6 +317,6 @@ func TestReserveFooterBounds_FooterShown_LowersMaxY(t *testing.T) {
 	// Default config shows the footer.
 	g.Expect(stages.InitDrawingBounds(c)).To(Succeed())
 	g.Expect(stages.ReserveFooterBounds(c)).To(Succeed())
-	g.Expect(c.DrawingBounds.MaxY).To(Equal(600 - int(canvas.FooterReservedHeight)))
-	g.Expect(c.DrawingBounds.MinY).To(Equal(0)) // title unchanged
+	g.Expect(c.DrawingBounds.Max.Y).To(Equal(600 - canvas.FooterReservedHeight))
+	g.Expect(c.DrawingBounds.Min.Y).To(Equal(0.0)) // title unchanged
 }

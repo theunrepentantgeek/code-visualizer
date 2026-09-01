@@ -166,7 +166,7 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 // LayoutStage runs the spiral layout algorithm and applies disc sizing.
 func LayoutStage(c *stages.CommonState, p *State) error {
 	bounds := c.DrawingBounds
-	availH := bounds.Height()
+	availH := int(bounds.Height())
 
 	p.SpotsPerLap = SpotsPerLap(p.Resolution, len(p.Buckets), c.Width, availH)
 	layout := LayoutWithCadence(p.Buckets, c.Width, availH, p.SpotsPerLap)
@@ -174,8 +174,8 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 
 	ApplyDiscSizes(layout.Nodes, p.Buckets, maxDisc)
 
-	if bounds.MinY > 0 {
-		offset := geometry.Vector{Y: float64(bounds.MinY)}
+	if bounds.Min.Y > 0 {
+		offset := geometry.Vector{Y: bounds.Min.Y}
 		layout.CY += offset.Y
 
 		for i := range layout.Nodes {
@@ -232,8 +232,8 @@ func RenderStage(c *stages.CommonState, p *State) error {
 			Format:     format,
 		},
 	)
-	if c.DrawingBounds.MaxY > 0 {
-		cv.SetDrawingBounds(c.DrawingBounds.MinY, c.DrawingBounds.MaxY)
+	if c.DrawingBounds.Max.Y > 0 {
+		cv.SetDrawingBounds(int(c.DrawingBounds.Min.Y), int(c.DrawingBounds.Max.Y))
 	}
 
 	legend.RenderInto(cv, p.LegendConfig)
