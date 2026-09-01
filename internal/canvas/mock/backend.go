@@ -13,7 +13,9 @@ import (
 
 // Call records a single drawing operation dispatched to a Backend.
 type Call struct {
-	Method      string
+	Method string
+	// Pos is the primary point for rectangle, disc, arc-text, and text calls.
+	// DrawLine records its endpoints in From and To instead.
 	Pos         geometry.Point
 	From        geometry.Point
 	To          geometry.Point

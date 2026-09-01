@@ -57,9 +57,9 @@ func BenchmarkDrawRadialGradientDisc(b *testing.B) {
 func BenchmarkMaxCornerDist(b *testing.B) {
 	for range b.N {
 		_ = maxCornerDist(
-			geometry.Point{X: 30, Y: 30},
 			geometry.Point{X: 10, Y: 10},
 			model.Size{Width: 180, Height: 180},
+			geometry.Point{X: 30, Y: 30},
 		)
 	}
 }

@@ -64,7 +64,7 @@ func (r *rasterBackend) drawRadialGradientRect(
 		X: pos.X + grad.Focus.X*size.Width,
 		Y: pos.Y + grad.Focus.Y*size.Height,
 	}
-	maxDist := maxCornerDist(focus, pos, size)
+	maxDist := maxCornerDist(pos, size, focus)
 
 	if maxDist == 0 {
 		r.dc.SetColor(nrgba(grad.Center))
@@ -102,7 +102,7 @@ func (r *rasterBackend) drawRadialGradientRect(
 // The maximum of dx²+dy² over the four corners decomposes as
 // max(dx0²,dx1²) + max(dy0²,dy1²) because dx and dy are independent, so only
 // one math.Sqrt is required instead of four.
-func maxCornerDist(focus, pos geometry.Point, size model.Size) float64 {
+func maxCornerDist(pos geometry.Point, size model.Size, focus geometry.Point) float64 {
 	dx0 := pos.X - focus.X
 	dx1 := pos.X + size.Width - focus.X
 	dy0 := pos.Y - focus.Y
