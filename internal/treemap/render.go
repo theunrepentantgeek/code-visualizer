@@ -215,8 +215,7 @@ func addDirectoryShapes(
 	if rect.Chrome.Orientation != DirectoryLabelNone && rect.Chrome.Text != "" {
 		spec := dirTopLabelSpec
 		rail := rect.Chrome.Rail
-		x := rail.Min.X + rail.Width()/2
-		y := rail.Min.Y + rail.Height()/2
+		center := rail.Center()
 
 		if rect.Chrome.Orientation == DirectoryLabelLeft {
 			spec = dirLeftLabelSpec
@@ -224,13 +223,14 @@ func addDirectoryShapes(
 
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:     spec,
-			Position: geometry.NewPoint(x, y),
+			Position: center,
 			Content:  rect.Chrome.Text,
 		})
 	}
 
 	// Directory border - BorderWidth varies per directory; look up the pre-allocated spec.
-	bw := DynBorderWidth(rect.Bounds.Width(), rect.Bounds.Height(), inks.KindNumeric)
+	size := rect.size()
+	bw := DynBorderWidth(size.Width, size.Height, inks.KindNumeric)
 	idx := specIndex(bw)
 
 	var borderSpec *canvas.RectangleSpec
@@ -271,7 +271,8 @@ func addFileRectForFile(
 	fillMV := inks.MetricValueForFile(file, is.Fill)
 	borderMV := inks.MetricValueForFile(file, is.Border)
 
-	bw := DynBorderWidth(rect.Bounds.Width(), rect.Bounds.Height(), hasBorder)
+	size := rect.size()
+	bw := DynBorderWidth(size.Width, size.Height, hasBorder)
 	idx := specIndex(bw)
 
 	var spec *canvas.RectangleSpec
@@ -301,10 +302,12 @@ func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) ca
 		return canvasmodel.GradientPoint{X: 0.5, Y: 0.5}
 	}
 
-	fileCX := fileRect.Bounds.Min.X + fileRect.Bounds.Width()/2
-	fileCY := fileRect.Bounds.Min.Y + fileRect.Bounds.Height()/2
-	dirCX := dirRect.Bounds.Min.X + dirRect.Bounds.Width()/2
-	dirCY := dirRect.Bounds.Min.Y + dirRect.Bounds.Height()/2
+	fileSize := fileRect.size()
+	dirSize := dirRect.size()
+	fileCX := fileRect.Bounds.Min.X + fileSize.Width/2
+	fileCY := fileRect.Bounds.Min.Y + fileSize.Height/2
+	dirCX := dirRect.Bounds.Min.X + dirSize.Width/2
+	dirCY := dirRect.Bounds.Min.Y + dirSize.Height/2
 	focusX := fileCX + (dirCX-fileCX)*weightFraction
 	focusY := fileCY + (dirCY-fileCY)*weightFraction
 

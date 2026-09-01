@@ -16,7 +16,10 @@ const (
 
 // BlockLabel is a centered multi-line label constrained to a rectangular area.
 type BlockLabel struct {
-	Bounds       geometry.Rect
+	Bounds geometry.Rect
+	// LayoutSize preserves a caller's original size when Bounds came from
+	// position-plus-size arithmetic that cannot be reversed bit-for-bit.
+	LayoutSize   geometry.Size
 	Lines        []string
 	Ink          color.RGBA
 	PreserveText bool
@@ -25,13 +28,13 @@ type BlockLabel struct {
 // AddBlockLabel adds a centered multi-line label sized to fit the given bounds.
 func (c *Canvas) AddBlockLabel(layer Layer, label BlockLabel, format ImageFormat) {
 	lines := compactLabelLines(label.Lines)
-	width, height := label.Bounds.Width(), label.Bounds.Height()
+	size := label.layoutSize()
 
-	if len(lines) == 0 || width <= 0 || height <= 0 {
+	if len(lines) == 0 || size.Empty() {
 		return
 	}
 
-	layout, ok := fitBlockLabel(lines, width, height)
+	layout, ok := fitBlockLabel(lines, size.Width, size.Height)
 	if !ok {
 		return
 	}
@@ -41,13 +44,21 @@ func (c *Canvas) AddBlockLabel(layer Layer, label BlockLabel, format ImageFormat
 		case layout.lineHeight <= omittedLineHeight:
 			return
 		case layout.lineHeight <= greekedLineHeight:
-			c.addGreekedBlockLabel(layer, label, layout.widths, layout.lineHeight, layout.totalHeight)
+			c.addGreekedBlockLabel(layer, label, size, layout.widths, layout.lineHeight, layout.totalHeight)
 
 			return
 		}
 	}
 
-	c.addTextBlockLabel(layer, label, lines, layout.fontSize, layout.lineHeight, layout.totalHeight)
+	c.addTextBlockLabel(layer, label, size, lines, layout.fontSize, layout.lineHeight, layout.totalHeight)
+}
+
+func (label BlockLabel) layoutSize() geometry.Size {
+	if label.LayoutSize.Valid() && !label.LayoutSize.Empty() {
+		return label.LayoutSize
+	}
+
+	return label.Bounds.Size()
 }
 
 func compactLabelLines(lines []string) []string {
@@ -125,6 +136,7 @@ func fitBlockLabel(lines []string, maxWidth, maxHeight float64) (fittedBlockLabe
 func (c *Canvas) addTextBlockLabel(
 	layer Layer,
 	label BlockLabel,
+	size geometry.Size,
 	lines []string,
 	fontSize, lineHeight, totalHeight float64,
 ) {
@@ -133,8 +145,8 @@ func (c *Canvas) addTextBlockLabel(
 		FontSize: fontSize,
 		Anchor:   AnchorMiddle,
 	}
-	centerX := label.Bounds.Min.X + label.Bounds.Width()/2.0
-	top := label.Bounds.Min.Y + (label.Bounds.Height()-totalHeight)/2.0
+	centerX := label.Bounds.Min.X + size.Width/2.0
+	top := label.Bounds.Min.Y + (size.Height-totalHeight)/2.0
 
 	for i, line := range lines {
 		c.AddText(layer, Text{
@@ -151,6 +163,7 @@ func (c *Canvas) addTextBlockLabel(
 func (c *Canvas) addGreekedBlockLabel(
 	layer Layer,
 	label BlockLabel,
+	size geometry.Size,
 	widths []float64,
 	lineHeight, totalHeight float64,
 ) {
@@ -158,11 +171,11 @@ func (c *Canvas) addGreekedBlockLabel(
 		Stroke:      inks.FixedInk(label.Ink),
 		StrokeWidth: max(1.0, lineHeight/2.0),
 	}
-	centerX := label.Bounds.Min.X + label.Bounds.Width()/2.0
-	top := label.Bounds.Min.Y + (label.Bounds.Height()-totalHeight)/2.0
+	centerX := label.Bounds.Min.X + size.Width/2.0
+	top := label.Bounds.Min.Y + (size.Height-totalHeight)/2.0
 
 	for i, width := range widths {
-		lineWidth := min(label.Bounds.Width(), max(width, lineHeight*4.0))
+		lineWidth := min(size.Width, max(width, lineHeight*4.0))
 		y := top + lineHeight*(float64(i)+0.5)
 		c.AddLine(layer, Line{
 			Spec: spec,

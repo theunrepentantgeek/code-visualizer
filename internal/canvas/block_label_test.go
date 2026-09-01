@@ -85,6 +85,27 @@ func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T)
 	g.Expect(mb.Calls[1].Text).To(Equal("0"))
 }
 
+func TestCanvas_AddBlockLabel_UsesExplicitLayoutSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(40, 20)
+	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
+		Bounds:       geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 35, Y: 15}},
+		LayoutSize:   geometry.Size{Width: 20, Height: 10},
+		Lines:        []string{"a.go"},
+		Ink:          color.RGBA{A: 255},
+		PreserveText: true,
+	}, canvas.FormatPNG)
+
+	mb := mock.NewBackend()
+	g.Expect(c.RenderTo(mb)).To(Succeed())
+	g.Expect(mb.Calls).To(HaveLen(1))
+	g.Expect(mb.Calls[0].Method).To(Equal("DrawText"))
+	g.Expect(mb.Calls[0].Pos.X).To(Equal(15.0))
+	g.Expect(mb.Calls[0].Pos.Y).To(Equal(10.0))
+}
+
 func TestCanvas_AddBlockLabel_OmitsUnreadableRasterLabels(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

@@ -105,11 +105,15 @@ func buildFileLabel(
 	lines = appendMetricLine(lines, file, metrics.Border)
 
 	fillColour := fillInk.Dip(inks.MetricValueForFile(file, fillInk))
+	size := rect.size()
+	size.Width -= 2 * blockLabelPadding
+	size.Height -= 2 * blockLabelPadding
 
 	return canvas.BlockLabel{
-		Bounds: bounds,
-		Lines:  lines,
-		Ink:    canvas.TextColourFor(fillColour),
+		Bounds:     bounds,
+		LayoutSize: size,
+		Lines:      lines,
+		Ink:        canvas.TextColourFor(fillColour),
 	}, true
 }
 

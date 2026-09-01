@@ -47,6 +47,7 @@ func layoutDirectory(
 ) TreemapRectangle {
 	rect := TreemapRectangle{
 		Bounds:       boxToRect(box),
+		layoutSize:   geometry.Size{Width: box.W, Height: box.H},
 		Label:        dir.Name,
 		IsDirectory:  true,
 		VisibleDepth: visibleDepth,
@@ -142,8 +143,9 @@ func layoutChild(
 	f := dir.Files[c.fileIdx]
 
 	return TreemapRectangle{
-		Bounds: boxToRect(b),
-		Label:  f.Name,
+		Bounds:     boxToRect(b),
+		layoutSize: geometry.Size{Width: b.W, Height: b.H},
+		Label:      f.Name,
 	}
 }
 
