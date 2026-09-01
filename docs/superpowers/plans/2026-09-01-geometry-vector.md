@@ -58,6 +58,17 @@ type Vector struct {
 	Y float64
 }
 
+// ZeroVector is the additive identity, representing no displacement.
+var ZeroVector = Vector{}
+
+func NewVector(x, y float64) Vector {
+	return Vector{X: x, Y: y}
+}
+
+func NewRadialVector(angle, length float64) Vector {
+	return Vector{X: length * math.Cos(angle), Y: length * math.Sin(angle)}
+}
+
 func (v Vector) Valid() bool {
 	return !math.IsNaN(v.X) && !math.IsInf(v.X, 0) &&
 		!math.IsNaN(v.Y) && !math.IsInf(v.Y, 0)
@@ -82,12 +93,24 @@ func (v Vector) Dot(other Vector) float64 {
 func (v Vector) LengthSquared() float64 { return v.Dot(v) }
 func (v Vector) Length() float64        { return math.Hypot(v.X, v.Y) }
 
+// Unit scales v to length 1. Pre-scaling by the largest absolute component
+// before computing Length avoids overflow to +Inf for near-MaxFloat64
+// components and overflow of 1/Length for subnormal components, either of
+// which would otherwise destroy the direction of v.
 func (v Vector) Unit() (Vector, bool) {
-	length := v.Length()
-	if !v.Valid() || length == 0 {
-		return Vector{}, false
+	if !v.Valid() {
+		return ZeroVector, false
 	}
-	return v.Scale(1 / length), true
+
+	scale := math.Max(math.Abs(v.X), math.Abs(v.Y))
+	if scale == 0 {
+		return ZeroVector, false
+	}
+
+	scaled := Vector{X: v.X / scale, Y: v.Y / scale}
+	length := scaled.Length()
+
+	return Vector{X: scaled.X / length, Y: scaled.Y / length}, true
 }
 ```
 
@@ -147,7 +170,7 @@ type RadialNode struct {
 }
 ```
 
-In layout, assign `geometry.Vector{X: radius * math.Cos(angle), Y: radius * math.Sin(angle)}`.
+In layout, assign `geometry.NewRadialVector(angle, radius)`.
 In rendering, replace `node.X` and `node.Y` with `node.Position.X` and
 `node.Position.Y`, and replace `nodeDistance` with `node.Position.Length()`.
 
