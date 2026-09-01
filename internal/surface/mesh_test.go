@@ -47,7 +47,10 @@ func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
 
 	triangles := surface.Build(
 		surface.Rect{MinX: 0, MinY: 0, MaxX: 10, MaxY: 10},
-		[]surface.Sample{{Position: geometry.Point{X: 1, Y: 1}, Value: 2}, {Position: geometry.Point{X: 9, Y: 9}, Value: 5}},
+		[]surface.Sample{
+			{Position: geometry.Point{X: 1, Y: 1}, Value: 2},
+			{Position: geometry.Point{X: 9, Y: 9}, Value: 5},
+		},
 		42,
 	)
 
@@ -394,7 +397,11 @@ func TestLongestEdge_ReturnsLengthOfLongestTriangleSide(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	triangle := surface.Triangle{
-		Points: [3]surface.Sample{{Position: geometry.Point{X: 0, Y: 0}}, {Position: geometry.Point{X: 3, Y: 0}}, {Position: geometry.Point{X: 0, Y: 4}}},
+		Points: [3]surface.Sample{
+			{Position: geometry.Point{X: 0, Y: 0}},
+			{Position: geometry.Point{X: 3, Y: 0}},
+			{Position: geometry.Point{X: 0, Y: 4}},
+		},
 	}
 
 	g.Expect(surface.LongestEdge(triangle)).To(gomega.Equal(5.0))

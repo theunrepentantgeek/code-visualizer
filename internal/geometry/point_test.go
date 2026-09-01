@@ -133,7 +133,7 @@ func TestMidpointOppositeExtremeFinitePoints(t *testing.T) {
 	}
 }
 
-func TestPointInvalidValuesPropagate(t *testing.T) {
+func TestPointInvalidValuesPropagateThroughCoordinateOperations(t *testing.T) {
 	t.Parallel()
 
 	nanPoint := Point{X: math.NaN(), Y: 2}
@@ -143,30 +143,50 @@ func TestPointInvalidValuesPropagate(t *testing.T) {
 	if got := nanPoint.Translate(Vector{}); !math.IsNaN(got.X) {
 		t.Fatalf("Translate() X = %v, want NaN", got.X)
 	}
+
 	if got := finitePoint.VectorTo(infinitePoint); !math.IsInf(got.Y, 1) {
 		t.Fatalf("VectorTo() Y = %v, want +Inf", got.Y)
 	}
+
 	if got := Midpoint(finitePoint, nanPoint); !math.IsNaN(got.X) {
 		t.Fatalf("Midpoint() X = %v, want NaN", got.X)
 	}
+
 	if got := Lerp(finitePoint, infinitePoint, 0.5); !math.IsInf(got.Y, 1) {
 		t.Fatalf("Lerp() Y = %v, want +Inf", got.Y)
 	}
+}
+
+func TestPointInvalidValuesPropagateThroughDistanceOperations(t *testing.T) {
+	t.Parallel()
+
+	nanPoint := Point{X: math.NaN(), Y: 2}
+	infinitePoint := Point{X: 1, Y: math.Inf(1)}
+	finitePoint := Point{X: 3, Y: 4}
 
 	invalidPoints := []Point{nanPoint, infinitePoint}
 	for _, invalid := range invalidPoints {
-		if got := finitePoint.DistanceSquaredTo(invalid); !math.IsNaN(got) {
-			t.Fatalf("DistanceSquaredTo(%v) = %v, want NaN", invalid, got)
-		}
-		if got := invalid.DistanceSquaredTo(finitePoint); !math.IsNaN(got) {
-			t.Fatalf("%v.DistanceSquaredTo() = %v, want NaN", invalid, got)
-		}
-		if got := finitePoint.DistanceTo(invalid); !math.IsNaN(got) {
-			t.Fatalf("DistanceTo(%v) = %v, want NaN", invalid, got)
-		}
-		if got := invalid.DistanceTo(finitePoint); !math.IsNaN(got) {
-			t.Fatalf("%v.DistanceTo() = %v, want NaN", invalid, got)
-		}
+		assertInvalidPointDistances(t, finitePoint, invalid)
+	}
+}
+
+func assertInvalidPointDistances(t *testing.T, finite, invalid Point) {
+	t.Helper()
+
+	if got := finite.DistanceSquaredTo(invalid); !math.IsNaN(got) {
+		t.Fatalf("DistanceSquaredTo(%v) = %v, want NaN", invalid, got)
+	}
+
+	if got := invalid.DistanceSquaredTo(finite); !math.IsNaN(got) {
+		t.Fatalf("%v.DistanceSquaredTo() = %v, want NaN", invalid, got)
+	}
+
+	if got := finite.DistanceTo(invalid); !math.IsNaN(got) {
+		t.Fatalf("DistanceTo(%v) = %v, want NaN", invalid, got)
+	}
+
+	if got := invalid.DistanceTo(finite); !math.IsNaN(got) {
+		t.Fatalf("%v.DistanceTo() = %v, want NaN", invalid, got)
 	}
 }
 

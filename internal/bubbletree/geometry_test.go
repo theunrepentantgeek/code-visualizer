@@ -213,7 +213,12 @@ func TestComputeEnclosing_TwoNodes(t *testing.T) {
 	// Must enclose both nodes as enclosure circles.
 	for _, n := range nodes {
 		e := enclosure{center: n.Position, radius: n.Radius}
-		g.Expect(encloses(result, e)).To(BeTrue(), "enclosing circle must contain node at (%v,%v)", n.Position.X, n.Position.Y)
+		g.Expect(encloses(result, e)).To(
+			BeTrue(),
+			"enclosing circle must contain node at (%v,%v)",
+			n.Position.X,
+			n.Position.Y,
+		)
 	}
 }
 
@@ -231,7 +236,12 @@ func TestComputeEnclosing_ThreeNodes(t *testing.T) {
 
 	for _, n := range nodes {
 		e := enclosure{center: n.Position, radius: n.Radius}
-		g.Expect(encloses(result, e)).To(BeTrue(), "enclosing circle must contain node at (%v,%v)", n.Position.X, n.Position.Y)
+		g.Expect(encloses(result, e)).To(
+			BeTrue(),
+			"enclosing circle must contain node at (%v,%v)",
+			n.Position.X,
+			n.Position.Y,
+		)
 	}
 }
 

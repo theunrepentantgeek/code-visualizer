@@ -209,8 +209,10 @@ func placeFallback(circles []BubbleNode, i int) {
 	maxDist := 0.0
 
 	for j := range i {
-		offset := geometry.Point{}.VectorTo(circles[j].Position)
-		d := math.Sqrt(offset.LengthSquared()) + circles[j].Radius
+		circle := circles[j] //nolint:gosec // G602 false positive: j < i <= len(circles)
+		offset := geometry.Point{}.VectorTo(circle.Position)
+
+		d := math.Sqrt(offset.LengthSquared()) + circle.Radius
 		if d > maxDist {
 			maxDist = d
 		}

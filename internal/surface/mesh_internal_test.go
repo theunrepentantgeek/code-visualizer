@@ -49,7 +49,10 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 	}
 
 	triangle := Triangle{Points: [3]Sample{originals[0], originals[1], originals[2]}}
-	g.Expect(pointStrictlyInTriangle(Sample{Position: geometry.Point{X: region.CX, Y: region.CY}}, triangle)).To(gomega.BeTrue())
+	g.Expect(pointStrictlyInTriangle(
+		Sample{Position: geometry.Point{X: region.CX, Y: region.CY}},
+		triangle,
+	)).To(gomega.BeTrue())
 
 	for _, point := range triangle.Points {
 		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
