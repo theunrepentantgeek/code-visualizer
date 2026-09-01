@@ -798,3 +798,20 @@ func TestCanvas_DrawingBounds_Getters_ReturnSetValues(t *testing.T) {
 	g.Expect(c.DrawingMinY()).To(Equal(40))
 	g.Expect(c.DrawingMaxY()).To(Equal(560))
 }
+
+func TestCanvas_Size_ReturnsCanvasDimensionsAsGeometrySize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(800, 600)
+	g.Expect(c.Size()).To(Equal(geometry.Size{Width: 800, Height: 600}))
+}
+
+func TestCanvas_DrawingSize_ReturnsCanvasWidthAndDrawableHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(800, 600)
+	c.SetDrawingBounds(40, 560)
+	g.Expect(c.DrawingSize()).To(Equal(geometry.Size{Width: 800, Height: 520}))
+}

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // FormatBreakpoint formats a numeric breakpoint for display.
@@ -19,24 +20,26 @@ func FormatBreakpoint(v float64) string {
 }
 
 // MeasureLegend computes the total width and height of the legend box
-// including padding. Returns (0, 0) if data is nil or has no entries.
-func MeasureLegend(data *model.LegendData, measurer StringMeasurer) (width, height float64) {
+// including padding. Returns a zero size if data is nil or has no entries.
+func MeasureLegend(data *model.LegendData, measurer StringMeasurer) geometry.Size {
 	if data == nil || len(data.Entries) == 0 {
-		return 0, 0
+		return geometry.Size{}
 	}
 
 	if data.Orientation == model.LegendOrientationHorizontal {
-		return measureLegendH(measurer, data)
+		width, height := measureLegendH(measurer, data)
+		return geometry.Size{Width: width, Height: height}
 	}
 
-	return measureLegendV(measurer, data)
+	width, height := measureLegendV(measurer, data)
+	return geometry.Size{Width: width, Height: height}
 }
 
 // LegendOrigin computes the top-left (x, y) for the legend box.
 func LegendOrigin(
 	position model.LegendPosition,
-	canvasW, canvasH float64,
-	legendW, legendH float64,
+	available geometry.Size,
+	legend geometry.Size,
 ) (ox, oy float64) {
 	m := model.LegendMargin
 
@@ -44,44 +47,44 @@ func LegendOrigin(
 	case model.LegendPositionTopLeft:
 		return m, m
 	case model.LegendPositionTopCenter:
-		return (canvasW - legendW) / 2, m
+		return (available.Width - legend.Width) / 2, m
 	case model.LegendPositionTopRight:
-		return canvasW - legendW - m, m
+		return available.Width - legend.Width - m, m
 	case model.LegendPositionCenterRight:
-		return canvasW - legendW - m, (canvasH - legendH) / 2
+		return available.Width - legend.Width - m, (available.Height - legend.Height) / 2
 	case model.LegendPositionBottomRight:
-		return canvasW - legendW - m, canvasH - legendH - m
+		return available.Width - legend.Width - m, available.Height - legend.Height - m
 	case model.LegendPositionBottomCenter:
-		return (canvasW - legendW) / 2, canvasH - legendH - m
+		return (available.Width - legend.Width) / 2, available.Height - legend.Height - m
 	case model.LegendPositionCenterLeft:
-		return m, (canvasH - legendH) / 2
+		return m, (available.Height - legend.Height) / 2
 	default:
-		return m, canvasH - legendH - m
+		return m, available.Height - legend.Height - m
 	}
 }
 
 // ReserveSpace computes the width and height reductions needed to reserve
-// space for the legend. Returns zeros if data is nil, position is "none",
-// or there are no entries.
-func ReserveSpace(data *model.LegendData, measurer StringMeasurer) (widthReduction, heightReduction float64) {
+// space for the legend. Returns a zero size if data is nil, position is
+// "none", or there are no entries.
+func ReserveSpace(data *model.LegendData, measurer StringMeasurer) geometry.Size {
 	if data == nil || data.Position == model.LegendPositionNone || len(data.Entries) == 0 {
-		return 0, 0
+		return geometry.Size{}
 	}
 
-	w, h := MeasureLegend(data, measurer)
+	size := MeasureLegend(data, measurer)
 	m := model.LegendMargin
 
 	switch data.Position {
 	case model.LegendPositionCenterLeft, model.LegendPositionCenterRight:
-		return w + 2*m, 0
+		return geometry.Size{Width: size.Width + 2*m}
 	case model.LegendPositionTopCenter, model.LegendPositionBottomCenter:
-		return 0, h + 2*m
+		return geometry.Size{Height: size.Height + 2*m}
 	default:
 		if data.Orientation == model.LegendOrientationHorizontal {
-			return 0, h + 2*m
+			return geometry.Size{Height: size.Height + 2*m}
 		}
 
-		return w + 2*m, 0
+		return geometry.Size{Width: size.Width + 2*m}
 	}
 }
 
@@ -334,8 +337,9 @@ func ContentOffsetV(data *model.LegendData) float64 {
 
 // MeasureLabelSample returns equal width and height for a square or circular
 // label sample.
-func MeasureLabelSample(sample *model.LegendLabelSample) (width, height float64) {
-	return measureLabelSampleImpl(NewBasicMeasurer(), sample)
+func MeasureLabelSample(sample *model.LegendLabelSample) geometry.Size {
+	width, height := measureLabelSampleImpl(NewBasicMeasurer(), sample)
+	return geometry.Size{Width: width, Height: height}
 }
 
 func measureLabelSampleImpl(measurer StringMeasurer, sample *model.LegendLabelSample) (width, height float64) {

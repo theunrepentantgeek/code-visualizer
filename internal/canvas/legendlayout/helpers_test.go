@@ -46,18 +46,18 @@ func TestMeasureLabelSample_Nil_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	w, h := MeasureLabelSample(nil)
-	g.Expect(w).To(Equal(0.0))
-	g.Expect(h).To(Equal(0.0))
+	size := MeasureLabelSample(nil)
+	g.Expect(size.Width).To(Equal(0.0))
+	g.Expect(size.Height).To(Equal(0.0))
 }
 
 func TestMeasureLabelSample_EmptyLines_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	w, h := MeasureLabelSample(&model.LegendLabelSample{Lines: nil})
-	g.Expect(w).To(Equal(0.0))
-	g.Expect(h).To(Equal(0.0))
+	size := MeasureLabelSample(&model.LegendLabelSample{Lines: nil})
+	g.Expect(size.Width).To(Equal(0.0))
+	g.Expect(size.Height).To(Equal(0.0))
 }
 
 func TestMeasureLabelSample_ShortLine_ReturnsSquareAtLeastDoubleSwatchSize(t *testing.T) {
@@ -66,9 +66,9 @@ func TestMeasureLabelSample_ShortLine_ReturnsSquareAtLeastDoubleSwatchSize(t *te
 
 	// "ab" is 14px wide; textH = 1 * LegendLineHeight = 16.
 	// side = max(SwatchSize*2, 14+2*LabelGap, 16+2*LabelGap) = max(56, 26, 28) = 56.
-	w, h := MeasureLabelSample(&model.LegendLabelSample{Lines: []string{"ab"}})
-	g.Expect(w).To(BeNumerically("~", 56, 1))
-	g.Expect(h).To(Equal(w)) // result is a square
+	size := MeasureLabelSample(&model.LegendLabelSample{Lines: []string{"ab"}})
+	g.Expect(size.Width).To(BeNumerically("~", 56, 1))
+	g.Expect(size.Height).To(Equal(size.Width)) // result is a square
 }
 
 func TestMeasureLabelSample_LongLine_SquareDrivenByTextWidth(t *testing.T) {
@@ -77,9 +77,9 @@ func TestMeasureLabelSample_LongLine_SquareDrivenByTextWidth(t *testing.T) {
 
 	// 30 chars × 7px = 210px; side = max(56, 210+12, 16+12) = 222.
 	long := "123456789012345678901234567890"
-	w, h := MeasureLabelSample(&model.LegendLabelSample{Lines: []string{long}})
-	g.Expect(w).To(BeNumerically(">", model.SwatchSize*2))
-	g.Expect(h).To(Equal(w))
+	size := MeasureLabelSample(&model.LegendLabelSample{Lines: []string{long}})
+	g.Expect(size.Width).To(BeNumerically(">", model.SwatchSize*2))
+	g.Expect(size.Height).To(Equal(size.Width))
 }
 
 func TestMeasureLabelSample_MultipleLines_SquareDrivenByHeight(t *testing.T) {
@@ -88,22 +88,22 @@ func TestMeasureLabelSample_MultipleLines_SquareDrivenByHeight(t *testing.T) {
 
 	// 5 short lines: textH = 5 * 16 = 80; side = max(56, short+12, 80+12) = 92.
 	lines := []string{"a", "b", "c", "d", "e"}
-	w, h := MeasureLabelSample(&model.LegendLabelSample{Lines: lines})
-	g.Expect(w).To(BeNumerically(">", model.SwatchSize*2))
-	g.Expect(h).To(Equal(w))
+	size := MeasureLabelSample(&model.LegendLabelSample{Lines: lines})
+	g.Expect(size.Width).To(BeNumerically(">", model.SwatchSize*2))
+	g.Expect(size.Height).To(Equal(size.Width))
 }
 
 func TestMeasureLabelSample_Circle_RemainsSquare(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	w, h := MeasureLabelSample(&model.LegendLabelSample{
+	size := MeasureLabelSample(&model.LegendLabelSample{
 		Shape: model.LegendLabelSampleCircle,
 		Lines: []string{"file-name", "file-size"},
 	})
 
-	g.Expect(w).To(BeNumerically(">", 0))
-	g.Expect(h).To(Equal(w))
+	g.Expect(size.Width).To(BeNumerically(">", 0))
+	g.Expect(size.Height).To(Equal(size.Width))
 }
 
 // MeasureEntryHWidth
