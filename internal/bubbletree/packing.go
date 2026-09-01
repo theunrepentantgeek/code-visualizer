@@ -21,7 +21,7 @@ func linkNodes(a, b *frontNode) {
 }
 
 // packCircles positions circles using a front-chain packing algorithm.
-// On entry each circle must have its Radius set; on exit X and Y are set
+// On entry each circle must have its Radius set; on exit Position is set
 // in a local coordinate frame centred roughly on the packing.
 func packCircles(circles []BubbleNode) {
 	n := len(circles)
@@ -161,7 +161,7 @@ func tangentPositions(rc float64, a, b BubbleNode) (p1, p2 geometry.Point, ok bo
 	db := b.Radius + rc + siblingPadding
 
 	delta := a.Position.VectorTo(b.Position)
-	d := a.Position.DistanceTo(b.Position)
+	d := math.Sqrt(delta.LengthSquared())
 
 	if d < 1e-10 || d > da+db+1e-6 || d < math.Abs(da-db)-1e-6 {
 		return geometry.Point{}, geometry.Point{}, false
@@ -176,7 +176,10 @@ func tangentPositions(rc float64, a, b BubbleNode) (p1, p2 geometry.Point, ok bo
 
 	h := math.Sqrt(h2)
 
-	midpoint := geometry.Lerp(a.Position, b.Position, al/d)
+	midpoint := a.Position.Translate(geometry.Vector{
+		X: al * delta.X / d,
+		Y: al * delta.Y / d,
+	})
 	offset := geometry.Vector{X: h * delta.Y / d, Y: -h * delta.X / d}
 
 	return midpoint.Translate(offset), midpoint.Translate(offset.Scale(-1)), true
@@ -206,7 +209,8 @@ func placeFallback(circles []BubbleNode, i int) {
 	maxDist := 0.0
 
 	for j := range i {
-		d := circles[j].Position.DistanceTo(geometry.Point{}) + circles[j].Radius
+		offset := geometry.Point{}.VectorTo(circles[j].Position)
+		d := math.Sqrt(offset.LengthSquared()) + circles[j].Radius
 		if d > maxDist {
 			maxDist = d
 		}

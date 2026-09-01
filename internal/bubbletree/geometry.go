@@ -78,7 +78,8 @@ func trivialEnclosing(boundary []enclosure) enclosure {
 }
 
 func enclosingTwo(a, b enclosure) enclosure {
-	d := a.center.DistanceTo(b.center)
+	delta := a.center.VectorTo(b.center)
+	d := math.Sqrt(delta.LengthSquared())
 
 	// One circle contains the other.
 	if d+a.radius <= b.radius {
@@ -94,7 +95,7 @@ func enclosingTwo(a, b enclosure) enclosure {
 	// t ranges from 0 (at a) to 1 (at b).
 	t := 0.5 + (b.radius-a.radius)/(2*d)
 
-	return enclosure{center: geometry.Lerp(a.center, b.center, t), radius: r}
+	return enclosure{center: a.center.Translate(delta.Scale(t)), radius: r}
 }
 
 // enclosingThree solves for the minimum circle enclosing three boundary circles

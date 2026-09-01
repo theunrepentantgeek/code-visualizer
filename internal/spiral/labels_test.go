@@ -130,6 +130,31 @@ func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
 	}))
 }
 
+func TestBuildDiscLabels_PreservesPrePointOffsetGrouping(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	nodes := []SpiralNode{{
+		Position:   geometry.Point{X: -2.3, Y: -0.1},
+		DiscRadius: 2.1,
+	}}
+	buckets := []TimeBucket{{
+		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		Files: makeFiles(1),
+	}}
+
+	labels := buildDiscLabels(
+		nodes,
+		buckets,
+		inks.FixedInk(color.RGBA{A: 255}),
+		LabelMetrics{Size: commitCountMetric},
+	)
+
+	g.Expect(labels).To(HaveLen(1))
+	g.Expect(labels[0].X).To(Equal(-2.4000000000000004))
+	g.Expect(labels[0].Y).To(Equal(-0.20000000000000018))
+}
+
 func TestBuildDiscLabels_UsesOnlyPairedNodesAndBuckets(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

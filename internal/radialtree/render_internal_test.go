@@ -382,6 +382,5 @@ func TestCollectDiscsLeaf_TranslatesPositionFromCenter(t *testing.T) {
 	entries := collectDiscsLeaf(node, file, geometry.Point{X: 400, Y: 300})
 
 	g.Expect(entries).To(HaveLen(1))
-	g.Expect(entries[0].sx).To(Equal(425.0))
-	g.Expect(entries[0].sy).To(Equal(285.0))
+	g.Expect(entries[0].position).To(Equal(geometry.Point{X: 425, Y: 285}))
 }

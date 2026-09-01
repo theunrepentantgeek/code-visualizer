@@ -83,6 +83,43 @@ func TestTangentPositions_OneInsideOther_ReturnsFalse(t *testing.T) {
 	g.Expect(ok).To(BeFalse())
 }
 
+func TestTangentPositions_PreservesPrePointEvaluationOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	a := BubbleNode{Position: geometry.Point{X: -10.7, Y: -10.7}, Radius: 0.1}
+	b := BubbleNode{Position: geometry.Point{X: -5.3, Y: 0.1}, Radius: 0.2}
+
+	p1, p2, ok := tangentPositions(3.9, a, b)
+
+	g.Expect(ok).To(BeTrue())
+	g.Expect(p1).To(Equal(geometry.Point{
+		X: -4.770151522985639,
+		Y: -6.980202016284957,
+	}))
+	g.Expect(p2).To(Equal(geometry.Point{
+		X: -11.282070699236581,
+		Y: -3.724242428159486,
+	}))
+}
+
+func TestPlaceFallback_PreservesPrePointDistanceEvaluationOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	circles := []BubbleNode{
+		{Position: geometry.Point{X: -1000.3, Y: -100.7}, Radius: 0.1},
+		{Radius: 0.1},
+	}
+
+	placeFallback(circles, 1)
+
+	g.Expect(circles[1].Position).To(Equal(geometry.Point{
+		X: -743.6777670569004,
+		Y: 681.2697533617113,
+	}))
+}
+
 // ---------------------------------------------------------------------------
 // anyOverlap
 // ---------------------------------------------------------------------------
