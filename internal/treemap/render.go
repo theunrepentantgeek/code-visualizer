@@ -210,10 +210,10 @@ func addDirectoryShapes(
 		rail := rect.Chrome.Rail
 		cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
 			Spec:  dirRailSpecForDepth(railSpecs, rect.VisibleDepth),
-			X:     rail.X,
-			Y:     rail.Y,
-			W:     rail.W,
-			H:     rail.H,
+			X:     rail.Min.X,
+			Y:     rail.Min.Y,
+			W:     rail.Width(),
+			H:     rail.Height(),
 			Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 		})
 	}
@@ -221,8 +221,8 @@ func addDirectoryShapes(
 	if rect.Chrome.Orientation != DirectoryLabelNone && rect.Chrome.Text != "" {
 		spec := dirTopLabelSpec
 		rail := rect.Chrome.Rail
-		x := rail.X + rail.W/2
-		y := rail.Y + rail.H/2
+		x := rail.Min.X + rail.Width()/2
+		y := rail.Min.Y + rail.Height()/2
 
 		if rect.Chrome.Orientation == DirectoryLabelLeft {
 			spec = dirLeftLabelSpec
@@ -236,7 +236,7 @@ func addDirectoryShapes(
 	}
 
 	// Directory border - BorderWidth varies per directory; look up the pre-allocated spec.
-	bw := DynBorderWidth(rect.W, rect.H, inks.KindNumeric)
+	bw := DynBorderWidth(rect.Bounds.Width(), rect.Bounds.Height(), inks.KindNumeric)
 	idx := specIndex(bw)
 
 	var borderSpec *canvas.RectangleSpec
@@ -254,10 +254,10 @@ func addDirectoryShapes(
 
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
 		Spec:  borderSpec,
-		X:     rect.X,
-		Y:     rect.Y,
-		W:     rect.W,
-		H:     rect.H,
+		X:     rect.Bounds.Min.X,
+		Y:     rect.Bounds.Min.Y,
+		W:     rect.Bounds.Width(),
+		H:     rect.Bounds.Height(),
 		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
@@ -271,7 +271,7 @@ func addFileRectForFile(
 	weightFraction float64,
 	fileSpecs fileRectSpecs,
 ) {
-	if rect.W <= 0 || rect.H <= 0 {
+	if rect.Bounds.Width() <= 0 || rect.Bounds.Height() <= 0 {
 		return
 	}
 
@@ -280,7 +280,7 @@ func addFileRectForFile(
 	fillMV := inks.MetricValueForFile(file, is.Fill)
 	borderMV := inks.MetricValueForFile(file, is.Border)
 
-	bw := DynBorderWidth(rect.W, rect.H, hasBorder)
+	bw := DynBorderWidth(rect.Bounds.Width(), rect.Bounds.Height(), hasBorder)
 	idx := specIndex(bw)
 
 	var spec *canvas.RectangleSpec
@@ -298,10 +298,10 @@ func addFileRectForFile(
 
 	cv.AddRectangle(canvas.LayerContent, canvas.Rectangle{
 		Spec:   spec,
-		X:      rect.X,
-		Y:      rect.Y,
-		W:      rect.W,
-		H:      rect.H,
+		X:      rect.Bounds.Min.X,
+		Y:      rect.Bounds.Min.Y,
+		W:      rect.Bounds.Width(),
+		H:      rect.Bounds.Height(),
 		Fill:   fillMV,
 		Border: borderMV,
 		Focus:  focus,
@@ -309,20 +309,20 @@ func addFileRectForFile(
 }
 
 func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) canvasmodel.GradientPoint {
-	if fileRect.W <= 0 || fileRect.H <= 0 {
+	if fileRect.Bounds.Width() <= 0 || fileRect.Bounds.Height() <= 0 {
 		return canvasmodel.GradientPoint{X: 0.5, Y: 0.5}
 	}
 
-	fileCX := fileRect.X + fileRect.W/2
-	fileCY := fileRect.Y + fileRect.H/2
-	dirCX := dirRect.X + dirRect.W/2
-	dirCY := dirRect.Y + dirRect.H/2
+	fileCX := fileRect.Bounds.Min.X + fileRect.Bounds.Width()/2
+	fileCY := fileRect.Bounds.Min.Y + fileRect.Bounds.Height()/2
+	dirCX := dirRect.Bounds.Min.X + dirRect.Bounds.Width()/2
+	dirCY := dirRect.Bounds.Min.Y + dirRect.Bounds.Height()/2
 	focusX := fileCX + (dirCX-fileCX)*weightFraction
 	focusY := fileCY + (dirCY-fileCY)*weightFraction
 
 	return canvasmodel.GradientPoint{
-		X: (focusX - fileRect.X) / fileRect.W,
-		Y: (focusY - fileRect.Y) / fileRect.H,
+		X: (focusX - fileRect.Bounds.Min.X) / fileRect.Bounds.Width(),
+		Y: (focusY - fileRect.Bounds.Min.Y) / fileRect.Bounds.Height(),
 	}
 }
 

@@ -37,8 +37,8 @@ func TestRenderToCanvas_DrawsTopDirectoryChrome(t *testing.T) {
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelTop,
 		Text:        "source",
-		Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 80, H: 20},
-		Content:     treemap.RectangleBounds{X: 14, Y: 30, W: 72, H: 56},
+		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
+		Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
 	}, 0)
 
 	g.Expect(hasRectangle(
@@ -62,8 +62,8 @@ func TestRenderToCanvas_DrawsLeftDirectoryChrome(t *testing.T) {
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelLeft,
 		Text:        "source",
-		Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 20, H: 80},
-		Content:     treemap.RectangleBounds{X: 30, Y: 14, W: 56, H: 72},
+		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 30, Y: 90}},
+		Content:     geometry.Rect{Min: geometry.Point{X: 30, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
 	}, 0)
 
 	g.Expect(hasRectangle(
@@ -86,7 +86,7 @@ func TestRenderToCanvas_OmitsDirectoryChromeWhenOrientationIsNone(t *testing.T) 
 	g := NewGomegaWithT(t)
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelNone,
-		Content:     treemap.RectangleBounds{X: 14, Y: 14, W: 72, H: 72},
+		Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
 	}, 0)
 
 	g.Expect(backend.texts).To(BeEmpty())
@@ -118,8 +118,8 @@ func TestRenderToCanvas_TopRailUsesDepthPaletteAcrossAllPaletteDepths(t *testing
 			backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 				Orientation: treemap.DirectoryLabelTop,
 				Text:        "source",
-				Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 80, H: 20},
-				Content:     treemap.RectangleBounds{X: 14, Y: 30, W: 72, H: 56},
+				Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
+				Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
 			}, depth)
 
 			fill, ok := railFillAt(
@@ -140,8 +140,8 @@ func TestRenderToCanvas_LeftRailWrapsPaletteAtPaletteLength(t *testing.T) {
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelLeft,
 		Text:        "source",
-		Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 20, H: 80},
-		Content:     treemap.RectangleBounds{X: 30, Y: 14, W: 56, H: 72},
+		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 30, Y: 90}},
+		Content:     geometry.Rect{Min: geometry.Point{X: 30, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
 	}, len(expectedHeaderFills))
 
 	fill, ok := railFillAt(
@@ -168,8 +168,8 @@ func TestRenderToCanvas_TopRailAtNegativeDepthUsesDarkestFillWithoutPanicking(t 
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelTop,
 		Text:        "source",
-		Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 80, H: 20},
-		Content:     treemap.RectangleBounds{X: 14, Y: 30, W: 72, H: 56},
+		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
+		Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
 	}, -1)
 
 	fill, ok := railFillAt(
@@ -212,32 +212,23 @@ func renderDirectoryChrome(t *testing.T, chrome treemap.DirectoryChrome, visible
 		},
 	}
 	rects := treemap.TreemapRectangle{
-		X:            0,
-		Y:            0,
-		W:            100,
-		H:            100,
+		Bounds:       geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
 		VisibleDepth: -1,
 		IsDirectory:  true,
 		Chrome: treemap.DirectoryChrome{
 			Orientation: treemap.DirectoryLabelNone,
-			Content:     treemap.RectangleBounds{X: 4, Y: 4, W: 92, H: 92},
+			Content:     geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 96}},
 		},
 		Children: []treemap.TreemapRectangle{
 			{
-				X:            10,
-				Y:            10,
-				W:            80,
-				H:            80,
+				Bounds:       geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
 				VisibleDepth: visibleDepth,
 				Label:        "source",
 				IsDirectory:  true,
 				Chrome:       chrome,
 				Children: []treemap.TreemapRectangle{
 					{
-						X: 14,
-						Y: 14,
-						W: 72,
-						H: 72,
+						Bounds: geometry.Rect{Min: geometry.Point{X: 14, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
 					},
 				},
 			},
@@ -266,51 +257,42 @@ func renderSiblingDirectoryChrome(t *testing.T) *captureBackend {
 		},
 	}
 	rects := treemap.TreemapRectangle{
-		X:            0,
-		Y:            0,
-		W:            100,
-		H:            100,
+		Bounds:       geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
 		VisibleDepth: -1,
 		IsDirectory:  true,
 		Chrome: treemap.DirectoryChrome{
 			Orientation: treemap.DirectoryLabelNone,
-			Content:     treemap.RectangleBounds{X: 4, Y: 4, W: 92, H: 92},
+			Content:     geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 96}},
 		},
 		Children: []treemap.TreemapRectangle{
 			{
-				X:            10,
-				Y:            10,
-				W:            35,
-				H:            80,
+				Bounds:       geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 90}},
 				VisibleDepth: 0,
 				Label:        "alpha",
 				IsDirectory:  true,
 				Chrome: treemap.DirectoryChrome{
 					Orientation: treemap.DirectoryLabelTop,
 					Text:        "alpha",
-					Rail:        treemap.RectangleBounds{X: 10, Y: 10, W: 35, H: 20},
-					Content:     treemap.RectangleBounds{X: 14, Y: 30, W: 27, H: 56},
+					Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 30}},
+					Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 41, Y: 86}},
 				},
 				Children: []treemap.TreemapRectangle{
-					{X: 14, Y: 30, W: 27, H: 56},
+					{Bounds: geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 41, Y: 86}}},
 				},
 			},
 			{
-				X:            55,
-				Y:            10,
-				W:            35,
-				H:            80,
+				Bounds:       geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
 				VisibleDepth: 0,
 				Label:        "beta",
 				IsDirectory:  true,
 				Chrome: treemap.DirectoryChrome{
 					Orientation: treemap.DirectoryLabelTop,
 					Text:        "beta",
-					Rail:        treemap.RectangleBounds{X: 55, Y: 10, W: 35, H: 20},
-					Content:     treemap.RectangleBounds{X: 59, Y: 30, W: 27, H: 56},
+					Rail:        geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
+					Content:     geometry.Rect{Min: geometry.Point{X: 59, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
 				},
 				Children: []treemap.TreemapRectangle{
-					{X: 59, Y: 30, W: 27, H: 56},
+					{Bounds: geometry.Rect{Min: geometry.Point{X: 59, Y: 30}, Max: geometry.Point{X: 86, Y: 86}}},
 				},
 			},
 		},

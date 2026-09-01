@@ -52,7 +52,7 @@ func addScatterStructure(cv *canvas.Canvas, layout ScatterLayout) {
 	addScatterAxisLabels(cv, layout)
 }
 
-func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
+func addScatterPlotBorder(cv *canvas.Canvas, plot geometry.Rect) {
 	plotSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        inks.FixedInk(scatterBgColour),
@@ -63,10 +63,10 @@ func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
 
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
 		Spec:  plotSpec,
-		X:     plot.X,
-		Y:     plot.Y,
-		W:     plot.W,
-		H:     plot.H,
+		X:     plot.Min.X,
+		Y:     plot.Min.Y,
+		W:     plot.Width(),
+		H:     plot.Height(),
 		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
@@ -76,8 +76,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
-			From: geometry.NewPoint(tick.Position, layout.Plot.Y),
-			To:   geometry.NewPoint(tick.Position, layout.Plot.Y+layout.Plot.H),
+			From: geometry.NewPoint(tick.Position, layout.Plot.Min.Y),
+			To:   geometry.NewPoint(tick.Position, layout.Plot.Max.Y),
 		})
 	}
 

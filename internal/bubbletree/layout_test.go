@@ -1,11 +1,11 @@
 package bubbletree
 
 import (
-	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
@@ -376,50 +376,36 @@ func TestLayoutFitsWithinCanvas(t *testing.T) {
 
 	// The root circle itself is never rendered; its padded radius may exceed
 	// the canvas. What must fit is the content — all descendant circles.
-	box := contentBoundsForTest(node)
-	g.Expect(box.minX).To(BeNumerically(">=", -1.0))
-	g.Expect(box.minY).To(BeNumerically(">=", -1.0))
-	g.Expect(box.maxX).To(BeNumerically("<=", float64(width)+1.0))
-	g.Expect(box.maxY).To(BeNumerically("<=", float64(height)+1.0))
+	box, _ := contentBoundsForTest(node)
+	g.Expect(box.Min.X).To(BeNumerically(">=", -1.0))
+	g.Expect(box.Min.Y).To(BeNumerically(">=", -1.0))
+	g.Expect(box.Max.X).To(BeNumerically("<=", float64(width)+1.0))
+	g.Expect(box.Max.Y).To(BeNumerically("<=", float64(height)+1.0))
 }
 
 // contentBoundsForTest returns the axis-aligned bounding box of all descendant
 // nodes (not the root itself, which is never drawn).
-func contentBoundsForTest(root BubbleNode) bounds {
-	box := bounds{
-		minX: math.MaxFloat64,
-		maxX: -math.MaxFloat64,
-		minY: math.MaxFloat64,
-		maxY: -math.MaxFloat64,
-	}
+func contentBoundsForTest(root BubbleNode) (geometry.Rect, bool) {
+	var (
+		box geometry.Rect
+		has bool
+	)
 
 	for _, child := range root.Children {
-		addBoundsForTest(child, &box)
+		box, has = addBoundsForTest(child, box, has)
 	}
 
-	return box
+	return box, has
 }
 
-func addBoundsForTest(node BubbleNode, box *bounds) {
-	if l := node.Position.X - node.Radius; l < box.minX {
-		box.minX = l
-	}
-
-	if r := node.Position.X + node.Radius; r > box.maxX {
-		box.maxX = r
-	}
-
-	if t := node.Position.Y - node.Radius; t < box.minY {
-		box.minY = t
-	}
-
-	if b := node.Position.Y + node.Radius; b > box.maxY {
-		box.maxY = b
-	}
+func addBoundsForTest(node BubbleNode, box geometry.Rect, has bool) (geometry.Rect, bool) {
+	box, has = expandBoundsForDisc(box, has, node.Position, node.Radius)
 
 	for _, child := range node.Children {
-		addBoundsForTest(child, box)
+		box, has = addBoundsForTest(child, box, has)
 	}
+
+	return box, has
 }
 
 func TestLayoutRootLabel(t *testing.T) {

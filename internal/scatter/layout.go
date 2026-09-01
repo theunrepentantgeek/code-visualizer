@@ -29,7 +29,7 @@ type ScatterPoint struct {
 
 // ScatterLayout is the rendered geometry for a scatter plot.
 type ScatterLayout struct {
-	Plot   PlotRect
+	Plot   geometry.Rect
 	XAxis  ResolvedAxis
 	YAxis  ResolvedAxis
 	Points []ScatterPoint
@@ -37,11 +37,11 @@ type ScatterLayout struct {
 
 // Layout converts the dataset into absolute plot geometry.
 func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLayout {
-	plot := PlotRect{
-		X: scatterPlotLeftMargin,
-		Y: scatterPlotTopMargin,
-		W: math.Max(1, float64(width)-scatterPlotLeftMargin-scatterPlotRightMargin),
-		H: math.Max(1, float64(height)-scatterPlotTopMargin-scatterPlotBottomMargin),
+	plotW := math.Max(1, float64(width)-scatterPlotLeftMargin-scatterPlotRightMargin)
+	plotH := math.Max(1, float64(height)-scatterPlotTopMargin-scatterPlotBottomMargin)
+	plot := geometry.Rect{
+		Min: geometry.Point{X: scatterPlotLeftMargin, Y: scatterPlotTopMargin},
+		Max: geometry.Point{X: scatterPlotLeftMargin + plotW, Y: scatterPlotTopMargin + plotH},
 	}
 
 	layout := ScatterLayout{
@@ -81,8 +81,7 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 
 // OffsetLayout shifts the layout when legend space has been reserved.
 func OffsetLayout(layout *ScatterLayout, offset geometry.Vector) {
-	layout.Plot.X += offset.X
-	layout.Plot.Y += offset.Y
+	layout.Plot = layout.Plot.Translate(offset)
 	layout.XAxis.Offset(offset.X)
 	layout.YAxis.Offset(offset.Y)
 
@@ -113,8 +112,8 @@ func sizeExtent(points []PointDatum) (minSize, maxSize float64) {
 }
 
 func maxPointRadius(layout ScatterLayout, pointCount int) float64 {
-	cellW := axisSlotSize(layout.XAxis, layout.Plot.W, pointCount)
-	cellH := axisSlotSize(layout.YAxis, layout.Plot.H, pointCount)
+	cellW := axisSlotSize(layout.XAxis, layout.Plot.Width(), pointCount)
+	cellH := axisSlotSize(layout.YAxis, layout.Plot.Height(), pointCount)
 	maxRadius := math.Min(cellW, cellH) * scatterMaxRadiusFactor
 
 	if maxRadius < 4 {

@@ -10,38 +10,46 @@ import (
 // Coordinate bounds helpers (used by scaling and layout)
 // ---------------------------------------------------------------------------
 
-type bounds struct {
-	minX float64
-	minY float64
-	maxX float64
-	maxY float64
+// occupiedBounds returns the tight axis-aligned bounding box of the node's
+// occupied area in its local coordinate frame, and whether any disc
+// contributed to it. A node with no children and no visible label
+// contributes nothing, so the returned bool is false.
+func occupiedBounds(node *BubbleNode) (geometry.Rect, bool) {
+	var (
+		box geometry.Rect
+		has bool
+	)
+
+	for _, c := range node.Children {
+		box, has = expandBoundsForDisc(box, has, c.Position, c.Radius)
+	}
+
+	if node.ShowLabel && node.Radius > 0 {
+		box, has = expandBoundsForDisc(box, has, geometry.Point{}, node.Radius)
+	}
+
+	return box, has
 }
 
-func newEmptyBounds() bounds {
-	return bounds{
-		minX: math.MaxFloat64,
-		minY: math.MaxFloat64,
-		maxX: -math.MaxFloat64,
-		maxY: -math.MaxFloat64,
-	}
-}
-
-func expandBoundsForDisc(box *bounds, center geometry.Point, radius float64) {
-	if center.X-radius < box.minX {
-		box.minX = center.X - radius
+// expandBoundsForDisc returns box expanded to include the disc at center with
+// radius, and true. When box has not yet received a disc (has is false), the
+// disc's own bounds become box directly, avoiding a false union with an
+// arbitrary starting rectangle.
+func expandBoundsForDisc(box geometry.Rect, has bool, center geometry.Point, radius float64) (geometry.Rect, bool) {
+	discBounds := geometry.Rect{
+		Min: geometry.Point{X: center.X - radius, Y: center.Y - radius},
+		Max: geometry.Point{X: center.X + radius, Y: center.Y + radius},
 	}
 
-	if center.Y-radius < box.minY {
-		box.minY = center.Y - radius
+	if !has {
+		return discBounds, true
 	}
 
-	if center.X+radius > box.maxX {
-		box.maxX = center.X + radius
+	if unioned, ok := box.Union(discBounds); ok {
+		return unioned, true
 	}
 
-	if center.Y+radius > box.maxY {
-		box.maxY = center.Y + radius
-	}
+	return box, has
 }
 
 // ---------------------------------------------------------------------------
@@ -69,12 +77,12 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 		return
 	}
 
-	box := occupiedBounds(node)
+	box, has := occupiedBounds(node)
 
-	boxW := box.maxX - box.minX
-	boxH := box.maxY - box.minY
+	boxW := box.Width()
+	boxH := box.Height()
 
-	if boxW <= 0 || boxH <= 0 {
+	if !has || boxW <= 0 || boxH <= 0 {
 		node.Position = geometry.NewPoint(width/2, height/2)
 		node.Radius *= math.Min(width, height) / (2 * node.Radius)
 
@@ -85,8 +93,8 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	scale := math.Min(width*usable/boxW, height*usable/boxH)
 
 	// Place the root node so that the bounding box centre maps to the canvas centre.
-	boxCx := (box.minX + box.maxX) / 2
-	boxCy := (box.minY + box.maxY) / 2
+	boxCx := (box.Min.X + box.Max.X) / 2
+	boxCy := (box.Min.Y + box.Max.Y) / 2
 
 	node.Position = geometry.NewPoint(width/2-boxCx*scale, height/2-boxCy*scale)
 	node.Radius *= scale

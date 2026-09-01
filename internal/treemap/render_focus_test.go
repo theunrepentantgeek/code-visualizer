@@ -79,11 +79,11 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 		},
 	}
 	rects := treemap.TreemapRectangle{
-		X: 0, Y: 0, W: 100, H: 100,
-		Label: "root", IsDirectory: true,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
+		Label:  "root", IsDirectory: true,
 		Children: []treemap.TreemapRectangle{
-			{X: 0, Y: 20, W: 50, H: 80},
-			{X: 50, Y: 20, W: 50, H: 80},
+			{Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 20}, Max: geometry.Point{X: 50, Y: 100}}},
+			{Bounds: geometry.Rect{Min: geometry.Point{X: 50, Y: 20}, Max: geometry.Point{X: 100, Y: 100}}},
 		},
 	}
 	is := treemap.Inks{
