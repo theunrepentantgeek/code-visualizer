@@ -44,6 +44,7 @@ func Lerp(a, b Point, fraction float64) Point {
 	if fraction == 0 {
 		return a
 	}
+
 	if fraction == 1 {
 		return b
 	}

@@ -169,6 +169,7 @@ func addTrack(cv *canvas.Canvas, layout SpiralLayout) {
 	points := make([]geometry.Point, steps)
 
 	center := geometry.Point{X: layout.CX, Y: layout.CY}
+
 	for i := range steps {
 		t := float64(i) / float64(steps-1)
 		theta := t * layout.MaxTheta

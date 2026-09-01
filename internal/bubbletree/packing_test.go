@@ -128,7 +128,7 @@ func TestAnyOverlap_NoCircles(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, nil, -1, -1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, nil, -1, -1)).To(BeFalse())
 }
 
 func TestAnyOverlap_FarAway_NoOverlap(t *testing.T) {
@@ -140,7 +140,7 @@ func TestAnyOverlap_FarAway_NoOverlap(t *testing.T) {
 		{Position: geometry.Point{X: 100, Y: 0}, Radius: 5},
 	}
 
-	g.Expect(anyOverlap(geometry.Point{0, 50}, 5, placed, -1, -1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 50}, 5, placed, -1, -1)).To(BeFalse())
 }
 
 func TestAnyOverlap_DirectOverlap(t *testing.T) {
@@ -152,7 +152,7 @@ func TestAnyOverlap_DirectOverlap(t *testing.T) {
 	}
 
 	// Exactly on top of circle 0.
-	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, placed, -1, -1)).To(BeTrue())
+	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, placed, -1, -1)).To(BeTrue())
 }
 
 func TestAnyOverlap_SkipsAnchorIndices(t *testing.T) {
@@ -165,7 +165,7 @@ func TestAnyOverlap_SkipsAnchorIndices(t *testing.T) {
 		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5},
 	}
 
-	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, placed, 0, 1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, placed, 0, 1)).To(BeFalse())
 }
 
 func TestAnyOverlap_SkipsOneAnchor_OverlapsOther(t *testing.T) {
@@ -177,7 +177,7 @@ func TestAnyOverlap_SkipsOneAnchor_OverlapsOther(t *testing.T) {
 		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5}, // not skipped — overlaps
 	}
 
-	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, placed, 0, -1)).To(BeTrue())
+	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, placed, 0, -1)).To(BeTrue())
 }
 
 // ---------------------------------------------------------------------------

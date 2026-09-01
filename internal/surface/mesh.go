@@ -361,6 +361,7 @@ func triangleWithinOuterRadius(annulus Annulus, triangle Triangle) bool {
 	outerRadiusSquared := outerRadius * outerRadius
 
 	center := geometry.Point{X: annulus.CX, Y: annulus.CY}
+
 	for _, sample := range triangle.Points {
 		if !isFiniteSample(sample) {
 			return false
@@ -445,6 +446,7 @@ func pointStrictlyInTriangle(point Sample, triangle Triangle) bool {
 func squaredDistanceToSegment(x, y float64, start, end Sample) float64 {
 	point := geometry.Point{X: x, Y: y}
 	segment := start.Position.VectorTo(end.Position)
+
 	lengthSquared := segment.LengthSquared()
 	if lengthSquared == 0 {
 		return point.DistanceSquaredTo(start.Position)

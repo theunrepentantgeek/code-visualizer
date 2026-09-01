@@ -7,11 +7,10 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
