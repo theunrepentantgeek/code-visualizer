@@ -3,6 +3,7 @@ package spiral
 import (
 	"math"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
@@ -12,12 +13,11 @@ func BuildSurface(layout SpiralLayout, values []float64, seed uint64) []surface.
 		return nil
 	}
 
-	originals := make([]surface.Point, len(layout.Nodes))
+	originals := make([]surface.Sample, len(layout.Nodes))
 	for index, node := range layout.Nodes {
-		originals[index] = surface.Point{
-			X:     node.X,
-			Y:     node.Y,
-			Value: values[index],
+		originals[index] = surface.Sample{
+			Position: geometry.Point{X: node.X, Y: node.Y},
+			Value:    values[index],
 		}
 	}
 

@@ -11,18 +11,18 @@ const (
 )
 
 type interpolationModel struct {
-	observations []Point
+	observations []Sample
 	radius       float64
 }
 
-// Interpolate estimates a point's value from observed points with compact support.
-func Interpolate(point Point, originals []Point) float64 {
+// Interpolate estimates a sample's value from observed samples with compact support.
+func Interpolate(sample Sample, originals []Sample) float64 {
 	model, ok := newInterpolationModel(originals)
 	if !ok {
 		return 0
 	}
 
-	value, ok := model.interpolate(point)
+	value, ok := model.interpolate(sample)
 	if !ok {
 		return 0
 	}
@@ -30,7 +30,7 @@ func Interpolate(point Point, originals []Point) float64 {
 	return value
 }
 
-func newInterpolationModel(originals []Point) (interpolationModel, bool) {
+func newInterpolationModel(originals []Sample) (interpolationModel, bool) {
 	observations := observedPoints(originals)
 	if len(observations) == 0 {
 		return interpolationModel{}, false
@@ -44,11 +44,11 @@ func newInterpolationModel(originals []Point) (interpolationModel, bool) {
 	return interpolationModel{observations: observations, radius: radius}, true
 }
 
-func interpolationSupportRadius(observations []Point) (float64, bool) {
+func interpolationSupportRadius(observations []Sample) (float64, bool) {
 	nearestPositiveDistances := make([]float64, 0, len(observations))
 
 	for index, observation := range observations {
-		if !isFinitePoint(observation) || !isFinite(observation.Value) {
+		if !isFiniteSample(observation) || !isFinite(observation.Value) {
 			continue
 		}
 
@@ -73,7 +73,7 @@ func interpolationSupportRadius(observations []Point) (float64, bool) {
 	return radius, true
 }
 
-func nearestPositiveDistance(observations []Point, observationIndex int) (float64, bool) {
+func nearestPositiveDistance(observations []Sample, observationIndex int) (float64, bool) {
 	nearestDistance := math.Inf(1)
 
 	for otherIndex, other := range observations {
@@ -81,7 +81,7 @@ func nearestPositiveDistance(observations []Point, observationIndex int) (float6
 			continue
 		}
 
-		distance := Distance(observations[observationIndex], other)
+		distance := observations[observationIndex].Position.DistanceTo(other.Position)
 		if isFinite(distance) && distance > 0 {
 			nearestDistance = min(nearestDistance, distance)
 		}
@@ -102,21 +102,21 @@ func smootherstepWeight(t float64) float64 {
 	return 1 - t*t*t*(t*(6*t-15)+10)
 }
 
-func (model interpolationModel) interpolate(point Point) (float64, bool) {
-	if !isFinitePoint(point) || !isFinite(model.radius) || model.radius <= 0 {
+func (model interpolationModel) interpolate(sample Sample) (float64, bool) {
+	if !isFiniteSample(sample) || !isFinite(model.radius) || model.radius <= 0 {
 		return 0, false
 	}
 
-	if value, found := observedValueAt(point, model.observations); found {
+	if value, found := observedValueAt(sample, model.observations); found {
 		return value, true
 	}
 
-	return model.weightedValue(point)
+	return model.weightedValue(sample)
 }
 
-func observedValueAt(point Point, observations []Point) (float64, bool) {
+func observedValueAt(sample Sample, observations []Sample) (float64, bool) {
 	for _, observation := range observations {
-		if point.X == observation.X && point.Y == observation.Y {
+		if sample.Position == observation.Position {
 			return observation.Value, true
 		}
 	}
@@ -124,14 +124,14 @@ func observedValueAt(point Point, observations []Point) (float64, bool) {
 	return 0, false
 }
 
-func (model interpolationModel) weightedValue(point Point) (float64, bool) {
+func (model interpolationModel) weightedValue(sample Sample) (float64, bool) {
 	var (
 		weightedValue float64
 		totalWeight   float64
 	)
 
 	for _, observation := range model.observations {
-		distance := Distance(point, observation)
+		distance := sample.Position.DistanceTo(observation.Position)
 		if !isFinite(distance) {
 			continue
 		}
@@ -157,10 +157,10 @@ func (model interpolationModel) weightedValue(point Point) (float64, bool) {
 	return value, true
 }
 
-func (model interpolationModel) assign(point Point) Point {
-	value, supported := model.interpolate(point)
-	point.Value = value
-	point.unsupported = !supported
+func (model interpolationModel) assign(sample Sample) Sample {
+	value, supported := model.interpolate(sample)
+	sample.Value = value
+	sample.unsupported = !supported
 
-	return point
+	return sample
 }

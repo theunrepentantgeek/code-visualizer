@@ -11,6 +11,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
@@ -34,8 +35,8 @@ func TestBuildSurface_CreatesTrianglesWithCentroidsInSpiralAnnulus(t *testing.T)
 	outerRadius := layout.A + layout.B*layout.MaxTheta + halfSpacing
 
 	for _, triangle := range triangles {
-		centroidX := (triangle.Points[0].X + triangle.Points[1].X + triangle.Points[2].X) / 3
-		centroidY := (triangle.Points[0].Y + triangle.Points[1].Y + triangle.Points[2].Y) / 3
+		centroidX := (triangle.Points[0].Position.X + triangle.Points[1].Position.X + triangle.Points[2].Position.X) / 3
+		centroidY := (triangle.Points[0].Position.Y + triangle.Points[1].Position.Y + triangle.Points[2].Position.Y) / 3
 		distance := math.Hypot(centroidX-layout.CX, centroidY-layout.CY)
 
 		g.Expect(distance).To(BeNumerically(">=", innerRadius))
@@ -67,7 +68,7 @@ func TestBuildSurface_ExtendsHalfCoilSpacingBeyondSpiralTrack(t *testing.T) {
 
 	for _, triangle := range triangles {
 		for _, point := range triangle.Points {
-			radius := math.Hypot(point.X-layout.CX, point.Y-layout.CY)
+			radius := math.Hypot(point.Position.X-layout.CX, point.Position.Y-layout.CY)
 			minimumRadius = math.Min(minimumRadius, radius)
 			maximumRadius = math.Max(maximumRadius, radius)
 		}
@@ -148,18 +149,18 @@ func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
 	layout, buckets := surfaceRenderFixture()
 	triangles := []surface.Triangle{
 		{
-			Points: [3]surface.Point{
-				{X: 20, Y: 30, Value: 1},
-				{X: 40, Y: 30, Value: 1},
-				{X: 20, Y: 50, Value: 1},
+			Points: [3]surface.Sample{
+				{Position: geometry.Point{X: 20, Y: 30}, Value: 1},
+				{Position: geometry.Point{X: 40, Y: 30}, Value: 1},
+				{Position: geometry.Point{X: 20, Y: 50}, Value: 1},
 			},
 			Value: 1,
 		},
 		{
-			Points: [3]surface.Point{
-				{X: 40, Y: 30, Value: 1},
-				{X: 40, Y: 50, Value: 1},
-				{X: 20, Y: 50, Value: 1},
+			Points: [3]surface.Sample{
+				{Position: geometry.Point{X: 40, Y: 30}, Value: 1},
+				{Position: geometry.Point{X: 40, Y: 50}, Value: 1},
+				{Position: geometry.Point{X: 20, Y: 50}, Value: 1},
 			},
 			Value: 1,
 		},
@@ -439,10 +440,10 @@ func bandedSurfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []s
 	buckets := largeSurfaceStageBuckets()
 	layout := spiral.Layout(buckets, 320, 240, spiral.Daily)
 	triangles := []surface.Triangle{{
-		Points: [3]surface.Point{
-			{X: 20, Y: 30, Value: 1},
-			{X: 40, Y: 30, Value: 1},
-			{X: 20, Y: 50, Value: 3},
+		Points: [3]surface.Sample{
+			{Position: geometry.Point{X: 20, Y: 30}, Value: 1},
+			{Position: geometry.Point{X: 40, Y: 30}, Value: 1},
+			{Position: geometry.Point{X: 20, Y: 50}, Value: 3},
 		},
 		Value: 5.0 / 3.0,
 	}}
