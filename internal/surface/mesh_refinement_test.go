@@ -4,9 +4,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
-
 	"github.com/fogleman/delaunay"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestRefinementPointLimitReservesHalfEdgeGrid(t *testing.T) {

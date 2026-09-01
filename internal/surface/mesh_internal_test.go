@@ -44,12 +44,24 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 	region := Annulus{InnerRadius: 1, OuterRadius: 8}
 	originals := []Sample{
 		{Position: geometry.Point{X: 4, Y: 0}},
-		{Position: geometry.Point{X: 4 * math.Cos(2*math.Pi/3), Y: 4 * math.Sin(2*math.Pi/3)}},
-		{Position: geometry.Point{X: 4 * math.Cos(4*math.Pi/3), Y: 4 * math.Sin(4*math.Pi/3)}},
+		{
+			Position: geometry.Point{
+				X: 4 * math.Cos(2*math.Pi/3),
+				Y: 4 * math.Sin(2*math.Pi/3),
+			},
+		},
+		{
+			Position: geometry.Point{
+				X: 4 * math.Cos(4*math.Pi/3),
+				Y: 4 * math.Sin(4*math.Pi/3),
+			},
+		},
 	}
 
 	triangle := Triangle{Points: [3]Sample{originals[0], originals[1], originals[2]}}
-	g.Expect(pointStrictlyInTriangle(Sample{Position: geometry.Point{X: region.CX, Y: region.CY}}, triangle)).To(gomega.BeTrue())
+	g.Expect(
+		pointStrictlyInTriangle(Sample{Position: geometry.Point{X: region.CX, Y: region.CY}}, triangle),
+	).To(gomega.BeTrue())
 
 	for _, point := range triangle.Points {
 		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
