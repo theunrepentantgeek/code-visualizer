@@ -24,8 +24,7 @@ func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		geometry.Point{X: 10, Y: 10},
-		model.Size{Width: 80, Height: 60},
+		geometry.RectFromPositionSize(geometry.Point{X: 10, Y: 10}, geometry.Size{Width: 80, Height: 60}),
 		model.SolidFill{Color: red}, model.SolidFill{Color: blk}, 2.0,
 	)
 
@@ -415,8 +414,7 @@ func TestRasterBackend_DrawDisc_SemiTransparentOverWhite_ProducesCorrectBlend(t 
 	semiBlue := color.RGBA{R: 0, G: 0, B: 255, A: 64}
 
 	b.DrawRectangle(
-		geometry.Point{X: 0, Y: 0},
-		model.Size{Width: 100, Height: 100},
+		geometry.RectFromPositionSize(geometry.Point{X: 0, Y: 0}, geometry.Size{Width: 100, Height: 100}),
 		model.SolidFill{Color: white}, model.SolidFill{Color: white}, 0,
 	)
 

@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -24,12 +25,9 @@ func TestApplyCanvasBlockLabels_AddsLabelsToCanvas(t *testing.T) {
 	}
 	viz := &treemap.State{
 		BlockLabels: []canvas.BlockLabel{{
-			X:     10,
-			Y:     10,
-			W:     100,
-			H:     40,
-			Lines: []string{"hello", "42"},
-			Ink:   color.RGBA{A: 255},
+			Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 110, Y: 50}},
+			Lines:  []string{"hello", "42"},
+			Ink:    color.RGBA{A: 255},
 		}},
 	}
 

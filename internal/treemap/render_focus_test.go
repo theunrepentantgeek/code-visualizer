@@ -35,9 +35,9 @@ type captureBackend struct {
 }
 
 func (b *captureBackend) DrawRectangle(
-	pos geometry.Point, size canvas.Size, fill, _ canvasmodel.Fill, _ float64,
+	bounds geometry.Rect, fill, _ canvasmodel.Fill, _ float64,
 ) {
-	b.rectangles = append(b.rectangles, rectangleCall{pos: pos, size: size, fill: fill})
+	b.rectangles = append(b.rectangles, rectangleCall{pos: bounds.Min, size: bounds.Size(), fill: fill})
 }
 
 func (*captureBackend) DrawDisc(geometry.Point, float64, canvasmodel.Fill, canvasmodel.Fill, float64) {

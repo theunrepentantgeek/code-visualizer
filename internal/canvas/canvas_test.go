@@ -66,10 +66,7 @@ func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
 		Spec:   spec,
-		X:      10,
-		Y:      20,
-		W:      100,
-		H:      50,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 70}},
 		Fill:   fillValue,
 		Focus:  focus,
 		Border: inks.MeasureValue(1.0),
@@ -277,12 +274,12 @@ func TestCanvas_LayerOrdering_BackgroundBeforeContent(t *testing.T) {
 
 	// Add content first, then background — layer ordering should override insertion order.
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: fgSpec,
-		X:    0, Y: 0, W: 100, H: 100,
+		Spec:   fgSpec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
 	})
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		X:    0, Y: 0, W: 800, H: 600,
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}},
 	})
 
 	mb := mock.NewBackend()
@@ -315,8 +312,14 @@ func TestCanvas_InsertionOrder_WithinSameLayer(t *testing.T) {
 		},
 	}
 
-	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{Spec: spec1, W: 100, H: 100})
-	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{Spec: spec2, W: 50, H: 50})
+	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
+		Spec:   spec1,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
+	})
+	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
+		Spec:   spec2,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 50, Y: 50}},
+	})
 
 	mb := mock.NewBackend()
 	err := c.RenderTo(mb)
@@ -342,10 +345,9 @@ func TestCanvas_InkResolution_NumericInk(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: spec,
-		W:    100,
-		H:    100,
-		Fill: inks.MeasureValue(10),
+		Spec:   spec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
+		Fill:   inks.MeasureValue(10),
 	})
 
 	mb := mock.NewBackend()
@@ -379,7 +381,10 @@ func TestCanvas_MultipleShapeTypes_MixedLayers(t *testing.T) {
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{Spec: textSpec, Content: "label"})
 	c.AddLine(canvas.LayerStructure, canvas.Line{Spec: lineSpec, To: geometry.Point{X: 100, Y: 100}})
-	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{Spec: rectSpec, W: 800, H: 600})
+	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
+		Spec:   rectSpec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}},
+	})
 
 	mb := mock.NewBackend()
 	err := c.RenderTo(mb)
@@ -415,9 +420,8 @@ func TestCanvas_Render_PNG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: spec,
-		W:    200,
-		H:    200,
+		Spec:   spec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 200}},
 	})
 
 	out := filepath.Join(t.TempDir(), "output.png")
@@ -445,9 +449,8 @@ func TestCanvas_Render_SVG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: spec,
-		W:    200,
-		H:    200,
+		Spec:   spec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 200}},
 	})
 
 	out := filepath.Join(t.TempDir(), "output.svg")
@@ -472,9 +475,8 @@ func TestCanvas_Render_JPG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: spec,
-		W:    200,
-		H:    200,
+		Spec:   spec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 200}},
 	})
 
 	out := filepath.Join(t.TempDir(), "output.jpg")
@@ -516,8 +518,8 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		W:    800, H: 600,
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}},
 	})
 
 	lineSpec := &canvas.LineSpec{
@@ -543,15 +545,15 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: rectSpec,
-		X:    50, Y: 50, W: 200, H: 150,
-		Fill: inks.MeasureValue(10),
+		Spec:   rectSpec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 50, Y: 50}, Max: geometry.Point{X: 250, Y: 200}},
+		Fill:   inks.MeasureValue(10),
 	})
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: rectSpec,
-		X:    300, Y: 50, W: 200, H: 150,
-		Fill: inks.MeasureValue(50),
+		Spec:   rectSpec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 300, Y: 50}, Max: geometry.Point{X: 500, Y: 200}},
+		Fill:   inks.MeasureValue(50),
 	})
 
 	discSpec := &canvas.DiscSpec{
@@ -633,8 +635,8 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		W:    800, H: 600,
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}},
 	})
 
 	discSpec := &canvas.DiscSpec{

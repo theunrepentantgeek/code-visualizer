@@ -107,12 +107,9 @@ func buildFileLabel(
 	fillColour := fillInk.Dip(inks.MetricValueForFile(file, fillInk))
 
 	return canvas.BlockLabel{
-		X:     bounds.Min.X,
-		Y:     bounds.Min.Y,
-		W:     bounds.Width(),
-		H:     bounds.Height(),
-		Lines: lines,
-		Ink:   canvas.TextColourFor(fillColour),
+		Bounds: bounds,
+		Lines:  lines,
+		Ink:    canvas.TextColourFor(fillColour),
 	}, true
 }
 

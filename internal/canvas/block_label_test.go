@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestCanvas_AddBlockLabel_CentersMultilineText(t *testing.T) {
@@ -16,12 +17,9 @@ func TestCanvas_AddBlockLabel_CentersMultilineText(t *testing.T) {
 
 	c := canvas.NewCanvas(200, 120)
 	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		X:     20,
-		Y:     30,
-		W:     160,
-		H:     60,
-		Lines: []string{"alpha.go", "128"},
-		Ink:   color.RGBA{A: 255},
+		Bounds: geometry.Rect{Min: geometry.Point{X: 20, Y: 30}, Max: geometry.Point{X: 180, Y: 90}},
+		Lines:  []string{"alpha.go", "128"},
+		Ink:    color.RGBA{A: 255},
 	}, canvas.FormatSVG)
 
 	mb := mock.NewBackend()
@@ -47,12 +45,9 @@ func TestCanvas_AddBlockLabel_GreeksTinyRasterLabels(t *testing.T) {
 
 	c := canvas.NewCanvas(40, 20)
 	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		X:     5,
-		Y:     5,
-		W:     30,
-		H:     8,
-		Lines: []string{"a.go", "42"},
-		Ink:   color.RGBA{A: 255},
+		Bounds: geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 35, Y: 13}},
+		Lines:  []string{"a.go", "42"},
+		Ink:    color.RGBA{A: 255},
 	}, canvas.FormatPNG)
 
 	mb := mock.NewBackend()
@@ -69,7 +64,7 @@ func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T)
 
 	c := canvas.NewCanvas(40, 20)
 	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		X: 5, Y: 5, W: 30, H: 8,
+		Bounds:       geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 35, Y: 13}},
 		Lines:        []string{"a.go", "0"},
 		Ink:          color.RGBA{A: 255},
 		PreserveText: true,
@@ -96,12 +91,9 @@ func TestCanvas_AddBlockLabel_OmitsUnreadableRasterLabels(t *testing.T) {
 
 	c := canvas.NewCanvas(20, 10)
 	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		X:     2,
-		Y:     2,
-		W:     16,
-		H:     1.5,
-		Lines: []string{"a.go"},
-		Ink:   color.RGBA{A: 255},
+		Bounds: geometry.Rect{Min: geometry.Point{X: 2, Y: 2}, Max: geometry.Point{X: 18, Y: 3.5}},
+		Lines:  []string{"a.go"},
+		Ink:    color.RGBA{A: 255},
 	}, canvas.FormatPNG)
 
 	mb := mock.NewBackend()
@@ -116,12 +108,9 @@ func TestCanvas_AddBlockLabel_KeepsTinySVGLabelsVisible(t *testing.T) {
 
 	c := canvas.NewCanvas(40, 20)
 	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		X:     5,
-		Y:     5,
-		W:     30,
-		H:     8,
-		Lines: []string{"a.go", "42"},
-		Ink:   color.RGBA{A: 255},
+		Bounds: geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 35, Y: 13}},
+		Lines:  []string{"a.go", "42"},
+		Ink:    color.RGBA{A: 255},
 	}, canvas.FormatSVG)
 
 	mb := mock.NewBackend()

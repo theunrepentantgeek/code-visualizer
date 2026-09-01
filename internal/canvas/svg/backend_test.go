@@ -22,8 +22,7 @@ func TestSVGBackend_DrawRectangle_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		geometry.Point{X: 10, Y: 10},
-		model.Size{Width: 80, Height: 60},
+		geometry.RectFromPositionSize(geometry.Point{X: 10, Y: 10}, geometry.Size{Width: 80, Height: 60}),
 		model.SolidFill{Color: red}, model.SolidFill{Color: blk}, 2.0,
 	)
 
@@ -45,8 +44,7 @@ func TestSVGBackend_UsesThreeDecimalPrecisionAcrossPrimitives(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		geometry.Point{X: 10.1234, Y: 20.5678},
-		model.Size{Width: 30.1234, Height: 40.5678},
+		geometry.RectFromPositionSize(geometry.Point{X: 10.1234, Y: 20.5678}, geometry.Size{Width: 30.1234, Height: 40.5678}),
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 10, G: 20, B: 30, A: 255},
 			Edge:   color.RGBA{R: 40, G: 50, B: 60, A: 255},

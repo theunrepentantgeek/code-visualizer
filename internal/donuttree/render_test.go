@@ -512,7 +512,7 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 	}
 
 	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.Min.Y))
-	g.Expect(legendBackground.Pos.Y + legendBackground.Size.Height).
+	g.Expect(legendBackground.Bounds.Max.Y).
 		To(BeNumerically("<=", common.DrawingBounds.Max.Y))
 }
 

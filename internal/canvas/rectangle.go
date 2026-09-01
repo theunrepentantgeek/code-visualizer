@@ -8,11 +8,11 @@ import (
 
 // Rectangle carries geometry and metric values for rectangular shapes.
 type Rectangle struct {
-	Spec       *RectangleSpec
-	X, Y, W, H float64
-	Fill       inks.MetricValue
-	Border     inks.MetricValue
-	Focus      model.GradientPoint
+	Spec   *RectangleSpec
+	Bounds geometry.Rect
+	Fill   inks.MetricValue
+	Border inks.MetricValue
+	Focus  model.GradientPoint
 }
 
 func (r *Rectangle) drawTo(b Backend) {
@@ -20,8 +20,7 @@ func (r *Rectangle) drawTo(b Backend) {
 	border := model.SolidFill{Color: r.Spec.Border.Dip(r.Border)}
 
 	b.DrawRectangle(
-		geometry.NewPoint(r.X, r.Y),
-		Size{Width: r.W, Height: r.H},
+		r.Bounds,
 		fill, border,
 		r.Spec.BorderWidth,
 	)

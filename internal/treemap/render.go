@@ -148,12 +148,9 @@ func RenderToCanvas(
 		},
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:  bgSpec,
-		X:     0,
-		Y:     0,
-		W:     float64(width),
-		H:     float64(height),
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Max: geometry.Point{X: float64(width), Y: float64(height)}},
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 
 	dirSpecs := buildDirBorderSpecs()
@@ -209,12 +206,9 @@ func addDirectoryShapes(
 	if rect.Chrome.Orientation != DirectoryLabelNone {
 		rail := rect.Chrome.Rail
 		cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-			Spec:  dirRailSpecForDepth(railSpecs, rect.VisibleDepth),
-			X:     rail.Min.X,
-			Y:     rail.Min.Y,
-			W:     rail.Width(),
-			H:     rail.Height(),
-			Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+			Spec:   dirRailSpecForDepth(railSpecs, rect.VisibleDepth),
+			Bounds: rail,
+			Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 		})
 	}
 
@@ -253,12 +247,9 @@ func addDirectoryShapes(
 	}
 
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec:  borderSpec,
-		X:     rect.Bounds.Min.X,
-		Y:     rect.Bounds.Min.Y,
-		W:     rect.Bounds.Width(),
-		H:     rect.Bounds.Height(),
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   borderSpec,
+		Bounds: rect.Bounds,
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -298,10 +289,7 @@ func addFileRectForFile(
 
 	cv.AddRectangle(canvas.LayerContent, canvas.Rectangle{
 		Spec:   spec,
-		X:      rect.Bounds.Min.X,
-		Y:      rect.Bounds.Min.Y,
-		W:      rect.Bounds.Width(),
-		H:      rect.Bounds.Height(),
+		Bounds: rect.Bounds,
 		Fill:   fillMV,
 		Border: borderMV,
 		Focus:  focus,

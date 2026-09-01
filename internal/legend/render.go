@@ -485,7 +485,9 @@ func (lb *legendBuilder) addRect(
 	}
 
 	lb.cv.AddRectangle(canvas.LayerOverlay, canvas.Rectangle{
-		Spec: spec, X: x, Y: y, W: w, H: h, Focus: model.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   spec,
+		Bounds: geometry.RectFromPositionSize(geometry.Point{X: x, Y: y}, geometry.Size{Width: w, Height: h}),
+		Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 

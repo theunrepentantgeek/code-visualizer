@@ -137,8 +137,8 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 			Border: inks.FixedInk(black),
 		},
 		DiscLabels: []canvas.BlockLabel{{
-			X: 10, Y: 10, W: 80, H: 80,
-			Lines: []string{"7", "Aug", "3"},
+			Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
+			Lines:  []string{"7", "Aug", "3"},
 		}},
 		LegendConfig: &legend.Config{
 			Position:    model.LegendPositionBottomRight,
