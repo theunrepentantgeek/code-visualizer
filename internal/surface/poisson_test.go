@@ -7,7 +7,6 @@ import (
 	"github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
-
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 

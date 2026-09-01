@@ -116,6 +116,7 @@ func TestLerpExtremeFiniteEndpoints(t *testing.T) {
 	if got := Lerp(a, b, 0); got != a {
 		t.Fatalf("Lerp(a, b, 0) = %v, want exact endpoint %v", got, a)
 	}
+
 	if got := Lerp(a, b, 1); got != b {
 		t.Fatalf("Lerp(a, b, 1) = %v, want exact endpoint %v", got, b)
 	}
