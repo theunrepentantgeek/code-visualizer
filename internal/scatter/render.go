@@ -128,7 +128,11 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 
 func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 	labelInk := inks.FixedInk(scatterLabelColour)
+	addScatterAxisTitles(cv, layout, labelInk)
+	addScatterTickLabels(cv, layout, labelInk)
+}
 
+func addScatterAxisTitles(cv *canvas.Canvas, layout ScatterLayout, labelInk inks.Ink) {
 	titleSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 12, Anchor: canvas.AnchorMiddle}
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec: titleSpec,
@@ -153,7 +157,9 @@ func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 		},
 		Content: layout.YAxis.Title,
 	})
+}
 
+func addScatterTickLabels(cv *canvas.Canvas, layout ScatterLayout, labelInk inks.Ink) {
 	tickSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 10, Anchor: canvas.AnchorMiddle}
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{

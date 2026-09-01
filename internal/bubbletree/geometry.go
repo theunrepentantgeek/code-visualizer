@@ -80,7 +80,8 @@ func trivialEnclosing(boundary []enclosure) enclosure {
 func enclosingTwo(a, b enclosure) enclosure {
 	aPosition := geometry.Point{X: a.x, Y: a.y}
 	bPosition := geometry.Point{X: b.x, Y: b.y}
-	d := aPosition.DistanceTo(bPosition)
+	delta := aPosition.VectorTo(bPosition)
+	d := math.Sqrt(delta.LengthSquared())
 
 	// One circle contains the other.
 	if d+a.radius <= b.radius {

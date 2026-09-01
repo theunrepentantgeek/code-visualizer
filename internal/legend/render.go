@@ -425,23 +425,21 @@ func (lb *legendBuilder) addArcLabelSample(x, y, w, h float64) {
 // arcLabelSamplePoints approximates a curved annular segment whose top edge is
 // narrower than its base, matching a small slice of the donut visualization.
 func arcLabelSamplePoints(x, y, w, h float64) []geometry.Point {
-	origin := geometry.Point{X: x, Y: y}
-
 	return []geometry.Point{
-		origin.Translate(geometry.Vector{X: 0.26 * w, Y: 0.12 * h}),
-		origin.Translate(geometry.Vector{X: 0.40 * w, Y: 0.03 * h}),
-		origin.Translate(geometry.Vector{X: 0.60 * w, Y: 0.03 * h}),
-		origin.Translate(geometry.Vector{X: 0.74 * w, Y: 0.12 * h}),
-		origin.Translate(geometry.Vector{X: 0.89 * w, Y: 0.33 * h}),
-		origin.Translate(geometry.Vector{X: 0.97 * w, Y: 0.58 * h}),
-		origin.Translate(geometry.Vector{X: 0.95 * w, Y: 0.82 * h}),
-		origin.Translate(geometry.Vector{X: 0.84 * w, Y: 0.96 * h}),
-		origin.Translate(geometry.Vector{X: 0.50 * w, Y: h}),
-		origin.Translate(geometry.Vector{X: 0.16 * w, Y: 0.96 * h}),
-		origin.Translate(geometry.Vector{X: 0.05 * w, Y: 0.82 * h}),
-		origin.Translate(geometry.Vector{X: 0.03 * w, Y: 0.58 * h}),
-		origin.Translate(geometry.Vector{X: 0.11 * w, Y: 0.33 * h}),
-		origin.Translate(geometry.Vector{X: 0.26 * w, Y: 0.12 * h}),
+		{X: x + 0.26*w, Y: y + 0.12*h},
+		{X: x + 0.40*w, Y: y + 0.03*h},
+		{X: x + 0.60*w, Y: y + 0.03*h},
+		{X: x + 0.74*w, Y: y + 0.12*h},
+		{X: x + 0.89*w, Y: y + 0.33*h},
+		{X: x + 0.97*w, Y: y + 0.58*h},
+		{X: x + 0.95*w, Y: y + 0.82*h},
+		{X: x + 0.84*w, Y: y + 0.96*h},
+		{X: x + 0.50*w, Y: y + h},
+		{X: x + 0.16*w, Y: y + 0.96*h},
+		{X: x + 0.05*w, Y: y + 0.82*h},
+		{X: x + 0.03*w, Y: y + 0.58*h},
+		{X: x + 0.11*w, Y: y + 0.33*h},
+		{X: x + 0.26*w, Y: y + 0.12*h},
 	}
 }
 
