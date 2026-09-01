@@ -52,7 +52,7 @@ func (s *svgBackend) writeHeader() {
 }
 
 func (s *svgBackend) DrawRectangle(
-	pos geometry.Point, size model.Size, fill, border model.Fill, borderWidth float64,
+	pos geometry.Point, size geometry.Size, fill, border model.Fill, borderWidth float64,
 ) {
 	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)

@@ -38,7 +38,7 @@ type captureBackend struct {
 	arcTexts []capturedArcText
 }
 
-func (*captureBackend) DrawRectangle(geometry.Point, canvas.Size, canvasmodel.Fill, canvasmodel.Fill, float64) {
+func (*captureBackend) DrawRectangle(geometry.Point, geometry.Size, canvasmodel.Fill, canvasmodel.Fill, float64) {
 }
 
 func (c *captureBackend) DrawDisc(
