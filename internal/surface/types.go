@@ -1,7 +1,11 @@
 //revive:disable-next-line:max-public-structs Polygon must stay exported for the palette-band subdivision API.
 package surface
 
-import "math"
+import (
+	"math"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+)
 
 const (
 	MaxTriangleEdge          = 8.0
@@ -9,9 +13,8 @@ const (
 	PoissonMinDistance       = 4.0
 )
 
-type Point struct {
-	X           float64
-	Y           float64
+type Sample struct {
+	Position    geometry.Point
 	Value       float64
 	unsupported bool
 	Original    bool
@@ -38,7 +41,7 @@ type Region interface {
 }
 
 type boundaryLoopProvider interface {
-	BoundaryLoops(maximumSegmentLength float64) [][]Point
+	BoundaryLoops(maximumSegmentLength float64) [][]Sample
 }
 
 type Annulus struct {
@@ -71,7 +74,7 @@ func (a Annulus) Contains(x, y float64) bool {
 }
 
 // BoundaryLoops returns the rectangle perimeter as one ordered loop.
-func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Point {
+func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Sample {
 	if !isFinite(maximumSegmentLength) ||
 		maximumSegmentLength <= 0 ||
 		!isFinite(r.MinX) ||
@@ -83,24 +86,24 @@ func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Point {
 		return nil
 	}
 
-	corners := [4]Point{
-		{X: r.MinX, Y: r.MinY},
-		{X: r.MaxX, Y: r.MinY},
-		{X: r.MaxX, Y: r.MaxY},
-		{X: r.MinX, Y: r.MaxY},
+	corners := [4]Sample{
+		{Position: geometry.Point{X: r.MinX, Y: r.MinY}},
+		{Position: geometry.Point{X: r.MaxX, Y: r.MinY}},
+		{Position: geometry.Point{X: r.MaxX, Y: r.MaxY}},
+		{Position: geometry.Point{X: r.MinX, Y: r.MaxY}},
 	}
-	loop := make([]Point, 0, len(corners))
+	loop := make([]Sample, 0, len(corners))
 
 	for index, start := range corners {
 		end := corners[(index+1)%len(corners)]
 		loop = append(loop, segmentBoundaryPoints(start, end, maximumSegmentLength)...)
 	}
 
-	return [][]Point{loop}
+	return [][]Sample{loop}
 }
 
 // BoundaryLoops returns the annulus outer boundary followed by its inner boundary.
-func (a Annulus) BoundaryLoops(maximumSegmentLength float64) [][]Point {
+func (a Annulus) BoundaryLoops(maximumSegmentLength float64) [][]Sample {
 	if !validBoundaryLoopLength(maximumSegmentLength) || !validAnnulus(a) {
 		return nil
 	}
@@ -109,7 +112,7 @@ func (a Annulus) BoundaryLoops(maximumSegmentLength float64) [][]Point {
 }
 
 // BoundaryLoops returns ordered boundary loops supplied by region.
-func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Point {
+func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Sample {
 	provider := boundaryLoopProviderForRegion(region)
 	if provider == nil {
 		return nil
@@ -118,8 +121,8 @@ func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Point {
 	return provider.BoundaryLoops(maximumSegmentLength)
 }
 
-func annulusBoundaryLoops(a Annulus, maximumSegmentLength float64) [][]Point {
-	loops := make([][]Point, 0, 2)
+func annulusBoundaryLoops(a Annulus, maximumSegmentLength float64) [][]Sample {
+	loops := make([][]Sample, 0, 2)
 
 	loops = appendCircularBoundaryLoop(loops, a.CX, a.CY, a.OuterRadius, maximumSegmentLength)
 	loops = appendCircularBoundaryLoop(loops, a.CX, a.CY, a.InnerRadius, maximumSegmentLength)
@@ -128,9 +131,9 @@ func annulusBoundaryLoops(a Annulus, maximumSegmentLength float64) [][]Point {
 }
 
 func appendCircularBoundaryLoop(
-	loops [][]Point,
+	loops [][]Sample,
 	cx, cy, radius, maximumSegmentLength float64,
-) [][]Point {
+) [][]Sample {
 	if radius <= 0 {
 		return loops
 	}
@@ -158,39 +161,40 @@ func validBoundaryLoopLength(maximumSegmentLength float64) bool {
 	return isFinite(maximumSegmentLength) && maximumSegmentLength > 0
 }
 
-func segmentBoundaryPoints(start, end Point, maximumSegmentLength float64) []Point {
-	length := Distance(start, end)
+func segmentBoundaryPoints(start, end Sample, maximumSegmentLength float64) []Sample {
+	length := start.Position.DistanceTo(end.Position)
 	if !isFinite(length) {
 		return nil
 	}
 
 	segments := max(1, int(math.Ceil(length/maximumSegmentLength)))
 
-	points := make([]Point, 0, segments)
+	points := make([]Sample, 0, segments)
 	for index := range segments {
 		fraction := float64(index) / float64(segments)
-		points = append(points, Point{
-			X: start.X + (end.X-start.X)*fraction,
-			Y: start.Y + (end.Y-start.Y)*fraction,
+		points = append(points, Sample{
+			Position: start.Position.Translate(start.Position.VectorTo(end.Position).Scale(fraction)),
 		})
 	}
 
 	return points
 }
 
-func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Point {
+func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Sample {
 	if radius == 0 {
 		return nil
 	}
 
 	segments := max(3, int(math.Ceil(2*math.Pi*radius/maximumSegmentLength)))
 
-	points := make([]Point, 0, segments)
+	points := make([]Sample, 0, segments)
 	for index := range segments {
 		angle := 2 * math.Pi * float64(index) / float64(segments)
-		points = append(points, Point{
-			X: cx + radius*math.Cos(angle),
-			Y: cy + radius*math.Sin(angle),
+		points = append(points, Sample{
+			Position: geometry.Point{
+				X: cx + radius*math.Cos(angle),
+				Y: cy + radius*math.Sin(angle),
+			},
 		})
 	}
 
@@ -198,15 +202,11 @@ func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Poin
 }
 
 type Triangle struct {
-	Points [3]Point
+	Points [3]Sample
 	Value  float64
 }
 
 type Polygon struct {
-	Points []Point
+	Points []Sample
 	Value  float64
-}
-
-func Distance(a, b Point) float64 {
-	return math.Hypot(a.X-b.X, a.Y-b.Y)
 }

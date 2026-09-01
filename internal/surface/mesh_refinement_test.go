@@ -4,6 +4,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+
 	"github.com/fogleman/delaunay"
 )
 
@@ -23,10 +25,10 @@ func TestRefinementPointLimitReservesHalfEdgeGrid(t *testing.T) {
 func TestRefinementPoints_IgnoresDegenerateOversizedFace(t *testing.T) {
 	t.Parallel()
 
-	points := []Point{
-		{X: 0, Y: 0},
-		{X: 12, Y: 0},
-		{X: 6, Y: 0},
+	points := []Sample{
+		{Position: geometry.Point{X: 0, Y: 0}},
+		{Position: geometry.Point{X: 12, Y: 0}},
+		{Position: geometry.Point{X: 6, Y: 0}},
 	}
 
 	candidates, oversized := refinementPoints(
@@ -47,11 +49,11 @@ func TestRefinementPoints_IgnoresDegenerateOversizedFace(t *testing.T) {
 func TestIsDegenerateTriangle_RecognizesMidpointVertex(t *testing.T) {
 	t.Parallel()
 
-	start := Point{X: 103.9590562495064, Y: 142.30031597003037}
-	end := Point{X: 111.25205052331654, Y: 151.73148706176613}
-	midpoint := Point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}
+	start := Sample{Position: geometry.Point{X: 103.9590562495064, Y: 142.30031597003037}}
+	end := Sample{Position: geometry.Point{X: 111.25205052331654, Y: 151.73148706176613}}
+	midpoint := Sample{Position: geometry.Midpoint(start.Position, end.Position)}
 
-	if !isDegenerateTriangle(Triangle{Points: [3]Point{start, end, midpoint}}) {
+	if !isDegenerateTriangle(Triangle{Points: [3]Sample{start, end, midpoint}}) {
 		t.Fatal("triangle with a midpoint vertex must be degenerate")
 	}
 }
@@ -118,7 +120,7 @@ func TestBuild_CoversEveryInRegionDelaunayFaceAfterRefinement(t *testing.T) {
 	}
 }
 
-func inRegionDelaunayTriangles(t *testing.T, region Region, points []Point) []Triangle {
+func inRegionDelaunayTriangles(t *testing.T, region Region, points []Sample) []Triangle {
 	t.Helper()
 
 	triangulation, err := delaunay.Triangulate(delaunayPoints(points))
@@ -154,21 +156,23 @@ func inRegionDelaunayTriangles(t *testing.T, region Region, points []Point) []Tr
 	return triangles
 }
 
-func refinementTestMesh() (Annulus, []Point) {
+func refinementTestMesh() (Annulus, []Sample) {
 	region := Annulus{
 		CX:          180,
 		CY:          180,
 		InnerRadius: 60,
 		OuterRadius: 160,
 	}
-	originals := make([]Point, 0, 32)
+	originals := make([]Sample, 0, 32)
 
 	for i := range 32 {
 		theta := float64(i) * 4 * math.Pi / 31
 		radius := 60 + 100*float64(i)/31
-		originals = append(originals, Point{
-			X: region.CX + radius*math.Sin(theta),
-			Y: region.CY - radius*math.Cos(theta),
+		originals = append(originals, Sample{
+			Position: geometry.Point{
+				X: region.CX + radius*math.Sin(theta),
+				Y: region.CY - radius*math.Cos(theta),
+			},
 		})
 	}
 

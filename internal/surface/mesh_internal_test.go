@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestTriangleInRegion_RejectsAnnulusHoleCrossingEdge(t *testing.T) {
@@ -13,22 +15,24 @@ func TestTriangleInRegion_RejectsAnnulusHoleCrossingEdge(t *testing.T) {
 	g := gomega.NewWithT(t)
 	region := Annulus{InnerRadius: 100, OuterRadius: 200}
 	triangle := Triangle{
-		Points: [3]Point{
-			{X: 100, Y: 0},
-			{X: 0, Y: 100},
-			{X: 140, Y: 140},
+		Points: [3]Sample{
+			{Position: geometry.Point{X: 100, Y: 0}},
+			{Position: geometry.Point{X: 0, Y: 100}},
+			{Position: geometry.Point{X: 140, Y: 140}},
 		},
 	}
 
 	for _, point := range triangle.Points {
-		g.Expect(region.Contains(point.X, point.Y)).To(gomega.BeTrue())
+		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
 	}
 
-	centroid := Point{
-		X: (triangle.Points[0].X + triangle.Points[1].X + triangle.Points[2].X) / 3,
-		Y: (triangle.Points[0].Y + triangle.Points[1].Y + triangle.Points[2].Y) / 3,
+	centroid := Sample{
+		Position: geometry.Point{
+			X: (triangle.Points[0].Position.X + triangle.Points[1].Position.X + triangle.Points[2].Position.X) / 3,
+			Y: (triangle.Points[0].Position.Y + triangle.Points[1].Position.Y + triangle.Points[2].Position.Y) / 3,
+		},
 	}
-	g.Expect(region.Contains(centroid.X, centroid.Y)).To(gomega.BeTrue())
+	g.Expect(region.Contains(centroid.Position.X, centroid.Position.Y)).To(gomega.BeTrue())
 
 	g.Expect(triangleInRegion(region, triangle)).To(gomega.BeFalse())
 }
@@ -38,17 +42,17 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 
 	g := gomega.NewWithT(t)
 	region := Annulus{InnerRadius: 1, OuterRadius: 8}
-	originals := []Point{
-		{X: 4, Y: 0},
-		{X: 4 * math.Cos(2*math.Pi/3), Y: 4 * math.Sin(2*math.Pi/3)},
-		{X: 4 * math.Cos(4*math.Pi/3), Y: 4 * math.Sin(4*math.Pi/3)},
+	originals := []Sample{
+		{Position: geometry.Point{X: 4, Y: 0}},
+		{Position: geometry.Point{X: 4 * math.Cos(2*math.Pi/3), Y: 4 * math.Sin(2*math.Pi/3)}},
+		{Position: geometry.Point{X: 4 * math.Cos(4*math.Pi/3), Y: 4 * math.Sin(4*math.Pi/3)}},
 	}
 
-	triangle := Triangle{Points: [3]Point{originals[0], originals[1], originals[2]}}
-	g.Expect(pointStrictlyInTriangle(Point{X: region.CX, Y: region.CY}, triangle)).To(gomega.BeTrue())
+	triangle := Triangle{Points: [3]Sample{originals[0], originals[1], originals[2]}}
+	g.Expect(pointStrictlyInTriangle(Sample{Position: geometry.Point{X: region.CX, Y: region.CY}}, triangle)).To(gomega.BeTrue())
 
 	for _, point := range triangle.Points {
-		g.Expect(region.Contains(point.X, point.Y)).To(gomega.BeTrue())
+		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
 	}
 
 	for index, start := range triangle.Points {
@@ -66,11 +70,11 @@ func TestBoundarySamples_RetainsAnnulusBoundaryNearObservedPoint(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	region := Annulus{InnerRadius: 10, OuterRadius: 20}
-	originals := []Point{{X: 19, Y: 0}}
+	originals := []Sample{{Position: geometry.Point{X: 19, Y: 0}}}
 
 	samples := boundarySamples(region, originals)
 
-	g.Expect(samples).To(gomega.ContainElement(Point{X: 20, Y: 0}))
+	g.Expect(samples).To(gomega.ContainElement(Sample{Position: geometry.Point{X: 20, Y: 0}}))
 }
 
 func TestBoundarySamples_SeedAnnulusAtTriangleResolution(t *testing.T) {
@@ -107,16 +111,18 @@ func TestBoundaryLoops_ReturnsDenseOrderedAnnulusLoops(t *testing.T) {
 	g.Expect(loops).To(gomega.HaveLen(2))
 	g.Expect(outerLoop).To(gomega.HaveLen(126))
 	g.Expect(innerLoop).To(gomega.HaveLen(63))
-	g.Expect(outerLoop[0]).To(gomega.Equal(Point{X: 20, Y: 0}))
-	g.Expect(innerLoop[0]).To(gomega.Equal(Point{X: 10, Y: 0}))
+	g.Expect(outerLoop[0]).To(gomega.Equal(Sample{Position: geometry.Point{X: 20, Y: 0}}))
+	g.Expect(innerLoop[0]).To(gomega.Equal(Sample{Position: geometry.Point{X: 10, Y: 0}}))
 
-	for _, loop := range [][]Point{outerLoop, innerLoop} {
+	for _, loop := range [][]Sample{outerLoop, innerLoop} {
 		g.Expect(loop[len(loop)-1]).NotTo(gomega.Equal(loop[0]))
-		g.Expect(loop[1].Y).To(gomega.BeNumerically(">", 0))
+		g.Expect(loop[1].Position.Y).To(gomega.BeNumerically(">", 0))
 
 		for index, point := range loop {
 			next := loop[(index+1)%len(loop)]
-			g.Expect(Distance(point, next)).To(gomega.BeNumerically("<=", MaxBoundarySegmentLength))
+			g.Expect(point.Position.DistanceTo(next.Position)).To(
+				gomega.BeNumerically("<=", MaxBoundarySegmentLength),
+			)
 		}
 	}
 }
@@ -139,18 +145,20 @@ func TestBoundaryLoops_ReturnsDenseClosedRectPerimeter(t *testing.T) {
 		t.Fatalf("expected rectangle loop to contain at least 2 points, got %d", len(rectLoop))
 	}
 
-	g.Expect(loops).To(gomega.Equal([][]Point{{
-		{X: 1, Y: 2},
-		{X: 2, Y: 2},
-		{X: 3, Y: 2},
-		{X: 3, Y: 3},
-		{X: 2, Y: 3},
-		{X: 1, Y: 3},
+	g.Expect(loops).To(gomega.Equal([][]Sample{{
+		{Position: geometry.Point{X: 1, Y: 2}},
+		{Position: geometry.Point{X: 2, Y: 2}},
+		{Position: geometry.Point{X: 3, Y: 2}},
+		{Position: geometry.Point{X: 3, Y: 3}},
+		{Position: geometry.Point{X: 2, Y: 3}},
+		{Position: geometry.Point{X: 1, Y: 3}},
 	}}))
 
 	for index, point := range rectLoop {
 		next := rectLoop[(index+1)%len(rectLoop)]
-		g.Expect(Distance(point, next)).To(gomega.BeNumerically("<=", MaxBoundarySegmentLength))
+		g.Expect(point.Position.DistanceTo(next.Position)).To(
+			gomega.BeNumerically("<=", MaxBoundarySegmentLength),
+		)
 	}
 }
 
@@ -205,10 +213,10 @@ func TestRegionTriangles_OmitsTriangleWithUnsupportedVertex(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	region := Rect{MinX: -2, MinY: -2, MaxX: 2, MaxY: 2}
-	points := []Point{
-		{X: 0, Y: 0, Value: 1},
-		{X: 1, Y: 0, Value: 2, unsupported: true},
-		{X: 0, Y: 1, Value: 3},
+	points := []Sample{
+		{Position: geometry.Point{X: 0, Y: 0}, Value: 1},
+		{Position: geometry.Point{X: 1, Y: 0}, Value: 2, unsupported: true},
+		{Position: geometry.Point{X: 0, Y: 1}, Value: 3},
 	}
 
 	triangles, complete := regionTriangles(region, points, []int{0, 1, 2})
@@ -224,6 +232,6 @@ func (*typedNilBoundaryProvider) Contains(float64, float64) bool {
 	panic("typed-nil provider Contains should not be called")
 }
 
-func (*typedNilBoundaryProvider) BoundaryLoops(float64) [][]Point {
+func (*typedNilBoundaryProvider) BoundaryLoops(float64) [][]Sample {
 	panic("typed-nil provider BoundaryLoops should not be called")
 }

@@ -4,6 +4,8 @@ import (
 	"math"
 
 	"github.com/fogleman/delaunay"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // Boundary samples are placed with trigonometry, so their recovered radius can
@@ -14,7 +16,7 @@ import (
 const radiusTolerance = 1e-9
 
 // Build creates an interpolated Delaunay triangle mesh restricted to region.
-func Build(region Region, originals []Point, seed uint64) []Triangle {
+func Build(region Region, originals []Sample, seed uint64) []Triangle {
 	if !isValidRegion(region) {
 		return nil
 	}
@@ -42,10 +44,10 @@ func Build(region Region, originals []Point, seed uint64) []Triangle {
 	return triangles
 }
 
-func observedPoints(originals []Point) []Point {
-	observed := make([]Point, 0, len(originals))
+func observedPoints(originals []Sample) []Sample {
+	observed := make([]Sample, 0, len(originals))
 	for _, original := range originals {
-		if !isFinitePoint(original) || !isFinite(original.Value) {
+		if !isFiniteSample(original) || !isFinite(original.Value) {
 			continue
 		}
 
@@ -56,17 +58,17 @@ func observedPoints(originals []Point) []Point {
 	return observed
 }
 
-func meshPoints(region Region, model interpolationModel, seed uint64) ([]Point, bool) {
+func meshPoints(region Region, model interpolationModel, seed uint64) ([]Sample, bool) {
 	boundary := boundarySamples(region, model.observations)
 	for index := range boundary {
 		boundary[index] = model.assign(boundary[index])
 	}
 
-	points := append([]Point(nil), model.observations...)
+	points := append([]Sample(nil), model.observations...)
 	points = append(points, boundary...)
-	samplingSources := append([]Point(nil), points...)
+	samplingSources := append([]Sample(nil), points...)
 
-	infill := Sample(region, samplingSources, PoissonMinDistance, seed)
+	infill := PoissonSamples(region, samplingSources, PoissonMinDistance, seed)
 	for _, point := range infill {
 		points = append(points, model.assign(point))
 	}
@@ -74,7 +76,7 @@ func meshPoints(region Region, model interpolationModel, seed uint64) ([]Point, 
 	return refineMeshPoints(region, points, model)
 }
 
-func refineMeshPoints(region Region, points []Point, model interpolationModel) ([]Point, bool) {
+func refineMeshPoints(region Region, points []Sample, model interpolationModel) ([]Sample, bool) {
 	limit := refinementPointLimit(region, len(points))
 
 	for {
@@ -129,10 +131,10 @@ func refinementPointLimit(region Region, pointCount int) int {
 
 func refinementPoints(
 	region Region,
-	points []Point,
+	points []Sample,
 	indexes []int,
-) ([]Point, bool) {
-	candidates := make([]Point, 0)
+) ([]Sample, bool) {
+	candidates := make([]Sample, 0)
 
 	var oversized bool
 
@@ -162,24 +164,21 @@ func refinementPoints(
 }
 
 // Splitting the longest edge ensures the next triangulation cannot retain the offending edge.
-func refinementPoint(region Region, target Triangle, points, candidates []Point) (Point, bool) {
+func refinementPoint(region Region, target Triangle, points, candidates []Sample) (Sample, bool) {
 	start, end, _ := longestTriangleEdge(target)
-	candidate := Point{
-		X: (start.X + end.X) / 2,
-		Y: (start.Y + end.Y) / 2,
-	}
+	candidate := Sample{Position: geometry.Midpoint(start.Position, end.Position)}
 
-	if !isFinitePoint(candidate) ||
-		!region.Contains(candidate.X, candidate.Y) ||
+	if !isFiniteSample(candidate) ||
+		!region.Contains(candidate.Position.X, candidate.Position.Y) ||
 		isDuplicate(candidate, points) ||
 		isDuplicate(candidate, candidates) {
-		return Point{}, false
+		return Sample{}, false
 	}
 
 	return candidate, true
 }
 
-func regionTriangles(region Region, points []Point, indexes []int) ([]Triangle, bool) {
+func regionTriangles(region Region, points []Sample, indexes []int) ([]Triangle, bool) {
 	triangles := make([]Triangle, 0, len(indexes)/3)
 	for index := 0; index+2 < len(indexes); index += 3 {
 		triangle, ok := triangleAt(points, [3]int{
@@ -215,7 +214,7 @@ func triangleIsUnsupported(triangle Triangle) bool {
 	return false
 }
 
-func triangleAt(points []Point, indexes [3]int) (Triangle, bool) {
+func triangleAt(points []Sample, indexes [3]int) (Triangle, bool) {
 	var triangle Triangle
 
 	for pointIndex, index := range indexes {
@@ -232,9 +231,12 @@ func triangleAt(points []Point, indexes [3]int) (Triangle, bool) {
 func isDegenerateTriangle(triangle Triangle) bool {
 	first, second, third := triangle.Points[0], triangle.Points[1], triangle.Points[2]
 	start, end, _ := longestTriangleEdge(triangle)
-	midpoint := Point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}
+	midpoint := Sample{Position: geometry.Midpoint(start.Position, end.Position)}
 
-	return (second.X-first.X)*(third.Y-first.Y) == (second.Y-first.Y)*(third.X-first.X) ||
+	firstToSecond := first.Position.VectorTo(second.Position)
+	firstToThird := first.Position.VectorTo(third.Position)
+
+	return firstToSecond.X*firstToThird.Y == firstToSecond.Y*firstToThird.X ||
 		isDuplicate(midpoint, triangle.Points[:])
 }
 
@@ -245,10 +247,10 @@ func LongestEdge(triangle Triangle) float64 {
 	return length
 }
 
-func longestTriangleEdge(triangle Triangle) (start, end Point, longest float64) {
+func longestTriangleEdge(triangle Triangle) (start, end Sample, longest float64) {
 	for index, point := range triangle.Points {
 		next := triangle.Points[(index+1)%len(triangle.Points)]
-		if length := Distance(point, next); length > longest {
+		if length := point.Position.DistanceTo(next.Position); length > longest {
 			start, end, longest = point, next, length
 		}
 	}
@@ -256,10 +258,10 @@ func longestTriangleEdge(triangle Triangle) (start, end Point, longest float64) 
 	return start, end, longest
 }
 
-func delaunayPoints(points []Point) []delaunay.Point {
+func delaunayPoints(points []Sample) []delaunay.Point {
 	result := make([]delaunay.Point, len(points))
-	for index, point := range points {
-		result[index] = delaunay.Point{X: point.X, Y: point.Y}
+	for index, sample := range points {
+		result[index] = delaunay.Point{X: sample.Position.X, Y: sample.Position.Y}
 	}
 
 	return result
@@ -277,15 +279,15 @@ func triangleInRegion(region Region, triangle Triangle) bool {
 		return annulus != nil && triangleInAnnulus(*annulus, triangle)
 	}
 
-	var center Point
+	var center geometry.Point
 
-	for _, point := range triangle.Points {
-		if !region.Contains(point.X, point.Y) {
+	for _, sample := range triangle.Points {
+		if !region.Contains(sample.Position.X, sample.Position.Y) {
 			return false
 		}
 
-		center.X += point.X
-		center.Y += point.Y
+		center.X += sample.Position.X
+		center.Y += sample.Position.Y
 	}
 
 	center.X /= float64(len(triangle.Points))
@@ -294,7 +296,7 @@ func triangleInRegion(region Region, triangle Triangle) bool {
 	return region.Contains(center.X, center.Y)
 }
 
-func boundarySamples(region Region, originals []Point) []Point {
+func boundarySamples(region Region, originals []Sample) []Sample {
 	loops := BoundaryLoops(region, MaxTriangleEdge)
 	if len(loops) == 0 {
 		return nil
@@ -305,14 +307,14 @@ func boundarySamples(region Region, originals []Point) []Point {
 		candidateCount += len(loop)
 	}
 
-	candidates := make([]Point, 0, candidateCount)
+	candidates := make([]Sample, 0, candidateCount)
 	for _, loop := range loops {
 		candidates = append(candidates, loop...)
 	}
 
-	samples := make([]Point, 0, len(candidates))
+	samples := make([]Sample, 0, len(candidates))
 	for _, candidate := range candidates {
-		if !isFinitePoint(candidate) ||
+		if !isFiniteSample(candidate) ||
 			isDuplicate(candidate, originals) ||
 			isDuplicate(candidate, samples) {
 			continue
@@ -325,9 +327,9 @@ func boundarySamples(region Region, originals []Point) []Point {
 	return samples
 }
 
-func isDuplicate(point Point, points []Point) bool {
-	for _, existing := range points {
-		if point.X == existing.X && point.Y == existing.Y {
+func isDuplicate(sample Sample, samples []Sample) bool {
+	for _, existing := range samples {
+		if sample.Position == existing.Position {
 			return true
 		}
 	}
@@ -358,15 +360,13 @@ func triangleWithinOuterRadius(annulus Annulus, triangle Triangle) bool {
 	outerRadius := annulus.OuterRadius * (1 + radiusTolerance)
 	outerRadiusSquared := outerRadius * outerRadius
 
-	for _, point := range triangle.Points {
-		if !isFinitePoint(point) {
+	center := geometry.Point{X: annulus.CX, Y: annulus.CY}
+	for _, sample := range triangle.Points {
+		if !isFiniteSample(sample) {
 			return false
 		}
 
-		dx := point.X - annulus.CX
-
-		dy := point.Y - annulus.CY
-		if dx*dx+dy*dy > outerRadiusSquared {
+		if sample.Position.DistanceSquaredTo(center) > outerRadiusSquared {
 			return false
 		}
 	}
@@ -379,7 +379,10 @@ func triangleAvoidsInnerRadius(annulus Annulus, triangle Triangle) bool {
 		return true
 	}
 
-	if pointStrictlyInTriangle(Point{X: annulus.CX, Y: annulus.CY}, triangle) {
+	if pointStrictlyInTriangle(
+		Sample{Position: geometry.Point{X: annulus.CX, Y: annulus.CY}},
+		triangle,
+	) {
 		return false
 	}
 
@@ -394,11 +397,9 @@ func triangleOutsideInnerRadius(annulus Annulus, triangle Triangle) bool {
 	innerRadius := annulus.InnerRadius * (1 - radiusTolerance)
 	innerRadiusSquared := innerRadius * innerRadius
 
-	for _, point := range triangle.Points {
-		dx := point.X - annulus.CX
-
-		dy := point.Y - annulus.CY
-		if dx*dx+dy*dy < innerRadiusSquared {
+	center := geometry.Point{X: annulus.CX, Y: annulus.CY}
+	for _, sample := range triangle.Points {
+		if sample.Position.DistanceSquaredTo(center) < innerRadiusSquared {
 			return false
 		}
 	}
@@ -426,12 +427,14 @@ func triangleEdgesAvoidInnerRadius(annulus Annulus, triangle Triangle, innerRadi
 	return true
 }
 
-func pointStrictlyInTriangle(point Point, triangle Triangle) bool {
+func pointStrictlyInTriangle(point Sample, triangle Triangle) bool {
 	var hasPositive, hasNegative bool
 
 	for index, start := range triangle.Points {
 		end := triangle.Points[(index+1)%len(triangle.Points)]
-		crossProduct := (end.X-start.X)*(point.Y-start.Y) - (end.Y-start.Y)*(point.X-start.X)
+		edge := start.Position.VectorTo(end.Position)
+		toPoint := start.Position.VectorTo(point.Position)
+		crossProduct := edge.X*toPoint.Y - edge.Y*toPoint.X
 		hasPositive = hasPositive || crossProduct > 0
 		hasNegative = hasNegative || crossProduct < 0
 	}
@@ -439,24 +442,17 @@ func pointStrictlyInTriangle(point Point, triangle Triangle) bool {
 	return hasPositive != hasNegative
 }
 
-func squaredDistanceToSegment(x, y float64, start, end Point) float64 {
-	dx := end.X - start.X
-	dy := end.Y - start.Y
-
-	lengthSquared := dx*dx + dy*dy
+func squaredDistanceToSegment(x, y float64, start, end Sample) float64 {
+	point := geometry.Point{X: x, Y: y}
+	segment := start.Position.VectorTo(end.Position)
+	lengthSquared := segment.LengthSquared()
 	if lengthSquared == 0 {
-		dx = x - start.X
-		dy = y - start.Y
-
-		return dx*dx + dy*dy
+		return point.DistanceSquaredTo(start.Position)
 	}
 
-	fraction := ((x-start.X)*dx + (y-start.Y)*dy) / lengthSquared
+	fraction := start.Position.VectorTo(point).Dot(segment) / lengthSquared
 	fraction = math.Max(0, math.Min(1, fraction))
-	nearestX := start.X + fraction*dx
-	nearestY := start.Y + fraction*dy
-	dx = x - nearestX
-	dy = y - nearestY
+	nearest := start.Position.Translate(segment.Scale(fraction))
 
-	return dx*dx + dy*dy
+	return point.DistanceSquaredTo(nearest)
 }

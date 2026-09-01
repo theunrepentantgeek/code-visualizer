@@ -150,10 +150,10 @@ func rgbaKey(colour color.RGBA) uint32 {
 	return uint32(colour.R)<<24 | uint32(colour.G)<<16 | uint32(colour.B)<<8 | uint32(colour.A)
 }
 
-func surfacePolygonPoints(points []surface.Point) []geometry.Point {
+func surfacePolygonPoints(points []surface.Sample) []geometry.Point {
 	positions := make([]geometry.Point, len(points))
-	for index, point := range points {
-		positions[index] = geometry.Point{X: point.X, Y: point.Y}
+	for index, sample := range points {
+		positions[index] = sample.Position
 	}
 
 	return positions

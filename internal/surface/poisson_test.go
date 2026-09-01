@@ -6,15 +6,17 @@ import (
 
 	"github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
 
-func TestSample_RejectsUnderflowingMinimumDistance(t *testing.T) {
+func TestPoissonSamples_RejectsUnderflowingMinimumDistance(t *testing.T) {
 	t.Parallel()
 
-	samples := make(chan []surface.Point, 1)
+	samples := make(chan []surface.Sample, 1)
 	go func() {
-		samples <- surface.Sample(
+		samples <- surface.PoissonSamples(
 			surface.Rect{MinX: 0, MinY: 0, MaxX: 50, MaxY: 50},
 			nil,
 			1e-200,
@@ -30,16 +32,16 @@ func TestSample_RejectsUnderflowingMinimumDistance(t *testing.T) {
 	}
 }
 
-func TestSample_RespectsMinimumDistance(t *testing.T) {
+func TestPoissonSamples_RespectsMinimumDistance(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewGomegaWithT(t)
-	originals := []surface.Point{
-		{X: 10, Y: 10, Value: 1, Original: true},
-		{X: 40, Y: 40, Value: 2, Original: true},
+	originals := []surface.Sample{
+		{Position: geometry.Point{X: 10, Y: 10}, Value: 1, Original: true},
+		{Position: geometry.Point{X: 40, Y: 40}, Value: 2, Original: true},
 	}
 
-	samples := surface.Sample(
+	samples := surface.PoissonSamples(
 		surface.Rect{MinX: 0, MinY: 0, MaxX: 50, MaxY: 50},
 		originals,
 		surface.PoissonMinDistance,
@@ -52,7 +54,7 @@ func TestSample_RespectsMinimumDistance(t *testing.T) {
 		g.Expect(sample.Original).To(gomega.BeFalse())
 
 		for _, original := range originals {
-			g.Expect(surface.Distance(sample, original)).To(
+			g.Expect(sample.Position.DistanceTo(original.Position)).To(
 				gomega.BeNumerically(">=", surface.PoissonMinDistance),
 			)
 		}
@@ -60,14 +62,14 @@ func TestSample_RespectsMinimumDistance(t *testing.T) {
 
 	for i, sample := range samples {
 		for _, other := range samples[i+1:] {
-			g.Expect(surface.Distance(sample, other)).To(
+			g.Expect(sample.Position.DistanceTo(other.Position)).To(
 				gomega.BeNumerically(">=", surface.PoissonMinDistance),
 			)
 		}
 	}
 }
 
-func TestSample_ReturnsOnlyPointsInsideAnnulus(t *testing.T) {
+func TestPoissonSamples_ReturnsOnlyPointsInsideAnnulus(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewGomegaWithT(t)
@@ -78,16 +80,16 @@ func TestSample_ReturnsOnlyPointsInsideAnnulus(t *testing.T) {
 		OuterRadius: 20,
 	}
 
-	samples := surface.Sample(region, nil, surface.PoissonMinDistance, 42)
+	samples := surface.PoissonSamples(region, nil, surface.PoissonMinDistance, 42)
 
 	g.Expect(samples).NotTo(gomega.BeEmpty())
 
 	for _, sample := range samples {
-		g.Expect(region.Contains(sample.X, sample.Y)).To(gomega.BeTrue())
+		g.Expect(region.Contains(sample.Position.X, sample.Position.Y)).To(gomega.BeTrue())
 	}
 }
 
-func TestSample_IsDeterministicForSeed(t *testing.T) {
+func TestPoissonSamples_IsDeterministicForSeed(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewGomegaWithT(t)
@@ -97,10 +99,10 @@ func TestSample_IsDeterministicForSeed(t *testing.T) {
 		InnerRadius: 6,
 		OuterRadius: 25,
 	}
-	originals := []surface.Point{{X: 30, Y: 10, Value: 3, Original: true}}
+	originals := []surface.Sample{{Position: geometry.Point{X: 30, Y: 10}, Value: 3, Original: true}}
 
-	first := surface.Sample(region, originals, surface.PoissonMinDistance, 123)
-	second := surface.Sample(region, originals, surface.PoissonMinDistance, 123)
+	first := surface.PoissonSamples(region, originals, surface.PoissonMinDistance, 123)
+	second := surface.PoissonSamples(region, originals, surface.PoissonMinDistance, 123)
 
 	g.Expect(first).To(gomega.Equal(second))
 }
