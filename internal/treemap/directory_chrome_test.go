@@ -23,7 +23,9 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
-		g.Expect(chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 14, Y: 24}, Max: geometry.Point{X: 106, Y: 76}}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 14, Y: 24}, Max: geometry.Point{X: 106, Y: 76},
+		}))
 	})
 
 	t.Run("wide rectangle uses top chrome", func(t *testing.T) {
@@ -33,8 +35,12 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		chrome := resolveDirectoryChrome(layout.Box{X: 0, Y: 0, W: 120, H: 60}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
-		g.Expect(chrome.Rail).To(Equal(geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 120, Y: 20}}))
-		g.Expect(chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 4, Y: 20}, Max: geometry.Point{X: 116, Y: 56}}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 120, Y: 20},
+		}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 4, Y: 20}, Max: geometry.Point{X: 116, Y: 56},
+		}))
 	})
 
 	t.Run("square rectangle uses top chrome", func(t *testing.T) {
@@ -44,8 +50,12 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		chrome := resolveDirectoryChrome(layout.Box{X: 5, Y: 6, W: 60, H: 60}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
-		g.Expect(chrome.Rail).To(Equal(geometry.Rect{Min: geometry.Point{X: 5, Y: 6}, Max: geometry.Point{X: 65, Y: 26}}))
-		g.Expect(chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 9, Y: 26}, Max: geometry.Point{X: 61, Y: 62}}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 5, Y: 6}, Max: geometry.Point{X: 65, Y: 26},
+		}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 9, Y: 26}, Max: geometry.Point{X: 61, Y: 62},
+		}))
 	})
 
 	t.Run("tall rectangle uses left chrome", func(t *testing.T) {
@@ -55,8 +65,12 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		chrome := resolveDirectoryChrome(layout.Box{X: 3, Y: 7, W: 60, H: 120}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelLeft))
-		g.Expect(chrome.Rail).To(Equal(geometry.Rect{Min: geometry.Point{X: 3, Y: 7}, Max: geometry.Point{X: 23, Y: 127}}))
-		g.Expect(chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 23, Y: 11}, Max: geometry.Point{X: 59, Y: 123}}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 3, Y: 7}, Max: geometry.Point{X: 23, Y: 127},
+		}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 23, Y: 11}, Max: geometry.Point{X: 59, Y: 123},
+		}))
 	})
 
 	t.Run("narrow top content falls back to border-only", func(t *testing.T) {
@@ -68,7 +82,9 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
-		g.Expect(chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 35}}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 35},
+		}))
 	})
 
 	t.Run("narrow left content falls back to border-only", func(t *testing.T) {
@@ -80,7 +96,9 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
-		g.Expect(chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 35, Y: 96}}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 35, Y: 96},
+		}))
 	})
 }
 

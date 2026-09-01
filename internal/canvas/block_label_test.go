@@ -39,23 +39,38 @@ func TestCanvas_AddBlockLabel_CentersMultilineText(t *testing.T) {
 	g.Expect(mb.Calls[1].Anchor).To(Equal(canvas.AnchorMiddle))
 }
 
-func TestCanvas_AddBlockLabel_GreeksTinyRasterLabels(t *testing.T) {
+func TestCanvas_AddBlockLabel_TinyRasterLabelStrategy(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	c := canvas.NewCanvas(40, 20)
-	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		Bounds: geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 35, Y: 13}},
-		Lines:  []string{"a.go", "42"},
-		Ink:    color.RGBA{A: 255},
-	}, canvas.FormatPNG)
+	tests := []struct {
+		name   string
+		format canvas.ImageFormat
+		method string
+	}{
+		{name: "PNG greeks tiny raster labels", format: canvas.FormatPNG, method: "DrawLine"},
+		{name: "SVG keeps tiny labels visible", format: canvas.FormatSVG, method: "DrawText"},
+	}
 
-	mb := mock.NewBackend()
-	err := c.RenderTo(mb)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(mb.Calls).To(HaveLen(2))
-	g.Expect(mb.Calls[0].Method).To(Equal("DrawLine"))
-	g.Expect(mb.Calls[1].Method).To(Equal("DrawLine"))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			c := canvas.NewCanvas(40, 20)
+			c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
+				Bounds: geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 35, Y: 13}},
+				Lines:  []string{"a.go", "42"},
+				Ink:    color.RGBA{A: 255},
+			}, tt.format)
+
+			mb := mock.NewBackend()
+			err := c.RenderTo(mb)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(mb.Calls).To(HaveLen(2))
+			g.Expect(mb.Calls[0].Method).To(Equal(tt.method))
+			g.Expect(mb.Calls[1].Method).To(Equal(tt.method))
+		})
+	}
 }
 
 func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T) {
@@ -121,23 +136,4 @@ func TestCanvas_AddBlockLabel_OmitsUnreadableRasterLabels(t *testing.T) {
 	err := c.RenderTo(mb)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(BeEmpty())
-}
-
-func TestCanvas_AddBlockLabel_KeepsTinySVGLabelsVisible(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	c := canvas.NewCanvas(40, 20)
-	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		Bounds: geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 35, Y: 13}},
-		Lines:  []string{"a.go", "42"},
-		Ink:    color.RGBA{A: 255},
-	}, canvas.FormatSVG)
-
-	mb := mock.NewBackend()
-	err := c.RenderTo(mb)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(mb.Calls).To(HaveLen(2))
-	g.Expect(mb.Calls[0].Method).To(Equal("DrawText"))
-	g.Expect(mb.Calls[1].Method).To(Equal("DrawText"))
 }

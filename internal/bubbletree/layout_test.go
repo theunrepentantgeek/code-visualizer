@@ -376,7 +376,7 @@ func TestLayoutFitsWithinCanvas(t *testing.T) {
 
 	// The root circle itself is never rendered; its padded radius may exceed
 	// the canvas. What must fit is the content — all descendant circles.
-	box, _ := contentBoundsForTest(node)
+	box := contentBoundsForTest(node)
 	g.Expect(box.Min.X).To(BeNumerically(">=", -1.0))
 	g.Expect(box.Min.Y).To(BeNumerically(">=", -1.0))
 	g.Expect(box.Max.X).To(BeNumerically("<=", float64(width)+1.0))
@@ -385,7 +385,7 @@ func TestLayoutFitsWithinCanvas(t *testing.T) {
 
 // contentBoundsForTest returns the axis-aligned bounding box of all descendant
 // nodes (not the root itself, which is never drawn).
-func contentBoundsForTest(root BubbleNode) (geometry.Rect, bool) {
+func contentBoundsForTest(root BubbleNode) geometry.Rect {
 	var (
 		box geometry.Rect
 		has bool
@@ -395,7 +395,7 @@ func contentBoundsForTest(root BubbleNode) (geometry.Rect, bool) {
 		box, has = addBoundsForTest(child, box, has)
 	}
 
-	return box, has
+	return box
 }
 
 func addBoundsForTest(node BubbleNode, box geometry.Rect, has bool) (geometry.Rect, bool) {

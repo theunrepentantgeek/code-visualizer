@@ -407,32 +407,46 @@ func TestCanvas_Empty_NoErrors(t *testing.T) {
 	g.Expect(mb.Calls).To(BeEmpty())
 }
 
-func TestCanvas_Render_PNG(t *testing.T) {
+func TestCanvas_Render_RasterFormats(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	c := canvas.NewCanvas(200, 200)
-	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(black),
-		},
+	tests := []struct {
+		name string
+		ext  string
+	}{
+		{name: "PNG", ext: "output.png"},
+		{name: "JPG", ext: "output.jpg"},
 	}
 
-	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:   spec,
-		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 200}},
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-	out := filepath.Join(t.TempDir(), "output.png")
-	err := c.Render(out)
-	g.Expect(err).NotTo(HaveOccurred())
+			c := canvas.NewCanvas(200, 200)
+			spec := &canvas.RectangleSpec{
+				ShapeStyle: canvas.ShapeStyle{
+					Fill:   inks.FixedInk(palette.White),
+					Border: inks.FixedInk(black),
+				},
+			}
 
-	info, statErr := os.Stat(out)
-	g.Expect(statErr).NotTo(HaveOccurred())
+			c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
+				Spec:   spec,
+				Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 200}},
+			})
 
-	if info != nil {
-		g.Expect(info.Size()).To(BeNumerically(">", 0))
+			out := filepath.Join(t.TempDir(), tt.ext)
+			err := c.Render(out)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			info, statErr := os.Stat(out)
+			g.Expect(statErr).NotTo(HaveOccurred())
+
+			if info != nil {
+				g.Expect(info.Size()).To(BeNumerically(">", 0))
+			}
+		})
 	}
 }
 
@@ -460,35 +474,6 @@ func TestCanvas_Render_SVG(t *testing.T) {
 	data, readErr := os.ReadFile(out)
 	g.Expect(readErr).NotTo(HaveOccurred())
 	g.Expect(string(data)).To(ContainSubstring("<svg"))
-}
-
-func TestCanvas_Render_JPG(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	c := canvas.NewCanvas(200, 200)
-	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(black),
-		},
-	}
-
-	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:   spec,
-		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 200}},
-	})
-
-	out := filepath.Join(t.TempDir(), "output.jpg")
-	err := c.Render(out)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	info, statErr := os.Stat(out)
-	g.Expect(statErr).NotTo(HaveOccurred())
-
-	if info != nil {
-		g.Expect(info.Size()).To(BeNumerically(">", 0))
-	}
 }
 
 func TestCanvas_Render_UnsupportedFormat(t *testing.T) {

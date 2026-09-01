@@ -45,7 +45,9 @@ func TestLayoutRootUsesBorderOnlyChrome(t *testing.T) {
 	rects := Layout(root, 200, 100, filesystem.FileSize)
 
 	g.Expect(rects.Chrome.Orientation).To(Equal(DirectoryLabelNone))
-	g.Expect(rects.Chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 196, Y: 96}}))
+	g.Expect(rects.Chrome.Content).To(Equal(geometry.Rect{
+		Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 196, Y: 96},
+	}))
 	g.Expect(rects.Children).To(HaveLen(1))
 	g.Expect(rects.Children[0].Bounds.Min.Y).To(BeNumerically(">=", 4.0))
 	g.Expect(rects.Children[0].Bounds.Min.Y).To(BeNumerically("<", directoryRailThickness))
@@ -371,8 +373,12 @@ func TestOffsetRects_ShiftsCoordinates(t *testing.T) {
 	g.Expect(rect.Bounds.Width()).To(Equal(100.0))
 	g.Expect(rect.Bounds.Height()).To(Equal(50.0))
 	g.Expect(rect.VisibleDepth).To(Equal(0))
-	g.Expect(rect.Chrome.Rail).To(Equal(geometry.Rect{Min: geometry.Point{X: 40, Y: 60}, Max: geometry.Point{X: 140, Y: 80}}))
-	g.Expect(rect.Chrome.Content).To(Equal(geometry.Rect{Min: geometry.Point{X: 44, Y: 80}, Max: geometry.Point{X: 136, Y: 106}}))
+	g.Expect(rect.Chrome.Rail).To(Equal(geometry.Rect{
+		Min: geometry.Point{X: 40, Y: 60}, Max: geometry.Point{X: 140, Y: 80},
+	}))
+	g.Expect(rect.Chrome.Content).To(Equal(geometry.Rect{
+		Min: geometry.Point{X: 44, Y: 80}, Max: geometry.Point{X: 136, Y: 106},
+	}))
 }
 
 func TestOffsetRects_ShiftsChildrenRecursively(t *testing.T) {
@@ -407,7 +413,9 @@ func TestOffsetRects_ZeroOffset_NoChange(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	rect := TreemapRectangle{Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 70}}}
+	rect := TreemapRectangle{
+		Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 70}},
+	}
 	OffsetRects(&rect, geometry.Vector{X: 0, Y: 0})
 	g.Expect(rect.Bounds.Min.X).To(Equal(10.0))
 	g.Expect(rect.Bounds.Min.Y).To(Equal(20.0))

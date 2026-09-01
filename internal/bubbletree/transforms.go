@@ -35,6 +35,8 @@ func occupiedBounds(node *BubbleNode) (geometry.Rect, bool) {
 // radius, and true. When box has not yet received a disc (has is false), the
 // disc's own bounds become box directly, avoiding a false union with an
 // arbitrary starting rectangle.
+//
+//nolint:revive,nolintlint // flag-parameter: has is fold-accumulator state, not a behaviour switch
 func expandBoundsForDisc(box geometry.Rect, has bool, center geometry.Point, radius float64) (geometry.Rect, bool) {
 	discBounds := geometry.Rect{
 		Min: geometry.Point{X: center.X - radius, Y: center.Y - radius},

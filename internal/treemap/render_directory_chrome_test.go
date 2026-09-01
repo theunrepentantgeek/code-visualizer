@@ -243,19 +243,51 @@ func renderDirectoryChrome(t *testing.T, chrome treemap.DirectoryChrome, visible
 func renderSiblingDirectoryChrome(t *testing.T) *captureBackend {
 	t.Helper()
 
-	root := &model.Directory{
-		Name: "",
-		Dirs: []*model.Directory{
-			{
-				Name:  "alpha",
-				Files: []*model.File{makeTestFile("a.go", "go", 100)},
-			},
-			{
-				Name:  "beta",
-				Files: []*model.File{makeTestFile("b.go", "go", 100)},
-			},
+	siblings := []struct {
+		name    string
+		bounds  geometry.Rect
+		rail    geometry.Rect
+		content geometry.Rect
+	}{
+		{
+			name:    "alpha",
+			bounds:  geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 90}},
+			rail:    geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 30}},
+			content: geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 41, Y: 86}},
+		},
+		{
+			name:    "beta",
+			bounds:  geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
+			rail:    geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
+			content: geometry.Rect{Min: geometry.Point{X: 59, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
 		},
 	}
+
+	root := &model.Directory{Name: ""}
+	children := make([]treemap.TreemapRectangle, 0, len(siblings))
+
+	for _, sibling := range siblings {
+		root.Dirs = append(root.Dirs, &model.Directory{
+			Name:  sibling.name,
+			Files: []*model.File{makeTestFile(sibling.name[:1]+".go", "go", 100)},
+		})
+		children = append(children, treemap.TreemapRectangle{
+			Bounds:       sibling.bounds,
+			VisibleDepth: 0,
+			Label:        sibling.name,
+			IsDirectory:  true,
+			Chrome: treemap.DirectoryChrome{
+				Orientation: treemap.DirectoryLabelTop,
+				Text:        sibling.name,
+				Rail:        sibling.rail,
+				Content:     sibling.content,
+			},
+			Children: []treemap.TreemapRectangle{
+				{Bounds: sibling.content},
+			},
+		})
+	}
+
 	rects := treemap.TreemapRectangle{
 		Bounds:       geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
 		VisibleDepth: -1,
@@ -264,38 +296,7 @@ func renderSiblingDirectoryChrome(t *testing.T) *captureBackend {
 			Orientation: treemap.DirectoryLabelNone,
 			Content:     geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 96}},
 		},
-		Children: []treemap.TreemapRectangle{
-			{
-				Bounds:       geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 90}},
-				VisibleDepth: 0,
-				Label:        "alpha",
-				IsDirectory:  true,
-				Chrome: treemap.DirectoryChrome{
-					Orientation: treemap.DirectoryLabelTop,
-					Text:        "alpha",
-					Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 30}},
-					Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 41, Y: 86}},
-				},
-				Children: []treemap.TreemapRectangle{
-					{Bounds: geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 41, Y: 86}}},
-				},
-			},
-			{
-				Bounds:       geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
-				VisibleDepth: 0,
-				Label:        "beta",
-				IsDirectory:  true,
-				Chrome: treemap.DirectoryChrome{
-					Orientation: treemap.DirectoryLabelTop,
-					Text:        "beta",
-					Rail:        geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
-					Content:     geometry.Rect{Min: geometry.Point{X: 59, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
-				},
-				Children: []treemap.TreemapRectangle{
-					{Bounds: geometry.Rect{Min: geometry.Point{X: 59, Y: 30}, Max: geometry.Point{X: 86, Y: 86}}},
-				},
-			},
-		},
+		Children: children,
 	}
 
 	return renderRectsToBackend(t, rects, root)

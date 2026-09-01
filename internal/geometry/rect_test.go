@@ -126,13 +126,41 @@ func TestRectContains(t *testing.T) {
 		point Point
 		want  bool
 	}{
-		{name: "min corner is inclusive", rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 10, Y: 20}, want: true},
-		{name: "max corner is inclusive", rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 30, Y: 50}, want: true},
-		{name: "interior point", rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 20, Y: 35}, want: true},
-		{name: "outside on X", rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 31, Y: 35}, want: false},
-		{name: "outside on Y", rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 20, Y: 51}, want: false},
-		{name: "invalid rectangle", rect: Rect{Min: Point{X: 30, Y: 20}, Max: Point{X: 10, Y: 50}}, point: Point{X: 20, Y: 35}, want: false},
-		{name: "invalid point", rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: math.NaN(), Y: 35}, want: false},
+		{
+			name: "min corner is inclusive",
+			rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 10, Y: 20},
+			want: true,
+		},
+		{
+			name: "max corner is inclusive",
+			rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 30, Y: 50},
+			want: true,
+		},
+		{
+			name: "interior point",
+			rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 20, Y: 35},
+			want: true,
+		},
+		{
+			name: "outside on X",
+			rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 31, Y: 35},
+			want: false,
+		},
+		{
+			name: "outside on Y",
+			rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: 20, Y: 51},
+			want: false,
+		},
+		{
+			name: "invalid rectangle",
+			rect: Rect{Min: Point{X: 30, Y: 20}, Max: Point{X: 10, Y: 50}}, point: Point{X: 20, Y: 35},
+			want: false,
+		},
+		{
+			name: "invalid point",
+			rect: Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}, point: Point{X: math.NaN(), Y: 35},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {

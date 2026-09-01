@@ -98,6 +98,13 @@ func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Sample {
 	case Annulus:
 		return value.BoundaryLoops(maximumSegmentLength)
 	case *Annulus:
+		// isNilInterfaceValue already rejects a typed-nil *Annulus above, but
+		// that reflection-based check is opaque to nilaway's static
+		// analysis, so make the guard explicit here too.
+		if value == nil {
+			return nil
+		}
+
 		return value.BoundaryLoops(maximumSegmentLength)
 	default:
 		return nil

@@ -98,7 +98,10 @@ func TestSVGBackend_DeduplicatesIdenticalRadialGradients(t *testing.T) {
 	// Draw 5 rectangles with sharedFill and 1 with uniqueFill.
 	for i := range 5 {
 		backend.DrawRectangle(
-			geometry.RectFromPositionSize(geometry.Point{X: float64(i * 100), Y: 0}, geometry.Size{Width: 90, Height: 200}),
+			geometry.RectFromPositionSize(
+				geometry.Point{X: float64(i * 100), Y: 0},
+				geometry.Size{Width: 90, Height: 200},
+			),
 			sharedFill, border, 1.0,
 		)
 	}

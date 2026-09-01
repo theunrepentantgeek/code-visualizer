@@ -58,8 +58,8 @@ func TestLayoutStage_ReservesLegendSpace(t *testing.T) {
 
 			wReduce, hReduce := cfg.ReserveSpace()
 			layoutW, layoutH := legend.ReserveAndLayout(cfg, common.Width, common.Height)
-			dx, dy := legend.LayoutOffset(cfg, wReduce, hReduce)
-			box, _ := contentBoundsForTest(viz.Nodes)
+			dx, dy := legend.LayoutOffset(cfg, reserved)
+			box := contentBoundsForTest(viz.Nodes)
 
 			if tt.startOnX {
 				g.Expect(box.Min.X).To(BeNumerically(">=", dx-1.0), tt.startMessage)
