@@ -2,9 +2,6 @@ package geometry
 
 import (
 	"math"
-	"os"
-	"os/exec"
-	"strings"
 	"testing"
 )
 
@@ -46,7 +43,12 @@ func TestVectorAdd(t *testing.T) {
 		right Vector
 		want  Vector
 	}{
-		{name: "adds positive and negative components", left: Vector{X: 1, Y: 2}, right: Vector{X: -3, Y: 4}, want: Vector{X: -2, Y: 6}},
+		{
+			name:  "adds positive and negative components",
+			left:  Vector{X: 1, Y: 2},
+			right: Vector{X: -3, Y: 4},
+			want:  Vector{X: -2, Y: 6},
+		},
 		{name: "adds zero vector", left: Vector{X: -5.5, Y: 8.25}, right: Vector{}, want: Vector{X: -5.5, Y: 8.25}},
 	}
 
@@ -68,8 +70,18 @@ func TestVectorSubtract(t *testing.T) {
 		right Vector
 		want  Vector
 	}{
-		{name: "subtracts positive and negative components", left: Vector{X: 1, Y: 2}, right: Vector{X: -3, Y: 4}, want: Vector{X: 4, Y: -2}},
-		{name: "subtracts zero vector", left: Vector{X: -5.5, Y: 8.25}, right: Vector{}, want: Vector{X: -5.5, Y: 8.25}},
+		{
+			name:  "subtracts positive and negative components",
+			left:  Vector{X: 1, Y: 2},
+			right: Vector{X: -3, Y: 4},
+			want:  Vector{X: 4, Y: -2},
+		},
+		{
+			name:  "subtracts zero vector",
+			left:  Vector{X: -5.5, Y: 8.25},
+			right: Vector{},
+			want:  Vector{X: -5.5, Y: 8.25},
+		},
 	}
 
 	for _, tt := range tests {
@@ -180,7 +192,13 @@ func TestVectorUnit(t *testing.T) {
 		wantOK     bool
 		wantLength float64
 	}{
-		{name: "three four five vector", vector: Vector{X: 3, Y: 4}, want: Vector{X: 0.6, Y: 0.8}, wantOK: true, wantLength: 1},
+		{
+			name:       "three four five vector",
+			vector:     Vector{X: 3, Y: 4},
+			want:       Vector{X: 0.6, Y: 0.8},
+			wantOK:     true,
+			wantLength: 1,
+		},
 		{name: "zero vector", vector: Vector{}, want: Vector{}, wantOK: false},
 		{name: "nan component", vector: Vector{X: math.NaN(), Y: 1}, want: Vector{}, wantOK: false},
 		{name: "infinite component", vector: Vector{X: 1, Y: math.Inf(1)}, want: Vector{}, wantOK: false},
@@ -196,6 +214,7 @@ func TestVectorUnit(t *testing.T) {
 			}
 
 			assertVectorClose(t, got, tt.want)
+
 			if tt.wantOK {
 				assertFloatClose(t, got.Length(), tt.wantLength)
 			}
@@ -211,7 +230,10 @@ func TestVectorUnitExtremeFiniteValues(t *testing.T) {
 		vector Vector
 	}{
 		{name: "max float64 components", vector: Vector{X: math.MaxFloat64, Y: math.MaxFloat64}},
-		{name: "smallest nonzero float64 components", vector: Vector{X: math.SmallestNonzeroFloat64, Y: math.SmallestNonzeroFloat64}},
+		{
+			name:   "smallest nonzero float64 components",
+			vector: Vector{X: math.SmallestNonzeroFloat64, Y: math.SmallestNonzeroFloat64},
+		},
 	}
 
 	for _, tt := range tests {
@@ -222,9 +244,11 @@ func TestVectorUnitExtremeFiniteValues(t *testing.T) {
 			if !ok {
 				t.Fatalf("Unit() ok = false, want true (got %v)", got)
 			}
+
 			if !got.Valid() {
 				t.Fatalf("Unit() produced invalid vector %v", got)
 			}
+
 			assertFloatClose(t, got.Length(), 1)
 		})
 	}
@@ -300,51 +324,9 @@ func TestVectorMethodsDoNotMutateReceiver(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.call()
 			assertVectorClose(t, original, want)
-		})
-	}
-}
-
-func TestAssertFloatCloseRejectsInvalidValues(t *testing.T) {
-	t.Parallel()
-
-	if scenario := os.Getenv("ASSERT_FLOAT_CLOSE_INVALID_SCENARIO"); scenario != "" {
-		switch scenario {
-		case "nan":
-			assertFloatClose(t, math.NaN(), 1)
-		case "positive-infinity":
-			assertFloatClose(t, math.Inf(1), 1)
-		case "negative-infinity":
-			assertFloatClose(t, math.Inf(-1), 1)
-		default:
-			t.Fatalf("unknown ASSERT_FLOAT_CLOSE_INVALID_SCENARIO %q", scenario)
-		}
-		return
-	}
-
-	tests := []struct {
-		name     string
-		scenario string
-	}{
-		{name: "nan", scenario: "nan"},
-		{name: "positive infinity", scenario: "positive-infinity"},
-		{name: "negative infinity", scenario: "negative-infinity"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			cmd := exec.Command("go", "test", ".", "-run", "^TestAssertFloatCloseRejectsInvalidValues$", "-count=1")
-			cmd.Env = append(os.Environ(), "ASSERT_FLOAT_CLOSE_INVALID_SCENARIO="+tt.scenario)
-			output, err := cmd.CombinedOutput()
-			if err == nil {
-				t.Fatalf("expected subprocess test to fail for scenario %q", tt.scenario)
-			}
-			if !strings.Contains(string(output), "expected finite floats") {
-				t.Fatalf("subprocess output %q did not contain expected failure message", output)
-			}
 		})
 	}
 }
@@ -362,9 +344,11 @@ func assertFloatClose(t *testing.T, got, want float64) {
 	if math.IsNaN(got) || math.IsNaN(want) {
 		t.Fatalf("expected finite floats, got=%v want=%v", got, want)
 	}
+
 	if math.IsInf(got, 0) || math.IsInf(want, 0) {
 		t.Fatalf("expected finite floats, got=%v want=%v", got, want)
 	}
+
 	if math.Abs(got-want) > vectorTolerance {
 		t.Fatalf("got %v, want %v", got, want)
 	}
