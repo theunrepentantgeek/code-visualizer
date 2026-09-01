@@ -32,9 +32,17 @@ func (v Vector) LengthSquared() float64 { return v.Dot(v) }
 func (v Vector) Length() float64        { return math.Hypot(v.X, v.Y) }
 
 func (v Vector) Unit() (Vector, bool) {
-	length := v.Length()
-	if !v.Valid() || length == 0 {
+	if !v.Valid() {
 		return Vector{}, false
 	}
-	return v.Scale(1 / length), true
+
+	scale := math.Max(math.Abs(v.X), math.Abs(v.Y))
+	if scale == 0 {
+		return Vector{}, false
+	}
+
+	scaled := Vector{X: v.X / scale, Y: v.Y / scale}
+	length := scaled.Length()
+
+	return Vector{X: scaled.X / length, Y: scaled.Y / length}, true
 }

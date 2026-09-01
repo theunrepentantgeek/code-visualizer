@@ -2,6 +2,9 @@ package geometry
 
 import (
 	"math"
+	"os"
+	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -208,6 +211,34 @@ func TestVectorUnit(t *testing.T) {
 	}
 }
 
+func TestVectorUnitExtremeFiniteValues(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		vector Vector
+	}{
+		{name: "max float64 components", vector: Vector{X: math.MaxFloat64, Y: math.MaxFloat64}},
+		{name: "smallest nonzero float64 components", vector: Vector{X: math.SmallestNonzeroFloat64, Y: math.SmallestNonzeroFloat64}},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, ok := tt.vector.Unit()
+			if !ok {
+				t.Fatalf("Unit() ok = false, want true (got %v)", got)
+			}
+			if !got.Valid() {
+				t.Fatalf("Unit() produced invalid vector %v", got)
+			}
+			assertFloatClose(t, got.Length(), 1)
+		})
+	}
+}
+
 func TestVectorAlgebraicIdentities(t *testing.T) {
 	t.Parallel()
 
@@ -286,6 +317,50 @@ func TestVectorMethodsDoNotMutateReceiver(t *testing.T) {
 	}
 }
 
+func TestAssertFloatCloseRejectsInvalidValues(t *testing.T) {
+	t.Parallel()
+
+	if scenario := os.Getenv("ASSERT_FLOAT_CLOSE_INVALID_SCENARIO"); scenario != "" {
+		switch scenario {
+		case "nan":
+			assertFloatClose(t, math.NaN(), 1)
+		case "positive-infinity":
+			assertFloatClose(t, math.Inf(1), 1)
+		case "negative-infinity":
+			assertFloatClose(t, math.Inf(-1), 1)
+		default:
+			t.Fatalf("unknown ASSERT_FLOAT_CLOSE_INVALID_SCENARIO %q", scenario)
+		}
+		return
+	}
+
+	tests := []struct {
+		name     string
+		scenario string
+	}{
+		{name: "nan", scenario: "nan"},
+		{name: "positive infinity", scenario: "positive-infinity"},
+		{name: "negative infinity", scenario: "negative-infinity"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cmd := exec.Command("go", "test", ".", "-run", "^TestAssertFloatCloseRejectsInvalidValues$", "-count=1")
+			cmd.Env = append(os.Environ(), "ASSERT_FLOAT_CLOSE_INVALID_SCENARIO="+tt.scenario)
+			output, err := cmd.CombinedOutput()
+			if err == nil {
+				t.Fatalf("expected subprocess test to fail for scenario %q", tt.scenario)
+			}
+			if !strings.Contains(string(output), "expected finite floats") {
+				t.Fatalf("subprocess output %q did not contain expected failure message", output)
+			}
+		})
+	}
+}
+
 func assertVectorClose(t *testing.T, got, want Vector) {
 	t.Helper()
 
@@ -296,6 +371,12 @@ func assertVectorClose(t *testing.T, got, want Vector) {
 func assertFloatClose(t *testing.T, got, want float64) {
 	t.Helper()
 
+	if math.IsNaN(got) || math.IsNaN(want) {
+		t.Fatalf("expected finite floats, got=%v want=%v", got, want)
+	}
+	if math.IsInf(got, 0) || math.IsInf(want, 0) {
+		t.Fatalf("expected finite floats, got=%v want=%v", got, want)
+	}
 	if math.Abs(got-want) > vectorTolerance {
 		t.Fatalf("got %v, want %v", got, want)
 	}
