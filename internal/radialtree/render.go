@@ -69,12 +69,12 @@ func addEdges(cv *canvas.Canvas, node RadialNode, cx, cy float64) {
 // addEdgesInner is the recursive worker for addEdges. It accepts a pre-allocated
 // edgeSpec so the single allocation is not repeated for every node in the tree.
 func addEdgesInner(cv *canvas.Canvas, node RadialNode, cx, cy float64, edgeSpec *canvas.LineSpec) {
-	px := cx + node.X
-	py := cy + node.Y
+	px := cx + node.Position.X
+	py := cy + node.Position.Y
 
 	for _, child := range node.Children {
-		chx := cx + child.X
-		chy := cy + child.Y
+		chx := cx + child.Position.X
+		chy := cy + child.Position.Y
 
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: edgeSpec,
@@ -108,8 +108,8 @@ func collectDiscs(
 	if node.DiscRadius > 0 {
 		entries = append(entries, discEntry{
 			node:      *node,
-			sx:        cx + node.X,
-			sy:        cy + node.Y,
+			sx:        cx + node.Position.X,
+			sy:        cy + node.Position.Y,
 			isDir:     node.IsDirectory,
 			directory: dir,
 		})
@@ -146,8 +146,8 @@ func collectDiscsLeaf(
 	return []discEntry{{
 		node: *node,
 		file: file,
-		sx:   cx + node.X,
-		sy:   cy + node.Y,
+		sx:   cx + node.Position.X,
+		sy:   cy + node.Position.Y,
 	}}
 }
 
@@ -259,7 +259,7 @@ func renderNodeLabel(
 		return
 	}
 
-	if nodeDistance(node) == 0 {
+	if node.Position.Length() == 0 {
 		addRootLabel(cv, node, cx, cy, is, labelInk)
 	} else {
 		addExternalLabel(cv, node, cx, cy, labelOrientAngle(node, parentDirAngle), labelInk)
@@ -280,16 +280,11 @@ func labelOrientAngle(node RadialNode, parentDirAngle float64) float64 {
 // childParentAngleFor returns the parentDirAngle to pass to a node's children.
 // Only non-root directories propagate their angle; root and file nodes pass NaN.
 func childParentAngleFor(node RadialNode) float64 {
-	if node.IsDirectory && nodeDistance(node) > 0 {
+	if node.IsDirectory && node.Position.Length() > 0 {
 		return node.Angle
 	}
 
 	return math.NaN()
-}
-
-// nodeDistance returns the node's distance from the canvas centre.
-func nodeDistance(node RadialNode) float64 {
-	return math.Sqrt(node.X*node.X + node.Y*node.Y)
 }
 
 // addRootLabel adds a centred label on the root disc.
@@ -311,8 +306,8 @@ func addRootLabel(
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:    labelSpec,
-		X:       cx + node.X,
-		Y:       cy + node.Y,
+		X:       cx + node.Position.X,
+		Y:       cy + node.Position.Y,
 		Content: node.Label,
 	})
 }
@@ -329,7 +324,7 @@ func addExternalLabel(
 	orientAngle float64,
 	labelInk inks.Ink,
 ) {
-	dist := math.Sqrt(node.X*node.X + node.Y*node.Y)
+	dist := node.Position.Length()
 	labelRadius := dist + node.DiscRadius + labelGap
 	lx := cx + labelRadius*math.Cos(node.Angle)
 	ly := cy + labelRadius*math.Sin(node.Angle)

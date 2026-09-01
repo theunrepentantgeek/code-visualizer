@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -29,8 +30,7 @@ func TestLayoutRootIsAtCentre(t *testing.T) {
 	}
 
 	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
-	g.Expect(node.X).To(BeNumerically("==", 0))
-	g.Expect(node.Y).To(BeNumerically("==", 0))
+	g.Expect(node.Position).To(Equal(geometry.Vector{X: 0, Y: 0}))
 }
 
 func TestLayoutChildrenInRing(t *testing.T) {
@@ -52,7 +52,7 @@ func TestLayoutChildrenInRing(t *testing.T) {
 	radii := make([]float64, 0, len(node.Children))
 
 	for _, child := range node.Children {
-		r := math.Sqrt(child.X*child.X + child.Y*child.Y)
+		r := child.Position.Length()
 		g.Expect(r).To(BeNumerically(">", 0))
 		radii = append(radii, r)
 	}
@@ -189,17 +189,16 @@ func TestLayoutNestedDepth(t *testing.T) {
 	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 
 	// Root is at centre (radius 0).
-	g.Expect(node.X).To(BeNumerically("==", 0))
-	g.Expect(node.Y).To(BeNumerically("==", 0))
+	g.Expect(node.Position).To(Equal(geometry.Vector{X: 0, Y: 0}))
 
 	g.Expect(node.Children).To(HaveLen(1))
 	subNode := node.Children[0]
-	subRadius := math.Sqrt(subNode.X*subNode.X + subNode.Y*subNode.Y)
+	subRadius := subNode.Position.Length()
 	g.Expect(subRadius).To(BeNumerically(">", 0))
 
 	g.Expect(subNode.Children).To(HaveLen(1))
 	fileNode := subNode.Children[0]
-	fileRadius := math.Sqrt(fileNode.X*fileNode.X + fileNode.Y*fileNode.Y)
+	fileRadius := fileNode.Position.Length()
 	g.Expect(fileRadius).To(BeNumerically(">", subRadius))
 }
 
@@ -309,8 +308,7 @@ func TestLayoutEmptyDirectory(t *testing.T) {
 
 	// Should not panic.
 	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
-	g.Expect(node.X).To(BeNumerically("==", 0))
-	g.Expect(node.Y).To(BeNumerically("==", 0))
+	g.Expect(node.Position).To(Equal(geometry.Vector{X: 0, Y: 0}))
 }
 
 func TestLayoutRootLabel(t *testing.T) {
@@ -346,8 +344,8 @@ func TestLayoutCanvasSize(t *testing.T) {
 	g.Expect(small.Children).To(HaveLen(2))
 	g.Expect(large.Children).To(HaveLen(2))
 
-	smallRadius := math.Sqrt(small.Children[0].X*small.Children[0].X + small.Children[0].Y*small.Children[0].Y)
-	largeRadius := math.Sqrt(large.Children[0].X*large.Children[0].X + large.Children[0].Y*large.Children[0].Y)
+	smallRadius := small.Children[0].Position.Length()
+	largeRadius := large.Children[0].Position.Length()
 
 	g.Expect(largeRadius).To(BeNumerically(">", smallRadius))
 }
@@ -558,8 +556,8 @@ func TestLayoutGrainDirectorySiblingsShareRings(t *testing.T) {
 	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainDirectory)
 	g.Expect(node.Children).To(HaveLen(2))
 
-	r1 := math.Sqrt(node.Children[0].X*node.Children[0].X + node.Children[0].Y*node.Children[0].Y)
-	r2 := math.Sqrt(node.Children[1].X*node.Children[1].X + node.Children[1].Y*node.Children[1].Y)
+	r1 := node.Children[0].Position.Length()
+	r2 := node.Children[1].Position.Length()
 	g.Expect(r1).To(BeNumerically("~", r2, r1*0.01))
 
 	// Both subtrees have one leaf directory each, so they share the circle evenly.

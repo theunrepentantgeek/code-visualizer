@@ -4,6 +4,7 @@ package radialtree
 import (
 	"math"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -166,8 +167,7 @@ func layoutDir(
 	dirDisc := directoryDiscRadius(dir, opts.discParams.dir)
 
 	node := RadialNode{
-		X:           radius * math.Cos(angle),
-		Y:           radius * math.Sin(angle),
+		Position:    geometry.Vector{X: radius * math.Cos(angle), Y: radius * math.Sin(angle)},
 		DiscRadius:  dirDisc,
 		Angle:       angle,
 		Label:       dir.Name,
@@ -217,8 +217,7 @@ func layoutFiles(
 		childAngle := childStart + fileSweep/2
 
 		fileNode := RadialNode{
-			X:           childRadius * math.Cos(childAngle),
-			Y:           childRadius * math.Sin(childAngle),
+			Position:    geometry.Vector{X: childRadius * math.Cos(childAngle), Y: childRadius * math.Sin(childAngle)},
 			DiscRadius:  fileDiscRadius(f, opts.discMetric, opts.discParams),
 			Angle:       childAngle,
 			Label:       f.Name,
