@@ -15,6 +15,7 @@
 ### Task 1: Add the Vector contract
 
 **Files:**
+
 - Create: `internal/geometry/vector.go`
 - Create: `internal/geometry/vector_test.go`
 
@@ -26,17 +27,17 @@ non-mutation:
 
 ```go
 func TestVectorUnit(t *testing.T) {
-	t.Parallel()
-	g := NewWithT(t)
+ t.Parallel()
+ g := NewWithT(t)
 
-	unit, ok := (Vector{X: 3, Y: 4}).Unit()
-	g.Expect(ok).To(BeTrue())
-	g.Expect(unit).To(Equal(Vector{X: 0.6, Y: 0.8}))
+ unit, ok := (Vector{X: 3, Y: 4}).Unit()
+ g.Expect(ok).To(BeTrue())
+ g.Expect(unit).To(Equal(Vector{X: 0.6, Y: 0.8}))
 
-	_, ok = (Vector{}).Unit()
-	g.Expect(ok).To(BeFalse())
-	_, ok = (Vector{X: math.NaN()}).Unit()
-	g.Expect(ok).To(BeFalse())
+ _, ok = (Vector{}).Unit()
+ g.Expect(ok).To(BeFalse())
+ _, ok = (Vector{X: math.NaN()}).Unit()
+ g.Expect(ok).To(BeFalse())
 }
 ```
 
@@ -54,40 +55,40 @@ package geometry
 import "math"
 
 type Vector struct {
-	X float64
-	Y float64
+ X float64
+ Y float64
 }
 
 // ZeroVector is the additive identity, representing no displacement.
 var ZeroVector = Vector{}
 
 func NewVector(x, y float64) Vector {
-	return Vector{X: x, Y: y}
+ return Vector{X: x, Y: y}
 }
 
 func NewRadialVector(angle, length float64) Vector {
-	return Vector{X: length * math.Cos(angle), Y: length * math.Sin(angle)}
+ return Vector{X: length * math.Cos(angle), Y: length * math.Sin(angle)}
 }
 
 func (v Vector) Valid() bool {
-	return !math.IsNaN(v.X) && !math.IsInf(v.X, 0) &&
-		!math.IsNaN(v.Y) && !math.IsInf(v.Y, 0)
+ return !math.IsNaN(v.X) && !math.IsInf(v.X, 0) &&
+  !math.IsNaN(v.Y) && !math.IsInf(v.Y, 0)
 }
 
 func (v Vector) Add(other Vector) Vector {
-	return Vector{X: v.X + other.X, Y: v.Y + other.Y}
+ return Vector{X: v.X + other.X, Y: v.Y + other.Y}
 }
 
 func (v Vector) Subtract(other Vector) Vector {
-	return Vector{X: v.X - other.X, Y: v.Y - other.Y}
+ return Vector{X: v.X - other.X, Y: v.Y - other.Y}
 }
 
 func (v Vector) Scale(factor float64) Vector {
-	return Vector{X: v.X * factor, Y: v.Y * factor}
+ return Vector{X: v.X * factor, Y: v.Y * factor}
 }
 
 func (v Vector) Dot(other Vector) float64 {
-	return v.X*other.X + v.Y*other.Y
+ return v.X*other.X + v.Y*other.Y
 }
 
 func (v Vector) LengthSquared() float64 { return v.Dot(v) }
@@ -98,19 +99,19 @@ func (v Vector) Length() float64        { return math.Hypot(v.X, v.Y) }
 // components and overflow of 1/Length for subnormal components, either of
 // which would otherwise destroy the direction of v.
 func (v Vector) Unit() (Vector, bool) {
-	if !v.Valid() {
-		return ZeroVector, false
-	}
+ if !v.Valid() {
+  return ZeroVector, false
+ }
 
-	scale := math.Max(math.Abs(v.X), math.Abs(v.Y))
-	if scale == 0 {
-		return ZeroVector, false
-	}
+ scale := math.Max(math.Abs(v.X), math.Abs(v.Y))
+ if scale == 0 {
+  return ZeroVector, false
+ }
 
-	scaled := Vector{X: v.X / scale, Y: v.Y / scale}
-	length := scaled.Length()
+ scaled := Vector{X: v.X / scale, Y: v.Y / scale}
+ length := scaled.Length()
 
-	return Vector{X: scaled.X / length, Y: scaled.Y / length}, true
+ return Vector{X: scaled.X / length, Y: scaled.Y / length}, true
 }
 ```
 
@@ -131,6 +132,7 @@ git commit -m "feat(geometry): add vector primitive" \
 ### Task 2: Use Vector for radial-tree offsets
 
 **Files:**
+
 - Modify: `internal/radialtree/node.go`
 - Modify: `internal/radialtree/layout.go`
 - Modify: `internal/radialtree/render.go`
@@ -160,13 +162,13 @@ Define:
 
 ```go
 type RadialNode struct {
-	Position    geometry.Vector
-	DiscRadius  float64
-	Angle       float64
-	Label       string
-	ShowLabel   bool
-	IsDirectory bool
-	Children    []RadialNode
+ Position    geometry.Vector
+ DiscRadius  float64
+ Angle       float64
+ Label       string
+ ShowLabel   bool
+ IsDirectory bool
+ Children    []RadialNode
 }
 ```
 
@@ -191,6 +193,7 @@ git commit -m "refactor(radialtree): model positions as vectors" \
 ### Task 3: Replace paired offset parameters
 
 **Files:**
+
 - Modify: `internal/bubbletree/transforms.go`
 - Modify: `internal/bubbletree/transforms_test.go`
 - Modify: `internal/scatter/layout.go`
@@ -262,6 +265,7 @@ git commit -m "refactor: pass layout offsets as vectors" \
 ### Task 4: Verify and open PR 1
 
 **Files:**
+
 - Verify only
 
 - [ ] **Step 1: Run full tests without golden updates**
