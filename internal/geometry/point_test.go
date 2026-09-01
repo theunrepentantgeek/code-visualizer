@@ -107,6 +107,32 @@ func TestLerp(t *testing.T) {
 	}
 }
 
+func TestLerpExtremeFiniteEndpoints(t *testing.T) {
+	t.Parallel()
+
+	a := Point{X: -math.MaxFloat64, Y: math.MaxFloat64}
+	b := Point{X: math.MaxFloat64, Y: -math.MaxFloat64}
+
+	if got := Lerp(a, b, 0); got != a {
+		t.Fatalf("Lerp(a, b, 0) = %v, want exact endpoint %v", got, a)
+	}
+	if got := Lerp(a, b, 1); got != b {
+		t.Fatalf("Lerp(a, b, 1) = %v, want exact endpoint %v", got, b)
+	}
+}
+
+func TestMidpointOppositeExtremeFinitePoints(t *testing.T) {
+	t.Parallel()
+
+	a := Point{X: -math.MaxFloat64, Y: math.MaxFloat64}
+	b := Point{X: math.MaxFloat64, Y: -math.MaxFloat64}
+	got := Midpoint(a, b)
+
+	if !got.Valid() || got != (Point{}) {
+		t.Fatalf("Midpoint(a, b) = %v, want finite origin", got)
+	}
+}
+
 func TestPointInvalidValuesPropagate(t *testing.T) {
 	t.Parallel()
 
