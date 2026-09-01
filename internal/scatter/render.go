@@ -204,8 +204,8 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 		borderValue := metricValueForPoint(point, is.Border)
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   discSpec,
-			X:      point.X,
-			Y:      point.Y,
+			X:      point.Position.X,
+			Y:      point.Position.Y,
 			Radius: point.Radius,
 			Fill:   fillValue,
 			Border: borderValue,
@@ -228,7 +228,7 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 		}
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:     labelSpec,
-			Position: geometry.Point{X: point.X, Y: point.Y},
+			Position: point.Position,
 			Content:  label,
 		})
 	}

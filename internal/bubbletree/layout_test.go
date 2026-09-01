@@ -21,7 +21,7 @@ func makeFile(name string, size int64) *model.File {
 // parent circle (distance + childRadius <= parentRadius + tolerance).
 func assertContainment(g Gomega, parent BubbleNode) {
 	for _, child := range parent.Children {
-		dist := math.Sqrt((child.X-parent.X)*(child.X-parent.X) + (child.Y-parent.Y)*(child.Y-parent.Y))
+		dist := parent.Position.DistanceTo(child.Position)
 		g.Expect(dist+child.Radius).To(
 			BeNumerically("<=", parent.Radius+1.0),
 			"child %q must be contained in parent %q", child.Label, parent.Label,
@@ -38,7 +38,7 @@ func assertNoOverlap(g Gomega, parent BubbleNode) {
 		for j := i + 1; j < len(parent.Children); j++ {
 			a := parent.Children[i]
 			b := parent.Children[j]
-			dist := math.Sqrt((a.X-b.X)*(a.X-b.X) + (a.Y-b.Y)*(a.Y-b.Y))
+			dist := a.Position.DistanceTo(b.Position)
 			g.Expect(dist).To(
 				BeNumerically(">=", a.Radius+b.Radius-1.0),
 				"siblings %q and %q must not overlap", a.Label, b.Label,
@@ -284,7 +284,7 @@ func TestLayoutSingleFile(t *testing.T) {
 	g.Expect(child.Radius).To(BeNumerically(">", 0))
 
 	// Single child should be roughly centred in the parent.
-	dist := math.Sqrt((child.X-node.X)*(child.X-node.X) + (child.Y-node.Y)*(child.Y-node.Y))
+	dist := node.Position.DistanceTo(child.Position)
 	g.Expect(dist).To(BeNumerically("<", node.Radius))
 
 	// Must be contained.
@@ -401,19 +401,19 @@ func contentBoundsForTest(root BubbleNode) bounds {
 }
 
 func addBoundsForTest(node BubbleNode, box *bounds) {
-	if l := node.X - node.Radius; l < box.minX {
+	if l := node.Position.X - node.Radius; l < box.minX {
 		box.minX = l
 	}
 
-	if r := node.X + node.Radius; r > box.maxX {
+	if r := node.Position.X + node.Radius; r > box.maxX {
 		box.maxX = r
 	}
 
-	if t := node.Y - node.Radius; t < box.minY {
+	if t := node.Position.Y - node.Radius; t < box.minY {
 		box.minY = t
 	}
 
-	if b := node.Y + node.Radius; b > box.maxY {
+	if b := node.Position.Y + node.Radius; b > box.maxY {
 		box.maxY = b
 	}
 
@@ -588,10 +588,7 @@ func TestLayoutPathPopulated(t *testing.T) {
 func assertLabelBandClear(g Gomega, parent BubbleNode) {
 	if parent.ShowLabel && parent.IsDirectory && len(parent.Children) > 0 {
 		for _, child := range parent.Children {
-			dist := math.Sqrt(
-				(child.X-parent.X)*(child.X-parent.X) +
-					(child.Y-parent.Y)*(child.Y-parent.Y),
-			)
+			dist := parent.Position.DistanceTo(child.Position)
 			g.Expect(dist+child.Radius).To(
 				BeNumerically("<=", parent.Radius-LabelReservation+1.0),
 				"child %q intrudes into label band of parent %q",

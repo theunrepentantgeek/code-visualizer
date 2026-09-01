@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -174,9 +175,13 @@ func buildDiscLabels(
 
 		bucket := buckets[i]
 		fill := fillInk.Dip(metricValue(bucket.FillValue, bucket.FillLabel, fillInk))
+		position := node.Position.Translate(geometry.Vector{
+			X: -node.DiscRadius + discLabelPadding,
+			Y: -node.DiscRadius + discLabelPadding,
+		})
 		labels = append(labels, canvas.BlockLabel{
-			X:            node.X - node.DiscRadius + discLabelPadding,
-			Y:            node.Y - node.DiscRadius + discLabelPadding,
+			X:            position.X,
+			Y:            position.Y,
 			W:            size,
 			H:            size,
 			Lines:        buildDiscLabel(bucket, metrics),

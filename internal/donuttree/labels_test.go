@@ -79,10 +79,10 @@ func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
-	blockCenter := geometry.Point{
-		X: center.X + midRadius*math.Cos(midpoint),
-		Y: center.Y + midRadius*math.Sin(midpoint),
-	}
+	blockCenter := center.Translate(geometry.Vector{
+		X: midRadius * math.Cos(midpoint),
+		Y: midRadius * math.Sin(midpoint),
+	})
 	fontSize := sectorLabelFontSize(node, lines)
 	_, measuredLineHeight := textlayout.MeasureStrings(lines, fontSize)
 	rotation := midpoint + math.Pi/2
@@ -92,8 +92,12 @@ func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {
 		g.Expect(call.Text).To(Equal(lines[index]))
 		g.Expect(call.Anchor).To(Equal(canvas.AnchorMiddle))
 		g.Expect(call.Rotation).To(BeNumerically("~", rotation, 0.001))
-		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X-offset*math.Sin(rotation), 0.001))
-		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Cos(rotation), 0.001))
+		expected := blockCenter.Translate(geometry.Vector{
+			X: -offset * math.Sin(rotation),
+			Y: offset * math.Cos(rotation),
+		})
+		g.Expect(call.Pos.X).To(BeNumerically("~", expected.X, 0.001))
+		g.Expect(call.Pos.Y).To(BeNumerically("~", expected.Y, 0.001))
 	}
 }
 
@@ -118,10 +122,10 @@ func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
-	blockCenter := geometry.Point{
-		X: center.X + midRadius*math.Cos(midpoint),
-		Y: center.Y + midRadius*math.Sin(midpoint),
-	}
+	blockCenter := center.Translate(geometry.Vector{
+		X: midRadius * math.Cos(midpoint),
+		Y: midRadius * math.Sin(midpoint),
+	})
 	rotation := midpoint + 3*math.Pi/2
 	_, lineHeight := textlayout.MeasureStrings(lines, calls[0].FontSize)
 
@@ -129,8 +133,12 @@ func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
 		g.Expect(call.Text).To(Equal(lines[index]))
 		g.Expect(call.Rotation).To(BeNumerically("~", rotation, 0.001))
-		g.Expect(call.Pos.X).To(BeNumerically("~", blockCenter.X-offset*math.Sin(rotation), 0.001))
-		g.Expect(call.Pos.Y).To(BeNumerically("~", blockCenter.Y+offset*math.Cos(rotation), 0.001))
+		expected := blockCenter.Translate(geometry.Vector{
+			X: -offset * math.Sin(rotation),
+			Y: offset * math.Cos(rotation),
+		})
+		g.Expect(call.Pos.X).To(BeNumerically("~", expected.X, 0.001))
+		g.Expect(call.Pos.Y).To(BeNumerically("~", expected.Y, 0.001))
 	}
 }
 

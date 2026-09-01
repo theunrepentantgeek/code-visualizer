@@ -168,14 +168,15 @@ func addTrack(cv *canvas.Canvas, layout SpiralLayout) {
 	steps := trackSteps(len(layout.Nodes))
 	points := make([]geometry.Point, steps)
 
+	center := geometry.Point{X: layout.CX, Y: layout.CY}
 	for i := range steps {
 		t := float64(i) / float64(steps-1)
 		theta := t * layout.MaxTheta
 		r := layout.A + layout.B*theta
-		points[i] = geometry.Point{
-			X: layout.CX + r*math.Sin(theta),
-			Y: layout.CY - r*math.Cos(theta),
-		}
+		points[i] = center.Translate(geometry.Vector{
+			X: r * math.Sin(theta),
+			Y: -r * math.Cos(theta),
+		})
 	}
 
 	trackSpec := &canvas.LineSpec{
@@ -228,8 +229,8 @@ func addDiscs(
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   spec,
-			X:      n.X,
-			Y:      n.Y,
+			X:      n.Position.X,
+			Y:      n.Position.Y,
 			Radius: n.DiscRadius,
 			Angle:  n.Angle,
 			Fill:   fillMV,

@@ -1,12 +1,19 @@
 package bubbletree
 
-import "math"
+import (
+	"math"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+)
 
 // ---------------------------------------------------------------------------
 // Enclosing circle — Welzl's algorithm adapted for circles
 // ---------------------------------------------------------------------------
 
-type enclosure struct{ x, y, radius float64 }
+type enclosure struct {
+	center geometry.Point
+	radius float64
+}
 
 // computeEnclosing returns the minimum enclosing circle of all nodes.
 func computeEnclosing(nodes []BubbleNode) enclosure {
@@ -15,12 +22,12 @@ func computeEnclosing(nodes []BubbleNode) enclosure {
 	}
 
 	if len(nodes) == 1 {
-		return enclosure{nodes[0].X, nodes[0].Y, nodes[0].Radius}
+		return enclosure{center: nodes[0].Position, radius: nodes[0].Radius}
 	}
 
 	circles := make([]enclosure, len(nodes))
 	for i, n := range nodes {
-		circles[i] = enclosure{n.X, n.Y, n.Radius}
+		circles[i] = enclosure{center: n.Position, radius: n.Radius}
 	}
 
 	return welzl(circles, [3]enclosure{}, 0, len(circles))
@@ -46,15 +53,13 @@ func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure
 
 // encloses reports whether outer fully contains inner (circle-in-circle test).
 func encloses(outer, inner enclosure) bool {
-	dx := inner.x - outer.x
-	dy := inner.y - outer.y
 	// Avoid math.Sqrt: sqrt(dist²)+r_inner <= r_outer+ε  ⟺  dist² <= (r_outer+ε-r_inner)²
 	rhs := outer.radius + 1e-6 - inner.radius
 	if rhs < 0 {
 		return false
 	}
 
-	return dx*dx+dy*dy <= rhs*rhs
+	return outer.center.DistanceSquaredTo(inner.center) <= rhs*rhs
 }
 
 func trivialEnclosing(boundary []enclosure) enclosure {
@@ -73,9 +78,7 @@ func trivialEnclosing(boundary []enclosure) enclosure {
 }
 
 func enclosingTwo(a, b enclosure) enclosure {
-	dx := b.x - a.x
-	dy := b.y - a.y
-	d := math.Sqrt(dx*dx + dy*dy)
+	d := a.center.DistanceTo(b.center)
 
 	// One circle contains the other.
 	if d+a.radius <= b.radius {
@@ -91,19 +94,15 @@ func enclosingTwo(a, b enclosure) enclosure {
 	// t ranges from 0 (at a) to 1 (at b).
 	t := 0.5 + (b.radius-a.radius)/(2*d)
 
-	return enclosure{
-		x:      a.x + dx*t,
-		y:      a.y + dy*t,
-		radius: r,
-	}
+	return enclosure{center: geometry.Lerp(a.center, b.center, t), radius: r}
 }
 
 // enclosingThree solves for the minimum circle enclosing three boundary circles
 // using the algebraic elimination approach.
 func enclosingThree(a, b, c enclosure) enclosure {
-	x1, y1, r1 := a.x, a.y, a.radius
-	x2, y2, r2 := b.x, b.y, b.radius
-	x3, y3, r3 := c.x, c.y, c.radius
+	x1, y1, r1 := a.center.X, a.center.Y, a.radius
+	x2, y2, r2 := b.center.X, b.center.Y, b.radius
+	x3, y3, r3 := c.center.X, c.center.Y, c.radius
 
 	s1 := x1*x1 + y1*y1 - r1*r1
 	s2 := x2*x2 + y2*y2 - r2*r2
@@ -142,7 +141,7 @@ func enclosingThree(a, b, c enclosure) enclosure {
 		return enclosingThreeFallback(a, b, c)
 	}
 
-	return enclosure{eu + fu*r, ev + fv*r, r}
+	return enclosure{center: geometry.Point{X: eu + fu*r, Y: ev + fv*r}, radius: r}
 }
 
 // solveQuadraticForRadius solves qa*r² + qb*r + qc = 0 for the smallest

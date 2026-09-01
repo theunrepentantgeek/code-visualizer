@@ -8,7 +8,6 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -93,8 +92,8 @@ func addBubbleDirDiscs(
 	for _, e := range entries {
 		cv.AddDisc(canvas.LayerStructure, canvas.Disc{
 			Spec:   dirSpec,
-			X:      e.node.X,
-			Y:      e.node.Y,
+			X:      e.node.Position.X,
+			Y:      e.node.Position.Y,
 			Radius: bubbleDirDiscRadius(*e.node),
 		})
 	}
@@ -159,8 +158,8 @@ func addBubbleFileDiscsWalk(
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   fileSpec,
-			X:      bn.X,
-			Y:      bn.Y,
+			X:      bn.Position.X,
+			Y:      bn.Position.Y,
 			Radius: bn.Radius,
 			Fill:   fillMV,
 			Border: borderMV,
@@ -238,7 +237,7 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 
 	cv.AddArcText(canvas.LayerOverlay, canvas.ArcText{
 		Spec:     arcSpec,
-		Position: geometry.Point{X: node.X, Y: node.Y},
+		Position: node.Position,
 		Radius:   bubbleDirLabelRadius(node, fontSize),
 		Text:     node.Label,
 	})
@@ -248,7 +247,7 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode, spec *canvas.TextSpec) {
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     spec,
-		Position: geometry.Point{X: node.X, Y: node.Y},
+		Position: node.Position,
 		Content:  node.Label,
 	})
 }

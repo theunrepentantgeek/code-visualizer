@@ -210,8 +210,8 @@ func TestLayoutClockwiseFromNorth(t *testing.T) {
 	cy := float64(1920) / 2
 
 	// First node (θ=0, north): should be above centre.
-	g.Expect(nodes[0].Y).To(BeNumerically("<", cy), "first node should be above centre")
-	g.Expect(nodes[0].X).To(BeNumerically("~", cx, 1.0), "first node should be near centre X")
+	g.Expect(nodes[0].Position.Y).To(BeNumerically("<", cy), "first node should be above centre")
+	g.Expect(nodes[0].Position.X).To(BeNumerically("~", cx, 1.0), "first node should be near centre X")
 }
 
 func TestLayoutPositionsWithinCanvas(t *testing.T) {
@@ -223,10 +223,10 @@ func TestLayoutPositionsWithinCanvas(t *testing.T) {
 	nodes := layout.Nodes
 
 	for i, n := range nodes {
-		g.Expect(n.X).To(BeNumerically(">=", 0), "node %d X should be >= 0", i)
-		g.Expect(n.X).To(BeNumerically("<=", 1920), "node %d X should be <= width", i)
-		g.Expect(n.Y).To(BeNumerically(">=", 0), "node %d Y should be >= 0", i)
-		g.Expect(n.Y).To(BeNumerically("<=", 1080), "node %d Y should be <= height", i)
+		g.Expect(n.Position.X).To(BeNumerically(">=", 0), "node %d X should be >= 0", i)
+		g.Expect(n.Position.X).To(BeNumerically("<=", 1920), "node %d X should be <= width", i)
+		g.Expect(n.Position.Y).To(BeNumerically(">=", 0), "node %d Y should be >= 0", i)
+		g.Expect(n.Position.Y).To(BeNumerically("<=", 1080), "node %d Y should be <= height", i)
 	}
 }
 
@@ -277,16 +277,16 @@ func TestLayoutCentreOfSpiral(t *testing.T) {
 
 	// First node at θ=0 should be directly above centre (north).
 	// Its X should be at cx, and Y should be < cy (above centre).
-	g.Expect(nodes[0].X).To(BeNumerically("~", cx, 1.0),
+	g.Expect(nodes[0].Position.X).To(BeNumerically("~", cx, 1.0),
 		"first node X should be at canvas centre X")
-	g.Expect(nodes[0].Y).To(BeNumerically("<", cy),
+	g.Expect(nodes[0].Position.Y).To(BeNumerically("<", cy),
 		"first node Y should be above canvas centre")
 
 	// Average of all X positions should be roughly centred.
 	var sumX, sumY float64
 	for _, n := range nodes {
-		sumX += n.X
-		sumY += n.Y
+		sumX += n.Position.X
+		sumY += n.Position.Y
 	}
 
 	avgX := sumX / float64(len(nodes))
@@ -456,13 +456,13 @@ func TestLayoutFitsWithinCanvasIncludingDisc(t *testing.T) {
 	nodes := layout.Nodes
 
 	for i, n := range nodes {
-		g.Expect(n.X-n.DiscRadius).To(BeNumerically(">=", 0),
+		g.Expect(n.Position.X-n.DiscRadius).To(BeNumerically(">=", 0),
 			"node %d left edge should be >= 0", i)
-		g.Expect(n.X+n.DiscRadius).To(BeNumerically("<=", 1920),
+		g.Expect(n.Position.X+n.DiscRadius).To(BeNumerically("<=", 1920),
 			"node %d right edge should be <= width", i)
-		g.Expect(n.Y-n.DiscRadius).To(BeNumerically(">=", 0),
+		g.Expect(n.Position.Y-n.DiscRadius).To(BeNumerically(">=", 0),
 			"node %d top edge should be >= 0", i)
-		g.Expect(n.Y+n.DiscRadius).To(BeNumerically("<=", 1080),
+		g.Expect(n.Position.Y+n.DiscRadius).To(BeNumerically("<=", 1080),
 			"node %d bottom edge should be <= height", i)
 	}
 }
@@ -532,14 +532,14 @@ func TestLayoutSpiralParamsConsistentWithNodes(t *testing.T) {
 
 				// Verify X = CX + r*sin(theta) using the exported centre.
 				expectedX := layout.CX + expectedR*math.Sin(node.Angle)
-				g.Expect(node.X).To(
+				g.Expect(node.Position.X).To(
 					BeNumerically("~", expectedX, 0.001),
 					"node %d: X should match CX + r*sin(theta)", i,
 				)
 
 				// Verify Y = CY - r*cos(theta) using the exported centre.
 				expectedY := layout.CY - expectedR*math.Cos(node.Angle)
-				g.Expect(node.Y).To(
+				g.Expect(node.Position.Y).To(
 					BeNumerically("~", expectedY, 0.001),
 					"node %d: Y should match CY - r*cos(theta)", i,
 				)
