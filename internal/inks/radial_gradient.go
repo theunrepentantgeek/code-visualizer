@@ -25,7 +25,7 @@ func (g *RadialGradientInk) Dip(value MetricValue) color.RGBA {
 	return g.inner.Dip(value)
 }
 
-func (g *RadialGradientInk) Fill(value MetricValue, focus model.Point) model.Fill {
+func (g *RadialGradientInk) Fill(value MetricValue, focus model.GradientPoint) model.Fill {
 	base := g.inner.Dip(value)
 
 	return model.RadialGradientFill{

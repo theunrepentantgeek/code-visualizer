@@ -8,15 +8,16 @@ import (
 	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // Call records a single drawing operation dispatched to a Backend.
 type Call struct {
 	Method      string
-	Pos         model.Position
+	Pos         geometry.Point
 	Size        model.Size
-	Points      []model.Position
-	Loops       [][]model.Position
+	Points      []geometry.Point
+	Loops       [][]geometry.Point
 	Fill        color.RGBA
 	Border      color.RGBA
 	RawFill     model.Fill
@@ -41,7 +42,9 @@ func NewBackend() *Backend {
 	return &Backend{}
 }
 
-func (m *Backend) DrawRectangle(pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64) {
+func (m *Backend) DrawRectangle(
+	pos geometry.Point, size model.Size, fill, border model.Fill, borderWidth float64,
+) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawRectangle",
 		Pos:         pos,
@@ -54,7 +57,9 @@ func (m *Backend) DrawRectangle(pos model.Position, size model.Size, fill, borde
 	})
 }
 
-func (m *Backend) DrawDisc(center model.Position, _ float64, fill, border model.Fill, borderWidth float64) {
+func (m *Backend) DrawDisc(
+	center geometry.Point, _ float64, fill, border model.Fill, borderWidth float64,
+) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawDisc",
 		Pos:         center,
@@ -67,7 +72,7 @@ func (m *Backend) DrawDisc(center model.Position, _ float64, fill, border model.
 }
 
 func (m *Backend) DrawPolygon(
-	points []model.Position, fill, border model.Fill, borderWidth float64,
+	points []geometry.Point, fill, border model.Fill, borderWidth float64,
 ) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawPolygon",
@@ -80,8 +85,8 @@ func (m *Backend) DrawPolygon(
 	})
 }
 
-func (m *Backend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
-	cloned := make([][]model.Position, len(loops))
+func (m *Backend) DrawFilledPath(loops [][]geometry.Point, fill color.RGBA) {
+	cloned := make([][]geometry.Point, len(loops))
 	for index, loop := range loops {
 		cloned[index] = slices.Clone(loop)
 	}
@@ -93,7 +98,7 @@ func (m *Backend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
 	})
 }
 
-func (m *Backend) DrawLine(from, _ model.Position, stroke color.RGBA, strokeWidth float64) {
+func (m *Backend) DrawLine(from, _ geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawLine",
 		Pos:         from,
@@ -102,7 +107,7 @@ func (m *Backend) DrawLine(from, _ model.Position, stroke color.RGBA, strokeWidt
 	})
 }
 
-func (m *Backend) DrawPath(points []model.Position, stroke color.RGBA, strokeWidth float64) {
+func (m *Backend) DrawPath(points []geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawPath",
 		Points:      slices.Clone(points),
@@ -112,7 +117,7 @@ func (m *Backend) DrawPath(points []model.Position, stroke color.RGBA, strokeWid
 }
 
 func (m *Backend) DrawText(
-	pos model.Position, text string, ink color.RGBA, fontSize float64, anchor model.TextAnchor, rotation float64,
+	pos geometry.Point, text string, ink color.RGBA, fontSize float64, anchor model.TextAnchor, rotation float64,
 ) {
 	m.Calls = append(m.Calls, Call{
 		Method:   "DrawText",
@@ -125,7 +130,7 @@ func (m *Backend) DrawText(
 	})
 }
 
-func (m *Backend) DrawArcText(center model.Position, _ float64, text string, ink color.RGBA, _ float64) {
+func (m *Backend) DrawArcText(center geometry.Point, _ float64, text string, ink color.RGBA, _ float64) {
 	m.Calls = append(m.Calls, Call{
 		Method: "DrawArcText",
 		Pos:    center,

@@ -14,6 +14,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // defaultFontSize is the font size used when callers pass fontSize <= 0,
@@ -51,7 +52,7 @@ func (s *svgBackend) writeHeader() {
 }
 
 func (s *svgBackend) DrawRectangle(
-	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
+	pos geometry.Point, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
 	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)
@@ -71,11 +72,15 @@ func (s *svgBackend) DrawRectangle(
 func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 	centerCSS := s.colourCSS(grad.Center)
 	edgeCSS := s.colourCSS(grad.Edge)
+	focus := geometry.Point{
+		X: grad.Focus.X * 100,
+		Y: grad.Focus.Y * 100,
+	}
 
 	key := fmt.Sprintf(
 		"%s|%s|%.3f|%.3f",
 		centerCSS, edgeCSS,
-		grad.Focus.X*100, grad.Focus.Y*100,
+		focus.X, focus.Y,
 	)
 
 	if urlRef, ok := s.gradCache[key]; ok {
@@ -94,7 +99,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 			`<stop offset="100%%" stop-color="%s"/>`+
 			`</radialGradient></defs>`+"\n",
 		id,
-		grad.Focus.X*100, grad.Focus.Y*100,
+		focus.X, focus.Y,
 		centerCSS, edgeCSS,
 	)
 
@@ -104,7 +109,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 }
 
 func (s *svgBackend) DrawDisc(
-	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
+	center geometry.Point, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
 	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)
@@ -118,7 +123,7 @@ func (s *svgBackend) DrawDisc(
 }
 
 func (s *svgBackend) DrawPolygon(
-	points []model.Position, fill, border model.Fill, borderWidth float64,
+	points []geometry.Point, fill, border model.Fill, borderWidth float64,
 ) {
 	if len(points) < 3 {
 		return
@@ -143,7 +148,7 @@ func (s *svgBackend) DrawPolygon(
 	s.buf.WriteString("/>\n")
 }
 
-func (s *svgBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
+func (s *svgBackend) DrawFilledPath(loops [][]geometry.Point, fill color.RGBA) {
 	var pathData strings.Builder
 
 	// Closed loops are combined with even-odd filling so holes and islands remain intact.
@@ -176,7 +181,7 @@ func (s *svgBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
 	)
 }
 
-func (s *svgBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
+func (s *svgBackend) DrawLine(from, to geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	fmt.Fprintf(
 		&s.buf,
 		`<line x1="%.3f" y1="%.3f" x2="%.3f" y2="%.3f" stroke="%s" stroke-width="%.3f"/>`+"\n",
@@ -185,7 +190,7 @@ func (s *svgBackend) DrawLine(from, to model.Position, stroke color.RGBA, stroke
 	)
 }
 
-func (s *svgBackend) DrawPath(points []model.Position, stroke color.RGBA, strokeWidth float64) {
+func (s *svgBackend) DrawPath(points []geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	if len(points) < 2 {
 		return
 	}
@@ -204,7 +209,7 @@ func (s *svgBackend) DrawPath(points []model.Position, stroke color.RGBA, stroke
 }
 
 func (s *svgBackend) DrawText(
-	pos model.Position,
+	pos geometry.Point,
 	text string,
 	ink color.RGBA,
 	fontSize float64,
@@ -242,7 +247,7 @@ func (s *svgBackend) DrawText(
 }
 
 func (s *svgBackend) DrawArcText(
-	center model.Position,
+	center geometry.Point,
 	radius float64,
 	text string,
 	ink color.RGBA,

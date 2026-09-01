@@ -2,10 +2,14 @@ package model
 
 import "image/color"
 
-// Point represents a 2D coordinate as fractions (may exceed [0,1]).
-type Point struct {
-	X, Y float64
+// GradientPoint represents normalized gradient coordinates (which may exceed [0,1]).
+type GradientPoint struct {
+	X float64
+	Y float64
 }
+
+// Point is retained for normalized-gradient consumers outside the canvas migration.
+type Point = GradientPoint
 
 // Fill is a sealed interface describing how a shape's interior is painted.
 type Fill interface {
@@ -22,7 +26,7 @@ type SolidFill struct {
 type RadialGradientFill struct {
 	Center color.RGBA
 	Edge   color.RGBA
-	Focus  Point
+	Focus  GradientPoint
 }
 
 func (SolidFill) isFill()          {}

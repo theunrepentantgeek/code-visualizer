@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
@@ -23,7 +24,7 @@ func TestRasterBackend_DrawRectangle_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		model.Position{X: 10, Y: 10},
+		geometry.Point{X: 10, Y: 10},
 		model.Size{Width: 80, Height: 60},
 		model.SolidFill{Color: red}, model.SolidFill{Color: blk}, 2.0,
 	)
@@ -46,7 +47,7 @@ func TestRasterBackend_DrawDisc_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawDisc(
-		model.Position{X: 100, Y: 100},
+		geometry.Point{X: 100, Y: 100},
 		50, model.SolidFill{Color: blue}, model.SolidFill{Color: blk}, 1.0,
 	)
 
@@ -66,7 +67,7 @@ func TestRasterBackend_DrawText_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawText(
-		model.Position{X: 100, Y: 50},
+		geometry.Point{X: 100, Y: 50},
 		"hello", blk, 14.0,
 		model.AnchorMiddle, 0,
 	)
@@ -91,8 +92,8 @@ func TestRasterBackend_DrawLine_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawLine(
-		model.Position{X: 0, Y: 0},
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 0, Y: 0},
+		geometry.Point{X: 200, Y: 200},
 		blk, 2.0,
 	)
 
@@ -109,7 +110,7 @@ func TestRasterBackend_DrawPath_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawPath(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 10, Y: 10},
 			{X: 100, Y: 50},
 			{X: 190, Y: 10},
@@ -130,7 +131,7 @@ func TestRasterBackend_DrawPolygon_FillsInterior(t *testing.T) {
 	red := color.RGBA{R: 255, A: 255}
 	black := color.RGBA{A: 255}
 	b.DrawPolygon(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 1, Y: 1},
 			{X: 9, Y: 1},
 			{X: 1, Y: 9},
@@ -157,14 +158,14 @@ func TestRasterBackend_DrawPolygon_WithoutBorder_DoesNotPreservePath(t *testing.
 	red := color.RGBA{R: 255, A: 255}
 	black := color.RGBA{A: 255}
 	b.DrawPolygon(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 2, Y: 2},
 			{X: 10, Y: 2},
 			{X: 2, Y: 10},
 		},
 		model.SolidFill{Color: red}, model.SolidFill{Color: black}, 0,
 	)
-	b.DrawLine(model.Position{X: 15, Y: 15}, model.Position{X: 18, Y: 15}, black, 1)
+	b.DrawLine(geometry.Point{X: 15, Y: 15}, geometry.Point{X: 18, Y: 15}, black, 1)
 
 	out := filepath.Join(t.TempDir(), "polygon-without-border.png")
 	err := b.Finish(out)
@@ -182,7 +183,7 @@ func TestRasterBackend_DrawFilledPath_UsesEvenOddFillRule(t *testing.T) {
 
 	b := New(10, 10)
 	filledPathBackend, ok := b.(interface {
-		DrawFilledPath(loops [][]model.Position, fill color.RGBA)
+		DrawFilledPath(loops [][]geometry.Point, fill color.RGBA)
 	})
 
 	g.Expect(ok).To(BeTrue())
@@ -191,7 +192,7 @@ func TestRasterBackend_DrawFilledPath_UsesEvenOddFillRule(t *testing.T) {
 		return
 	}
 
-	filledPathBackend.DrawFilledPath([][]model.Position{
+	filledPathBackend.DrawFilledPath([][]geometry.Point{
 		{
 			{X: 1, Y: 1},
 			{X: 9, Y: 1},
@@ -268,7 +269,7 @@ func TestRasterBackend_DrawArcText_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawArcText(
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 200, Y: 200},
 		100, "hello", blk, 14.0,
 	)
 
@@ -288,7 +289,7 @@ func TestRasterBackend_DrawArcText_FontSizeZero_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawArcText(
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 200, Y: 200},
 		100, "hello", blk, 0,
 	)
 
@@ -332,7 +333,7 @@ func TestRasterBackend_DrawText_FontSizeZero_ProducesValidPNG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawText(
-		model.Position{X: 100, Y: 50},
+		geometry.Point{X: 100, Y: 50},
 		"hello", blk, 0,
 		model.AnchorMiddle, 0,
 	)
@@ -359,7 +360,7 @@ func TestRasterBackend_DrawText_RespectsCustomFontSize(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	small.DrawText(
-		model.Position{X: 100, Y: 50},
+		geometry.Point{X: 100, Y: 50},
 		"Hello", blk, 10.0,
 		model.AnchorMiddle, 0,
 	)
@@ -371,7 +372,7 @@ func TestRasterBackend_DrawText_RespectsCustomFontSize(t *testing.T) {
 	large := New(200, 100)
 
 	large.DrawText(
-		model.Position{X: 100, Y: 50},
+		geometry.Point{X: 100, Y: 50},
 		"Hello", blk, 28.0,
 		model.AnchorMiddle, 0,
 	)
@@ -414,13 +415,13 @@ func TestRasterBackend_DrawDisc_SemiTransparentOverWhite_ProducesCorrectBlend(t 
 	semiBlue := color.RGBA{R: 0, G: 0, B: 255, A: 64}
 
 	b.DrawRectangle(
-		model.Position{X: 0, Y: 0},
+		geometry.Point{X: 0, Y: 0},
 		model.Size{Width: 100, Height: 100},
 		model.SolidFill{Color: white}, model.SolidFill{Color: white}, 0,
 	)
 
 	b.DrawDisc(
-		model.Position{X: 50, Y: 50},
+		geometry.Point{X: 50, Y: 50},
 		40, model.SolidFill{Color: semiBlue}, model.SolidFill{Color: semiBlue}, 0,
 	)
 

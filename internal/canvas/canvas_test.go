@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
@@ -20,14 +21,14 @@ var black = color.RGBA{A: 255}
 type fillAwareInk struct {
 	fillValue model.Fill
 	gotValue  inks.MetricValue
-	gotFocus  model.Point
+	gotFocus  model.GradientPoint
 }
 
 func (*fillAwareInk) Dip(inks.MetricValue) color.RGBA {
 	return color.RGBA{R: 255, A: 255}
 }
 
-func (ink *fillAwareInk) Fill(value inks.MetricValue, focus model.Point) model.Fill {
+func (ink *fillAwareInk) Fill(value inks.MetricValue, focus model.GradientPoint) model.Fill {
 	ink.gotValue = value
 	ink.gotFocus = focus
 
@@ -47,7 +48,7 @@ func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	c := canvas.NewCanvas(800, 600)
-	focus := model.Point{X: 0.2, Y: 0.8}
+	focus := model.GradientPoint{X: 0.2, Y: 0.8}
 	fillValue := inks.MeasureValue(0.75)
 	gradient := model.RadialGradientFill{
 		Center: color.RGBA{R: 255, A: 255},
@@ -125,10 +126,9 @@ func TestCanvas_AddText_DispatchesToBackend(t *testing.T) {
 	}
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    spec,
-		X:       100,
-		Y:       200,
-		Content: "hello",
+		Spec:     spec,
+		Position: geometry.Point{X: 100, Y: 200},
+		Content:  "hello",
 	})
 
 	mb := mock.NewBackend()
@@ -151,7 +151,8 @@ func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
 
 	c.AddLine(canvas.LayerStructure, canvas.Line{
 		Spec: spec,
-		X1:   0, Y1: 0, X2: 100, Y2: 100,
+		From: geometry.Point{X: 0, Y: 0},
+		To:   geometry.Point{X: 100, Y: 100},
 	})
 
 	mb := mock.NewBackend()
@@ -173,7 +174,7 @@ func TestCanvas_AddPath_DispatchesToBackend(t *testing.T) {
 
 	c.AddPath(canvas.LayerStructure, canvas.Path{
 		Spec: spec,
-		Points: []canvas.Position{
+		Points: []geometry.Point{
 			{X: 0, Y: 0},
 			{X: 50, Y: 50},
 			{X: 100, Y: 0},
@@ -206,14 +207,14 @@ func TestCanvas_AddPolygon_DispatchesBeforeStructurePath(t *testing.T) {
 
 	c.AddPath(canvas.LayerStructure, canvas.Path{
 		Spec: pathSpec,
-		Points: []canvas.Position{
+		Points: []geometry.Point{
 			{X: 0, Y: 0},
 			{X: 10, Y: 10},
 		},
 	})
 	c.AddPolygon(canvas.LayerSurface, canvas.Polygon{
 		Spec: polygonSpec,
-		Points: []canvas.Position{
+		Points: []geometry.Point{
 			{X: 1, Y: 1},
 			{X: 9, Y: 1},
 			{X: 1, Y: 9},
@@ -240,11 +241,10 @@ func TestAddArcText_DispatchesToBackend(t *testing.T) {
 	}
 
 	c.AddArcText(canvas.LayerOverlay, canvas.ArcText{
-		Spec:   spec,
-		X:      200,
-		Y:      200,
-		Radius: 100,
-		Text:   "hello",
+		Spec:     spec,
+		Position: geometry.Point{X: 200, Y: 200},
+		Radius:   100,
+		Text:     "hello",
 	})
 
 	mb := mock.NewBackend()
@@ -253,7 +253,7 @@ func TestAddArcText_DispatchesToBackend(t *testing.T) {
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawArcText"))
 	g.Expect(mb.Calls[0].Text).To(Equal("hello"))
-	g.Expect(mb.Calls[0].Pos).To(Equal(canvas.Position{X: 200, Y: 200}))
+	g.Expect(mb.Calls[0].Pos).To(Equal(geometry.Point{X: 200, Y: 200}))
 }
 
 func TestCanvas_LayerOrdering_BackgroundBeforeContent(t *testing.T) {
@@ -378,7 +378,10 @@ func TestCanvas_MultipleShapeTypes_MixedLayers(t *testing.T) {
 	}
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{Spec: textSpec, Content: "label"})
-	c.AddLine(canvas.LayerStructure, canvas.Line{Spec: lineSpec, X2: 100, Y2: 100})
+	c.AddLine(canvas.LayerStructure, canvas.Line{
+		Spec: lineSpec,
+		To:   geometry.Point{X: 100, Y: 100},
+	})
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{Spec: rectSpec, W: 800, H: 600})
 
 	mb := mock.NewBackend()
@@ -527,7 +530,8 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 
 	c.AddLine(canvas.LayerStructure, canvas.Line{
 		Spec: lineSpec,
-		X1:   0, Y1: 300, X2: 800, Y2: 300,
+		From: geometry.Point{X: 0, Y: 300},
+		To:   geometry.Point{X: 800, Y: 300},
 	})
 
 	pal := palette.GetPalette(palette.Temperature)
@@ -573,10 +577,9 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    textSpec,
-		X:       400,
-		Y:       500,
-		Content: "Canvas Integration Test",
+		Spec:     textSpec,
+		Position: geometry.Point{X: 400, Y: 500},
+		Content:  "Canvas Integration Test",
 	})
 
 	pathSpec := &canvas.LineSpec{
@@ -586,7 +589,7 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 
 	c.AddPath(canvas.LayerStructure, canvas.Path{
 		Spec: pathSpec,
-		Points: []canvas.Position{
+		Points: []geometry.Point{
 			{X: 50, Y: 400},
 			{X: 200, Y: 350},
 			{X: 400, Y: 450},
@@ -657,8 +660,9 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 	}
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec: textSpec,
-		X:    400, Y: 300, Content: "SVG Test",
+		Spec:     textSpec,
+		Position: geometry.Point{X: 400, Y: 300},
+		Content:  "SVG Test",
 	})
 
 	out := filepath.Join(t.TempDir(), "integration.svg")
