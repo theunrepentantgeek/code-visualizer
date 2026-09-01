@@ -311,6 +311,8 @@ func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) ca
 	focusX := fileCX + (dirCX-fileCX)*weightFraction
 	focusY := fileCY + (dirCY-fileCY)*weightFraction
 
+	// Normalize against the Rect extent consumed by the canvas backend so it
+	// reconstructs the focus computed from the original layout-box sizes.
 	return canvasmodel.GradientPoint{
 		X: (focusX - fileRect.Bounds.Min.X) / fileRect.Bounds.Width(),
 		Y: (focusY - fileRect.Bounds.Min.Y) / fileRect.Bounds.Height(),
