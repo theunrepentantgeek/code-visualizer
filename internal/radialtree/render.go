@@ -91,7 +91,7 @@ type discEntry struct {
 	node      RadialNode
 	file      *model.File
 	directory *model.Directory
-	sx, sy    float64
+	position  geometry.Point
 	isDir     bool
 }
 
@@ -109,8 +109,7 @@ func collectDiscs(
 		position := center.Translate(node.Position)
 		entries = append(entries, discEntry{
 			node:      *node,
-			sx:        position.X,
-			sy:        position.Y,
+			position:  position,
 			isDir:     node.IsDirectory,
 			directory: dir,
 		})
@@ -147,10 +146,9 @@ func collectDiscsLeaf(
 	position := center.Translate(node.Position)
 
 	return []discEntry{{
-		node: *node,
-		file: file,
-		sx:   position.X,
-		sy:   position.Y,
+		node:     *node,
+		file:     file,
+		position: position,
 	}}
 }
 
@@ -204,8 +202,8 @@ func addDisc(cv *canvas.Canvas, e discEntry, is Inks, fileSpec, dirSpec *canvas.
 
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{
 		Spec:   spec,
-		X:      e.sx,
-		Y:      e.sy,
+		X:      e.position.X,
+		Y:      e.position.Y,
 		Radius: e.node.DiscRadius,
 		Angle:  e.node.Angle,
 		Fill:   fillMV,

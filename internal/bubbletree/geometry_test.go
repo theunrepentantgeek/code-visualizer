@@ -120,6 +120,21 @@ func TestEnclosingTwo_DifferentRadii(t *testing.T) {
 	g.Expect(encloses(result, b)).To(BeTrue())
 }
 
+func TestEnclosingTwo_PreservesPrePointEvaluationOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	a := enclosure{center: geometry.Point{X: -100.7, Y: -100.7}, radius: 0.1}
+	b := enclosure{center: geometry.Point{X: -19.7, Y: 100.1}, radius: 0.2}
+
+	result := enclosingTwo(a, b)
+
+	g.Expect(result).To(Equal(enclosure{
+		center: geometry.Point{X: -60.181295176031675, Y: -0.2536305104587626},
+		radius: 108.41084241312738,
+	}))
+}
+
 // ---------------------------------------------------------------------------
 // enclosingThree
 // ---------------------------------------------------------------------------
