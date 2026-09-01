@@ -101,6 +101,7 @@ func legendOrigin(
 
 	drawingMinY := float64(cv.DrawingMinY())
 	drawingSize := cv.DrawingSize()
+
 	drawingMaxY := drawingMinY + drawingSize.Height
 	if legendSize.Height <= drawingSize.Height {
 		oy = min(max(oy, drawingMinY), drawingMaxY-legendSize.Height)

@@ -28,10 +28,12 @@ func MeasureLegend(data *model.LegendData, measurer StringMeasurer) geometry.Siz
 
 	if data.Orientation == model.LegendOrientationHorizontal {
 		width, height := measureLegendH(measurer, data)
+
 		return geometry.Size{Width: width, Height: height}
 	}
 
 	width, height := measureLegendV(measurer, data)
+
 	return geometry.Size{Width: width, Height: height}
 }
 
@@ -339,6 +341,7 @@ func ContentOffsetV(data *model.LegendData) float64 {
 // label sample.
 func MeasureLabelSample(sample *model.LegendLabelSample) geometry.Size {
 	width, height := measureLabelSampleImpl(NewBasicMeasurer(), sample)
+
 	return geometry.Size{Width: width, Height: height}
 }
 

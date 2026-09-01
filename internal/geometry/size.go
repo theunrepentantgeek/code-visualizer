@@ -27,5 +27,6 @@ func (s Size) AspectRatio() (float64, bool) {
 	if !s.Valid() || s.Height == 0 {
 		return 0, false
 	}
+
 	return s.Width / s.Height, true
 }
