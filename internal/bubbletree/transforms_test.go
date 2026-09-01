@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // ---------------------------------------------------------------------------
@@ -175,7 +177,7 @@ func TestOffsetNodes_RootAndChildren(t *testing.T) {
 		Children: []BubbleNode{child},
 	}
 
-	OffsetNodes(&root, 3, -2)
+	OffsetNodes(&root, geometry.Vector{X: 3, Y: -2})
 
 	g.Expect(root.X).To(BeNumerically("~", 13.0, 1e-9))
 	g.Expect(root.Y).To(BeNumerically("~", 8.0, 1e-9))

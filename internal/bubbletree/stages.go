@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -89,7 +90,7 @@ func LayoutStage(c *stages.CommonState, b *State) error {
 		}
 	}
 
-	OffsetNodes(&b.Nodes, dx, dy)
+	OffsetNodes(&b.Nodes, geometry.Vector{X: dx, Y: dy})
 
 	return nil
 }

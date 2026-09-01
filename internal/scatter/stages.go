@@ -7,6 +7,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
@@ -268,7 +269,7 @@ func LayoutStage(c *stages.CommonState, x *State) error {
 		}
 	}
 
-	OffsetLayout(&layout, dx, dy)
+	OffsetLayout(&layout, geometry.Vector{X: dx, Y: dy})
 	x.Layout = layout
 
 	return nil

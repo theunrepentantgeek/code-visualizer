@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -179,7 +180,7 @@ func TestOffsetLayout_ShiftsPlotOrigin(t *testing.T) {
 	layout := &ScatterLayout{
 		Plot: PlotRect{X: 10, Y: 20, W: 100, H: 50},
 	}
-	OffsetLayout(layout, 5, 3)
+	OffsetLayout(layout, geometry.Vector{X: 5, Y: 3})
 	g.Expect(layout.Plot.X).To(BeNumerically("==", 15))
 	g.Expect(layout.Plot.Y).To(BeNumerically("==", 23))
 }
@@ -194,7 +195,7 @@ func TestOffsetLayout_ShiftsPoints(t *testing.T) {
 			{X: 30, Y: 40},
 		},
 	}
-	OffsetLayout(layout, 5, -10)
+	OffsetLayout(layout, geometry.Vector{X: 5, Y: -10})
 	g.Expect(layout.Points[0].X).To(BeNumerically("==", 15))
 	g.Expect(layout.Points[0].Y).To(BeNumerically("==", 10))
 	g.Expect(layout.Points[1].X).To(BeNumerically("==", 35))
@@ -215,7 +216,7 @@ func TestOffsetLayout_ShiftsNumericAxisTicks(t *testing.T) {
 			},
 		},
 	}
-	OffsetLayout(layout, 20, 0)
+	OffsetLayout(layout, geometry.Vector{X: 20, Y: 0})
 	g.Expect(layout.XAxis.Numeric.Ticks[0].Position).To(BeNumerically("==", 120))
 	g.Expect(layout.XAxis.Numeric.Ticks[1].Position).To(BeNumerically("==", 170))
 }

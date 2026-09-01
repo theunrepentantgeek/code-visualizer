@@ -5,6 +5,7 @@ package treemap
 import (
 	"github.com/nikolaydubina/treemap/layout"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -160,24 +161,24 @@ func insetBox(b layout.Box, inset float64) layout.Box {
 	}
 }
 
-// OffsetRects shifts all rectangle coordinates by (dx, dy), recursively
+// OffsetRects shifts all rectangle coordinates by the provided offset, recursively
 // adjusting every child in the tree.
-func OffsetRects(rect *TreemapRectangle, dx, dy float64) {
-	rect.X += dx
-	rect.Y += dy
+func OffsetRects(rect *TreemapRectangle, offset geometry.Vector) {
+	rect.X += offset.X
+	rect.Y += offset.Y
 
 	if rect.IsDirectory {
 		if rect.Chrome.Orientation != DirectoryLabelNone {
-			rect.Chrome.Rail.X += dx
-			rect.Chrome.Rail.Y += dy
+			rect.Chrome.Rail.X += offset.X
+			rect.Chrome.Rail.Y += offset.Y
 		}
 
-		rect.Chrome.Content.X += dx
-		rect.Chrome.Content.Y += dy
+		rect.Chrome.Content.X += offset.X
+		rect.Chrome.Content.Y += offset.Y
 	}
 
 	for i := range rect.Children {
-		OffsetRects(&rect.Children[i], dx, dy)
+		OffsetRects(&rect.Children[i], offset)
 	}
 }
 
