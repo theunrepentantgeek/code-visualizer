@@ -7,6 +7,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -82,8 +83,10 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 
 	// Re-centre so the enclosing circle's centre becomes local origin.
 	for i := range children {
-		children[i].X -= enc.x
-		children[i].Y -= enc.y
+		children[i].Position = children[i].Position.Translate(geometry.Vector{
+			X: -enc.x,
+			Y: -enc.y,
+		})
 	}
 
 	node.Radius = enc.radius + parentPadding

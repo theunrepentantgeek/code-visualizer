@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // ---------------------------------------------------------------------------
@@ -173,7 +175,7 @@ func TestComputeEnclosing_SingleNode(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	node := BubbleNode{X: 3, Y: 4, Radius: 5}
+	node := BubbleNode{Position: geometry.Point{X: 3, Y: 4}, Radius: 5}
 
 	result := computeEnclosing([]BubbleNode{node})
 
@@ -187,16 +189,21 @@ func TestComputeEnclosing_TwoNodes(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	nodes := []BubbleNode{
-		{X: -2, Y: 0, Radius: 1},
-		{X: 2, Y: 0, Radius: 1},
+		{Position: geometry.Point{X: -2, Y: 0}, Radius: 1},
+		{Position: geometry.Point{X: 2, Y: 0}, Radius: 1},
 	}
 
 	result := computeEnclosing(nodes)
 
 	// Must enclose both nodes as enclosure circles.
 	for _, n := range nodes {
-		e := enclosure{x: n.X, y: n.Y, radius: n.Radius}
-		g.Expect(encloses(result, e)).To(BeTrue(), "enclosing circle must contain node at (%v,%v)", n.X, n.Y)
+		e := enclosure{x: n.Position.X, y: n.Position.Y, radius: n.Radius}
+		g.Expect(encloses(result, e)).To(
+			BeTrue(),
+			"enclosing circle must contain node at (%v,%v)",
+			n.Position.X,
+			n.Position.Y,
+		)
 	}
 }
 
@@ -205,16 +212,21 @@ func TestComputeEnclosing_ThreeNodes(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	nodes := []BubbleNode{
-		{X: 0, Y: 0, Radius: 1},
-		{X: 4, Y: 0, Radius: 1},
-		{X: 2, Y: 4, Radius: 1},
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 1},
+		{Position: geometry.Point{X: 4, Y: 0}, Radius: 1},
+		{Position: geometry.Point{X: 2, Y: 4}, Radius: 1},
 	}
 
 	result := computeEnclosing(nodes)
 
 	for _, n := range nodes {
-		e := enclosure{x: n.X, y: n.Y, radius: n.Radius}
-		g.Expect(encloses(result, e)).To(BeTrue(), "enclosing circle must contain node at (%v,%v)", n.X, n.Y)
+		e := enclosure{x: n.Position.X, y: n.Position.Y, radius: n.Radius}
+		g.Expect(encloses(result, e)).To(
+			BeTrue(),
+			"enclosing circle must contain node at (%v,%v)",
+			n.Position.X,
+			n.Position.Y,
+		)
 	}
 }
 
@@ -224,14 +236,14 @@ func TestComputeEnclosing_OneNodeInsideAnother(t *testing.T) {
 
 	// The large circle already contains the small one; result should equal the large circle.
 	nodes := []BubbleNode{
-		{X: 0, Y: 0, Radius: 10},
-		{X: 1, Y: 0, Radius: 2},
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 10},
+		{Position: geometry.Point{X: 1, Y: 0}, Radius: 2},
 	}
 
 	result := computeEnclosing(nodes)
 
 	for _, n := range nodes {
-		e := enclosure{x: n.X, y: n.Y, radius: n.Radius}
+		e := enclosure{x: n.Position.X, y: n.Position.Y, radius: n.Radius}
 		g.Expect(encloses(result, e)).To(BeTrue())
 	}
 }

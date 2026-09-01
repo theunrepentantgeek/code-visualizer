@@ -1,6 +1,7 @@
 package bubbletree
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
@@ -14,9 +15,9 @@ const (
 )
 
 // BubbleNode is a positioned visual element in the rendered bubble tree.
-// X and Y are absolute pixel coordinates after layout; Radius is the circle radius in pixels.
+// Position contains absolute pixel coordinates after layout; Radius is the circle radius in pixels.
 type BubbleNode struct {
-	X, Y        float64 // centre position in pixels
+	Position    geometry.Point
 	Radius      float64 // circle radius in pixels
 	Path        string  // model path — stable identifier for colour mapping
 	Label       string  // display name

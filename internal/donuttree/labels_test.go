@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -66,7 +67,7 @@ func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {
 		InnerRadius: 100,
 		OuterRadius: 140,
 	}
-	center := canvas.Position{X: 200, Y: 200}
+	center := geometry.Point{X: 200, Y: 200}
 	cv := canvas.NewCanvas(400, 400)
 	addSectorLabel(cv, node, center, []string{"src", "120", "go"}, inks.FixedInk(donutLabelColour))
 
@@ -78,10 +79,10 @@ func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
-	blockCenter := canvas.Position{
-		X: center.X + midRadius*math.Cos(midpoint),
-		Y: center.Y + midRadius*math.Sin(midpoint),
-	}
+	blockCenter := center.Translate(geometry.Vector{
+		X: midRadius * math.Cos(midpoint),
+		Y: midRadius * math.Sin(midpoint),
+	})
 	fontSize := sectorLabelFontSize(node, lines)
 	_, measuredLineHeight := textlayout.MeasureStrings(lines, fontSize)
 	rotation := midpoint + math.Pi/2
@@ -105,7 +106,7 @@ func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 		InnerRadius: 100,
 		OuterRadius: 140,
 	}
-	center := canvas.Position{X: 200, Y: 200}
+	center := geometry.Point{X: 200, Y: 200}
 	lines := []string{"src", "120"}
 	cv := canvas.NewCanvas(400, 400)
 	addSectorLabel(cv, node, center, lines, inks.FixedInk(donutLabelColour))
@@ -117,10 +118,10 @@ func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
-	blockCenter := canvas.Position{
-		X: center.X + midRadius*math.Cos(midpoint),
-		Y: center.Y + midRadius*math.Sin(midpoint),
-	}
+	blockCenter := center.Translate(geometry.Vector{
+		X: midRadius * math.Cos(midpoint),
+		Y: midRadius * math.Sin(midpoint),
+	})
 	rotation := midpoint + 3*math.Pi/2
 	_, lineHeight := textlayout.MeasureStrings(lines, calls[0].FontSize)
 

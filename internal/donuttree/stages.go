@@ -5,8 +5,8 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -165,7 +165,7 @@ func donutCanvasSize(c *stages.CommonState) int {
 // RenderStage renders the donut tree into its reserved drawing bounds.
 func RenderStage(c *stages.CommonState, d *State) error {
 	size := donutCanvasSize(c)
-	d.Layout.Center = canvas.Position{
+	d.Layout.Center = geometry.Point{
 		X: float64(c.Width) / 2,
 		Y: float64(c.DrawingBounds.MinY) + float64(size)/2,
 	}

@@ -249,7 +249,7 @@ func TestLayout_NumericYAxisPlacesHigherValuesHigherOnCanvas(t *testing.T) {
 		points[point.File.Name] = point
 	}
 
-	g.Expect(points["high.go"].Y).To(BeNumerically("<", points["low.go"].Y))
+	g.Expect(points["high.go"].Position.Y).To(BeNumerically("<", points["low.go"].Position.Y))
 	g.Expect(layout.YAxis.Numeric.Ticks).NotTo(BeEmpty())
 }
 
@@ -461,13 +461,13 @@ func TestLayout_LogScalePositionsPointsLogarithmically(t *testing.T) {
 
 	// With log scale, the gap between 10→100 should equal the gap between 100→1000
 	// (both are one decade)
-	gap1 := points["medium.go"].X - points["small.go"].X
-	gap2 := points["large.go"].X - points["medium.go"].X
+	gap1 := points["medium.go"].Position.X - points["small.go"].Position.X
+	gap2 := points["large.go"].Position.X - points["medium.go"].Position.X
 	g.Expect(gap1).To(BeNumerically("~", gap2, 1.0))
 
 	// All X values should be within the plot area
-	g.Expect(points["small.go"].X).To(BeNumerically(">=", scatterPlotLeftMargin))
-	g.Expect(points["large.go"].X).To(BeNumerically("<=", 800-scatterPlotRightMargin))
+	g.Expect(points["small.go"].Position.X).To(BeNumerically(">=", scatterPlotLeftMargin))
+	g.Expect(points["large.go"].Position.X).To(BeNumerically("<=", 800-scatterPlotRightMargin))
 }
 
 func TestValidateLogScale_ErrorsOnZeroValue(t *testing.T) {

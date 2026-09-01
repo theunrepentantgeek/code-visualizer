@@ -3,12 +3,14 @@ package spiral
 
 import (
 	"time"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // SpiralNode is a positioned visual element on the rendered spiral timeline.
-// X and Y are absolute pixel coordinates on the canvas.
+// Position contains absolute pixel coordinates on the canvas.
 type SpiralNode struct {
-	X, Y         float64   // pixel position on canvas
+	Position     geometry.Point
 	DiscRadius   float64   // radius in pixels (from size metric)
 	Angle        float64   // angle in radians (clockwise from 12-o'clock / north)
 	SpiralRadius float64   // distance from canvas centre to this point

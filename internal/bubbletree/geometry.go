@@ -1,6 +1,10 @@
 package bubbletree
 
-import "math"
+import (
+	"math"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+)
 
 // ---------------------------------------------------------------------------
 // Enclosing circle — Welzl's algorithm adapted for circles
@@ -15,12 +19,12 @@ func computeEnclosing(nodes []BubbleNode) enclosure {
 	}
 
 	if len(nodes) == 1 {
-		return enclosure{nodes[0].X, nodes[0].Y, nodes[0].Radius}
+		return enclosure{nodes[0].Position.X, nodes[0].Position.Y, nodes[0].Radius}
 	}
 
 	circles := make([]enclosure, len(nodes))
 	for i, n := range nodes {
-		circles[i] = enclosure{n.X, n.Y, n.Radius}
+		circles[i] = enclosure{n.Position.X, n.Position.Y, n.Radius}
 	}
 
 	return welzl(circles, [3]enclosure{}, 0, len(circles))
@@ -46,15 +50,16 @@ func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure
 
 // encloses reports whether outer fully contains inner (circle-in-circle test).
 func encloses(outer, inner enclosure) bool {
-	dx := inner.x - outer.x
-	dy := inner.y - outer.y
 	// Avoid math.Sqrt: sqrt(dist²)+r_inner <= r_outer+ε  ⟺  dist² <= (r_outer+ε-r_inner)²
 	rhs := outer.radius + 1e-6 - inner.radius
 	if rhs < 0 {
 		return false
 	}
 
-	return dx*dx+dy*dy <= rhs*rhs
+	outerPosition := geometry.Point{X: outer.x, Y: outer.y}
+	innerPosition := geometry.Point{X: inner.x, Y: inner.y}
+
+	return outerPosition.DistanceSquaredTo(innerPosition) <= rhs*rhs
 }
 
 func trivialEnclosing(boundary []enclosure) enclosure {
@@ -73,9 +78,9 @@ func trivialEnclosing(boundary []enclosure) enclosure {
 }
 
 func enclosingTwo(a, b enclosure) enclosure {
-	dx := b.x - a.x
-	dy := b.y - a.y
-	d := math.Sqrt(dx*dx + dy*dy)
+	aPosition := geometry.Point{X: a.x, Y: a.y}
+	bPosition := geometry.Point{X: b.x, Y: b.y}
+	d := aPosition.DistanceTo(bPosition)
 
 	// One circle contains the other.
 	if d+a.radius <= b.radius {
@@ -90,10 +95,11 @@ func enclosingTwo(a, b enclosure) enclosure {
 
 	// t ranges from 0 (at a) to 1 (at b).
 	t := 0.5 + (b.radius-a.radius)/(2*d)
+	center := geometry.Lerp(aPosition, bPosition, t)
 
 	return enclosure{
-		x:      a.x + dx*t,
-		y:      a.y + dy*t,
+		x:      center.X,
+		y:      center.Y,
 		radius: r,
 	}
 }

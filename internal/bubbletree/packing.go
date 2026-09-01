@@ -1,12 +1,14 @@
 package bubbletree
 
-import "math"
+import (
+	"math"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+)
 
 // ---------------------------------------------------------------------------
 // Front-chain circle packing
 // ---------------------------------------------------------------------------
-
-type point struct{ x, y float64 }
 
 type frontNode struct {
 	idx        int
@@ -40,7 +42,7 @@ func packCircles(circles []BubbleNode) {
 		bestPos, bestAfter := findBestPlacement(circles, i, chain)
 
 		if bestAfter != nil {
-			circles[i].X, circles[i].Y = bestPos.x, bestPos.y //nolint:gosec // G602 false positive: i < len(circles)
+			circles[i].Position = bestPos //nolint:gosec // G602 false positive: i < len(circles)
 
 			// Insert into chain between bestAfter and bestAfter.next.
 			chain[i].prev = bestAfter
@@ -56,14 +58,15 @@ func packCircles(circles []BubbleNode) {
 // placeInitialCircles positions the first min(len(circles), 3) circles.
 // Circle 0 at origin, circle 1 along x-axis, circle 2 tangent to both.
 func placeInitialCircles(circles []BubbleNode) {
-	circles[0].X, circles[0].Y = 0, 0
+	circles[0].Position = geometry.Point{}
 
 	if len(circles) < 2 {
 		return
 	}
 
-	circles[1].X = circles[0].Radius + circles[1].Radius + siblingPadding
-	circles[1].Y = 0
+	circles[1].Position = geometry.Point{
+		X: circles[0].Radius + circles[1].Radius + siblingPadding,
+	}
 
 	if len(circles) < 3 {
 		return
@@ -71,10 +74,11 @@ func placeInitialCircles(circles []BubbleNode) {
 
 	p1, p2, ok := tangentPositions(circles[2].Radius, circles[0], circles[1])
 	if ok {
-		if p1.x*p1.x+p1.y*p1.y <= p2.x*p2.x+p2.y*p2.y {
-			circles[2].X, circles[2].Y = p1.x, p1.y
+		origin := geometry.Point{}
+		if p1.DistanceSquaredTo(origin) <= p2.DistanceSquaredTo(origin) {
+			circles[2].Position = p1
 		} else {
-			circles[2].X, circles[2].Y = p2.x, p2.y
+			circles[2].Position = p2
 		}
 	}
 }
@@ -94,10 +98,10 @@ func initFrontChain(chain []frontNode) {
 // findBestPlacement scans the front chain to find the position closest to the
 // origin where circle i can be placed tangent to an adjacent pair without
 // overlapping any previously placed circle.
-func findBestPlacement(circles []BubbleNode, i int, chain []frontNode) (point, *frontNode) {
+func findBestPlacement(circles []BubbleNode, i int, chain []frontNode) (geometry.Point, *frontNode) {
 	bestDist := math.MaxFloat64
 
-	var bestPos point
+	var bestPos geometry.Point
 
 	var bestAfter *frontNode
 
@@ -107,7 +111,7 @@ func findBestPlacement(circles []BubbleNode, i int, chain []frontNode) (point, *
 	for {
 		pos, ok := bestTangentPosition(circles, i, cur)
 		if ok {
-			d := pos.x*pos.x + pos.y*pos.y
+			d := pos.DistanceSquaredTo(geometry.Point{})
 			if d < bestDist {
 				bestDist = d
 				bestPos = pos
@@ -126,22 +130,22 @@ func findBestPlacement(circles []BubbleNode, i int, chain []frontNode) (point, *
 
 // bestTangentPosition returns the non-overlapping tangent position closest to
 // the origin for placing circle i between the adjacent pair (cur, cur.next).
-func bestTangentPosition(circles []BubbleNode, i int, cur *frontNode) (point, bool) {
+func bestTangentPosition(circles []BubbleNode, i int, cur *frontNode) (geometry.Point, bool) {
 	a, b := cur, cur.next
 	tp1, tp2, tok := tangentPositions(circles[i].Radius, circles[a.idx], circles[b.idx])
 
 	if !tok {
-		return point{}, false
+		return geometry.Point{}, false
 	}
 
-	var best point
+	var best geometry.Point
 
 	bestDist := math.MaxFloat64
 	found := false
 
-	for _, pos := range [2]point{tp1, tp2} {
+	for _, pos := range [2]geometry.Point{tp1, tp2} {
 		if !anyOverlap(pos, circles[i].Radius, circles[:i], a.idx, b.idx) {
-			d := pos.x*pos.x + pos.y*pos.y
+			d := pos.DistanceSquaredTo(geometry.Point{})
 			if d < bestDist {
 				bestDist = d
 				best = pos
@@ -155,16 +159,15 @@ func bestTangentPosition(circles []BubbleNode, i int, cur *frontNode) (point, bo
 
 // tangentPositions returns the two positions where a circle of radius rc
 // can be placed tangent to circles a and b (including siblingPadding).
-func tangentPositions(rc float64, a, b BubbleNode) (p1, p2 point, ok bool) {
+func tangentPositions(rc float64, a, b BubbleNode) (p1, p2 geometry.Point, ok bool) {
 	da := a.Radius + rc + siblingPadding
 	db := b.Radius + rc + siblingPadding
 
-	dx := b.X - a.X
-	dy := b.Y - a.Y
-	d := math.Sqrt(dx*dx + dy*dy)
+	delta := a.Position.VectorTo(b.Position)
+	d := a.Position.DistanceTo(b.Position)
 
 	if d < 1e-10 || d > da+db+1e-6 || d < math.Abs(da-db)-1e-6 {
-		return point{}, point{}, false
+		return geometry.Point{}, geometry.Point{}, false
 	}
 
 	al := (da*da - db*db + d*d) / (2 * d)
@@ -176,27 +179,27 @@ func tangentPositions(rc float64, a, b BubbleNode) (p1, p2 point, ok bool) {
 
 	h := math.Sqrt(h2)
 
-	mx := a.X + al*dx/d
-	my := a.Y + al*dy/d
+	midpoint := a.Position.Translate(geometry.Vector{
+		X: al * delta.X / d,
+		Y: al * delta.Y / d,
+	})
 
-	return point{mx + h*dy/d, my - h*dx/d},
-		point{mx - h*dy/d, my + h*dx/d},
+	return midpoint.Translate(geometry.Vector{X: h * delta.Y / d, Y: -h * delta.X / d}),
+		midpoint.Translate(geometry.Vector{X: -h * delta.Y / d, Y: h * delta.X / d}),
 		true
 }
 
 // anyOverlap reports whether a circle at pos with the given radius overlaps
 // any already-placed circle except the two tangent anchors.
-func anyOverlap(pos point, radius float64, placed []BubbleNode, skipA, skipB int) bool {
+func anyOverlap(pos geometry.Point, radius float64, placed []BubbleNode, skipA, skipB int) bool {
 	for j := range placed {
 		if j == skipA || j == skipB {
 			continue
 		}
 
-		dx := pos.x - placed[j].X
-		dy := pos.y - placed[j].Y
 		// Avoid math.Sqrt: dist < minSep-ε  ⟺  dist² < (minSep-ε)²  (when minSep-ε > 0)
 		minSep := radius + placed[j].Radius + siblingPadding - 1e-6
-		if minSep > 0 && dx*dx+dy*dy < minSep*minSep {
+		if minSep > 0 && pos.DistanceSquaredTo(placed[j].Position) < minSep*minSep {
 			return true
 		}
 	}
@@ -210,7 +213,7 @@ func placeFallback(circles []BubbleNode, i int) {
 	maxDist := 0.0
 
 	for j := range i {
-		d := math.Sqrt(circles[j].X*circles[j].X+circles[j].Y*circles[j].Y) + circles[j].Radius
+		d := geometry.Point{}.DistanceTo(circles[j].Position) + circles[j].Radius
 		if d > maxDist {
 			maxDist = d
 		}
@@ -221,6 +224,8 @@ func placeFallback(circles []BubbleNode, i int) {
 
 	angle := float64(i) * goldenAngle
 	r := maxDist + circles[i].Radius + siblingPadding
-	circles[i].X = r * math.Cos(angle)
-	circles[i].Y = r * math.Sin(angle)
+	circles[i].Position = geometry.Point{
+		X: r * math.Cos(angle),
+		Y: r * math.Sin(angle),
+	}
 }

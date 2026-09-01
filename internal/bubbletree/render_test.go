@@ -17,6 +17,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -37,11 +38,11 @@ type captureBackend struct {
 	arcTexts []capturedArcText
 }
 
-func (*captureBackend) DrawRectangle(canvas.Position, canvas.Size, canvasmodel.Fill, canvasmodel.Fill, float64) {
+func (*captureBackend) DrawRectangle(geometry.Point, canvas.Size, canvasmodel.Fill, canvasmodel.Fill, float64) {
 }
 
 func (c *captureBackend) DrawDisc(
-	_ canvas.Position,
+	_ geometry.Point,
 	radius float64,
 	_ canvasmodel.Fill,
 	_ canvasmodel.Fill,
@@ -50,19 +51,19 @@ func (c *captureBackend) DrawDisc(
 	c.discs = append(c.discs, capturedDisc{radius: radius})
 }
 
-func (*captureBackend) DrawPolygon([]canvas.Position, canvasmodel.Fill, canvasmodel.Fill, float64) {}
+func (*captureBackend) DrawPolygon([]geometry.Point, canvasmodel.Fill, canvasmodel.Fill, float64) {}
 
-func (*captureBackend) DrawFilledPath([][]canvas.Position, color.RGBA) {}
+func (*captureBackend) DrawFilledPath([][]geometry.Point, color.RGBA) {}
 
-func (*captureBackend) DrawLine(canvas.Position, canvas.Position, color.RGBA, float64) {}
+func (*captureBackend) DrawLine(geometry.Point, geometry.Point, color.RGBA, float64) {}
 
-func (*captureBackend) DrawPath([]canvas.Position, color.RGBA, float64) {}
+func (*captureBackend) DrawPath([]geometry.Point, color.RGBA, float64) {}
 
-func (*captureBackend) DrawText(canvas.Position, string, color.RGBA, float64, canvas.TextAnchor, float64) {
+func (*captureBackend) DrawText(geometry.Point, string, color.RGBA, float64, canvas.TextAnchor, float64) {
 }
 
 func (c *captureBackend) DrawArcText(
-	_ canvas.Position,
+	_ geometry.Point,
 	radius float64,
 	text string,
 	_ color.RGBA,
@@ -440,10 +441,10 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 	g.Expect(cv.Render(out)).To(Succeed())
 
 	img := decodeImage(t, out)
-	minX := int(math.Floor(dirNode.X - dirNode.Radius/2))
-	maxX := int(math.Ceil(dirNode.X + dirNode.Radius/2))
-	minY := int(math.Floor(dirNode.Y - dirNode.Radius))
-	maxY := int(math.Ceil(dirNode.Y - dirNode.Radius + bubbletree.LabelReservation))
+	minX := int(math.Floor(dirNode.Position.X - dirNode.Radius/2))
+	maxX := int(math.Ceil(dirNode.Position.X + dirNode.Radius/2))
+	minY := int(math.Floor(dirNode.Position.Y - dirNode.Radius))
+	maxY := int(math.Ceil(dirNode.Position.Y - dirNode.Radius + bubbletree.LabelReservation))
 
 	g.Expect(hasNonWhitePixelInRect(img, minX, minY, maxX, maxY)).To(
 		BeTrue(),

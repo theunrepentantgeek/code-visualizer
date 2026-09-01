@@ -66,7 +66,7 @@ func TestOccupiedBounds_NoChildren_NoLabel(t *testing.T) {
 	// bounds (MaxFloat64 for min, -MaxFloat64 for max). The caller is
 	// expected to guard against degenerate boxes; we just verify the
 	// values are the empty-bounds sentinel.
-	node := BubbleNode{X: 5, Y: 5, Radius: 3, ShowLabel: false}
+	node := BubbleNode{Position: geometry.Point{X: 5, Y: 5}, Radius: 3, ShowLabel: false}
 
 	box := occupiedBounds(&node)
 
@@ -81,10 +81,10 @@ func TestOccupiedBounds_WithChildren(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	parent := BubbleNode{
-		X: 0, Y: 0, Radius: 10,
+		Position: geometry.Point{X: 0, Y: 0}, Radius: 10,
 		Children: []BubbleNode{
-			{X: -3, Y: 0, Radius: 2}, // covers X: -5 .. -1
-			{X: 4, Y: 0, Radius: 1},  // covers X:  3 ..  5
+			{Position: geometry.Point{X: -3, Y: 0}, Radius: 2}, // covers X: -5 .. -1
+			{Position: geometry.Point{X: 4, Y: 0}, Radius: 1},  // covers X:  3 ..  5
 		},
 	}
 
@@ -100,9 +100,9 @@ func TestOccupiedBounds_ShowLabelIncludesRoot(t *testing.T) {
 
 	// When ShowLabel is true, the root node's own circle is added to bounds.
 	parent := BubbleNode{
-		X: 0, Y: 0, Radius: 8, ShowLabel: true,
+		Position: geometry.Point{X: 0, Y: 0}, Radius: 8, ShowLabel: true,
 		Children: []BubbleNode{
-			{X: 1, Y: 0, Radius: 1},
+			{Position: geometry.Point{X: 1, Y: 0}, Radius: 1},
 		},
 	}
 
@@ -124,17 +124,17 @@ func TestApplyScale_ChildPositionUpdated(t *testing.T) {
 	// Parent placed at (10, 20); child in local frame at (2, 0) with radius 1.
 	// After applyScale(scale=3): child should be at (10+2*3, 20+0*3)=(16,20) with radius 3.
 	parent := BubbleNode{
-		X: 10, Y: 20, Radius: 15,
+		Position: geometry.Point{X: 10, Y: 20}, Radius: 15,
 		Children: []BubbleNode{
-			{X: 2, Y: 0, Radius: 1},
+			{Position: geometry.Point{X: 2, Y: 0}, Radius: 1},
 		},
 	}
 
 	applyScale(&parent, 3)
 
 	child := parent.Children[0]
-	g.Expect(child.X).To(BeNumerically("~", 16.0, 1e-9))
-	g.Expect(child.Y).To(BeNumerically("~", 20.0, 1e-9))
+	g.Expect(child.Position.X).To(BeNumerically("~", 16.0, 1e-9))
+	g.Expect(child.Position.Y).To(BeNumerically("~", 20.0, 1e-9))
 	g.Expect(child.Radius).To(BeNumerically("~", 3.0, 1e-9))
 }
 
@@ -142,24 +142,24 @@ func TestApplyScale_NestedChildren(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	grandchild := BubbleNode{X: 1, Y: 0, Radius: 0.5}
+	grandchild := BubbleNode{Position: geometry.Point{X: 1, Y: 0}, Radius: 0.5}
 	child := BubbleNode{
-		X: 2, Y: 0, Radius: 2,
+		Position: geometry.Point{X: 2, Y: 0}, Radius: 2,
 		Children: []BubbleNode{grandchild},
 	}
 	parent := BubbleNode{
-		X: 0, Y: 0, Radius: 10,
+		Position: geometry.Point{X: 0, Y: 0}, Radius: 10,
 		Children: []BubbleNode{child},
 	}
 
 	applyScale(&parent, 2)
 
 	// child: X = 0 + 2*2 = 4, Y = 0, Radius = 4
-	g.Expect(parent.Children[0].X).To(BeNumerically("~", 4.0, 1e-9))
+	g.Expect(parent.Children[0].Position.X).To(BeNumerically("~", 4.0, 1e-9))
 	g.Expect(parent.Children[0].Radius).To(BeNumerically("~", 4.0, 1e-9))
 
 	// grandchild: X = 4 + 1*2 = 6, Y = 0, Radius = 1
-	g.Expect(parent.Children[0].Children[0].X).To(BeNumerically("~", 6.0, 1e-9))
+	g.Expect(parent.Children[0].Children[0].Position.X).To(BeNumerically("~", 6.0, 1e-9))
 	g.Expect(parent.Children[0].Children[0].Radius).To(BeNumerically("~", 1.0, 1e-9))
 }
 
@@ -171,16 +171,16 @@ func TestOffsetNodes_RootAndChildren(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	child := BubbleNode{X: 5, Y: 5, Radius: 1}
+	child := BubbleNode{Position: geometry.Point{X: 5, Y: 5}, Radius: 1}
 	root := BubbleNode{
-		X: 10, Y: 10, Radius: 20,
+		Position: geometry.Point{X: 10, Y: 10}, Radius: 20,
 		Children: []BubbleNode{child},
 	}
 
 	OffsetNodes(&root, geometry.Vector{X: 3, Y: -2})
 
-	g.Expect(root.X).To(BeNumerically("~", 13.0, 1e-9))
-	g.Expect(root.Y).To(BeNumerically("~", 8.0, 1e-9))
-	g.Expect(root.Children[0].X).To(BeNumerically("~", 8.0, 1e-9))
-	g.Expect(root.Children[0].Y).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(root.Position.X).To(BeNumerically("~", 13.0, 1e-9))
+	g.Expect(root.Position.Y).To(BeNumerically("~", 8.0, 1e-9))
+	g.Expect(root.Children[0].Position.X).To(BeNumerically("~", 8.0, 1e-9))
+	g.Expect(root.Children[0].Position.Y).To(BeNumerically("~", 3.0, 1e-9))
 }

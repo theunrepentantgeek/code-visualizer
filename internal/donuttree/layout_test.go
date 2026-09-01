@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -30,6 +31,7 @@ func TestLayoutAllocatesDirectorySectorsByMetric(t *testing.T) {
 	layout := Layout(root, 800, filesystem.FileLines)
 
 	g.Expect(layout.RootName).To(Equal("root"))
+	g.Expect(layout.Center).To(Equal(geometry.Point{X: 400, Y: 400}))
 	g.Expect(layout.Children).To(HaveLen(2))
 	g.Expect(layout.Children[0].Depth).To(Equal(1))
 	g.Expect(layout.Children[1].Depth).To(Equal(1))
