@@ -125,7 +125,7 @@ func (c *Canvas) AddPolygon(layer Layer, p Polygon) {
 
 // AddFilledPath records a borderless filled path on the given layer.
 func (c *Canvas) AddFilledPath(layer Layer, p FilledPath) {
-	p.Loops = clonePositionLoops(p.Loops)
+	p.Loops = clonePointLoops(p.Loops)
 	c.shapes = append(c.shapes, layeredShape{
 		layer: layer,
 		order: len(c.shapes),
@@ -133,7 +133,7 @@ func (c *Canvas) AddFilledPath(layer Layer, p FilledPath) {
 	})
 }
 
-func clonePositionLoops(loops [][]geometry.Point) [][]geometry.Point {
+func clonePointLoops(loops [][]geometry.Point) [][]geometry.Point {
 	cloned := make([][]geometry.Point, len(loops))
 	for index, loop := range loops {
 		cloned[index] = slices.Clone(loop)

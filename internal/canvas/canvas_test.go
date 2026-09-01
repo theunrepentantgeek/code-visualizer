@@ -137,6 +137,7 @@ func TestCanvas_AddText_DispatchesToBackend(t *testing.T) {
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawText"))
 	g.Expect(mb.Calls[0].Text).To(Equal("hello"))
+	g.Expect(mb.Calls[0].Pos).To(Equal(geometry.Point{X: 100, Y: 200}))
 }
 
 func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
@@ -160,6 +161,8 @@ func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawLine"))
+	g.Expect(mb.Calls[0].Pos).To(Equal(geometry.Point{X: 0, Y: 0}))
+	g.Expect(mb.Calls[0].To).To(Equal(geometry.Point{X: 100, Y: 100}))
 }
 
 func TestCanvas_AddPath_DispatchesToBackend(t *testing.T) {

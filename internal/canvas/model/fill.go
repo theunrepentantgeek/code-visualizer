@@ -9,6 +9,8 @@ type GradientPoint struct {
 }
 
 // Point is retained for normalized-gradient consumers outside the canvas migration.
+//
+// Deprecated: New code must use GradientPoint.
 type Point = GradientPoint
 
 // Fill is a sealed interface describing how a shape's interior is painted.

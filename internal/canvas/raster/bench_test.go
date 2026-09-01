@@ -56,6 +56,6 @@ func BenchmarkDrawRadialGradientDisc(b *testing.B) {
 // corner distance — called once per gradient rectangle.
 func BenchmarkMaxCornerDist(b *testing.B) {
 	for range b.N {
-		_ = maxCornerDist(30, 30, 10, 10, 180, 180)
+		_ = maxCornerDist(geometry.Point{X: 30, Y: 30}, 10, 10, 180, 180)
 	}
 }

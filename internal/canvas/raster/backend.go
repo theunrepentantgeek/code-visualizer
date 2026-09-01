@@ -64,7 +64,7 @@ func (r *rasterBackend) drawRadialGradientRect(
 		X: pos.X + grad.Focus.X*size.Width,
 		Y: pos.Y + grad.Focus.Y*size.Height,
 	}
-	maxDist := maxCornerDist(focus.X, focus.Y, pos.X, pos.Y, size.Width, size.Height)
+	maxDist := maxCornerDist(focus, pos.X, pos.Y, size.Width, size.Height)
 
 	if maxDist == 0 {
 		r.dc.SetColor(nrgba(grad.Center))
@@ -92,21 +92,21 @@ func (r *rasterBackend) drawRadialGradientRect(
 
 	lerp := newGradientLerp(grad.Center, grad.Edge)
 	renderRadialGradientPixels(
-		img, image.Rect(x0, y0, x1, y1), focus.X, focus.Y, 1.0/maxDist, lerp, radialClip{},
+		img, image.Rect(x0, y0, x1, y1), focus, 1.0/maxDist, lerp, radialClip{},
 	)
 }
 
-// maxCornerDist returns the maximum distance from point (fx,fy) to any corner
+// maxCornerDist returns the maximum distance from focus to any corner
 // of the rectangle with top-left (rx,ry), width w, and height h.
 //
 // The maximum of dx²+dy² over the four corners decomposes as
 // max(dx0²,dx1²) + max(dy0²,dy1²) because dx and dy are independent, so only
 // one math.Sqrt is required instead of four.
-func maxCornerDist(fx, fy, rx, ry, w, h float64) float64 {
-	dx0 := rx - fx
-	dx1 := rx + w - fx
-	dy0 := ry - fy
-	dy1 := ry + h - fy
+func maxCornerDist(focus geometry.Point, rx, ry, w, h float64) float64 {
+	dx0 := rx - focus.X
+	dx1 := rx + w - focus.X
+	dy0 := ry - focus.Y
+	dy1 := ry + h - focus.Y
 
 	return math.Sqrt(max(dx0*dx0, dx1*dx1) + max(dy0*dy0, dy1*dy1))
 }
@@ -229,7 +229,7 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 
 	lerp := newGradientLerp(grad.Center, grad.Edge)
 	renderPolygonGradientPixels(
-		img, image.Rect(x0, y0, x1, y1), points, focus.X, focus.Y, 1.0/maxDist, lerp,
+		img, image.Rect(x0, y0, x1, y1), points, focus, 1.0/maxDist, lerp,
 	)
 
 	return true
@@ -265,8 +265,8 @@ func (r *rasterBackend) drawRadialGradientDisc(
 	lerp := newGradientLerp(grad.Center, grad.Edge)
 	renderRadialGradientPixels(
 		img, image.Rect(x0, y0, x1, y1),
-		focus.X, focus.Y, 1.0/radius, lerp,
-		radialClip{cx: center.X, cy: center.Y, r: radius},
+		focus, 1.0/radius, lerp,
+		radialClip{center: center, r: radius},
 	)
 }
 
