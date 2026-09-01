@@ -41,5 +41,15 @@ func Midpoint(a, b Point) Point {
 }
 
 func Lerp(a, b Point, fraction float64) Point {
-	return a.Translate(a.VectorTo(b).Scale(fraction))
+	if fraction == 0 {
+		return a
+	}
+	if fraction == 1 {
+		return b
+	}
+
+	return Point{
+		X: (1-fraction)*a.X + fraction*b.X,
+		Y: (1-fraction)*a.Y + fraction*b.Y,
+	}
 }
