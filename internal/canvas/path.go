@@ -1,11 +1,14 @@
 package canvas
 
-import "github.com/theunrepentantgeek/code-visualizer/internal/inks"
+import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+)
 
 // Path carries a sequence of positions for multi-point paths.
 type Path struct {
 	Spec   *LineSpec
-	Points []Position
+	Points []geometry.Point
 }
 
 func (p *Path) drawTo(b Backend) {

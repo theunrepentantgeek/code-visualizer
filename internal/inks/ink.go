@@ -26,7 +26,7 @@ const (
 // Ink resolves metric values to colours and fill specifications.
 type Ink interface {
 	Dip(value MetricValue) color.RGBA
-	Fill(value MetricValue, focus model.Point) model.Fill
+	Fill(value MetricValue, focus model.GradientPoint) model.Fill
 	Info() Info
 	LegendData() (model.LegendEntryKind, []model.LegendSwatch)
 }
@@ -104,7 +104,7 @@ func (ink *fixedInk) Dip(MetricValue) color.RGBA {
 	return applyOpacity(ink.color, ink.opacity)
 }
 
-func (ink *fixedInk) Fill(value MetricValue, _ model.Point) model.Fill {
+func (ink *fixedInk) Fill(value MetricValue, _ model.GradientPoint) model.Fill {
 	return model.SolidFill{Color: ink.Dip(value)}
 }
 
@@ -124,7 +124,7 @@ func (ink *numericInk) Dip(value MetricValue) color.RGBA {
 	return applyOpacity(c, ink.opacity)
 }
 
-func (ink *numericInk) Fill(value MetricValue, _ model.Point) model.Fill {
+func (ink *numericInk) Fill(value MetricValue, _ model.GradientPoint) model.Fill {
 	return model.SolidFill{Color: ink.Dip(value)}
 }
 
@@ -134,7 +134,7 @@ func (ink *categoricalInk) Dip(value MetricValue) color.RGBA {
 	return applyOpacity(c, ink.opacity)
 }
 
-func (ink *categoricalInk) Fill(value MetricValue, _ model.Point) model.Fill {
+func (ink *categoricalInk) Fill(value MetricValue, _ model.GradientPoint) model.Fill {
 	return model.SolidFill{Color: ink.Dip(value)}
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -152,7 +153,7 @@ func RenderToCanvas(
 		Y:     0,
 		W:     float64(width),
 		H:     float64(height),
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 
 	dirSpecs := buildDirBorderSpecs()
@@ -213,7 +214,7 @@ func addDirectoryShapes(
 			Y:     rail.Y,
 			W:     rail.W,
 			H:     rail.H,
-			Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+			Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 		})
 	}
 
@@ -228,10 +229,9 @@ func addDirectoryShapes(
 		}
 
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec:    spec,
-			X:       x,
-			Y:       y,
-			Content: rect.Chrome.Text,
+			Spec:     spec,
+			Position: geometry.Point{X: x, Y: y},
+			Content:  rect.Chrome.Text,
 		})
 	}
 
@@ -258,7 +258,7 @@ func addDirectoryShapes(
 		Y:     rect.Y,
 		W:     rect.W,
 		H:     rect.H,
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -308,9 +308,9 @@ func addFileRectForFile(
 	})
 }
 
-func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) canvasmodel.Point {
+func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) canvasmodel.GradientPoint {
 	if fileRect.W <= 0 || fileRect.H <= 0 {
-		return canvasmodel.Point{X: 0.5, Y: 0.5}
+		return canvasmodel.GradientPoint{X: 0.5, Y: 0.5}
 	}
 
 	fileCX := fileRect.X + fileRect.W/2
@@ -320,7 +320,7 @@ func computeFocus(fileRect, dirRect TreemapRectangle, weightFraction float64) ca
 	focusX := fileCX + (dirCX-fileCX)*weightFraction
 	focusY := fileCY + (dirCY-fileCY)*weightFraction
 
-	return canvasmodel.Point{
+	return canvasmodel.GradientPoint{
 		X: (focusX - fileRect.X) / fileRect.W,
 		Y: (focusY - fileRect.Y) / fileRect.H,
 	}

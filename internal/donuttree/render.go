@@ -6,6 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -45,7 +46,7 @@ func addDonutBackground(cv *canvas.Canvas, width, height int) {
 		},
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: spec, W: float64(width), H: float64(height), Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Spec: spec, W: float64(width), H: float64(height), Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -71,14 +72,14 @@ func addRootAnchor(cv *canvas.Canvas, layout LayoutResult, root *model.Directory
 	}
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec: labelSpec, X: layout.Center.X, Y: layout.Center.Y, Content: rootName,
+		Spec: labelSpec, Position: layout.Center, Content: rootName,
 	})
 }
 
 func addDonutSectors(
 	cv *canvas.Canvas,
 	nodes []DonutNode,
-	center canvas.Position,
+	center geometry.Point,
 	is Inks,
 	labelMetrics LabelMetrics,
 ) {
@@ -116,9 +117,9 @@ func addDonutSectors(
 	}
 }
 
-func sectorPoints(node DonutNode, center canvas.Position) []canvas.Position {
+func sectorPoints(node DonutNode, center geometry.Point) []geometry.Point {
 	steps := sectorSteps(node.SweepAngle)
-	points := make([]canvas.Position, 0, 2*steps+3)
+	points := make([]geometry.Point, 0, 2*steps+3)
 
 	for step := range steps + 1 {
 		angle := node.StartAngle + node.SweepAngle*float64(step)/float64(steps)
@@ -135,7 +136,7 @@ func sectorPoints(node DonutNode, center canvas.Position) []canvas.Position {
 	return points
 }
 
-func insetSectorPoints(node DonutNode, center canvas.Position, borderWidth float64) []canvas.Position {
+func insetSectorPoints(node DonutNode, center geometry.Point, borderWidth float64) []geometry.Point {
 	halfWidth := borderWidth / 2
 	innerRadius := node.InnerRadius + halfWidth
 	outerRadius := node.OuterRadius - halfWidth
@@ -144,7 +145,7 @@ func insetSectorPoints(node DonutNode, center canvas.Position, borderWidth float
 	innerInset := radialEdgeInset(innerRadius, halfWidth, maxInset)
 	outerInset := radialEdgeInset(outerRadius, halfWidth, maxInset)
 	steps := sectorSteps(node.SweepAngle)
-	points := make([]canvas.Position, 0, 2*steps+3)
+	points := make([]geometry.Point, 0, 2*steps+3)
 
 	for step := range steps + 1 {
 		angle := node.StartAngle + outerInset +
@@ -207,8 +208,8 @@ func sectorSteps(sweepAngle float64) int {
 	return max(2, int(math.Ceil(sweepAngle/(2*math.Pi)*64)))
 }
 
-func polarPosition(center canvas.Position, radius, angle float64) canvas.Position {
-	return canvas.Position{
+func polarPosition(center geometry.Point, radius, angle float64) geometry.Point {
+	return geometry.Point{
 		X: center.X + radius*math.Cos(angle),
 		Y: center.Y + radius*math.Sin(angle),
 	}

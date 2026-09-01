@@ -6,6 +6,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -87,7 +88,7 @@ func directoryMetricLabel(name metric.Name, dir *model.Directory) (string, bool)
 	return "", false
 }
 
-func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, lines []string, ink inks.Ink) {
+func addSectorLabel(cv *canvas.Canvas, node DonutNode, center geometry.Point, lines []string, ink inks.Ink) {
 	fontSize := sectorLabelFontSize(node, lines)
 	if fontSize == 0 {
 		return
@@ -95,7 +96,7 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
-	blockCenter := canvas.Position{
+	blockCenter := geometry.Point{
 		X: center.X + midRadius*math.Cos(midpoint),
 		Y: center.Y + midRadius*math.Sin(midpoint),
 	}
@@ -116,9 +117,11 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center canvas.Position, l
 	for index, line := range lines {
 		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec:    spec,
-			X:       blockCenter.X - offset*math.Sin(rotation),
-			Y:       blockCenter.Y + offset*math.Cos(rotation),
+			Spec: spec,
+			Position: geometry.Point{
+				X: blockCenter.X - offset*math.Sin(rotation),
+				Y: blockCenter.Y + offset*math.Cos(rotation),
+			},
 			Content: line,
 		})
 	}
