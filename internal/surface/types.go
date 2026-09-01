@@ -96,7 +96,7 @@ func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Sample {
 
 	for index, start := range corners {
 		end := corners[(index+1)%len(corners)]
-		loop = append(loop, segmentBoundaryPoints(start, end, maximumSegmentLength)...)
+		loop = append(loop, segmentBoundarySamples(start, end, maximumSegmentLength)...)
 	}
 
 	return [][]Sample{loop}
@@ -140,7 +140,7 @@ func appendCircularBoundaryLoop(
 
 	return append(
 		loops,
-		circularBoundaryPoints(cx, cy, radius, maximumSegmentLength),
+		circularBoundarySamples(cx, cy, radius, maximumSegmentLength),
 	)
 }
 
@@ -161,7 +161,7 @@ func validBoundaryLoopLength(maximumSegmentLength float64) bool {
 	return isFinite(maximumSegmentLength) && maximumSegmentLength > 0
 }
 
-func segmentBoundaryPoints(start, end Sample, maximumSegmentLength float64) []Sample {
+func segmentBoundarySamples(start, end Sample, maximumSegmentLength float64) []Sample {
 	length := start.Position.DistanceTo(end.Position)
 	if !isFinite(length) {
 		return nil
@@ -169,28 +169,28 @@ func segmentBoundaryPoints(start, end Sample, maximumSegmentLength float64) []Sa
 
 	segments := max(1, int(math.Ceil(length/maximumSegmentLength)))
 
-	points := make([]Sample, 0, segments)
+	samples := make([]Sample, 0, segments)
 	for index := range segments {
 		fraction := float64(index) / float64(segments)
-		points = append(points, Sample{
+		samples = append(samples, Sample{
 			Position: start.Position.Translate(start.Position.VectorTo(end.Position).Scale(fraction)),
 		})
 	}
 
-	return points
+	return samples
 }
 
-func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Sample {
+func circularBoundarySamples(cx, cy, radius, maximumSegmentLength float64) []Sample {
 	if radius == 0 {
 		return nil
 	}
 
 	segments := max(3, int(math.Ceil(2*math.Pi*radius/maximumSegmentLength)))
 
-	points := make([]Sample, 0, segments)
+	samples := make([]Sample, 0, segments)
 	for index := range segments {
 		angle := 2 * math.Pi * float64(index) / float64(segments)
-		points = append(points, Sample{
+		samples = append(samples, Sample{
 			Position: geometry.Point{
 				X: cx + radius*math.Cos(angle),
 				Y: cy + radius*math.Sin(angle),
@@ -198,7 +198,7 @@ func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Samp
 		})
 	}
 
-	return points
+	return samples
 }
 
 type Triangle struct {

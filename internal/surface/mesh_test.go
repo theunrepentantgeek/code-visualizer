@@ -19,7 +19,7 @@ func TestInterpolate_InterpolatesMidpointWithCompactKernel(t *testing.T) {
 		{Position: geometry.Point{X: 4, Y: 0}, Value: 8},
 	}
 
-	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.Point{X: 2, Y: 0}}, originals)).To(
+	g.Expect(surface.Interpolate(geometry.Point{X: 2, Y: 0}, originals)).To(
 		gomega.Equal(4.0),
 	)
 }
@@ -33,10 +33,10 @@ func TestInterpolate_ReturnsObservedValueAtOriginalLocation(t *testing.T) {
 		{Position: geometry.Point{X: 4, Y: 0}, Value: 8},
 	}
 
-	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.Point{X: 0, Y: 0}}, originals)).To(
+	g.Expect(surface.Interpolate(geometry.Point{X: 0, Y: 0}, originals)).To(
 		gomega.Equal(3.0),
 	)
-	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.Point{X: 4, Y: 0}}, originals)).To(gomega.Equal(8.0))
+	g.Expect(surface.Interpolate(geometry.Point{X: 4, Y: 0}, originals)).To(gomega.Equal(8.0))
 }
 
 func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
@@ -56,7 +56,7 @@ func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
 	g.Expect(triangles).To(gomega.BeEmpty())
 }
 
-func TestBuildAndSample_RejectTypedNilAnnulusRegion(t *testing.T) {
+func TestBuildAndPoissonSamples_RejectTypedNilAnnulusRegion(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
@@ -115,10 +115,10 @@ func TestBuild_IgnoresNonFiniteOriginalCoordinatesAndValues(t *testing.T) {
 	g.Expect(triangles).NotTo(gomega.BeEmpty())
 
 	for _, triangle := range triangles {
-		for _, point := range triangle.Points {
-			g.Expect(math.IsNaN(point.Position.X) || math.IsInf(point.Position.X, 0)).To(gomega.BeFalse())
-			g.Expect(math.IsNaN(point.Position.Y) || math.IsInf(point.Position.Y, 0)).To(gomega.BeFalse())
-			g.Expect(math.IsNaN(point.Value) || math.IsInf(point.Value, 0)).To(gomega.BeFalse())
+		for _, sample := range triangle.Points {
+			g.Expect(math.IsNaN(sample.Position.X) || math.IsInf(sample.Position.X, 0)).To(gomega.BeFalse())
+			g.Expect(math.IsNaN(sample.Position.Y) || math.IsInf(sample.Position.Y, 0)).To(gomega.BeFalse())
+			g.Expect(math.IsNaN(sample.Value) || math.IsInf(sample.Value, 0)).To(gomega.BeFalse())
 		}
 	}
 }
@@ -162,9 +162,9 @@ func TestBuild_PreservesObservedVertexValues(t *testing.T) {
 	foundOriginals := make(map[coordinate]float64)
 
 	for _, triangle := range triangles {
-		for _, point := range triangle.Points {
-			if point.Original {
-				foundOriginals[coordinate{x: point.Position.X, y: point.Position.Y}] = point.Value
+		for _, sample := range triangle.Points {
+			if sample.Original {
+				foundOriginals[coordinate{x: sample.Position.X, y: sample.Position.Y}] = sample.Value
 			}
 		}
 	}
@@ -197,14 +197,14 @@ func TestBuild_InterpolatesInfillFromOriginalsOnly(t *testing.T) {
 	foundInfill := false
 
 	for _, triangle := range triangles {
-		for _, point := range triangle.Points {
-			if point.Original {
+		for _, sample := range triangle.Points {
+			if sample.Original {
 				continue
 			}
 
 			foundInfill = true
 
-			g.Expect(point.Value).To(gomega.BeNumerically("~", surface.Interpolate(point, originals)))
+			g.Expect(sample.Value).To(gomega.BeNumerically("~", surface.Interpolate(sample.Position, originals)))
 		}
 	}
 
@@ -266,8 +266,8 @@ func TestBuild_RestrictsAnnularMeshToRegionAndMaximumEdge(t *testing.T) {
 	}
 
 	for _, triangle := range first {
-		for _, point := range triangle.Points {
-			g.Expect(tolerantRegion.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
+		for _, sample := range triangle.Points {
+			g.Expect(tolerantRegion.Contains(sample.Position.X, sample.Position.Y)).To(gomega.BeTrue())
 		}
 
 		centroid := centroid(triangle)
@@ -313,23 +313,23 @@ func TestBuild_SeedsAnnulusBoundaries(t *testing.T) {
 			gomega.BeNumerically("<=", surface.MaxTriangleEdge),
 		)
 
-		for _, point := range triangle.Points {
-			radius := math.Hypot(point.Position.X-region.CX, point.Position.Y-region.CY)
+		for _, sample := range triangle.Points {
+			radius := math.Hypot(sample.Position.X-region.CX, sample.Position.Y-region.CY)
 			if math.Abs(radius-region.InnerRadius) <= 1e-9 {
 				hasInnerBoundaryVertex = true
 
-				g.Expect(point.Original).To(gomega.BeFalse())
-				g.Expect(point.Value).To(
-					gomega.BeNumerically("~", surface.Interpolate(point, originals)),
+				g.Expect(sample.Original).To(gomega.BeFalse())
+				g.Expect(sample.Value).To(
+					gomega.BeNumerically("~", surface.Interpolate(sample.Position, originals)),
 				)
 			}
 
 			if math.Abs(radius-region.OuterRadius) <= 1e-9 {
 				hasOuterBoundaryVertex = true
 
-				g.Expect(point.Original).To(gomega.BeFalse())
-				g.Expect(point.Value).To(
-					gomega.BeNumerically("~", surface.Interpolate(point, originals)),
+				g.Expect(sample.Original).To(gomega.BeFalse())
+				g.Expect(sample.Value).To(
+					gomega.BeNumerically("~", surface.Interpolate(sample.Position, originals)),
 				)
 			}
 		}
@@ -372,8 +372,8 @@ func TestBuild_RetainsEverySupportedAnnulusBoundarySampleAsMeshVertex(t *testing
 
 	vertices := make(map[[2]float64]bool, len(triangles)*3)
 	for _, triangle := range triangles {
-		for _, point := range triangle.Points {
-			vertices[[2]float64{point.Position.X, point.Position.Y}] = true
+		for _, sample := range triangle.Points {
+			vertices[[2]float64{sample.Position.X, sample.Position.Y}] = true
 		}
 	}
 
@@ -381,12 +381,12 @@ func TestBuild_RetainsEverySupportedAnnulusBoundarySampleAsMeshVertex(t *testing
 	g.Expect(loops).To(gomega.HaveLen(2))
 
 	for _, loop := range loops {
-		for _, point := range loop {
-			if surface.Interpolate(point, originals) == 0 {
+		for _, sample := range loop {
+			if surface.Interpolate(sample.Position, originals) == 0 {
 				continue
 			}
 
-			g.Expect(vertices).To(gomega.HaveKey([2]float64{point.Position.X, point.Position.Y}))
+			g.Expect(vertices).To(gomega.HaveKey([2]float64{sample.Position.X, sample.Position.Y}))
 		}
 	}
 }
@@ -408,9 +408,9 @@ func TestLongestEdge_ReturnsLengthOfLongestTriangleSide(t *testing.T) {
 
 func centroid(triangle surface.Triangle) surface.Sample {
 	var centroid surface.Sample
-	for _, point := range triangle.Points {
-		centroid.Position.X += point.Position.X
-		centroid.Position.Y += point.Position.Y
+	for _, sample := range triangle.Points {
+		centroid.Position.X += sample.Position.X
+		centroid.Position.Y += sample.Position.Y
 	}
 
 	centroid.Position.X /= float64(len(triangle.Points))

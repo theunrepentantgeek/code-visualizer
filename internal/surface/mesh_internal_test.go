@@ -22,8 +22,8 @@ func TestTriangleInRegion_RejectsAnnulusHoleCrossingEdge(t *testing.T) {
 		},
 	}
 
-	for _, point := range triangle.Points {
-		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
+	for _, sample := range triangle.Points {
+		g.Expect(region.Contains(sample.Position.X, sample.Position.Y)).To(gomega.BeTrue())
 	}
 
 	centroid := Sample{
@@ -60,16 +60,20 @@ func TestTriangleInRegion_RejectsAnnulusCenterEnclosedAfterInnerBoundaryPruning(
 
 	triangle := Triangle{Points: [3]Sample{originals[0], originals[1], originals[2]}}
 	g.Expect(
-		pointStrictlyInTriangle(Sample{Position: geometry.Point{X: region.CX, Y: region.CY}}, triangle),
+		pointStrictlyInTriangle(geometry.Point{X: region.CX, Y: region.CY}, triangle),
 	).To(gomega.BeTrue())
 
-	for _, point := range triangle.Points {
-		g.Expect(region.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
+	for _, sample := range triangle.Points {
+		g.Expect(region.Contains(sample.Position.X, sample.Position.Y)).To(gomega.BeTrue())
 	}
 
 	for index, start := range triangle.Points {
 		end := triangle.Points[(index+1)%len(triangle.Points)]
-		g.Expect(squaredDistanceToSegment(region.CX, region.CY, start, end)).To(
+		g.Expect(squaredDistanceToSegment(
+			geometry.Point{X: region.CX, Y: region.CY},
+			start,
+			end,
+		)).To(
 			gomega.BeNumerically(">", region.InnerRadius*region.InnerRadius),
 		)
 	}
@@ -112,12 +116,12 @@ func TestBoundaryLoops_ReturnsDenseOrderedAnnulusLoops(t *testing.T) {
 
 	outerLoop := loops[0]
 	if len(outerLoop) < 2 {
-		t.Fatalf("expected outer loop to contain at least 2 points, got %d", len(outerLoop))
+		t.Fatalf("expected outer loop to contain at least 2 samples, got %d", len(outerLoop))
 	}
 
 	innerLoop := loops[1]
 	if len(innerLoop) < 2 {
-		t.Fatalf("expected inner loop to contain at least 2 points, got %d", len(innerLoop))
+		t.Fatalf("expected inner loop to contain at least 2 samples, got %d", len(innerLoop))
 	}
 
 	g.Expect(loops).To(gomega.HaveLen(2))
@@ -130,9 +134,9 @@ func TestBoundaryLoops_ReturnsDenseOrderedAnnulusLoops(t *testing.T) {
 		g.Expect(loop[len(loop)-1]).NotTo(gomega.Equal(loop[0]))
 		g.Expect(loop[1].Position.Y).To(gomega.BeNumerically(">", 0))
 
-		for index, point := range loop {
+		for index, sample := range loop {
 			next := loop[(index+1)%len(loop)]
-			g.Expect(point.Position.DistanceTo(next.Position)).To(
+			g.Expect(sample.Position.DistanceTo(next.Position)).To(
 				gomega.BeNumerically("<=", MaxBoundarySegmentLength),
 			)
 		}
@@ -154,7 +158,7 @@ func TestBoundaryLoops_ReturnsDenseClosedRectPerimeter(t *testing.T) {
 
 	rectLoop := loops[0]
 	if len(rectLoop) < 2 {
-		t.Fatalf("expected rectangle loop to contain at least 2 points, got %d", len(rectLoop))
+		t.Fatalf("expected rectangle loop to contain at least 2 samples, got %d", len(rectLoop))
 	}
 
 	g.Expect(loops).To(gomega.Equal([][]Sample{{
@@ -166,9 +170,9 @@ func TestBoundaryLoops_ReturnsDenseClosedRectPerimeter(t *testing.T) {
 		{Position: geometry.Point{X: 1, Y: 3}},
 	}}))
 
-	for index, point := range rectLoop {
+	for index, sample := range rectLoop {
 		next := rectLoop[(index+1)%len(rectLoop)]
-		g.Expect(point.Position.DistanceTo(next.Position)).To(
+		g.Expect(sample.Position.DistanceTo(next.Position)).To(
 			gomega.BeNumerically("<=", MaxBoundarySegmentLength),
 		)
 	}
@@ -225,13 +229,13 @@ func TestRegionTriangles_OmitsTriangleWithUnsupportedVertex(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	region := Rect{MinX: -2, MinY: -2, MaxX: 2, MaxY: 2}
-	points := []Sample{
+	samples := []Sample{
 		{Position: geometry.Point{X: 0, Y: 0}, Value: 1},
 		{Position: geometry.Point{X: 1, Y: 0}, Value: 2, unsupported: true},
 		{Position: geometry.Point{X: 0, Y: 1}, Value: 3},
 	}
 
-	triangles, complete := regionTriangles(region, points, []int{0, 1, 2})
+	triangles, complete := regionTriangles(region, samples, []int{0, 1, 2})
 	g.Expect(complete).To(gomega.BeTrue())
 	g.Expect(triangles).To(gomega.BeEmpty())
 }

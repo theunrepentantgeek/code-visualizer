@@ -67,8 +67,8 @@ func TestBuildSurface_ExtendsHalfCoilSpacingBeyondSpiralTrack(t *testing.T) {
 	)
 
 	for _, triangle := range triangles {
-		for _, point := range triangle.Points {
-			radius := math.Hypot(point.Position.X-layout.CX, point.Position.Y-layout.CY)
+		for _, sample := range triangle.Points {
+			radius := math.Hypot(sample.Position.X-layout.CX, sample.Position.Y-layout.CY)
 			minimumRadius = math.Min(minimumRadius, radius)
 			maximumRadius = math.Max(maximumRadius, radius)
 		}

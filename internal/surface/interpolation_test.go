@@ -94,15 +94,15 @@ func TestInterpolationModelInterpolate_AssignsZeroWeightAtSupportRadiusBoundary(
 		radius:       4,
 	}
 
-	inside, ok := model.interpolate(Sample{Position: geometry.Point{X: 3, Y: 0}})
+	inside, ok := model.interpolate(geometry.Point{X: 3, Y: 0})
 	g.Expect(ok).To(gomega.BeTrue())
 	g.Expect(inside).To(gomega.Equal(10.0))
 
-	boundary, ok := model.interpolate(Sample{Position: geometry.Point{X: 4, Y: 0}})
+	boundary, ok := model.interpolate(geometry.Point{X: 4, Y: 0})
 	g.Expect(ok).To(gomega.BeFalse())
 	g.Expect(boundary).To(gomega.Equal(0.0))
 
-	outside, ok := model.interpolate(Sample{Position: geometry.Point{X: 7, Y: 0}})
+	outside, ok := model.interpolate(geometry.Point{X: 7, Y: 0})
 	g.Expect(ok).To(gomega.BeFalse())
 	g.Expect(outside).To(gomega.Equal(0.0))
 }
@@ -116,7 +116,7 @@ func TestInterpolationModelInterpolate_ReturnsUnsupportedWithoutPositiveWeights(
 		radius:       1,
 	}
 
-	value, ok := model.interpolate(Sample{Position: geometry.Point{X: 2, Y: 0}})
+	value, ok := model.interpolate(geometry.Point{X: 2, Y: 0})
 	g.Expect(ok).To(gomega.BeFalse())
 	g.Expect(value).To(gomega.Equal(0.0))
 }
@@ -134,7 +134,7 @@ func TestInterpolationModelInterpolate_ReturnsFirstCoincidentObservationValue(t 
 		radius: 4,
 	}
 
-	value, ok := model.interpolate(Sample{Position: geometry.Point{X: 1, Y: 1}})
+	value, ok := model.interpolate(geometry.Point{X: 1, Y: 1})
 	g.Expect(ok).To(gomega.BeTrue())
 	g.Expect(value).To(gomega.Equal(10.0))
 }
@@ -143,7 +143,7 @@ func TestInterpolate_ReturnsZeroForUnsupportedInterpolation(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewWithT(t)
-	value := Interpolate(Sample{Position: geometry.Point{X: 5, Y: 0}}, []Sample{
+	value := Interpolate(geometry.Point{X: 5, Y: 0}, []Sample{
 		{Position: geometry.Point{X: 0, Y: 0}, Value: 1},
 		{Position: geometry.Point{X: 0, Y: 0}, Value: 2},
 	})

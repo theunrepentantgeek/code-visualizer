@@ -70,8 +70,8 @@ func sampleInfill(
 ) []Sample {
 	for len(active) > 0 {
 		activeIndex := random.IntN(len(active))
-		activePoint := active[activeIndex]
-		candidate, accepted := sampleCandidate(region, *grid, activePoint, minimumDistance, random)
+		activeSample := active[activeIndex]
+		candidate, accepted := sampleCandidate(region, *grid, activeSample, minimumDistance, random)
 
 		if !accepted {
 			active[activeIndex] = active[len(active)-1]
@@ -91,12 +91,12 @@ func sampleInfill(
 func sampleCandidate(
 	region Region,
 	grid poissonGrid,
-	activePoint Sample,
+	activeSample Sample,
 	minimumDistance float64,
 	random *rand.Rand,
 ) (Sample, bool) {
 	for range attemptsPerActivePoint {
-		candidate := annulusCandidate(activePoint, minimumDistance, random)
+		candidate := annulusCandidate(activeSample, minimumDistance, random)
 		if !region.Contains(candidate.Position.X, candidate.Position.Y) ||
 			grid.hasNearby(candidate, minimumDistance) {
 			continue

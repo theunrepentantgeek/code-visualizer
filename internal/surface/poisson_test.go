@@ -68,7 +68,7 @@ func TestPoissonSamples_RespectsMinimumDistance(t *testing.T) {
 	}
 }
 
-func TestPoissonSamples_ReturnsOnlyPointsInsideAnnulus(t *testing.T) {
+func TestPoissonSamples_ReturnsOnlySamplesInsideAnnulus(t *testing.T) {
 	t.Parallel()
 
 	g := gomega.NewGomegaWithT(t)

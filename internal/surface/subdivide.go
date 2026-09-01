@@ -43,34 +43,34 @@ func subdivideTriangleBands(triangle Triangle, breakpoints []float64) []Polygon 
 }
 
 func subdivideTriangleBand(original []Sample, breakpoints []float64, bandIndex int) (Polygon, bool) {
-	points := clipPointsToBand(original, breakpoints, bandIndex)
-	if !validPolygon(points) {
+	samples := clipSamplesToBand(original, breakpoints, bandIndex)
+	if !validPolygon(samples) {
 		return Polygon{}, false
 	}
 
-	value, ok := representativeValue(points, breakpoints, bandIndex)
+	value, ok := representativeValue(samples, breakpoints, bandIndex)
 	if !ok {
 		return Polygon{}, false
 	}
 
 	return Polygon{
-		Points: append([]Sample(nil), points...),
+		Points: append([]Sample(nil), samples...),
 		Value:  value,
 	}, true
 }
 
-func clipPointsToBand(original []Sample, breakpoints []float64, bandIndex int) []Sample {
-	points := append([]Sample(nil), original...)
+func clipSamplesToBand(original []Sample, breakpoints []float64, bandIndex int) []Sample {
+	samples := append([]Sample(nil), original...)
 
 	switch {
 	case bandIndex == 0:
-		return clipBelow(points, breakpoints[0])
+		return clipBelow(samples, breakpoints[0])
 	case bandIndex == len(breakpoints):
-		return clipAtOrAbove(points, breakpoints[bandIndex-1])
+		return clipAtOrAbove(samples, breakpoints[bandIndex-1])
 	default:
-		points = clipAtOrAbove(points, breakpoints[bandIndex-1])
+		samples = clipAtOrAbove(samples, breakpoints[bandIndex-1])
 
-		return clipBelow(points, breakpoints[bandIndex])
+		return clipBelow(samples, breakpoints[bandIndex])
 	}
 }
 
@@ -79,8 +79,8 @@ func validTriangle(triangle Triangle) bool {
 		return false
 	}
 
-	for _, point := range triangle.Points {
-		if !isFiniteSample(point) || !isFinite(point.Value) {
+	for _, sample := range triangle.Points {
+		if !isFiniteSample(sample) || !isFinite(sample.Value) {
 			return false
 		}
 	}
@@ -102,26 +102,26 @@ func validBreakpoints(breakpoints []float64) bool {
 	return true
 }
 
-func clipBelow(points []Sample, breakpoint float64) []Sample {
-	return clipPolygon(points, breakpoint, func(value float64) bool {
+func clipBelow(samples []Sample, breakpoint float64) []Sample {
+	return clipPolygon(samples, breakpoint, func(value float64) bool {
 		return value < breakpoint
 	})
 }
 
-func clipAtOrAbove(points []Sample, breakpoint float64) []Sample {
-	return clipPolygon(points, breakpoint, func(value float64) bool {
+func clipAtOrAbove(samples []Sample, breakpoint float64) []Sample {
+	return clipPolygon(samples, breakpoint, func(value float64) bool {
 		return value >= breakpoint
 	})
 }
 
-func clipPolygon(points []Sample, breakpoint float64, inside func(float64) bool) []Sample {
-	if len(points) == 0 {
+func clipPolygon(samples []Sample, breakpoint float64, inside func(float64) bool) []Sample {
+	if len(samples) == 0 {
 		return nil
 	}
 
-	clipped := make([]Sample, 0, len(points)+1)
-	for index, start := range points {
-		end := points[(index+1)%len(points)]
+	clipped := make([]Sample, 0, len(samples)+1)
+	for index, start := range samples {
+		end := samples[(index+1)%len(samples)]
 		clipped = clipPolygonEdge(clipped, start, end, breakpoint, inside)
 	}
 
@@ -145,13 +145,13 @@ func clipPolygonEdge(
 ) []Sample {
 	switch clipTransitionForEdge(inside(start.Value), inside(end.Value)) {
 	case clipKeepEnd:
-		return appendPoint(clipped, end)
+		return appendSample(clipped, end)
 	case clipKeepIntersection:
-		return appendIntersectionPoint(clipped, start, end, breakpoint)
+		return appendIntersectionSample(clipped, start, end, breakpoint)
 	case clipKeepIntersectionAndEnd:
-		clipped = appendIntersectionPoint(clipped, start, end, breakpoint)
+		clipped = appendIntersectionSample(clipped, start, end, breakpoint)
 
-		return appendPoint(clipped, end)
+		return appendSample(clipped, end)
 	case clipDrop:
 		return clipped
 	default:
@@ -174,37 +174,37 @@ func clipTransitionForEdge(startInside, endInside bool) clipTransition {
 	}
 }
 
-func appendIntersectionPoint(points []Sample, start, end Sample, breakpoint float64) []Sample {
+func appendIntersectionSample(samples []Sample, start, end Sample, breakpoint float64) []Sample {
 	if start.Value == end.Value {
-		return points
+		return samples
 	}
 
-	return appendPoint(points, edgeIntersection(start, end, breakpoint))
+	return appendSample(samples, edgeIntersection(start, end, breakpoint))
 }
 
-func appendPoint(points []Sample, point Sample) []Sample {
-	if len(points) > 0 && samePoint(points[len(points)-1], point) {
-		if point.Original {
-			points[len(points)-1].Original = true
+func appendSample(samples []Sample, sample Sample) []Sample {
+	if len(samples) > 0 && sameSample(samples[len(samples)-1], sample) {
+		if sample.Original {
+			samples[len(samples)-1].Original = true
 		}
 
-		return points
+		return samples
 	}
 
-	return append(points, point)
+	return append(samples, sample)
 }
 
-func normalizePolygon(points []Sample) []Sample {
-	if len(points) == 0 {
+func normalizePolygon(samples []Sample) []Sample {
+	if len(samples) == 0 {
 		return nil
 	}
 
-	normalized := make([]Sample, 0, len(points))
-	for _, point := range points {
-		normalized = appendPoint(normalized, point)
+	normalized := make([]Sample, 0, len(samples))
+	for _, sample := range samples {
+		normalized = appendSample(normalized, sample)
 	}
 
-	if len(normalized) > 1 && samePoint(normalized[0], normalized[len(normalized)-1]) {
+	if len(normalized) > 1 && sameSample(normalized[0], normalized[len(normalized)-1]) {
 		if normalized[len(normalized)-1].Original {
 			normalized[0].Original = true
 		}
@@ -215,7 +215,7 @@ func normalizePolygon(points []Sample) []Sample {
 	return normalized
 }
 
-func samePoint(a, b Sample) bool {
+func sameSample(a, b Sample) bool {
 	return a.Position == b.Position && a.Value == b.Value
 }
 
@@ -232,39 +232,39 @@ func edgeIntersection(start, end Sample, breakpoint float64) Sample {
 	}
 }
 
-func validPolygon(points []Sample) bool {
-	if len(points) < 3 {
+func validPolygon(samples []Sample) bool {
+	if len(samples) < 3 {
 		return false
 	}
 
-	for _, point := range points {
-		if !isFiniteSample(point) || !isFinite(point.Value) {
+	for _, sample := range samples {
+		if !isFiniteSample(sample) || !isFinite(sample.Value) {
 			return false
 		}
 	}
 
-	area := polygonArea(points)
+	area := polygonArea(samples)
 
 	return isFinite(area) && area > 0
 }
 
-func polygonArea(points []Sample) float64 {
+func polygonArea(samples []Sample) float64 {
 	area := 0.0
 
-	for index, point := range points {
-		next := points[(index+1)%len(points)]
-		area += point.Position.X*next.Position.Y - next.Position.X*point.Position.Y
+	for index, sample := range samples {
+		next := samples[(index+1)%len(samples)]
+		area += sample.Position.X*next.Position.Y - next.Position.X*sample.Position.Y
 	}
 
 	return math.Abs(area) / 2
 }
 
-func representativeValue(points []Sample, breakpoints []float64, bandIndex int) (float64, bool) {
+func representativeValue(samples []Sample, breakpoints []float64, bandIndex int) (float64, bool) {
 	// Reuse a fragment vertex value so the representative stays within the
 	// triangle's realized scalar range and follows BucketIndex semantics exactly.
-	for _, point := range points {
-		if bucketIndex(breakpoints, point.Value) == bandIndex {
-			return point.Value, true
+	for _, sample := range samples {
+		if bucketIndex(breakpoints, sample.Value) == bandIndex {
+			return sample.Value, true
 		}
 	}
 
