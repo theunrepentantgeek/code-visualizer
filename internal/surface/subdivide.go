@@ -1,6 +1,10 @@
 package surface
 
-import "math"
+import (
+	"math"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+)
 
 func SubdivideTriangle(triangle Triangle, breakpoints []float64) []Polygon {
 	if !validTriangle(triangle) || !validBreakpoints(breakpoints) {
@@ -16,7 +20,7 @@ func SubdivideTriangle(triangle Triangle, breakpoints []float64) []Polygon {
 
 func wholeTrianglePolygon(triangle Triangle) Polygon {
 	return Polygon{
-		Points: append([]Point(nil), triangle.Points[:]...),
+		Points: append([]Sample(nil), triangle.Points[:]...),
 		Value:  triangle.Value,
 	}
 }
@@ -24,7 +28,7 @@ func wholeTrianglePolygon(triangle Triangle) Polygon {
 func subdivideTriangleBands(triangle Triangle, breakpoints []float64) []Polygon {
 	polygons := make([]Polygon, 0, len(breakpoints)+1)
 
-	original := append([]Point(nil), triangle.Points[:]...)
+	original := append([]Sample(nil), triangle.Points[:]...)
 
 	for bandIndex := range len(breakpoints) + 1 {
 		polygon, ok := subdivideTriangleBand(original, breakpoints, bandIndex)
@@ -38,7 +42,7 @@ func subdivideTriangleBands(triangle Triangle, breakpoints []float64) []Polygon 
 	return polygons
 }
 
-func subdivideTriangleBand(original []Point, breakpoints []float64, bandIndex int) (Polygon, bool) {
+func subdivideTriangleBand(original []Sample, breakpoints []float64, bandIndex int) (Polygon, bool) {
 	points := clipPointsToBand(original, breakpoints, bandIndex)
 	if !validPolygon(points) {
 		return Polygon{}, false
@@ -50,13 +54,13 @@ func subdivideTriangleBand(original []Point, breakpoints []float64, bandIndex in
 	}
 
 	return Polygon{
-		Points: append([]Point(nil), points...),
+		Points: append([]Sample(nil), points...),
 		Value:  value,
 	}, true
 }
 
-func clipPointsToBand(original []Point, breakpoints []float64, bandIndex int) []Point {
-	points := append([]Point(nil), original...)
+func clipPointsToBand(original []Sample, breakpoints []float64, bandIndex int) []Sample {
+	points := append([]Sample(nil), original...)
 
 	switch {
 	case bandIndex == 0:
@@ -76,7 +80,7 @@ func validTriangle(triangle Triangle) bool {
 	}
 
 	for _, point := range triangle.Points {
-		if !isFinitePoint(point) || !isFinite(point.Value) {
+		if !isFiniteSample(point) || !isFinite(point.Value) {
 			return false
 		}
 	}
@@ -98,24 +102,24 @@ func validBreakpoints(breakpoints []float64) bool {
 	return true
 }
 
-func clipBelow(points []Point, breakpoint float64) []Point {
+func clipBelow(points []Sample, breakpoint float64) []Sample {
 	return clipPolygon(points, breakpoint, func(value float64) bool {
 		return value < breakpoint
 	})
 }
 
-func clipAtOrAbove(points []Point, breakpoint float64) []Point {
+func clipAtOrAbove(points []Sample, breakpoint float64) []Sample {
 	return clipPolygon(points, breakpoint, func(value float64) bool {
 		return value >= breakpoint
 	})
 }
 
-func clipPolygon(points []Point, breakpoint float64, inside func(float64) bool) []Point {
+func clipPolygon(points []Sample, breakpoint float64, inside func(float64) bool) []Sample {
 	if len(points) == 0 {
 		return nil
 	}
 
-	clipped := make([]Point, 0, len(points)+1)
+	clipped := make([]Sample, 0, len(points)+1)
 	for index, start := range points {
 		end := points[(index+1)%len(points)]
 		clipped = clipPolygonEdge(clipped, start, end, breakpoint, inside)
@@ -134,11 +138,11 @@ const (
 )
 
 func clipPolygonEdge(
-	clipped []Point,
-	start, end Point,
+	clipped []Sample,
+	start, end Sample,
 	breakpoint float64,
 	inside func(float64) bool,
-) []Point {
+) []Sample {
 	switch clipTransitionForEdge(inside(start.Value), inside(end.Value)) {
 	case clipKeepEnd:
 		return appendPoint(clipped, end)
@@ -170,7 +174,7 @@ func clipTransitionForEdge(startInside, endInside bool) clipTransition {
 	}
 }
 
-func appendIntersectionPoint(points []Point, start, end Point, breakpoint float64) []Point {
+func appendIntersectionPoint(points []Sample, start, end Sample, breakpoint float64) []Sample {
 	if start.Value == end.Value {
 		return points
 	}
@@ -178,7 +182,7 @@ func appendIntersectionPoint(points []Point, start, end Point, breakpoint float6
 	return appendPoint(points, edgeIntersection(start, end, breakpoint))
 }
 
-func appendPoint(points []Point, point Point) []Point {
+func appendPoint(points []Sample, point Sample) []Sample {
 	if len(points) > 0 && samePoint(points[len(points)-1], point) {
 		if point.Original {
 			points[len(points)-1].Original = true
@@ -190,12 +194,12 @@ func appendPoint(points []Point, point Point) []Point {
 	return append(points, point)
 }
 
-func normalizePolygon(points []Point) []Point {
+func normalizePolygon(points []Sample) []Sample {
 	if len(points) == 0 {
 		return nil
 	}
 
-	normalized := make([]Point, 0, len(points))
+	normalized := make([]Sample, 0, len(points))
 	for _, point := range points {
 		normalized = appendPoint(normalized, point)
 	}
@@ -211,28 +215,26 @@ func normalizePolygon(points []Point) []Point {
 	return normalized
 }
 
-func samePoint(a, b Point) bool {
-	return a.X == b.X && a.Y == b.Y && a.Value == b.Value
+func samePoint(a, b Sample) bool {
+	return a.Position == b.Position && a.Value == b.Value
 }
 
-func edgeIntersection(start, end Point, breakpoint float64) Point {
+func edgeIntersection(start, end Sample, breakpoint float64) Sample {
 	fraction := (breakpoint - start.Value) / (end.Value - start.Value)
-	inverseFraction := 1 - fraction
 
-	return Point{
-		X:     inverseFraction*start.X + fraction*end.X,
-		Y:     inverseFraction*start.Y + fraction*end.Y,
-		Value: breakpoint,
+	return Sample{
+		Position: geometry.Lerp(start.Position, end.Position, fraction),
+		Value:    breakpoint,
 	}
 }
 
-func validPolygon(points []Point) bool {
+func validPolygon(points []Sample) bool {
 	if len(points) < 3 {
 		return false
 	}
 
 	for _, point := range points {
-		if !isFinitePoint(point) || !isFinite(point.Value) {
+		if !isFiniteSample(point) || !isFinite(point.Value) {
 			return false
 		}
 	}
@@ -242,18 +244,18 @@ func validPolygon(points []Point) bool {
 	return isFinite(area) && area > 0
 }
 
-func polygonArea(points []Point) float64 {
+func polygonArea(points []Sample) float64 {
 	area := 0.0
 
 	for index, point := range points {
 		next := points[(index+1)%len(points)]
-		area += point.X*next.Y - next.X*point.Y
+		area += point.Position.X*next.Position.Y - next.Position.X*point.Position.Y
 	}
 
 	return math.Abs(area) / 2
 }
 
-func representativeValue(points []Point, breakpoints []float64, bandIndex int) (float64, bool) {
+func representativeValue(points []Sample, breakpoints []float64, bandIndex int) (float64, bool) {
 	// Reuse a fragment vertex value so the representative stays within the
 	// triangle's realized scalar range and follows BucketIndex semantics exactly.
 	for _, point := range points {
