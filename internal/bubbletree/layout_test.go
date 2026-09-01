@@ -21,9 +21,9 @@ func makeFile(name string, size int64) *model.File {
 // parent circle (distance + childRadius <= parentRadius + tolerance).
 func assertContainment(g Gomega, parent BubbleNode) {
 	for _, child := range parent.Children {
-		dist := parent.Position.DistanceTo(child.Position)
-		g.Expect(dist+child.Radius).To(
-			BeNumerically("<=", parent.Radius+1.0),
+		dist := parent.Geometry.Center.DistanceTo(child.Geometry.Center)
+		g.Expect(dist+child.Geometry.Radius).To(
+			BeNumerically("<=", parent.Geometry.Radius+1.0),
 			"child %q must be contained in parent %q", child.Label, parent.Label,
 		)
 		// Recurse into nested directories.
@@ -38,9 +38,9 @@ func assertNoOverlap(g Gomega, parent BubbleNode) {
 		for j := i + 1; j < len(parent.Children); j++ {
 			a := parent.Children[i]
 			b := parent.Children[j]
-			dist := a.Position.DistanceTo(b.Position)
+			dist := a.Geometry.Center.DistanceTo(b.Geometry.Center)
 			g.Expect(dist).To(
-				BeNumerically(">=", a.Radius+b.Radius-1.0),
+				BeNumerically(">=", a.Geometry.Radius+b.Geometry.Radius-1.0),
 				"siblings %q and %q must not overlap", a.Label, b.Label,
 			)
 		}
@@ -68,7 +68,7 @@ func TestLayoutRootEnclosure(t *testing.T) {
 	}
 
 	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
-	g.Expect(node.Radius).To(BeNumerically(">", 0))
+	g.Expect(node.Geometry.Radius).To(BeNumerically(">", 0))
 	g.Expect(node.IsDirectory).To(BeTrue())
 	assertContainment(g, node)
 }
@@ -112,9 +112,9 @@ func TestLayoutRadiusScaling(t *testing.T) {
 	for _, child := range node.Children {
 		switch child.Label {
 		case "small.go":
-			smallRadius = child.Radius
+			smallRadius = child.Geometry.Radius
 		case "large.go":
-			largeRadius = child.Radius
+			largeRadius = child.Geometry.Radius
 		default:
 		}
 	}
@@ -137,17 +137,17 @@ func TestLayoutNestingDepth(t *testing.T) {
 
 	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
 	g.Expect(node.IsDirectory).To(BeTrue())
-	g.Expect(node.Radius).To(BeNumerically(">", 0))
+	g.Expect(node.Geometry.Radius).To(BeNumerically(">", 0))
 	g.Expect(node.Children).To(HaveLen(1))
 
 	subNode := node.Children[0]
 	g.Expect(subNode.IsDirectory).To(BeTrue())
-	g.Expect(subNode.Radius).To(BeNumerically(">", 0))
+	g.Expect(subNode.Geometry.Radius).To(BeNumerically(">", 0))
 	g.Expect(subNode.Children).To(HaveLen(1))
 
 	fileNode := subNode.Children[0]
 	g.Expect(fileNode.IsDirectory).To(BeFalse())
-	g.Expect(fileNode.Radius).To(BeNumerically(">", 0))
+	g.Expect(fileNode.Geometry.Radius).To(BeNumerically(">", 0))
 
 	// Nested containment: sub inside root, file inside sub.
 	assertContainment(g, node)
@@ -219,7 +219,7 @@ func TestLayoutEmptyDirectory(t *testing.T) {
 
 	// Should not panic.
 	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
-	g.Expect(node.Radius).To(BeNumerically(">", 0))
+	g.Expect(node.Geometry.Radius).To(BeNumerically(">", 0))
 	g.Expect(node.IsDirectory).To(BeTrue())
 	g.Expect(node.Children).To(BeEmpty())
 }
@@ -262,8 +262,8 @@ func TestLayoutEmptyLabelledDirectoryReservesMoreSpaceThanFile(t *testing.T) {
 		return
 	}
 
-	g.Expect(dirNode.Radius).To(
-		BeNumerically(">", fileNode.Radius),
+	g.Expect(dirNode.Geometry.Radius).To(
+		BeNumerically(">", fileNode.Geometry.Radius),
 		"empty labelled directory should reserve extra occupied space for its label",
 	)
 }
@@ -281,14 +281,14 @@ func TestLayoutSingleFile(t *testing.T) {
 	g.Expect(node.Children).To(HaveLen(1))
 
 	child := node.Children[0]
-	g.Expect(child.Radius).To(BeNumerically(">", 0))
+	g.Expect(child.Geometry.Radius).To(BeNumerically(">", 0))
 
 	// Single child should be roughly centred in the parent.
-	dist := node.Position.DistanceTo(child.Position)
-	g.Expect(dist).To(BeNumerically("<", node.Radius))
+	dist := node.Geometry.Center.DistanceTo(child.Geometry.Center)
+	g.Expect(dist).To(BeNumerically("<", node.Geometry.Radius))
 
 	// Must be contained.
-	g.Expect(dist + child.Radius).To(BeNumerically("<=", node.Radius+1.0))
+	g.Expect(dist + child.Geometry.Radius).To(BeNumerically("<=", node.Geometry.Radius+1.0))
 }
 
 func TestLayoutLargeFlatDirectory(t *testing.T) {
@@ -329,7 +329,7 @@ func TestLayoutZeroMetric(t *testing.T) {
 	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelAll)
 	g.Expect(node.Children).To(HaveLen(1))
 	// Should have a positive radius (minimum floor), not zero.
-	g.Expect(node.Children[0].Radius).To(BeNumerically(">", 0))
+	g.Expect(node.Children[0].Geometry.Radius).To(BeNumerically(">", 0))
 }
 
 func TestLayoutUniformMetric(t *testing.T) {
@@ -349,11 +349,11 @@ func TestLayoutUniformMetric(t *testing.T) {
 	g.Expect(node.Children).To(HaveLen(3))
 
 	// All file circles should have the same radius.
-	radius0 := node.Children[0].Radius
+	radius0 := node.Children[0].Geometry.Radius
 	g.Expect(radius0).To(BeNumerically(">", 0))
 
 	for _, child := range node.Children[1:] {
-		g.Expect(child.Radius).To(BeNumerically("~", radius0, 0.001))
+		g.Expect(child.Geometry.Radius).To(BeNumerically("~", radius0, 0.001))
 	}
 }
 
@@ -399,7 +399,7 @@ func contentBoundsForTest(root BubbleNode) geometry.Rect {
 }
 
 func addBoundsForTest(node BubbleNode, box geometry.Rect, has bool) (geometry.Rect, bool) {
-	box, has = expandBoundsForDisc(box, has, node.Position, node.Radius)
+	box, has = expandBoundsForDisc(box, has, node.Geometry)
 
 	for _, child := range node.Children {
 		box, has = addBoundsForTest(child, box, has)
@@ -570,13 +570,13 @@ func TestLayoutPathPopulated(t *testing.T) {
 
 // assertLabelBandClear verifies that for labelled directory nodes, all children
 // are packed inside the label-reserved zone: each child must satisfy
-// distance(child, parent) + child.Radius <= parent.Radius - LabelReservation.
+// distance(child, parent) + child.Geometry.Radius <= parent.Geometry.Radius - LabelReservation.
 func assertLabelBandClear(g Gomega, parent BubbleNode) {
 	if parent.ShowLabel && parent.IsDirectory && len(parent.Children) > 0 {
 		for _, child := range parent.Children {
-			dist := parent.Position.DistanceTo(child.Position)
-			g.Expect(dist+child.Radius).To(
-				BeNumerically("<=", parent.Radius-LabelReservation+1.0),
+			dist := parent.Geometry.Center.DistanceTo(child.Geometry.Center)
+			g.Expect(dist+child.Geometry.Radius).To(
+				BeNumerically("<=", parent.Geometry.Radius-LabelReservation+1.0),
 				"child %q intrudes into label band of parent %q",
 				child.Label, parent.Label,
 			)

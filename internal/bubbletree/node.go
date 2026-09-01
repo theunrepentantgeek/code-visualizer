@@ -15,14 +15,13 @@ const (
 )
 
 // BubbleNode is a positioned visual element in the rendered bubble tree.
-// Position is an absolute pixel location after layout; Radius is the circle radius in pixels.
+// Geometry.Center is an absolute pixel location after layout; Geometry.Radius is the circle radius in pixels.
 type BubbleNode struct {
-	Position    geometry.Point // centre position in pixels
-	Radius      float64        // circle radius in pixels
-	Path        string         // model path — stable identifier for colour mapping
-	Label       string         // display name
-	ShowLabel   bool           // whether to render the label for this node
-	IsDirectory bool           // true for directory nodes, false for file nodes
+	Geometry    geometry.Circle // centre position and circle radius in pixels
+	Path        string          // model path — stable identifier for colour mapping
+	Label       string          // display name
+	ShowLabel   bool            // whether to render the label for this node
+	IsDirectory bool            // true for directory nodes, false for file nodes
 	Children    []BubbleNode
 }
 

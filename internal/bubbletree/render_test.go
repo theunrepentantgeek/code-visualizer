@@ -336,7 +336,7 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 		}
 	}
 
-	g.Expect(maxDiscRadius).To(BeNumerically("~", pkgNode.Radius-bubbletree.LabelReservation, 0.001))
+	g.Expect(maxDiscRadius).To(BeNumerically("~", pkgNode.Geometry.Radius-bubbletree.LabelReservation, 0.001))
 
 	var pkgLabelRadius float64
 
@@ -353,7 +353,7 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 		"directory label should sit above the bubble edge, not on top of it",
 	)
 	g.Expect(pkgLabelRadius).To(
-		BeNumerically(">", pkgNode.Radius),
+		BeNumerically(">", pkgNode.Geometry.Radius),
 		"rendered arc should use the reserved label band outside the bubble",
 	)
 }
@@ -439,10 +439,10 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 	g.Expect(cv.Render(out)).To(Succeed())
 
 	img := decodeImage(t, out)
-	minX := int(math.Floor(dirNode.Position.X - dirNode.Radius/2))
-	maxX := int(math.Ceil(dirNode.Position.X + dirNode.Radius/2))
-	minY := int(math.Floor(dirNode.Position.Y - dirNode.Radius))
-	maxY := int(math.Ceil(dirNode.Position.Y - dirNode.Radius + bubbletree.LabelReservation))
+	minX := int(math.Floor(dirNode.Geometry.Center.X - dirNode.Geometry.Radius/2))
+	maxX := int(math.Ceil(dirNode.Geometry.Center.X + dirNode.Geometry.Radius/2))
+	minY := int(math.Floor(dirNode.Geometry.Center.Y - dirNode.Geometry.Radius))
+	maxY := int(math.Ceil(dirNode.Geometry.Center.Y - dirNode.Geometry.Radius + bubbletree.LabelReservation))
 
 	g.Expect(hasNonWhitePixelInRect(img, minX, minY, maxX, maxY)).To(
 		BeTrue(),
