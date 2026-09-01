@@ -59,7 +59,7 @@ func encloses(outer, inner enclosure) bool {
 	outerPosition := geometry.Point{X: outer.x, Y: outer.y}
 	innerPosition := geometry.Point{X: inner.x, Y: inner.y}
 
-	return outerPosition.DistanceSquaredTo(innerPosition) <= rhs*rhs
+	return outerPosition.VectorTo(innerPosition).LengthSquared() <= rhs*rhs
 }
 
 func trivialEnclosing(boundary []enclosure) enclosure {
@@ -81,6 +81,7 @@ func enclosingTwo(a, b enclosure) enclosure {
 	aPosition := geometry.Point{X: a.x, Y: a.y}
 	bPosition := geometry.Point{X: b.x, Y: b.y}
 	delta := aPosition.VectorTo(bPosition)
+	// Keep this operation sequence for bit-stable output; Length uses math.Hypot.
 	d := math.Sqrt(delta.LengthSquared())
 
 	// One circle contains the other.

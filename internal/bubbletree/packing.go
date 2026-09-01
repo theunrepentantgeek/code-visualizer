@@ -75,7 +75,7 @@ func placeInitialCircles(circles []BubbleNode) {
 	p1, p2, ok := tangentPositions(circles[2].Radius, circles[0], circles[1])
 	if ok {
 		origin := geometry.Point{}
-		if p1.DistanceSquaredTo(origin) <= p2.DistanceSquaredTo(origin) {
+		if p1.VectorTo(origin).LengthSquared() <= p2.VectorTo(origin).LengthSquared() {
 			circles[2].Position = p1
 		} else {
 			circles[2].Position = p2
@@ -112,7 +112,7 @@ func findBestPlacement(circles []BubbleNode, i int, chain []frontNode) (geometry
 	for {
 		pos, ok := bestTangentPosition(circles, i, cur)
 		if ok {
-			d := pos.DistanceSquaredTo(origin)
+			d := pos.VectorTo(origin).LengthSquared()
 			if d < bestDist {
 				bestDist = d
 				bestPos = pos
@@ -147,7 +147,7 @@ func bestTangentPosition(circles []BubbleNode, i int, cur *frontNode) (geometry.
 
 	for _, pos := range [2]geometry.Point{tp1, tp2} {
 		if !anyOverlap(pos, circles[i].Radius, circles[:i], a.idx, b.idx) {
-			d := pos.DistanceSquaredTo(origin)
+			d := pos.VectorTo(origin).LengthSquared()
 			if d < bestDist {
 				bestDist = d
 				best = pos
@@ -166,6 +166,7 @@ func tangentPositions(rc float64, a, b BubbleNode) (p1, p2 geometry.Point, ok bo
 	db := b.Radius + rc + siblingPadding
 
 	delta := a.Position.VectorTo(b.Position)
+	// Keep this operation sequence for bit-stable output; Length uses math.Hypot.
 	d := math.Sqrt(delta.LengthSquared())
 
 	if d < 1e-10 || d > da+db+1e-6 || d < math.Abs(da-db)-1e-6 {
@@ -216,8 +217,9 @@ func placeFallback(circles []BubbleNode, i int) {
 	origin := geometry.Point{}
 
 	for j := range i {
-		delta := origin.VectorTo(circles[j].Position)
-		d := math.Sqrt(delta.LengthSquared()) + circles[j].Radius
+		fromOrigin := origin.VectorTo(circles[j].Position)
+		// Keep this operation sequence for bit-stable output; Length uses math.Hypot.
+		d := math.Sqrt(fromOrigin.LengthSquared()) + circles[j].Radius
 
 		if d > maxDist {
 			maxDist = d
