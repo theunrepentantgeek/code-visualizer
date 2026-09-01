@@ -1,10 +1,11 @@
 package bubbletree
 
 import (
-	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // ---------------------------------------------------------------------------
@@ -16,21 +17,21 @@ func TestTangentPositions_SymmetricCircles(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Two equal circles 20 apart (centre-to-centre), new circle radius 5.
-	a := BubbleNode{X: 0, Y: 0, Radius: 5}
-	b := BubbleNode{X: 20, Y: 0, Radius: 5}
+	a := BubbleNode{Position: geometry.Point{X: 0, Y: 0}, Radius: 5}
+	b := BubbleNode{Position: geometry.Point{X: 20, Y: 0}, Radius: 5}
 
 	p1, p2, ok := tangentPositions(5, a, b)
 
 	g.Expect(ok).To(BeTrue())
 
 	// Both candidate positions must be at the correct tangent distances from a and b.
-	expectDist := func(p point, center BubbleNode, r float64) {
+	expectDist := func(p geometry.Point, center BubbleNode, r float64) {
 		t.Helper()
 
 		da := a.Radius + r + siblingPadding
 		db := center.Radius + r + siblingPadding
-		distA := math.Sqrt((p.x-a.X)*(p.x-a.X) + (p.y-a.Y)*(p.y-a.Y))
-		distCenter := math.Sqrt((p.x-center.X)*(p.x-center.X) + (p.y-center.Y)*(p.y-center.Y))
+		distA := p.DistanceTo(a.Position)
+		distCenter := p.DistanceTo(center.Position)
 
 		g.Expect(distA).To(BeNumerically("~", da, 1e-9))
 		g.Expect(distCenter).To(BeNumerically("~", db, 1e-9))
@@ -40,16 +41,16 @@ func TestTangentPositions_SymmetricCircles(t *testing.T) {
 	expectDist(p2, b, 5)
 
 	// p1 and p2 are reflections across the x-axis.
-	g.Expect(p1.x).To(BeNumerically("~", p2.x, 1e-9))
-	g.Expect(p1.y).To(BeNumerically("~", -p2.y, 1e-9))
+	g.Expect(p1.X).To(BeNumerically("~", p2.X, 1e-9))
+	g.Expect(p1.Y).To(BeNumerically("~", -p2.Y, 1e-9))
 }
 
 func TestTangentPositions_CoincidentCentres_ReturnsFalse(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	a := BubbleNode{X: 0, Y: 0, Radius: 5}
-	b := BubbleNode{X: 0, Y: 0, Radius: 5}
+	a := BubbleNode{Position: geometry.Point{X: 0, Y: 0}, Radius: 5}
+	b := BubbleNode{Position: geometry.Point{X: 0, Y: 0}, Radius: 5}
 
 	_, _, ok := tangentPositions(5, a, b)
 
@@ -61,8 +62,8 @@ func TestTangentPositions_TooFarApart_ReturnsFalse(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Circles with radius 1, 1000 units apart — far exceeds tangent reach.
-	a := BubbleNode{X: 0, Y: 0, Radius: 1}
-	b := BubbleNode{X: 1000, Y: 0, Radius: 1}
+	a := BubbleNode{Position: geometry.Point{X: 0, Y: 0}, Radius: 1}
+	b := BubbleNode{Position: geometry.Point{X: 1000, Y: 0}, Radius: 1}
 
 	_, _, ok := tangentPositions(1, a, b)
 
@@ -74,8 +75,8 @@ func TestTangentPositions_OneInsideOther_ReturnsFalse(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Circle b is entirely inside circle a; no external tangent circle fits.
-	a := BubbleNode{X: 0, Y: 0, Radius: 50}
-	b := BubbleNode{X: 1, Y: 0, Radius: 1}
+	a := BubbleNode{Position: geometry.Point{X: 0, Y: 0}, Radius: 50}
+	b := BubbleNode{Position: geometry.Point{X: 1, Y: 0}, Radius: 1}
 
 	_, _, ok := tangentPositions(1, a, b)
 
@@ -90,7 +91,7 @@ func TestAnyOverlap_NoCircles(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(anyOverlap(point{0, 0}, 5, nil, -1, -1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, nil, -1, -1)).To(BeFalse())
 }
 
 func TestAnyOverlap_FarAway_NoOverlap(t *testing.T) {
@@ -98,11 +99,11 @@ func TestAnyOverlap_FarAway_NoOverlap(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	placed := []BubbleNode{
-		{X: 0, Y: 0, Radius: 5},
-		{X: 100, Y: 0, Radius: 5},
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5},
+		{Position: geometry.Point{X: 100, Y: 0}, Radius: 5},
 	}
 
-	g.Expect(anyOverlap(point{0, 50}, 5, placed, -1, -1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.Point{0, 50}, 5, placed, -1, -1)).To(BeFalse())
 }
 
 func TestAnyOverlap_DirectOverlap(t *testing.T) {
@@ -110,11 +111,11 @@ func TestAnyOverlap_DirectOverlap(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	placed := []BubbleNode{
-		{X: 0, Y: 0, Radius: 5},
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5},
 	}
 
 	// Exactly on top of circle 0.
-	g.Expect(anyOverlap(point{0, 0}, 5, placed, -1, -1)).To(BeTrue())
+	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, placed, -1, -1)).To(BeTrue())
 }
 
 func TestAnyOverlap_SkipsAnchorIndices(t *testing.T) {
@@ -123,11 +124,11 @@ func TestAnyOverlap_SkipsAnchorIndices(t *testing.T) {
 
 	// Two circles at the same position — would overlap, but both are skipped.
 	placed := []BubbleNode{
-		{X: 0, Y: 0, Radius: 5},
-		{X: 0, Y: 0, Radius: 5},
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5},
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5},
 	}
 
-	g.Expect(anyOverlap(point{0, 0}, 5, placed, 0, 1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, placed, 0, 1)).To(BeFalse())
 }
 
 func TestAnyOverlap_SkipsOneAnchor_OverlapsOther(t *testing.T) {
@@ -135,11 +136,11 @@ func TestAnyOverlap_SkipsOneAnchor_OverlapsOther(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	placed := []BubbleNode{
-		{X: 0, Y: 0, Radius: 5}, // skipped (anchor 0)
-		{X: 0, Y: 0, Radius: 5}, // not skipped — overlaps
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5}, // skipped (anchor 0)
+		{Position: geometry.Point{X: 0, Y: 0}, Radius: 5}, // not skipped — overlaps
 	}
 
-	g.Expect(anyOverlap(point{0, 0}, 5, placed, 0, -1)).To(BeTrue())
+	g.Expect(anyOverlap(geometry.Point{0, 0}, 5, placed, 0, -1)).To(BeTrue())
 }
 
 // ---------------------------------------------------------------------------
@@ -160,8 +161,8 @@ func TestPackCircles_SingleCircle_AtOrigin(t *testing.T) {
 	circles := []BubbleNode{{Radius: 10}}
 	packCircles(circles)
 
-	g.Expect(circles[0].X).To(Equal(0.0))
-	g.Expect(circles[0].Y).To(Equal(0.0))
+	g.Expect(circles[0].Position.X).To(Equal(0.0))
+	g.Expect(circles[0].Position.Y).To(Equal(0.0))
 }
 
 func TestPackCircles_TwoCircles_AdjacentOnXAxis(t *testing.T) {
@@ -171,12 +172,12 @@ func TestPackCircles_TwoCircles_AdjacentOnXAxis(t *testing.T) {
 	circles := []BubbleNode{{Radius: 10}, {Radius: 10}}
 	packCircles(circles)
 
-	g.Expect(circles[0].X).To(Equal(0.0))
-	g.Expect(circles[0].Y).To(Equal(0.0))
+	g.Expect(circles[0].Position.X).To(Equal(0.0))
+	g.Expect(circles[0].Position.Y).To(Equal(0.0))
 
 	want := circles[0].Radius + circles[1].Radius + siblingPadding
-	g.Expect(circles[1].X).To(BeNumerically("~", want, 1e-9))
-	g.Expect(circles[1].Y).To(Equal(0.0))
+	g.Expect(circles[1].Position.X).To(BeNumerically("~", want, 1e-9))
+	g.Expect(circles[1].Position.Y).To(Equal(0.0))
 }
 
 func TestPackCircles_ThreeCircles_NoOverlap(t *testing.T) {
@@ -246,15 +247,13 @@ func assertNoOverlaps(t *testing.T, g *GomegaWithT, circles []BubbleNode) {
 
 	for i := range circles {
 		for j := i + 1; j < len(circles); j++ {
-			dx := circles[i].X - circles[j].X
-			dy := circles[i].Y - circles[j].Y
-			dist := math.Sqrt(dx*dx + dy*dy)
+			dist := circles[i].Position.DistanceTo(circles[j].Position)
 			minDist := circles[i].Radius + circles[j].Radius + siblingPadding - 1e-6
 			g.Expect(dist).To(
 				BeNumerically(">=", minDist),
 				"circles %d (r=%.1f at %.1f,%.1f) and %d (r=%.1f at %.1f,%.1f) overlap",
-				i, circles[i].Radius, circles[i].X, circles[i].Y,
-				j, circles[j].Radius, circles[j].X, circles[j].Y,
+				i, circles[i].Radius, circles[i].Position.X, circles[i].Position.Y,
+				j, circles[j].Radius, circles[j].Position.X, circles[j].Position.Y,
 			)
 		}
 	}

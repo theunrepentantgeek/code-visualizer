@@ -13,6 +13,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
@@ -128,8 +130,8 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 			{FillValue: 2, BorderValue: 2},
 		},
 		Layout: spiral.SpiralLayout{Nodes: []spiral.SpiralNode{
-			{X: 50, Y: 50, DiscRadius: 20},
-			{X: 100, Y: 100},
+			{Position: geometry.Point{X: 50, Y: 50}, DiscRadius: 20},
+			{Position: geometry.Point{X: 100, Y: 100}},
 		}},
 		Inks: spiral.Inks{
 			Fill:   inks.FixedInk(black),

@@ -235,49 +235,53 @@ func (lb *legendBuilder) addEntry(
 // swatchCursor tracks the position of the next swatch in a legend strip.
 // For vertical orientation it advances along Y; for horizontal, along X.
 type swatchCursor struct {
-	x, y       float64
+	position   geometry.Point
 	horizontal bool
 	scale      float64
 }
 
 // swatchPos returns the top-left corner of the current swatch.
-func (c *swatchCursor) swatchPos() (x, y float64) { return c.x, c.y }
+func (c *swatchCursor) swatchPos() geometry.Point { return c.position }
 
 // numericLabelPos returns the position and anchor for a numeric swatch label.
 // Vertical: to the right of the swatch. Horizontal: below the swatch.
-func (c *swatchCursor) numericLabelPos() (x, y float64, anchor canvas.TextAnchor) {
+func (c *swatchCursor) numericLabelPos() (geometry.Point, canvas.TextAnchor) {
 	if c.horizontal {
-		return c.x + c.scale*model.SwatchSize,
-			c.y + c.scale*(model.SwatchSize+model.LegendLineHeight),
-			canvas.AnchorMiddle
+		return c.position.Translate(geometry.Vector{
+			X: c.scale * model.SwatchSize,
+			Y: c.scale * (model.SwatchSize + model.LegendLineHeight),
+		}), canvas.AnchorMiddle
 	}
 
-	return c.x + c.scale*(model.SwatchSize+model.LabelGap),
-		c.y + c.scale*model.SwatchSize,
-		canvas.AnchorStart
+	return c.position.Translate(geometry.Vector{
+		X: c.scale * (model.SwatchSize + model.LabelGap),
+		Y: c.scale * model.SwatchSize,
+	}), canvas.AnchorStart
 }
 
 // catLabelPos returns the position and anchor for a categorical swatch label.
 // Vertical: to the right, vertically centred on the swatch.
 // Horizontal: below the swatch, centred horizontally.
-func (c *swatchCursor) catLabelPos() (x, y float64, anchor canvas.TextAnchor) {
+func (c *swatchCursor) catLabelPos() (geometry.Point, canvas.TextAnchor) {
 	if c.horizontal {
-		return c.x + c.scale*model.SwatchSize/2,
-			c.y + c.scale*(model.SwatchSize+model.LegendLineHeight),
-			canvas.AnchorMiddle
+		return c.position.Translate(geometry.Vector{
+			X: c.scale * model.SwatchSize / 2,
+			Y: c.scale * (model.SwatchSize + model.LegendLineHeight),
+		}), canvas.AnchorMiddle
 	}
 
-	return c.x + c.scale*(model.SwatchSize+model.LabelGap),
-		c.y + c.scale*model.SwatchSize/2,
-		canvas.AnchorStart
+	return c.position.Translate(geometry.Vector{
+		X: c.scale * (model.SwatchSize + model.LabelGap),
+		Y: c.scale * model.SwatchSize / 2,
+	}), canvas.AnchorStart
 }
 
 // advance moves the cursor by delta along the main axis.
 func (c *swatchCursor) advance(delta float64) {
 	if c.horizontal {
-		c.x += delta
+		c.position = c.position.Translate(geometry.Vector{X: delta})
 	} else {
-		c.y += delta
+		c.position = c.position.Translate(geometry.Vector{Y: delta})
 	}
 }
 
@@ -289,7 +293,7 @@ func (c *swatchCursor) endY(startY float64) float64 {
 		return startY + c.scale*(model.SwatchSize+model.LegendLineHeight+model.LabelGap)
 	}
 
-	return c.y
+	return c.position.Y
 }
 
 func (lb *legendBuilder) addNumericSwatches(
@@ -304,19 +308,26 @@ func (lb *legendBuilder) addNumericSwatches(
 		step += lb.scaleValue(model.BorderSwatchOutlineWidth)
 	}
 
-	cur := swatchCursor{x: x, y: y, horizontal: orientation == model.LegendOrientationHorizontal, scale: lb.scale}
+	cur := swatchCursor{
+		position:   geometry.Point{X: x, Y: y},
+		horizontal: orientation == model.LegendOrientationHorizontal,
+		scale:      lb.scale,
+	}
 
 	for _, sw := range entry.Swatches {
-		sx, sy := cur.swatchPos()
+		position := cur.swatchPos()
 		if entry.IsBorder {
-			lb.addOutlineSwatch(sx, sy, sw.Colour)
+			lb.addOutlineSwatch(position.X, position.Y, sw.Colour)
 		} else {
-			lb.addSwatch(sx, sy, sw.Colour)
+			lb.addSwatch(position.X, position.Y, sw.Colour)
 		}
 
 		if sw.Label != "" {
-			lx, ly, anchor := cur.numericLabelPos()
-			lb.addTextShape(lx, ly, sw.Label, lb.labelInk, lb.scaleValue(model.LegendFontSize), anchor)
+			labelPosition, anchor := cur.numericLabelPos()
+			lb.addTextShape(
+				labelPosition.X, labelPosition.Y, sw.Label, lb.labelInk,
+				lb.scaleValue(model.LegendFontSize), anchor,
+			)
 		}
 
 		cur.advance(step)
@@ -337,18 +348,25 @@ func (lb *legendBuilder) addCategorySwatches(
 		gap = lb.scaleValue(model.BorderSwatchOutlineWidth)
 	}
 
-	cur := swatchCursor{x: x, y: y, horizontal: orientation == model.LegendOrientationHorizontal, scale: lb.scale}
+	cur := swatchCursor{
+		position:   geometry.Point{X: x, Y: y},
+		horizontal: orientation == model.LegendOrientationHorizontal,
+		scale:      lb.scale,
+	}
 
 	for _, sw := range entry.Swatches {
-		sx, sy := cur.swatchPos()
+		position := cur.swatchPos()
 		if entry.IsBorder {
-			lb.addOutlineSwatch(sx, sy, sw.Colour)
+			lb.addOutlineSwatch(position.X, position.Y, sw.Colour)
 		} else {
-			lb.addSwatch(sx, sy, sw.Colour)
+			lb.addSwatch(position.X, position.Y, sw.Colour)
 		}
 
-		lx, ly, anchor := cur.catLabelPos()
-		lb.addTextShape(lx, ly, sw.Label, lb.labelInk, lb.scaleValue(model.LegendFontSize), anchor)
+		labelPosition, anchor := cur.catLabelPos()
+		lb.addTextShape(
+			labelPosition.X, labelPosition.Y, sw.Label, lb.labelInk,
+			lb.scaleValue(model.LegendFontSize), anchor,
+		)
 
 		if cur.horizontal {
 			cur.advance(lb.scaleValue(legendlayout.MeasureCatSwatchColumnWidth(sw.Label)))

@@ -214,7 +214,7 @@ func TestRenderToCanvas_InsetsMetricBordersInsideAdjacentSectors(t *testing.T) {
 	rightBorder := polygons[3].Points
 	leftEnd := leftBorder[len(leftBorder)/2-1]
 	rightStart := rightBorder[0]
-	g.Expect(math.Hypot(leftEnd.X-rightStart.X, leftEnd.Y-rightStart.Y)).
+	g.Expect(leftEnd.DistanceTo(rightStart)).
 		To(BeNumerically("~", donutSectorBorderWidth, 0.000001))
 }
 
@@ -315,9 +315,9 @@ func TestInsetSectorPoints_KeepsBorderStrokeInsideSector(t *testing.T) {
 		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
 	}
 
-	g.Expect(math.Hypot(points[0].X-center.X, points[0].Y-center.Y)).
+	g.Expect(center.DistanceTo(points[0])).
 		To(BeNumerically("~", node.OuterRadius-halfWidth, 0.000001))
-	g.Expect(math.Hypot(points[outerCount].X-center.X, points[outerCount].Y-center.Y)).
+	g.Expect(center.DistanceTo(points[outerCount])).
 		To(BeNumerically("~", node.InnerRadius+halfWidth, 0.000001))
 	g.Expect(math.Abs(points[0].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
 	g.Expect(math.Abs(points[len(points)-2].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
@@ -339,10 +339,7 @@ func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
 		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
 	}
 
-	g.Expect(math.Hypot(
-		points[0].X-points[sectorSteps(node.SweepAngle)].X,
-		points[0].Y-points[sectorSteps(node.SweepAngle)].Y,
-	)).To(BeNumerically(">", 0))
+	g.Expect(points[0].DistanceTo(points[sectorSteps(node.SweepAngle)])).To(BeNumerically(">", 0))
 }
 
 func TestInsetSectorPoints_ScalesNarrowAdjacentBordersToRemainDisjoint(t *testing.T) {
@@ -365,15 +362,12 @@ func TestInsetSectorPoints_ScalesNarrowAdjacentBordersToRemainDisjoint(t *testin
 	rightStart := rightPoints[0]
 
 	g.Expect(borderWidth).To(BeNumerically("<", donutSectorBorderWidth))
-	g.Expect(math.Hypot(leftEnd.X-rightStart.X, leftEnd.Y-rightStart.Y)).
+	g.Expect(leftEnd.DistanceTo(rightStart)).
 		To(BeNumerically("~", borderWidth, 0.000001))
 
 	leftStartInner := leftPoints[len(leftPoints)-2]
 	leftEndInner := leftPoints[sectorSteps(left.SweepAngle)+1]
-	g.Expect(math.Hypot(
-		leftStartInner.X-leftEndInner.X,
-		leftStartInner.Y-leftEndInner.Y,
-	)).To(BeNumerically(">=", borderWidth-0.000001))
+	g.Expect(leftStartInner.DistanceTo(leftEndInner)).To(BeNumerically(">=", borderWidth-0.000001))
 }
 
 func TestSectorBorderWidth_PreservesFullCircleBorders(t *testing.T) {

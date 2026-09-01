@@ -441,10 +441,10 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 	g.Expect(cv.Render(out)).To(Succeed())
 
 	img := decodeImage(t, out)
-	minX := int(math.Floor(dirNode.X - dirNode.Radius/2))
-	maxX := int(math.Ceil(dirNode.X + dirNode.Radius/2))
-	minY := int(math.Floor(dirNode.Y - dirNode.Radius))
-	maxY := int(math.Ceil(dirNode.Y - dirNode.Radius + bubbletree.LabelReservation))
+	minX := int(math.Floor(dirNode.Position.X - dirNode.Radius/2))
+	maxX := int(math.Ceil(dirNode.Position.X + dirNode.Radius/2))
+	minY := int(math.Floor(dirNode.Position.Y - dirNode.Radius))
+	maxY := int(math.Ceil(dirNode.Position.Y - dirNode.Radius + bubbletree.LabelReservation))
 
 	g.Expect(hasNonWhitePixelInRect(img, minX, minY, maxX, maxY)).To(
 		BeTrue(),

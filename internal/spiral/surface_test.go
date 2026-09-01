@@ -422,9 +422,9 @@ func TestRenderStage_RendersSurfaceFor162PointSpiral(t *testing.T) {
 func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket) {
 	layout := spiral.SpiralLayout{
 		Nodes: []spiral.SpiralNode{
-			{X: 20, Y: 30, DiscRadius: 4},
-			{X: 40, Y: 50, DiscRadius: 4},
-			{X: 60, Y: 70, DiscRadius: 4},
+			{Position: geometry.Point{X: 20, Y: 30}, DiscRadius: 4},
+			{Position: geometry.Point{X: 40, Y: 50}, DiscRadius: 4},
+			{Position: geometry.Point{X: 60, Y: 70}, DiscRadius: 4},
 		},
 	}
 	buckets := []spiral.TimeBucket{
