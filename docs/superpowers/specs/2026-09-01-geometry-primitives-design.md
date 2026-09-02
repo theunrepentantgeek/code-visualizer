@@ -44,6 +44,14 @@ type Vector struct {
 }
 ```
 
+Factories and constants:
+
+```go
+var ZeroVector = Vector{}
+func NewVector(x, y float64) Vector
+func NewRadialVector(angle, length float64) Vector
+```
+
 Methods:
 
 ```go
@@ -56,6 +64,11 @@ func (v Vector) Length() float64
 func (v Vector) LengthSquared() float64
 func (v Vector) Unit() (Vector, bool)
 ```
+
+`ZeroVector` is the additive identity, exported as a `var` because structs
+cannot be declared `const`. `NewRadialVector` converts polar coordinates
+(angle in radians, length) to Cartesian components using the same convention
+as radial-tree layout: `{X: length * cos(angle), Y: length * sin(angle)}`.
 
 `Valid` requires finite components. `Unit` returns false for a zero or invalid
 vector.
