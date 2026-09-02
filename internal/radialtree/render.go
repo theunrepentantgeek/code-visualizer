@@ -109,7 +109,7 @@ func collectDiscs(
 	return collectDiscsFromCenter(node, dir, geometry.Point{X: cx, Y: cy})
 }
 
-// collectDiscs recursively gathers all nodes with a positive DiscRadius,
+// collectDiscsFromCenter recursively gathers all nodes with a positive DiscRadius,
 // along with their corresponding model.File (nil for directories).
 // INVARIANT: node.Children are ordered files-first, then subdirectories.
 func collectDiscsFromCenter(
@@ -146,7 +146,7 @@ func collectDiscsFromCenter(
 	return entries
 }
 
-// collectDiscsLeaf collects a single file node (leaf).
+// collectDiscsLeaf preserves the scalar helper contract for existing callers.
 func collectDiscsLeaf(
 	node *RadialNode,
 	file *model.File,
@@ -155,6 +155,7 @@ func collectDiscsLeaf(
 	return collectDiscsLeafFromCenter(node, file, geometry.Point{X: cx, Y: cy})
 }
 
+// collectDiscsLeafFromCenter collects a single file node (leaf).
 func collectDiscsLeafFromCenter(
 	node *RadialNode,
 	file *model.File,
