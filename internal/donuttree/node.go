@@ -1,7 +1,7 @@
 package donuttree
 
 import (
-	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -24,7 +24,7 @@ func (n DonutNode) EndAngle() float64 {
 // LayoutResult contains the central root anchor and its directory sectors.
 type LayoutResult struct {
 	RootName     string
-	Center       canvasmodel.Position
+	Center       geometry.Point
 	AnchorRadius float64
 	Children     []DonutNode
 }

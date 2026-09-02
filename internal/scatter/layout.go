@@ -22,8 +22,7 @@ const (
 type ScatterPoint struct {
 	File      *model.File
 	Directory *model.Directory
-	X         float64
-	Y         float64
+	Position  geometry.Point
 	Radius    float64
 	Label     string
 }
@@ -60,10 +59,12 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 		layout.Points = append(layout.Points, ScatterPoint{
 			File:      point.File,
 			Directory: point.Directory,
-			X:         positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
-			Y:         positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
-			Radius:    scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
-			Label:     point.Name(),
+			Position: geometry.NewPoint(
+				positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
+				positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
+			),
+			Radius: scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
+			Label:  point.Name(),
 		})
 	}
 
@@ -86,8 +87,7 @@ func OffsetLayout(layout *ScatterLayout, offset geometry.Vector) {
 	layout.YAxis.Offset(offset.Y)
 
 	for i := range layout.Points {
-		layout.Points[i].X += offset.X
-		layout.Points[i].Y += offset.Y
+		layout.Points[i].Position = layout.Points[i].Position.Translate(offset)
 	}
 }
 

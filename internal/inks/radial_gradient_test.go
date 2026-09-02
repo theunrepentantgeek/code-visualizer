@@ -31,7 +31,7 @@ func TestRadialGradientInk_Fill_ReturnsRadialGradientFill(t *testing.T) {
 	inner := inks.FixedInk(white)
 	gradient := inks.NewRadialGradientInk(inner)
 
-	focus := model.Point{X: 0.35, Y: 0.35}
+	focus := model.GradientPoint{X: 0.35, Y: 0.35}
 	fill := gradient.Fill(inks.MetricValue{}, focus)
 
 	rgf, ok := fill.(model.RadialGradientFill)
@@ -53,7 +53,7 @@ func TestRadialGradientInk_Fill_DarkensBy40Percent(t *testing.T) {
 	inner := inks.FixedInk(base)
 	gradient := inks.NewRadialGradientInk(inner)
 
-	fill := gradient.Fill(inks.MetricValue{}, model.Point{X: 0.5, Y: 0.5})
+	fill := gradient.Fill(inks.MetricValue{}, model.GradientPoint{X: 0.5, Y: 0.5})
 	rgf, ok := fill.(model.RadialGradientFill)
 	g.Expect(ok).To(BeTrue())
 
@@ -71,7 +71,7 @@ func TestRadialGradientInk_Fill_PreservesAlpha(t *testing.T) {
 	inner := inks.FixedInk(base)
 	gradient := inks.NewRadialGradientInk(inner)
 
-	fill := gradient.Fill(inks.MetricValue{}, model.Point{X: 0.5, Y: 0.5})
+	fill := gradient.Fill(inks.MetricValue{}, model.GradientPoint{X: 0.5, Y: 0.5})
 	rgf, ok := fill.(model.RadialGradientFill)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(rgf.Center.A).To(Equal(base.A))

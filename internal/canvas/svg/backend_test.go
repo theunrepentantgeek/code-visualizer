@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestSVGBackend_DrawRectangle_ProducesValidSVG(t *testing.T) {
@@ -21,7 +22,7 @@ func TestSVGBackend_DrawRectangle_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		model.Position{X: 10, Y: 10},
+		geometry.Point{X: 10, Y: 10},
 		model.Size{Width: 80, Height: 60},
 		model.SolidFill{Color: red}, model.SolidFill{Color: blk}, 2.0,
 	)
@@ -44,25 +45,25 @@ func TestSVGBackend_UsesThreeDecimalPrecisionAcrossPrimitives(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawRectangle(
-		model.Position{X: 10.1234, Y: 20.5678},
+		geometry.Point{X: 10.1234, Y: 20.5678},
 		model.Size{Width: 30.1234, Height: 40.5678},
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 10, G: 20, B: 30, A: 255},
 			Edge:   color.RGBA{R: 40, G: 50, B: 60, A: 255},
-			Focus:  model.Point{X: 0.333333, Y: 0.666667},
+			Focus:  model.GradientPoint{X: 0.333333, Y: 0.666667},
 		},
 		model.SolidFill{Color: blk},
 		0.4567,
 	)
 	b.DrawDisc(
-		model.Position{X: 50.1234, Y: 60.5678},
+		geometry.Point{X: 50.1234, Y: 60.5678},
 		7.8912,
 		model.SolidFill{Color: color.RGBA{R: 200, G: 100, B: 50, A: 255}},
 		model.SolidFill{Color: blk},
 		0.4567,
 	)
 	b.DrawPolygon(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 1.2346, Y: 2.3456},
 			{X: 3.4567, Y: 4.5678},
 			{X: 5.6789, Y: 6.7891},
@@ -72,10 +73,10 @@ func TestSVGBackend_UsesThreeDecimalPrecisionAcrossPrimitives(t *testing.T) {
 		0.4567,
 	)
 	filledPath, ok := b.(interface {
-		DrawFilledPath(loops [][]model.Position, fill color.RGBA)
+		DrawFilledPath(loops [][]geometry.Point, fill color.RGBA)
 	})
 	g.Expect(ok).To(BeTrue())
-	filledPath.DrawFilledPath([][]model.Position{
+	filledPath.DrawFilledPath([][]geometry.Point{
 		{
 			{X: 7.1234, Y: 8.2345},
 			{X: 9.3456, Y: 10.4567},
@@ -83,13 +84,13 @@ func TestSVGBackend_UsesThreeDecimalPrecisionAcrossPrimitives(t *testing.T) {
 		},
 	}, color.RGBA{R: 9, G: 8, B: 7, A: 255})
 	b.DrawLine(
-		model.Position{X: 12.3456, Y: 13.4567},
-		model.Position{X: 14.5678, Y: 15.6789},
+		geometry.Point{X: 12.3456, Y: 13.4567},
+		geometry.Point{X: 14.5678, Y: 15.6789},
 		color.RGBA{R: 1, G: 2, B: 3, A: 128},
 		0.4567,
 	)
 	b.DrawPath(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 16.1234, Y: 17.2345},
 			{X: 18.3456, Y: 19.4567},
 			{X: 20.5678, Y: 21.6789},
@@ -98,12 +99,12 @@ func TestSVGBackend_UsesThreeDecimalPrecisionAcrossPrimitives(t *testing.T) {
 		0.4567,
 	)
 	b.DrawText(
-		model.Position{X: 22.1234, Y: 23.2345},
+		geometry.Point{X: 22.1234, Y: 23.2345},
 		"rotated", blk, 12.3456,
 		model.AnchorMiddle, 0.44879895,
 	)
 	b.DrawArcText(
-		model.Position{X: 100.1234, Y: 200.5678},
+		geometry.Point{X: 100.1234, Y: 200.5678},
 		40.9876,
 		"arc", blk, 9.8765,
 	)
@@ -141,7 +142,7 @@ func TestSVGBackend_DrawDisc_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawDisc(
-		model.Position{X: 100, Y: 100},
+		geometry.Point{X: 100, Y: 100},
 		50, model.SolidFill{Color: blue}, model.SolidFill{Color: blk}, 1.0,
 	)
 
@@ -161,7 +162,7 @@ func TestSVGBackend_DrawText_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawText(
-		model.Position{X: 100, Y: 50},
+		geometry.Point{X: 100, Y: 50},
 		"hello", blk, 14.0,
 		model.AnchorMiddle, 0,
 	)
@@ -183,8 +184,8 @@ func TestSVGBackend_DrawLine_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawLine(
-		model.Position{X: 0, Y: 0},
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 0, Y: 0},
+		geometry.Point{X: 200, Y: 200},
 		blk, 2.0,
 	)
 
@@ -204,7 +205,7 @@ func TestSVGBackend_DrawPath_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawPath(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 10, Y: 10},
 			{X: 100, Y: 50},
 			{X: 190, Y: 10},
@@ -228,7 +229,7 @@ func TestSVGBackend_DrawPolygon_ProducesFilledPolygon(t *testing.T) {
 	red := color.RGBA{R: 255, A: 255}
 	black := color.RGBA{A: 255}
 	b.DrawPolygon(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 1, Y: 1},
 			{X: 9, Y: 1},
 			{X: 1, Y: 9},
@@ -253,7 +254,7 @@ func TestSVGBackend_DrawPolygon_WithoutBorder_OmitsStrokeAttributes(t *testing.T
 
 	b := New(10, 10)
 	b.DrawPolygon(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 1, Y: 1},
 			{X: 9, Y: 1},
 			{X: 1, Y: 9},
@@ -278,7 +279,7 @@ func TestSVGBackend_DrawFilledPath_ProducesBorderlessEvenOddPath(t *testing.T) {
 
 	b := New(10, 10)
 	filledPathBackend, ok := b.(interface {
-		DrawFilledPath(loops [][]model.Position, fill color.RGBA)
+		DrawFilledPath(loops [][]geometry.Point, fill color.RGBA)
 	})
 
 	g.Expect(ok).To(BeTrue())
@@ -287,7 +288,7 @@ func TestSVGBackend_DrawFilledPath_ProducesBorderlessEvenOddPath(t *testing.T) {
 		return
 	}
 
-	filledPathBackend.DrawFilledPath([][]model.Position{
+	filledPathBackend.DrawFilledPath([][]geometry.Point{
 		{
 			{X: 1, Y: 1},
 			{X: 9, Y: 1},
@@ -321,7 +322,7 @@ func TestSVGBackend_DrawArcText_ProducesValidSVG(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawArcText(
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 200, Y: 200},
 		100, "hello", blk, 14.0,
 	)
 
@@ -341,7 +342,7 @@ func TestSVGBackend_DrawText_FontSizeZero_UsesDefault(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawText(
-		model.Position{X: 100, Y: 50},
+		geometry.Point{X: 100, Y: 50},
 		"hello", blk, 0,
 		model.AnchorMiddle, 0,
 	)
@@ -364,7 +365,7 @@ func TestSVGBackend_DrawText_FontSizeNegative_UsesDefault(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawText(
-		model.Position{X: 100, Y: 50},
+		geometry.Point{X: 100, Y: 50},
 		"hello", blk, -5.0,
 		model.AnchorMiddle, 0,
 	)
@@ -387,7 +388,7 @@ func TestSVGBackend_DrawArcText_FontSizeZero_UsesDefault(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawArcText(
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 200, Y: 200},
 		100, "hello", blk, 0,
 	)
 
@@ -413,7 +414,7 @@ func TestSVGBackend_DrawArcText_PathGoesOverTop(t *testing.T) {
 	// right side (300, 200) so that the 50% midpoint is at the top (200, 100),
 	// placing the text label at the top of the circle.
 	b.DrawArcText(
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 200, Y: 200},
 		100, "hello", blk, 14.0,
 	)
 
@@ -438,7 +439,7 @@ func TestSVGBackend_DrawArcText_CentersGlyphsOnPath(t *testing.T) {
 	blk := color.RGBA{A: 255}
 
 	b.DrawArcText(
-		model.Position{X: 200, Y: 200},
+		geometry.Point{X: 200, Y: 200},
 		100, "hello", blk, 14.0,
 	)
 

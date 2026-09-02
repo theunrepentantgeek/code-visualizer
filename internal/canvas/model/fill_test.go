@@ -24,16 +24,16 @@ func TestRadialGradientFill_ImplementsFill(t *testing.T) {
 	var fill model.Fill = model.RadialGradientFill{
 		Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
-		Focus:  model.Point{X: 0.5, Y: 0.5},
+		Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 	}
 	g.Expect(fill).NotTo(BeNil())
 }
 
-func TestPoint_Zero(t *testing.T) {
+func TestGradientPoint_Zero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	p := model.Point{}
+	p := model.GradientPoint{}
 	g.Expect(p.X).To(Equal(0.0))
 	g.Expect(p.Y).To(Equal(0.0))
 }
@@ -54,7 +54,7 @@ func TestSolidColor_RadialGradientFill_ReturnsCenterColor(t *testing.T) {
 	fill := model.RadialGradientFill{
 		Center: center,
 		Edge:   color.RGBA{R: 10, G: 20, B: 30, A: 255},
-		Focus:  model.Point{X: 0.5, Y: 0.5},
+		Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 	}
 	g.Expect(model.SolidColor(fill)).To(Equal(center))
 }

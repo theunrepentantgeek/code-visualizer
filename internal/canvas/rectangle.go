@@ -2,6 +2,7 @@ package canvas
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
@@ -11,7 +12,7 @@ type Rectangle struct {
 	X, Y, W, H float64
 	Fill       inks.MetricValue
 	Border     inks.MetricValue
-	Focus      model.Point
+	Focus      model.GradientPoint
 }
 
 func (r *Rectangle) drawTo(b Backend) {
@@ -19,7 +20,7 @@ func (r *Rectangle) drawTo(b Backend) {
 	border := model.SolidFill{Color: r.Spec.Border.Dip(r.Border)}
 
 	b.DrawRectangle(
-		Position{X: r.X, Y: r.Y},
+		geometry.NewPoint(r.X, r.Y),
 		Size{Width: r.W, Height: r.H},
 		fill, border,
 		r.Spec.BorderWidth,

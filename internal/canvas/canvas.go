@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/raster"
 	svgbackend "github.com/theunrepentantgeek/code-visualizer/internal/canvas/svg"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 const (
@@ -132,8 +133,8 @@ func (c *Canvas) AddFilledPath(layer Layer, p FilledPath) {
 	})
 }
 
-func clonePositionLoops(loops [][]Position) [][]Position {
-	cloned := make([][]Position, len(loops))
+func clonePositionLoops(loops [][]geometry.Point) [][]geometry.Point {
+	cloned := make([][]geometry.Point, len(loops))
 	for index, loop := range loops {
 		cloned[index] = slices.Clone(loop)
 	}
@@ -261,18 +262,12 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	}
 
 	if c.title != nil {
-		pos := model.Position{
-			X: float64(c.width) / 2,
-			Y: titleMarginY,
-		}
+		pos := geometry.NewPoint(float64(c.width)/2, titleMarginY)
 		backend.DrawText(pos, *c.title, titleColor, titleFontSize, model.AnchorMiddle, 0)
 	}
 
 	if c.footer != nil {
-		pos := model.Position{
-			X: float64(c.width) / 2,
-			Y: float64(c.height) - footerMarginY,
-		}
+		pos := geometry.NewPoint(float64(c.width)/2, float64(c.height)-footerMarginY)
 		backend.DrawText(pos, *c.footer, footerColor, footerFontSize, model.AnchorMiddle, 0)
 	}
 

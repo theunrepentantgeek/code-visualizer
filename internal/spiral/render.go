@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
 )
@@ -66,7 +67,7 @@ func addBackground(cv *canvas.Canvas, width, height int) {
 		Spec:  bgSpec,
 		W:     float64(width),
 		H:     float64(height),
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -86,7 +87,7 @@ func addSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks
 }
 
 func addFlatSurface(cv *canvas.Canvas, triangles []surface.Triangle, surfaceInk inks.Ink) {
-	loopsByColour := make(map[color.RGBA][][]canvas.Position)
+	loopsByColour := make(map[color.RGBA][][]geometry.Point)
 
 	for _, triangle := range triangles {
 		fill := metricValue(triangle.Value, "", surfaceInk)
@@ -106,7 +107,7 @@ func addBandedSurface(
 	surfaceInk inks.Ink,
 	breakpoints []float64,
 ) {
-	loopsByColour := make(map[color.RGBA][][]canvas.Position)
+	loopsByColour := make(map[color.RGBA][][]geometry.Point)
 
 	for _, triangle := range triangles {
 		fragments := surface.SubdivideTriangle(triangle, breakpoints)
@@ -127,7 +128,7 @@ func addBandedSurface(
 	addSurfaceFillPaths(cv, loopsByColour)
 }
 
-func addSurfaceFillPaths(cv *canvas.Canvas, loopsByColour map[color.RGBA][][]canvas.Position) {
+func addSurfaceFillPaths(cv *canvas.Canvas, loopsByColour map[color.RGBA][][]geometry.Point) {
 	colours := make([]color.RGBA, 0, len(loopsByColour))
 	for colour := range loopsByColour {
 		colours = append(colours, colour)
@@ -149,10 +150,10 @@ func rgbaKey(colour color.RGBA) uint32 {
 	return uint32(colour.R)<<24 | uint32(colour.G)<<16 | uint32(colour.B)<<8 | uint32(colour.A)
 }
 
-func surfacePolygonPoints(points []surface.Point) []canvas.Position {
-	positions := make([]canvas.Position, len(points))
-	for index, point := range points {
-		positions[index] = canvas.Position{X: point.X, Y: point.Y}
+func surfacePolygonPoints(points []surface.Sample) []geometry.Point {
+	positions := make([]geometry.Point, len(points))
+	for index, sample := range points {
+		positions[index] = sample.Position
 	}
 
 	return positions
@@ -165,16 +166,15 @@ func addTrack(cv *canvas.Canvas, layout SpiralLayout) {
 	}
 
 	steps := trackSteps(len(layout.Nodes))
-	points := make([]canvas.Position, steps)
+	points := make([]geometry.Point, steps)
+
+	center := geometry.NewPoint(layout.CX, layout.CY)
 
 	for i := range steps {
 		t := float64(i) / float64(steps-1)
 		theta := t * layout.MaxTheta
 		r := layout.A + layout.B*theta
-		points[i] = canvas.Position{
-			X: layout.CX + r*math.Sin(theta),
-			Y: layout.CY - r*math.Cos(theta),
-		}
+		points[i] = center.Translate(geometry.NewVector(r*math.Sin(theta), -r*math.Cos(theta)))
 	}
 
 	trackSpec := &canvas.LineSpec{
@@ -227,8 +227,8 @@ func addDiscs(
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   spec,
-			X:      n.X,
-			Y:      n.Y,
+			X:      n.Position.X,
+			Y:      n.Position.Y,
 			Radius: n.DiscRadius,
 			Angle:  n.Angle,
 			Fill:   fillMV,

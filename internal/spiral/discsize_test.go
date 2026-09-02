@@ -1,7 +1,6 @@
 package spiral
 
 import (
-	"math"
 	"testing"
 	"time"
 
@@ -180,7 +179,7 @@ func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T
 	for i := 0; i+Hourly.SpotsPerLap() < len(layout.Nodes); i++ {
 		current := layout.Nodes[i]
 		nextLap := layout.Nodes[i+Hourly.SpotsPerLap()]
-		distance := math.Hypot(nextLap.X-current.X, nextLap.Y-current.Y)
+		distance := current.Position.DistanceTo(nextLap.Position)
 		g.Expect(distance).To(
 			BeNumerically(
 				">=",

@@ -4,7 +4,7 @@ package donuttree
 import (
 	"math"
 
-	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -14,7 +14,7 @@ import (
 func Layout(root *model.Directory, canvasSize int, sizeMetric metric.Name) LayoutResult {
 	center := float64(canvasSize) / 2
 	result := LayoutResult{
-		Center: canvasmodel.Position{X: center, Y: center},
+		Center: geometry.NewPoint(center, center),
 	}
 
 	if root == nil {

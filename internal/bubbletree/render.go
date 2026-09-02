@@ -56,7 +56,7 @@ func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 		Spec:  bgSpec,
 		W:     float64(width),
 		H:     float64(height),
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -92,8 +92,8 @@ func addBubbleDirDiscs(
 	for _, e := range entries {
 		cv.AddDisc(canvas.LayerStructure, canvas.Disc{
 			Spec:   dirSpec,
-			X:      e.node.X,
-			Y:      e.node.Y,
+			X:      e.node.Position.X,
+			Y:      e.node.Position.Y,
 			Radius: bubbleDirDiscRadius(*e.node),
 		})
 	}
@@ -158,8 +158,8 @@ func addBubbleFileDiscsWalk(
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
 			Spec:   fileSpec,
-			X:      bn.X,
-			Y:      bn.Y,
+			X:      bn.Position.X,
+			Y:      bn.Position.Y,
 			Radius: bn.Radius,
 			Fill:   fillMV,
 			Border: borderMV,
@@ -236,21 +236,19 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 	}
 
 	cv.AddArcText(canvas.LayerOverlay, canvas.ArcText{
-		Spec:   arcSpec,
-		X:      node.X,
-		Y:      node.Y,
-		Radius: bubbleDirLabelRadius(node, fontSize),
-		Text:   node.Label,
+		Spec:     arcSpec,
+		Position: node.Position,
+		Radius:   bubbleDirLabelRadius(node, fontSize),
+		Text:     node.Label,
 	})
 }
 
 // addBubbleFileLabel adds a centred text label on a file circle.
 func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode, spec *canvas.TextSpec) {
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    spec,
-		X:       node.X,
-		Y:       node.Y,
-		Content: node.Label,
+		Spec:     spec,
+		Position: node.Position,
+		Content:  node.Label,
 	})
 }
 

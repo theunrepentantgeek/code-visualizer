@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // radialClip describes an optional circular clipping region. When r == 0 the clip is disabled.
@@ -77,7 +77,7 @@ func renderClippedGradient(
 func renderPolygonGradientPixels(
 	img *image.RGBA,
 	rect image.Rectangle,
-	points []model.Position,
+	points []geometry.Point,
 	fx, fy, invScale float64,
 	lerp gradientLerp,
 ) {
@@ -121,7 +121,7 @@ func clampUint8(value uint32) uint8 {
 	return uint8(value)
 }
 
-func pointInPolygon(points []model.Position, x, y float64) bool {
+func pointInPolygon(points []geometry.Point, x, y float64) bool {
 	inside := false
 	previous := points[len(points)-1]
 

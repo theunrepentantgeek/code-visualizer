@@ -17,6 +17,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 const jpegQuality = 95
@@ -37,7 +38,7 @@ func New(width, height int) model.Backend {
 }
 
 func (r *rasterBackend) DrawRectangle(
-	pos model.Position, size model.Size, fill, border model.Fill, borderWidth float64,
+	pos geometry.Point, size model.Size, fill, border model.Fill, borderWidth float64,
 ) {
 	if f, ok := fill.(model.RadialGradientFill); ok {
 		r.drawRadialGradientRect(pos, size, f)
@@ -57,11 +58,13 @@ func (r *rasterBackend) DrawRectangle(
 }
 
 func (r *rasterBackend) drawRadialGradientRect(
-	pos model.Position, size model.Size, grad model.RadialGradientFill,
+	pos geometry.Point, size model.Size, grad model.RadialGradientFill,
 ) {
-	fx := pos.X + grad.Focus.X*size.Width
-	fy := pos.Y + grad.Focus.Y*size.Height
-	maxDist := maxCornerDist(fx, fy, pos.X, pos.Y, size.Width, size.Height)
+	focus := geometry.NewPoint(
+		pos.X+grad.Focus.X*size.Width,
+		pos.Y+grad.Focus.Y*size.Height,
+	)
+	maxDist := maxCornerDist(focus.X, focus.Y, pos.X, pos.Y, size.Width, size.Height)
 
 	if maxDist == 0 {
 		r.dc.SetColor(nrgba(grad.Center))
@@ -88,7 +91,9 @@ func (r *rasterBackend) drawRadialGradientRect(
 	y1 = min(y1, bounds.Max.Y)
 
 	lerp := newGradientLerp(grad.Center, grad.Edge)
-	renderRadialGradientPixels(img, image.Rect(x0, y0, x1, y1), fx, fy, 1.0/maxDist, lerp, radialClip{})
+	renderRadialGradientPixels(
+		img, image.Rect(x0, y0, x1, y1), focus.X, focus.Y, 1.0/maxDist, lerp, radialClip{},
+	)
 }
 
 // maxCornerDist returns the maximum distance from point (fx,fy) to any corner
@@ -107,7 +112,7 @@ func maxCornerDist(fx, fy, rx, ry, w, h float64) float64 {
 }
 
 func (r *rasterBackend) DrawDisc(
-	center model.Position, radius float64, fill, border model.Fill, borderWidth float64,
+	center geometry.Point, radius float64, fill, border model.Fill, borderWidth float64,
 ) {
 	if f, ok := fill.(model.RadialGradientFill); ok {
 		r.drawRadialGradientDisc(center, radius, f)
@@ -127,7 +132,7 @@ func (r *rasterBackend) DrawDisc(
 }
 
 func (r *rasterBackend) DrawPolygon(
-	points []model.Position, fill, border model.Fill, borderWidth float64,
+	points []geometry.Point, fill, border model.Fill, borderWidth float64,
 ) {
 	if len(points) < 3 {
 		return
@@ -156,7 +161,7 @@ func (r *rasterBackend) DrawPolygon(
 	}
 }
 
-func (r *rasterBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA) {
+func (r *rasterBackend) DrawFilledPath(loops [][]geometry.Point, fill color.RGBA) {
 	r.dc.SetFillRuleEvenOdd()
 	defer r.dc.SetFillRuleWinding()
 
@@ -172,7 +177,7 @@ func (r *rasterBackend) DrawFilledPath(loops [][]model.Position, fill color.RGBA
 	r.dc.Fill()
 }
 
-func (r *rasterBackend) drawPolygonPath(points []model.Position) {
+func (r *rasterBackend) drawPolygonPath(points []geometry.Point) {
 	r.dc.MoveTo(points[0].X, points[0].Y)
 
 	for _, point := range points[1:] {
@@ -183,7 +188,7 @@ func (r *rasterBackend) drawPolygonPath(points []model.Position) {
 }
 
 func (r *rasterBackend) drawRadialGradientPolygon(
-	points []model.Position, grad model.RadialGradientFill,
+	points []geometry.Point, grad model.RadialGradientFill,
 ) bool {
 	img, ok := r.dc.Image().(*image.RGBA)
 	if !ok {
@@ -202,12 +207,14 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 
 	// Focus is relative to the polygon's bounding box; the farthest vertex
 	// establishes the radius, matching rectangle gradient normalization.
-	fx := minX + grad.Focus.X*(maxX-minX)
-	fy := minY + grad.Focus.Y*(maxY-minY)
+	focus := geometry.NewPoint(
+		minX+grad.Focus.X*(maxX-minX),
+		minY+grad.Focus.Y*(maxY-minY),
+	)
 
 	maxDist := 0.0
 	for _, point := range points {
-		maxDist = max(maxDist, math.Hypot(point.X-fx, point.Y-fy))
+		maxDist = max(maxDist, math.Hypot(point.X-focus.X, point.Y-focus.Y))
 	}
 
 	if maxDist == 0 {
@@ -222,14 +229,14 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 
 	lerp := newGradientLerp(grad.Center, grad.Edge)
 	renderPolygonGradientPixels(
-		img, image.Rect(x0, y0, x1, y1), points, fx, fy, 1.0/maxDist, lerp,
+		img, image.Rect(x0, y0, x1, y1), points, focus.X, focus.Y, 1.0/maxDist, lerp,
 	)
 
 	return true
 }
 
 func (r *rasterBackend) drawRadialGradientDisc(
-	center model.Position, radius float64, grad model.RadialGradientFill,
+	center geometry.Point, radius float64, grad model.RadialGradientFill,
 ) {
 	if radius == 0 {
 		return
@@ -244,8 +251,10 @@ func (r *rasterBackend) drawRadialGradientDisc(
 		return
 	}
 
-	fx := center.X + (grad.Focus.X-0.5)*2*radius
-	fy := center.Y + (grad.Focus.Y-0.5)*2*radius
+	focus := geometry.NewPoint(
+		center.X+(grad.Focus.X-0.5)*2*radius,
+		center.Y+(grad.Focus.Y-0.5)*2*radius,
+	)
 
 	bounds := img.Bounds()
 	x0 := max(int(center.X-radius), bounds.Min.X)
@@ -256,19 +265,19 @@ func (r *rasterBackend) drawRadialGradientDisc(
 	lerp := newGradientLerp(grad.Center, grad.Edge)
 	renderRadialGradientPixels(
 		img, image.Rect(x0, y0, x1, y1),
-		fx, fy, 1.0/radius, lerp,
+		focus.X, focus.Y, 1.0/radius, lerp,
 		radialClip{cx: center.X, cy: center.Y, r: radius},
 	)
 }
 
-func (r *rasterBackend) DrawLine(from, to model.Position, stroke color.RGBA, strokeWidth float64) {
+func (r *rasterBackend) DrawLine(from, to geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	r.dc.SetColor(nrgba(stroke))
 	r.dc.SetLineWidth(strokeWidth)
 	r.dc.DrawLine(from.X, from.Y, to.X, to.Y)
 	r.dc.Stroke()
 }
 
-func (r *rasterBackend) DrawPath(points []model.Position, stroke color.RGBA, strokeWidth float64) {
+func (r *rasterBackend) DrawPath(points []geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	if len(points) < 2 {
 		return
 	}
@@ -285,7 +294,7 @@ func (r *rasterBackend) DrawPath(points []model.Position, stroke color.RGBA, str
 }
 
 func (r *rasterBackend) DrawText(
-	pos model.Position,
+	pos geometry.Point,
 	text string,
 	ink color.RGBA,
 	fontSize float64,
@@ -318,7 +327,7 @@ func (r *rasterBackend) DrawText(
 }
 
 func (r *rasterBackend) DrawArcText(
-	center model.Position,
+	center geometry.Point,
 	radius float64,
 	text string,
 	ink color.RGBA,

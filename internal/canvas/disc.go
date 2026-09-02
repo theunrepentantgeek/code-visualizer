@@ -2,6 +2,7 @@ package canvas
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
@@ -16,11 +17,11 @@ type Disc struct {
 }
 
 func (d *Disc) drawTo(b Backend) {
-	fill := d.Spec.Fill.Fill(d.Fill, model.Point{X: 0.5, Y: 0.5})
+	fill := d.Spec.Fill.Fill(d.Fill, model.GradientPoint{X: 0.5, Y: 0.5})
 	border := model.SolidFill{Color: d.Spec.Border.Dip(d.Border)}
 
 	b.DrawDisc(
-		Position{X: d.X, Y: d.Y},
+		geometry.NewPoint(d.X, d.Y),
 		d.Radius,
 		fill, border,
 		d.Spec.BorderWidth,

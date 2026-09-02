@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -15,13 +16,13 @@ import (
 )
 
 type rectangleCall struct {
-	pos  canvas.Position
+	pos  geometry.Point
 	size canvas.Size
 	fill canvasmodel.Fill
 }
 
 type textCall struct {
-	pos      canvas.Position
+	pos      geometry.Point
 	text     string
 	fontSize float64
 	anchor   canvas.TextAnchor
@@ -34,24 +35,24 @@ type captureBackend struct {
 }
 
 func (b *captureBackend) DrawRectangle(
-	pos canvas.Position, size canvas.Size, fill, _ canvasmodel.Fill, _ float64,
+	pos geometry.Point, size canvas.Size, fill, _ canvasmodel.Fill, _ float64,
 ) {
 	b.rectangles = append(b.rectangles, rectangleCall{pos: pos, size: size, fill: fill})
 }
 
-func (*captureBackend) DrawDisc(canvas.Position, float64, canvasmodel.Fill, canvasmodel.Fill, float64) {
+func (*captureBackend) DrawDisc(geometry.Point, float64, canvasmodel.Fill, canvasmodel.Fill, float64) {
 }
 
-func (*captureBackend) DrawPolygon([]canvas.Position, canvasmodel.Fill, canvasmodel.Fill, float64) {}
+func (*captureBackend) DrawPolygon([]geometry.Point, canvasmodel.Fill, canvasmodel.Fill, float64) {}
 
-func (*captureBackend) DrawFilledPath([][]canvas.Position, color.RGBA) {}
+func (*captureBackend) DrawFilledPath([][]geometry.Point, color.RGBA) {}
 
-func (*captureBackend) DrawLine(canvas.Position, canvas.Position, color.RGBA, float64) {}
+func (*captureBackend) DrawLine(geometry.Point, geometry.Point, color.RGBA, float64) {}
 
-func (*captureBackend) DrawPath([]canvas.Position, color.RGBA, float64) {}
+func (*captureBackend) DrawPath([]geometry.Point, color.RGBA, float64) {}
 
 func (b *captureBackend) DrawText(
-	pos canvas.Position, text string, _ color.RGBA, fontSize float64, anchor canvas.TextAnchor, rotation float64,
+	pos geometry.Point, text string, _ color.RGBA, fontSize float64, anchor canvas.TextAnchor, rotation float64,
 ) {
 	b.texts = append(b.texts, textCall{
 		pos:      pos,
@@ -62,7 +63,7 @@ func (b *captureBackend) DrawText(
 	})
 }
 
-func (*captureBackend) DrawArcText(canvas.Position, float64, string, color.RGBA, float64) {}
+func (*captureBackend) DrawArcText(geometry.Point, float64, string, color.RGBA, float64) {}
 
 func (*captureBackend) Finish(string) error { return nil }
 

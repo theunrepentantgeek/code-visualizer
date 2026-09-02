@@ -12,6 +12,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/raster"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestRasterBackend_DrawRectangle_WithRadialGradientFill(t *testing.T) {
@@ -23,12 +24,12 @@ func TestRasterBackend_DrawRectangle_WithRadialGradientFill(t *testing.T) {
 	fill := model.RadialGradientFill{
 		Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
-		Focus:  model.Point{X: 0.5, Y: 0.5},
+		Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 	}
 	border := model.SolidFill{Color: color.RGBA{A: 255}}
 
 	backend.DrawRectangle(
-		model.Position{X: 10, Y: 10},
+		geometry.Point{X: 10, Y: 10},
 		model.Size{Width: 180, Height: 180},
 		fill, border, 1.0,
 	)
@@ -51,12 +52,12 @@ func TestRasterBackend_DrawRectangle_RadialGradientVariesFromEdgeToCenter(t *tes
 
 	backend := raster.New(200, 200)
 	backend.DrawRectangle(
-		model.Position{X: 10, Y: 10},
+		geometry.Point{X: 10, Y: 10},
 		model.Size{Width: 180, Height: 180},
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 			Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
-			Focus:  model.Point{X: 0.5, Y: 0.5},
+			Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 		},
 		model.SolidFill{Color: color.RGBA{A: 255}}, 0,
 	)
@@ -80,12 +81,12 @@ func TestRasterBackend_DrawRectangle_RadialGradientWithOffCenterFocus_CoversFarC
 
 	backend := raster.New(200, 200)
 	backend.DrawRectangle(
-		model.Position{X: 10, Y: 10},
+		geometry.Point{X: 10, Y: 10},
 		model.Size{Width: 180, Height: 180},
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 			Edge:   color.RGBA{B: 255, A: 255},
-			Focus:  model.Point{X: 0.1, Y: 0.1},
+			Focus:  model.GradientPoint{X: 0.1, Y: 0.1},
 		},
 		model.SolidFill{Color: color.RGBA{A: 255}}, 0,
 	)
@@ -108,12 +109,12 @@ func TestRasterBackend_DrawDisc_WithRadialGradientFill(t *testing.T) {
 
 	backend := raster.New(200, 200)
 	backend.DrawDisc(
-		model.Position{X: 100, Y: 100},
+		geometry.Point{X: 100, Y: 100},
 		80,
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 			Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
-			Focus:  model.Point{X: 0.5, Y: 0.5},
+			Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 		},
 		model.SolidFill{Color: color.RGBA{A: 255}}, 0,
 	)
@@ -138,7 +139,7 @@ func TestRasterBackend_DrawPolygon_RadialGradientVariesFromEdgeToCenter(t *testi
 
 	backend := raster.New(200, 200)
 	backend.DrawPolygon(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 20, Y: 20},
 			{X: 180, Y: 20},
 			{X: 180, Y: 180},
@@ -147,7 +148,7 @@ func TestRasterBackend_DrawPolygon_RadialGradientVariesFromEdgeToCenter(t *testi
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 			Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
-			Focus:  model.Point{X: 0.5, Y: 0.5},
+			Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 		},
 		model.SolidFill{Color: color.RGBA{A: 255}}, 0,
 	)
@@ -174,12 +175,12 @@ func TestRasterBackend_DrawPolygon_SemiTransparentRadialGradient_CompositesOverB
 	semiBlue := color.RGBA{B: 255, A: 64}
 
 	backend.DrawRectangle(
-		model.Position{},
+		geometry.OriginPoint,
 		model.Size{Width: 100, Height: 100},
 		model.SolidFill{Color: white}, model.SolidFill{Color: white}, 0,
 	)
 	backend.DrawPolygon(
-		[]model.Position{
+		[]geometry.Point{
 			{X: 20, Y: 20},
 			{X: 80, Y: 20},
 			{X: 80, Y: 80},
@@ -188,7 +189,7 @@ func TestRasterBackend_DrawPolygon_SemiTransparentRadialGradient_CompositesOverB
 		model.RadialGradientFill{
 			Center: semiBlue,
 			Edge:   semiBlue,
-			Focus:  model.Point{X: 0.5, Y: 0.5},
+			Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 		},
 		model.SolidFill{Color: white}, 0,
 	)

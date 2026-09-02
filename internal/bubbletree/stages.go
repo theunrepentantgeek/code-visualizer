@@ -90,7 +90,7 @@ func LayoutStage(c *stages.CommonState, b *State) error {
 		}
 	}
 
-	OffsetNodes(&b.Nodes, geometry.Vector{X: dx, Y: dy})
+	OffsetNodes(&b.Nodes, geometry.NewVector(dx, dy))
 
 	return nil
 }

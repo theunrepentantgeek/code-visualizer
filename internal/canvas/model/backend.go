@@ -5,25 +5,22 @@ package model
 
 import (
 	"image/color"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // Backend is the rendering interface implemented by output format adapters.
 // Methods receive resolved colours/fills and primitive geometry.
 type Backend interface {
-	DrawRectangle(pos Position, size Size, fill, border Fill, borderWidth float64)
-	DrawDisc(center Position, radius float64, fill, border Fill, borderWidth float64)
-	DrawPolygon(points []Position, fill, border Fill, borderWidth float64)
-	DrawFilledPath(loops [][]Position, fill color.RGBA)
-	DrawLine(from, to Position, stroke color.RGBA, strokeWidth float64)
-	DrawPath(points []Position, stroke color.RGBA, strokeWidth float64)
-	DrawText(pos Position, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64)
-	DrawArcText(center Position, radius float64, text string, ink color.RGBA, fontSize float64)
+	DrawRectangle(pos geometry.Point, size Size, fill, border Fill, borderWidth float64)
+	DrawDisc(center geometry.Point, radius float64, fill, border Fill, borderWidth float64)
+	DrawPolygon(points []geometry.Point, fill, border Fill, borderWidth float64)
+	DrawFilledPath(loops [][]geometry.Point, fill color.RGBA)
+	DrawLine(from, to geometry.Point, stroke color.RGBA, strokeWidth float64)
+	DrawPath(points []geometry.Point, stroke color.RGBA, strokeWidth float64)
+	DrawText(pos geometry.Point, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64)
+	DrawArcText(center geometry.Point, radius float64, text string, ink color.RGBA, fontSize float64)
 	Finish(outputPath string) error
-}
-
-// Position represents a 2D coordinate.
-type Position struct {
-	X, Y float64
 }
 
 // Size represents a width and height.

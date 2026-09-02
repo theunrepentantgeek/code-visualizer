@@ -2,6 +2,8 @@ package spiral
 
 import (
 	"math"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 const (
@@ -178,12 +180,10 @@ func positionNode(
 	r := params.a + params.b*theta
 
 	// Clockwise from north: x = cx + r*sin(θ), y = cy - r*cos(θ)
-	x := params.centreX + r*math.Sin(theta)
-	y := params.centreY - r*math.Cos(theta)
+	center := geometry.NewPoint(params.centreX, params.centreY)
 
 	return SpiralNode{
-		X:            x,
-		Y:            y,
+		Position:     center.Translate(geometry.NewVector(r*math.Sin(theta), -r*math.Cos(theta))),
 		DiscRadius:   defaultDiscRadius,
 		Angle:        theta,
 		SpiralRadius: r,
