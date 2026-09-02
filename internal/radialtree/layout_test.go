@@ -30,7 +30,7 @@ func TestLayoutRootIsAtCentre(t *testing.T) {
 	}
 
 	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
-	g.Expect(node.Position).To(Equal(geometry.Vector{X: 0, Y: 0}))
+	g.Expect(node.Position).To(Equal(geometry.ZeroVector))
 }
 
 func TestLayoutChildrenInRing(t *testing.T) {
@@ -189,7 +189,7 @@ func TestLayoutNestedDepth(t *testing.T) {
 	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
 
 	// Root is at centre (radius 0).
-	g.Expect(node.Position).To(Equal(geometry.Vector{X: 0, Y: 0}))
+	g.Expect(node.Position).To(Equal(geometry.ZeroVector))
 
 	g.Expect(node.Children).To(HaveLen(1))
 	subNode := node.Children[0]
@@ -308,7 +308,7 @@ func TestLayoutEmptyDirectory(t *testing.T) {
 
 	// Should not panic.
 	node := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
-	g.Expect(node.Position).To(Equal(geometry.Vector{X: 0, Y: 0}))
+	g.Expect(node.Position).To(Equal(geometry.ZeroVector))
 }
 
 func TestLayoutRootLabel(t *testing.T) {
