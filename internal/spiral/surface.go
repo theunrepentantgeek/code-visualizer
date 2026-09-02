@@ -15,7 +15,7 @@ func BuildSurface(layout SpiralLayout, values []float64, seed uint64) []surface.
 	originals := make([]surface.Sample, len(layout.Nodes))
 	for index, node := range layout.Nodes {
 		originals[index] = surface.Sample{
-			Position: node.Position,
+			Position: node.Geometry.Center,
 			Value:    values[index],
 		}
 	}

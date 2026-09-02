@@ -191,15 +191,15 @@ func TestOffsetLayout_ShiftsPoints(t *testing.T) {
 
 	layout := &ScatterLayout{
 		Points: []ScatterPoint{
-			{Position: geometry.Point{X: 10, Y: 20}},
-			{Position: geometry.Point{X: 30, Y: 40}},
+			{Geometry: geometry.Circle{Center: geometry.Point{X: 10, Y: 20}}},
+			{Geometry: geometry.Circle{Center: geometry.Point{X: 30, Y: 40}}},
 		},
 	}
 	OffsetLayout(layout, geometry.Vector{X: 5, Y: -10})
-	g.Expect(layout.Points[0].Position.X).To(BeNumerically("==", 15))
-	g.Expect(layout.Points[0].Position.Y).To(BeNumerically("==", 10))
-	g.Expect(layout.Points[1].Position.X).To(BeNumerically("==", 35))
-	g.Expect(layout.Points[1].Position.Y).To(BeNumerically("==", 30))
+	g.Expect(layout.Points[0].Geometry.Center.X).To(BeNumerically("==", 15))
+	g.Expect(layout.Points[0].Geometry.Center.Y).To(BeNumerically("==", 10))
+	g.Expect(layout.Points[1].Geometry.Center.X).To(BeNumerically("==", 35))
+	g.Expect(layout.Points[1].Geometry.Center.Y).To(BeNumerically("==", 30))
 }
 
 func TestOffsetLayout_ShiftsNumericAxisTicks(t *testing.T) {

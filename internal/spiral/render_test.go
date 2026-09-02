@@ -129,8 +129,8 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 			{FillValue: 2, BorderValue: 2},
 		},
 		Layout: spiral.SpiralLayout{Nodes: []spiral.SpiralNode{
-			{Position: geometry.Point{X: 50, Y: 50}, DiscRadius: 20},
-			{Position: geometry.Point{X: 100, Y: 100}},
+			{Geometry: geometry.Circle{Center: geometry.Point{X: 50, Y: 50}, Radius: 20}},
+			{Geometry: geometry.Circle{Center: geometry.Point{X: 100, Y: 100}}},
 		}},
 		Inks: spiral.Inks{
 			Fill:   inks.FixedInk(black),

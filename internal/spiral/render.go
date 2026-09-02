@@ -212,7 +212,7 @@ func addDiscs(
 	}
 
 	for i, n := range nodes {
-		if n.DiscRadius <= 0 {
+		if n.Geometry.Radius <= 0 {
 			continue
 		}
 
@@ -220,19 +220,16 @@ func addDiscs(
 		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, is.Border)
 
 		spec := smallSpec
-		if borderWidth(n.DiscRadius) == 3.0 {
+		if borderWidth(n.Geometry.Radius) == 3.0 {
 			spec = largeSpec
 		}
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec: spec,
-			Geometry: geometry.Circle{
-				Center: n.Position,
-				Radius: n.DiscRadius,
-			},
-			Angle:  n.Angle,
-			Fill:   fillMV,
-			Border: borderMV,
+			Spec:     spec,
+			Geometry: n.Geometry,
+			Angle:    n.Angle,
+			Fill:     fillMV,
+			Border:   borderMV,
 		})
 	}
 }

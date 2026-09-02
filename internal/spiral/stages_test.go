@@ -376,7 +376,7 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 	g.Expect(viz.Layout.Nodes[1].Angle).To(
 		BeNumerically("~", 2*math.Pi/float64(viz.SpotsPerLap), 1e-9),
 	)
-	g.Expect(viz.Layout.Nodes[bucketCount-1].DiscRadius).To(
+	g.Expect(viz.Layout.Nodes[bucketCount-1].Geometry.Radius).To(
 		BeNumerically(
 			"~",
 			spiral.MaxDiscRadiusWithCadence(bucketCount, 1920, 1080, viz.SpotsPerLap),

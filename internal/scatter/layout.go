@@ -22,8 +22,7 @@ const (
 type ScatterPoint struct {
 	File      *model.File
 	Directory *model.Directory
-	Position  geometry.Point
-	Radius    float64
+	Geometry  geometry.Circle
 	Label     string
 }
 
@@ -59,17 +58,19 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 		layout.Points = append(layout.Points, ScatterPoint{
 			File:      point.File,
 			Directory: point.Directory,
-			Position: geometry.NewPoint(
-				positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
-				positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
-			),
-			Radius: scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
-			Label:  point.Name(),
+			Geometry: geometry.Circle{
+				Center: geometry.Point{
+					X: positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
+					Y: positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
+				},
+				Radius: scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
+			},
+			Label: point.Name(),
 		})
 	}
 
 	slices.SortFunc(layout.Points, func(a, b ScatterPoint) int {
-		if cmp := cmp.Compare(b.Radius, a.Radius); cmp != 0 {
+		if cmp := cmp.Compare(b.Geometry.Radius, a.Geometry.Radius); cmp != 0 {
 			return cmp
 		}
 
@@ -86,7 +87,7 @@ func OffsetLayout(layout *ScatterLayout, offset geometry.Vector) {
 	layout.YAxis.Offset(offset.Y)
 
 	for i := range layout.Points {
-		layout.Points[i].Position = layout.Points[i].Position.Translate(offset)
+		layout.Points[i].Geometry.Center = layout.Points[i].Geometry.Center.Translate(offset)
 	}
 }
 

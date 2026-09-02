@@ -8,12 +8,11 @@ import (
 )
 
 // SpiralNode is a positioned visual element on the rendered spiral timeline.
-// Position is an absolute pixel location on the canvas.
+// Geometry.Center is an absolute pixel location on the canvas.
 type SpiralNode struct {
-	Position     geometry.Point // pixel position on canvas
-	DiscRadius   float64        // radius in pixels (from size metric)
-	Angle        float64        // angle in radians (clockwise from 12-o'clock / north)
-	SpiralRadius float64        // distance from canvas centre to this point
-	TimeStart    time.Time      // start of this time bucket (inclusive)
-	TimeEnd      time.Time      // end of this time bucket (exclusive)
+	Geometry     geometry.Circle // pixel position (Center) and disc radius (Radius) on canvas
+	Angle        float64         // angle in radians (clockwise from 12-o'clock / north)
+	SpiralRadius float64         // distance from canvas centre to this point
+	TimeStart    time.Time       // start of this time bucket (inclusive)
+	TimeEnd      time.Time       // end of this time bucket (exclusive)
 }

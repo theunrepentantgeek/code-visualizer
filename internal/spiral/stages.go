@@ -179,7 +179,7 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 		layout.CY += offset.Y
 
 		for i := range layout.Nodes {
-			layout.Nodes[i].Position = layout.Nodes[i].Position.Translate(offset)
+			layout.Nodes[i].Geometry.Center = layout.Nodes[i].Geometry.Center.Translate(offset)
 		}
 	}
 
