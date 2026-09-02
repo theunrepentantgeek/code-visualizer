@@ -175,13 +175,8 @@ func buildDiscLabels(
 
 		bucket := buckets[i]
 		fill := fillInk.Dip(metricValue(bucket.FillValue, bucket.FillLabel, fillInk))
-		position := node.Position.Translate(geometry.Vector{
-			X: -node.DiscRadius,
-			Y: -node.DiscRadius,
-		}).Translate(geometry.Vector{
-			X: discLabelPadding,
-			Y: discLabelPadding,
-		})
+		position := node.Position.Translate(geometry.NewVector(-node.DiscRadius, -node.DiscRadius)).
+			Translate(geometry.NewVector(discLabelPadding, discLabelPadding))
 		labels = append(labels, canvas.BlockLabel{
 			X:            position.X,
 			Y:            position.Y,

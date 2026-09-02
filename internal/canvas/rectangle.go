@@ -20,7 +20,7 @@ func (r *Rectangle) drawTo(b Backend) {
 	border := model.SolidFill{Color: r.Spec.Border.Dip(r.Border)}
 
 	b.DrawRectangle(
-		geometry.Point{X: r.X, Y: r.Y},
+		geometry.NewPoint(r.X, r.Y),
 		Size{Width: r.W, Height: r.H},
 		fill, border,
 		r.Spec.BorderWidth,

@@ -21,7 +21,7 @@ func (d *Disc) drawTo(b Backend) {
 	border := model.SolidFill{Color: d.Spec.Border.Dip(d.Border)}
 
 	b.DrawDisc(
-		geometry.Point{X: d.X, Y: d.Y},
+		geometry.NewPoint(d.X, d.Y),
 		d.Radius,
 		fill, border,
 		d.Spec.BorderWidth,

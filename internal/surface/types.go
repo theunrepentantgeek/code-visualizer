@@ -87,10 +87,10 @@ func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Sample {
 	}
 
 	corners := [4]Sample{
-		{Position: geometry.Point{X: r.MinX, Y: r.MinY}},
-		{Position: geometry.Point{X: r.MaxX, Y: r.MinY}},
-		{Position: geometry.Point{X: r.MaxX, Y: r.MaxY}},
-		{Position: geometry.Point{X: r.MinX, Y: r.MaxY}},
+		{Position: geometry.NewPoint(r.MinX, r.MinY)},
+		{Position: geometry.NewPoint(r.MaxX, r.MinY)},
+		{Position: geometry.NewPoint(r.MaxX, r.MaxY)},
+		{Position: geometry.NewPoint(r.MinX, r.MaxY)},
 	}
 	loop := make([]Sample, 0, len(corners))
 
@@ -168,12 +168,13 @@ func segmentBoundaryPoints(start, end Sample, maximumSegmentLength float64) []Sa
 	}
 
 	segments := max(1, int(math.Ceil(length/maximumSegmentLength)))
+	segmentVector := start.Position.VectorTo(end.Position)
 
 	points := make([]Sample, 0, segments)
 	for index := range segments {
 		fraction := float64(index) / float64(segments)
 		points = append(points, Sample{
-			Position: start.Position.Translate(start.Position.VectorTo(end.Position).Scale(fraction)),
+			Position: start.Position.Translate(segmentVector.Scale(fraction)),
 		})
 	}
 
@@ -191,10 +192,7 @@ func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Samp
 	for index := range segments {
 		angle := 2 * math.Pi * float64(index) / float64(segments)
 		points = append(points, Sample{
-			Position: geometry.Point{
-				X: cx + radius*math.Cos(angle),
-				Y: cy + radius*math.Sin(angle),
-			},
+			Position: geometry.NewPoint(cx+radius*math.Cos(angle), cy+radius*math.Sin(angle)),
 		})
 	}
 

@@ -269,7 +269,7 @@ func LayoutStage(c *stages.CommonState, x *State) error {
 		}
 	}
 
-	OffsetLayout(&layout, geometry.Vector{X: dx, Y: dy})
+	OffsetLayout(&layout, geometry.NewVector(dx, dy))
 	x.Layout = layout
 
 	return nil

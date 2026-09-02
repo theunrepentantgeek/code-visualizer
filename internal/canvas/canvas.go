@@ -262,18 +262,12 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	}
 
 	if c.title != nil {
-		pos := geometry.Point{
-			X: float64(c.width) / 2,
-			Y: titleMarginY,
-		}
+		pos := geometry.NewPoint(float64(c.width)/2, titleMarginY)
 		backend.DrawText(pos, *c.title, titleColor, titleFontSize, model.AnchorMiddle, 0)
 	}
 
 	if c.footer != nil {
-		pos := geometry.Point{
-			X: float64(c.width) / 2,
-			Y: float64(c.height) - footerMarginY,
-		}
+		pos := geometry.NewPoint(float64(c.width)/2, float64(c.height)-footerMarginY)
 		backend.DrawText(pos, *c.footer, footerColor, footerFontSize, model.AnchorMiddle, 0)
 	}
 

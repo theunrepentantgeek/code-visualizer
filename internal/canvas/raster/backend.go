@@ -60,10 +60,10 @@ func (r *rasterBackend) DrawRectangle(
 func (r *rasterBackend) drawRadialGradientRect(
 	pos geometry.Point, size model.Size, grad model.RadialGradientFill,
 ) {
-	focus := geometry.Point{
-		X: pos.X + grad.Focus.X*size.Width,
-		Y: pos.Y + grad.Focus.Y*size.Height,
-	}
+	focus := geometry.NewPoint(
+		pos.X+grad.Focus.X*size.Width,
+		pos.Y+grad.Focus.Y*size.Height,
+	)
 	maxDist := maxCornerDist(focus.X, focus.Y, pos.X, pos.Y, size.Width, size.Height)
 
 	if maxDist == 0 {
@@ -207,10 +207,10 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 
 	// Focus is relative to the polygon's bounding box; the farthest vertex
 	// establishes the radius, matching rectangle gradient normalization.
-	focus := geometry.Point{
-		X: minX + grad.Focus.X*(maxX-minX),
-		Y: minY + grad.Focus.Y*(maxY-minY),
-	}
+	focus := geometry.NewPoint(
+		minX+grad.Focus.X*(maxX-minX),
+		minY+grad.Focus.Y*(maxY-minY),
+	)
 
 	maxDist := 0.0
 	for _, point := range points {
@@ -251,10 +251,10 @@ func (r *rasterBackend) drawRadialGradientDisc(
 		return
 	}
 
-	focus := geometry.Point{
-		X: center.X + (grad.Focus.X-0.5)*2*radius,
-		Y: center.Y + (grad.Focus.Y-0.5)*2*radius,
-	}
+	focus := geometry.NewPoint(
+		center.X+(grad.Focus.X-0.5)*2*radius,
+		center.Y+(grad.Focus.Y-0.5)*2*radius,
+	)
 
 	bounds := img.Bounds()
 	x0 := max(int(center.X-radius), bounds.Min.X)

@@ -59,10 +59,10 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 		layout.Points = append(layout.Points, ScatterPoint{
 			File:      point.File,
 			Directory: point.Directory,
-			Position: geometry.Point{
-				X: positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
-				Y: positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
-			},
+			Position: geometry.NewPoint(
+				positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
+				positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
+			),
 			Radius: scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
 			Label:  point.Name(),
 		})

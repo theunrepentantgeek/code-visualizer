@@ -88,7 +88,7 @@ func LayoutStage(c *stages.CommonState, t *State) error {
 		}
 	}
 
-	OffsetRects(&rect, geometry.Vector{X: dx, Y: dy})
+	OffsetRects(&rect, geometry.NewVector(dx, dy))
 	t.Root = rect
 
 	return nil

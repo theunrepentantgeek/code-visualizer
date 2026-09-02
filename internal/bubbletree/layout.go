@@ -82,7 +82,7 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 	enc := computeEnclosing(children)
 
 	// Re-centre so the enclosing circle's centre becomes local origin.
-	offset := enc.center.VectorTo(geometry.Point{})
+	offset := enc.center.VectorTo(geometry.OriginPoint)
 	for i := range children {
 		children[i].Position = children[i].Position.Translate(offset)
 	}

@@ -165,10 +165,10 @@ func donutCanvasSize(c *stages.CommonState) int {
 // RenderStage renders the donut tree into its reserved drawing bounds.
 func RenderStage(c *stages.CommonState, d *State) error {
 	size := donutCanvasSize(c)
-	d.Layout.Center = geometry.Point{
-		X: float64(c.Width) / 2,
-		Y: float64(c.DrawingBounds.MinY) + float64(size)/2,
-	}
+	d.Layout.Center = geometry.NewPoint(
+		float64(c.Width)/2,
+		float64(c.DrawingBounds.MinY)+float64(size)/2,
+	)
 
 	var cfg *config.DonutTree
 	if c.RootConfig != nil {

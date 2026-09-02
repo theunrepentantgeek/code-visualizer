@@ -142,7 +142,7 @@ func enclosingThree(a, b, c enclosure) enclosure {
 		return enclosingThreeFallback(a, b, c)
 	}
 
-	return enclosure{center: geometry.Point{X: eu + fu*r, Y: ev + fv*r}, radius: r}
+	return enclosure{center: geometry.NewPoint(eu+fu*r, ev+fv*r), radius: r}
 }
 
 // solveQuadraticForRadius solves qa*r² + qb*r + qc = 0 for the smallest

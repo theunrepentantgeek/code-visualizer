@@ -93,6 +93,8 @@ type Point struct {
 Methods and functions:
 
 ```go
+var OriginPoint = Point{}
+func NewPoint(x, y float64) Point
 func (p Point) Valid() bool
 func (p Point) Translate(displacement Vector) Point
 func (p Point) VectorTo(other Point) Vector
@@ -101,6 +103,13 @@ func (p Point) DistanceSquaredTo(other Point) float64
 func Midpoint(a, b Point) Point
 func Lerp(a, b Point, fraction float64) Point
 ```
+
+`OriginPoint` is the point at `(0, 0)`, exported as a `var` because structs
+cannot be declared `const` — mirroring `ZeroVector`. `NewPoint` is the
+Cartesian-coordinate factory, mirroring `NewVector`. Callers use `NewPoint` for
+ordinary two-coordinate construction and `OriginPoint` wherever a point
+semantically means the coordinate origin; keyed struct literals remain where
+only one axis is meaningfully set or a partial/invalid value is intentional.
 
 `Valid` requires finite coordinates. Point-to-point addition is deliberately
 absent. `DistanceTo` and `DistanceSquaredTo` return `NaN` when either operand is

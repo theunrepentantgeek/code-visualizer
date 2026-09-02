@@ -247,16 +247,16 @@ func (c *swatchCursor) swatchPos() geometry.Point { return c.position }
 // Vertical: to the right of the swatch. Horizontal: below the swatch.
 func (c *swatchCursor) numericLabelPos() (geometry.Point, canvas.TextAnchor) {
 	if c.horizontal {
-		return c.position.Translate(geometry.Vector{
-			X: c.scale * model.SwatchSize,
-			Y: c.scale * (model.SwatchSize + model.LegendLineHeight),
-		}), canvas.AnchorMiddle
+		return c.position.Translate(geometry.NewVector(
+			c.scale*model.SwatchSize,
+			c.scale*(model.SwatchSize+model.LegendLineHeight),
+		)), canvas.AnchorMiddle
 	}
 
-	return c.position.Translate(geometry.Vector{
-		X: c.scale * (model.SwatchSize + model.LabelGap),
-		Y: c.scale * model.SwatchSize,
-	}), canvas.AnchorStart
+	return c.position.Translate(geometry.NewVector(
+		c.scale*(model.SwatchSize+model.LabelGap),
+		c.scale*model.SwatchSize,
+	)), canvas.AnchorStart
 }
 
 // catLabelPos returns the position and anchor for a categorical swatch label.
@@ -264,16 +264,16 @@ func (c *swatchCursor) numericLabelPos() (geometry.Point, canvas.TextAnchor) {
 // Horizontal: below the swatch, centred horizontally.
 func (c *swatchCursor) catLabelPos() (geometry.Point, canvas.TextAnchor) {
 	if c.horizontal {
-		return c.position.Translate(geometry.Vector{
-			X: c.scale * model.SwatchSize / 2,
-			Y: c.scale * (model.SwatchSize + model.LegendLineHeight),
-		}), canvas.AnchorMiddle
+		return c.position.Translate(geometry.NewVector(
+			c.scale*model.SwatchSize/2,
+			c.scale*(model.SwatchSize+model.LegendLineHeight),
+		)), canvas.AnchorMiddle
 	}
 
-	return c.position.Translate(geometry.Vector{
-		X: c.scale * (model.SwatchSize + model.LabelGap),
-		Y: c.scale * model.SwatchSize / 2,
-	}), canvas.AnchorStart
+	return c.position.Translate(geometry.NewVector(
+		c.scale*(model.SwatchSize+model.LabelGap),
+		c.scale*model.SwatchSize/2,
+	)), canvas.AnchorStart
 }
 
 // advance moves the cursor by delta along the main axis.
@@ -309,7 +309,7 @@ func (lb *legendBuilder) addNumericSwatches(
 	}
 
 	cur := swatchCursor{
-		position:   geometry.Point{X: x, Y: y},
+		position:   geometry.NewPoint(x, y),
 		horizontal: orientation == model.LegendOrientationHorizontal,
 		scale:      lb.scale,
 	}
@@ -349,7 +349,7 @@ func (lb *legendBuilder) addCategorySwatches(
 	}
 
 	cur := swatchCursor{
-		position:   geometry.Point{X: x, Y: y},
+		position:   geometry.NewPoint(x, y),
 		horizontal: orientation == model.LegendOrientationHorizontal,
 		scale:      lb.scale,
 	}
@@ -444,20 +444,20 @@ func (lb *legendBuilder) addArcLabelSample(x, y, w, h float64) {
 // narrower than its base, matching a small slice of the donut visualization.
 func arcLabelSamplePoints(x, y, w, h float64) []geometry.Point {
 	return []geometry.Point{
-		{X: x + 0.26*w, Y: y + 0.12*h},
-		{X: x + 0.40*w, Y: y + 0.03*h},
-		{X: x + 0.60*w, Y: y + 0.03*h},
-		{X: x + 0.74*w, Y: y + 0.12*h},
-		{X: x + 0.89*w, Y: y + 0.33*h},
-		{X: x + 0.97*w, Y: y + 0.58*h},
-		{X: x + 0.95*w, Y: y + 0.82*h},
-		{X: x + 0.84*w, Y: y + 0.96*h},
-		{X: x + 0.50*w, Y: y + h},
-		{X: x + 0.16*w, Y: y + 0.96*h},
-		{X: x + 0.05*w, Y: y + 0.82*h},
-		{X: x + 0.03*w, Y: y + 0.58*h},
-		{X: x + 0.11*w, Y: y + 0.33*h},
-		{X: x + 0.26*w, Y: y + 0.12*h},
+		geometry.NewPoint(x+0.26*w, y+0.12*h),
+		geometry.NewPoint(x+0.40*w, y+0.03*h),
+		geometry.NewPoint(x+0.60*w, y+0.03*h),
+		geometry.NewPoint(x+0.74*w, y+0.12*h),
+		geometry.NewPoint(x+0.89*w, y+0.33*h),
+		geometry.NewPoint(x+0.97*w, y+0.58*h),
+		geometry.NewPoint(x+0.95*w, y+0.82*h),
+		geometry.NewPoint(x+0.84*w, y+0.96*h),
+		geometry.NewPoint(x+0.50*w, y+h),
+		geometry.NewPoint(x+0.16*w, y+0.96*h),
+		geometry.NewPoint(x+0.05*w, y+0.82*h),
+		geometry.NewPoint(x+0.03*w, y+0.58*h),
+		geometry.NewPoint(x+0.11*w, y+0.33*h),
+		geometry.NewPoint(x+0.26*w, y+0.12*h),
 	}
 }
 
@@ -500,6 +500,6 @@ func (lb *legendBuilder) addTextShape(
 	}
 
 	lb.cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec: spec, Position: geometry.Point{X: x, Y: y}, Content: content,
+		Spec: spec, Position: geometry.NewPoint(x, y), Content: content,
 	})
 }

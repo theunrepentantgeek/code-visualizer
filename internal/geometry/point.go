@@ -7,6 +7,15 @@ type Point struct {
 	Y float64
 }
 
+// OriginPoint is the point at (0, 0). It's a var, not a const, because Go
+// structs cannot be declared const.
+var OriginPoint = Point{}
+
+// NewPoint constructs a Point from Cartesian coordinates.
+func NewPoint(x, y float64) Point {
+	return Point{X: x, Y: y}
+}
+
 func (p Point) Valid() bool {
 	return !math.IsNaN(p.X) && !math.IsInf(p.X, 0) &&
 		!math.IsNaN(p.Y) && !math.IsInf(p.Y, 0)

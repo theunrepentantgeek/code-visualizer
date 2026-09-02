@@ -14,7 +14,7 @@ import (
 func Layout(root *model.Directory, canvasSize int, sizeMetric metric.Name) LayoutResult {
 	center := float64(canvasSize) / 2
 	result := LayoutResult{
-		Center: geometry.Point{X: center, Y: center},
+		Center: geometry.NewPoint(center, center),
 	}
 
 	if root == nil {

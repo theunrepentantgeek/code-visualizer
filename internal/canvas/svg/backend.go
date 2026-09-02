@@ -72,7 +72,7 @@ func (s *svgBackend) DrawRectangle(
 func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 	centerCSS := s.colourCSS(grad.Center)
 	edgeCSS := s.colourCSS(grad.Edge)
-	focus := geometry.Point{X: grad.Focus.X * 100, Y: grad.Focus.Y * 100}
+	focus := geometry.NewPoint(grad.Focus.X*100, grad.Focus.Y*100)
 
 	key := fmt.Sprintf(
 		"%s|%s|%.3f|%.3f",

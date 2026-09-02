@@ -31,7 +31,7 @@ func RenderToCanvas(
 	is Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(canvasWidth, canvasHeight)
-	center := geometry.Point{X: cx, Y: cy}
+	center := geometry.NewPoint(cx, cy)
 
 	addBackground(cv, canvasWidth, canvasHeight)
 	addEdges(cv, *nodes, center)
@@ -326,10 +326,10 @@ func addExternalLabel(
 ) {
 	dist := node.Position.Length()
 	labelRadius := dist + node.DiscRadius + labelGap
-	labelDisplacement := geometry.Vector{
-		X: labelRadius * math.Cos(node.Angle),
-		Y: labelRadius * math.Sin(node.Angle),
-	}
+	labelDisplacement := geometry.NewVector(
+		labelRadius*math.Cos(node.Angle),
+		labelRadius*math.Sin(node.Angle),
+	)
 
 	angle := math.Mod(orientAngle, 2*math.Pi)
 	if angle < 0 {

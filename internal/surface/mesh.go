@@ -360,7 +360,7 @@ func triangleWithinOuterRadius(annulus Annulus, triangle Triangle) bool {
 	outerRadius := annulus.OuterRadius * (1 + radiusTolerance)
 	outerRadiusSquared := outerRadius * outerRadius
 
-	center := geometry.Point{X: annulus.CX, Y: annulus.CY}
+	center := geometry.NewPoint(annulus.CX, annulus.CY)
 
 	for _, sample := range triangle.Points {
 		if !isFiniteSample(sample) {
@@ -381,7 +381,7 @@ func triangleAvoidsInnerRadius(annulus Annulus, triangle Triangle) bool {
 	}
 
 	if pointStrictlyInTriangle(
-		Sample{Position: geometry.Point{X: annulus.CX, Y: annulus.CY}},
+		Sample{Position: geometry.NewPoint(annulus.CX, annulus.CY)},
 		triangle,
 	) {
 		return false
@@ -398,7 +398,7 @@ func triangleOutsideInnerRadius(annulus Annulus, triangle Triangle) bool {
 	innerRadius := annulus.InnerRadius * (1 - radiusTolerance)
 	innerRadiusSquared := innerRadius * innerRadius
 
-	center := geometry.Point{X: annulus.CX, Y: annulus.CY}
+	center := geometry.NewPoint(annulus.CX, annulus.CY)
 	for _, sample := range triangle.Points {
 		if sample.Position.DistanceSquaredTo(center) < innerRadiusSquared {
 			return false
@@ -444,7 +444,7 @@ func pointStrictlyInTriangle(point Sample, triangle Triangle) bool {
 }
 
 func squaredDistanceToSegment(x, y float64, start, end Sample) float64 {
-	point := geometry.Point{X: x, Y: y}
+	point := geometry.NewPoint(x, y)
 	segment := start.Position.VectorTo(end.Position)
 
 	lengthSquared := segment.LengthSquared()

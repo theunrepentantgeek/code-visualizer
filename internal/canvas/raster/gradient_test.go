@@ -175,7 +175,7 @@ func TestRasterBackend_DrawPolygon_SemiTransparentRadialGradient_CompositesOverB
 	semiBlue := color.RGBA{B: 255, A: 64}
 
 	backend.DrawRectangle(
-		geometry.Point{},
+		geometry.OriginPoint,
 		model.Size{Width: 100, Height: 100},
 		model.SolidFill{Color: white}, model.SolidFill{Color: white}, 0,
 	)

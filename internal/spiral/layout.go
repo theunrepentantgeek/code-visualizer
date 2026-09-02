@@ -180,13 +180,10 @@ func positionNode(
 	r := params.a + params.b*theta
 
 	// Clockwise from north: x = cx + r*sin(θ), y = cy - r*cos(θ)
-	center := geometry.Point{X: params.centreX, Y: params.centreY}
+	center := geometry.NewPoint(params.centreX, params.centreY)
 
 	return SpiralNode{
-		Position: center.Translate(geometry.Vector{
-			X: r * math.Sin(theta),
-			Y: -r * math.Cos(theta),
-		}),
+		Position:     center.Translate(geometry.NewVector(r*math.Sin(theta), -r*math.Cos(theta))),
 		DiscRadius:   defaultDiscRadius,
 		Angle:        theta,
 		SpiralRadius: r,

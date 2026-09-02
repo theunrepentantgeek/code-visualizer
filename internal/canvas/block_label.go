@@ -137,10 +137,10 @@ func (c *Canvas) addTextBlockLabel(
 	for i, line := range lines {
 		c.AddText(layer, Text{
 			Spec: spec,
-			Position: geometry.Point{
-				X: centerX,
-				Y: top + lineHeight*(float64(i)+0.5),
-			},
+			Position: geometry.NewPoint(
+				centerX,
+				top+lineHeight*(float64(i)+0.5),
+			),
 			Content: line,
 		})
 	}
@@ -164,8 +164,8 @@ func (c *Canvas) addGreekedBlockLabel(
 		y := top + lineHeight*(float64(i)+0.5)
 		c.AddLine(layer, Line{
 			Spec: spec,
-			From: geometry.Point{X: centerX - lineWidth/2.0, Y: y},
-			To:   geometry.Point{X: centerX + lineWidth/2.0, Y: y},
+			From: geometry.NewPoint(centerX-lineWidth/2.0, y),
+			To:   geometry.NewPoint(centerX+lineWidth/2.0, y),
 		})
 	}
 }

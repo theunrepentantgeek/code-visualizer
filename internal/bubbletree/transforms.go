@@ -57,13 +57,13 @@ const canvasMarginFraction = 0.02 // 2% margin on each side
 // fit would leave on a non-square canvas.
 func scaleToFit(node *BubbleNode, width, height float64) {
 	if node.Radius <= 0 {
-		node.Position = geometry.Point{X: width / 2, Y: height / 2}
+		node.Position = geometry.NewPoint(width/2, height/2)
 
 		return
 	}
 
 	if len(node.Children) == 0 {
-		node.Position = geometry.Point{X: width / 2, Y: height / 2}
+		node.Position = geometry.NewPoint(width/2, height/2)
 		node.Radius = math.Min(width, height) * (1 - 2*canvasMarginFraction) / 2
 
 		return
@@ -75,7 +75,7 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	boxH := box.maxY - box.minY
 
 	if boxW <= 0 || boxH <= 0 {
-		node.Position = geometry.Point{X: width / 2, Y: height / 2}
+		node.Position = geometry.NewPoint(width/2, height/2)
 		node.Radius *= math.Min(width, height) / (2 * node.Radius)
 
 		return
@@ -88,7 +88,7 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	boxCx := (box.minX + box.maxX) / 2
 	boxCy := (box.minY + box.maxY) / 2
 
-	node.Position = geometry.Point{X: width/2 - boxCx*scale, Y: height/2 - boxCy*scale}
+	node.Position = geometry.NewPoint(width/2-boxCx*scale, height/2-boxCy*scale)
 	node.Radius *= scale
 
 	applyScale(node, scale)
@@ -104,7 +104,7 @@ func occupiedBounds(node *BubbleNode) bounds {
 	}
 
 	if node.ShowLabel && node.Radius > 0 {
-		expandBoundsForDisc(&box, geometry.Point{}, node.Radius)
+		expandBoundsForDisc(&box, geometry.OriginPoint, node.Radius)
 	}
 
 	return box
@@ -114,10 +114,7 @@ func occupiedBounds(node *BubbleNode) bounds {
 func applyScale(parent *BubbleNode, scale float64) {
 	for i := range parent.Children {
 		child := &parent.Children[i]
-		child.Position = parent.Position.Translate(geometry.Vector{
-			X: child.Position.X * scale,
-			Y: child.Position.Y * scale,
-		})
+		child.Position = parent.Position.Translate(geometry.NewVector(child.Position.X*scale, child.Position.Y*scale))
 		child.Radius *= scale
 		applyScale(child, scale)
 	}

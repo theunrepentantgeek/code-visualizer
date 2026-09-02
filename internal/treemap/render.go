@@ -230,7 +230,7 @@ func addDirectoryShapes(
 
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:     spec,
-			Position: geometry.Point{X: x, Y: y},
+			Position: geometry.NewPoint(x, y),
 			Content:  rect.Chrome.Text,
 		})
 	}
