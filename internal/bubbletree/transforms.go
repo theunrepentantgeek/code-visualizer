@@ -1,6 +1,10 @@
 package bubbletree
 
-import "math"
+import (
+	"math"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+)
 
 // ---------------------------------------------------------------------------
 // Coordinate bounds helpers (used by scaling and layout)
@@ -121,12 +125,12 @@ func applyScale(parent *BubbleNode, scale float64) {
 	}
 }
 
-// OffsetNodes shifts every node in the tree by (dx, dy).
-func OffsetNodes(node *BubbleNode, dx, dy float64) {
-	node.X += dx
-	node.Y += dy
+// OffsetNodes shifts every node in the tree by the provided offset.
+func OffsetNodes(node *BubbleNode, offset geometry.Vector) {
+	node.X += offset.X
+	node.Y += offset.Y
 
 	for i := range node.Children {
-		OffsetNodes(&node.Children[i], dx, dy)
+		OffsetNodes(&node.Children[i], offset)
 	}
 }

@@ -16,6 +16,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -352,7 +353,7 @@ func TestCollectDiscsLeaf_ZeroRadius_ReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	node := &RadialNode{DiscRadius: 0}
+	node := &RadialNode{Position: geometry.Vector{X: 0, Y: 0}, DiscRadius: 0}
 	file := radialTestFile("small.go", "go", 10)
 
 	entries := collectDiscsLeaf(node, file, 400, 400)
@@ -364,7 +365,7 @@ func TestCollectDiscsLeaf_NegativeRadius_ReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	node := &RadialNode{DiscRadius: -5}
+	node := &RadialNode{Position: geometry.Vector{X: 0, Y: 0}, DiscRadius: -5}
 	file := radialTestFile("neg.go", "go", 10)
 
 	entries := collectDiscsLeaf(node, file, 400, 400)

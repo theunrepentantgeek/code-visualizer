@@ -1,6 +1,7 @@
 package radialtree
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
@@ -22,9 +23,9 @@ const (
 )
 
 // RadialNode is a positioned visual element in the rendered radial tree.
-// X and Y are pixel offsets from the canvas centre (canvas centre = origin).
+// Position is a pixel offset vector from the canvas centre (canvas centre = origin).
 type RadialNode struct {
-	X, Y        float64 // pixel position relative to canvas centre
+	Position    geometry.Vector
 	DiscRadius  float64 // radius of the node disc in pixels
 	Angle       float64 // angle in radians (0 = right/east, π/2 = down, in screen coordinates)
 	Label       string  // display name

@@ -7,6 +7,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -174,11 +175,11 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 	ApplyDiscSizes(layout.Nodes, p.Buckets, maxDisc)
 
 	if bounds.MinY > 0 {
-		dy := float64(bounds.MinY)
-		layout.CY += dy
+		offset := geometry.Vector{Y: float64(bounds.MinY)}
+		layout.CY += offset.Y
 
 		for i := range layout.Nodes {
-			layout.Nodes[i].Y += dy
+			layout.Nodes[i].Y += offset.Y
 		}
 	}
 

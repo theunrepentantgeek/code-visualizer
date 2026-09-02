@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -364,7 +365,7 @@ func TestOffsetRects_ShiftsCoordinates(t *testing.T) {
 			Content:     RectangleBounds{X: 14, Y: 40, W: 92, H: 26},
 		},
 	}
-	OffsetRects(&rect, 30, 40)
+	OffsetRects(&rect, geometry.Vector{X: 30, Y: 40})
 	g.Expect(rect.X).To(Equal(40.0))
 	g.Expect(rect.Y).To(Equal(60.0))
 	g.Expect(rect.W).To(Equal(100.0))
@@ -391,7 +392,7 @@ func TestOffsetRects_ShiftsChildrenRecursively(t *testing.T) {
 		},
 	}
 
-	OffsetRects(&rect, 50, 100)
+	OffsetRects(&rect, geometry.Vector{X: 50, Y: 100})
 	g.Expect(rect.X).To(Equal(50.0))
 	g.Expect(rect.Y).To(Equal(100.0))
 	g.Expect(rect.Children[0].X).To(Equal(55.0))
@@ -407,7 +408,7 @@ func TestOffsetRects_ZeroOffset_NoChange(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	rect := TreemapRectangle{X: 10, Y: 20, W: 100, H: 50}
-	OffsetRects(&rect, 0, 0)
+	OffsetRects(&rect, geometry.Vector{X: 0, Y: 0})
 	g.Expect(rect.X).To(Equal(10.0))
 	g.Expect(rect.Y).To(Equal(20.0))
 }
@@ -430,7 +431,7 @@ func TestOffsetRects_PreservesVisibleDepth(t *testing.T) {
 		},
 	}
 
-	OffsetRects(&rect, 30, 40)
+	OffsetRects(&rect, geometry.Vector{X: 30, Y: 40})
 
 	g.Expect(rect.VisibleDepth).To(Equal(3))
 	g.Expect(rect.Children[0].VisibleDepth).To(Equal(0))

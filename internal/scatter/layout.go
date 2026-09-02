@@ -5,6 +5,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -78,15 +79,15 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 }
 
 // OffsetLayout shifts the layout when legend space has been reserved.
-func OffsetLayout(layout *ScatterLayout, dx, dy float64) {
-	layout.Plot.X += dx
-	layout.Plot.Y += dy
-	layout.XAxis.Offset(dx)
-	layout.YAxis.Offset(dy)
+func OffsetLayout(layout *ScatterLayout, offset geometry.Vector) {
+	layout.Plot.X += offset.X
+	layout.Plot.Y += offset.Y
+	layout.XAxis.Offset(offset.X)
+	layout.YAxis.Offset(offset.Y)
 
 	for i := range layout.Points {
-		layout.Points[i].X += dx
-		layout.Points[i].Y += dy
+		layout.Points[i].X += offset.X
+		layout.Points[i].Y += offset.Y
 	}
 }
 
