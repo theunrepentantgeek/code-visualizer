@@ -31,11 +31,12 @@ func RenderToCanvas(
 	is Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(canvasWidth, canvasHeight)
+	center := geometry.Point{X: cx, Y: cy}
 
 	addBackground(cv, canvasWidth, canvasHeight)
-	addEdges(cv, *nodes, cx, cy)
-	addDiscs(cv, nodes, root, cx, cy, is)
-	addLabels(cv, *nodes, cx, cy, is)
+	addEdges(cv, *nodes, center)
+	addDiscs(cv, nodes, root, center, is)
+	addLabels(cv, *nodes, center, is)
 
 	return cv
 }
@@ -59,18 +60,22 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 }
 
 // addEdges recursively adds edge lines from each node to its children.
-func addEdges(cv *canvas.Canvas, node RadialNode, cx, cy float64) {
+func addEdges(cv *canvas.Canvas, node RadialNode, center geometry.Point) {
 	edgeSpec := &canvas.LineSpec{
 		Stroke:      inks.FixedInk(edgeColour),
 		StrokeWidth: edgeWidth,
 	}
-	addEdgesInner(cv, node, cx, cy, edgeSpec)
+	addEdgesInner(cv, node, center, edgeSpec)
 }
 
 // addEdgesInner is the recursive worker for addEdges. It accepts a pre-allocated
 // edgeSpec so the single allocation is not repeated for every node in the tree.
-func addEdgesInner(cv *canvas.Canvas, node RadialNode, cx, cy float64, edgeSpec *canvas.LineSpec) {
-	center := geometry.Point{X: cx, Y: cy}
+func addEdgesInner(
+	cv *canvas.Canvas,
+	node RadialNode,
+	center geometry.Point,
+	edgeSpec *canvas.LineSpec,
+) {
 	position := center.Translate(node.Position)
 
 	for _, child := range node.Children {
@@ -82,7 +87,7 @@ func addEdgesInner(cv *canvas.Canvas, node RadialNode, cx, cy float64, edgeSpec 
 			To:   childPosition,
 		})
 
-		addEdgesInner(cv, child, cx, cy, edgeSpec)
+		addEdgesInner(cv, child, center, edgeSpec)
 	}
 }
 
@@ -91,27 +96,33 @@ type discEntry struct {
 	node      RadialNode
 	file      *model.File
 	directory *model.Directory
-	sx, sy    float64
+	position  geometry.Point
 	isDir     bool
 }
 
-// collectDiscs recursively gathers all nodes with a positive DiscRadius,
-// along with their corresponding model.File (nil for directories).
-// INVARIANT: node.Children are ordered files-first, then subdirectories.
+// collectDiscs preserves the scalar helper contract used by internal tests.
 func collectDiscs(
 	node *RadialNode,
 	dir *model.Directory,
 	cx, cy float64,
 ) []discEntry {
+	return collectDiscsFromCenter(node, dir, geometry.Point{X: cx, Y: cy})
+}
+
+// collectDiscs recursively gathers all nodes with a positive DiscRadius,
+// along with their corresponding model.File (nil for directories).
+// INVARIANT: node.Children are ordered files-first, then subdirectories.
+func collectDiscsFromCenter(
+	node *RadialNode,
+	dir *model.Directory,
+	center geometry.Point,
+) []discEntry {
 	entries := make([]discEntry, 0)
-	center := geometry.Point{X: cx, Y: cy}
-	position := center.Translate(node.Position)
 
 	if node.DiscRadius > 0 {
 		entries = append(entries, discEntry{
 			node:      *node,
-			sx:        position.X,
-			sy:        position.Y,
+			position:  center.Translate(node.Position),
 			isDir:     node.IsDirectory,
 			directory: dir,
 		})
@@ -123,10 +134,10 @@ func collectDiscs(
 	for i := range node.Children {
 		child := &node.Children[i]
 		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			entries = append(entries, collectDiscs(child, dir.Dirs[dirIdx], cx, cy)...)
+			entries = append(entries, collectDiscsFromCenter(child, dir.Dirs[dirIdx], center)...)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			childEntries := collectDiscsLeaf(child, dir.Files[fileIdx], cx, cy)
+			childEntries := collectDiscsLeafFromCenter(child, dir.Files[fileIdx], center)
 			entries = append(entries, childEntries...)
 			fileIdx++
 		}
@@ -141,18 +152,22 @@ func collectDiscsLeaf(
 	file *model.File,
 	cx, cy float64,
 ) []discEntry {
+	return collectDiscsLeafFromCenter(node, file, geometry.Point{X: cx, Y: cy})
+}
+
+func collectDiscsLeafFromCenter(
+	node *RadialNode,
+	file *model.File,
+	center geometry.Point,
+) []discEntry {
 	if node.DiscRadius <= 0 {
 		return make([]discEntry, 0)
 	}
 
-	center := geometry.Point{X: cx, Y: cy}
-	position := center.Translate(node.Position)
-
 	return []discEntry{{
-		node: *node,
-		file: file,
-		sx:   position.X,
-		sy:   position.Y,
+		node:     *node,
+		file:     file,
+		position: center.Translate(node.Position),
 	}}
 }
 
@@ -162,10 +177,10 @@ func addDiscs(
 	cv *canvas.Canvas,
 	nodes *RadialNode,
 	root *model.Directory,
-	cx, cy float64,
+	center geometry.Point,
 	is Inks,
 ) {
-	entries := collectDiscs(nodes, root, cx, cy)
+	entries := collectDiscsFromCenter(nodes, root, center)
 
 	slices.SortFunc(entries, func(a, b discEntry) int {
 		return cmp.Compare(b.node.DiscRadius, a.node.DiscRadius)
@@ -206,8 +221,8 @@ func addDisc(cv *canvas.Canvas, e discEntry, is Inks, fileSpec, dirSpec *canvas.
 
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{
 		Spec:   spec,
-		X:      e.sx,
-		Y:      e.sy,
+		X:      e.position.X,
+		Y:      e.position.Y,
 		Radius: e.node.DiscRadius,
 		Angle:  e.node.Angle,
 		Fill:   fillMV,
@@ -219,13 +234,13 @@ func addDisc(cv *canvas.Canvas, e discEntry, is Inks, fileSpec, dirSpec *canvas.
 func addLabels(
 	cv *canvas.Canvas,
 	node RadialNode,
-	cx, cy float64,
+	center geometry.Point,
 	is Inks,
 ) {
 	labelInk := inks.FixedInk(labelColour)
 	// The root sits at dist==0 and has no meaningful angle; pass NaN so its
 	// direct file children each use their own angle for orientation.
-	addLabelsInner(cv, node, cx, cy, is, math.NaN(), labelInk)
+	addLabelsInner(cv, node, center, is, math.NaN(), labelInk)
 }
 
 // addLabelsInner recurses the node tree, rendering labels.
@@ -238,16 +253,16 @@ func addLabels(
 func addLabelsInner(
 	cv *canvas.Canvas,
 	node RadialNode,
-	cx, cy float64,
+	center geometry.Point,
 	is Inks,
 	parentDirAngle float64,
 	labelInk inks.Ink,
 ) {
-	renderNodeLabel(cv, node, cx, cy, is, parentDirAngle, labelInk)
+	renderNodeLabel(cv, node, center, is, parentDirAngle, labelInk)
 
 	childParentAngle := childParentAngleFor(node)
 	for _, child := range node.Children {
-		addLabelsInner(cv, child, cx, cy, is, childParentAngle, labelInk)
+		addLabelsInner(cv, child, center, is, childParentAngle, labelInk)
 	}
 }
 
@@ -255,7 +270,7 @@ func addLabelsInner(
 func renderNodeLabel(
 	cv *canvas.Canvas,
 	node RadialNode,
-	cx, cy float64,
+	center geometry.Point,
 	is Inks,
 	parentDirAngle float64,
 	labelInk inks.Ink,
@@ -265,9 +280,9 @@ func renderNodeLabel(
 	}
 
 	if node.Position.Length() == 0 {
-		addRootLabel(cv, node, cx, cy, is, labelInk)
+		addRootLabel(cv, node, center, is, labelInk)
 	} else {
-		addExternalLabel(cv, node, cx, cy, labelOrientAngle(node, parentDirAngle), labelInk)
+		addExternalLabel(cv, node, center, labelOrientAngle(node, parentDirAngle), labelInk)
 	}
 }
 
@@ -299,7 +314,7 @@ func childParentAngleFor(node RadialNode) float64 {
 func addRootLabel(
 	cv *canvas.Canvas,
 	node RadialNode,
-	cx, cy float64,
+	center geometry.Point,
 	_ Inks,
 	labelInk inks.Ink,
 ) {
@@ -308,8 +323,6 @@ func addRootLabel(
 		Anchor:   canvas.AnchorMiddle,
 		FontSize: 0,
 	}
-	center := geometry.Point{X: cx, Y: cy}
-
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     labelSpec,
 		Position: center.Translate(node.Position),
@@ -325,13 +338,12 @@ func addRootLabel(
 func addExternalLabel(
 	cv *canvas.Canvas,
 	node RadialNode,
-	cx, cy float64,
+	center geometry.Point,
 	orientAngle float64,
 	labelInk inks.Ink,
 ) {
 	dist := node.Position.Length()
 	labelRadius := dist + node.DiscRadius + labelGap
-	center := geometry.Point{X: cx, Y: cy}
 	position := center.Translate(geometry.Vector{
 		X: labelRadius * math.Cos(node.Angle),
 		Y: labelRadius * math.Sin(node.Angle),

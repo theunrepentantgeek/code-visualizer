@@ -221,8 +221,6 @@ func addDirectoryShapes(
 	if rect.Chrome.Orientation != DirectoryLabelNone && rect.Chrome.Text != "" {
 		spec := dirTopLabelSpec
 		rail := rect.Chrome.Rail
-		x := rail.X + rail.W/2
-		y := rail.Y + rail.H/2
 
 		if rect.Chrome.Orientation == DirectoryLabelLeft {
 			spec = dirLeftLabelSpec
@@ -230,7 +228,7 @@ func addDirectoryShapes(
 
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:     spec,
-			Position: geometry.Point{X: x, Y: y},
+			Position: geometry.Point{X: rail.X + rail.W/2, Y: rail.Y + rail.H/2},
 			Content:  rect.Chrome.Text,
 		})
 	}

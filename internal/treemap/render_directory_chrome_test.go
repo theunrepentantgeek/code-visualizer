@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
@@ -42,16 +43,16 @@ func TestRenderToCanvas_DrawsTopDirectoryChrome(t *testing.T) {
 	}, 0)
 
 	g.Expect(hasRectangle(
-		backend.rectangles,
+		backend.Calls,
 		geometry.Point{X: 10, Y: 10},
 		canvas.Size{Width: 80, Height: 20},
 	)).To(BeTrue())
-	g.Expect(hasText(backend.texts, textCall{
-		pos:      geometry.Point{X: 50, Y: 20},
-		text:     "source",
-		fontSize: 12,
-		anchor:   canvas.AnchorMiddle,
-		rotation: 0,
+	g.Expect(hasText(backend.Calls, mock.Call{
+		Pos:      geometry.Point{X: 50, Y: 20},
+		Text:     "source",
+		FontSize: 12,
+		Anchor:   canvas.AnchorMiddle,
+		Rotation: 0,
 	})).To(BeTrue())
 }
 
@@ -67,16 +68,16 @@ func TestRenderToCanvas_DrawsLeftDirectoryChrome(t *testing.T) {
 	}, 0)
 
 	g.Expect(hasRectangle(
-		backend.rectangles,
+		backend.Calls,
 		geometry.Point{X: 10, Y: 10},
 		canvas.Size{Width: 20, Height: 80},
 	)).To(BeTrue())
-	g.Expect(hasText(backend.texts, textCall{
-		pos:      geometry.Point{X: 20, Y: 50},
-		text:     "source",
-		fontSize: 12,
-		anchor:   canvas.AnchorMiddle,
-		rotation: -math.Pi / 2,
+	g.Expect(hasText(backend.Calls, mock.Call{
+		Pos:      geometry.Point{X: 20, Y: 50},
+		Text:     "source",
+		FontSize: 12,
+		Anchor:   canvas.AnchorMiddle,
+		Rotation: -math.Pi / 2,
 	})).To(BeTrue())
 }
 
@@ -89,19 +90,19 @@ func TestRenderToCanvas_OmitsDirectoryChromeWhenOrientationIsNone(t *testing.T) 
 		Content:     treemap.RectangleBounds{X: 14, Y: 14, W: 72, H: 72},
 	}, 0)
 
-	g.Expect(backend.texts).To(BeEmpty())
+	g.Expect(callsNamed(backend.Calls, "DrawText")).To(BeEmpty())
 	g.Expect(hasRectangle(
-		backend.rectangles,
+		backend.Calls,
 		geometry.Point{X: 10, Y: 10},
 		canvas.Size{Width: 80, Height: 20},
 	)).To(BeFalse())
 	g.Expect(hasRectangle(
-		backend.rectangles,
+		backend.Calls,
 		geometry.Point{X: 10, Y: 10},
 		canvas.Size{Width: 20, Height: 80},
 	)).To(BeFalse())
 	g.Expect(hasRectangle(
-		backend.rectangles,
+		backend.Calls,
 		geometry.Point{X: 10, Y: 10},
 		canvas.Size{Width: 80, Height: 80},
 	)).To(BeTrue())
@@ -123,7 +124,7 @@ func TestRenderToCanvas_TopRailUsesDepthPaletteAcrossAllPaletteDepths(t *testing
 			}, depth)
 
 			fill, ok := railFillAt(
-				backend.rectangles,
+				backend.Calls,
 				geometry.Point{X: 10, Y: 10},
 				canvas.Size{Width: 80, Height: 20},
 			)
@@ -145,7 +146,7 @@ func TestRenderToCanvas_LeftRailWrapsPaletteAtPaletteLength(t *testing.T) {
 	}, len(expectedHeaderFills))
 
 	fill, ok := railFillAt(
-		backend.rectangles,
+		backend.Calls,
 		geometry.Point{X: 10, Y: 10},
 		canvas.Size{Width: 20, Height: 80},
 	)
@@ -173,7 +174,7 @@ func TestRenderToCanvas_TopRailAtNegativeDepthUsesDarkestFillWithoutPanicking(t 
 	}, -1)
 
 	fill, ok := railFillAt(
-		backend.rectangles,
+		backend.Calls,
 		geometry.Point{X: 10, Y: 10},
 		canvas.Size{Width: 80, Height: 20},
 	)
@@ -187,9 +188,9 @@ func TestRenderToCanvas_SameDepthSiblingRailsShareFill(t *testing.T) {
 	g := NewGomegaWithT(t)
 	backend := renderSiblingDirectoryChrome(t)
 
-	first, ok := railFillAt(backend.rectangles, geometry.Point{X: 10, Y: 10}, canvas.Size{Width: 35, Height: 20})
+	first, ok := railFillAt(backend.Calls, geometry.Point{X: 10, Y: 10}, canvas.Size{Width: 35, Height: 20})
 	g.Expect(ok).To(BeTrue())
-	second, ok := railFillAt(backend.rectangles, geometry.Point{X: 55, Y: 10}, canvas.Size{Width: 35, Height: 20})
+	second, ok := railFillAt(backend.Calls, geometry.Point{X: 55, Y: 10}, canvas.Size{Width: 35, Height: 20})
 	g.Expect(ok).To(BeTrue())
 
 	g.Expect(first).To(Equal(expectedHeaderFills[0]))
@@ -199,7 +200,7 @@ func TestRenderToCanvas_SameDepthSiblingRailsShareFill(t *testing.T) {
 // renderDirectoryChrome renders a root directory with a single "source" child
 // directory using the given chrome and visibleDepth. The root itself always
 // carries VisibleDepth -1 (border-only chrome), matching layoutRoot.
-func renderDirectoryChrome(t *testing.T, chrome treemap.DirectoryChrome, visibleDepth int) *captureBackend {
+func renderDirectoryChrome(t *testing.T, chrome treemap.DirectoryChrome, visibleDepth int) *mock.Backend {
 	t.Helper()
 
 	root := &model.Directory{
@@ -249,7 +250,7 @@ func renderDirectoryChrome(t *testing.T, chrome treemap.DirectoryChrome, visible
 
 // renderSiblingDirectoryChrome renders a root directory with two sibling
 // directories, both at VisibleDepth 0, each with a top rail.
-func renderSiblingDirectoryChrome(t *testing.T) *captureBackend {
+func renderSiblingDirectoryChrome(t *testing.T) *mock.Backend {
 	t.Helper()
 
 	root := &model.Directory{
@@ -319,7 +320,7 @@ func renderSiblingDirectoryChrome(t *testing.T) *captureBackend {
 	return renderRectsToBackend(t, rects, root)
 }
 
-func renderRectsToBackend(t *testing.T, rects treemap.TreemapRectangle, root *model.Directory) *captureBackend {
+func renderRectsToBackend(t *testing.T, rects treemap.TreemapRectangle, root *model.Directory) *mock.Backend {
 	t.Helper()
 
 	is := treemap.Inks{
@@ -327,16 +328,16 @@ func renderRectsToBackend(t *testing.T, rects treemap.TreemapRectangle, root *mo
 		Border: inks.FixedInk(color.RGBA{A: 0xFF}),
 	}
 	cv := treemap.RenderToCanvas(rects, root, 100, 100, is, filesystem.FileSize)
-	backend := &captureBackend{}
+	backend := mock.NewBackend()
 
 	NewGomegaWithT(t).Expect(cv.RenderTo(backend)).To(Succeed())
 
 	return backend
 }
 
-func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size canvas.Size) bool {
-	for _, rectangle := range rectangles {
-		if rectangle.pos == pos && rectangle.size == size {
+func hasRectangle(calls []mock.Call, pos geometry.Point, size canvas.Size) bool {
+	for _, call := range calls {
+		if call.Method == "DrawRectangle" && call.Pos == pos && call.Size == size {
 			return true
 		}
 	}
@@ -346,13 +347,13 @@ func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size canvas.Si
 
 // railFillAt returns the solid fill colour of the rectangle at pos/size,
 // and whether a matching rectangle with a SolidFill was found.
-func railFillAt(rectangles []rectangleCall, pos geometry.Point, size canvas.Size) (color.RGBA, bool) {
-	for _, rectangle := range rectangles {
-		if rectangle.pos != pos || rectangle.size != size {
+func railFillAt(calls []mock.Call, pos geometry.Point, size canvas.Size) (color.RGBA, bool) {
+	for _, call := range calls {
+		if call.Method != "DrawRectangle" || call.Pos != pos || call.Size != size {
 			continue
 		}
 
-		if solid, ok := rectangle.fill.(canvasmodel.SolidFill); ok {
+		if solid, ok := call.RawFill.(canvasmodel.SolidFill); ok {
 			return solid.Color, true
 		}
 	}
@@ -360,6 +361,25 @@ func railFillAt(rectangles []rectangleCall, pos geometry.Point, size canvas.Size
 	return color.RGBA{}, false
 }
 
-func hasText(texts []textCall, want textCall) bool {
-	return slices.Contains(texts, want)
+func hasText(calls []mock.Call, want mock.Call) bool {
+	return slices.ContainsFunc(calls, func(call mock.Call) bool {
+		return call.Method == "DrawText" &&
+			call.Pos == want.Pos &&
+			call.Text == want.Text &&
+			call.FontSize == want.FontSize &&
+			call.Anchor == want.Anchor &&
+			call.Rotation == want.Rotation
+	})
+}
+
+func callsNamed(calls []mock.Call, method string) []mock.Call {
+	result := make([]mock.Call, 0)
+
+	for _, call := range calls {
+		if call.Method == method {
+			result = append(result, call)
+		}
+	}
+
+	return result
 }
