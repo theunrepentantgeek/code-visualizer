@@ -7,6 +7,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -53,7 +54,7 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 		Spec:  bgSpec,
 		W:     float64(canvasWidth),
 		H:     float64(canvasHeight),
-		Focus: canvasmodel.Point{X: 0.5, Y: 0.5},
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -69,17 +70,16 @@ func addEdges(cv *canvas.Canvas, node RadialNode, cx, cy float64) {
 // addEdgesInner is the recursive worker for addEdges. It accepts a pre-allocated
 // edgeSpec so the single allocation is not repeated for every node in the tree.
 func addEdgesInner(cv *canvas.Canvas, node RadialNode, cx, cy float64, edgeSpec *canvas.LineSpec) {
-	px := cx + node.Position.X
-	py := cy + node.Position.Y
+	center := geometry.Point{X: cx, Y: cy}
+	position := center.Translate(node.Position)
 
 	for _, child := range node.Children {
-		chx := cx + child.Position.X
-		chy := cy + child.Position.Y
+		childPosition := center.Translate(child.Position)
 
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: edgeSpec,
-			X1:   px, Y1: py,
-			X2: chx, Y2: chy,
+			From: position,
+			To:   childPosition,
 		})
 
 		addEdgesInner(cv, child, cx, cy, edgeSpec)
@@ -104,12 +104,14 @@ func collectDiscs(
 	cx, cy float64,
 ) []discEntry {
 	entries := make([]discEntry, 0)
+	center := geometry.Point{X: cx, Y: cy}
+	position := center.Translate(node.Position)
 
 	if node.DiscRadius > 0 {
 		entries = append(entries, discEntry{
 			node:      *node,
-			sx:        cx + node.Position.X,
-			sy:        cy + node.Position.Y,
+			sx:        position.X,
+			sy:        position.Y,
 			isDir:     node.IsDirectory,
 			directory: dir,
 		})
@@ -143,11 +145,14 @@ func collectDiscsLeaf(
 		return make([]discEntry, 0)
 	}
 
+	center := geometry.Point{X: cx, Y: cy}
+	position := center.Translate(node.Position)
+
 	return []discEntry{{
 		node: *node,
 		file: file,
-		sx:   cx + node.Position.X,
-		sy:   cy + node.Position.Y,
+		sx:   position.X,
+		sy:   position.Y,
 	}}
 }
 
@@ -303,12 +308,12 @@ func addRootLabel(
 		Anchor:   canvas.AnchorMiddle,
 		FontSize: 0,
 	}
+	center := geometry.Point{X: cx, Y: cy}
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    labelSpec,
-		X:       cx + node.Position.X,
-		Y:       cy + node.Position.Y,
-		Content: node.Label,
+		Spec:     labelSpec,
+		Position: center.Translate(node.Position),
+		Content:  node.Label,
 	})
 }
 
@@ -326,8 +331,11 @@ func addExternalLabel(
 ) {
 	dist := node.Position.Length()
 	labelRadius := dist + node.DiscRadius + labelGap
-	lx := cx + labelRadius*math.Cos(node.Angle)
-	ly := cy + labelRadius*math.Sin(node.Angle)
+	center := geometry.Point{X: cx, Y: cy}
+	position := center.Translate(geometry.Vector{
+		X: labelRadius * math.Cos(node.Angle),
+		Y: labelRadius * math.Sin(node.Angle),
+	})
 
 	angle := math.Mod(orientAngle, 2*math.Pi)
 	if angle < 0 {
@@ -354,9 +362,8 @@ func addExternalLabel(
 	}
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec:    labelSpec,
-		X:       lx,
-		Y:       ly,
-		Content: node.Label,
+		Spec:     labelSpec,
+		Position: position,
+		Content:  node.Label,
 	})
 }
