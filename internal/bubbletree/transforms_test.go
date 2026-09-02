@@ -16,7 +16,8 @@ func TestExpandBoundsForDisc_SingleDisc(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box, has := expandBoundsForDisc(geometry.Rect{}, false, geometry.Circle{Center: geometry.Point{X: 5, Y: 3}, Radius: 2})
+	circle := geometry.Circle{Center: geometry.Point{X: 5, Y: 3}, Radius: 2}
+	box, has := expandBoundsForDisc(geometry.Rect{}, false, circle)
 
 	g.Expect(has).To(BeTrue())
 	g.Expect(box.Min.X).To(BeNumerically("~", 3.0, 1e-9))
@@ -30,10 +31,14 @@ func TestExpandBoundsForDisc_MultipleDiscs(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	box, has := geometry.Rect{}, false
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 1})  // bounds: (-1,-1)..(1,1)
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 5, Y: 0}, Radius: 2})  // extends maxX to 7, maxY to 2, minY to -2
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 0, Y: -4}, Radius: 1}) // extends minY to -5
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: -3, Y: 0}, Radius: 0}) // extends minX to -3
+	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 1})
+	// bounds: (-1,-1)..(1,1)
+	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 5, Y: 0}, Radius: 2})
+	// extends maxX to 7, maxY to 2, minY to -2
+	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 0, Y: -4}, Radius: 1})
+	// extends minY to -5
+	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: -3, Y: 0}, Radius: 0})
+	// extends minX to -3
 
 	g.Expect(has).To(BeTrue())
 	g.Expect(box.Min.X).To(BeNumerically("~", -3.0, 1e-9))
@@ -46,7 +51,8 @@ func TestExpandBoundsForDisc_ZeroRadius(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box, has := expandBoundsForDisc(geometry.Rect{}, false, geometry.Circle{Center: geometry.Point{X: 3, Y: 7}, Radius: 0}) // zero-radius "point"
+	circle := geometry.Circle{Center: geometry.Point{X: 3, Y: 7}, Radius: 0} // zero-radius "point"
+	box, has := expandBoundsForDisc(geometry.Rect{}, false, circle)
 
 	g.Expect(has).To(BeTrue())
 	g.Expect(box.Min.X).To(BeNumerically("~", 3.0, 1e-9))

@@ -65,7 +65,9 @@ func placeInitialCircles(circles []BubbleNode) {
 		return
 	}
 
-	circles[1].Position = geometry.NewPoint(circles[0].Radius+circles[1].Radius+siblingPadding, 0)
+	circles[1].Geometry.Center = geometry.Point{
+		X: circles[0].Geometry.Radius + circles[1].Geometry.Radius + siblingPadding,
+	}
 
 	if len(circles) < 3 {
 		return

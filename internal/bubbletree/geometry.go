@@ -56,6 +56,8 @@ func welzl(pts []geometry.Circle, boundary [3]geometry.Circle, boundaryLen, n in
 // test), allowing tolerance of slack to absorb floating-point rounding. This
 // is deliberately separate from geometry.Circle.Encloses, which uses exact
 // comparisons with no hidden tolerance.
+//
+//nolint:unparam // tolerance is kept explicit so callers can see and vary the enclosure slack
 func enclosesWithin(outer, inner geometry.Circle, tolerance float64) bool {
 	if !outer.Valid() || !inner.Valid() {
 		return false

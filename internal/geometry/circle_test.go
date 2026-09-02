@@ -20,8 +20,16 @@ func TestCircleValid(t *testing.T) {
 		{name: "zero radius", circle: Circle{Center: Point{X: 10, Y: 20}, Radius: 0}, want: true},
 		{name: "negative radius", circle: Circle{Center: Point{X: 10, Y: 20}, Radius: -5}, want: false},
 		{name: "nan radius", circle: Circle{Center: Point{X: 10, Y: 20}, Radius: math.NaN()}, want: false},
-		{name: "positive infinite radius", circle: Circle{Center: Point{X: 10, Y: 20}, Radius: math.Inf(1)}, want: false},
-		{name: "negative infinite radius", circle: Circle{Center: Point{X: 10, Y: 20}, Radius: math.Inf(-1)}, want: false},
+		{
+			name:   "positive infinite radius",
+			circle: Circle{Center: Point{X: 10, Y: 20}, Radius: math.Inf(1)},
+			want:   false,
+		},
+		{
+			name:   "negative infinite radius",
+			circle: Circle{Center: Point{X: 10, Y: 20}, Radius: math.Inf(-1)},
+			want:   false,
+		},
 		{name: "invalid center", circle: Circle{Center: Point{X: math.NaN(), Y: 20}, Radius: 5}, want: false},
 	}
 
@@ -120,7 +128,11 @@ func TestCircleIntersects(t *testing.T) {
 		want  bool
 	}{
 		{name: "overlapping circle", other: Circle{Center: Point{X: 12, Y: 20}, Radius: 5}, want: true},
-		{name: "tangent circle counts as intersecting", other: Circle{Center: Point{X: 20, Y: 20}, Radius: 5}, want: true},
+		{
+			name:  "tangent circle counts as intersecting",
+			other: Circle{Center: Point{X: 20, Y: 20}, Radius: 5},
+			want:  true,
+		},
 		{name: "disjoint circle", other: Circle{Center: Point{X: 30, Y: 20}, Radius: 5}, want: false},
 		{name: "identical circle", other: Circle{Center: Point{X: 10, Y: 20}, Radius: 5}, want: true},
 		{name: "enclosed circle", other: Circle{Center: Point{X: 10, Y: 20}, Radius: 1}, want: true},
