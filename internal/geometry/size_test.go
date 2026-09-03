@@ -64,8 +64,9 @@ func TestSizeEmpty(t *testing.T) {
 
 func TestSizeArea(t *testing.T) {
 	t.Parallel()
+	g := NewWithT(t)
 
-	assertFloatClose(t, (Size{Width: 16, Height: 9}).Area(), 144)
+	assertFloatClose(g, (Size{Width: 16, Height: 9}).Area(), 144)
 }
 
 func TestSizeScale(t *testing.T) {
