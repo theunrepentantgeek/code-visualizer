@@ -37,17 +37,17 @@ func TestRenderToCanvas_DrawsTopDirectoryChrome(t *testing.T) {
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelTop,
 		Text:        "source",
-		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
-		Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
+		Rail:        geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(90, 30)},
+		Content:     geometry.Rect{Min: geometry.NewPoint(14, 30), Max: geometry.NewPoint(86, 86)},
 	}, 0)
 
 	g.Expect(hasRectangle(
 		backend.rectangles,
-		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 20},
+		geometry.NewPoint(10, 10),
+		geometry.Size{Width: 80, Height: 20},
 	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
-		pos:      geometry.Point{X: 50, Y: 20},
+		pos:      geometry.NewPoint(50, 20),
 		text:     "source",
 		fontSize: 12,
 		anchor:   canvas.AnchorMiddle,
@@ -62,17 +62,17 @@ func TestRenderToCanvas_DrawsLeftDirectoryChrome(t *testing.T) {
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelLeft,
 		Text:        "source",
-		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 30, Y: 90}},
-		Content:     geometry.Rect{Min: geometry.Point{X: 30, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
+		Rail:        geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(30, 90)},
+		Content:     geometry.Rect{Min: geometry.NewPoint(30, 14), Max: geometry.NewPoint(86, 86)},
 	}, 0)
 
 	g.Expect(hasRectangle(
 		backend.rectangles,
-		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 20, Height: 80},
+		geometry.NewPoint(10, 10),
+		geometry.Size{Width: 20, Height: 80},
 	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
-		pos:      geometry.Point{X: 20, Y: 50},
+		pos:      geometry.NewPoint(20, 50),
 		text:     "source",
 		fontSize: 12,
 		anchor:   canvas.AnchorMiddle,
@@ -86,24 +86,24 @@ func TestRenderToCanvas_OmitsDirectoryChromeWhenOrientationIsNone(t *testing.T) 
 	g := NewGomegaWithT(t)
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelNone,
-		Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
+		Content:     geometry.Rect{Min: geometry.NewPoint(14, 14), Max: geometry.NewPoint(86, 86)},
 	}, 0)
 
 	g.Expect(backend.texts).To(BeEmpty())
 	g.Expect(hasRectangle(
 		backend.rectangles,
-		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 20},
+		geometry.NewPoint(10, 10),
+		geometry.Size{Width: 80, Height: 20},
 	)).To(BeFalse())
 	g.Expect(hasRectangle(
 		backend.rectangles,
-		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 20, Height: 80},
+		geometry.NewPoint(10, 10),
+		geometry.Size{Width: 20, Height: 80},
 	)).To(BeFalse())
 	g.Expect(hasRectangle(
 		backend.rectangles,
-		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 80},
+		geometry.NewPoint(10, 10),
+		geometry.Size{Width: 80, Height: 80},
 	)).To(BeTrue())
 }
 
@@ -118,14 +118,14 @@ func TestRenderToCanvas_TopRailUsesDepthPaletteAcrossAllPaletteDepths(t *testing
 			backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 				Orientation: treemap.DirectoryLabelTop,
 				Text:        "source",
-				Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
-				Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
+				Rail:        geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(90, 30)},
+				Content:     geometry.Rect{Min: geometry.NewPoint(14, 30), Max: geometry.NewPoint(86, 86)},
 			}, depth)
 
 			fill, ok := railFillAt(
 				backend.rectangles,
-				geometry.Point{X: 10, Y: 10},
-				canvas.Size{Width: 80, Height: 20},
+				geometry.NewPoint(10, 10),
+				geometry.Size{Width: 80, Height: 20},
 			)
 			g.Expect(ok).To(BeTrue())
 			g.Expect(fill).To(Equal(expectedHeaderFills[depth]))
@@ -140,14 +140,14 @@ func TestRenderToCanvas_LeftRailWrapsPaletteAtPaletteLength(t *testing.T) {
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelLeft,
 		Text:        "source",
-		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 30, Y: 90}},
-		Content:     geometry.Rect{Min: geometry.Point{X: 30, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
+		Rail:        geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(30, 90)},
+		Content:     geometry.Rect{Min: geometry.NewPoint(30, 14), Max: geometry.NewPoint(86, 86)},
 	}, len(expectedHeaderFills))
 
 	fill, ok := railFillAt(
 		backend.rectangles,
-		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 20, Height: 80},
+		geometry.NewPoint(10, 10),
+		geometry.Size{Width: 20, Height: 80},
 	)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(fill).To(Equal(expectedHeaderFills[0]))
@@ -168,14 +168,14 @@ func TestRenderToCanvas_TopRailAtNegativeDepthUsesDarkestFillWithoutPanicking(t 
 	backend := renderDirectoryChrome(t, treemap.DirectoryChrome{
 		Orientation: treemap.DirectoryLabelTop,
 		Text:        "source",
-		Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
-		Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
+		Rail:        geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(90, 30)},
+		Content:     geometry.Rect{Min: geometry.NewPoint(14, 30), Max: geometry.NewPoint(86, 86)},
 	}, -1)
 
 	fill, ok := railFillAt(
 		backend.rectangles,
-		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 20},
+		geometry.NewPoint(10, 10),
+		geometry.Size{Width: 80, Height: 20},
 	)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(fill).To(Equal(expectedHeaderFills[0]))
@@ -187,9 +187,9 @@ func TestRenderToCanvas_SameDepthSiblingRailsShareFill(t *testing.T) {
 	g := NewGomegaWithT(t)
 	backend := renderSiblingDirectoryChrome(t)
 
-	first, ok := railFillAt(backend.rectangles, geometry.Point{X: 10, Y: 10}, canvas.Size{Width: 35, Height: 20})
+	first, ok := railFillAt(backend.rectangles, geometry.NewPoint(10, 10), geometry.Size{Width: 35, Height: 20})
 	g.Expect(ok).To(BeTrue())
-	second, ok := railFillAt(backend.rectangles, geometry.Point{X: 55, Y: 10}, canvas.Size{Width: 35, Height: 20})
+	second, ok := railFillAt(backend.rectangles, geometry.NewPoint(55, 10), geometry.Size{Width: 35, Height: 20})
 	g.Expect(ok).To(BeTrue())
 
 	g.Expect(first).To(Equal(expectedHeaderFills[0]))
@@ -212,23 +212,23 @@ func renderDirectoryChrome(t *testing.T, chrome treemap.DirectoryChrome, visible
 		},
 	}
 	rects := treemap.TreemapRectangle{
-		Bounds:       geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
+		Bounds:       geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 100)},
 		VisibleDepth: -1,
 		IsDirectory:  true,
 		Chrome: treemap.DirectoryChrome{
 			Orientation: treemap.DirectoryLabelNone,
-			Content:     geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 96}},
+			Content:     geometry.Rect{Min: geometry.NewPoint(4, 4), Max: geometry.NewPoint(96, 96)},
 		},
 		Children: []treemap.TreemapRectangle{
 			{
-				Bounds:       geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
+				Bounds:       geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(90, 90)},
 				VisibleDepth: visibleDepth,
 				Label:        "source",
 				IsDirectory:  true,
 				Chrome:       chrome,
 				Children: []treemap.TreemapRectangle{
 					{
-						Bounds: geometry.Rect{Min: geometry.Point{X: 14, Y: 14}, Max: geometry.Point{X: 86, Y: 86}},
+						Bounds: geometry.Rect{Min: geometry.NewPoint(14, 14), Max: geometry.NewPoint(86, 86)},
 					},
 				},
 			},
@@ -251,15 +251,15 @@ func renderSiblingDirectoryChrome(t *testing.T) *captureBackend {
 	}{
 		{
 			name:    "alpha",
-			bounds:  geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 90}},
-			rail:    geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 45, Y: 30}},
-			content: geometry.Rect{Min: geometry.Point{X: 14, Y: 30}, Max: geometry.Point{X: 41, Y: 86}},
+			bounds:  geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(45, 90)},
+			rail:    geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(45, 30)},
+			content: geometry.Rect{Min: geometry.NewPoint(14, 30), Max: geometry.NewPoint(41, 86)},
 		},
 		{
 			name:    "beta",
-			bounds:  geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
-			rail:    geometry.Rect{Min: geometry.Point{X: 55, Y: 10}, Max: geometry.Point{X: 90, Y: 30}},
-			content: geometry.Rect{Min: geometry.Point{X: 59, Y: 30}, Max: geometry.Point{X: 86, Y: 86}},
+			bounds:  geometry.Rect{Min: geometry.NewPoint(55, 10), Max: geometry.NewPoint(90, 90)},
+			rail:    geometry.Rect{Min: geometry.NewPoint(55, 10), Max: geometry.NewPoint(90, 30)},
+			content: geometry.Rect{Min: geometry.NewPoint(59, 30), Max: geometry.NewPoint(86, 86)},
 		},
 	}
 
@@ -289,12 +289,12 @@ func renderSiblingDirectoryChrome(t *testing.T) *captureBackend {
 	}
 
 	rects := treemap.TreemapRectangle{
-		Bounds:       geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
+		Bounds:       geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 100)},
 		VisibleDepth: -1,
 		IsDirectory:  true,
 		Chrome: treemap.DirectoryChrome{
 			Orientation: treemap.DirectoryLabelNone,
-			Content:     geometry.Rect{Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 96}},
+			Content:     geometry.Rect{Min: geometry.NewPoint(4, 4), Max: geometry.NewPoint(96, 96)},
 		},
 		Children: children,
 	}
@@ -317,7 +317,7 @@ func renderRectsToBackend(t *testing.T, rects treemap.TreemapRectangle, root *mo
 	return backend
 }
 
-func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size canvas.Size) bool {
+func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size geometry.Size) bool {
 	for _, rectangle := range rectangles {
 		if rectangle.pos == pos && rectangle.size == size {
 			return true
@@ -329,7 +329,7 @@ func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size canvas.Si
 
 // railFillAt returns the solid fill colour of the rectangle at pos/size,
 // and whether a matching rectangle with a SolidFill was found.
-func railFillAt(rectangles []rectangleCall, pos geometry.Point, size canvas.Size) (color.RGBA, bool) {
+func railFillAt(rectangles []rectangleCall, pos geometry.Point, size geometry.Size) (color.RGBA, bool) {
 	for _, rectangle := range rectangles {
 		if rectangle.pos != pos || rectangle.size != size {
 			continue

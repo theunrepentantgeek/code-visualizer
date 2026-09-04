@@ -113,8 +113,8 @@ func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
 		{Start: time.Date(2026, time.August, 8, 0, 0, 0, 0, time.UTC)},
 	}
 	nodes := []SpiralNode{
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 30, Y: 40}, Radius: 12}},
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 60, Y: 80}, Radius: 0}},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(30, 40), 12)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(60, 80), 0)},
 	}
 	darkFill := inks.FixedInk(color.RGBA{A: 255})
 
@@ -122,7 +122,7 @@ func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
 
 	g.Expect(labels).To(HaveLen(1))
 	g.Expect(labels[0]).To(Equal(canvas.BlockLabel{
-		Bounds:       geometry.Rect{Min: geometry.Point{X: 20, Y: 30}, Max: geometry.Point{X: 40, Y: 50}},
+		Bounds:       geometry.Rect{Min: geometry.NewPoint(20, 30), Max: geometry.NewPoint(40, 50)},
 		Lines:        []string{"7", "Aug", "1"},
 		Ink:          canvas.TextColourFor(color.RGBA{A: 255}),
 		PreserveText: true,
@@ -134,7 +134,7 @@ func TestBuildDiscLabels_PreservesPrePointOffsetGrouping(t *testing.T) {
 	g := NewWithT(t)
 
 	nodes := []SpiralNode{{
-		Geometry: geometry.Circle{Center: geometry.Point{X: -2.3, Y: -0.1}, Radius: 2.1},
+		Geometry: geometry.NewCircle(geometry.NewPoint(-2.3, -0.1), 2.1),
 	}}
 	buckets := []TimeBucket{{
 		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
@@ -158,8 +158,8 @@ func TestBuildDiscLabels_UsesOnlyPairedNodesAndBuckets(t *testing.T) {
 	g := NewWithT(t)
 
 	nodes := []SpiralNode{
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 30, Y: 40}, Radius: 12}},
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 60, Y: 80}, Radius: 12}},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(30, 40), 12)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(60, 80), 12)},
 	}
 	buckets := []TimeBucket{{
 		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
@@ -181,7 +181,7 @@ func TestRenderToCanvas_PreservesZeroMetricTextInRasterDiscLabels(t *testing.T) 
 	buckets := []TimeBucket{{
 		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
 	}}
-	nodes := []SpiralNode{{Geometry: geometry.Circle{Center: geometry.Point{X: 25, Y: 25}, Radius: 12}}}
+	nodes := []SpiralNode{{Geometry: geometry.NewCircle(geometry.NewPoint(25, 25), 12)}}
 	ink := inks.FixedInk(color.RGBA{A: 255})
 	labels := buildDiscLabels(nodes, buckets, ink, LabelMetrics{
 		Size: commitCountMetric, Fill: "file-lines", Border: "file-size", Surface: "git-age",

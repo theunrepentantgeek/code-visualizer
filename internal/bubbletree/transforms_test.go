@@ -16,7 +16,7 @@ func TestExpandBoundsForDisc_SingleDisc(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	circle := geometry.Circle{Center: geometry.Point{X: 5, Y: 3}, Radius: 2}
+	circle := geometry.NewCircle(geometry.NewPoint(5, 3), 2)
 	box, has := expandBoundsForDisc(geometry.Rect{}, false, circle)
 
 	g.Expect(has).To(BeTrue())
@@ -31,13 +31,13 @@ func TestExpandBoundsForDisc_MultipleDiscs(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	box, has := geometry.Rect{}, false
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 1})
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(0, 0), 1))
 	// bounds: (-1,-1)..(1,1)
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 5, Y: 0}, Radius: 2})
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(5, 0), 2))
 	// extends maxX to 7, maxY to 2, minY to -2
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: 0, Y: -4}, Radius: 1})
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(0, -4), 1))
 	// extends minY to -5
-	box, has = expandBoundsForDisc(box, has, geometry.Circle{Center: geometry.Point{X: -3, Y: 0}, Radius: 0})
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(-3, 0), 0))
 	// extends minX to -3
 
 	g.Expect(has).To(BeTrue())
@@ -51,7 +51,7 @@ func TestExpandBoundsForDisc_ZeroRadius(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	circle := geometry.Circle{Center: geometry.Point{X: 3, Y: 7}, Radius: 0} // zero-radius "point"
+	circle := geometry.NewCircle(geometry.NewPoint(3, 7), 0) // zero-radius "point"
 	box, has := expandBoundsForDisc(geometry.Rect{}, false, circle)
 
 	g.Expect(has).To(BeTrue())
@@ -71,7 +71,7 @@ func TestOccupiedBounds_NoChildren_NoLabel(t *testing.T) {
 
 	// A leaf node with no children and ShowLabel=false contributes nothing,
 	// so occupiedBounds reports it received no rectangle.
-	node := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 5, Y: 5}, Radius: 3}, ShowLabel: false}
+	node := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(5, 5), 3), ShowLabel: false}
 
 	_, has := occupiedBounds(&node)
 
@@ -83,10 +83,10 @@ func TestOccupiedBounds_WithChildren(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	parent := BubbleNode{
-		Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 10},
+		Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 10),
 		Children: []BubbleNode{
-			{Geometry: geometry.Circle{Center: geometry.Point{X: -3, Y: 0}, Radius: 2}}, // covers X: -5 .. -1
-			{Geometry: geometry.Circle{Center: geometry.Point{X: 4, Y: 0}, Radius: 1}},  // covers X:  3 ..  5
+			{Geometry: geometry.NewCircle(geometry.NewPoint(-3, 0), 2)},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(4, 0), 1)},
 		},
 	}
 
@@ -103,9 +103,9 @@ func TestOccupiedBounds_ShowLabelIncludesRoot(t *testing.T) {
 
 	// When ShowLabel is true, the root node's own circle is added to bounds.
 	parent := BubbleNode{
-		Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 8}, ShowLabel: true,
+		Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 8), ShowLabel: true,
 		Children: []BubbleNode{
-			{Geometry: geometry.Circle{Center: geometry.Point{X: 1, Y: 0}, Radius: 1}},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(1, 0), 1)},
 		},
 	}
 
@@ -129,9 +129,9 @@ func TestApplyScale_ChildPositionUpdated(t *testing.T) {
 	// Parent placed at (10, 20); child in local frame at (2, 0) with radius 1.
 	// After applyScale(scale=3): child should be at (10+2*3, 20+0*3)=(16,20) with radius 3.
 	parent := BubbleNode{
-		Geometry: geometry.Circle{Center: geometry.Point{X: 10, Y: 20}, Radius: 15},
+		Geometry: geometry.NewCircle(geometry.NewPoint(10, 20), 15),
 		Children: []BubbleNode{
-			{Geometry: geometry.Circle{Center: geometry.Point{X: 2, Y: 0}, Radius: 1}},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(2, 0), 1)},
 		},
 	}
 
@@ -147,13 +147,13 @@ func TestApplyScale_NestedChildren(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	grandchild := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 1, Y: 0}, Radius: 0.5}}
+	grandchild := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(1, 0), 0.5)}
 	child := BubbleNode{
-		Geometry: geometry.Circle{Center: geometry.Point{X: 2, Y: 0}, Radius: 2},
+		Geometry: geometry.NewCircle(geometry.NewPoint(2, 0), 2),
 		Children: []BubbleNode{grandchild},
 	}
 	parent := BubbleNode{
-		Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 10},
+		Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 10),
 		Children: []BubbleNode{child},
 	}
 
@@ -176,9 +176,9 @@ func TestOffsetNodes_RootAndChildren(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	child := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 5, Y: 5}, Radius: 1}}
+	child := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(5, 5), 1)}
 	root := BubbleNode{
-		Geometry: geometry.Circle{Center: geometry.Point{X: 10, Y: 10}, Radius: 20},
+		Geometry: geometry.NewCircle(geometry.NewPoint(10, 10), 20),
 		Children: []BubbleNode{child},
 	}
 

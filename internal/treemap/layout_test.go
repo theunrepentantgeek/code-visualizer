@@ -46,7 +46,7 @@ func TestLayoutRootUsesBorderOnlyChrome(t *testing.T) {
 
 	g.Expect(rects.Chrome.Orientation).To(Equal(DirectoryLabelNone))
 	g.Expect(rects.Chrome.Content).To(Equal(geometry.Rect{
-		Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 196, Y: 96},
+		Min: geometry.NewPoint(4, 4), Max: geometry.NewPoint(196, 96),
 	}))
 	g.Expect(rects.Children).To(HaveLen(1))
 	g.Expect(rects.Children[0].Bounds.Min.Y).To(BeNumerically(">=", 4.0))
@@ -359,12 +359,12 @@ func TestOffsetRects_ShiftsCoordinates(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	rect := TreemapRectangle{
-		Bounds:      geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 70}},
+		Bounds:      geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(110, 70)},
 		IsDirectory: true,
 		Chrome: DirectoryChrome{
 			Orientation: DirectoryLabelTop,
-			Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 40}},
-			Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 40}, Max: geometry.Point{X: 106, Y: 66}},
+			Rail:        geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(110, 40)},
+			Content:     geometry.Rect{Min: geometry.NewPoint(14, 40), Max: geometry.NewPoint(106, 66)},
 		},
 	}
 	OffsetRects(&rect, geometry.Vector{X: 30, Y: 40})
@@ -374,10 +374,10 @@ func TestOffsetRects_ShiftsCoordinates(t *testing.T) {
 	g.Expect(rect.Bounds.Height()).To(Equal(50.0))
 	g.Expect(rect.VisibleDepth).To(Equal(0))
 	g.Expect(rect.Chrome.Rail).To(Equal(geometry.Rect{
-		Min: geometry.Point{X: 40, Y: 60}, Max: geometry.Point{X: 140, Y: 80},
+		Min: geometry.NewPoint(40, 60), Max: geometry.NewPoint(140, 80),
 	}))
 	g.Expect(rect.Chrome.Content).To(Equal(geometry.Rect{
-		Min: geometry.Point{X: 44, Y: 80}, Max: geometry.Point{X: 136, Y: 106},
+		Min: geometry.NewPoint(44, 80), Max: geometry.NewPoint(136, 106),
 	}))
 }
 
@@ -386,13 +386,13 @@ func TestOffsetRects_ShiftsChildrenRecursively(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	rect := TreemapRectangle{
-		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 100}},
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(200, 100)},
 		Children: []TreemapRectangle{
-			{Bounds: geometry.Rect{Min: geometry.Point{X: 5, Y: 5}, Max: geometry.Point{X: 95, Y: 95}}},
+			{Bounds: geometry.Rect{Min: geometry.NewPoint(5, 5), Max: geometry.NewPoint(95, 95)}},
 			{
-				Bounds: geometry.Rect{Min: geometry.Point{X: 100, Y: 5}, Max: geometry.Point{X: 190, Y: 95}},
+				Bounds: geometry.Rect{Min: geometry.NewPoint(100, 5), Max: geometry.NewPoint(190, 95)},
 				Children: []TreemapRectangle{
-					{Bounds: geometry.Rect{Min: geometry.Point{X: 105, Y: 10}, Max: geometry.Point{X: 145, Y: 50}}},
+					{Bounds: geometry.Rect{Min: geometry.NewPoint(105, 10), Max: geometry.NewPoint(145, 50)}},
 				},
 			},
 		},
@@ -414,7 +414,7 @@ func TestOffsetRects_ZeroOffset_NoChange(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	rect := TreemapRectangle{
-		Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 70}},
+		Bounds: geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(110, 70)},
 	}
 	OffsetRects(&rect, geometry.Vector{X: 0, Y: 0})
 	g.Expect(rect.Bounds.Min.X).To(Equal(10.0))
@@ -426,13 +426,13 @@ func TestOffsetRects_PreservesVisibleDepth(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	rect := TreemapRectangle{
-		Bounds:       geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 70}},
+		Bounds:       geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(110, 70)},
 		IsDirectory:  true,
 		VisibleDepth: 3,
 		Chrome: DirectoryChrome{
 			Orientation: DirectoryLabelTop,
-			Rail:        geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 40}},
-			Content:     geometry.Rect{Min: geometry.Point{X: 14, Y: 40}, Max: geometry.Point{X: 106, Y: 66}},
+			Rail:        geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(110, 40)},
+			Content:     geometry.Rect{Min: geometry.NewPoint(14, 40), Max: geometry.NewPoint(106, 66)},
 		},
 		Children: []TreemapRectangle{
 			{VisibleDepth: 0},

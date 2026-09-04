@@ -100,7 +100,7 @@ func enclosingTwo(a, b geometry.Circle) geometry.Circle {
 	// t ranges from 0 (at a) to 1 (at b).
 	t := 0.5 + (b.Radius-a.Radius)/(2*d)
 
-	return geometry.Circle{Center: a.Center.Translate(delta.Scale(t)), Radius: r}
+	return geometry.NewCircle(a.Center.Translate(delta.Scale(t)), r)
 }
 
 // enclosingThree solves for the minimum circle enclosing three boundary circles
@@ -147,7 +147,7 @@ func enclosingThree(a, b, c geometry.Circle) geometry.Circle {
 		return enclosingThreeFallback(a, b, c)
 	}
 
-	return enclosure{center: geometry.NewPoint(eu+fu*r, ev+fv*r), radius: r}
+	return geometry.NewCircle(geometry.NewPoint(eu+fu*r, ev+fv*r), r)
 }
 
 // solveQuadraticForRadius solves qa*r² + qb*r + qc = 0 for the smallest

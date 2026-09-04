@@ -266,7 +266,7 @@ func TestSectorPoints_FollowsAnnularBoundarySampling(t *testing.T) {
 		InnerRadius: 40,
 		OuterRadius: 80,
 	}
-	center := geometry.Point{X: 120, Y: 160}
+	center := geometry.NewPoint(120, 160)
 
 	steps := max(2, int(math.Ceil(node.SweepAngle/(2*math.Pi)*64)))
 	boundarySamples := steps + 1
@@ -305,7 +305,7 @@ func TestInsetSectorPoints_KeepsBorderStrokeInsideSector(t *testing.T) {
 		InnerRadius: 40,
 		OuterRadius: 80,
 	}
-	center := geometry.Point{X: 120, Y: 160}
+	center := geometry.NewPoint(120, 160)
 	points := insetSectorPoints(node, center, donutSectorBorderWidth)
 	halfWidth := donutSectorBorderWidth / 2
 	outerCount := sectorSteps(node.SweepAngle) + 1
@@ -333,7 +333,7 @@ func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
 		OuterRadius: 80,
 	}
 
-	points := insetSectorPoints(node, geometry.Point{X: 120, Y: 160}, donutSectorBorderWidth)
+	points := insetSectorPoints(node, geometry.NewPoint(120, 160), donutSectorBorderWidth)
 	for _, point := range points {
 		g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(BeFalse())
 		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
@@ -345,7 +345,7 @@ func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
 func TestInsetSectorPoints_ScalesNarrowAdjacentBordersToRemainDisjoint(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	center := geometry.Point{X: 120, Y: 160}
+	center := geometry.NewPoint(120, 160)
 	left := DonutNode{
 		StartAngle:  0,
 		SweepAngle:  math.Pi / 180,

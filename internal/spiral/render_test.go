@@ -129,15 +129,15 @@ func TestRenderStage_RendersOnlyActiveDiscLabelsBeforeLegend(t *testing.T) {
 			{FillValue: 2, BorderValue: 2},
 		},
 		Layout: spiral.SpiralLayout{Nodes: []spiral.SpiralNode{
-			{Geometry: geometry.Circle{Center: geometry.Point{X: 50, Y: 50}, Radius: 20}},
-			{Geometry: geometry.Circle{Center: geometry.Point{X: 100, Y: 100}}},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(50, 50), 20)},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(100, 100), 0)},
 		}},
 		Inks: spiral.Inks{
 			Fill:   inks.FixedInk(black),
 			Border: inks.FixedInk(black),
 		},
 		DiscLabels: []canvas.BlockLabel{{
-			Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 90, Y: 90}},
+			Bounds: geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(90, 90)},
 			Lines:  []string{"7", "Aug", "3"},
 		}},
 		LegendConfig: &legend.Config{

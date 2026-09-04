@@ -39,8 +39,8 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 	plotW := math.Max(1, float64(width)-scatterPlotLeftMargin-scatterPlotRightMargin)
 	plotH := math.Max(1, float64(height)-scatterPlotTopMargin-scatterPlotBottomMargin)
 	plot := geometry.Rect{
-		Min: geometry.Point{X: scatterPlotLeftMargin, Y: scatterPlotTopMargin},
-		Max: geometry.Point{X: scatterPlotLeftMargin + plotW, Y: scatterPlotTopMargin + plotH},
+		Min: geometry.NewPoint(scatterPlotLeftMargin, scatterPlotTopMargin),
+		Max: geometry.NewPoint(scatterPlotLeftMargin+plotW, scatterPlotTopMargin+plotH),
 	}
 
 	layout := ScatterLayout{
@@ -58,13 +58,15 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 		layout.Points = append(layout.Points, ScatterPoint{
 			File:      point.File,
 			Directory: point.Directory,
-			Geometry: geometry.Circle{
-				Center: geometry.Point{
-					X: positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
-					Y: positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
-				},
-				Radius: scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
-			},
+			Geometry: geometry.NewCircle(
+				geometry.NewPoint(
+					positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
+					positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
+				),
+
+				scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
+			),
+
 			Label: point.Name(),
 		})
 	}

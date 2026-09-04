@@ -149,7 +149,7 @@ func RenderToCanvas(
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec:   bgSpec,
-		Bounds: geometry.Rect{Max: geometry.Point{X: float64(width), Y: float64(height)}},
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
 		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 

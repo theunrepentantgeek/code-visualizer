@@ -17,8 +17,8 @@ func TestTangentPositions_SymmetricCircles(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Two equal circles 20 apart (centre-to-centre), new circle radius 5.
-	a := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}}
-	b := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 20, Y: 0}, Radius: 5}}
+	a := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)}
+	b := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(20, 0), 5)}
 
 	p1, p2, ok := tangentPositions(5, a, b)
 
@@ -49,8 +49,8 @@ func TestTangentPositions_CoincidentCentres_ReturnsFalse(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	a := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}}
-	b := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}}
+	a := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)}
+	b := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)}
 
 	_, _, ok := tangentPositions(5, a, b)
 
@@ -62,8 +62,8 @@ func TestTangentPositions_TooFarApart_ReturnsFalse(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Circles with radius 1, 1000 units apart — far exceeds tangent reach.
-	a := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 1}}
-	b := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 1000, Y: 0}, Radius: 1}}
+	a := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 1)}
+	b := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(1000, 0), 1)}
 
 	_, _, ok := tangentPositions(1, a, b)
 
@@ -75,8 +75,8 @@ func TestTangentPositions_OneInsideOther_ReturnsFalse(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Circle b is entirely inside circle a; no external tangent circle fits.
-	a := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 50}}
-	b := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: 1, Y: 0}, Radius: 1}}
+	a := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 50)}
+	b := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(1, 0), 1)}
 
 	_, _, ok := tangentPositions(1, a, b)
 
@@ -87,20 +87,20 @@ func TestTangentPositions_PreservesPrePointEvaluationOrder(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	a := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: -10.7, Y: -10.7}, Radius: 0.1}}
-	b := BubbleNode{Geometry: geometry.Circle{Center: geometry.Point{X: -5.3, Y: 0.1}, Radius: 0.2}}
+	a := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(-10.7, -10.7), 0.1)}
+	b := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(-5.3, 0.1), 0.2)}
 
 	p1, p2, ok := tangentPositions(3.9, a, b)
 
 	g.Expect(ok).To(BeTrue())
-	g.Expect(p1).To(Equal(geometry.Point{
-		X: -4.770151522985639,
-		Y: -6.980202016284957,
-	}))
-	g.Expect(p2).To(Equal(geometry.Point{
-		X: -11.282070699236581,
-		Y: -3.724242428159486,
-	}))
+	g.Expect(p1).To(Equal(geometry.NewPoint(
+		-4.770151522985639,
+		-6.980202016284957,
+	)))
+	g.Expect(p2).To(Equal(geometry.NewPoint(
+		-11.282070699236581,
+		-3.724242428159486,
+	)))
 }
 
 func TestPlaceFallback_PreservesPrePointDistanceEvaluationOrder(t *testing.T) {
@@ -108,16 +108,16 @@ func TestPlaceFallback_PreservesPrePointDistanceEvaluationOrder(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	circles := []BubbleNode{
-		{Geometry: geometry.Circle{Center: geometry.Point{X: -1000.3, Y: -100.7}, Radius: 0.1}},
-		{Geometry: geometry.Circle{Radius: 0.1}},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(-1000.3, -100.7), 0.1)},
+		{Geometry: geometry.NewCircle(geometry.OriginPoint, 0.1)},
 	}
 
 	placeFallback(circles, 1)
 
-	g.Expect(circles[1].Geometry.Center).To(Equal(geometry.Point{
-		X: -743.6777670569004,
-		Y: 681.2697533617113,
-	}))
+	g.Expect(circles[1].Geometry.Center).To(Equal(geometry.NewPoint(
+		-743.6777670569004,
+		681.2697533617113,
+	)))
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +128,7 @@ func TestAnyOverlap_NoCircles(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, nil, -1, -1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.NewPoint(0, 0), 5, nil, -1, -1)).To(BeFalse())
 }
 
 func TestAnyOverlap_FarAway_NoOverlap(t *testing.T) {
@@ -136,11 +136,11 @@ func TestAnyOverlap_FarAway_NoOverlap(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	placed := []BubbleNode{
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}},
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 100, Y: 0}, Radius: 5}},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(100, 0), 5)},
 	}
 
-	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 50}, 5, placed, -1, -1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.NewPoint(0, 50), 5, placed, -1, -1)).To(BeFalse())
 }
 
 func TestAnyOverlap_DirectOverlap(t *testing.T) {
@@ -148,11 +148,11 @@ func TestAnyOverlap_DirectOverlap(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	placed := []BubbleNode{
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)},
 	}
 
 	// Exactly on top of circle 0.
-	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, placed, -1, -1)).To(BeTrue())
+	g.Expect(anyOverlap(geometry.NewPoint(0, 0), 5, placed, -1, -1)).To(BeTrue())
 }
 
 func TestAnyOverlap_SkipsAnchorIndices(t *testing.T) {
@@ -161,11 +161,11 @@ func TestAnyOverlap_SkipsAnchorIndices(t *testing.T) {
 
 	// Two circles at the same position — would overlap, but both are skipped.
 	placed := []BubbleNode{
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}},
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)},
 	}
 
-	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, placed, 0, 1)).To(BeFalse())
+	g.Expect(anyOverlap(geometry.NewPoint(0, 0), 5, placed, 0, 1)).To(BeFalse())
 }
 
 func TestAnyOverlap_SkipsOneAnchor_OverlapsOther(t *testing.T) {
@@ -173,11 +173,11 @@ func TestAnyOverlap_SkipsOneAnchor_OverlapsOther(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	placed := []BubbleNode{
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}}, // skipped (anchor 0)
-		{Geometry: geometry.Circle{Center: geometry.Point{X: 0, Y: 0}, Radius: 5}}, // not skipped — overlaps
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 5)},
 	}
 
-	g.Expect(anyOverlap(geometry.Point{X: 0, Y: 0}, 5, placed, 0, -1)).To(BeTrue())
+	g.Expect(anyOverlap(geometry.NewPoint(0, 0), 5, placed, 0, -1)).To(BeTrue())
 }
 
 // ---------------------------------------------------------------------------
@@ -195,7 +195,7 @@ func TestPackCircles_SingleCircle_AtOrigin(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	circles := []BubbleNode{{Geometry: geometry.Circle{Radius: 10}}}
+	circles := []BubbleNode{{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)}}
 	packCircles(circles)
 
 	g.Expect(circles[0].Geometry.Center.X).To(Equal(0.0))
@@ -206,7 +206,7 @@ func TestPackCircles_TwoCircles_AdjacentOnXAxis(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	circles := []BubbleNode{{Geometry: geometry.Circle{Radius: 10}}, {Geometry: geometry.Circle{Radius: 10}}}
+	circles := []BubbleNode{{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)}, {Geometry: geometry.NewCircle(geometry.OriginPoint, 10)}}
 	packCircles(circles)
 
 	g.Expect(circles[0].Geometry.Center.X).To(Equal(0.0))
@@ -222,9 +222,9 @@ func TestPackCircles_ThreeCircles_NoOverlap(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	circles := []BubbleNode{
-		{Geometry: geometry.Circle{Radius: 10}},
-		{Geometry: geometry.Circle{Radius: 10}},
-		{Geometry: geometry.Circle{Radius: 10}},
+		{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)},
+		{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)},
+		{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)},
 	}
 	packCircles(circles)
 

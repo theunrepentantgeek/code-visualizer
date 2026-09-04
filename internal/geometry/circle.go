@@ -7,6 +7,10 @@ type Circle struct {
 	Radius float64
 }
 
+func NewCircle(center Point, radius float64) Circle {
+	return Circle{Center: center, Radius: radius}
+}
+
 func (c Circle) Valid() bool {
 	return c.Center.Valid() &&
 		!math.IsNaN(c.Radius) && !math.IsInf(c.Radius, 0) &&
@@ -55,5 +59,5 @@ func (c Circle) Bounds() Rect {
 }
 
 func (c Circle) Translate(offset Vector) Circle {
-	return Circle{Center: c.Center.Translate(offset), Radius: c.Radius}
+	return NewCircle(c.Center.Translate(offset), c.Radius)
 }

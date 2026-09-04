@@ -28,7 +28,7 @@ func TestSVGBackend_DrawRectangle_WithRadialGradientFill_EmitsGradient(t *testin
 	border := model.SolidFill{Color: color.RGBA{A: 255}}
 
 	backend.DrawRectangle(
-		geometry.RectFromPositionSize(geometry.Point{X: 10, Y: 10}, geometry.Size{Width: 180, Height: 180}),
+		geometry.RectFromPositionSize(geometry.NewPoint(10, 10), geometry.Size{Width: 180, Height: 180}),
 		fill, border, 1.0,
 	)
 
@@ -53,7 +53,7 @@ func TestSVGBackend_DrawDisc_WithRadialGradientFill_EmitsGradient(t *testing.T) 
 
 	backend := svgbackend.New(200, 200)
 	backend.DrawDisc(
-		geometry.Circle{Center: geometry.Point{X: 100, Y: 100}, Radius: 80},
+		geometry.NewCircle(geometry.NewPoint(100, 100), 80),
 		model.RadialGradientFill{
 			Center: color.RGBA{R: 255, G: 255, B: 255, A: 255},
 			Edge:   color.RGBA{R: 100, G: 100, B: 100, A: 255},
@@ -98,7 +98,7 @@ func TestSVGBackend_DeduplicatesIdenticalRadialGradients(t *testing.T) {
 	for i := range 5 {
 		backend.DrawRectangle(
 			geometry.RectFromPositionSize(
-				geometry.Point{X: float64(i * 100), Y: 0},
+				geometry.NewPoint(float64(i*100), 0),
 				geometry.Size{Width: 90, Height: 200},
 			),
 			sharedFill, border, 1.0,
@@ -106,7 +106,7 @@ func TestSVGBackend_DeduplicatesIdenticalRadialGradients(t *testing.T) {
 	}
 
 	backend.DrawRectangle(
-		geometry.RectFromPositionSize(geometry.Point{X: 500, Y: 0}, geometry.Size{Width: 90, Height: 200}),
+		geometry.RectFromPositionSize(geometry.NewPoint(500, 0), geometry.Size{Width: 90, Height: 200}),
 		uniqueFill, border, 1.0,
 	)
 
@@ -137,11 +137,11 @@ func TestSVGBackend_DeduplicatesGradientAcrossRectAndDisc(t *testing.T) {
 	border := model.SolidFill{Color: color.RGBA{A: 255}}
 
 	backend.DrawRectangle(
-		geometry.RectFromPositionSize(geometry.Point{X: 0, Y: 0}, geometry.Size{Width: 100, Height: 200}),
+		geometry.RectFromPositionSize(geometry.NewPoint(0, 0), geometry.Size{Width: 100, Height: 200}),
 		fill, border, 1.0,
 	)
 	backend.DrawDisc(
-		geometry.Circle{Center: geometry.Point{X: 200, Y: 100}, Radius: 80},
+		geometry.NewCircle(geometry.NewPoint(200, 100), 80),
 		fill, border, 0,
 	)
 

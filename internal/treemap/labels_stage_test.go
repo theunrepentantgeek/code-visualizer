@@ -25,7 +25,7 @@ func TestApplyCanvasBlockLabels_AddsLabelsToCanvas(t *testing.T) {
 	}
 	viz := &treemap.State{
 		BlockLabels: []canvas.BlockLabel{{
-			Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 110, Y: 50}},
+			Bounds: geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(110, 50)},
 			Lines:  []string{"hello", "42"},
 			Ink:    color.RGBA{A: 255},
 		}},

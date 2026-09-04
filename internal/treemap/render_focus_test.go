@@ -17,7 +17,7 @@ import (
 
 type rectangleCall struct {
 	pos  geometry.Point
-	size canvas.Size
+	size geometry.Size
 	fill canvasmodel.Fill
 }
 
@@ -79,11 +79,11 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 		},
 	}
 	rects := treemap.TreemapRectangle{
-		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 100)},
 		Label:  "root", IsDirectory: true,
 		Children: []treemap.TreemapRectangle{
-			{Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 20}, Max: geometry.Point{X: 50, Y: 100}}},
-			{Bounds: geometry.Rect{Min: geometry.Point{X: 50, Y: 20}, Max: geometry.Point{X: 100, Y: 100}}},
+			{Bounds: geometry.Rect{Min: geometry.NewPoint(0, 20), Max: geometry.NewPoint(50, 100)}},
+			{Bounds: geometry.Rect{Min: geometry.NewPoint(50, 20), Max: geometry.NewPoint(100, 100)}},
 		},
 	}
 	is := treemap.Inks{

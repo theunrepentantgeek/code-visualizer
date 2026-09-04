@@ -25,7 +25,7 @@ func occupiedBounds(node *BubbleNode) (geometry.Rect, bool) {
 	}
 
 	if node.ShowLabel && node.Geometry.Radius > 0 {
-		box, has = expandBoundsForDisc(box, has, geometry.Circle{Radius: node.Geometry.Radius})
+		box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.OriginPoint, node.Geometry.Radius))
 	}
 
 	return box, has
@@ -64,13 +64,13 @@ const canvasMarginFraction = 0.02 // 2% margin on each side
 // fit would leave on a non-square canvas.
 func scaleToFit(node *BubbleNode, width, height float64) {
 	if node.Geometry.Radius <= 0 {
-		node.Geometry.Center = geometry.Point{X: width / 2, Y: height / 2}
+		node.Geometry.Center = geometry.NewPoint(width/2, height/2)
 
 		return
 	}
 
 	if len(node.Children) == 0 {
-		node.Geometry.Center = geometry.Point{X: width / 2, Y: height / 2}
+		node.Geometry.Center = geometry.NewPoint(width/2, height/2)
 		node.Geometry.Radius = math.Min(width, height) * (1 - 2*canvasMarginFraction) / 2
 
 		return
@@ -82,7 +82,7 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	boxH := box.Height()
 
 	if !has || boxW <= 0 || boxH <= 0 {
-		node.Geometry.Center = geometry.Point{X: width / 2, Y: height / 2}
+		node.Geometry.Center = geometry.NewPoint(width/2, height/2)
 		node.Geometry.Radius *= math.Min(width, height) / (2 * node.Geometry.Radius)
 
 		return
@@ -95,26 +95,10 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	boxCx := (box.Min.X + box.Max.X) / 2
 	boxCy := (box.Min.Y + box.Max.Y) / 2
 
-	node.Geometry.Center = geometry.Point{X: width/2 - boxCx*scale, Y: height/2 - boxCy*scale}
+	node.Geometry.Center = geometry.NewPoint(width/2-boxCx*scale, height/2-boxCy*scale)
 	node.Geometry.Radius *= scale
 
 	applyScale(node, scale)
-}
-
-// occupiedBounds returns the tight axis-aligned bounding box of the node's
-// occupied area in its local coordinate frame.
-func occupiedBounds(node *BubbleNode) bounds {
-	box := newEmptyBounds()
-
-	for _, c := range node.Children {
-		expandBoundsForDisc(&box, c.Position, c.Radius)
-	}
-
-	if node.ShowLabel && node.Radius > 0 {
-		expandBoundsForDisc(&box, geometry.OriginPoint, node.Radius)
-	}
-
-	return box
 }
 
 // applyScale recursively converts children from local to absolute coordinates.

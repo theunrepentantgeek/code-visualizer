@@ -104,7 +104,7 @@ func layoutFile(f *model.File, sizeMetric metric.Name, labels LabelMode) BubbleN
 	}
 
 	return BubbleNode{
-		Geometry:  geometry.Circle{Radius: r},
+		Geometry:  geometry.NewCircle(geometry.OriginPoint, r),
 		Path:      f.Path,
 		Label:     f.Name,
 		ShowLabel: labels == LabelAll,
