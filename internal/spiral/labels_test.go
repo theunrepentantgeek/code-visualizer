@@ -122,7 +122,7 @@ func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
 
 	g.Expect(labels).To(HaveLen(1))
 	g.Expect(labels[0]).To(Equal(canvas.BlockLabel{
-		X: 20, Y: 30, W: 20, H: 20,
+		Bounds:       geometry.Rect{Min: geometry.Point{X: 20, Y: 30}, Max: geometry.Point{X: 40, Y: 50}},
 		Lines:        []string{"7", "Aug", "1"},
 		Ink:          canvas.TextColourFor(color.RGBA{A: 255}),
 		PreserveText: true,
@@ -150,8 +150,8 @@ func TestBuildDiscLabels_PreservesPrePointOffsetGrouping(t *testing.T) {
 	)
 
 	g.Expect(labels).To(HaveLen(1))
-	g.Expect(labels[0].X).To(Equal(-2.4000000000000004))
-	g.Expect(labels[0].Y).To(Equal(-0.20000000000000018))
+	g.Expect(labels[0].Bounds.Min.X).To(Equal(-2.4000000000000004))
+	g.Expect(labels[0].Bounds.Min.Y).To(Equal(-0.20000000000000018))
 }
 
 func TestBuildDiscLabels_UsesOnlyPairedNodesAndBuckets(t *testing.T) {
@@ -293,18 +293,18 @@ func TestLayoutStage_StoresDiscLabelsAfterVerticalOffset(t *testing.T) {
 	}
 	common := &stages.CommonState{
 		Width: 200,
-		DrawingBounds: stages.DrawingBounds{
-			MinY: 25,
-			MaxY: 200,
+		DrawingBounds: geometry.Rect{
+			Min: geometry.Point{Y: 25},
+			Max: geometry.Point{Y: 200},
 		},
 	}
 
 	g.Expect(LayoutStage(common, viz)).To(Succeed())
 	g.Expect(viz.DiscLabels).To(HaveLen(1))
-	g.Expect(viz.DiscLabels[0].X).To(
+	g.Expect(viz.DiscLabels[0].Bounds.Min.X).To(
 		BeNumerically("==", viz.Layout.Nodes[0].Position.X-viz.Layout.Nodes[0].DiscRadius+discLabelPadding),
 	)
-	g.Expect(viz.DiscLabels[0].Y).To(
+	g.Expect(viz.DiscLabels[0].Bounds.Min.Y).To(
 		BeNumerically("==", viz.Layout.Nodes[0].Position.Y-viz.Layout.Nodes[0].DiscRadius+discLabelPadding),
 	)
 }

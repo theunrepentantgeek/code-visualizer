@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -293,7 +294,7 @@ func TestNumericTicks_UsesRegularNiceSteps(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	ticks := numericTicks(0.219, 0.875, plot, horizontalAxis)
 
 	g.Expect(ticks).To(HaveLen(8))
@@ -309,7 +310,7 @@ func TestNumericTicks_NearZeroRangeIncludesZeroTick(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	ticks := numericTicks(9, 842, plot, horizontalAxis)
 
 	g.Expect(ticks).To(HaveLen(10))
@@ -354,7 +355,7 @@ func TestLogNumericTicks_SpansMultipleDecades(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	ticks := logNumericTicks(1, 10000, plot, horizontalAxis)
 
 	// Expect ticks at powers of 10: 1, 10, 100, 1000, 10000
@@ -381,7 +382,7 @@ func TestLogNumericTicks_NarrowRange_AddsIntermediateTicks(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	ticks := logNumericTicks(50, 500, plot, horizontalAxis)
 
 	// Range spans ~1 decade, so intermediate ticks (2x, 5x) are added.
@@ -404,7 +405,7 @@ func TestLogNumericTicks_SubDecadeRange_UsesFallback(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	// Range [11, 19] has no power-of-10 or subdivision candidate inside it
 	ticks := logNumericTicks(11, 19, plot, horizontalAxis)
 
@@ -423,7 +424,7 @@ func TestLogNumericTicks_SingleValue_ReturnsCenterTick(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	ticks := logNumericTicks(42, 42, plot, horizontalAxis)
 
 	g.Expect(ticks).To(HaveLen(1))

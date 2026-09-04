@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
@@ -25,11 +26,8 @@ func TestBuildBlockLabels_IncludesOnlyConfiguredMetricLines(t *testing.T) {
 		Label:       "root",
 		IsDirectory: true,
 		Children: []TreemapRectangle{{
-			X:     10,
-			Y:     20,
-			W:     120,
-			H:     60,
-			Label: "alpha.go",
+			Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 130, Y: 80}},
+			Label:  "alpha.go",
 		}},
 	}
 
@@ -60,11 +58,8 @@ func TestBuildBlockLabels_OmitsUnconfiguredMetrics(t *testing.T) {
 		Label:       "root",
 		IsDirectory: true,
 		Children: []TreemapRectangle{{
-			X:     0,
-			Y:     0,
-			W:     100,
-			H:     40,
-			Label: "beta.go",
+			Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 40}},
+			Label:  "beta.go",
 		}},
 	}
 

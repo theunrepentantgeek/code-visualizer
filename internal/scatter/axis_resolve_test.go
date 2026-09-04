@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // TestIncludeNearZero verifies the zero-snapping behaviour of axis bounds.
@@ -358,7 +360,7 @@ func TestPositionForValue_NumericHorizontal_MapsToCorrectPosition(t *testing.T) 
 	g := NewGomegaWithT(t)
 
 	// Arrange: horizontal axis [0, 100] on a 200-wide plot at x=100
-	plot := PlotRect{X: 100, Y: 0, W: 200, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 100, Y: 0}, Max: geometry.Point{X: 300, Y: 600}}
 	axis := ResolvedAxis{Numeric: &NumericAxis{Min: 0, Max: 100, Scale: Linear}}
 
 	// Act: value 50 should map to midpoint
@@ -373,7 +375,7 @@ func TestPositionForValue_NumericVertical_InvertsAxis(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Arrange: vertical axis [0, 100] on a 600-tall plot at y=0
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	axis := ResolvedAxis{Numeric: &NumericAxis{Min: 0, Max: 100, Scale: Linear}}
 
 	// Act: higher value should appear higher (lower Y) on canvas
@@ -381,7 +383,7 @@ func TestPositionForValue_NumericVertical_InvertsAxis(t *testing.T) {
 	posHigh := positionForValue(AxisValue{Numeric: 100}, axis, plot, verticalAxis)
 
 	// Assert: norm=0 → bottom (Y + H); norm=1 → top (Y + 0)
-	g.Expect(posLow).To(BeNumerically("~", float64(plot.H), 1e-9))
+	g.Expect(posLow).To(BeNumerically("~", plot.Height(), 1e-9))
 	g.Expect(posHigh).To(BeNumerically("~", 0, 1e-9))
 }
 
@@ -390,7 +392,7 @@ func TestPositionForValue_CategoricalAxis_UsesCenter(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Arrange: categorical axis with two bands
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	axis := ResolvedAxis{
 		Categorical: &CategoricalAxis{
 			Bands: []AxisBand{
@@ -414,7 +416,7 @@ func TestPositionForValue_LogScale_MapsLogarithmically(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Arrange: log-scale horizontal axis [10, 1000] on an 800-wide plot at x=0
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	axis := ResolvedAxis{Numeric: &NumericAxis{Min: 10, Max: 1000, Scale: Log}}
 
 	// Act
@@ -430,7 +432,7 @@ func TestPositionForValue_EqualMinMax_ReturnsCenterPosition(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Arrange: degenerate axis where min == max
-	plot := PlotRect{X: 0, Y: 0, W: 800, H: 600}
+	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
 	axis := ResolvedAxis{Numeric: &NumericAxis{Min: 50, Max: 50, Scale: Linear}}
 
 	// Act

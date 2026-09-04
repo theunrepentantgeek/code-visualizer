@@ -45,7 +45,7 @@ func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	triangles := surface.Build(
-		surface.Rect{MinX: 0, MinY: 0, MaxX: 10, MaxY: 10},
+		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 10, Y: 10}},
 		[]surface.Sample{
 			{Position: geometry.Point{X: 1, Y: 1}, Value: 2},
 			{Position: geometry.Point{X: 9, Y: 9}, Value: 5},
@@ -106,7 +106,7 @@ func TestBuild_IgnoresNonFiniteOriginalCoordinatesAndValues(t *testing.T) {
 
 	g.Expect(func() {
 		triangles = surface.Build(
-			surface.Rect{MinX: 0, MinY: 0, MaxX: 10, MaxY: 10},
+			geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 10, Y: 10}},
 			originals,
 			42,
 		)
@@ -147,7 +147,7 @@ func TestBuild_PreservesObservedVertexValues(t *testing.T) {
 	}
 
 	triangles := surface.Build(
-		surface.Rect{MinX: 0, MinY: 0, MaxX: 15, MaxY: 15},
+		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 15, Y: 15}},
 		originals,
 		42,
 	)
@@ -189,7 +189,7 @@ func TestBuild_InterpolatesInfillFromOriginalsOnly(t *testing.T) {
 	}
 
 	triangles := surface.Build(
-		surface.Rect{MinX: 0, MinY: 0, MaxX: 10, MaxY: 10},
+		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 10, Y: 10}},
 		originals,
 		42,
 	)
@@ -267,11 +267,11 @@ func TestBuild_RestrictsAnnularMeshToRegionAndMaximumEdge(t *testing.T) {
 
 	for _, triangle := range first {
 		for _, point := range triangle.Points {
-			g.Expect(tolerantRegion.Contains(point.Position.X, point.Position.Y)).To(gomega.BeTrue())
+			g.Expect(tolerantRegion.Contains(point.Position)).To(gomega.BeTrue())
 		}
 
 		centroid := centroid(triangle)
-		g.Expect(tolerantRegion.Contains(centroid.Position.X, centroid.Position.Y)).To(gomega.BeTrue())
+		g.Expect(tolerantRegion.Contains(centroid.Position)).To(gomega.BeTrue())
 		g.Expect(surface.LongestEdge(triangle)).To(
 			gomega.BeNumerically("<=", surface.MaxTriangleEdge),
 		)

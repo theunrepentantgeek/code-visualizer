@@ -16,7 +16,7 @@ func TestPoissonSamples_RejectsUnderflowingMinimumDistance(t *testing.T) {
 	samples := make(chan []surface.Sample, 1)
 	go func() {
 		samples <- surface.PoissonSamples(
-			surface.Rect{MinX: 0, MinY: 0, MaxX: 50, MaxY: 50},
+			geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 50, Y: 50}},
 			nil,
 			1e-200,
 			42,
@@ -41,7 +41,7 @@ func TestPoissonSamples_RespectsMinimumDistance(t *testing.T) {
 	}
 
 	samples := surface.PoissonSamples(
-		surface.Rect{MinX: 0, MinY: 0, MaxX: 50, MaxY: 50},
+		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 50, Y: 50}},
 		originals,
 		surface.PoissonMinDistance,
 		42,
@@ -84,7 +84,7 @@ func TestPoissonSamples_ReturnsOnlyPointsInsideAnnulus(t *testing.T) {
 	g.Expect(samples).NotTo(gomega.BeEmpty())
 
 	for _, sample := range samples {
-		g.Expect(region.Contains(sample.Position.X, sample.Position.Y)).To(gomega.BeTrue())
+		g.Expect(region.Contains(sample.Position)).To(gomega.BeTrue())
 	}
 }
 

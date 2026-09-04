@@ -178,10 +178,7 @@ func buildDiscLabels(
 		position := node.Position.Translate(geometry.NewVector(-node.DiscRadius, -node.DiscRadius)).
 			Translate(geometry.NewVector(discLabelPadding, discLabelPadding))
 		labels = append(labels, canvas.BlockLabel{
-			X:            position.X,
-			Y:            position.Y,
-			W:            size,
-			H:            size,
+			Bounds:       geometry.RectFromPositionSize(position, geometry.Size{Width: size, Height: size}),
 			Lines:        buildDiscLabel(bucket, metrics),
 			Ink:          canvas.TextColourFor(fill),
 			PreserveText: true,

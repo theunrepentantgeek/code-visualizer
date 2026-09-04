@@ -15,7 +15,7 @@ import (
 type Call struct {
 	Method      string
 	Pos         geometry.Point
-	Size        geometry.Size
+	Bounds      geometry.Rect
 	Points      []geometry.Point
 	Loops       [][]geometry.Point
 	Fill        color.RGBA
@@ -42,11 +42,11 @@ func NewBackend() *Backend {
 	return &Backend{}
 }
 
-func (m *Backend) DrawRectangle(pos geometry.Point, size geometry.Size, fill, border model.Fill, borderWidth float64) {
+func (m *Backend) DrawRectangle(bounds geometry.Rect, fill, border model.Fill, borderWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawRectangle",
-		Pos:         pos,
-		Size:        size,
+		Pos:         bounds.Min,
+		Bounds:      bounds,
 		Fill:        model.SolidColor(fill),
 		Border:      model.SolidColor(border),
 		RawFill:     fill,

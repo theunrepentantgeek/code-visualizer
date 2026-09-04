@@ -12,7 +12,7 @@ import (
 // Backend is the rendering interface implemented by output format adapters.
 // Methods receive resolved colours/fills and primitive geometry.
 type Backend interface {
-	DrawRectangle(pos geometry.Point, size geometry.Size, fill, border Fill, borderWidth float64)
+	DrawRectangle(bounds geometry.Rect, fill, border Fill, borderWidth float64)
 	DrawDisc(center geometry.Point, radius float64, fill, border Fill, borderWidth float64)
 	DrawPolygon(points []geometry.Point, fill, border Fill, borderWidth float64)
 	DrawFilledPath(loops [][]geometry.Point, fill color.RGBA)

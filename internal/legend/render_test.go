@@ -255,8 +255,8 @@ func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.
 
 	g.Expect(background.Pos.X).To(BeNumerically(">=", 0))
 	g.Expect(background.Pos.Y).To(BeNumerically(">=", drawingMinY))
-	g.Expect(background.Pos.X + background.Size.Width).To(BeNumerically("<=", width))
-	g.Expect(background.Pos.Y + background.Size.Height).To(BeNumerically("<=", drawingMaxY))
+	g.Expect(background.Bounds.Max.X).To(BeNumerically("<=", width))
+	g.Expect(background.Bounds.Max.Y).To(BeNumerically("<=", drawingMaxY))
 
 	scale := sampleTexts[0].FontSize / model.LegendFontSize
 	sampleSide := scale * (float64(len(sampleLines))*model.LegendLineHeight + 2*model.LabelGap)

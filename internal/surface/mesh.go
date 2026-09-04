@@ -106,8 +106,8 @@ func refineMeshPoints(region Region, points []Sample, model interpolationModel) 
 func refinementPointLimit(region Region, pointCount int) int {
 	bounds := region.Bounds()
 	spacing := MaxTriangleEdge / 2
-	columns := math.Ceil((bounds.MaxX-bounds.MinX)/spacing) + 1
-	rows := math.Ceil((bounds.MaxY-bounds.MinY)/spacing) + 1
+	columns := math.Ceil(bounds.Width()/spacing) + 1
+	rows := math.Ceil(bounds.Height()/spacing) + 1
 	maxInt := int(^uint(0) >> 1)
 
 	if pointCount >= maxInt ||
@@ -169,7 +169,7 @@ func refinementPoint(region Region, target Triangle, points, candidates []Sample
 	candidate := Sample{Position: geometry.Midpoint(start.Position, end.Position)}
 
 	if !isFiniteSample(candidate) ||
-		!region.Contains(candidate.Position.X, candidate.Position.Y) ||
+		!region.Contains(candidate.Position) ||
 		isDuplicate(candidate, points) ||
 		isDuplicate(candidate, candidates) {
 		return Sample{}, false
@@ -282,7 +282,7 @@ func triangleInRegion(region Region, triangle Triangle) bool {
 	var center geometry.Point
 
 	for _, sample := range triangle.Points {
-		if !region.Contains(sample.Position.X, sample.Position.Y) {
+		if !region.Contains(sample.Position) {
 			return false
 		}
 
@@ -293,7 +293,7 @@ func triangleInRegion(region Region, triangle Triangle) bool {
 	center.X /= float64(len(triangle.Points))
 	center.Y /= float64(len(triangle.Points))
 
-	return region.Contains(center.X, center.Y)
+	return region.Contains(center)
 }
 
 func boundarySamples(region Region, originals []Sample) []Sample {

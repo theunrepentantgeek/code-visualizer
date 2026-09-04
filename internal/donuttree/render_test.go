@@ -491,8 +491,8 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 	g.Expect(LayoutStage(common, state)).To(Succeed())
 	g.Expect(RenderStage(common, state)).To(Succeed())
 
-	g.Expect(common.Canvas.DrawingMinY()).To(Equal(common.DrawingBounds.MinY))
-	g.Expect(common.Canvas.DrawingMaxY()).To(Equal(common.DrawingBounds.MaxY))
+	g.Expect(common.Canvas.DrawingMinY()).To(Equal(int(common.DrawingBounds.Min.Y)))
+	g.Expect(common.Canvas.DrawingMaxY()).To(Equal(int(common.DrawingBounds.Max.Y)))
 
 	calls := renderCalls(t, common.Canvas)
 
@@ -511,9 +511,9 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 		t.Fatal("expected legend background")
 	}
 
-	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.MinY))
-	g.Expect(legendBackground.Pos.Y + legendBackground.Size.Height).
-		To(BeNumerically("<=", common.DrawingBounds.MaxY))
+	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.Min.Y))
+	g.Expect(legendBackground.Bounds.Max.Y).
+		To(BeNumerically("<=", common.DrawingBounds.Max.Y))
 }
 
 func TestRenderStage_KeepsConfiguredDimensionsAfterTitleAndFooterReservation(t *testing.T) {

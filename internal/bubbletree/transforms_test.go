@@ -1,7 +1,6 @@
 package bubbletree
 
 import (
-	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -17,42 +16,43 @@ func TestExpandBoundsForDisc_SingleDisc(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box := newEmptyBounds()
-	expandBoundsForDisc(&box, geometry.Point{X: 5, Y: 3}, 2)
+	box, has := expandBoundsForDisc(geometry.Rect{}, false, geometry.Point{X: 5, Y: 3}, 2)
 
-	g.Expect(box.minX).To(BeNumerically("~", 3.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 7.0, 1e-9))
-	g.Expect(box.minY).To(BeNumerically("~", 1.0, 1e-9))
-	g.Expect(box.maxY).To(BeNumerically("~", 5.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(box.Min.Y).To(BeNumerically("~", 1.0, 1e-9))
+	g.Expect(box.Max.Y).To(BeNumerically("~", 5.0, 1e-9))
 }
 
 func TestExpandBoundsForDisc_MultipleDiscs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box := newEmptyBounds()
-	expandBoundsForDisc(&box, geometry.Point{X: 0, Y: 0}, 1)  // bounds: (-1,-1)..(1,1)
-	expandBoundsForDisc(&box, geometry.Point{X: 5, Y: 0}, 2)  // extends maxX to 7, maxY to 2, minY to -2
-	expandBoundsForDisc(&box, geometry.Point{X: 0, Y: -4}, 1) // extends minY to -5
-	expandBoundsForDisc(&box, geometry.Point{X: -3, Y: 0}, 0) // extends minX to -3
+	box, has := geometry.Rect{}, false
+	box, has = expandBoundsForDisc(box, has, geometry.Point{X: 0, Y: 0}, 1)  // bounds: (-1,-1)..(1,1)
+	box, has = expandBoundsForDisc(box, has, geometry.Point{X: 5, Y: 0}, 2)  // extends maxX to 7, maxY to 2, minY to -2
+	box, has = expandBoundsForDisc(box, has, geometry.Point{X: 0, Y: -4}, 1) // extends minY to -5
+	box, has = expandBoundsForDisc(box, has, geometry.Point{X: -3, Y: 0}, 0) // extends minX to -3
 
-	g.Expect(box.minX).To(BeNumerically("~", -3.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 7.0, 1e-9))
-	g.Expect(box.minY).To(BeNumerically("~", -5.0, 1e-9))
-	g.Expect(box.maxY).To(BeNumerically("~", 2.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", -3.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(box.Min.Y).To(BeNumerically("~", -5.0, 1e-9))
+	g.Expect(box.Max.Y).To(BeNumerically("~", 2.0, 1e-9))
 }
 
 func TestExpandBoundsForDisc_ZeroRadius(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box := newEmptyBounds()
-	expandBoundsForDisc(&box, geometry.Point{X: 3, Y: 7}, 0) // zero-radius "point"
+	box, has := expandBoundsForDisc(geometry.Rect{}, false, geometry.Point{X: 3, Y: 7}, 0) // zero-radius "point"
 
-	g.Expect(box.minX).To(BeNumerically("~", 3.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 3.0, 1e-9))
-	g.Expect(box.minY).To(BeNumerically("~", 7.0, 1e-9))
-	g.Expect(box.maxY).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(box.Min.Y).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(box.Max.Y).To(BeNumerically("~", 7.0, 1e-9))
 }
 
 // ---------------------------------------------------------------------------
@@ -61,19 +61,15 @@ func TestExpandBoundsForDisc_ZeroRadius(t *testing.T) {
 
 func TestOccupiedBounds_NoChildren_NoLabel(t *testing.T) {
 	t.Parallel()
+	g := NewGomegaWithT(t)
 
-	// A leaf node with no children and ShowLabel=false returns an "empty"
-	// bounds (MaxFloat64 for min, -MaxFloat64 for max). The caller is
-	// expected to guard against degenerate boxes; we just verify the
-	// values are the empty-bounds sentinel.
+	// A leaf node with no children and ShowLabel=false contributes nothing,
+	// so occupiedBounds reports it received no rectangle.
 	node := BubbleNode{Position: geometry.Point{X: 5, Y: 5}, Radius: 3, ShowLabel: false}
 
-	box := occupiedBounds(&node)
+	_, has := occupiedBounds(&node)
 
-	// minX should equal the initial empty sentinel.
-	if box.minX != math.MaxFloat64 {
-		t.Errorf("expected minX == MaxFloat64 for empty bounds, got %v", box.minX)
-	}
+	g.Expect(has).To(BeFalse())
 }
 
 func TestOccupiedBounds_WithChildren(t *testing.T) {
@@ -88,10 +84,11 @@ func TestOccupiedBounds_WithChildren(t *testing.T) {
 		},
 	}
 
-	box := occupiedBounds(&parent)
+	box, has := occupiedBounds(&parent)
 
-	g.Expect(box.minX).To(BeNumerically("~", -5.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 5.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", -5.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 5.0, 1e-9))
 }
 
 func TestOccupiedBounds_ShowLabelIncludesRoot(t *testing.T) {
@@ -106,11 +103,13 @@ func TestOccupiedBounds_ShowLabelIncludesRoot(t *testing.T) {
 		},
 	}
 
-	box := occupiedBounds(&parent)
+	box, has := occupiedBounds(&parent)
+
+	g.Expect(has).To(BeTrue())
 
 	// The root circle contributes radius 8 around (0,0).
-	g.Expect(box.minX).To(BeNumerically("<=", -8.0+1e-9))
-	g.Expect(box.maxX).To(BeNumerically(">=", 8.0-1e-9))
+	g.Expect(box.Min.X).To(BeNumerically("<=", -8.0+1e-9))
+	g.Expect(box.Max.X).To(BeNumerically(">=", 8.0-1e-9))
 }
 
 // ---------------------------------------------------------------------------

@@ -35,9 +35,9 @@ type captureBackend struct {
 }
 
 func (b *captureBackend) DrawRectangle(
-	pos geometry.Point, size geometry.Size, fill, _ canvasmodel.Fill, _ float64,
+	bounds geometry.Rect, fill, _ canvasmodel.Fill, _ float64,
 ) {
-	b.rectangles = append(b.rectangles, rectangleCall{pos: pos, size: size, fill: fill})
+	b.rectangles = append(b.rectangles, rectangleCall{pos: bounds.Min, size: bounds.Size(), fill: fill})
 }
 
 func (*captureBackend) DrawDisc(geometry.Point, float64, canvasmodel.Fill, canvasmodel.Fill, float64) {
@@ -79,11 +79,11 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 		},
 	}
 	rects := treemap.TreemapRectangle{
-		X: 0, Y: 0, W: 100, H: 100,
-		Label: "root", IsDirectory: true,
+		Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 100}},
+		Label:  "root", IsDirectory: true,
 		Children: []treemap.TreemapRectangle{
-			{X: 0, Y: 20, W: 50, H: 80},
-			{X: 50, Y: 20, W: 50, H: 80},
+			{Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 20}, Max: geometry.Point{X: 50, Y: 100}}},
+			{Bounds: geometry.Rect{Min: geometry.Point{X: 50, Y: 20}, Max: geometry.Point{X: 100, Y: 100}}},
 		},
 	}
 	is := treemap.Inks{

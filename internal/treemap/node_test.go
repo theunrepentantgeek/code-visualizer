@@ -44,8 +44,8 @@ func TestSmallDirectoryChromeKeepsInsetContentWithoutRail(t *testing.T) {
 	g.Expect(dirRect.IsDirectory).To(BeTrue())
 	g.Expect(dirRect.Label).To(Equal("my-super-long-directory-name"))
 	g.Expect(dirRect.Chrome.Orientation).To(Equal(DirectoryLabelNone))
-	g.Expect(dirRect.Chrome.Content.X).To(BeNumerically(">", dirRect.X))
-	g.Expect(dirRect.Chrome.Content.Y).To(BeNumerically(">", dirRect.Y))
+	g.Expect(dirRect.Chrome.Content.Min.X).To(BeNumerically(">", dirRect.Bounds.Min.X))
+	g.Expect(dirRect.Chrome.Content.Min.Y).To(BeNumerically(">", dirRect.Bounds.Min.Y))
 }
 
 func TestDirectoryPaddingSeparatesGroups(t *testing.T) {
@@ -93,10 +93,6 @@ func findDirRect(rects TreemapRectangle, name string) *TreemapRectangle {
 }
 
 func rectsAreSeparated(a, b *TreemapRectangle) bool {
-	aRight := a.X + a.W
-	bRight := b.X + b.W
-	aBottom := a.Y + a.H
-	bBottom := b.Y + b.H
-
-	return aRight <= b.X || bRight <= a.X || aBottom <= b.Y || bBottom <= a.Y
+	return a.Bounds.Max.X <= b.Bounds.Min.X || b.Bounds.Max.X <= a.Bounds.Min.X ||
+		a.Bounds.Max.Y <= b.Bounds.Min.Y || b.Bounds.Max.Y <= a.Bounds.Min.Y
 }

@@ -28,8 +28,7 @@ func TestSVGBackend_DrawRectangle_WithRadialGradientFill_EmitsGradient(t *testin
 	border := model.SolidFill{Color: color.RGBA{A: 255}}
 
 	backend.DrawRectangle(
-		geometry.Point{X: 10, Y: 10},
-		geometry.Size{Width: 180, Height: 180},
+		geometry.RectFromPositionSize(geometry.Point{X: 10, Y: 10}, geometry.Size{Width: 180, Height: 180}),
 		fill, border, 1.0,
 	)
 
@@ -99,15 +98,16 @@ func TestSVGBackend_DeduplicatesIdenticalRadialGradients(t *testing.T) {
 	// Draw 5 rectangles with sharedFill and 1 with uniqueFill.
 	for i := range 5 {
 		backend.DrawRectangle(
-			geometry.Point{X: float64(i * 100), Y: 0},
-			geometry.Size{Width: 90, Height: 200},
+			geometry.RectFromPositionSize(
+				geometry.Point{X: float64(i * 100), Y: 0},
+				geometry.Size{Width: 90, Height: 200},
+			),
 			sharedFill, border, 1.0,
 		)
 	}
 
 	backend.DrawRectangle(
-		geometry.Point{X: 500, Y: 0},
-		geometry.Size{Width: 90, Height: 200},
+		geometry.RectFromPositionSize(geometry.Point{X: 500, Y: 0}, geometry.Size{Width: 90, Height: 200}),
 		uniqueFill, border, 1.0,
 	)
 
@@ -138,8 +138,7 @@ func TestSVGBackend_DeduplicatesGradientAcrossRectAndDisc(t *testing.T) {
 	border := model.SolidFill{Color: color.RGBA{A: 255}}
 
 	backend.DrawRectangle(
-		geometry.Point{X: 0, Y: 0},
-		geometry.Size{Width: 100, Height: 200},
+		geometry.RectFromPositionSize(geometry.Point{X: 0, Y: 0}, geometry.Size{Width: 100, Height: 200}),
 		fill, border, 1.0,
 	)
 	backend.DrawDisc(

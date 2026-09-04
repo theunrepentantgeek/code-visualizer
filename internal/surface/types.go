@@ -20,28 +20,9 @@ type Sample struct {
 	Original    bool
 }
 
-type Rect struct {
-	MinX float64
-	MinY float64
-	MaxX float64
-	MaxY float64
-}
-
-func (r Rect) Bounds() Rect {
-	return r
-}
-
-func (r Rect) Contains(x, y float64) bool {
-	return x >= r.MinX && x <= r.MaxX && y >= r.MinY && y <= r.MaxY
-}
-
 type Region interface {
-	Bounds() Rect
-	Contains(x, y float64) bool
-}
-
-type boundaryLoopProvider interface {
-	BoundaryLoops(maximumSegmentLength float64) [][]Sample
+	Bounds() geometry.Rect
+	Contains(point geometry.Point) bool
 }
 
 type Annulus struct {
@@ -51,46 +32,40 @@ type Annulus struct {
 	OuterRadius float64
 }
 
-func (a Annulus) Bounds() Rect {
-	return Rect{
-		MinX: a.CX - a.OuterRadius,
-		MinY: a.CY - a.OuterRadius,
-		MaxX: a.CX + a.OuterRadius,
-		MaxY: a.CY + a.OuterRadius,
+func (a Annulus) Bounds() geometry.Rect {
+	return geometry.Rect{
+		Min: geometry.Point{X: a.CX - a.OuterRadius, Y: a.CY - a.OuterRadius},
+		Max: geometry.Point{X: a.CX + a.OuterRadius, Y: a.CY + a.OuterRadius},
 	}
 }
 
-func (a Annulus) Contains(x, y float64) bool {
+func (a Annulus) Contains(point geometry.Point) bool {
 	if a.InnerRadius < 0 || a.OuterRadius < a.InnerRadius {
 		return false
 	}
 
-	dx := x - a.CX
-	dy := y - a.CY
+	dx := point.X - a.CX
+	dy := point.Y - a.CY
 	distanceSquared := dx*dx + dy*dy
 
 	return distanceSquared >= a.InnerRadius*a.InnerRadius &&
 		distanceSquared <= a.OuterRadius*a.OuterRadius
 }
 
-// BoundaryLoops returns the rectangle perimeter as one ordered loop.
-func (r Rect) BoundaryLoops(maximumSegmentLength float64) [][]Sample {
+// rectBoundaryLoops returns the rectangle perimeter as one ordered loop.
+func rectBoundaryLoops(r geometry.Rect, maximumSegmentLength float64) [][]Sample {
 	if !isFinite(maximumSegmentLength) ||
 		maximumSegmentLength <= 0 ||
-		!isFinite(r.MinX) ||
-		!isFinite(r.MinY) ||
-		!isFinite(r.MaxX) ||
-		!isFinite(r.MaxY) ||
-		r.MinX >= r.MaxX ||
-		r.MinY >= r.MaxY {
+		!r.Valid() ||
+		r.Empty() {
 		return nil
 	}
 
 	corners := [4]Sample{
-		{Position: geometry.NewPoint(r.MinX, r.MinY)},
-		{Position: geometry.NewPoint(r.MaxX, r.MinY)},
-		{Position: geometry.NewPoint(r.MaxX, r.MaxY)},
-		{Position: geometry.NewPoint(r.MinX, r.MaxY)},
+		{Position: geometry.NewPoint(r.Min.X, r.Min.Y)},
+		{Position: geometry.NewPoint(r.Max.X, r.Min.Y)},
+		{Position: geometry.NewPoint(r.Max.X, r.Max.Y)},
+		{Position: geometry.NewPoint(r.Min.X, r.Max.Y)},
 	}
 	loop := make([]Sample, 0, len(corners))
 
@@ -113,12 +88,27 @@ func (a Annulus) BoundaryLoops(maximumSegmentLength float64) [][]Sample {
 
 // BoundaryLoops returns ordered boundary loops supplied by region.
 func BoundaryLoops(region Region, maximumSegmentLength float64) [][]Sample {
-	provider := boundaryLoopProviderForRegion(region)
-	if provider == nil {
+	if isNilInterfaceValue(region) {
 		return nil
 	}
 
-	return provider.BoundaryLoops(maximumSegmentLength)
+	switch value := region.(type) {
+	case geometry.Rect:
+		return rectBoundaryLoops(value, maximumSegmentLength)
+	case Annulus:
+		return value.BoundaryLoops(maximumSegmentLength)
+	case *Annulus:
+		// isNilInterfaceValue already rejects a typed-nil *Annulus above, but
+		// that reflection-based check is opaque to nilaway's static
+		// analysis, so make the guard explicit here too.
+		if value == nil {
+			return nil
+		}
+
+		return value.BoundaryLoops(maximumSegmentLength)
+	default:
+		return nil
+	}
 }
 
 func annulusBoundaryLoops(a Annulus, maximumSegmentLength float64) [][]Sample {
@@ -142,19 +132,6 @@ func appendCircularBoundaryLoop(
 		loops,
 		circularBoundaryPoints(cx, cy, radius, maximumSegmentLength),
 	)
-}
-
-func boundaryLoopProviderForRegion(region Region) boundaryLoopProvider {
-	if isNilInterfaceValue(region) {
-		return nil
-	}
-
-	provider, ok := region.(boundaryLoopProvider)
-	if !ok || isNilInterfaceValue(provider) {
-		return nil
-	}
-
-	return provider
 }
 
 func validBoundaryLoopLength(maximumSegmentLength float64) bool {

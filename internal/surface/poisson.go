@@ -16,7 +16,7 @@ type gridCell struct {
 }
 
 type poissonGrid struct {
-	bounds   Rect
+	bounds   geometry.Rect
 	cellSize float64
 	cells    map[gridCell][]Sample
 }
@@ -97,7 +97,7 @@ func sampleCandidate(
 ) (Sample, bool) {
 	for range attemptsPerActivePoint {
 		candidate := annulusCandidate(activePoint, minimumDistance, random)
-		if !region.Contains(candidate.Position.X, candidate.Position.Y) ||
+		if !region.Contains(candidate.Position) ||
 			grid.hasNearby(candidate, minimumDistance) {
 			continue
 		}
@@ -134,24 +134,19 @@ func isNilInterfaceValue(value any) bool {
 	}
 }
 
-func validBounds(bounds Rect) bool {
-	return isFinite(bounds.MinX) &&
-		isFinite(bounds.MinY) &&
-		isFinite(bounds.MaxX) &&
-		isFinite(bounds.MaxY) &&
-		bounds.MinX < bounds.MaxX &&
-		bounds.MinY < bounds.MaxY
+func validBounds(bounds geometry.Rect) bool {
+	return bounds.Valid() && !bounds.Empty()
 }
 
-func initialSample(region Region, bounds Rect, random *rand.Rand) (Sample, bool) {
+func initialSample(region Region, bounds geometry.Rect, random *rand.Rand) (Sample, bool) {
 	for range attemptsPerActivePoint {
 		candidate := Sample{
 			Position: geometry.NewPoint(
-				bounds.MinX+random.Float64()*(bounds.MaxX-bounds.MinX),
-				bounds.MinY+random.Float64()*(bounds.MaxY-bounds.MinY),
+				bounds.Min.X+random.Float64()*bounds.Width(),
+				bounds.Min.Y+random.Float64()*bounds.Height(),
 			),
 		}
-		if region.Contains(candidate.Position.X, candidate.Position.Y) {
+		if region.Contains(candidate.Position) {
 			return candidate, true
 		}
 	}
@@ -168,7 +163,7 @@ func annulusCandidate(sample Sample, minimumDistance float64, random *rand.Rand)
 	}
 }
 
-func newPoissonGrid(bounds Rect, minimumDistance float64) poissonGrid {
+func newPoissonGrid(bounds geometry.Rect, minimumDistance float64) poissonGrid {
 	return poissonGrid{
 		bounds:   bounds,
 		cellSize: minimumDistance / math.Sqrt2,
@@ -201,8 +196,8 @@ func (g poissonGrid) hasNearby(candidate Sample, minimumDistance float64) bool {
 
 func (g poissonGrid) cellFor(sample Sample) gridCell {
 	return gridCell{
-		x: int(math.Floor((sample.Position.X - g.bounds.MinX) / g.cellSize)),
-		y: int(math.Floor((sample.Position.Y - g.bounds.MinY) / g.cellSize)),
+		x: int(math.Floor((sample.Position.X - g.bounds.Min.X) / g.cellSize)),
+		y: int(math.Floor((sample.Position.Y - g.bounds.Min.Y) / g.cellSize)),
 	}
 }
 

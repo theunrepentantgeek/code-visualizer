@@ -52,10 +52,9 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:  bgSpec,
-		W:     float64(canvasWidth),
-		H:     float64(canvasHeight),
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Max: geometry.Point{X: float64(canvasWidth), Y: float64(canvasHeight)}},
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 

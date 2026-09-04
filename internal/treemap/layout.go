@@ -15,6 +15,14 @@ const (
 	minFileSize = 1.0
 )
 
+// boxToRect converts a third-party layout.Box into a geometry.Rect.
+func boxToRect(box layout.Box) geometry.Rect {
+	return geometry.RectFromPositionSize(
+		geometry.Point{X: box.X, Y: box.Y},
+		geometry.Size{Width: box.W, Height: box.H},
+	)
+}
+
 // Layout computes a squarified treemap layout from a Directory tree.
 func Layout(root *model.Directory, width, height int, sizeMetric metric.Name) TreemapRectangle {
 	box := layout.Box{X: 0, Y: 0, W: float64(width), H: float64(height)}
@@ -23,21 +31,11 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name) Tr
 }
 
 func layoutRoot(root *model.Directory, box layout.Box, sizeMetric metric.Name) TreemapRectangle {
-	return layoutDirectory(root, box, sizeMetric, -1, directoryChromeBorderOnly(RectangleBounds{
-		X: box.X,
-		Y: box.Y,
-		W: box.W,
-		H: box.H,
-	}))
+	return layoutDirectory(root, box, sizeMetric, -1, directoryChromeBorderOnly(box))
 }
 
 func layoutDir(dir *model.Directory, box layout.Box, sizeMetric metric.Name, visibleDepth int) TreemapRectangle {
-	return layoutDirectory(dir, box, sizeMetric, visibleDepth, resolveDirectoryChrome(RectangleBounds{
-		X: box.X,
-		Y: box.Y,
-		W: box.W,
-		H: box.H,
-	}, dir.Name))
+	return layoutDirectory(dir, box, sizeMetric, visibleDepth, resolveDirectoryChrome(box, dir.Name))
 }
 
 func layoutDirectory(
@@ -48,8 +46,10 @@ func layoutDirectory(
 	chrome DirectoryChrome,
 ) TreemapRectangle {
 	rect := TreemapRectangle{
-		X: box.X, Y: box.Y, W: box.W, H: box.H,
-		Label: dir.Name, IsDirectory: true,
+		Bounds:       boxToRect(box),
+		layoutSize:   geometry.Size{Width: box.W, Height: box.H},
+		Label:        dir.Name,
+		IsDirectory:  true,
 		VisibleDepth: visibleDepth,
 	}
 	rect.Chrome = chrome
@@ -59,12 +59,10 @@ func layoutDirectory(
 		return rect
 	}
 
-	contentBox := layout.Box{
-		X: rect.Chrome.Content.X,
-		Y: rect.Chrome.Content.Y,
-		W: rect.Chrome.Content.W,
-		H: rect.Chrome.Content.H,
-	}
+	// Recomputed from box (not derived from rect.Chrome.Content) so Squarify
+	// receives the same floating-point values as chrome resolution used,
+	// with no Rect Min/Max round-trip to perturb descendant layout.
+	contentBox := directoryContentBox(box, chrome.Orientation)
 	if contentBox.W <= 0 || contentBox.H <= 0 {
 		return rect
 	}
@@ -145,8 +143,9 @@ func layoutChild(
 	f := dir.Files[c.fileIdx]
 
 	return TreemapRectangle{
-		X: b.X, Y: b.Y, W: b.W, H: b.H,
-		Label: f.Name,
+		Bounds:     boxToRect(b),
+		layoutSize: geometry.Size{Width: b.W, Height: b.H},
+		Label:      f.Name,
 	}
 }
 
@@ -164,17 +163,14 @@ func insetBox(b layout.Box, inset float64) layout.Box {
 // OffsetRects shifts all rectangle coordinates by the provided offset, recursively
 // adjusting every child in the tree.
 func OffsetRects(rect *TreemapRectangle, offset geometry.Vector) {
-	rect.X += offset.X
-	rect.Y += offset.Y
+	rect.Bounds = rect.Bounds.Translate(offset)
 
 	if rect.IsDirectory {
 		if rect.Chrome.Orientation != DirectoryLabelNone {
-			rect.Chrome.Rail.X += offset.X
-			rect.Chrome.Rail.Y += offset.Y
+			rect.Chrome.Rail = rect.Chrome.Rail.Translate(offset)
 		}
 
-		rect.Chrome.Content.X += offset.X
-		rect.Chrome.Content.Y += offset.Y
+		rect.Chrome.Content = rect.Chrome.Content.Translate(offset)
 	}
 
 	for i := range rect.Children {

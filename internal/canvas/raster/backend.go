@@ -38,10 +38,13 @@ func New(width, height int) model.Backend {
 }
 
 func (r *rasterBackend) DrawRectangle(
-	pos geometry.Point, size geometry.Size, fill, border model.Fill, borderWidth float64,
+	bounds geometry.Rect, fill, border model.Fill, borderWidth float64,
 ) {
+	pos := bounds.Min
+	size := bounds.Size()
+
 	if f, ok := fill.(model.RadialGradientFill); ok {
-		r.drawRadialGradientRect(pos, size, f)
+		r.drawRadialGradientRect(bounds, f)
 	} else {
 		r.dc.SetColor(nrgba(model.SolidColor(fill)))
 		r.dc.DrawRectangle(pos.X, pos.Y, size.Width, size.Height)
@@ -58,13 +61,15 @@ func (r *rasterBackend) DrawRectangle(
 }
 
 func (r *rasterBackend) drawRadialGradientRect(
-	pos geometry.Point, size geometry.Size, grad model.RadialGradientFill,
+	bounds geometry.Rect, grad model.RadialGradientFill,
 ) {
-	focus := geometry.NewPoint(
-		pos.X+grad.Focus.X*size.Width,
-		pos.Y+grad.Focus.Y*size.Height,
-	)
-	maxDist := maxCornerDist(focus.X, focus.Y, pos.X, pos.Y, size.Width, size.Height)
+	pos := bounds.Min
+	size := bounds.Size()
+	focus := geometry.Point{
+		X: pos.X + grad.Focus.X*size.Width,
+		Y: pos.Y + grad.Focus.Y*size.Height,
+	}
+	maxDist := maxCornerDist(focus.X, focus.Y, bounds)
 
 	if maxDist == 0 {
 		r.dc.SetColor(nrgba(grad.Center))
@@ -80,15 +85,15 @@ func (r *rasterBackend) drawRadialGradientRect(
 		return
 	}
 
-	x0 := int(pos.X)
-	y0 := int(pos.Y)
-	x1 := int(pos.X + size.Width)
-	y1 := int(pos.Y + size.Height)
-	bounds := img.Bounds()
-	x0 = max(x0, bounds.Min.X)
-	y0 = max(y0, bounds.Min.Y)
-	x1 = min(x1, bounds.Max.X)
-	y1 = min(y1, bounds.Max.Y)
+	x0 := int(bounds.Min.X)
+	y0 := int(bounds.Min.Y)
+	x1 := int(bounds.Max.X)
+	y1 := int(bounds.Max.Y)
+	imgBounds := img.Bounds()
+	x0 = max(x0, imgBounds.Min.X)
+	y0 = max(y0, imgBounds.Min.Y)
+	x1 = min(x1, imgBounds.Max.X)
+	y1 = min(y1, imgBounds.Max.Y)
 
 	lerp := newGradientLerp(grad.Center, grad.Edge)
 	renderRadialGradientPixels(
@@ -97,16 +102,16 @@ func (r *rasterBackend) drawRadialGradientRect(
 }
 
 // maxCornerDist returns the maximum distance from point (fx,fy) to any corner
-// of the rectangle with top-left (rx,ry), width w, and height h.
+// of bounds.
 //
 // The maximum of dx²+dy² over the four corners decomposes as
 // max(dx0²,dx1²) + max(dy0²,dy1²) because dx and dy are independent, so only
 // one math.Sqrt is required instead of four.
-func maxCornerDist(fx, fy, rx, ry, w, h float64) float64 {
-	dx0 := rx - fx
-	dx1 := rx + w - fx
-	dy0 := ry - fy
-	dy1 := ry + h - fy
+func maxCornerDist(fx, fy float64, bounds geometry.Rect) float64 {
+	dx0 := bounds.Min.X - fx
+	dx1 := bounds.Max.X - fx
+	dy0 := bounds.Min.Y - fy
+	dy1 := bounds.Max.Y - fy
 
 	return math.Sqrt(max(dx0*dx0, dx1*dx1) + max(dy0*dy0, dy1*dy1))
 }
