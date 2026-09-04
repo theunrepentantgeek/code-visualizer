@@ -103,7 +103,7 @@ func TestRenderToCanvas_UsesNarrowedRingGeometryForSectorsAndLabels(t *testing.T
 
 	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{}))
 	polygons := callsNamed(calls, "DrawPolygon")
-	expectedOuterRadius := layout.AnchorRadius * 1.9
+	expectedOuterRadius := layout.AnchorRadius * (1 + donutRingWidthRatio)
 
 	g.Expect(polygons).NotTo(BeEmpty())
 	g.Expect(layout.Center.DistanceTo(polygons[0].Points[0])).
