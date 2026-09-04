@@ -59,10 +59,10 @@ func TestLayoutLeavesTenPercentGapBetweenDepthRings(t *testing.T) {
 
 	g.Expect(firstRing.InnerRadius).To(BeNumerically("==", slotWidth))
 	g.Expect(firstRing.OuterRadius - firstRing.InnerRadius).
-		To(BeNumerically("~", slotWidth*0.9, 1e-12))
+		To(BeNumerically("~", slotWidth*donutRingWidthRatio, 1e-12))
 	g.Expect(secondRing.InnerRadius).To(BeNumerically("==", slotWidth*2))
 	g.Expect(secondRing.OuterRadius - secondRing.InnerRadius).
-		To(BeNumerically("~", slotWidth*0.9, 1e-12))
+		To(BeNumerically("~", slotWidth*donutRingWidthRatio, 1e-12))
 	g.Expect(secondRing.InnerRadius - firstRing.OuterRadius).
 		To(BeNumerically("~", slotWidth*0.1, 1e-12))
 }
