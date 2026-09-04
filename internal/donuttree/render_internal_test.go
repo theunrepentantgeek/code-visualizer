@@ -77,6 +77,8 @@ func TestRenderDonutPipeline_WritesDecodablePNGAndSVG(t *testing.T) {
 
 				if decoded == nil {
 					t.Fatal("decoded PNG is nil")
+
+					return
 				}
 
 				g.Expect(decoded.Bounds().Dx()).To(Equal(360))

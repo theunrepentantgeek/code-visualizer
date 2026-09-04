@@ -121,6 +121,8 @@ func TestRenderToCanvas_UsesNarrowedRingGeometryForSectorsAndLabels(t *testing.T
 
 	if directoryLabel == nil {
 		t.Fatal("expected src directory label")
+
+		return
 	}
 
 	expectedMidRadius := layout.AnchorRadius * 1.45
@@ -543,6 +545,8 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 
 	if legendBackground == nil {
 		t.Fatal("expected legend background")
+
+		return
 	}
 
 	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.Min.Y))
