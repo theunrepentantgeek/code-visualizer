@@ -105,6 +105,53 @@ func TestCommitTotalInRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
 	g.Expect(total).To(Equal(int64(1)))
 }
 
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestHistoryRange_TotalHistoryAndPrewarmUseSameSelection(t *testing.T) {
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	historyRange := HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"}
+	tracked := map[string]bool{"main.go": true, "feature.go": true}
+
+	total, err := CommitTotalInHistoryRange(fixture.dir, historyRange)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(total).To(Equal(int64(4)))
+
+	resetService()
+
+	processed := 0
+	commits, err := BulkCommitHistoryAndPrewarmInHistoryRange(
+		fixture.dir,
+		tracked,
+		[]metric.Name{CommitCount},
+		historyRange,
+		func() { processed++ },
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(processed).To(Equal(int(total)))
+	g.Expect(commits).To(HaveLen(3))
+
+	s, err := getService(fixture.dir)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(s).NotTo(BeNil())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	mainData := s.cachedCommitData("main.go")
+	featureData := s.cachedCommitData("feature.go")
+
+	g.Expect(mainData).NotTo(BeNil())
+	g.Expect(featureData).NotTo(BeNil())
+
+	if mainData == nil || featureData == nil {
+		t.Fatal("expected prewarmed commit data")
+	}
+
+	g.Expect(mainData.count).To(Equal(int64(1)))
+	g.Expect(featureData.count).To(Equal(int64(2)))
+}
+
 func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -119,7 +166,7 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
 	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
 
-	commits, err := s.commitIterator(from, until)
+	commits, err := s.commitIterator(HistoryRange{From: from, Until: until})
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var count int

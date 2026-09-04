@@ -5,6 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -45,16 +46,40 @@ func parseDate(value string) (time.Time, error) {
 	return time.Time{}, eris.Errorf("invalid date %q: expected YYYY-MM-DD", value)
 }
 
-func stagesFlagsForCommand(flags *Flags, fromValue string, untilValue string) (*stages.Flags, error) {
-	parsedFlags := toStagesFlags(flags)
+func parseHistoryRange(fromValue, untilValue, fromTag, untilTag string) (git.HistoryRange, error) {
+	if fromValue != "" && fromTag != "" {
+		return git.HistoryRange{}, eris.New("--from and --from-tag are mutually exclusive")
+	}
+
+	if untilValue != "" && untilTag != "" {
+		return git.HistoryRange{}, eris.New("--until and --until-tag are mutually exclusive")
+	}
 
 	from, until, err := parseDateRange(fromValue, untilValue)
+	if err != nil {
+		return git.HistoryRange{}, err
+	}
+
+	return git.HistoryRange{
+		From:     from,
+		Until:    until,
+		FromTag:  fromTag,
+		UntilTag: untilTag,
+	}, nil
+}
+
+func stagesFlagsForCommand(
+	flags *Flags,
+	fromValue, untilValue, fromTag, untilTag string,
+) (*stages.Flags, error) {
+	parsedFlags := toStagesFlags(flags)
+
+	historyRange, err := parseHistoryRange(fromValue, untilValue, fromTag, untilTag)
 	if err != nil {
 		return nil, err
 	}
 
-	parsedFlags.From = from
-	parsedFlags.Until = until
+	parsedFlags.HistoryRange = historyRange
 
 	return parsedFlags, nil
 }
