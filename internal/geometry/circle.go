@@ -42,6 +42,10 @@ func (c Circle) Intersects(other Circle) bool {
 }
 
 func (c Circle) Bounds() Rect {
+	if !c.Valid() {
+		return Rect{}
+	}
+
 	offset := Vector{X: c.Radius, Y: c.Radius}
 
 	return Rect{
