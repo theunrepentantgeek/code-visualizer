@@ -80,7 +80,7 @@ func BulkAuthorHistory(
 // BulkAuthorHistoryInRange applies the same aggregation but only considers commits
 // whose author timestamps fall within the supplied date window.
 //
-//nolint:cyclop,funlen,maintidx,revive // A single-pass history walk keeps the accumulators local and coherent.
+//nolint:cyclop,funlen,maintidx,revive,nolintlint // A single-pass history walk keeps the accumulators local and coherent.
 func BulkAuthorHistoryInRange(
 	repoPath string,
 	filePaths map[string]bool,
@@ -267,7 +267,7 @@ func linesInBlob(c *object.Commit, relPath string) int64 {
 // Using one DiffTree call per commit avoids O(N) repeated diff operations for
 // commits that touch many tracked files.
 //
-//nolint:revive // The linear diff processing is intentionally kept in one function.
+//nolint:revive,nolintlint // The linear diff processing is intentionally kept in one function.
 func batchFileDiffStats(c *object.Commit, changed []string) map[string]fileDiffStats {
 	parent, err := c.Parent(0)
 	if err != nil {
