@@ -206,7 +206,10 @@ func TestPackCircles_TwoCircles_AdjacentOnXAxis(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	circles := []BubbleNode{{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)}, {Geometry: geometry.NewCircle(geometry.OriginPoint, 10)}}
+	circles := []BubbleNode{
+		{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)},
+		{Geometry: geometry.NewCircle(geometry.OriginPoint, 10)},
+	}
 	packCircles(circles)
 
 	g.Expect(circles[0].Geometry.Center.X).To(Equal(0.0))
