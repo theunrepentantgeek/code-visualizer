@@ -53,7 +53,7 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec:   bgSpec,
-		Bounds: geometry.Rect{Max: geometry.Point{X: float64(canvasWidth), Y: float64(canvasHeight)}},
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(canvasWidth), float64(canvasHeight))},
 		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
@@ -200,10 +200,12 @@ func addDisc(cv *canvas.Canvas, e discEntry, is Inks, fileSpec, dirSpec *canvas.
 	}
 
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{
-		Spec:   spec,
-		X:      e.position.X,
-		Y:      e.position.Y,
-		Radius: e.node.DiscRadius,
+		Spec: spec,
+		Geometry: geometry.NewCircle(
+			e.position,
+			e.node.DiscRadius,
+		),
+
 		Angle:  e.node.Angle,
 		Fill:   fillMV,
 		Border: borderMV,

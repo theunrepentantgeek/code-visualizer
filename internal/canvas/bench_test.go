@@ -20,7 +20,7 @@ func BenchmarkFitBlockLabel(b *testing.B) {
 	for range b.N {
 		c := NewCanvas(200, 120)
 		c.AddBlockLabel(LayerOverlay, BlockLabel{
-			Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 10}, Max: geometry.Point{X: 190, Y: 110}},
+			Bounds: geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(190, 110)},
 			Lines:  lines,
 			Ink:    color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		}, FormatPNG)

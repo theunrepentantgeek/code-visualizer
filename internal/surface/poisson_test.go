@@ -16,7 +16,7 @@ func TestPoissonSamples_RejectsUnderflowingMinimumDistance(t *testing.T) {
 	samples := make(chan []surface.Sample, 1)
 	go func() {
 		samples <- surface.PoissonSamples(
-			geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 50, Y: 50}},
+			geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(50, 50)},
 			nil,
 			1e-200,
 			42,
@@ -36,12 +36,12 @@ func TestPoissonSamples_RespectsMinimumDistance(t *testing.T) {
 
 	g := gomega.NewGomegaWithT(t)
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 10, Y: 10}, Value: 1, Original: true},
-		{Position: geometry.Point{X: 40, Y: 40}, Value: 2, Original: true},
+		{Position: geometry.NewPoint(10, 10), Value: 1, Original: true},
+		{Position: geometry.NewPoint(40, 40), Value: 2, Original: true},
 	}
 
 	samples := surface.PoissonSamples(
-		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 50, Y: 50}},
+		geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(50, 50)},
 		originals,
 		surface.PoissonMinDistance,
 		42,
@@ -98,7 +98,7 @@ func TestPoissonSamples_IsDeterministicForSeed(t *testing.T) {
 		InnerRadius: 6,
 		OuterRadius: 25,
 	}
-	originals := []surface.Sample{{Position: geometry.Point{X: 30, Y: 10}, Value: 3, Original: true}}
+	originals := []surface.Sample{{Position: geometry.NewPoint(30, 10), Value: 3, Original: true}}
 
 	first := surface.PoissonSamples(region, originals, surface.PoissonMinDistance, 123)
 	second := surface.PoissonSamples(region, originals, surface.PoissonMinDistance, 123)

@@ -65,10 +65,11 @@ func (r *rasterBackend) drawRadialGradientRect(
 ) {
 	pos := bounds.Min
 	size := bounds.Size()
-	focus := geometry.Point{
-		X: pos.X + grad.Focus.X*size.Width,
-		Y: pos.Y + grad.Focus.Y*size.Height,
-	}
+	focus := geometry.NewPoint(
+		pos.X+grad.Focus.X*size.Width,
+		pos.Y+grad.Focus.Y*size.Height,
+	)
+
 	maxDist := maxCornerDist(focus.X, focus.Y, bounds)
 
 	if maxDist == 0 {
@@ -117,10 +118,12 @@ func maxCornerDist(fx, fy float64, bounds geometry.Rect) float64 {
 }
 
 func (r *rasterBackend) DrawDisc(
-	center geometry.Point, radius float64, fill, border model.Fill, borderWidth float64,
+	circle geometry.Circle, fill, border model.Fill, borderWidth float64,
 ) {
+	center, radius := circle.Center, circle.Radius
+
 	if f, ok := fill.(model.RadialGradientFill); ok {
-		r.drawRadialGradientDisc(center, radius, f)
+		r.drawRadialGradientDisc(circle, f)
 	} else {
 		r.dc.SetColor(nrgba(model.SolidColor(fill)))
 		r.dc.DrawCircle(center.X, center.Y, radius)
@@ -241,8 +244,10 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 }
 
 func (r *rasterBackend) drawRadialGradientDisc(
-	center geometry.Point, radius float64, grad model.RadialGradientFill,
+	circle geometry.Circle, grad model.RadialGradientFill,
 ) {
+	center, radius := circle.Center, circle.Radius
+
 	if radius == 0 {
 		return
 	}
@@ -261,11 +266,12 @@ func (r *rasterBackend) drawRadialGradientDisc(
 		center.Y+(grad.Focus.Y-0.5)*2*radius,
 	)
 
+	discBounds := circle.Bounds()
 	bounds := img.Bounds()
-	x0 := max(int(center.X-radius), bounds.Min.X)
-	y0 := max(int(center.Y-radius), bounds.Min.Y)
-	x1 := min(int(center.X+radius)+1, bounds.Max.X)
-	y1 := min(int(center.Y+radius)+1, bounds.Max.Y)
+	x0 := max(int(discBounds.Min.X), bounds.Min.X)
+	y0 := max(int(discBounds.Min.Y), bounds.Min.Y)
+	x1 := min(int(discBounds.Max.X)+1, bounds.Max.X)
+	y1 := min(int(discBounds.Max.Y)+1, bounds.Max.Y)
 
 	lerp := newGradientLerp(grad.Center, grad.Edge)
 	renderRadialGradientPixels(

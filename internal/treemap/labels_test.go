@@ -26,7 +26,7 @@ func TestBuildBlockLabels_IncludesOnlyConfiguredMetricLines(t *testing.T) {
 		Label:       "root",
 		IsDirectory: true,
 		Children: []TreemapRectangle{{
-			Bounds: geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 130, Y: 80}},
+			Bounds: geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(130, 80)},
 			Label:  "alpha.go",
 		}},
 	}
@@ -58,7 +58,7 @@ func TestBuildBlockLabels_OmitsUnconfiguredMetrics(t *testing.T) {
 		Label:       "root",
 		IsDirectory: true,
 		Children: []TreemapRectangle{{
-			Bounds: geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 100, Y: 40}},
+			Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 40)},
 			Label:  "beta.go",
 		}},
 	}

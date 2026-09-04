@@ -351,7 +351,7 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 		Width:  1920,
 		Height: 1080,
 		DrawingBounds: geometry.Rect{
-			Max: geometry.Point{X: 1920, Y: 1080},
+			Max: geometry.NewPoint(1920, 1080),
 		},
 	}
 	buckets := make([]spiral.TimeBucket, bucketCount)
@@ -376,7 +376,7 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 	g.Expect(viz.Layout.Nodes[1].Angle).To(
 		BeNumerically("~", 2*math.Pi/float64(viz.SpotsPerLap), 1e-9),
 	)
-	g.Expect(viz.Layout.Nodes[bucketCount-1].DiscRadius).To(
+	g.Expect(viz.Layout.Nodes[bucketCount-1].Geometry.Radius).To(
 		BeNumerically(
 			"~",
 			spiral.MaxDiscRadiusWithCadence(bucketCount, 1920, 1080, viz.SpotsPerLap),
@@ -393,7 +393,7 @@ func TestLayoutStageKeepsHourlyCadence(t *testing.T) {
 		Width:  1920,
 		Height: 1080,
 		DrawingBounds: geometry.Rect{
-			Max: geometry.Point{X: 1920, Y: 1080},
+			Max: geometry.NewPoint(1920, 1080),
 		},
 	}
 	viz := &spiral.State{

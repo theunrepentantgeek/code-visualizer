@@ -103,7 +103,7 @@ func EffectiveTitleHeight(cfg *config.Config) int {
 // Run this immediately after ResolveDimensions, before any Reserve* stages.
 func InitDrawingBounds(c *CommonState) error {
 	c.DrawingBounds = geometry.Rect{
-		Max: geometry.Point{X: float64(c.Width), Y: float64(c.Height)},
+		Max: geometry.NewPoint(float64(c.Width), float64(c.Height)),
 	}
 
 	return nil

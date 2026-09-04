@@ -15,11 +15,11 @@ func TestInterpolate_InterpolatesMidpointWithCompactKernel(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 0, Y: 0}, Value: 0},
-		{Position: geometry.Point{X: 4, Y: 0}, Value: 8},
+		{Position: geometry.NewPoint(0, 0), Value: 0},
+		{Position: geometry.NewPoint(4, 0), Value: 8},
 	}
 
-	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.Point{X: 2, Y: 0}}, originals)).To(
+	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.NewPoint(2, 0)}, originals)).To(
 		gomega.Equal(4.0),
 	)
 }
@@ -29,14 +29,14 @@ func TestInterpolate_ReturnsObservedValueAtOriginalLocation(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 0, Y: 0}, Value: 3},
-		{Position: geometry.Point{X: 4, Y: 0}, Value: 8},
+		{Position: geometry.NewPoint(0, 0), Value: 3},
+		{Position: geometry.NewPoint(4, 0), Value: 8},
 	}
 
-	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.Point{X: 0, Y: 0}}, originals)).To(
+	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.NewPoint(0, 0)}, originals)).To(
 		gomega.Equal(3.0),
 	)
-	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.Point{X: 4, Y: 0}}, originals)).To(gomega.Equal(8.0))
+	g.Expect(surface.Interpolate(surface.Sample{Position: geometry.NewPoint(4, 0)}, originals)).To(gomega.Equal(8.0))
 }
 
 func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
@@ -45,10 +45,10 @@ func TestBuild_ReturnsNoMeshWithFewerThanThreeOriginals(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	triangles := surface.Build(
-		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 10, Y: 10}},
+		geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(10, 10)},
 		[]surface.Sample{
-			{Position: geometry.Point{X: 1, Y: 1}, Value: 2},
-			{Position: geometry.Point{X: 9, Y: 9}, Value: 5},
+			{Position: geometry.NewPoint(1, 1), Value: 2},
+			{Position: geometry.NewPoint(9, 9), Value: 5},
 		},
 		42,
 	)
@@ -67,9 +67,9 @@ func TestBuildAndSample_RejectTypedNilAnnulusRegion(t *testing.T) {
 	)
 
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 0, Y: 0}, Value: 1},
-		{Position: geometry.Point{X: 10, Y: 0}, Value: 2},
-		{Position: geometry.Point{X: 0, Y: 10}, Value: 3},
+		{Position: geometry.NewPoint(0, 0), Value: 1},
+		{Position: geometry.NewPoint(10, 0), Value: 2},
+		{Position: geometry.NewPoint(0, 10), Value: 3},
 	}
 
 	var (
@@ -91,22 +91,22 @@ func TestBuild_IgnoresNonFiniteOriginalCoordinatesAndValues(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 1, Y: 1}, Value: 1},
-		{Position: geometry.Point{X: 9, Y: 1}, Value: 2},
-		{Position: geometry.Point{X: 1, Y: 9}, Value: 3},
-		{Position: geometry.Point{X: math.NaN(), Y: 5}, Value: 4},
-		{Position: geometry.Point{X: 5, Y: math.Inf(1)}, Value: 5},
-		{Position: geometry.Point{X: math.Inf(-1), Y: 5}, Value: 6},
-		{Position: geometry.Point{X: 5, Y: 5}, Value: math.NaN()},
-		{Position: geometry.Point{X: 6, Y: 6}, Value: math.Inf(1)},
-		{Position: geometry.Point{X: 7, Y: 7}, Value: math.Inf(-1)},
+		{Position: geometry.NewPoint(1, 1), Value: 1},
+		{Position: geometry.NewPoint(9, 1), Value: 2},
+		{Position: geometry.NewPoint(1, 9), Value: 3},
+		{Position: geometry.NewPoint(math.NaN(), 5), Value: 4},
+		{Position: geometry.NewPoint(5, math.Inf(1)), Value: 5},
+		{Position: geometry.NewPoint(math.Inf(-1), 5), Value: 6},
+		{Position: geometry.NewPoint(5, 5), Value: math.NaN()},
+		{Position: geometry.NewPoint(6, 6), Value: math.Inf(1)},
+		{Position: geometry.NewPoint(7, 7), Value: math.Inf(-1)},
 	}
 
 	var triangles []surface.Triangle
 
 	g.Expect(func() {
 		triangles = surface.Build(
-			geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 10, Y: 10}},
+			geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(10, 10)},
 			originals,
 			42,
 		)
@@ -128,26 +128,26 @@ func TestBuild_PreservesObservedVertexValues(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 0, Y: 0}, Value: 1},
-		{Position: geometry.Point{X: 5, Y: 0}, Value: 2},
-		{Position: geometry.Point{X: 10, Y: 0}, Value: 3},
-		{Position: geometry.Point{X: 15, Y: 0}, Value: 4},
-		{Position: geometry.Point{X: 0, Y: 5}, Value: 5},
-		{Position: geometry.Point{X: 5, Y: 5}, Value: 6},
-		{Position: geometry.Point{X: 10, Y: 5}, Value: 7},
-		{Position: geometry.Point{X: 15, Y: 5}, Value: 8},
-		{Position: geometry.Point{X: 0, Y: 10}, Value: 9},
-		{Position: geometry.Point{X: 5, Y: 10}, Value: 10},
-		{Position: geometry.Point{X: 10, Y: 10}, Value: 11},
-		{Position: geometry.Point{X: 15, Y: 10}, Value: 12},
-		{Position: geometry.Point{X: 0, Y: 15}, Value: 13},
-		{Position: geometry.Point{X: 5, Y: 15}, Value: 14},
-		{Position: geometry.Point{X: 10, Y: 15}, Value: 15},
-		{Position: geometry.Point{X: 15, Y: 15}, Value: 16},
+		{Position: geometry.NewPoint(0, 0), Value: 1},
+		{Position: geometry.NewPoint(5, 0), Value: 2},
+		{Position: geometry.NewPoint(10, 0), Value: 3},
+		{Position: geometry.NewPoint(15, 0), Value: 4},
+		{Position: geometry.NewPoint(0, 5), Value: 5},
+		{Position: geometry.NewPoint(5, 5), Value: 6},
+		{Position: geometry.NewPoint(10, 5), Value: 7},
+		{Position: geometry.NewPoint(15, 5), Value: 8},
+		{Position: geometry.NewPoint(0, 10), Value: 9},
+		{Position: geometry.NewPoint(5, 10), Value: 10},
+		{Position: geometry.NewPoint(10, 10), Value: 11},
+		{Position: geometry.NewPoint(15, 10), Value: 12},
+		{Position: geometry.NewPoint(0, 15), Value: 13},
+		{Position: geometry.NewPoint(5, 15), Value: 14},
+		{Position: geometry.NewPoint(10, 15), Value: 15},
+		{Position: geometry.NewPoint(15, 15), Value: 16},
 	}
 
 	triangles := surface.Build(
-		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 15, Y: 15}},
+		geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(15, 15)},
 		originals,
 		42,
 	)
@@ -182,14 +182,14 @@ func TestBuild_InterpolatesInfillFromOriginalsOnly(t *testing.T) {
 
 	g := gomega.NewWithT(t)
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 0, Y: 0}, Value: 0},
-		{Position: geometry.Point{X: 10, Y: 0}, Value: 8},
-		{Position: geometry.Point{X: 0, Y: 10}, Value: 16},
-		{Position: geometry.Point{X: 10, Y: 10}, Value: 24},
+		{Position: geometry.NewPoint(0, 0), Value: 0},
+		{Position: geometry.NewPoint(10, 0), Value: 8},
+		{Position: geometry.NewPoint(0, 10), Value: 16},
+		{Position: geometry.NewPoint(10, 10), Value: 24},
 	}
 
 	triangles := surface.Build(
-		geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 10, Y: 10}},
+		geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(10, 10)},
 		originals,
 		42,
 	)
@@ -222,30 +222,30 @@ func TestBuild_RestrictsAnnularMeshToRegionAndMaximumEdge(t *testing.T) {
 		OuterRadius: 14,
 	}
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 34, Y: 20}, Value: 1},
-		{Position: geometry.Point{X: 32.1, Y: 27}, Value: 2},
-		{Position: geometry.Point{X: 27, Y: 32.1}, Value: 3},
-		{Position: geometry.Point{X: 20, Y: 34}, Value: 4},
-		{Position: geometry.Point{X: 13, Y: 32.1}, Value: 5},
-		{Position: geometry.Point{X: 7.9, Y: 27}, Value: 6},
-		{Position: geometry.Point{X: 6, Y: 20}, Value: 7},
-		{Position: geometry.Point{X: 7.9, Y: 13}, Value: 8},
-		{Position: geometry.Point{X: 13, Y: 7.9}, Value: 9},
-		{Position: geometry.Point{X: 20, Y: 6}, Value: 10},
-		{Position: geometry.Point{X: 27, Y: 7.9}, Value: 11},
-		{Position: geometry.Point{X: 32.1, Y: 13}, Value: 12},
-		{Position: geometry.Point{X: 26, Y: 20}, Value: 13},
-		{Position: geometry.Point{X: 25.2, Y: 23}, Value: 14},
-		{Position: geometry.Point{X: 23, Y: 25.2}, Value: 15},
-		{Position: geometry.Point{X: 20, Y: 26}, Value: 16},
-		{Position: geometry.Point{X: 17, Y: 25.2}, Value: 17},
-		{Position: geometry.Point{X: 14.8, Y: 23}, Value: 18},
-		{Position: geometry.Point{X: 14, Y: 20}, Value: 19},
-		{Position: geometry.Point{X: 14.8, Y: 17}, Value: 20},
-		{Position: geometry.Point{X: 17, Y: 14.8}, Value: 21},
-		{Position: geometry.Point{X: 20, Y: 14}, Value: 22},
-		{Position: geometry.Point{X: 23, Y: 14.8}, Value: 23},
-		{Position: geometry.Point{X: 25.2, Y: 17}, Value: 24},
+		{Position: geometry.NewPoint(34, 20), Value: 1},
+		{Position: geometry.NewPoint(32.1, 27), Value: 2},
+		{Position: geometry.NewPoint(27, 32.1), Value: 3},
+		{Position: geometry.NewPoint(20, 34), Value: 4},
+		{Position: geometry.NewPoint(13, 32.1), Value: 5},
+		{Position: geometry.NewPoint(7.9, 27), Value: 6},
+		{Position: geometry.NewPoint(6, 20), Value: 7},
+		{Position: geometry.NewPoint(7.9, 13), Value: 8},
+		{Position: geometry.NewPoint(13, 7.9), Value: 9},
+		{Position: geometry.NewPoint(20, 6), Value: 10},
+		{Position: geometry.NewPoint(27, 7.9), Value: 11},
+		{Position: geometry.NewPoint(32.1, 13), Value: 12},
+		{Position: geometry.NewPoint(26, 20), Value: 13},
+		{Position: geometry.NewPoint(25.2, 23), Value: 14},
+		{Position: geometry.NewPoint(23, 25.2), Value: 15},
+		{Position: geometry.NewPoint(20, 26), Value: 16},
+		{Position: geometry.NewPoint(17, 25.2), Value: 17},
+		{Position: geometry.NewPoint(14.8, 23), Value: 18},
+		{Position: geometry.NewPoint(14, 20), Value: 19},
+		{Position: geometry.NewPoint(14.8, 17), Value: 20},
+		{Position: geometry.NewPoint(17, 14.8), Value: 21},
+		{Position: geometry.NewPoint(20, 14), Value: 22},
+		{Position: geometry.NewPoint(23, 14.8), Value: 23},
+		{Position: geometry.NewPoint(25.2, 17), Value: 24},
 	}
 
 	first := surface.Build(region, originals, 42)
@@ -290,10 +290,10 @@ func TestBuild_SeedsAnnulusBoundaries(t *testing.T) {
 	}
 
 	originals := []surface.Sample{
-		{Position: geometry.Point{X: 30, Y: 20}, Value: 1},
-		{Position: geometry.Point{X: 20, Y: 30}, Value: 2},
-		{Position: geometry.Point{X: 10, Y: 20}, Value: 3},
-		{Position: geometry.Point{X: 20, Y: 10}, Value: 4},
+		{Position: geometry.NewPoint(30, 20), Value: 1},
+		{Position: geometry.NewPoint(20, 30), Value: 2},
+		{Position: geometry.NewPoint(10, 20), Value: 3},
+		{Position: geometry.NewPoint(20, 10), Value: 4},
 	}
 	for _, original := range originals {
 		radius := math.Hypot(original.Position.X-region.CX, original.Position.Y-region.CY)
@@ -359,10 +359,11 @@ func TestBuild_RetainsEverySupportedAnnulusBoundarySampleAsMeshVertex(t *testing
 		radius := 110 + 80*float64(index%7)/7
 
 		originals = append(originals, surface.Sample{
-			Position: geometry.Point{
-				X: region.CX + radius*math.Cos(angle),
-				Y: region.CY + radius*math.Sin(angle),
-			},
+			Position: geometry.NewPoint(
+				region.CX+radius*math.Cos(angle),
+				region.CY+radius*math.Sin(angle),
+			),
+
 			Value: radius,
 		})
 	}
@@ -397,9 +398,9 @@ func TestLongestEdge_ReturnsLengthOfLongestTriangleSide(t *testing.T) {
 	g := gomega.NewWithT(t)
 	triangle := surface.Triangle{
 		Points: [3]surface.Sample{
-			{Position: geometry.Point{X: 0, Y: 0}},
-			{Position: geometry.Point{X: 3, Y: 0}},
-			{Position: geometry.Point{X: 0, Y: 4}},
+			{Position: geometry.NewPoint(0, 0)},
+			{Position: geometry.NewPoint(3, 0)},
+			{Position: geometry.NewPoint(0, 4)},
 		},
 	}
 

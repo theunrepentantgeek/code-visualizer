@@ -117,7 +117,7 @@ func TestCategoricalPosition_CentersMap_ReturnsMapValue(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 100}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(200, 100)}
 	axis := &CategoricalAxis{
 		Centers: map[string]float64{"go": 50, "md": 150},
 	}
@@ -130,7 +130,7 @@ func TestCategoricalPosition_CentersMap_UnknownCategory_ReturnsCenter(t *testing
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 100}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(200, 100)}
 	axis := &CategoricalAxis{
 		Centers: map[string]float64{"go": 50},
 	}
@@ -143,7 +143,7 @@ func TestCategoricalPosition_LinearScan_MatchingBand_ReturnsBandCenter(t *testin
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 100}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(200, 100)}
 	axis := &CategoricalAxis{
 		Bands: []AxisBand{
 			{Label: "go", Start: 0, End: 100, Center: 50},
@@ -160,7 +160,7 @@ func TestCategoricalPosition_LinearScan_UnknownCategory_ReturnsCenter(t *testing
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 200, Y: 100}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(200, 100)}
 	axis := &CategoricalAxis{
 		Bands: []AxisBand{
 			{Label: "go", Start: 0, End: 100, Center: 50},
@@ -178,7 +178,7 @@ func TestOffsetLayout_ShiftsPlotOrigin(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	layout := &ScatterLayout{
-		Plot: geometry.Rect{Min: geometry.Point{X: 10, Y: 20}, Max: geometry.Point{X: 110, Y: 70}},
+		Plot: geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(110, 70)},
 	}
 	OffsetLayout(layout, geometry.Vector{X: 5, Y: 3})
 	g.Expect(layout.Plot.Min.X).To(BeNumerically("==", 15))
@@ -191,15 +191,15 @@ func TestOffsetLayout_ShiftsPoints(t *testing.T) {
 
 	layout := &ScatterLayout{
 		Points: []ScatterPoint{
-			{Position: geometry.Point{X: 10, Y: 20}},
-			{Position: geometry.Point{X: 30, Y: 40}},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(10, 20), 0)},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(30, 40), 0)},
 		},
 	}
 	OffsetLayout(layout, geometry.Vector{X: 5, Y: -10})
-	g.Expect(layout.Points[0].Position.X).To(BeNumerically("==", 15))
-	g.Expect(layout.Points[0].Position.Y).To(BeNumerically("==", 10))
-	g.Expect(layout.Points[1].Position.X).To(BeNumerically("==", 35))
-	g.Expect(layout.Points[1].Position.Y).To(BeNumerically("==", 30))
+	g.Expect(layout.Points[0].Geometry.Center.X).To(BeNumerically("==", 15))
+	g.Expect(layout.Points[0].Geometry.Center.Y).To(BeNumerically("==", 10))
+	g.Expect(layout.Points[1].Geometry.Center.X).To(BeNumerically("==", 35))
+	g.Expect(layout.Points[1].Geometry.Center.Y).To(BeNumerically("==", 30))
 }
 
 func TestOffsetLayout_ShiftsNumericAxisTicks(t *testing.T) {

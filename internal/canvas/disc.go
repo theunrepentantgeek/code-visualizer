@@ -8,12 +8,11 @@ import (
 
 // Disc carries geometry and metric values for circular shapes.
 type Disc struct {
-	Spec   *DiscSpec
-	X, Y   float64
-	Radius float64
-	Angle  float64 // angular position; used for radial/external label orientation
-	Fill   inks.MetricValue
-	Border inks.MetricValue
+	Spec     *DiscSpec
+	Geometry geometry.Circle
+	Angle    float64 // angular position; used for radial/external label orientation
+	Fill     inks.MetricValue
+	Border   inks.MetricValue
 }
 
 func (d *Disc) drawTo(b Backend) {
@@ -21,8 +20,7 @@ func (d *Disc) drawTo(b Backend) {
 	border := model.SolidFill{Color: d.Spec.Border.Dip(d.Border)}
 
 	b.DrawDisc(
-		geometry.NewPoint(d.X, d.Y),
-		d.Radius,
+		d.Geometry,
 		fill, border,
 		d.Spec.BorderWidth,
 	)

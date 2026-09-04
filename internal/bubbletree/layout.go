@@ -33,7 +33,7 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, la
 	// shown either. Strip the label reservation so the children fill the
 	// canvas instead of leaving whitespace for a label that won't appear.
 	if node.ShowLabel {
-		node.Radius -= LabelReservation
+		node.Geometry.Radius -= LabelReservation
 		node.ShowLabel = false
 	}
 
@@ -64,9 +64,9 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 	}
 
 	if len(children) == 0 {
-		node.Radius = minFileRadius
+		node.Geometry.Radius = minFileRadius
 		if node.ShowLabel {
-			node.Radius += LabelReservation
+			node.Geometry.Radius += LabelReservation
 		}
 
 		return node
@@ -74,7 +74,7 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 
 	// Sort by radius descending — improves packing density.
 	slices.SortFunc(children, func(a, b BubbleNode) int {
-		return cmp.Compare(b.Radius, a.Radius)
+		return cmp.Compare(b.Geometry.Radius, a.Geometry.Radius)
 	})
 
 	packCircles(children)
@@ -82,14 +82,14 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 	enc := computeEnclosing(children)
 
 	// Re-centre so the enclosing circle's centre becomes local origin.
-	offset := enc.center.VectorTo(geometry.OriginPoint)
+	offset := enc.Center.VectorTo(geometry.OriginPoint)
 	for i := range children {
-		children[i].Position = children[i].Position.Translate(offset)
+		children[i].Geometry.Center = children[i].Geometry.Center.Translate(offset)
 	}
 
-	node.Radius = enc.radius + parentPadding
+	node.Geometry.Radius = enc.Radius + parentPadding
 	if node.ShowLabel {
-		node.Radius += LabelReservation
+		node.Geometry.Radius += LabelReservation
 	}
 
 	node.Children = children
@@ -104,7 +104,7 @@ func layoutFile(f *model.File, sizeMetric metric.Name, labels LabelMode) BubbleN
 	}
 
 	return BubbleNode{
-		Radius:    r,
+		Geometry:  geometry.NewCircle(geometry.OriginPoint, r),
 		Path:      f.Path,
 		Label:     f.Name,
 		ShowLabel: labels == LabelAll,

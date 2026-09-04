@@ -47,7 +47,7 @@ func addDonutBackground(cv *canvas.Canvas, width, height int) {
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec:   spec,
-		Bounds: geometry.Rect{Max: geometry.Point{X: float64(width), Y: float64(height)}},
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
 		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
@@ -61,7 +61,11 @@ func addRootAnchor(cv *canvas.Canvas, layout LayoutResult, root *model.Directory
 		},
 	}
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{
-		Spec: discSpec, X: layout.Center.X, Y: layout.Center.Y, Radius: layout.AnchorRadius,
+		Spec: discSpec,
+		Geometry: geometry.NewCircle(
+			layout.Center,
+			layout.AnchorRadius,
+		),
 	})
 
 	labelSpec := &canvas.TextSpec{

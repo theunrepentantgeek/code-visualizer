@@ -18,7 +18,7 @@ const (
 // boxToRect converts a third-party layout.Box into a geometry.Rect.
 func boxToRect(box layout.Box) geometry.Rect {
 	return geometry.RectFromPositionSize(
-		geometry.Point{X: box.X, Y: box.Y},
+		geometry.NewPoint(box.X, box.Y),
 		geometry.Size{Width: box.W, Height: box.H},
 	)
 }

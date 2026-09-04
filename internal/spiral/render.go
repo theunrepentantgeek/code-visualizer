@@ -65,7 +65,7 @@ func addBackground(cv *canvas.Canvas, width, height int) {
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec:   bgSpec,
-		Bounds: geometry.Rect{Max: geometry.Point{X: float64(width), Y: float64(height)}},
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
 		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
@@ -212,7 +212,7 @@ func addDiscs(
 	}
 
 	for i, n := range nodes {
-		if n.DiscRadius <= 0 {
+		if n.Geometry.Radius <= 0 {
 			continue
 		}
 
@@ -220,18 +220,16 @@ func addDiscs(
 		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, is.Border)
 
 		spec := smallSpec
-		if borderWidth(n.DiscRadius) == 3.0 {
+		if borderWidth(n.Geometry.Radius) == 3.0 {
 			spec = largeSpec
 		}
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   spec,
-			X:      n.Position.X,
-			Y:      n.Position.Y,
-			Radius: n.DiscRadius,
-			Angle:  n.Angle,
-			Fill:   fillMV,
-			Border: borderMV,
+			Spec:     spec,
+			Geometry: n.Geometry,
+			Angle:    n.Angle,
+			Fill:     fillMV,
+			Border:   borderMV,
 		})
 	}
 }

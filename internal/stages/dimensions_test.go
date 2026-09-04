@@ -131,7 +131,7 @@ func TestDrawingBounds_FullCanvas_WidthAndHeight(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	b := geometry.Rect{Max: geometry.Point{X: 1920, Y: 1080}}
+	b := geometry.Rect{Max: geometry.NewPoint(1920, 1080)}
 	g.Expect(b.Width()).To(Equal(1920.0))
 	g.Expect(b.Height()).To(Equal(1080.0))
 }

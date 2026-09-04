@@ -406,7 +406,11 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 			},
 		}
 		lb.cv.AddDisc(canvas.LayerOverlay, canvas.Disc{
-			Spec: spec, X: x + w/2, Y: y + h/2, Radius: min(w, h) / 2,
+			Spec: spec,
+			Geometry: geometry.NewCircle(
+				geometry.NewPoint(x+w/2, y+h/2),
+				min(w, h)/2,
+			),
 		})
 	case model.LegendLabelSampleArc:
 		lb.addArcLabelSample(x, y, w, h)
@@ -491,7 +495,7 @@ func (lb *legendBuilder) addRect(
 
 	lb.cv.AddRectangle(canvas.LayerOverlay, canvas.Rectangle{
 		Spec:   spec,
-		Bounds: geometry.RectFromPositionSize(geometry.Point{X: x, Y: y}, geometry.Size{Width: w, Height: h}),
+		Bounds: geometry.RectFromPositionSize(geometry.NewPoint(x, y), geometry.Size{Width: w, Height: h}),
 		Focus:  model.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }

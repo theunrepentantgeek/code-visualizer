@@ -13,7 +13,7 @@ import (
 // Methods receive resolved colours/fills and primitive geometry.
 type Backend interface {
 	DrawRectangle(bounds geometry.Rect, fill, border Fill, borderWidth float64)
-	DrawDisc(center geometry.Point, radius float64, fill, border Fill, borderWidth float64)
+	DrawDisc(circle geometry.Circle, fill, border Fill, borderWidth float64)
 	DrawPolygon(points []geometry.Point, fill, border Fill, borderWidth float64)
 	DrawFilledPath(loops [][]geometry.Point, fill color.RGBA)
 	DrawLine(from, to geometry.Point, stroke color.RGBA, strokeWidth float64)

@@ -211,7 +211,7 @@ func TestLayout_CategoricalAxesUseAlphabeticalBands(t *testing.T) {
 	g.Expect(layout.YAxis.Categorical.Bands).To(HaveLen(2))
 	g.Expect(layout.YAxis.Categorical.Bands[0].Label).To(Equal("alpha"))
 	g.Expect(layout.YAxis.Categorical.Bands[1].Label).To(Equal("beta"))
-	g.Expect(layout.Points[0].Radius).To(BeNumerically(">=", layout.Points[1].Radius))
+	g.Expect(layout.Points[0].Geometry.Radius).To(BeNumerically(">=", layout.Points[1].Geometry.Radius))
 }
 
 func TestLayout_NumericYAxisPlacesHigherValuesHigherOnCanvas(t *testing.T) {
@@ -250,7 +250,7 @@ func TestLayout_NumericYAxisPlacesHigherValuesHigherOnCanvas(t *testing.T) {
 		points[point.File.Name] = point
 	}
 
-	g.Expect(points["high.go"].Position.Y).To(BeNumerically("<", points["low.go"].Position.Y))
+	g.Expect(points["high.go"].Geometry.Center.Y).To(BeNumerically("<", points["low.go"].Geometry.Center.Y))
 	g.Expect(layout.YAxis.Numeric.Ticks).NotTo(BeEmpty())
 }
 
@@ -286,7 +286,7 @@ func TestLayout_CrowdedPlotKeepsMinimumDiscRadius(t *testing.T) {
 	)
 
 	for _, point := range layout.Points {
-		g.Expect(point.Radius).To(BeNumerically(">=", scatterMinRadius))
+		g.Expect(point.Geometry.Radius).To(BeNumerically(">=", scatterMinRadius))
 	}
 }
 
@@ -294,7 +294,7 @@ func TestNumericTicks_UsesRegularNiceSteps(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)}
 	ticks := numericTicks(0.219, 0.875, plot, horizontalAxis)
 
 	g.Expect(ticks).To(HaveLen(8))
@@ -310,7 +310,7 @@ func TestNumericTicks_NearZeroRangeIncludesZeroTick(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)}
 	ticks := numericTicks(9, 842, plot, horizontalAxis)
 
 	g.Expect(ticks).To(HaveLen(10))
@@ -355,7 +355,7 @@ func TestLogNumericTicks_SpansMultipleDecades(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)}
 	ticks := logNumericTicks(1, 10000, plot, horizontalAxis)
 
 	// Expect ticks at powers of 10: 1, 10, 100, 1000, 10000
@@ -382,7 +382,7 @@ func TestLogNumericTicks_NarrowRange_AddsIntermediateTicks(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)}
 	ticks := logNumericTicks(50, 500, plot, horizontalAxis)
 
 	// Range spans ~1 decade, so intermediate ticks (2x, 5x) are added.
@@ -405,7 +405,7 @@ func TestLogNumericTicks_SubDecadeRange_UsesFallback(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)}
 	// Range [11, 19] has no power-of-10 or subdivision candidate inside it
 	ticks := logNumericTicks(11, 19, plot, horizontalAxis)
 
@@ -424,7 +424,7 @@ func TestLogNumericTicks_SingleValue_ReturnsCenterTick(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	plot := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 800, Y: 600}}
+	plot := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)}
 	ticks := logNumericTicks(42, 42, plot, horizontalAxis)
 
 	g.Expect(ticks).To(HaveLen(1))
@@ -462,13 +462,13 @@ func TestLayout_LogScalePositionsPointsLogarithmically(t *testing.T) {
 
 	// With log scale, the gap between 10→100 should equal the gap between 100→1000
 	// (both are one decade)
-	gap1 := points["medium.go"].Position.X - points["small.go"].Position.X
-	gap2 := points["large.go"].Position.X - points["medium.go"].Position.X
+	gap1 := points["medium.go"].Geometry.Center.X - points["small.go"].Geometry.Center.X
+	gap2 := points["large.go"].Geometry.Center.X - points["medium.go"].Geometry.Center.X
 	g.Expect(gap1).To(BeNumerically("~", gap2, 1.0))
 
 	// All X values should be within the plot area
-	g.Expect(points["small.go"].Position.X).To(BeNumerically(">=", scatterPlotLeftMargin))
-	g.Expect(points["large.go"].Position.X).To(BeNumerically("<=", 800-scatterPlotRightMargin))
+	g.Expect(points["small.go"].Geometry.Center.X).To(BeNumerically(">=", scatterPlotLeftMargin))
+	g.Expect(points["large.go"].Geometry.Center.X).To(BeNumerically("<=", 800-scatterPlotRightMargin))
 }
 
 func TestValidateLogScale_ErrorsOnZeroValue(t *testing.T) {

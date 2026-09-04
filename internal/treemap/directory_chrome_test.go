@@ -24,7 +24,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		g.Expect(chrome.Text).To(BeEmpty())
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
 		g.Expect(chrome.Content).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 14, Y: 24}, Max: geometry.Point{X: 106, Y: 76},
+			Min: geometry.NewPoint(14, 24), Max: geometry.NewPoint(106, 76),
 		}))
 	})
 
@@ -36,10 +36,10 @@ func TestResolveDirectoryChrome(t *testing.T) {
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 120, Y: 20},
+			Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(120, 20),
 		}))
 		g.Expect(chrome.Content).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 4, Y: 20}, Max: geometry.Point{X: 116, Y: 56},
+			Min: geometry.NewPoint(4, 20), Max: geometry.NewPoint(116, 56),
 		}))
 	})
 
@@ -51,10 +51,10 @@ func TestResolveDirectoryChrome(t *testing.T) {
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 5, Y: 6}, Max: geometry.Point{X: 65, Y: 26},
+			Min: geometry.NewPoint(5, 6), Max: geometry.NewPoint(65, 26),
 		}))
 		g.Expect(chrome.Content).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 9, Y: 26}, Max: geometry.Point{X: 61, Y: 62},
+			Min: geometry.NewPoint(9, 26), Max: geometry.NewPoint(61, 62),
 		}))
 	})
 
@@ -66,10 +66,10 @@ func TestResolveDirectoryChrome(t *testing.T) {
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelLeft))
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 3, Y: 7}, Max: geometry.Point{X: 23, Y: 127},
+			Min: geometry.NewPoint(3, 7), Max: geometry.NewPoint(23, 127),
 		}))
 		g.Expect(chrome.Content).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 23, Y: 11}, Max: geometry.Point{X: 59, Y: 123},
+			Min: geometry.NewPoint(23, 11), Max: geometry.NewPoint(59, 123),
 		}))
 	})
 
@@ -83,7 +83,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		g.Expect(chrome.Text).To(BeEmpty())
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
 		g.Expect(chrome.Content).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 96, Y: 35},
+			Min: geometry.NewPoint(4, 4), Max: geometry.NewPoint(96, 35),
 		}))
 	})
 
@@ -97,7 +97,7 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		g.Expect(chrome.Text).To(BeEmpty())
 		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
 		g.Expect(chrome.Content).To(Equal(geometry.Rect{
-			Min: geometry.Point{X: 4, Y: 4}, Max: geometry.Point{X: 35, Y: 96},
+			Min: geometry.NewPoint(4, 4), Max: geometry.NewPoint(35, 96),
 		}))
 	})
 }

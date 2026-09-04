@@ -183,8 +183,14 @@ func positionNode(
 	center := geometry.NewPoint(params.centreX, params.centreY)
 
 	return SpiralNode{
-		Position:     center.Translate(geometry.NewVector(r*math.Sin(theta), -r*math.Cos(theta))),
-		DiscRadius:   defaultDiscRadius,
+		Geometry: geometry.NewCircle(
+			center.Translate(geometry.Vector{
+				X: r * math.Sin(theta),
+				Y: -r * math.Cos(theta),
+			}),
+			defaultDiscRadius,
+		),
+
 		Angle:        theta,
 		SpiralRadius: r,
 		TimeStart:    bucket.Start,

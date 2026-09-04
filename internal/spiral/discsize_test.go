@@ -27,7 +27,7 @@ func TestApplyDiscSizes_LargestBucketGetsMaxDisc(t *testing.T) {
 
 	nodes := make([]SpiralNode, 5)
 	for i := range nodes {
-		nodes[i].DiscRadius = defaultDiscRadius
+		nodes[i].Geometry.Radius = defaultDiscRadius
 	}
 
 	// Give one bucket a clearly larger SizeValue.
@@ -43,17 +43,17 @@ func TestApplyDiscSizes_LargestBucketGetsMaxDisc(t *testing.T) {
 	ApplyDiscSizes(nodes, buckets, maxDisc)
 
 	// The largest bucket (index 2) should have radius == maxDisc.
-	g.Expect(nodes[2].DiscRadius).To(BeNumerically("~", maxDisc, 1e-9), "largest bucket should get maxDisc radius")
+	g.Expect(nodes[2].Geometry.Radius).To(BeNumerically("~", maxDisc, 1e-9), "largest bucket should get maxDisc radius")
 
 	// Smaller active buckets should be between minDiscRadius and maxDisc.
-	g.Expect(nodes[0].DiscRadius).To(BeNumerically(">=", minDiscRadius))
-	g.Expect(nodes[0].DiscRadius).To(BeNumerically("<=", maxDisc))
-	g.Expect(nodes[3].DiscRadius).To(BeNumerically(">=", minDiscRadius))
-	g.Expect(nodes[3].DiscRadius).To(BeNumerically("<=", maxDisc))
+	g.Expect(nodes[0].Geometry.Radius).To(BeNumerically(">=", minDiscRadius))
+	g.Expect(nodes[0].Geometry.Radius).To(BeNumerically("<=", maxDisc))
+	g.Expect(nodes[3].Geometry.Radius).To(BeNumerically(">=", minDiscRadius))
+	g.Expect(nodes[3].Geometry.Radius).To(BeNumerically("<=", maxDisc))
 
 	// Empty buckets should have zero radius.
-	g.Expect(nodes[1].DiscRadius).To(Equal(0.0))
-	g.Expect(nodes[4].DiscRadius).To(Equal(0.0))
+	g.Expect(nodes[1].Geometry.Radius).To(Equal(0.0))
+	g.Expect(nodes[4].Geometry.Radius).To(Equal(0.0))
 }
 
 func TestApplyDiscSizes_UsesReadableFloorWhenGeometrySupportsIt(t *testing.T) {
@@ -65,7 +65,7 @@ func TestApplyDiscSizes_UsesReadableFloorWhenGeometrySupportsIt(t *testing.T) {
 
 	nodes := make([]SpiralNode, 3)
 	for i := range nodes {
-		nodes[i].DiscRadius = defaultDiscRadius
+		nodes[i].Geometry.Radius = defaultDiscRadius
 		buckets[i].SizeValue = 0
 		buckets[i].Files = makeFiles(1) // active but zero SizeValue
 	}
@@ -73,8 +73,8 @@ func TestApplyDiscSizes_UsesReadableFloorWhenGeometrySupportsIt(t *testing.T) {
 	ApplyDiscSizes(nodes, buckets, maxDisc)
 
 	for i := range nodes {
-		g.Expect(nodes[i].DiscRadius).To(Equal(minDiscRadius))
-		g.Expect(nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc))
+		g.Expect(nodes[i].Geometry.Radius).To(Equal(minDiscRadius))
+		g.Expect(nodes[i].Geometry.Radius).To(BeNumerically("<=", maxDisc))
 	}
 }
 
@@ -86,7 +86,7 @@ func TestApplyDiscSizes_SmallerBucketIsSmallerThanLarger(t *testing.T) {
 
 	nodes := make([]SpiralNode, 2)
 	for i := range nodes {
-		nodes[i].DiscRadius = defaultDiscRadius
+		nodes[i].Geometry.Radius = defaultDiscRadius
 	}
 
 	buckets[0].Files = makeFiles(1)
@@ -96,7 +96,7 @@ func TestApplyDiscSizes_SmallerBucketIsSmallerThanLarger(t *testing.T) {
 
 	ApplyDiscSizes(nodes, buckets, 20.0)
 
-	g.Expect(nodes[0].DiscRadius).To(BeNumerically("<", nodes[1].DiscRadius),
+	g.Expect(nodes[0].Geometry.Radius).To(BeNumerically("<", nodes[1].Geometry.Radius),
 		"bucket with fewer commits should have smaller disc")
 }
 
@@ -115,10 +115,10 @@ func TestApplyDiscSizes_UsesReadableFloorAndSquareRootScaling(t *testing.T) {
 	ApplyDiscSizes(nodes, buckets, 20)
 
 	g.Expect(minDiscRadius).To(Equal(12.0))
-	g.Expect(nodes[0].DiscRadius).To(BeNumerically(">", minDiscRadius))
-	g.Expect(nodes[0].DiscRadius).To(BeNumerically("<", nodes[1].DiscRadius))
-	g.Expect(nodes[1].DiscRadius).To(BeNumerically("<", nodes[2].DiscRadius))
-	g.Expect(nodes[2].DiscRadius).To(BeNumerically("==", 20))
+	g.Expect(nodes[0].Geometry.Radius).To(BeNumerically(">", minDiscRadius))
+	g.Expect(nodes[0].Geometry.Radius).To(BeNumerically("<", nodes[1].Geometry.Radius))
+	g.Expect(nodes[1].Geometry.Radius).To(BeNumerically("<", nodes[2].Geometry.Radius))
+	g.Expect(nodes[2].Geometry.Radius).To(BeNumerically("==", 20))
 }
 
 func TestApplyDiscSizes_DenseHourlyLayoutHonorsGeometryMaximum(t *testing.T) {
@@ -141,7 +141,7 @@ func TestApplyDiscSizes_DenseHourlyLayoutHonorsGeometryMaximum(t *testing.T) {
 	ApplyDiscSizes(nodes, buckets, maxDisc)
 
 	for i := range nodes {
-		g.Expect(nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
+		g.Expect(nodes[i].Geometry.Radius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
 	}
 }
 
@@ -172,19 +172,19 @@ func TestApplyDiscSizes_DenseHourlyLayoutDoesNotOverlapAdjacentLaps(t *testing.T
 	ApplyDiscSizes(layout.Nodes, buckets, maxDisc)
 
 	for i := range layout.Nodes {
-		g.Expect(layout.Nodes[i].DiscRadius).To(BeNumerically(">", 0), "bucket %d", i)
-		g.Expect(layout.Nodes[i].DiscRadius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
+		g.Expect(layout.Nodes[i].Geometry.Radius).To(BeNumerically(">", 0), "bucket %d", i)
+		g.Expect(layout.Nodes[i].Geometry.Radius).To(BeNumerically("<=", maxDisc), "bucket %d", i)
 	}
 
 	for i := 0; i+Hourly.SpotsPerLap() < len(layout.Nodes); i++ {
 		current := layout.Nodes[i]
 		nextLap := layout.Nodes[i+Hourly.SpotsPerLap()]
-		distance := current.Position.DistanceTo(nextLap.Position)
+		distance := current.Geometry.Center.DistanceTo(nextLap.Geometry.Center)
 		g.Expect(distance).To(
 			BeNumerically(
 				">=",
-				current.DiscRadius+borderWidth(current.DiscRadius)/2+
-					nextLap.DiscRadius+borderWidth(nextLap.DiscRadius)/2,
+				current.Geometry.Radius+borderWidth(current.Geometry.Radius)/2+
+					nextLap.Geometry.Radius+borderWidth(nextLap.Geometry.Radius)/2,
 			),
 			"painted extents of same-angle buckets %d and %d should not overlap",
 			i, i+Hourly.SpotsPerLap(),

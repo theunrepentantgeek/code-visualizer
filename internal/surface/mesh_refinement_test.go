@@ -12,7 +12,7 @@ import (
 func TestRefinementPointLimitReservesHalfEdgeGrid(t *testing.T) {
 	t.Parallel()
 
-	region := geometry.Rect{Min: geometry.Point{X: 0, Y: 0}, Max: geometry.Point{X: 16, Y: 16}}
+	region := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(16, 16)}
 
 	got := refinementPointLimit(region, 3)
 
@@ -26,13 +26,13 @@ func TestRefinementPoints_IgnoresDegenerateOversizedFace(t *testing.T) {
 	t.Parallel()
 
 	points := []Sample{
-		{Position: geometry.Point{X: 0, Y: 0}},
-		{Position: geometry.Point{X: 12, Y: 0}},
-		{Position: geometry.Point{X: 6, Y: 0}},
+		{Position: geometry.NewPoint(0, 0)},
+		{Position: geometry.NewPoint(12, 0)},
+		{Position: geometry.NewPoint(6, 0)},
 	}
 
 	candidates, oversized := refinementPoints(
-		geometry.Rect{Min: geometry.Point{X: 0, Y: -1}, Max: geometry.Point{X: 12, Y: 1}},
+		geometry.Rect{Min: geometry.NewPoint(0, -1), Max: geometry.NewPoint(12, 1)},
 		points,
 		[]int{0, 1, 2},
 	)
@@ -49,8 +49,8 @@ func TestRefinementPoints_IgnoresDegenerateOversizedFace(t *testing.T) {
 func TestIsDegenerateTriangle_RecognizesMidpointVertex(t *testing.T) {
 	t.Parallel()
 
-	start := Sample{Position: geometry.Point{X: 103.9590562495064, Y: 142.30031597003037}}
-	end := Sample{Position: geometry.Point{X: 111.25205052331654, Y: 151.73148706176613}}
+	start := Sample{Position: geometry.NewPoint(103.9590562495064, 142.30031597003037)}
+	end := Sample{Position: geometry.NewPoint(111.25205052331654, 151.73148706176613)}
 	midpoint := Sample{Position: geometry.Midpoint(start.Position, end.Position)}
 
 	if !isDegenerateTriangle(Triangle{Points: [3]Sample{start, end, midpoint}}) {
@@ -169,10 +169,10 @@ func refinementTestMesh() (Annulus, []Sample) {
 		theta := float64(i) * 4 * math.Pi / 31
 		radius := 60 + 100*float64(i)/31
 		originals = append(originals, Sample{
-			Position: geometry.Point{
-				X: region.CX + radius*math.Sin(theta),
-				Y: region.CY - radius*math.Cos(theta),
-			},
+			Position: geometry.NewPoint(
+				region.CX+radius*math.Sin(theta),
+				region.CY-radius*math.Cos(theta),
+			),
 		})
 	}
 

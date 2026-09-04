@@ -150,17 +150,17 @@ func TestRenderToCanvas_MergesSameColourNumericSurfaceFragments(t *testing.T) {
 	triangles := []surface.Triangle{
 		{
 			Points: [3]surface.Sample{
-				{Position: geometry.Point{X: 20, Y: 30}, Value: 1},
-				{Position: geometry.Point{X: 40, Y: 30}, Value: 1},
-				{Position: geometry.Point{X: 20, Y: 50}, Value: 1},
+				{Position: geometry.NewPoint(20, 30), Value: 1},
+				{Position: geometry.NewPoint(40, 30), Value: 1},
+				{Position: geometry.NewPoint(20, 50), Value: 1},
 			},
 			Value: 1,
 		},
 		{
 			Points: [3]surface.Sample{
-				{Position: geometry.Point{X: 40, Y: 30}, Value: 1},
-				{Position: geometry.Point{X: 40, Y: 50}, Value: 1},
-				{Position: geometry.Point{X: 20, Y: 50}, Value: 1},
+				{Position: geometry.NewPoint(40, 30), Value: 1},
+				{Position: geometry.NewPoint(40, 50), Value: 1},
+				{Position: geometry.NewPoint(20, 50), Value: 1},
 			},
 			Value: 1,
 		},
@@ -422,9 +422,9 @@ func TestRenderStage_RendersSurfaceFor162PointSpiral(t *testing.T) {
 func surfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket) {
 	layout := spiral.SpiralLayout{
 		Nodes: []spiral.SpiralNode{
-			{Position: geometry.Point{X: 20, Y: 30}, DiscRadius: 4},
-			{Position: geometry.Point{X: 40, Y: 50}, DiscRadius: 4},
-			{Position: geometry.Point{X: 60, Y: 70}, DiscRadius: 4},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(20, 30), 4)},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(40, 50), 4)},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(60, 70), 4)},
 		},
 	}
 	buckets := []spiral.TimeBucket{
@@ -441,9 +441,9 @@ func bandedSurfaceRenderFixture() (spiral.SpiralLayout, []spiral.TimeBucket, []s
 	layout := spiral.Layout(buckets, 320, 240, spiral.Daily)
 	triangles := []surface.Triangle{{
 		Points: [3]surface.Sample{
-			{Position: geometry.Point{X: 20, Y: 30}, Value: 1},
-			{Position: geometry.Point{X: 40, Y: 30}, Value: 1},
-			{Position: geometry.Point{X: 20, Y: 50}, Value: 3},
+			{Position: geometry.NewPoint(20, 30), Value: 1},
+			{Position: geometry.NewPoint(40, 30), Value: 1},
+			{Position: geometry.NewPoint(20, 50), Value: 3},
 		},
 		Value: 5.0 / 3.0,
 	}}

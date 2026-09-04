@@ -10,30 +10,31 @@ import (
 // Enclosing circle — Welzl's algorithm adapted for circles
 // ---------------------------------------------------------------------------
 
-type enclosure struct {
-	center geometry.Point
-	radius float64
-}
+// welzlTolerance is the enclosure tolerance used by Welzl's algorithm to
+// absorb floating-point rounding when deciding whether one circle already
+// encloses another. It is kept local to this algorithm rather than folded
+// into geometry.Circle.Encloses, which performs exact comparisons.
+const welzlTolerance = 1e-6
 
 // computeEnclosing returns the minimum enclosing circle of all nodes.
-func computeEnclosing(nodes []BubbleNode) enclosure {
+func computeEnclosing(nodes []BubbleNode) geometry.Circle {
 	if len(nodes) == 0 {
-		return enclosure{}
+		return geometry.Circle{}
 	}
 
 	if len(nodes) == 1 {
-		return enclosure{center: nodes[0].Position, radius: nodes[0].Radius}
+		return nodes[0].Geometry
 	}
 
-	circles := make([]enclosure, len(nodes))
+	circles := make([]geometry.Circle, len(nodes))
 	for i, n := range nodes {
-		circles[i] = enclosure{center: n.Position, radius: n.Radius}
+		circles[i] = n.Geometry
 	}
 
-	return welzl(circles, [3]enclosure{}, 0, len(circles))
+	return welzl(circles, [3]geometry.Circle{}, 0, len(circles))
 }
 
-func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure {
+func welzl(pts []geometry.Circle, boundary [3]geometry.Circle, boundaryLen, n int) geometry.Circle {
 	if n == 0 || boundaryLen == 3 {
 		return trivialEnclosing(boundary[:boundaryLen])
 	}
@@ -41,7 +42,7 @@ func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure
 	p := pts[n-1]
 	d := welzl(pts, boundary, boundaryLen, n-1)
 
-	if encloses(d, p) {
+	if enclosesWithin(d, p, welzlTolerance) {
 		return d
 	}
 
@@ -51,21 +52,25 @@ func welzl(pts []enclosure, boundary [3]enclosure, boundaryLen, n int) enclosure
 	return welzl(pts, boundary, boundaryLen+1, n-1)
 }
 
-// encloses reports whether outer fully contains inner (circle-in-circle test).
-func encloses(outer, inner enclosure) bool {
-	// Avoid math.Sqrt: sqrt(dist²)+r_inner <= r_outer+ε  ⟺  dist² <= (r_outer+ε-r_inner)²
-	rhs := outer.radius + 1e-6 - inner.radius
-	if rhs < 0 {
+// enclosesWithin reports whether outer fully contains inner (circle-in-circle
+// test), allowing tolerance of slack to absorb floating-point rounding. This
+// is deliberately separate from geometry.Circle.Encloses, which uses exact
+// comparisons with no hidden tolerance.
+//
+//nolint:unparam // tolerance is kept explicit so callers can see and vary the enclosure slack
+func enclosesWithin(outer, inner geometry.Circle, tolerance float64) bool {
+	if !outer.Valid() || !inner.Valid() {
 		return false
 	}
 
-	return outer.center.DistanceSquaredTo(inner.center) <= rhs*rhs
+	return outer.Center.DistanceTo(inner.Center)+inner.Radius <=
+		outer.Radius+tolerance
 }
 
-func trivialEnclosing(boundary []enclosure) enclosure {
+func trivialEnclosing(boundary []geometry.Circle) geometry.Circle {
 	switch len(boundary) {
 	case 0:
-		return enclosure{}
+		return geometry.Circle{}
 	case 1:
 		return boundary[0]
 	case 2:
@@ -74,36 +79,36 @@ func trivialEnclosing(boundary []enclosure) enclosure {
 		return enclosingThree(boundary[0], boundary[1], boundary[2])
 	}
 
-	return enclosure{} // unreachable
+	return geometry.Circle{} // unreachable
 }
 
-func enclosingTwo(a, b enclosure) enclosure {
-	delta := a.center.VectorTo(b.center)
+func enclosingTwo(a, b geometry.Circle) geometry.Circle {
+	delta := a.Center.VectorTo(b.Center)
 	d := math.Sqrt(delta.LengthSquared())
 
 	// One circle contains the other.
-	if d+a.radius <= b.radius {
+	if d+a.Radius <= b.Radius {
 		return b
 	}
 
-	if d+b.radius <= a.radius {
+	if d+b.Radius <= a.Radius {
 		return a
 	}
 
-	r := (d + a.radius + b.radius) / 2
+	r := (d + a.Radius + b.Radius) / 2
 
 	// t ranges from 0 (at a) to 1 (at b).
-	t := 0.5 + (b.radius-a.radius)/(2*d)
+	t := 0.5 + (b.Radius-a.Radius)/(2*d)
 
-	return enclosure{center: a.center.Translate(delta.Scale(t)), radius: r}
+	return geometry.NewCircle(a.Center.Translate(delta.Scale(t)), r)
 }
 
 // enclosingThree solves for the minimum circle enclosing three boundary circles
 // using the algebraic elimination approach.
-func enclosingThree(a, b, c enclosure) enclosure {
-	x1, y1, r1 := a.center.X, a.center.Y, a.radius
-	x2, y2, r2 := b.center.X, b.center.Y, b.radius
-	x3, y3, r3 := c.center.X, c.center.Y, c.radius
+func enclosingThree(a, b, c geometry.Circle) geometry.Circle {
+	x1, y1, r1 := a.Center.X, a.Center.Y, a.Radius
+	x2, y2, r2 := b.Center.X, b.Center.Y, b.Radius
+	x3, y3, r3 := c.Center.X, c.Center.Y, c.Radius
 
 	s1 := x1*x1 + y1*y1 - r1*r1
 	s2 := x2*x2 + y2*y2 - r2*r2
@@ -142,7 +147,7 @@ func enclosingThree(a, b, c enclosure) enclosure {
 		return enclosingThreeFallback(a, b, c)
 	}
 
-	return enclosure{center: geometry.NewPoint(eu+fu*r, ev+fv*r), radius: r}
+	return geometry.NewCircle(geometry.NewPoint(eu+fu*r, ev+fv*r), r)
 }
 
 // solveQuadraticForRadius solves qa*r² + qb*r + qc = 0 for the smallest
@@ -184,30 +189,30 @@ func solveQuadraticForRadius(qa, qb, qc, minR float64) (float64, bool) {
 
 // enclosingThreeFallback returns the smallest pairwise enclosing circle
 // that contains all three circles. Used when the algebraic solution is degenerate.
-func enclosingThreeFallback(a, b, c enclosure) enclosure {
+func enclosingThreeFallback(a, b, c geometry.Circle) geometry.Circle {
 	ab := enclosingTwo(a, b)
 	ac := enclosingTwo(a, c)
 	bc := enclosingTwo(b, c)
 
-	if encloses(ab, c) {
+	if enclosesWithin(ab, c, welzlTolerance) {
 		return ab
 	}
 
-	if encloses(ac, b) {
+	if enclosesWithin(ac, b, welzlTolerance) {
 		return ac
 	}
 
-	if encloses(bc, a) {
+	if enclosesWithin(bc, a, welzlTolerance) {
 		return bc
 	}
 
 	// Last resort: return the largest.
 	best := ab
-	if ac.radius > best.radius {
+	if ac.Radius > best.Radius {
 		best = ac
 	}
 
-	if bc.radius > best.radius {
+	if bc.Radius > best.Radius {
 		best = bc
 	}
 

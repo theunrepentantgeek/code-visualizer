@@ -21,27 +21,24 @@ func occupiedBounds(node *BubbleNode) (geometry.Rect, bool) {
 	)
 
 	for _, c := range node.Children {
-		box, has = expandBoundsForDisc(box, has, c.Position, c.Radius)
+		box, has = expandBoundsForDisc(box, has, c.Geometry)
 	}
 
-	if node.ShowLabel && node.Radius > 0 {
-		box, has = expandBoundsForDisc(box, has, geometry.Point{}, node.Radius)
+	if node.ShowLabel && node.Geometry.Radius > 0 {
+		box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.OriginPoint, node.Geometry.Radius))
 	}
 
 	return box, has
 }
 
-// expandBoundsForDisc returns box expanded to include the disc at center with
-// radius, and true. When box has not yet received a disc (has is false), the
-// disc's own bounds become box directly, avoiding a false union with an
-// arbitrary starting rectangle.
+// expandBoundsForDisc returns box expanded to include circle's bounds, and
+// true. When box has not yet received a disc (has is false), the disc's own
+// bounds become box directly, avoiding a false union with an arbitrary
+// starting rectangle.
 //
 //nolint:revive,nolintlint // flag-parameter: has is fold-accumulator state, not a behaviour switch
-func expandBoundsForDisc(box geometry.Rect, has bool, center geometry.Point, radius float64) (geometry.Rect, bool) {
-	discBounds := geometry.Rect{
-		Min: geometry.Point{X: center.X - radius, Y: center.Y - radius},
-		Max: geometry.Point{X: center.X + radius, Y: center.Y + radius},
-	}
+func expandBoundsForDisc(box geometry.Rect, has bool, circle geometry.Circle) (geometry.Rect, bool) {
+	discBounds := circle.Bounds()
 
 	if !has {
 		return discBounds, true
@@ -66,15 +63,15 @@ const canvasMarginFraction = 0.02 // 2% margin on each side
 // root bounding circle removes the large whitespace corners that a circle
 // fit would leave on a non-square canvas.
 func scaleToFit(node *BubbleNode, width, height float64) {
-	if node.Radius <= 0 {
-		node.Position = geometry.NewPoint(width/2, height/2)
+	if node.Geometry.Radius <= 0 {
+		node.Geometry.Center = geometry.NewPoint(width/2, height/2)
 
 		return
 	}
 
 	if len(node.Children) == 0 {
-		node.Position = geometry.NewPoint(width/2, height/2)
-		node.Radius = math.Min(width, height) * (1 - 2*canvasMarginFraction) / 2
+		node.Geometry.Center = geometry.NewPoint(width/2, height/2)
+		node.Geometry.Radius = math.Min(width, height) * (1 - 2*canvasMarginFraction) / 2
 
 		return
 	}
@@ -85,8 +82,8 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	boxH := box.Height()
 
 	if !has || boxW <= 0 || boxH <= 0 {
-		node.Position = geometry.NewPoint(width/2, height/2)
-		node.Radius *= math.Min(width, height) / (2 * node.Radius)
+		node.Geometry.Center = geometry.NewPoint(width/2, height/2)
+		node.Geometry.Radius *= math.Min(width, height) / (2 * node.Geometry.Radius)
 
 		return
 	}
@@ -98,8 +95,8 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	boxCx := (box.Min.X + box.Max.X) / 2
 	boxCy := (box.Min.Y + box.Max.Y) / 2
 
-	node.Position = geometry.NewPoint(width/2-boxCx*scale, height/2-boxCy*scale)
-	node.Radius *= scale
+	node.Geometry.Center = geometry.NewPoint(width/2-boxCx*scale, height/2-boxCy*scale)
+	node.Geometry.Radius *= scale
 
 	applyScale(node, scale)
 }
@@ -108,15 +105,18 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 func applyScale(parent *BubbleNode, scale float64) {
 	for i := range parent.Children {
 		child := &parent.Children[i]
-		child.Position = parent.Position.Translate(geometry.NewVector(child.Position.X*scale, child.Position.Y*scale))
-		child.Radius *= scale
+		child.Geometry.Center = parent.Geometry.Center.Translate(geometry.Vector{
+			X: child.Geometry.Center.X * scale,
+			Y: child.Geometry.Center.Y * scale,
+		})
+		child.Geometry.Radius *= scale
 		applyScale(child, scale)
 	}
 }
 
 // OffsetNodes shifts every node in the tree by the provided offset.
 func OffsetNodes(node *BubbleNode, offset geometry.Vector) {
-	node.Position = node.Position.Translate(offset)
+	node.Geometry.Center = node.Geometry.Center.Translate(offset)
 
 	for i := range node.Children {
 		OffsetNodes(&node.Children[i], offset)

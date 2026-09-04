@@ -34,8 +34,8 @@ type Annulus struct {
 
 func (a Annulus) Bounds() geometry.Rect {
 	return geometry.Rect{
-		Min: geometry.Point{X: a.CX - a.OuterRadius, Y: a.CY - a.OuterRadius},
-		Max: geometry.Point{X: a.CX + a.OuterRadius, Y: a.CY + a.OuterRadius},
+		Min: geometry.NewPoint(a.CX-a.OuterRadius, a.CY-a.OuterRadius),
+		Max: geometry.NewPoint(a.CX+a.OuterRadius, a.CY+a.OuterRadius),
 	}
 }
 
