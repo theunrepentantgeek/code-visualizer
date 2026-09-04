@@ -803,15 +803,27 @@ func TestCanvas_Size_ReturnsCanvasDimensionsAsGeometrySize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
+	// Arrange
 	c := canvas.NewCanvas(800, 600)
-	g.Expect(c.Size()).To(Equal(geometry.Size{Width: 800, Height: 600}))
+
+	// Act
+	size := c.Size()
+
+	// Assert
+	g.Expect(size).To(Equal(geometry.Size{Width: 800, Height: 600}))
 }
 
 func TestCanvas_DrawingSize_ReturnsCanvasWidthAndDrawableHeight(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
+	// Arrange
 	c := canvas.NewCanvas(800, 600)
 	c.SetDrawingBounds(40, 560)
-	g.Expect(c.DrawingSize()).To(Equal(geometry.Size{Width: 800, Height: 520}))
+
+	// Act
+	size := c.DrawingSize()
+
+	// Assert
+	g.Expect(size).To(Equal(geometry.Size{Width: 800, Height: 520}))
 }

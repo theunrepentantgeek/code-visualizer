@@ -7,126 +7,190 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSizeValid(t *testing.T) {
+func TestNewSize_Dimensions_ReturnsSize(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	// Arrange
+	width := 16.0
+	height := 9.0
+
+	// Act
+	size := NewSize(width, height)
+
+	// Assert
+	g.Expect(size).To(Equal(Size{Width: width, Height: height}))
+}
+
+func TestSize_VariousDimensions_ReportsValidity(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name string
+	cases := map[string]struct {
 		size Size
 		want bool
 	}{
-		{name: "zero value", size: Size{}, want: true},
-		{name: "finite positive dimensions", size: Size{Width: 16, Height: 9}, want: true},
-		{name: "one zero dimension", size: Size{Width: 16}, want: true},
-		{name: "negative width", size: Size{Width: -1, Height: 9}, want: false},
-		{name: "negative height", size: Size{Width: 16, Height: -1}, want: false},
-		{name: "nan width", size: Size{Width: math.NaN(), Height: 9}, want: false},
-		{name: "nan height", size: Size{Width: 16, Height: math.NaN()}, want: false},
-		{name: "positive infinity width", size: Size{Width: math.Inf(1), Height: 9}, want: false},
-		{name: "negative infinity height", size: Size{Width: 16, Height: math.Inf(-1)}, want: false},
+		"zero value":                 {size: Size{}, want: true},
+		"finite positive dimensions": {size: Size{Width: 16, Height: 9}, want: true},
+		"one zero dimension":         {size: Size{Width: 16}, want: true},
+		"negative width":             {size: Size{Width: -1, Height: 9}, want: false},
+		"negative height":            {size: Size{Width: 16, Height: -1}, want: false},
+		"nan width":                  {size: Size{Width: math.NaN(), Height: 9}, want: false},
+		"nan height":                 {size: Size{Width: 16, Height: math.NaN()}, want: false},
+		"positive infinity width":    {size: Size{Width: math.Inf(1), Height: 9}, want: false},
+		"negative infinity width":    {size: Size{Width: math.Inf(-1), Height: 9}, want: false},
+		"positive infinity height":   {size: Size{Width: 16, Height: math.Inf(1)}, want: false},
+		"negative infinity height":   {size: Size{Width: 16, Height: math.Inf(-1)}, want: false},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
 
-			g.Expect(tt.size.Valid()).To(Equal(tt.want))
+			// Arrange
+			size := c.size
+
+			// Act
+			valid := size.Valid()
+
+			// Assert
+			g.Expect(valid).To(Equal(c.want))
 		})
 	}
 }
 
-func TestSizeEmpty(t *testing.T) {
+func TestSize_VariousDimensions_ReportsEmptiness(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name string
+	cases := map[string]struct {
 		size Size
 		want bool
 	}{
-		{name: "zero value", size: Size{}, want: true},
-		{name: "positive dimensions", size: Size{Width: 16, Height: 9}, want: false},
-		{name: "zero height", size: Size{Width: 16}, want: true},
-		{name: "zero width", size: Size{Height: 9}, want: true},
-		{name: "negative dimension", size: Size{Width: -1, Height: 9}, want: false},
-		{name: "nan dimension", size: Size{Width: math.NaN(), Height: 9}, want: false},
+		"zero value":          {size: Size{}, want: true},
+		"positive dimensions": {size: Size{Width: 16, Height: 9}, want: false},
+		"zero height":         {size: Size{Width: 16}, want: true},
+		"zero width":          {size: Size{Height: 9}, want: true},
+		"negative dimension":  {size: Size{Width: -1, Height: 9}, want: false},
+		"nan dimension":       {size: Size{Width: math.NaN(), Height: 9}, want: false},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
 
-			g.Expect(tt.size.Empty()).To(Equal(tt.want))
+			// Arrange
+			size := c.size
+
+			// Act
+			empty := size.Empty()
+
+			// Assert
+			g.Expect(empty).To(Equal(c.want))
 		})
 	}
 }
 
-func TestSizeArea(t *testing.T) {
+func TestSize_Area_ReturnsProductOfDimensions(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 
-	assertFloatClose(g, (Size{Width: 16, Height: 9}).Area(), 144)
+	// Arrange
+	size := Size{Width: 16, Height: 9}
+
+	// Act
+	area := size.Area()
+
+	// Assert
+	assertFloatClose(g, area, 144)
 }
 
-func TestSizeScale(t *testing.T) {
+func TestSize_Scale_ReturnsScaledDimensions(t *testing.T) {
 	t.Parallel()
-
 	g := NewWithT(t)
-	got := (Size{Width: 16, Height: 9}).Scale(0.5)
 
-	g.Expect(got).To(Equal(Size{Width: 8, Height: 4.5}))
+	// Arrange
+	size := Size{Width: 16, Height: 9}
+
+	// Act
+	scaled := size.Scale(0.5)
+
+	// Assert
+	g.Expect(scaled).To(Equal(Size{Width: 8, Height: 4.5}))
 }
 
-func TestSizeAspectRatio(t *testing.T) {
+func TestSize_AspectRatio_ValidSize_ReturnsRatio(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 
-	ratio, ok := (Size{Width: 16, Height: 9}).AspectRatio()
+	// Arrange
+	size := Size{Width: 16, Height: 9}
+
+	// Act
+	ratio, ok := size.AspectRatio()
+
+	// Assert
 	g.Expect(ok).To(BeTrue())
 	g.Expect(ratio).To(Equal(16.0 / 9.0))
+}
 
-	_, ok = (Size{Width: 16}).AspectRatio()
-	g.Expect(ok).To(BeFalse())
-	_, ok = (Size{Width: -1, Height: 9}).AspectRatio()
+func TestSize_AspectRatio_ZeroHeight_ReturnsFalse(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	// Arrange
+	size := Size{Width: 16}
+
+	// Act
+	_, ok := size.AspectRatio()
+
+	// Assert
 	g.Expect(ok).To(BeFalse())
 }
 
-func TestSizeAspectRatioInvalidValues(t *testing.T) {
+func TestSize_AspectRatio_InvalidSize_ReturnsFalse(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name string
+	cases := map[string]struct {
 		size Size
 	}{
-		{name: "zero value", size: Size{}},
-		{name: "nan height", size: Size{Width: 16, Height: math.NaN()}},
-		{name: "positive infinity width", size: Size{Width: math.Inf(1), Height: 9}},
+		"negative dimension":      {size: Size{Width: -1, Height: 9}},
+		"nan height":              {size: Size{Width: 16, Height: math.NaN()}},
+		"positive infinity width": {size: Size{Width: math.Inf(1), Height: 9}},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
 
-			_, ok := tt.size.AspectRatio()
+			// Arrange
+			size := c.size
+
+			// Act
+			_, ok := size.AspectRatio()
+
+			// Assert
 			g.Expect(ok).To(BeFalse())
 		})
 	}
 }
 
-func TestSizeMethodsDoNotMutateReceiver(t *testing.T) {
+func TestSize_ValueMethods_DoNotMutateReceiver(t *testing.T) {
 	t.Parallel()
-
 	g := NewWithT(t)
+
+	// Arrange
 	original := Size{Width: 16, Height: 9}
 	want := original
 
+	// Act
 	_ = original.Valid()
 	_ = original.Empty()
 	_ = original.Area()
 	_ = original.Scale(2)
 	_, _ = original.AspectRatio()
 
+	// Assert
 	g.Expect(original).To(Equal(want))
 }

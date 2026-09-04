@@ -27,14 +27,10 @@ func MeasureLegend(data *model.LegendData, measurer StringMeasurer) geometry.Siz
 	}
 
 	if data.Orientation == model.LegendOrientationHorizontal {
-		width, height := measureLegendH(measurer, data)
-
-		return geometry.Size{Width: width, Height: height}
+		return measureLegendH(measurer, data)
 	}
 
-	width, height := measureLegendV(measurer, data)
-
-	return geometry.Size{Width: width, Height: height}
+	return measureLegendV(measurer, data)
 }
 
 // LegendOrigin computes the top-left (x, y) for the legend box.
@@ -90,15 +86,15 @@ func ReserveSpace(data *model.LegendData, measurer StringMeasurer) geometry.Size
 	}
 }
 
-func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, height float64) {
+func measureLegendV(measurer StringMeasurer, data *model.LegendData) geometry.Size {
 	var totalH float64
 
 	maxW := 0.0
 
 	if data.LabelSample != nil {
-		sampleW, sampleH := measureLabelSampleImpl(measurer, data.LabelSample)
-		totalH += sampleH
-		maxW = max(maxW, sampleW)
+		sampleSize := measureLabelSampleImpl(measurer, data.LabelSample)
+		totalH += sampleSize.Height
+		maxW = max(maxW, sampleSize.Width)
 
 		if len(data.Entries) > 0 {
 			totalH += model.EntryGap
@@ -115,18 +111,21 @@ func measureLegendV(measurer StringMeasurer, data *model.LegendData) (width, hei
 		maxW = max(maxW, entryW)
 	}
 
-	return maxW + 2*model.LegendPadding, totalH + 2*model.LegendPadding
+	return geometry.NewSize(
+		maxW+2*model.LegendPadding,
+		totalH+2*model.LegendPadding,
+	)
 }
 
-func measureLegendH(measurer StringMeasurer, data *model.LegendData) (width, height float64) {
+func measureLegendH(measurer StringMeasurer, data *model.LegendData) geometry.Size {
 	var totalW float64
 
 	maxH := 0.0
 
 	if data.LabelSample != nil {
-		sampleW, sampleH := measureLabelSampleImpl(measurer, data.LabelSample)
-		totalW += sampleW
-		maxH = max(maxH, sampleH)
+		sampleSize := measureLabelSampleImpl(measurer, data.LabelSample)
+		totalW += sampleSize.Width
+		maxH = max(maxH, sampleSize.Height)
 
 		if len(data.Entries) > 0 {
 			totalW += model.EntryGap
@@ -146,7 +145,10 @@ func measureLegendH(measurer StringMeasurer, data *model.LegendData) (width, hei
 		}
 	}
 
-	return totalW + 2*model.LegendPadding, maxH + 2*model.LegendPadding
+	return geometry.NewSize(
+		totalW+2*model.LegendPadding,
+		maxH+2*model.LegendPadding,
+	)
 }
 
 func measureSingleEntryH(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
@@ -329,8 +331,8 @@ func ContentOffsetV(data *model.LegendData) float64 {
 	}
 
 	contentBoundingWidth := rightExtent - leftExtent
-	legendContentW, _ := measureLegendV(measurer, data)
-	legendContentW -= 2 * model.LegendPadding
+	legendContentSize := measureLegendV(measurer, data)
+	legendContentW := legendContentSize.Width - 2*model.LegendPadding
 
 	offset := (legendContentW-contentBoundingWidth)/2 - leftExtent
 
@@ -340,14 +342,12 @@ func ContentOffsetV(data *model.LegendData) float64 {
 // MeasureLabelSample returns equal width and height for a square or circular
 // label sample.
 func MeasureLabelSample(sample *model.LegendLabelSample) geometry.Size {
-	width, height := measureLabelSampleImpl(NewBasicMeasurer(), sample)
-
-	return geometry.Size{Width: width, Height: height}
+	return measureLabelSampleImpl(NewBasicMeasurer(), sample)
 }
 
-func measureLabelSampleImpl(measurer StringMeasurer, sample *model.LegendLabelSample) (width, height float64) {
+func measureLabelSampleImpl(measurer StringMeasurer, sample *model.LegendLabelSample) geometry.Size {
 	if sample == nil || len(sample.Lines) == 0 {
-		return 0, 0
+		return geometry.Size{}
 	}
 
 	maxTextW := 0.0
@@ -364,5 +364,5 @@ func measureLabelSampleImpl(measurer StringMeasurer, sample *model.LegendLabelSa
 		textH+2*model.LabelGap,
 	)
 
-	return side, side
+	return geometry.NewSize(side, side)
 }

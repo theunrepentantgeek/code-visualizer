@@ -7,6 +7,11 @@ type Size struct {
 	Height float64
 }
 
+// NewSize constructs a Size from width and height dimensions.
+func NewSize(width, height float64) Size {
+	return Size{Width: width, Height: height}
+}
+
 func (s Size) Valid() bool {
 	return !math.IsNaN(s.Width) && !math.IsInf(s.Width, 0) &&
 		!math.IsNaN(s.Height) && !math.IsInf(s.Height, 0) &&
