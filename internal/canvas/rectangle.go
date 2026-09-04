@@ -18,10 +18,11 @@ type Rectangle struct {
 func (r *Rectangle) drawTo(b Backend) {
 	fill := r.Spec.Fill.Fill(r.Fill, r.Focus)
 	border := model.SolidFill{Color: r.Spec.Border.Dip(r.Border)}
+	size := geometry.Size{Width: r.W, Height: r.H}
 
 	b.DrawRectangle(
 		geometry.NewPoint(r.X, r.Y),
-		Size{Width: r.W, Height: r.H},
+		size,
 		fill, border,
 		r.Spec.BorderWidth,
 	)

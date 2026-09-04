@@ -17,7 +17,7 @@ import (
 
 type rectangleCall struct {
 	pos  geometry.Point
-	size canvas.Size
+	size geometry.Size
 	fill canvasmodel.Fill
 }
 
@@ -35,7 +35,7 @@ type captureBackend struct {
 }
 
 func (b *captureBackend) DrawRectangle(
-	pos geometry.Point, size canvas.Size, fill, _ canvasmodel.Fill, _ float64,
+	pos geometry.Point, size geometry.Size, fill, _ canvasmodel.Fill, _ float64,
 ) {
 	b.rectangles = append(b.rectangles, rectangleCall{pos: pos, size: size, fill: fill})
 }

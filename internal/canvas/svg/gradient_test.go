@@ -29,7 +29,7 @@ func TestSVGBackend_DrawRectangle_WithRadialGradientFill_EmitsGradient(t *testin
 
 	backend.DrawRectangle(
 		geometry.Point{X: 10, Y: 10},
-		model.Size{Width: 180, Height: 180},
+		geometry.Size{Width: 180, Height: 180},
 		fill, border, 1.0,
 	)
 
@@ -100,14 +100,14 @@ func TestSVGBackend_DeduplicatesIdenticalRadialGradients(t *testing.T) {
 	for i := range 5 {
 		backend.DrawRectangle(
 			geometry.Point{X: float64(i * 100), Y: 0},
-			model.Size{Width: 90, Height: 200},
+			geometry.Size{Width: 90, Height: 200},
 			sharedFill, border, 1.0,
 		)
 	}
 
 	backend.DrawRectangle(
 		geometry.Point{X: 500, Y: 0},
-		model.Size{Width: 90, Height: 200},
+		geometry.Size{Width: 90, Height: 200},
 		uniqueFill, border, 1.0,
 	)
 
@@ -139,7 +139,7 @@ func TestSVGBackend_DeduplicatesGradientAcrossRectAndDisc(t *testing.T) {
 
 	backend.DrawRectangle(
 		geometry.Point{X: 0, Y: 0},
-		model.Size{Width: 100, Height: 200},
+		geometry.Size{Width: 100, Height: 200},
 		fill, border, 1.0,
 	)
 	backend.DrawDisc(

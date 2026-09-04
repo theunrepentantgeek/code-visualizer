@@ -12,7 +12,7 @@ import (
 // Backend is the rendering interface implemented by output format adapters.
 // Methods receive resolved colours/fills and primitive geometry.
 type Backend interface {
-	DrawRectangle(pos geometry.Point, size Size, fill, border Fill, borderWidth float64)
+	DrawRectangle(pos geometry.Point, size geometry.Size, fill, border Fill, borderWidth float64)
 	DrawDisc(center geometry.Point, radius float64, fill, border Fill, borderWidth float64)
 	DrawPolygon(points []geometry.Point, fill, border Fill, borderWidth float64)
 	DrawFilledPath(loops [][]geometry.Point, fill color.RGBA)
@@ -21,11 +21,6 @@ type Backend interface {
 	DrawText(pos geometry.Point, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64)
 	DrawArcText(center geometry.Point, radius float64, text string, ink color.RGBA, fontSize float64)
 	Finish(outputPath string) error
-}
-
-// Size represents a width and height.
-type Size struct {
-	Width, Height float64
 }
 
 // TextAnchor controls horizontal text alignment.

@@ -38,7 +38,7 @@ func New(width, height int) model.Backend {
 }
 
 func (r *rasterBackend) DrawRectangle(
-	pos geometry.Point, size model.Size, fill, border model.Fill, borderWidth float64,
+	pos geometry.Point, size geometry.Size, fill, border model.Fill, borderWidth float64,
 ) {
 	if f, ok := fill.(model.RadialGradientFill); ok {
 		r.drawRadialGradientRect(pos, size, f)
@@ -58,7 +58,7 @@ func (r *rasterBackend) DrawRectangle(
 }
 
 func (r *rasterBackend) drawRadialGradientRect(
-	pos geometry.Point, size model.Size, grad model.RadialGradientFill,
+	pos geometry.Point, size geometry.Size, grad model.RadialGradientFill,
 ) {
 	focus := geometry.NewPoint(
 		pos.X+grad.Focus.X*size.Width,

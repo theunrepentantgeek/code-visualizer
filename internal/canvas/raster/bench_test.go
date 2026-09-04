@@ -24,7 +24,7 @@ func BenchmarkDrawRadialGradientRect(b *testing.B) {
 		be := New(200, 200)
 		be.DrawRectangle(
 			geometry.Point{X: 10, Y: 10},
-			model.Size{Width: 180, Height: 180},
+			geometry.Size{Width: 180, Height: 180},
 			grad, border, 1.0,
 		)
 	}
