@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestFormatBreakpoint_IntegerValue(t *testing.T) {
@@ -30,8 +31,8 @@ func TestLegendOrigin_AllPositions_InBounds(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	canvasW, canvasH := 800.0, 600.0
-	legendW, legendH := 100.0, 50.0
+	available := geometry.Size{Width: 800, Height: 600}
+	legendSize := geometry.Size{Width: 100, Height: 50}
 
 	positions := []model.LegendPosition{
 		model.LegendPositionTopLeft, model.LegendPositionTopCenter, model.LegendPositionTopRight,
@@ -40,12 +41,12 @@ func TestLegendOrigin_AllPositions_InBounds(t *testing.T) {
 	}
 
 	for _, pos := range positions {
-		ox, oy := LegendOrigin(pos, canvasW, canvasH, legendW, legendH)
+		ox, oy := LegendOrigin(pos, available, legendSize)
 		g.Expect(ox).To(BeNumerically(">=", 0), "x out of bounds for %s", pos)
 		g.Expect(oy).To(BeNumerically(">=", 0), "y out of bounds for %s", pos)
-		g.Expect(ox+legendW).To(BeNumerically("<=", canvasW),
+		g.Expect(ox+legendSize.Width).To(BeNumerically("<=", available.Width),
 			"right edge out of bounds for %s", pos)
-		g.Expect(oy+legendH).To(BeNumerically("<=", canvasH),
+		g.Expect(oy+legendSize.Height).To(BeNumerically("<=", available.Height),
 			"bottom edge out of bounds for %s", pos)
 	}
 }
@@ -54,7 +55,11 @@ func TestLegendOrigin_TopLeft_IsNearOrigin(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	ox, oy := LegendOrigin(model.LegendPositionTopLeft, 800, 600, 100, 50)
+	ox, oy := LegendOrigin(
+		model.LegendPositionTopLeft,
+		geometry.Size{Width: 800, Height: 600},
+		geometry.Size{Width: 100, Height: 50},
+	)
 	g.Expect(ox).To(Equal(model.LegendMargin))
 	g.Expect(oy).To(Equal(model.LegendMargin))
 }
@@ -63,7 +68,11 @@ func TestLegendOrigin_BottomRight_IsNearCorner(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	ox, oy := LegendOrigin(model.LegendPositionBottomRight, 800, 600, 100, 50)
+	ox, oy := LegendOrigin(
+		model.LegendPositionBottomRight,
+		geometry.Size{Width: 800, Height: 600},
+		geometry.Size{Width: 100, Height: 50},
+	)
 	g.Expect(ox).To(Equal(800.0 - 100.0 - model.LegendMargin))
 	g.Expect(oy).To(Equal(600.0 - 50.0 - model.LegendMargin))
 }
@@ -73,18 +82,18 @@ func TestMeasureLegend_EmptyEntries_ReturnsZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := &model.LegendData{Orientation: model.LegendOrientationVertical}
-	w, h := MeasureLegend(data, NewBasicMeasurer())
-	g.Expect(w).To(BeZero())
-	g.Expect(h).To(BeZero())
+	size := MeasureLegend(data, NewBasicMeasurer())
+	g.Expect(size.Width).To(BeZero())
+	g.Expect(size.Height).To(BeZero())
 }
 
 func TestMeasureLegend_Nil_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	w, h := MeasureLegend(nil, NewBasicMeasurer())
-	g.Expect(w).To(BeZero())
-	g.Expect(h).To(BeZero())
+	size := MeasureLegend(nil, NewBasicMeasurer())
+	g.Expect(size.Width).To(BeZero())
+	g.Expect(size.Height).To(BeZero())
 }
 
 func TestMeasureLegend_Vertical_NonZero(t *testing.T) {
@@ -92,9 +101,9 @@ func TestMeasureLegend_Vertical_NonZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := makeSampleLegendData(model.LegendOrientationVertical)
-	w, h := MeasureLegend(data, NewBasicMeasurer())
-	g.Expect(w).To(BeNumerically(">", 0))
-	g.Expect(h).To(BeNumerically(">", 0))
+	size := MeasureLegend(data, NewBasicMeasurer())
+	g.Expect(size.Width).To(BeNumerically(">", 0))
+	g.Expect(size.Height).To(BeNumerically(">", 0))
 }
 
 func TestMeasureLegend_Horizontal_WiderThanVertical(t *testing.T) {
@@ -104,9 +113,9 @@ func TestMeasureLegend_Horizontal_WiderThanVertical(t *testing.T) {
 	m := NewBasicMeasurer()
 	dataH := makeSampleLegendData(model.LegendOrientationHorizontal)
 	dataV := makeSampleLegendData(model.LegendOrientationVertical)
-	wH, _ := MeasureLegend(dataH, m)
-	wV, _ := MeasureLegend(dataV, m)
-	g.Expect(wH).To(BeNumerically(">", wV),
+	sizeH := MeasureLegend(dataH, m)
+	sizeV := MeasureLegend(dataV, m)
+	g.Expect(sizeH.Width).To(BeNumerically(">", sizeV.Width),
 		"horizontal legend should be wider than vertical")
 }
 
@@ -117,9 +126,9 @@ func TestMeasureLegend_Horizontal_ShorterThanVertical(t *testing.T) {
 	m := NewBasicMeasurer()
 	dataH := makeSampleLegendData(model.LegendOrientationHorizontal)
 	dataV := makeSampleLegendData(model.LegendOrientationVertical)
-	_, hH := MeasureLegend(dataH, m)
-	_, hV := MeasureLegend(dataV, m)
-	g.Expect(hH).To(BeNumerically("<", hV),
+	sizeH := MeasureLegend(dataH, m)
+	sizeV := MeasureLegend(dataV, m)
+	g.Expect(sizeH.Height).To(BeNumerically("<", sizeV.Height),
 		"horizontal legend should be shorter than vertical")
 }
 
@@ -127,9 +136,9 @@ func TestReserveSpace_NilData_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	wReduce, hReduce := ReserveSpace(nil, NewBasicMeasurer())
-	g.Expect(wReduce).To(BeZero())
-	g.Expect(hReduce).To(BeZero())
+	reserved := ReserveSpace(nil, NewBasicMeasurer())
+	g.Expect(reserved.Width).To(BeZero())
+	g.Expect(reserved.Height).To(BeZero())
 }
 
 func TestReserveSpace_NonePosition_ReturnsZero(t *testing.T) {
@@ -137,9 +146,9 @@ func TestReserveSpace_NonePosition_ReturnsZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := &model.LegendData{Position: model.LegendPositionNone}
-	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
-	g.Expect(wReduce).To(BeZero())
-	g.Expect(hReduce).To(BeZero())
+	reserved := ReserveSpace(data, NewBasicMeasurer())
+	g.Expect(reserved.Width).To(BeZero())
+	g.Expect(reserved.Height).To(BeZero())
 }
 
 func TestReserveSpace_CenterRight_ReducesWidth(t *testing.T) {
@@ -148,9 +157,9 @@ func TestReserveSpace_CenterRight_ReducesWidth(t *testing.T) {
 
 	data := makeSampleLegendData(model.LegendOrientationVertical)
 	data.Position = model.LegendPositionCenterRight
-	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
-	g.Expect(wReduce).To(BeNumerically(">", 0))
-	g.Expect(hReduce).To(BeZero())
+	reserved := ReserveSpace(data, NewBasicMeasurer())
+	g.Expect(reserved.Width).To(BeNumerically(">", 0))
+	g.Expect(reserved.Height).To(BeZero())
 }
 
 func TestReserveSpace_BottomCenter_ReducesHeight(t *testing.T) {
@@ -159,9 +168,9 @@ func TestReserveSpace_BottomCenter_ReducesHeight(t *testing.T) {
 
 	data := makeSampleLegendData(model.LegendOrientationVertical)
 	data.Position = model.LegendPositionBottomCenter
-	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
-	g.Expect(wReduce).To(BeZero())
-	g.Expect(hReduce).To(BeNumerically(">", 0))
+	reserved := ReserveSpace(data, NewBasicMeasurer())
+	g.Expect(reserved.Width).To(BeZero())
+	g.Expect(reserved.Height).To(BeNumerically(">", 0))
 }
 
 func TestReserveSpace_CornerVertical_ReducesWidth(t *testing.T) {
@@ -170,9 +179,9 @@ func TestReserveSpace_CornerVertical_ReducesWidth(t *testing.T) {
 
 	data := makeSampleLegendData(model.LegendOrientationVertical)
 	data.Position = model.LegendPositionBottomRight
-	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
-	g.Expect(wReduce).To(BeNumerically(">", 0))
-	g.Expect(hReduce).To(BeZero())
+	reserved := ReserveSpace(data, NewBasicMeasurer())
+	g.Expect(reserved.Width).To(BeNumerically(">", 0))
+	g.Expect(reserved.Height).To(BeZero())
 }
 
 func TestReserveSpace_CornerHorizontal_ReducesHeight(t *testing.T) {
@@ -181,9 +190,9 @@ func TestReserveSpace_CornerHorizontal_ReducesHeight(t *testing.T) {
 
 	data := makeSampleLegendData(model.LegendOrientationHorizontal)
 	data.Position = model.LegendPositionBottomRight
-	wReduce, hReduce := ReserveSpace(data, NewBasicMeasurer())
-	g.Expect(wReduce).To(BeZero())
-	g.Expect(hReduce).To(BeNumerically(">", 0))
+	reserved := ReserveSpace(data, NewBasicMeasurer())
+	g.Expect(reserved.Width).To(BeZero())
+	g.Expect(reserved.Height).To(BeNumerically(">", 0))
 }
 
 func TestContentOffsetV_NilData_ReturnsZero(t *testing.T) {

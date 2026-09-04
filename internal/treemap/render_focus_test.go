@@ -17,7 +17,7 @@ import (
 
 type rectangleCall struct {
 	pos  geometry.Point
-	size canvas.Size
+	size geometry.Size
 	fill canvasmodel.Fill
 }
 

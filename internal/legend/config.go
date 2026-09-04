@@ -6,6 +6,7 @@ package legend
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 )
 
@@ -64,9 +65,9 @@ func DefaultOrientation(pos model.LegendPosition) model.LegendOrientation {
 }
 
 // ReserveSpace computes the width and height reductions needed to reserve
-// space for the legend within the canvas. Returns zeros if the legend is
-// disabled or has no entries.
-func (cfg *Config) ReserveSpace() (widthReduction, heightReduction float64) {
+// space for the legend within the canvas. Returns a zero size if the legend
+// is disabled or has no entries.
+func (cfg *Config) ReserveSpace() geometry.Size {
 	data := cfg.toLegendData()
 
 	return legendlayout.ReserveSpace(data, legendlayout.NewBasicMeasurer())

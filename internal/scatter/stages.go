@@ -262,8 +262,8 @@ func LayoutStage(c *stages.CommonState, x *State) error {
 
 	if layoutW < c.Width || layoutH < availH {
 		if x.LegendConfig != nil {
-			wReduce, hReduce := x.LegendConfig.ReserveSpace()
-			ldx, ldy := legend.LayoutOffset(x.LegendConfig, wReduce, hReduce)
+			reserved := x.LegendConfig.ReserveSpace()
+			ldx, ldy := legend.LayoutOffset(x.LegendConfig, reserved)
 			dx += ldx
 			dy += ldy
 		}

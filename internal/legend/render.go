@@ -24,10 +24,10 @@ func RenderInto(cv *canvas.Canvas, cfg *Config) {
 	}
 
 	layout := fitLegendToCanvas(cv, data)
-	ox, oy := legendOrigin(cv, layout.data.Position, layout.width, layout.height)
+	ox, oy := legendOrigin(cv, layout.data.Position, layout.size)
 
 	lb := newLegendBuilder(cv, layout.scale)
-	lb.addBackground(ox, oy, layout.width, layout.height)
+	lb.addBackground(ox, oy, layout.size.Width, layout.size.Height)
 
 	px := ox + lb.scaleValue(model.LegendPadding)
 	py := oy + lb.scaleValue(model.LegendPadding)
@@ -35,71 +35,76 @@ func RenderInto(cv *canvas.Canvas, cfg *Config) {
 	if layout.data.Orientation == model.LegendOrientationHorizontal {
 		lb.addEntriesH(layout.data, px, py)
 	} else {
-		contentAreaW := layout.width - 2*lb.scaleValue(model.LegendPadding)
+		contentAreaW := layout.size.Width - 2*lb.scaleValue(model.LegendPadding)
 		lb.addEntriesV(layout.data, px, py, contentAreaW)
 	}
 }
 
 type legendLayout struct {
-	data          *model.LegendData
-	width, height float64
-	scale         float64
+	data  *model.LegendData
+	size  geometry.Size
+	scale float64
 }
 
 // fitLegendToCanvas scales oversized legends to keep them fully visible while
 // preserving their configured orientation.
 func fitLegendToCanvas(cv *canvas.Canvas, data *model.LegendData) legendLayout {
-	w, h := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
-	if legendFits(cv, w, h) ||
+	size := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
+	if legendFits(cv, size) ||
 		data.LabelSample == nil ||
 		(data.LabelSample.Shape != model.LegendLabelSampleCircle &&
 			data.LabelSample.Shape != model.LegendLabelSampleArc) {
-		return legendLayout{data: data, width: w, height: h, scale: 1}
+		return legendLayout{data: data, size: size, scale: 1}
 	}
 
+	canvasSize := cv.Size()
+	drawingSize := cv.DrawingSize()
 	scale := min(
-		float64(cv.Width())/w,
-		float64(cv.DrawingMaxY()-cv.DrawingMinY())/h,
+		canvasSize.Width/size.Width,
+		drawingSize.Height/size.Height,
 	)
 
 	return legendLayout{
-		data: data, width: w * scale, height: h * scale, scale: scale,
+		data: data, size: size.Scale(scale), scale: scale,
 	}
 }
 
-func legendFits(cv *canvas.Canvas, legendW, legendH float64) bool {
-	return legendW <= float64(cv.Width()) &&
-		legendH <= float64(cv.DrawingMaxY()-cv.DrawingMinY())
+func legendFits(cv *canvas.Canvas, legendSize geometry.Size) bool {
+	canvasSize := cv.Size()
+	drawingSize := cv.DrawingSize()
+
+	return legendSize.Width <= canvasSize.Width &&
+		legendSize.Height <= drawingSize.Height
 }
 
 // legendOrigin computes the top-left (x, y) of the legend, respecting the
 // drawing bounds for top-center and bottom-center positions so that the
 // legend doesn't overlap the title or footer.
 func legendOrigin(
-	cv *canvas.Canvas, position model.LegendPosition, legendW, legendH float64,
+	cv *canvas.Canvas, position model.LegendPosition, legendSize geometry.Size,
 ) (ox, oy float64) {
 	m := model.LegendMargin
-	cw := float64(cv.Width())
-	ch := float64(cv.Height())
+	canvasSize := cv.Size()
 
 	switch position {
 	case model.LegendPositionTopCenter:
-		ox, oy = (cw-legendW)/2, float64(cv.DrawingMinY())+m
+		ox, oy = (canvasSize.Width-legendSize.Width)/2, float64(cv.DrawingMinY())+m
 	case model.LegendPositionBottomCenter:
-		ox, oy = (cw-legendW)/2, float64(cv.DrawingMaxY())-legendH-m
+		ox, oy = (canvasSize.Width-legendSize.Width)/2, float64(cv.DrawingMaxY())-legendSize.Height-m
 	default:
-		ox, oy = legendlayout.LegendOrigin(position, cw, ch, legendW, legendH)
+		ox, oy = legendlayout.LegendOrigin(position, canvasSize, legendSize)
 	}
 
-	if legendW <= cw {
-		ox = min(max(ox, 0), cw-legendW)
+	if legendSize.Width <= canvasSize.Width {
+		ox = min(max(ox, 0), canvasSize.Width-legendSize.Width)
 	}
 
 	drawingMinY := float64(cv.DrawingMinY())
+	drawingSize := cv.DrawingSize()
 
-	drawingMaxY := float64(cv.DrawingMaxY())
-	if legendH <= drawingMaxY-drawingMinY {
-		oy = min(max(oy, drawingMinY), drawingMaxY-legendH)
+	drawingMaxY := drawingMinY + drawingSize.Height
+	if legendSize.Height <= drawingSize.Height {
+		oy = min(max(oy, drawingMinY), drawingMaxY-legendSize.Height)
 	}
 
 	return ox, oy
@@ -156,8 +161,8 @@ func (lb *legendBuilder) addEntriesV(
 	cy := y
 
 	if data.LabelSample != nil {
-		sampleW, _ := legendlayout.MeasureLabelSample(data.LabelSample)
-		sampleX := x + (contentAreaW-lb.scaleValue(sampleW))/2
+		sampleSize := legendlayout.MeasureLabelSample(data.LabelSample)
+		sampleX := x + (contentAreaW-lb.scaleValue(sampleSize.Width))/2
 		cy = lb.addLabelSample(data.LabelSample, sampleX, cy)
 
 		if len(data.Entries) > 0 {
@@ -182,10 +187,10 @@ func (lb *legendBuilder) addEntriesH(
 	cx := x
 
 	if data.LabelSample != nil {
-		sampleW, _ := legendlayout.MeasureLabelSample(data.LabelSample)
+		sampleSize := legendlayout.MeasureLabelSample(data.LabelSample)
 		lb.addLabelSample(data.LabelSample, cx, y)
 
-		cx += lb.scaleValue(sampleW)
+		cx += lb.scaleValue(sampleSize.Width)
 		if len(data.Entries) > 0 {
 			cx += lb.scaleValue(model.EntryGap)
 		}
@@ -383,13 +388,13 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 		return y
 	}
 
-	w, h := legendlayout.MeasureLabelSample(sample)
-	if w <= 0 || h <= 0 {
+	size := legendlayout.MeasureLabelSample(sample)
+	if size.Width <= 0 || size.Height <= 0 {
 		return y
 	}
 
-	w = lb.scaleValue(w)
-	h = lb.scaleValue(h)
+	w := lb.scaleValue(size.Width)
+	h := lb.scaleValue(size.Height)
 
 	switch sample.Shape {
 	case model.LegendLabelSampleCircle:

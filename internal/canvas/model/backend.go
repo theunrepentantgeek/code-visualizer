@@ -23,11 +23,6 @@ type Backend interface {
 	Finish(outputPath string) error
 }
 
-// Size represents a width and height.
-type Size struct {
-	Width, Height float64
-}
-
 // TextAnchor controls horizontal text alignment.
 type TextAnchor int
 

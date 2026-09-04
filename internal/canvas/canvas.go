@@ -95,6 +95,19 @@ func (c *Canvas) Width() int { return c.width }
 // Height returns the canvas height in pixels.
 func (c *Canvas) Height() int { return c.height }
 
+// Size returns the full canvas dimensions as a geometry.Size.
+func (c *Canvas) Size() geometry.Size {
+	return geometry.Size{Width: float64(c.width), Height: float64(c.height)}
+}
+
+// DrawingSize returns the drawable content dimensions as a geometry.Size.
+func (c *Canvas) DrawingSize() geometry.Size {
+	return geometry.Size{
+		Width:  float64(c.width),
+		Height: float64(c.drawingMaxY - c.drawingMinY),
+	}
+}
+
 // AddRectangle records a rectangle on the given layer.
 func (c *Canvas) AddRectangle(layer Layer, r Rectangle) {
 	c.shapes = append(c.shapes, layeredShape{

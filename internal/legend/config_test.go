@@ -218,9 +218,9 @@ func TestReserveSpace_NonePosition_ReturnsZero(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cfg := &Config{Position: model.LegendPositionNone}
-	wReduce, hReduce := cfg.ReserveSpace()
-	g.Expect(wReduce).To(BeZero())
-	g.Expect(hReduce).To(BeZero())
+	reserved := cfg.ReserveSpace()
+	g.Expect(reserved.Width).To(BeZero())
+	g.Expect(reserved.Height).To(BeZero())
 }
 
 func TestReserveSpace_WithEntries_NonZero(t *testing.T) {
@@ -238,7 +238,7 @@ func TestReserveSpace_WithEntries_NonZero(t *testing.T) {
 		},
 	}
 
-	wReduce, hReduce := cfg.ReserveSpace()
-	g.Expect(wReduce).To(BeNumerically(">", 0))
-	g.Expect(hReduce).To(BeZero())
+	reserved := cfg.ReserveSpace()
+	g.Expect(reserved.Width).To(BeNumerically(">", 0))
+	g.Expect(reserved.Height).To(BeZero())
 }

@@ -104,22 +104,6 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 	applyScale(node, scale)
 }
 
-// occupiedBounds returns the tight axis-aligned bounding box of the node's
-// occupied area in its local coordinate frame.
-func occupiedBounds(node *BubbleNode) bounds {
-	box := newEmptyBounds()
-
-	for _, c := range node.Children {
-		expandBoundsForDisc(&box, c.Position, c.Radius)
-	}
-
-	if node.ShowLabel && node.Radius > 0 {
-		expandBoundsForDisc(&box, geometry.OriginPoint, node.Radius)
-	}
-
-	return box
-}
-
 // applyScale recursively converts children from local to absolute coordinates.
 func applyScale(parent *BubbleNode, scale float64) {
 	for i := range parent.Children {

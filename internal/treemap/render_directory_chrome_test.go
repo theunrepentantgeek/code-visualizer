@@ -44,7 +44,7 @@ func TestRenderToCanvas_DrawsTopDirectoryChrome(t *testing.T) {
 	g.Expect(hasRectangle(
 		backend.rectangles,
 		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 20},
+		geometry.Size{Width: 80, Height: 20},
 	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
 		pos:      geometry.Point{X: 50, Y: 20},
@@ -69,7 +69,7 @@ func TestRenderToCanvas_DrawsLeftDirectoryChrome(t *testing.T) {
 	g.Expect(hasRectangle(
 		backend.rectangles,
 		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 20, Height: 80},
+		geometry.Size{Width: 20, Height: 80},
 	)).To(BeTrue())
 	g.Expect(hasText(backend.texts, textCall{
 		pos:      geometry.Point{X: 20, Y: 50},
@@ -93,17 +93,17 @@ func TestRenderToCanvas_OmitsDirectoryChromeWhenOrientationIsNone(t *testing.T) 
 	g.Expect(hasRectangle(
 		backend.rectangles,
 		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 20},
+		geometry.Size{Width: 80, Height: 20},
 	)).To(BeFalse())
 	g.Expect(hasRectangle(
 		backend.rectangles,
 		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 20, Height: 80},
+		geometry.Size{Width: 20, Height: 80},
 	)).To(BeFalse())
 	g.Expect(hasRectangle(
 		backend.rectangles,
 		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 80},
+		geometry.Size{Width: 80, Height: 80},
 	)).To(BeTrue())
 }
 
@@ -125,7 +125,7 @@ func TestRenderToCanvas_TopRailUsesDepthPaletteAcrossAllPaletteDepths(t *testing
 			fill, ok := railFillAt(
 				backend.rectangles,
 				geometry.Point{X: 10, Y: 10},
-				canvas.Size{Width: 80, Height: 20},
+				geometry.Size{Width: 80, Height: 20},
 			)
 			g.Expect(ok).To(BeTrue())
 			g.Expect(fill).To(Equal(expectedHeaderFills[depth]))
@@ -147,7 +147,7 @@ func TestRenderToCanvas_LeftRailWrapsPaletteAtPaletteLength(t *testing.T) {
 	fill, ok := railFillAt(
 		backend.rectangles,
 		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 20, Height: 80},
+		geometry.Size{Width: 20, Height: 80},
 	)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(fill).To(Equal(expectedHeaderFills[0]))
@@ -175,7 +175,7 @@ func TestRenderToCanvas_TopRailAtNegativeDepthUsesDarkestFillWithoutPanicking(t 
 	fill, ok := railFillAt(
 		backend.rectangles,
 		geometry.Point{X: 10, Y: 10},
-		canvas.Size{Width: 80, Height: 20},
+		geometry.Size{Width: 80, Height: 20},
 	)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(fill).To(Equal(expectedHeaderFills[0]))
@@ -187,9 +187,9 @@ func TestRenderToCanvas_SameDepthSiblingRailsShareFill(t *testing.T) {
 	g := NewGomegaWithT(t)
 	backend := renderSiblingDirectoryChrome(t)
 
-	first, ok := railFillAt(backend.rectangles, geometry.Point{X: 10, Y: 10}, canvas.Size{Width: 35, Height: 20})
+	first, ok := railFillAt(backend.rectangles, geometry.Point{X: 10, Y: 10}, geometry.Size{Width: 35, Height: 20})
 	g.Expect(ok).To(BeTrue())
-	second, ok := railFillAt(backend.rectangles, geometry.Point{X: 55, Y: 10}, canvas.Size{Width: 35, Height: 20})
+	second, ok := railFillAt(backend.rectangles, geometry.Point{X: 55, Y: 10}, geometry.Size{Width: 35, Height: 20})
 	g.Expect(ok).To(BeTrue())
 
 	g.Expect(first).To(Equal(expectedHeaderFills[0]))
@@ -317,7 +317,7 @@ func renderRectsToBackend(t *testing.T, rects treemap.TreemapRectangle, root *mo
 	return backend
 }
 
-func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size canvas.Size) bool {
+func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size geometry.Size) bool {
 	for _, rectangle := range rectangles {
 		if rectangle.pos == pos && rectangle.size == size {
 			return true
@@ -329,7 +329,7 @@ func hasRectangle(rectangles []rectangleCall, pos geometry.Point, size canvas.Si
 
 // railFillAt returns the solid fill colour of the rectangle at pos/size,
 // and whether a matching rectangle with a SolidFill was found.
-func railFillAt(rectangles []rectangleCall, pos geometry.Point, size canvas.Size) (color.RGBA, bool) {
+func railFillAt(rectangles []rectangleCall, pos geometry.Point, size geometry.Size) (color.RGBA, bool) {
 	for _, rectangle := range rectangles {
 		if rectangle.pos != pos || rectangle.size != size {
 			continue
