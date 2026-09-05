@@ -10,33 +10,32 @@ import (
 
 // radialClip describes an optional circular clipping region. When r == 0 the clip is disabled.
 type radialClip struct {
-	center geometry.Point
-	r      float64
+	cx, cy, r float64
 }
 
 // renderRadialGradientPixels fills pixels in rect with a radial gradient.
-// focus is in image coordinates; invScale maps distance to t ∈ [0,1].
+// fx,fy is the gradient focus in image coordinates; invScale maps distance to t ∈ [0,1].
 // If clip.r > 0, pixels outside the circle are skipped.
 func renderRadialGradientPixels(
 	img *image.RGBA,
 	rect image.Rectangle,
-	focus geometry.Point,
+	fx, fy float64,
 	invScale float64,
 	lerp gradientLerp,
 	clip radialClip,
 ) {
 	if clip.r > 0 {
-		renderClippedGradient(img, rect, focus, invScale, lerp, clip)
+		renderClippedGradient(img, rect, fx, fy, invScale, lerp, clip)
 
 		return
 	}
 
 	for py := rect.Min.Y; py < rect.Max.Y; py++ {
-		dy := float64(py) + 0.5 - focus.Y
+		dy := float64(py) + 0.5 - fy
 		dy2 := dy * dy
 
 		for px := rect.Min.X; px < rect.Max.X; px++ {
-			dx := float64(px) + 0.5 - focus.X
+			dx := float64(px) + 0.5 - fx
 			dist := math.Sqrt(dx*dx + dy2)
 			compositeGradientPixel(img, px, py, lerp.at(min(dist*invScale, 1.0)))
 		}
@@ -48,7 +47,7 @@ func renderRadialGradientPixels(
 func renderClippedGradient(
 	img *image.RGBA,
 	rect image.Rectangle,
-	focus geometry.Point,
+	fx, fy float64,
 	invScale float64,
 	lerp gradientLerp,
 	clip radialClip,
@@ -56,19 +55,19 @@ func renderClippedGradient(
 	r2 := clip.r * clip.r
 
 	for py := rect.Min.Y; py < rect.Max.Y; py++ {
-		dy := float64(py) + 0.5 - focus.Y
+		dy := float64(py) + 0.5 - fy
 		dy2 := dy * dy
 
-		cdy := float64(py) + 0.5 - clip.center.Y
+		cdy := float64(py) + 0.5 - clip.cy
 		cdy2 := cdy * cdy
 
 		for px := rect.Min.X; px < rect.Max.X; px++ {
-			cdx := float64(px) + 0.5 - clip.center.X
+			cdx := float64(px) + 0.5 - clip.cx
 			if cdx*cdx+cdy2 > r2 {
 				continue
 			}
 
-			dx := float64(px) + 0.5 - focus.X
+			dx := float64(px) + 0.5 - fx
 			dist := math.Sqrt(dx*dx + dy2)
 			compositeGradientPixel(img, px, py, lerp.at(min(dist*invScale, 1.0)))
 		}
@@ -79,8 +78,7 @@ func renderPolygonGradientPixels(
 	img *image.RGBA,
 	rect image.Rectangle,
 	points []geometry.Point,
-	focus geometry.Point,
-	invScale float64,
+	fx, fy, invScale float64,
 	lerp gradientLerp,
 ) {
 	for py := rect.Min.Y; py < rect.Max.Y; py++ {
@@ -93,7 +91,7 @@ func renderPolygonGradientPixels(
 			}
 
 			compositeGradientPixel(
-				img, px, py, lerp.at(min(math.Hypot(x-focus.X, y-focus.Y)*invScale, 1.0)),
+				img, px, py, lerp.at(min(math.Hypot(x-fx, y-fy)*invScale, 1.0)),
 			)
 		}
 	}

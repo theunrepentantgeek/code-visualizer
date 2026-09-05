@@ -1,4 +1,4 @@
-//nolint:revive // Package model defines the data structures for legend rendering, shared by all backends.
+//nolint:revive,nolintlint // Package model defines the data structures for legend rendering, shared by all backends.
 package model
 
 import (

@@ -117,7 +117,7 @@ func resolveGrain(cfg *config.Radial) Grain {
 // smaller of the configured width and the drawing height remaining after any
 // title/footer reservation.
 func radialCanvasSize(c *stages.CommonState) int {
-	return min(c.Width, c.DrawingBounds.Height())
+	return min(c.Width, int(c.DrawingBounds.Height()))
 }
 
 // BuildInksStage builds the radial inks and emits the Rendering image log line.
@@ -207,7 +207,7 @@ func LayoutStage(c *stages.CommonState, r *State) error {
 func RenderStage(c *stages.CommonState, r *State) error {
 	size := radialCanvasSize(c)
 	cx := float64(c.Width) / 2.0
-	cy := float64(size)/2.0 + float64(c.DrawingBounds.MinY)
+	cy := float64(size)/2.0 + c.DrawingBounds.Min.Y
 	root := c.Root
 
 	if r.DisplayRoot != nil {

@@ -17,41 +17,41 @@ func TestEncloses_ContainedCircle(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	outer := enclosure{x: 0, y: 0, radius: 10}
-	inner := enclosure{x: 1, y: 1, radius: 2}
+	outer := geometry.NewCircle(geometry.NewPoint(0, 0), 10)
+	inner := geometry.NewCircle(geometry.NewPoint(1, 1), 2)
 
-	g.Expect(encloses(outer, inner)).To(BeTrue())
+	g.Expect(enclosesWithin(outer, inner, welzlTolerance)).To(BeTrue())
 }
 
 func TestEncloses_SameCircle(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	c := enclosure{x: 5, y: 5, radius: 3}
+	c := geometry.NewCircle(geometry.NewPoint(5, 5), 3)
 
-	g.Expect(encloses(c, c)).To(BeTrue())
+	g.Expect(enclosesWithin(c, c, welzlTolerance)).To(BeTrue())
 }
 
 func TestEncloses_OuterTooSmall(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	outer := enclosure{x: 0, y: 0, radius: 3}
-	inner := enclosure{x: 0, y: 0, radius: 5}
+	outer := geometry.NewCircle(geometry.NewPoint(0, 0), 3)
+	inner := geometry.NewCircle(geometry.NewPoint(0, 0), 5)
 
-	g.Expect(encloses(outer, inner)).To(BeFalse())
+	g.Expect(enclosesWithin(outer, inner, welzlTolerance)).To(BeFalse())
 }
 
 func TestEncloses_TouchingExternally(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	a := enclosure{x: 0, y: 0, radius: 3}
-	b := enclosure{x: 6, y: 0, radius: 3} // centres 6 apart, radii sum to 6
+	a := geometry.NewCircle(geometry.NewPoint(0, 0), 3)
+	b := geometry.NewCircle(geometry.NewPoint(6, 0), 3) // centres 6 apart, radii sum to 6
 
 	// Neither encloses the other.
-	g.Expect(encloses(a, b)).To(BeFalse())
-	g.Expect(encloses(b, a)).To(BeFalse())
+	g.Expect(enclosesWithin(a, b, welzlTolerance)).To(BeFalse())
+	g.Expect(enclosesWithin(b, a, welzlTolerance)).To(BeFalse())
 }
 
 // ---------------------------------------------------------------------------
@@ -63,14 +63,14 @@ func TestEnclosingTwo_AContainsB(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// B is entirely inside A, so the enclosing circle should equal A.
-	a := enclosure{x: 0, y: 0, radius: 10}
-	b := enclosure{x: 1, y: 0, radius: 2}
+	a := geometry.NewCircle(geometry.NewPoint(0, 0), 10)
+	b := geometry.NewCircle(geometry.NewPoint(1, 0), 2)
 
 	result := enclosingTwo(a, b)
 
-	g.Expect(result.radius).To(BeNumerically("~", a.radius, 1e-9))
-	g.Expect(result.x).To(BeNumerically("~", a.x, 1e-9))
-	g.Expect(result.y).To(BeNumerically("~", a.y, 1e-9))
+	g.Expect(result.Radius).To(BeNumerically("~", a.Radius, 1e-9))
+	g.Expect(result.Center.X).To(BeNumerically("~", a.Center.X, 1e-9))
+	g.Expect(result.Center.Y).To(BeNumerically("~", a.Center.Y, 1e-9))
 }
 
 func TestEnclosingTwo_BContainsA(t *testing.T) {
@@ -78,12 +78,12 @@ func TestEnclosingTwo_BContainsA(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// A is entirely inside B.
-	a := enclosure{x: 1, y: 0, radius: 2}
-	b := enclosure{x: 0, y: 0, radius: 10}
+	a := geometry.NewCircle(geometry.NewPoint(1, 0), 2)
+	b := geometry.NewCircle(geometry.NewPoint(0, 0), 10)
 
 	result := enclosingTwo(a, b)
 
-	g.Expect(result.radius).To(BeNumerically("~", b.radius, 1e-9))
+	g.Expect(result.Radius).To(BeNumerically("~", b.Radius, 1e-9))
 }
 
 func TestEnclosingTwo_EqualCirclesSideBySide(t *testing.T) {
@@ -92,32 +92,47 @@ func TestEnclosingTwo_EqualCirclesSideBySide(t *testing.T) {
 
 	// Two circles of radius 1 with centres at (-1,0) and (1,0).
 	// The minimum enclosing circle has centre at (0,0) and radius 2.
-	a := enclosure{x: -1, y: 0, radius: 1}
-	b := enclosure{x: 1, y: 0, radius: 1}
+	a := geometry.NewCircle(geometry.NewPoint(-1, 0), 1)
+	b := geometry.NewCircle(geometry.NewPoint(1, 0), 1)
 
 	result := enclosingTwo(a, b)
 
-	g.Expect(result.x).To(BeNumerically("~", 0.0, 1e-9))
-	g.Expect(result.y).To(BeNumerically("~", 0.0, 1e-9))
-	g.Expect(result.radius).To(BeNumerically("~", 2.0, 1e-9))
+	g.Expect(result.Center.X).To(BeNumerically("~", 0.0, 1e-9))
+	g.Expect(result.Center.Y).To(BeNumerically("~", 0.0, 1e-9))
+	g.Expect(result.Radius).To(BeNumerically("~", 2.0, 1e-9))
 
 	// Verify it actually encloses both.
-	g.Expect(encloses(result, a)).To(BeTrue())
-	g.Expect(encloses(result, b)).To(BeTrue())
+	g.Expect(enclosesWithin(result, a, welzlTolerance)).To(BeTrue())
+	g.Expect(enclosesWithin(result, b, welzlTolerance)).To(BeTrue())
 }
 
 func TestEnclosingTwo_DifferentRadii(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	a := enclosure{x: 0, y: 0, radius: 1}
-	b := enclosure{x: 3, y: 0, radius: 2}
+	a := geometry.NewCircle(geometry.NewPoint(0, 0), 1)
+	b := geometry.NewCircle(geometry.NewPoint(3, 0), 2)
 
 	result := enclosingTwo(a, b)
 
 	// Enclosing circle must contain both.
-	g.Expect(encloses(result, a)).To(BeTrue())
-	g.Expect(encloses(result, b)).To(BeTrue())
+	g.Expect(enclosesWithin(result, a, welzlTolerance)).To(BeTrue())
+	g.Expect(enclosesWithin(result, b, welzlTolerance)).To(BeTrue())
+}
+
+func TestEnclosingTwo_PreservesPrePointEvaluationOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	a := geometry.NewCircle(geometry.NewPoint(-100.7, -100.7), 0.1)
+	b := geometry.NewCircle(geometry.NewPoint(-19.7, 100.1), 0.2)
+
+	result := enclosingTwo(a, b)
+
+	g.Expect(result).To(Equal(geometry.NewCircle(
+		geometry.NewPoint(-60.181295176031675, -0.2536305104587626),
+		108.41084241312738,
+	)))
 }
 
 // ---------------------------------------------------------------------------
@@ -130,15 +145,15 @@ func TestEnclosingThree_EnclosesAllThree(t *testing.T) {
 
 	// Three equal circles at vertices of an equilateral triangle.
 	s := math.Sqrt(3) / 2 // side = 2, so height = sqrt(3)
-	a := enclosure{x: 0, y: 0, radius: 1}
-	b := enclosure{x: 2, y: 0, radius: 1}
-	c := enclosure{x: 1, y: 2 * s, radius: 1}
+	a := geometry.NewCircle(geometry.NewPoint(0, 0), 1)
+	b := geometry.NewCircle(geometry.NewPoint(2, 0), 1)
+	c := geometry.NewCircle(geometry.NewPoint(1, 2*s), 1)
 
 	result := enclosingThree(a, b, c)
 
-	g.Expect(encloses(result, a)).To(BeTrue())
-	g.Expect(encloses(result, b)).To(BeTrue())
-	g.Expect(encloses(result, c)).To(BeTrue())
+	g.Expect(enclosesWithin(result, a, welzlTolerance)).To(BeTrue())
+	g.Expect(enclosesWithin(result, b, welzlTolerance)).To(BeTrue())
+	g.Expect(enclosesWithin(result, c, welzlTolerance)).To(BeTrue())
 }
 
 func TestEnclosingThree_CollinearCircles(t *testing.T) {
@@ -147,15 +162,15 @@ func TestEnclosingThree_CollinearCircles(t *testing.T) {
 
 	// Three circles in a row — degenerate (no unique circumscribed circle).
 	// Should fall back gracefully and still enclose all three.
-	a := enclosure{x: 0, y: 0, radius: 1}
-	b := enclosure{x: 4, y: 0, radius: 1}
-	c := enclosure{x: 8, y: 0, radius: 1}
+	a := geometry.NewCircle(geometry.NewPoint(0, 0), 1)
+	b := geometry.NewCircle(geometry.NewPoint(4, 0), 1)
+	c := geometry.NewCircle(geometry.NewPoint(8, 0), 1)
 
 	result := enclosingThree(a, b, c)
 
-	g.Expect(encloses(result, a)).To(BeTrue())
-	g.Expect(encloses(result, b)).To(BeTrue())
-	g.Expect(encloses(result, c)).To(BeTrue())
+	g.Expect(enclosesWithin(result, a, welzlTolerance)).To(BeTrue())
+	g.Expect(enclosesWithin(result, b, welzlTolerance)).To(BeTrue())
+	g.Expect(enclosesWithin(result, c, welzlTolerance)).To(BeTrue())
 }
 
 // ---------------------------------------------------------------------------
@@ -168,20 +183,20 @@ func TestComputeEnclosing_Empty(t *testing.T) {
 
 	result := computeEnclosing([]BubbleNode{})
 
-	g.Expect(result.radius).To(Equal(0.0))
+	g.Expect(result.Radius).To(Equal(0.0))
 }
 
 func TestComputeEnclosing_SingleNode(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	node := BubbleNode{Position: geometry.Point{X: 3, Y: 4}, Radius: 5}
+	node := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(3, 4), 5)}
 
 	result := computeEnclosing([]BubbleNode{node})
 
-	g.Expect(result.x).To(BeNumerically("~", 3.0, 1e-9))
-	g.Expect(result.y).To(BeNumerically("~", 4.0, 1e-9))
-	g.Expect(result.radius).To(BeNumerically("~", 5.0, 1e-9))
+	g.Expect(result.Center.X).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(result.Center.Y).To(BeNumerically("~", 4.0, 1e-9))
+	g.Expect(result.Radius).To(BeNumerically("~", 5.0, 1e-9))
 }
 
 func TestComputeEnclosing_TwoNodes(t *testing.T) {
@@ -189,20 +204,20 @@ func TestComputeEnclosing_TwoNodes(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	nodes := []BubbleNode{
-		{Position: geometry.Point{X: -2, Y: 0}, Radius: 1},
-		{Position: geometry.Point{X: 2, Y: 0}, Radius: 1},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(-2, 0), 1)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(2, 0), 1)},
 	}
 
 	result := computeEnclosing(nodes)
 
 	// Must enclose both nodes as enclosure circles.
 	for _, n := range nodes {
-		e := enclosure{x: n.Position.X, y: n.Position.Y, radius: n.Radius}
-		g.Expect(encloses(result, e)).To(
+		e := geometry.NewCircle(n.Geometry.Center, n.Geometry.Radius)
+		g.Expect(enclosesWithin(result, e, welzlTolerance)).To(
 			BeTrue(),
 			"enclosing circle must contain node at (%v,%v)",
-			n.Position.X,
-			n.Position.Y,
+			n.Geometry.Center.X,
+			n.Geometry.Center.Y,
 		)
 	}
 }
@@ -212,20 +227,20 @@ func TestComputeEnclosing_ThreeNodes(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	nodes := []BubbleNode{
-		{Position: geometry.Point{X: 0, Y: 0}, Radius: 1},
-		{Position: geometry.Point{X: 4, Y: 0}, Radius: 1},
-		{Position: geometry.Point{X: 2, Y: 4}, Radius: 1},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 1)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(4, 0), 1)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(2, 4), 1)},
 	}
 
 	result := computeEnclosing(nodes)
 
 	for _, n := range nodes {
-		e := enclosure{x: n.Position.X, y: n.Position.Y, radius: n.Radius}
-		g.Expect(encloses(result, e)).To(
+		e := geometry.NewCircle(n.Geometry.Center, n.Geometry.Radius)
+		g.Expect(enclosesWithin(result, e, welzlTolerance)).To(
 			BeTrue(),
 			"enclosing circle must contain node at (%v,%v)",
-			n.Position.X,
-			n.Position.Y,
+			n.Geometry.Center.X,
+			n.Geometry.Center.Y,
 		)
 	}
 }
@@ -236,14 +251,14 @@ func TestComputeEnclosing_OneNodeInsideAnother(t *testing.T) {
 
 	// The large circle already contains the small one; result should equal the large circle.
 	nodes := []BubbleNode{
-		{Position: geometry.Point{X: 0, Y: 0}, Radius: 10},
-		{Position: geometry.Point{X: 1, Y: 0}, Radius: 2},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 10)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(1, 0), 2)},
 	}
 
 	result := computeEnclosing(nodes)
 
 	for _, n := range nodes {
-		e := enclosure{x: n.Position.X, y: n.Position.Y, radius: n.Radius}
-		g.Expect(encloses(result, e)).To(BeTrue())
+		e := geometry.NewCircle(n.Geometry.Center, n.Geometry.Radius)
+		g.Expect(enclosesWithin(result, e, welzlTolerance)).To(BeTrue())
 	}
 }

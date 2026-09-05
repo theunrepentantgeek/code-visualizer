@@ -7,8 +7,7 @@ import (
 
 // Text carries position and content for standalone text.
 type Text struct {
-	Spec *TextSpec
-	// Position is the text anchor point.
+	Spec     *TextSpec
 	Position geometry.Point
 	Content  string
 }

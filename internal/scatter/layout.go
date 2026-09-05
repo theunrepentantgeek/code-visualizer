@@ -22,14 +22,13 @@ const (
 type ScatterPoint struct {
 	File      *model.File
 	Directory *model.Directory
-	Position  geometry.Point
-	Radius    float64
+	Geometry  geometry.Circle
 	Label     string
 }
 
 // ScatterLayout is the rendered geometry for a scatter plot.
 type ScatterLayout struct {
-	Plot   PlotRect
+	Plot   geometry.Rect
 	XAxis  ResolvedAxis
 	YAxis  ResolvedAxis
 	Points []ScatterPoint
@@ -37,11 +36,11 @@ type ScatterLayout struct {
 
 // Layout converts the dataset into absolute plot geometry.
 func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLayout {
-	plot := PlotRect{
-		X: scatterPlotLeftMargin,
-		Y: scatterPlotTopMargin,
-		W: math.Max(1, float64(width)-scatterPlotLeftMargin-scatterPlotRightMargin),
-		H: math.Max(1, float64(height)-scatterPlotTopMargin-scatterPlotBottomMargin),
+	plotW := math.Max(1, float64(width)-scatterPlotLeftMargin-scatterPlotRightMargin)
+	plotH := math.Max(1, float64(height)-scatterPlotTopMargin-scatterPlotBottomMargin)
+	plot := geometry.Rect{
+		Min: geometry.NewPoint(scatterPlotLeftMargin, scatterPlotTopMargin),
+		Max: geometry.NewPoint(scatterPlotLeftMargin+plotW, scatterPlotTopMargin+plotH),
 	}
 
 	layout := ScatterLayout{
@@ -59,17 +58,21 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 		layout.Points = append(layout.Points, ScatterPoint{
 			File:      point.File,
 			Directory: point.Directory,
-			Position: geometry.Point{
-				X: positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
-				Y: positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
-			},
-			Radius: scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
-			Label:  point.Name(),
+			Geometry: geometry.NewCircle(
+				geometry.NewPoint(
+					positionForValue(point.X, layout.XAxis, plot, horizontalAxis),
+					positionForValue(point.Y, layout.YAxis, plot, verticalAxis),
+				),
+
+				scaleRadius(point.Size, minSize, maxSize, minRadius, maxRadius),
+			),
+
+			Label: point.Name(),
 		})
 	}
 
 	slices.SortFunc(layout.Points, func(a, b ScatterPoint) int {
-		if cmp := cmp.Compare(b.Radius, a.Radius); cmp != 0 {
+		if cmp := cmp.Compare(b.Geometry.Radius, a.Geometry.Radius); cmp != 0 {
 			return cmp
 		}
 
@@ -81,13 +84,12 @@ func Layout(dataset Dataset, width, height int, xAxis, yAxis AxisSpec) ScatterLa
 
 // OffsetLayout shifts the layout when legend space has been reserved.
 func OffsetLayout(layout *ScatterLayout, offset geometry.Vector) {
-	layout.Plot.X += offset.X
-	layout.Plot.Y += offset.Y
+	layout.Plot = layout.Plot.Translate(offset)
 	layout.XAxis.Offset(offset.X)
 	layout.YAxis.Offset(offset.Y)
 
 	for i := range layout.Points {
-		layout.Points[i].Position = layout.Points[i].Position.Translate(offset)
+		layout.Points[i].Geometry.Center = layout.Points[i].Geometry.Center.Translate(offset)
 	}
 }
 
@@ -113,8 +115,8 @@ func sizeExtent(points []PointDatum) (minSize, maxSize float64) {
 }
 
 func maxPointRadius(layout ScatterLayout, pointCount int) float64 {
-	cellW := axisSlotSize(layout.XAxis, layout.Plot.W, pointCount)
-	cellH := axisSlotSize(layout.YAxis, layout.Plot.H, pointCount)
+	cellW := axisSlotSize(layout.XAxis, layout.Plot.Width(), pointCount)
+	cellH := axisSlotSize(layout.YAxis, layout.Plot.Height(), pointCount)
 	maxRadius := math.Min(cellW, cellH) * scatterMaxRadiusFactor
 
 	if maxRadius < 4 {

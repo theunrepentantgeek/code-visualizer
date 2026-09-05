@@ -16,7 +16,7 @@ type gridCell struct {
 }
 
 type poissonGrid struct {
-	bounds   Rect
+	bounds   geometry.Rect
 	cellSize float64
 	cells    map[gridCell][]Sample
 }
@@ -70,8 +70,8 @@ func sampleInfill(
 ) []Sample {
 	for len(active) > 0 {
 		activeIndex := random.IntN(len(active))
-		activeSample := active[activeIndex]
-		candidate, accepted := sampleCandidate(region, *grid, activeSample, minimumDistance, random)
+		activePoint := active[activeIndex]
+		candidate, accepted := sampleCandidate(region, *grid, activePoint, minimumDistance, random)
 
 		if !accepted {
 			active[activeIndex] = active[len(active)-1]
@@ -91,13 +91,13 @@ func sampleInfill(
 func sampleCandidate(
 	region Region,
 	grid poissonGrid,
-	activeSample Sample,
+	activePoint Sample,
 	minimumDistance float64,
 	random *rand.Rand,
 ) (Sample, bool) {
 	for range attemptsPerActivePoint {
-		candidate := annulusCandidate(activeSample, minimumDistance, random)
-		if !region.Contains(candidate.Position.X, candidate.Position.Y) ||
+		candidate := annulusCandidate(activePoint, minimumDistance, random)
+		if !region.Contains(candidate.Position) ||
 			grid.hasNearby(candidate, minimumDistance) {
 			continue
 		}
@@ -134,24 +134,19 @@ func isNilInterfaceValue(value any) bool {
 	}
 }
 
-func validBounds(bounds Rect) bool {
-	return isFinite(bounds.MinX) &&
-		isFinite(bounds.MinY) &&
-		isFinite(bounds.MaxX) &&
-		isFinite(bounds.MaxY) &&
-		bounds.MinX < bounds.MaxX &&
-		bounds.MinY < bounds.MaxY
+func validBounds(bounds geometry.Rect) bool {
+	return bounds.Valid() && !bounds.Empty()
 }
 
-func initialSample(region Region, bounds Rect, random *rand.Rand) (Sample, bool) {
+func initialSample(region Region, bounds geometry.Rect, random *rand.Rand) (Sample, bool) {
 	for range attemptsPerActivePoint {
 		candidate := Sample{
-			Position: geometry.Point{
-				X: bounds.MinX + random.Float64()*(bounds.MaxX-bounds.MinX),
-				Y: bounds.MinY + random.Float64()*(bounds.MaxY-bounds.MinY),
-			},
+			Position: geometry.NewPoint(
+				bounds.Min.X+random.Float64()*bounds.Width(),
+				bounds.Min.Y+random.Float64()*bounds.Height(),
+			),
 		}
-		if region.Contains(candidate.Position.X, candidate.Position.Y) {
+		if region.Contains(candidate.Position) {
 			return candidate, true
 		}
 	}
@@ -164,14 +159,11 @@ func annulusCandidate(sample Sample, minimumDistance float64, random *rand.Rand)
 	radius := minimumDistance * math.Sqrt(1+3*random.Float64())
 
 	return Sample{
-		Position: sample.Position.Translate(geometry.Vector{
-			X: radius * math.Cos(angle),
-			Y: radius * math.Sin(angle),
-		}),
+		Position: sample.Position.Translate(geometry.NewVector(radius*math.Cos(angle), radius*math.Sin(angle))),
 	}
 }
 
-func newPoissonGrid(bounds Rect, minimumDistance float64) poissonGrid {
+func newPoissonGrid(bounds geometry.Rect, minimumDistance float64) poissonGrid {
 	return poissonGrid{
 		bounds:   bounds,
 		cellSize: minimumDistance / math.Sqrt2,
@@ -204,8 +196,8 @@ func (g poissonGrid) hasNearby(candidate Sample, minimumDistance float64) bool {
 
 func (g poissonGrid) cellFor(sample Sample) gridCell {
 	return gridCell{
-		x: int(math.Floor((sample.Position.X - g.bounds.MinX) / g.cellSize)),
-		y: int(math.Floor((sample.Position.Y - g.bounds.MinY) / g.cellSize)),
+		x: int(math.Floor((sample.Position.X - g.bounds.Min.X) / g.cellSize)),
+		y: int(math.Floor((sample.Position.Y - g.bounds.Min.Y) / g.cellSize)),
 	}
 }
 

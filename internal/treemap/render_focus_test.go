@@ -6,13 +6,66 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
+
+type rectangleCall struct {
+	pos  geometry.Point
+	size geometry.Size
+	fill canvasmodel.Fill
+}
+
+type textCall struct {
+	pos      geometry.Point
+	text     string
+	fontSize float64
+	anchor   canvas.TextAnchor
+	rotation float64
+}
+
+type captureBackend struct {
+	rectangles []rectangleCall
+	texts      []textCall
+}
+
+func (b *captureBackend) DrawRectangle(
+	bounds geometry.Rect, fill, _ canvasmodel.Fill, _ float64,
+) {
+	b.rectangles = append(b.rectangles, rectangleCall{pos: bounds.Min, size: bounds.Size(), fill: fill})
+}
+
+func (*captureBackend) DrawDisc(geometry.Circle, canvasmodel.Fill, canvasmodel.Fill, float64) {
+}
+
+func (*captureBackend) DrawPolygon([]geometry.Point, canvasmodel.Fill, canvasmodel.Fill, float64) {}
+
+func (*captureBackend) DrawFilledPath([][]geometry.Point, color.RGBA) {}
+
+func (*captureBackend) DrawLine(geometry.Point, geometry.Point, color.RGBA, float64) {}
+
+func (*captureBackend) DrawPath([]geometry.Point, color.RGBA, float64) {}
+
+func (b *captureBackend) DrawText(
+	pos geometry.Point, text string, _ color.RGBA, fontSize float64, anchor canvas.TextAnchor, rotation float64,
+) {
+	b.texts = append(b.texts, textCall{
+		pos:      pos,
+		text:     text,
+		fontSize: fontSize,
+		anchor:   anchor,
+		rotation: rotation,
+	})
+}
+
+func (*captureBackend) DrawArcText(geometry.Point, float64, string, color.RGBA, float64) {}
+
+func (*captureBackend) Finish(string) error { return nil }
 
 func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 	t.Parallel()
@@ -26,11 +79,11 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 		},
 	}
 	rects := treemap.TreemapRectangle{
-		X: 0, Y: 0, W: 100, H: 100,
-		Label: "root", IsDirectory: true,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 100)},
+		Label:  "root", IsDirectory: true,
 		Children: []treemap.TreemapRectangle{
-			{X: 0, Y: 20, W: 50, H: 80},
-			{X: 50, Y: 20, W: 50, H: 80},
+			{Bounds: geometry.Rect{Min: geometry.NewPoint(0, 20), Max: geometry.NewPoint(50, 100)}},
+			{Bounds: geometry.Rect{Min: geometry.NewPoint(50, 20), Max: geometry.NewPoint(100, 100)}},
 		},
 	}
 	is := treemap.Inks{
@@ -39,18 +92,14 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 	}
 
 	cv := treemap.RenderToCanvas(rects, root, 100, 100, is, filesystem.FileSize)
-	backend := mock.NewBackend()
+	backend := &captureBackend{}
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
-	var gradientCalls []mock.Call
+	var gradientCalls []rectangleCall
 
-	for _, call := range backend.Calls {
-		if call.Method != "DrawRectangle" {
-			continue
-		}
-
-		if _, ok := call.RawFill.(canvasmodel.RadialGradientFill); ok {
+	for _, call := range backend.rectangles {
+		if _, ok := call.fill.(canvasmodel.RadialGradientFill); ok {
 			gradientCalls = append(gradientCalls, call)
 		}
 	}
@@ -61,10 +110,10 @@ func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {
 		return // unreachable; satisfies nilaway
 	}
 
-	first, ok := gradientCalls[0].RawFill.(canvasmodel.RadialGradientFill)
+	first, ok := gradientCalls[0].fill.(canvasmodel.RadialGradientFill)
 	g.Expect(ok).To(BeTrue())
 
-	second, ok := gradientCalls[1].RawFill.(canvasmodel.RadialGradientFill)
+	second, ok := gradientCalls[1].fill.(canvasmodel.RadialGradientFill)
 	g.Expect(ok).To(BeTrue())
 
 	g.Expect(first.Focus.X).To(BeNumerically("~", 0.875, 1e-9))

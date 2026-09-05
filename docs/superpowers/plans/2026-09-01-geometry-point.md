@@ -21,8 +21,8 @@
 - [ ] **Step 1: Write failing Point tests**
 
 Cover `Valid`, translation, `VectorTo`, both distances, midpoint, interpolation,
-NaN/Inf propagation, distance symmetry, endpoint interpolation, and
-non-mutation:
+NaN/Inf propagation, distance symmetry, endpoint interpolation, non-mutation,
+`OriginPoint`, and the `NewPoint` factory:
 
 ```go
 func TestPointVectorSemantics(t *testing.T) {
@@ -38,6 +38,8 @@ func TestPointVectorSemantics(t *testing.T) {
 	g.Expect(Midpoint(start, end)).To(Equal(Point{X: 3.5, Y: 5}))
 	g.Expect(Lerp(start, end, 0)).To(Equal(start))
 	g.Expect(Lerp(start, end, 1)).To(Equal(end))
+	g.Expect(OriginPoint).To(Equal(Point{X: 0, Y: 0}))
+	g.Expect(NewPoint(2, 3)).To(Equal(start))
 }
 ```
 
@@ -57,6 +59,15 @@ import "math"
 type Point struct {
 	X float64
 	Y float64
+}
+
+// OriginPoint is the point at (0, 0). It's a var, not a const, because Go
+// structs cannot be declared const.
+var OriginPoint = Point{}
+
+// NewPoint constructs a Point from Cartesian coordinates.
+func NewPoint(x, y float64) Point {
+	return Point{X: x, Y: y}
 }
 
 func (p Point) Valid() bool {
@@ -92,6 +103,13 @@ func Lerp(a, b Point, fraction float64) Point {
 	return a.Translate(a.VectorTo(b).Scale(fraction))
 }
 ```
+
+`OriginPoint` mirrors `ZeroVector`: a `var`, not a `const`, because Go structs
+cannot be declared `const`. `NewPoint` mirrors `NewVector` as the ordinary
+two-coordinate construction factory. Callers use `NewPoint(x, y)` at absolute-point
+construction sites and `OriginPoint` wherever a point semantically means the
+coordinate origin, rather than repeating `Point{X: ..., Y: ...}` or `Point{}`
+literals.
 
 - [ ] **Step 4: Run and format geometry tests**
 

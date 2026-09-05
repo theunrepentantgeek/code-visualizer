@@ -113,8 +113,8 @@ func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
 		{Start: time.Date(2026, time.August, 8, 0, 0, 0, 0, time.UTC)},
 	}
 	nodes := []SpiralNode{
-		{Position: geometry.Point{X: 30, Y: 40}, DiscRadius: 12},
-		{Position: geometry.Point{X: 60, Y: 80}, DiscRadius: 0},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(30, 40), 12)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(60, 80), 0)},
 	}
 	darkFill := inks.FixedInk(color.RGBA{A: 255})
 
@@ -122,11 +122,35 @@ func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
 
 	g.Expect(labels).To(HaveLen(1))
 	g.Expect(labels[0]).To(Equal(canvas.BlockLabel{
-		X: 20, Y: 30, W: 20, H: 20,
+		Bounds:       geometry.Rect{Min: geometry.NewPoint(20, 30), Max: geometry.NewPoint(40, 50)},
 		Lines:        []string{"7", "Aug", "1"},
 		Ink:          canvas.TextColourFor(color.RGBA{A: 255}),
 		PreserveText: true,
 	}))
+}
+
+func TestBuildDiscLabels_PreservesPrePointOffsetGrouping(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	nodes := []SpiralNode{{
+		Geometry: geometry.NewCircle(geometry.NewPoint(-2.3, -0.1), 2.1),
+	}}
+	buckets := []TimeBucket{{
+		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		Files: makeFiles(1),
+	}}
+
+	labels := buildDiscLabels(
+		nodes,
+		buckets,
+		inks.FixedInk(color.RGBA{A: 255}),
+		LabelMetrics{Size: commitCountMetric},
+	)
+
+	g.Expect(labels).To(HaveLen(1))
+	g.Expect(labels[0].Bounds.Min.X).To(Equal(-2.4000000000000004))
+	g.Expect(labels[0].Bounds.Min.Y).To(Equal(-0.20000000000000018))
 }
 
 func TestBuildDiscLabels_UsesOnlyPairedNodesAndBuckets(t *testing.T) {
@@ -134,8 +158,8 @@ func TestBuildDiscLabels_UsesOnlyPairedNodesAndBuckets(t *testing.T) {
 	g := NewWithT(t)
 
 	nodes := []SpiralNode{
-		{Position: geometry.Point{X: 30, Y: 40}, DiscRadius: 12},
-		{Position: geometry.Point{X: 60, Y: 80}, DiscRadius: 12},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(30, 40), 12)},
+		{Geometry: geometry.NewCircle(geometry.NewPoint(60, 80), 12)},
 	}
 	buckets := []TimeBucket{{
 		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
@@ -157,7 +181,7 @@ func TestRenderToCanvas_PreservesZeroMetricTextInRasterDiscLabels(t *testing.T) 
 	buckets := []TimeBucket{{
 		Start: time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
 	}}
-	nodes := []SpiralNode{{Position: geometry.Point{X: 25, Y: 25}, DiscRadius: 12}}
+	nodes := []SpiralNode{{Geometry: geometry.NewCircle(geometry.NewPoint(25, 25), 12)}}
 	ink := inks.FixedInk(color.RGBA{A: 255})
 	labels := buildDiscLabels(nodes, buckets, ink, LabelMetrics{
 		Size: commitCountMetric, Fill: "file-lines", Border: "file-size", Surface: "git-age",
@@ -268,24 +292,18 @@ func TestLayoutStage_StoresDiscLabelsAfterVerticalOffset(t *testing.T) {
 	}
 	common := &stages.CommonState{
 		Width: 200,
-		DrawingBounds: stages.DrawingBounds{
-			MinY: 25,
-			MaxY: 200,
+		DrawingBounds: geometry.Rect{
+			Min: geometry.Point{Y: 25},
+			Max: geometry.Point{Y: 200},
 		},
 	}
 
 	g.Expect(LayoutStage(common, viz)).To(Succeed())
 	g.Expect(viz.DiscLabels).To(HaveLen(1))
-	g.Expect(viz.DiscLabels[0].X).To(
-		BeNumerically(
-			"==",
-			viz.Layout.Nodes[0].Position.X-viz.Layout.Nodes[0].DiscRadius+discLabelPadding,
-		),
+	g.Expect(viz.DiscLabels[0].Bounds.Min.X).To(
+		BeNumerically("==", viz.Layout.Nodes[0].Geometry.Center.X-viz.Layout.Nodes[0].Geometry.Radius+discLabelPadding),
 	)
-	g.Expect(viz.DiscLabels[0].Y).To(
-		BeNumerically(
-			"==",
-			viz.Layout.Nodes[0].Position.Y-viz.Layout.Nodes[0].DiscRadius+discLabelPadding,
-		),
+	g.Expect(viz.DiscLabels[0].Bounds.Min.Y).To(
+		BeNumerically("==", viz.Layout.Nodes[0].Geometry.Center.Y-viz.Layout.Nodes[0].Geometry.Radius+discLabelPadding),
 	)
 }

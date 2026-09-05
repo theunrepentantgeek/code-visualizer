@@ -156,7 +156,7 @@ func TestLayoutStage_FooterEnabled_ReducesAvailableHeight(t *testing.T) {
 
 	// The layout rectangle must not extend into the footer zone.
 	footerH := canvas.FooterReservedHeight
-	maxY := viz.Root.Y + viz.Root.H
+	maxY := viz.Root.Bounds.Max.Y
 	g.Expect(maxY).To(BeNumerically("<=", float64(height)-footerH),
 		"layout rect extends into footer zone")
 }
@@ -210,8 +210,8 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 	g.Expect(treemap.LayoutStage(commonWithFooter, vizWithFooter)).To(Succeed())
 
 	// With footer hidden, layout uses more vertical space than when footer is shown.
-	maxYNoFooter := vizNoFooter.Root.Y + vizNoFooter.Root.H
-	maxYWithFooter := vizWithFooter.Root.Y + vizWithFooter.Root.H
+	maxYNoFooter := vizNoFooter.Root.Bounds.Max.Y
+	maxYWithFooter := vizWithFooter.Root.Bounds.Max.Y
 	g.Expect(maxYNoFooter).To(BeNumerically(">", maxYWithFooter),
 		"footer-hidden layout should use more height than footer-shown layout")
 }

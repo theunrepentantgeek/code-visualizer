@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -349,9 +350,8 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 	common := &stages.CommonState{
 		Width:  1920,
 		Height: 1080,
-		DrawingBounds: stages.DrawingBounds{
-			MaxX: 1920,
-			MaxY: 1080,
+		DrawingBounds: geometry.Rect{
+			Max: geometry.NewPoint(1920, 1080),
 		},
 	}
 	buckets := make([]spiral.TimeBucket, bucketCount)
@@ -376,7 +376,7 @@ func TestLayoutStageSelectsAdaptiveDailyCadence(t *testing.T) {
 	g.Expect(viz.Layout.Nodes[1].Angle).To(
 		BeNumerically("~", 2*math.Pi/float64(viz.SpotsPerLap), 1e-9),
 	)
-	g.Expect(viz.Layout.Nodes[bucketCount-1].DiscRadius).To(
+	g.Expect(viz.Layout.Nodes[bucketCount-1].Geometry.Radius).To(
 		BeNumerically(
 			"~",
 			spiral.MaxDiscRadiusWithCadence(bucketCount, 1920, 1080, viz.SpotsPerLap),
@@ -392,9 +392,8 @@ func TestLayoutStageKeepsHourlyCadence(t *testing.T) {
 	common := &stages.CommonState{
 		Width:  1920,
 		Height: 1080,
-		DrawingBounds: stages.DrawingBounds{
-			MaxX: 1920,
-			MaxY: 1080,
+		DrawingBounds: geometry.Rect{
+			Max: geometry.NewPoint(1920, 1080),
 		},
 	}
 	viz := &spiral.State{

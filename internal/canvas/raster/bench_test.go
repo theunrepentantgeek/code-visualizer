@@ -23,8 +23,7 @@ func BenchmarkDrawRadialGradientRect(b *testing.B) {
 	for range b.N {
 		be := New(200, 200)
 		be.DrawRectangle(
-			geometry.Point{X: 10, Y: 10},
-			model.Size{Width: 180, Height: 180},
+			geometry.RectFromPositionSize(geometry.NewPoint(10, 10), geometry.Size{Width: 180, Height: 180}),
 			grad, border, 1.0,
 		)
 	}
@@ -45,8 +44,7 @@ func BenchmarkDrawRadialGradientDisc(b *testing.B) {
 	for range b.N {
 		be := New(200, 200)
 		be.DrawDisc(
-			geometry.Point{X: 100, Y: 100},
-			80,
+			geometry.NewCircle(geometry.NewPoint(100, 100), 80),
 			grad, border, 1.0,
 		)
 	}
@@ -55,11 +53,8 @@ func BenchmarkDrawRadialGradientDisc(b *testing.B) {
 // BenchmarkMaxCornerDist measures the cost of computing the maximum
 // corner distance — called once per gradient rectangle.
 func BenchmarkMaxCornerDist(b *testing.B) {
+	bounds := geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(190, 190)}
 	for range b.N {
-		_ = maxCornerDist(
-			geometry.Point{X: 10, Y: 10},
-			model.Size{Width: 180, Height: 180},
-			geometry.Point{X: 30, Y: 30},
-		)
+		_ = maxCornerDist(30, 30, bounds)
 	}
 }

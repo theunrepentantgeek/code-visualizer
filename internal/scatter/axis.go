@@ -1,6 +1,8 @@
 package scatter
 
-import "github.com/theunrepentantgeek/code-visualizer/internal/metric"
+import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+)
 
 // AxisSpec identifies the metric and kind used for one scatter axis.
 type AxisSpec struct {
@@ -13,14 +15,6 @@ type AxisSpec struct {
 type AxisValue struct {
 	Numeric  float64
 	Category string
-}
-
-// PlotRect is the drawable chart area after reserving margins.
-type PlotRect struct {
-	X float64
-	Y float64
-	W float64
-	H float64
 }
 
 // AxisTick is a labeled numeric tick at an absolute canvas position.

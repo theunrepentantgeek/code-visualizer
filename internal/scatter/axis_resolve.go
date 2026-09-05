@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
@@ -23,7 +24,7 @@ const (
 	verticalAxis
 )
 
-func resolveAxis(points []PointDatum, plot PlotRect, spec AxisSpec, direction axisDirection) ResolvedAxis {
+func resolveAxis(points []PointDatum, plot geometry.Rect, spec AxisSpec, direction axisDirection) ResolvedAxis {
 	axis := ResolvedAxis{Spec: spec, Title: string(spec.Metric)}
 	if spec.Kind == metric.Classification {
 		axis.Categorical = categoricalBands(points, plot, direction)
@@ -75,7 +76,7 @@ func numericExtent(points []PointDatum, direction axisDirection) (minValue, maxV
 	return minValue, maxValue
 }
 
-func categoricalBands(points []PointDatum, plot PlotRect, direction axisDirection) *CategoricalAxis {
+func categoricalBands(points []PointDatum, plot geometry.Rect, direction axisDirection) *CategoricalAxis {
 	labels := make([]string, 0, len(points))
 	seen := make(map[string]bool, len(points))
 
@@ -113,7 +114,7 @@ func categoricalBands(points []PointDatum, plot PlotRect, direction axisDirectio
 	return &CategoricalAxis{Bands: bands, Centers: centers}
 }
 
-func numericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirection) []AxisTick {
+func numericTicks(minValue, maxValue float64, plot geometry.Rect, direction axisDirection) []AxisTick {
 	if minValue == maxValue {
 		return []AxisTick{{
 			Value:    minValue,
@@ -280,7 +281,7 @@ func formatTick(value, step float64) string {
 	return strconv.FormatFloat(value, 'f', decimals, 64)
 }
 
-func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, direction axisDirection) float64 {
+func positionForValue(value AxisValue, axis ResolvedAxis, plot geometry.Rect, direction axisDirection) float64 {
 	if axis.Categorical != nil {
 		return categoricalPosition(value, axis.Categorical, plot, direction)
 	}
@@ -302,7 +303,7 @@ func positionForValue(value AxisValue, axis ResolvedAxis, plot PlotRect, directi
 	return direction.position(plot, norm)
 }
 
-func categoricalPosition(value AxisValue, axis *CategoricalAxis, plot PlotRect, direction axisDirection) float64 {
+func categoricalPosition(value AxisValue, axis *CategoricalAxis, plot geometry.Rect, direction axisDirection) float64 {
 	// Use the Centers map for O(1) lookup when available (axes built via categoricalBands).
 	// Fall back to a linear scan for manually-constructed CategoricalAxis values (e.g. tests).
 	if axis.Centers != nil {
@@ -330,28 +331,28 @@ func axisSlotSize(axis ResolvedAxis, span float64, pointCount int) float64 {
 	return span / math.Max(scatterMinNumericSlots, math.Sqrt(float64(max(pointCount, 1))))
 }
 
-func (d axisDirection) center(plot PlotRect) float64 {
+func (d axisDirection) center(plot geometry.Rect) float64 {
 	if d == horizontalAxis {
-		return plot.X + plot.W/2
+		return plot.Min.X + plot.Width()/2
 	}
 
-	return plot.Y + plot.H/2
+	return plot.Min.Y + plot.Height()/2
 }
 
-func (d axisDirection) position(plot PlotRect, norm float64) float64 {
+func (d axisDirection) position(plot geometry.Rect, norm float64) float64 {
 	if d == horizontalAxis {
-		return plot.X + plot.W*norm
+		return plot.Min.X + plot.Width()*norm
 	}
 
-	return plot.Y + plot.H*(1-norm)
+	return plot.Min.Y + plot.Height()*(1-norm)
 }
 
-func (d axisDirection) span(plot PlotRect) (origin, span float64) {
+func (d axisDirection) span(plot geometry.Rect) (origin, span float64) {
 	if d == horizontalAxis {
-		return plot.X, plot.W
+		return plot.Min.X, plot.Width()
 	}
 
-	return plot.Y, plot.H
+	return plot.Min.Y, plot.Height()
 }
 
 func (d axisDirection) numericValue(point PointDatum) float64 {
@@ -370,7 +371,7 @@ func (d axisDirection) categoryValue(point PointDatum) string {
 	return point.Y.Category
 }
 
-func logNumericTicks(minValue, maxValue float64, plot PlotRect, direction axisDirection) []AxisTick {
+func logNumericTicks(minValue, maxValue float64, plot geometry.Rect, direction axisDirection) []AxisTick {
 	if minValue == maxValue {
 		return []AxisTick{{
 			Value:    minValue,

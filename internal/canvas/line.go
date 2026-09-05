@@ -15,10 +15,5 @@ type Line struct {
 func (l *Line) drawTo(b Backend) {
 	stroke := l.Spec.Stroke.Dip(inks.MetricValue{})
 
-	b.DrawLine(
-		l.From,
-		l.To,
-		stroke,
-		l.Spec.StrokeWidth,
-	)
+	b.DrawLine(l.From, l.To, stroke, l.Spec.StrokeWidth)
 }

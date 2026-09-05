@@ -9,22 +9,10 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
-
-// DrawingBounds is the pixel rectangle within the canvas available for
-// visualization content. It starts at the full canvas dimensions and is
-// shrunk by ReserveTitleBounds and ReserveFooterBounds before layout stages run.
-type DrawingBounds struct {
-	MinX, MinY, MaxX, MaxY int
-}
-
-// Width returns the available horizontal space.
-func (b DrawingBounds) Width() int { return b.MaxX - b.MinX }
-
-// Height returns the available vertical space.
-func (b DrawingBounds) Height() int { return b.MaxY - b.MinY }
 
 // Flags is the cross-cutting flag bundle passed to every viz command's Run.
 // It mirrors cmd/codeviz.Flags but lives here so this package does not
@@ -60,7 +48,7 @@ type CommonState struct {
 	Root          *model.Directory // ScanFilesystem
 	Width         int              // ResolveDimensions
 	Height        int              // ResolveDimensions
-	DrawingBounds DrawingBounds    // InitDrawingBounds + Reserve*Bounds
+	DrawingBounds geometry.Rect    // InitDrawingBounds + Reserve*Bounds
 	Canvas        *canvas.Canvas   // viz-specific Render
 
 	// Git history (populated by LoadGitHistory / GroupGitHistoryByFile / ExtractFileHistory).

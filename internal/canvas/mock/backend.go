@@ -13,13 +13,9 @@ import (
 
 // Call records a single drawing operation dispatched to a Backend.
 type Call struct {
-	Method string
-	// Pos is the primary point for rectangle, disc, arc-text, and text calls.
-	// DrawLine records its endpoints in From and To instead.
+	Method      string
 	Pos         geometry.Point
-	From        geometry.Point
-	To          geometry.Point
-	Size        model.Size
+	Bounds      geometry.Rect
 	Points      []geometry.Point
 	Loops       [][]geometry.Point
 	Fill        color.RGBA
@@ -46,13 +42,11 @@ func NewBackend() *Backend {
 	return &Backend{}
 }
 
-func (m *Backend) DrawRectangle(
-	pos geometry.Point, size model.Size, fill, border model.Fill, borderWidth float64,
-) {
+func (m *Backend) DrawRectangle(bounds geometry.Rect, fill, border model.Fill, borderWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawRectangle",
-		Pos:         pos,
-		Size:        size,
+		Pos:         bounds.Min,
+		Bounds:      bounds,
 		Fill:        model.SolidColor(fill),
 		Border:      model.SolidColor(border),
 		RawFill:     fill,
@@ -61,12 +55,10 @@ func (m *Backend) DrawRectangle(
 	})
 }
 
-func (m *Backend) DrawDisc(
-	center geometry.Point, _ float64, fill, border model.Fill, borderWidth float64,
-) {
+func (m *Backend) DrawDisc(circle geometry.Circle, fill, border model.Fill, borderWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawDisc",
-		Pos:         center,
+		Pos:         circle.Center,
 		Fill:        model.SolidColor(fill),
 		Border:      model.SolidColor(border),
 		RawFill:     fill,
@@ -102,11 +94,10 @@ func (m *Backend) DrawFilledPath(loops [][]geometry.Point, fill color.RGBA) {
 	})
 }
 
-func (m *Backend) DrawLine(from, to geometry.Point, stroke color.RGBA, strokeWidth float64) {
+func (m *Backend) DrawLine(from, _ geometry.Point, stroke color.RGBA, strokeWidth float64) {
 	m.Calls = append(m.Calls, Call{
 		Method:      "DrawLine",
-		From:        from,
-		To:          to,
+		Pos:         from,
 		Fill:        stroke,
 		StrokeWidth: strokeWidth,
 	})

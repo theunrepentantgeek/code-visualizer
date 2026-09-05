@@ -20,19 +20,19 @@ func ApplyDiscSizes(nodes []SpiralNode, buckets []TimeBucket, maxDisc float64) {
 
 	for i := range nodes {
 		if buckets[i].SizeValue == 0 && len(buckets[i].Files) == 0 {
-			nodes[i].DiscRadius = 0
+			nodes[i].Geometry.Radius = 0
 
 			continue
 		}
 
 		if maxSize == 0 {
-			nodes[i].DiscRadius = effectiveMin
+			nodes[i].Geometry.Radius = effectiveMin
 
 			continue
 		}
 
 		ratio := buckets[i].SizeValue / maxSize
-		nodes[i].DiscRadius = min(
+		nodes[i].Geometry.Radius = min(
 			maxDisc,
 			max(effectiveMin, effectiveMin+(maxDisc-effectiveMin)*math.Sqrt(ratio)),
 		)

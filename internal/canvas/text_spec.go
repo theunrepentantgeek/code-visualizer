@@ -36,8 +36,7 @@ type ArcTextSpec struct {
 
 // ArcText carries position and content for text curved along a circle arc.
 type ArcText struct {
-	Spec *ArcTextSpec
-	// Position is the centre of the circle or arc.
+	Spec     *ArcTextSpec
 	Position geometry.Point
 	Radius   float64 // reference arc radius; backends apply their fixed inset from this value
 	Text     string

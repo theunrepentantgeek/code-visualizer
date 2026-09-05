@@ -5,7 +5,10 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/nikolaydubina/treemap/layout"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 func TestResolveDirectoryChrome(t *testing.T) {
@@ -15,69 +18,87 @@ func TestResolveDirectoryChrome(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 10, Y: 20, W: 100, H: 60}, "")
+		chrome := resolveDirectoryChrome(layout.Box{X: 10, Y: 20, W: 100, H: 60}, "")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
-		g.Expect(chrome.Rail).To(Equal(RectangleBounds{}))
-		g.Expect(chrome.Content).To(Equal(RectangleBounds{X: 14, Y: 24, W: 92, H: 52}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(14, 24), Max: geometry.NewPoint(106, 76),
+		}))
 	})
 
 	t.Run("wide rectangle uses top chrome", func(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 120, H: 60}, "alpha")
+		chrome := resolveDirectoryChrome(layout.Box{X: 0, Y: 0, W: 120, H: 60}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
-		g.Expect(chrome.Rail).To(Equal(RectangleBounds{X: 0, Y: 0, W: 120, H: 20}))
-		g.Expect(chrome.Content).To(Equal(RectangleBounds{X: 4, Y: 20, W: 112, H: 36}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(120, 20),
+		}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(4, 20), Max: geometry.NewPoint(116, 56),
+		}))
 	})
 
 	t.Run("square rectangle uses top chrome", func(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 5, Y: 6, W: 60, H: 60}, "alpha")
+		chrome := resolveDirectoryChrome(layout.Box{X: 5, Y: 6, W: 60, H: 60}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelTop))
-		g.Expect(chrome.Rail).To(Equal(RectangleBounds{X: 5, Y: 6, W: 60, H: 20}))
-		g.Expect(chrome.Content).To(Equal(RectangleBounds{X: 9, Y: 26, W: 52, H: 36}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(5, 6), Max: geometry.NewPoint(65, 26),
+		}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(9, 26), Max: geometry.NewPoint(61, 62),
+		}))
 	})
 
 	t.Run("tall rectangle uses left chrome", func(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 3, Y: 7, W: 60, H: 120}, "alpha")
+		chrome := resolveDirectoryChrome(layout.Box{X: 3, Y: 7, W: 60, H: 120}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelLeft))
-		g.Expect(chrome.Rail).To(Equal(RectangleBounds{X: 3, Y: 7, W: 20, H: 120}))
-		g.Expect(chrome.Content).To(Equal(RectangleBounds{X: 23, Y: 11, W: 36, H: 112}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(3, 7), Max: geometry.NewPoint(23, 127),
+		}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(23, 11), Max: geometry.NewPoint(59, 123),
+		}))
 	})
 
 	t.Run("narrow top content falls back to border-only", func(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 100, H: 39}, "alpha")
+		chrome := resolveDirectoryChrome(layout.Box{X: 0, Y: 0, W: 100, H: 39}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
-		g.Expect(chrome.Rail).To(Equal(RectangleBounds{}))
-		g.Expect(chrome.Content).To(Equal(RectangleBounds{X: 4, Y: 4, W: 92, H: 31}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(4, 4), Max: geometry.NewPoint(96, 35),
+		}))
 	})
 
 	t.Run("narrow left content falls back to border-only", func(t *testing.T) {
 		t.Parallel()
 		g := NewGomegaWithT(t)
 
-		chrome := resolveDirectoryChrome(RectangleBounds{X: 0, Y: 0, W: 39, H: 100}, "alpha")
+		chrome := resolveDirectoryChrome(layout.Box{X: 0, Y: 0, W: 39, H: 100}, "alpha")
 
 		g.Expect(chrome.Orientation).To(Equal(DirectoryLabelNone))
 		g.Expect(chrome.Text).To(BeEmpty())
-		g.Expect(chrome.Rail).To(Equal(RectangleBounds{}))
-		g.Expect(chrome.Content).To(Equal(RectangleBounds{X: 4, Y: 4, W: 31, H: 92}))
+		g.Expect(chrome.Rail).To(Equal(geometry.Rect{}))
+		g.Expect(chrome.Content).To(Equal(geometry.Rect{
+			Min: geometry.NewPoint(4, 4), Max: geometry.NewPoint(35, 96),
+		}))
 	})
 }
 

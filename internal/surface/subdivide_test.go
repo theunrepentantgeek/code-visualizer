@@ -140,7 +140,7 @@ func TestSubdivideTriangle_TreatsBreakpointValueAsUpperBand(t *testing.T) {
 		t.Fatalf("expected 1 polygon, got %d", len(polygons))
 	}
 
-	g.Expect(polygons[0].Points).To(gomega.ConsistOf(triangleSamples(triangle)))
+	g.Expect(polygons[0].Points).To(gomega.ConsistOf(trianglePoints(triangle)))
 	g.Expect(bucketIndex([]float64{1}, polygons[0].Value)).To(gomega.Equal(1))
 }
 
@@ -165,7 +165,7 @@ func TestSubdivideTriangle_LeavesUncrossedTriangleWhole(t *testing.T) {
 		t.Fatalf("expected 1 polygon, got %d", len(polygons))
 	}
 
-	g.Expect(polygons[0].Points).To(gomega.ConsistOf(triangleSamples(triangle)))
+	g.Expect(polygons[0].Points).To(gomega.ConsistOf(trianglePoints(triangle)))
 	g.Expect(bucketIndex([]float64{1}, polygons[0].Value)).To(gomega.Equal(1))
 	g.Expect(polygons[0].Value).To(gomega.And(
 		gomega.BeNumerically(">=", 2.0),
@@ -189,7 +189,7 @@ func TestSubdivideTriangle_ReturnsWholeTriangleWhenBreakpointsEmpty(t *testing.T
 	polygons := surface.SubdivideTriangle(triangle, nil)
 
 	g.Expect(polygons).To(gomega.Equal([]surface.Polygon{{
-		Points: triangleSamples(triangle),
+		Points: trianglePoints(triangle),
 		Value:  3,
 	}}))
 
@@ -262,10 +262,10 @@ func TestSubdivideTriangle_ReturnsNilForInvalidBreakpointsOrGeometry(t *testing.
 	g.Expect(overflowPolygons).To(gomega.HaveLen(2))
 
 	for _, polygon := range overflowPolygons {
-		for _, sample := range polygon.Points {
-			g.Expect(math.IsNaN(sample.Position.X) || math.IsInf(sample.Position.X, 0)).To(gomega.BeFalse())
-			g.Expect(math.IsNaN(sample.Position.Y) || math.IsInf(sample.Position.Y, 0)).To(gomega.BeFalse())
-			g.Expect(math.IsNaN(sample.Value) || math.IsInf(sample.Value, 0)).To(gomega.BeFalse())
+		for _, point := range polygon.Points {
+			g.Expect(math.IsNaN(point.Position.X) || math.IsInf(point.Position.X, 0)).To(gomega.BeFalse())
+			g.Expect(math.IsNaN(point.Position.Y) || math.IsInf(point.Position.Y, 0)).To(gomega.BeFalse())
+			g.Expect(math.IsNaN(point.Value) || math.IsInf(point.Value, 0)).To(gomega.BeFalse())
 		}
 	}
 }
@@ -295,7 +295,7 @@ func TestSubdivideTriangle_IsDeterministicAndDoesNotMutateInputs(t *testing.T) {
 	g.Expect(breakpoints).To(gomega.Equal(originalBreakpoints))
 }
 
-func triangleSamples(triangle surface.Triangle) []surface.Sample {
+func trianglePoints(triangle surface.Triangle) []surface.Sample {
 	return append([]surface.Sample(nil), triangle.Points[:]...)
 }
 

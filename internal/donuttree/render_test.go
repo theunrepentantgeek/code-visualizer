@@ -94,6 +94,42 @@ func TestRenderToCanvas_RendersOneSectorPerDirectoryAndOneRootAnchor(t *testing.
 	g.Expect(callsNamed(calls, "DrawText")).To(ContainElement(HaveField("Text", "project")))
 }
 
+func TestRenderToCanvas_UsesNarrowedRingGeometryForSectorsAndLabels(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	root := donutRoot()
+	layout := Layout(root, 600, filesystem.FileLines)
+	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+
+	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{}))
+	polygons := callsNamed(calls, "DrawPolygon")
+	expectedOuterRadius := layout.AnchorRadius * (1 + donutRingWidthRatio)
+
+	g.Expect(polygons).NotTo(BeEmpty())
+	g.Expect(layout.Center.DistanceTo(polygons[0].Points[0])).
+		To(BeNumerically("~", expectedOuterRadius, 0.000001))
+
+	var directoryLabel *mock.Call
+
+	for index := range calls {
+		if calls[index].Method == "DrawText" && calls[index].Text == "src" {
+			directoryLabel = &calls[index]
+
+			break
+		}
+	}
+
+	if directoryLabel == nil {
+		t.Fatal("expected src directory label")
+
+		return
+	}
+
+	expectedMidRadius := layout.AnchorRadius * 1.45
+	g.Expect(layout.Center.DistanceTo(directoryLabel.Pos)).
+		To(BeNumerically("~", expectedMidRadius, 0.000001))
+}
+
 func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -266,7 +302,7 @@ func TestSectorPoints_FollowsAnnularBoundarySampling(t *testing.T) {
 		InnerRadius: 40,
 		OuterRadius: 80,
 	}
-	center := geometry.Point{X: 120, Y: 160}
+	center := geometry.NewPoint(120, 160)
 
 	steps := max(2, int(math.Ceil(node.SweepAngle/(2*math.Pi)*64)))
 	boundarySamples := steps + 1
@@ -305,7 +341,7 @@ func TestInsetSectorPoints_KeepsBorderStrokeInsideSector(t *testing.T) {
 		InnerRadius: 40,
 		OuterRadius: 80,
 	}
-	center := geometry.Point{X: 120, Y: 160}
+	center := geometry.NewPoint(120, 160)
 	points := insetSectorPoints(node, center, donutSectorBorderWidth)
 	halfWidth := donutSectorBorderWidth / 2
 	outerCount := sectorSteps(node.SweepAngle) + 1
@@ -315,9 +351,9 @@ func TestInsetSectorPoints_KeepsBorderStrokeInsideSector(t *testing.T) {
 		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
 	}
 
-	g.Expect(points[0].DistanceTo(center)).
+	g.Expect(center.DistanceTo(points[0])).
 		To(BeNumerically("~", node.OuterRadius-halfWidth, 0.000001))
-	g.Expect(points[outerCount].DistanceTo(center)).
+	g.Expect(center.DistanceTo(points[outerCount])).
 		To(BeNumerically("~", node.InnerRadius+halfWidth, 0.000001))
 	g.Expect(math.Abs(points[0].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
 	g.Expect(math.Abs(points[len(points)-2].Y - center.Y)).To(BeNumerically("~", halfWidth, 0.000001))
@@ -333,7 +369,7 @@ func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
 		OuterRadius: 80,
 	}
 
-	points := insetSectorPoints(node, geometry.Point{X: 120, Y: 160}, donutSectorBorderWidth)
+	points := insetSectorPoints(node, geometry.NewPoint(120, 160), donutSectorBorderWidth)
 	for _, point := range points {
 		g.Expect(math.IsNaN(point.X) || math.IsInf(point.X, 0)).To(BeFalse())
 		g.Expect(math.IsNaN(point.Y) || math.IsInf(point.Y, 0)).To(BeFalse())
@@ -345,7 +381,7 @@ func TestInsetSectorPoints_KeepsNarrowSectorGeometryFinite(t *testing.T) {
 func TestInsetSectorPoints_ScalesNarrowAdjacentBordersToRemainDisjoint(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	center := geometry.Point{X: 120, Y: 160}
+	center := geometry.NewPoint(120, 160)
 	left := DonutNode{
 		StartAngle:  0,
 		SweepAngle:  math.Pi / 180,
@@ -491,8 +527,8 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 	g.Expect(LayoutStage(common, state)).To(Succeed())
 	g.Expect(RenderStage(common, state)).To(Succeed())
 
-	g.Expect(common.Canvas.DrawingMinY()).To(Equal(common.DrawingBounds.MinY))
-	g.Expect(common.Canvas.DrawingMaxY()).To(Equal(common.DrawingBounds.MaxY))
+	g.Expect(common.Canvas.DrawingMinY()).To(Equal(int(common.DrawingBounds.Min.Y)))
+	g.Expect(common.Canvas.DrawingMaxY()).To(Equal(int(common.DrawingBounds.Max.Y)))
 
 	calls := renderCalls(t, common.Canvas)
 
@@ -509,11 +545,13 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 
 	if legendBackground == nil {
 		t.Fatal("expected legend background")
+
+		return
 	}
 
-	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.MinY))
-	g.Expect(legendBackground.Pos.Y + legendBackground.Size.Height).
-		To(BeNumerically("<=", common.DrawingBounds.MaxY))
+	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.Min.Y))
+	g.Expect(legendBackground.Bounds.Max.Y).
+		To(BeNumerically("<=", common.DrawingBounds.Max.Y))
 }
 
 func TestRenderStage_KeepsConfiguredDimensionsAfterTitleAndFooterReservation(t *testing.T) {

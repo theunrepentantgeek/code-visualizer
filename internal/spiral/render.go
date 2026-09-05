@@ -64,10 +64,9 @@ func addBackground(cv *canvas.Canvas, width, height int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:  bgSpec,
-		W:     float64(width),
-		H:     float64(height),
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -150,9 +149,9 @@ func rgbaKey(colour color.RGBA) uint32 {
 	return uint32(colour.R)<<24 | uint32(colour.G)<<16 | uint32(colour.B)<<8 | uint32(colour.A)
 }
 
-func surfacePolygonPoints(samples []surface.Sample) []geometry.Point {
-	positions := make([]geometry.Point, len(samples))
-	for index, sample := range samples {
+func surfacePolygonPoints(points []surface.Sample) []geometry.Point {
+	positions := make([]geometry.Point, len(points))
+	for index, sample := range points {
 		positions[index] = sample.Position
 	}
 
@@ -167,16 +166,14 @@ func addTrack(cv *canvas.Canvas, layout SpiralLayout) {
 
 	steps := trackSteps(len(layout.Nodes))
 	points := make([]geometry.Point, steps)
-	center := geometry.Point{X: layout.CX, Y: layout.CY}
+
+	center := geometry.NewPoint(layout.CX, layout.CY)
 
 	for i := range steps {
 		t := float64(i) / float64(steps-1)
 		theta := t * layout.MaxTheta
 		r := layout.A + layout.B*theta
-		points[i] = center.Translate(geometry.Vector{
-			X: r * math.Sin(theta),
-			Y: -r * math.Cos(theta),
-		})
+		points[i] = center.Translate(geometry.NewVector(r*math.Sin(theta), -r*math.Cos(theta)))
 	}
 
 	trackSpec := &canvas.LineSpec{
@@ -215,7 +212,7 @@ func addDiscs(
 	}
 
 	for i, n := range nodes {
-		if n.DiscRadius <= 0 {
+		if n.Geometry.Radius <= 0 {
 			continue
 		}
 
@@ -223,18 +220,16 @@ func addDiscs(
 		borderMV := metricValue(buckets[i].BorderValue, buckets[i].BorderLabel, is.Border)
 
 		spec := smallSpec
-		if borderWidth(n.DiscRadius) == 3.0 {
+		if borderWidth(n.Geometry.Radius) == 3.0 {
 			spec = largeSpec
 		}
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   spec,
-			X:      n.Position.X,
-			Y:      n.Position.Y,
-			Radius: n.DiscRadius,
-			Angle:  n.Angle,
-			Fill:   fillMV,
-			Border: borderMV,
+			Spec:     spec,
+			Geometry: n.Geometry,
+			Angle:    n.Angle,
+			Fill:     fillMV,
+			Border:   borderMV,
 		})
 	}
 }

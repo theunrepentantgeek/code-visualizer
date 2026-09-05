@@ -3,6 +3,8 @@ package canvas
 import (
 	"image/color"
 	"testing"
+
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // BenchmarkFitBlockLabel measures the cost of fitting a multi-line label into
@@ -18,12 +20,9 @@ func BenchmarkFitBlockLabel(b *testing.B) {
 	for range b.N {
 		c := NewCanvas(200, 120)
 		c.AddBlockLabel(LayerOverlay, BlockLabel{
-			X:     10,
-			Y:     10,
-			W:     180,
-			H:     100,
-			Lines: lines,
-			Ink:   color.RGBA{R: 255, G: 255, B: 255, A: 255},
+			Bounds: geometry.Rect{Min: geometry.NewPoint(10, 10), Max: geometry.NewPoint(190, 110)},
+			Lines:  lines,
+			Ink:    color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		}, FormatPNG)
 	}
 }

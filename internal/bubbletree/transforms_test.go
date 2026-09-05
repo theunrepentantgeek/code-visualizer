@@ -1,7 +1,6 @@
 package bubbletree
 
 import (
-	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -17,42 +16,49 @@ func TestExpandBoundsForDisc_SingleDisc(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box := newEmptyBounds()
-	expandBoundsForDisc(&box, 5, 3, 2)
+	circle := geometry.NewCircle(geometry.NewPoint(5, 3), 2)
+	box, has := expandBoundsForDisc(geometry.Rect{}, false, circle)
 
-	g.Expect(box.minX).To(BeNumerically("~", 3.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 7.0, 1e-9))
-	g.Expect(box.minY).To(BeNumerically("~", 1.0, 1e-9))
-	g.Expect(box.maxY).To(BeNumerically("~", 5.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(box.Min.Y).To(BeNumerically("~", 1.0, 1e-9))
+	g.Expect(box.Max.Y).To(BeNumerically("~", 5.0, 1e-9))
 }
 
 func TestExpandBoundsForDisc_MultipleDiscs(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box := newEmptyBounds()
-	expandBoundsForDisc(&box, 0, 0, 1)  // bounds: (-1,-1)..(1,1)
-	expandBoundsForDisc(&box, 5, 0, 2)  // extends maxX to 7, maxY to 2, minY to -2
-	expandBoundsForDisc(&box, 0, -4, 1) // extends minY to -5
-	expandBoundsForDisc(&box, -3, 0, 0) // extends minX to -3
+	box, has := geometry.Rect{}, false
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(0, 0), 1))
+	// bounds: (-1,-1)..(1,1)
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(5, 0), 2))
+	// extends maxX to 7, maxY to 2, minY to -2
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(0, -4), 1))
+	// extends minY to -5
+	box, has = expandBoundsForDisc(box, has, geometry.NewCircle(geometry.NewPoint(-3, 0), 0))
+	// extends minX to -3
 
-	g.Expect(box.minX).To(BeNumerically("~", -3.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 7.0, 1e-9))
-	g.Expect(box.minY).To(BeNumerically("~", -5.0, 1e-9))
-	g.Expect(box.maxY).To(BeNumerically("~", 2.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", -3.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(box.Min.Y).To(BeNumerically("~", -5.0, 1e-9))
+	g.Expect(box.Max.Y).To(BeNumerically("~", 2.0, 1e-9))
 }
 
 func TestExpandBoundsForDisc_ZeroRadius(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	box := newEmptyBounds()
-	expandBoundsForDisc(&box, 3, 7, 0) // zero-radius "point"
+	circle := geometry.NewCircle(geometry.NewPoint(3, 7), 0) // zero-radius "point"
+	box, has := expandBoundsForDisc(geometry.Rect{}, false, circle)
 
-	g.Expect(box.minX).To(BeNumerically("~", 3.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 3.0, 1e-9))
-	g.Expect(box.minY).To(BeNumerically("~", 7.0, 1e-9))
-	g.Expect(box.maxY).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(box.Min.Y).To(BeNumerically("~", 7.0, 1e-9))
+	g.Expect(box.Max.Y).To(BeNumerically("~", 7.0, 1e-9))
 }
 
 // ---------------------------------------------------------------------------
@@ -61,19 +67,15 @@ func TestExpandBoundsForDisc_ZeroRadius(t *testing.T) {
 
 func TestOccupiedBounds_NoChildren_NoLabel(t *testing.T) {
 	t.Parallel()
+	g := NewGomegaWithT(t)
 
-	// A leaf node with no children and ShowLabel=false returns an "empty"
-	// bounds (MaxFloat64 for min, -MaxFloat64 for max). The caller is
-	// expected to guard against degenerate boxes; we just verify the
-	// values are the empty-bounds sentinel.
-	node := BubbleNode{Position: geometry.Point{X: 5, Y: 5}, Radius: 3, ShowLabel: false}
+	// A leaf node with no children and ShowLabel=false contributes nothing,
+	// so occupiedBounds reports it received no rectangle.
+	node := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(5, 5), 3), ShowLabel: false}
 
-	box := occupiedBounds(&node)
+	_, has := occupiedBounds(&node)
 
-	// minX should equal the initial empty sentinel.
-	if box.minX != math.MaxFloat64 {
-		t.Errorf("expected minX == MaxFloat64 for empty bounds, got %v", box.minX)
-	}
+	g.Expect(has).To(BeFalse())
 }
 
 func TestOccupiedBounds_WithChildren(t *testing.T) {
@@ -81,17 +83,18 @@ func TestOccupiedBounds_WithChildren(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	parent := BubbleNode{
-		Position: geometry.Point{X: 0, Y: 0}, Radius: 10,
+		Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 10),
 		Children: []BubbleNode{
-			{Position: geometry.Point{X: -3, Y: 0}, Radius: 2}, // covers X: -5 .. -1
-			{Position: geometry.Point{X: 4, Y: 0}, Radius: 1},  // covers X:  3 ..  5
+			{Geometry: geometry.NewCircle(geometry.NewPoint(-3, 0), 2)},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(4, 0), 1)},
 		},
 	}
 
-	box := occupiedBounds(&parent)
+	box, has := occupiedBounds(&parent)
 
-	g.Expect(box.minX).To(BeNumerically("~", -5.0, 1e-9))
-	g.Expect(box.maxX).To(BeNumerically("~", 5.0, 1e-9))
+	g.Expect(has).To(BeTrue())
+	g.Expect(box.Min.X).To(BeNumerically("~", -5.0, 1e-9))
+	g.Expect(box.Max.X).To(BeNumerically("~", 5.0, 1e-9))
 }
 
 func TestOccupiedBounds_ShowLabelIncludesRoot(t *testing.T) {
@@ -100,17 +103,19 @@ func TestOccupiedBounds_ShowLabelIncludesRoot(t *testing.T) {
 
 	// When ShowLabel is true, the root node's own circle is added to bounds.
 	parent := BubbleNode{
-		Position: geometry.Point{X: 0, Y: 0}, Radius: 8, ShowLabel: true,
+		Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 8), ShowLabel: true,
 		Children: []BubbleNode{
-			{Position: geometry.Point{X: 1, Y: 0}, Radius: 1},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(1, 0), 1)},
 		},
 	}
 
-	box := occupiedBounds(&parent)
+	box, has := occupiedBounds(&parent)
+
+	g.Expect(has).To(BeTrue())
 
 	// The root circle contributes radius 8 around (0,0).
-	g.Expect(box.minX).To(BeNumerically("<=", -8.0+1e-9))
-	g.Expect(box.maxX).To(BeNumerically(">=", 8.0-1e-9))
+	g.Expect(box.Min.X).To(BeNumerically("<=", -8.0+1e-9))
+	g.Expect(box.Max.X).To(BeNumerically(">=", 8.0-1e-9))
 }
 
 // ---------------------------------------------------------------------------
@@ -124,43 +129,43 @@ func TestApplyScale_ChildPositionUpdated(t *testing.T) {
 	// Parent placed at (10, 20); child in local frame at (2, 0) with radius 1.
 	// After applyScale(scale=3): child should be at (10+2*3, 20+0*3)=(16,20) with radius 3.
 	parent := BubbleNode{
-		Position: geometry.Point{X: 10, Y: 20}, Radius: 15,
+		Geometry: geometry.NewCircle(geometry.NewPoint(10, 20), 15),
 		Children: []BubbleNode{
-			{Position: geometry.Point{X: 2, Y: 0}, Radius: 1},
+			{Geometry: geometry.NewCircle(geometry.NewPoint(2, 0), 1)},
 		},
 	}
 
 	applyScale(&parent, 3)
 
 	child := parent.Children[0]
-	g.Expect(child.Position.X).To(BeNumerically("~", 16.0, 1e-9))
-	g.Expect(child.Position.Y).To(BeNumerically("~", 20.0, 1e-9))
-	g.Expect(child.Radius).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(child.Geometry.Center.X).To(BeNumerically("~", 16.0, 1e-9))
+	g.Expect(child.Geometry.Center.Y).To(BeNumerically("~", 20.0, 1e-9))
+	g.Expect(child.Geometry.Radius).To(BeNumerically("~", 3.0, 1e-9))
 }
 
 func TestApplyScale_NestedChildren(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	grandchild := BubbleNode{Position: geometry.Point{X: 1, Y: 0}, Radius: 0.5}
+	grandchild := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(1, 0), 0.5)}
 	child := BubbleNode{
-		Position: geometry.Point{X: 2, Y: 0}, Radius: 2,
+		Geometry: geometry.NewCircle(geometry.NewPoint(2, 0), 2),
 		Children: []BubbleNode{grandchild},
 	}
 	parent := BubbleNode{
-		Position: geometry.Point{X: 0, Y: 0}, Radius: 10,
+		Geometry: geometry.NewCircle(geometry.NewPoint(0, 0), 10),
 		Children: []BubbleNode{child},
 	}
 
 	applyScale(&parent, 2)
 
 	// child: X = 0 + 2*2 = 4, Y = 0, Radius = 4
-	g.Expect(parent.Children[0].Position.X).To(BeNumerically("~", 4.0, 1e-9))
-	g.Expect(parent.Children[0].Radius).To(BeNumerically("~", 4.0, 1e-9))
+	g.Expect(parent.Children[0].Geometry.Center.X).To(BeNumerically("~", 4.0, 1e-9))
+	g.Expect(parent.Children[0].Geometry.Radius).To(BeNumerically("~", 4.0, 1e-9))
 
 	// grandchild: X = 4 + 1*2 = 6, Y = 0, Radius = 1
-	g.Expect(parent.Children[0].Children[0].Position.X).To(BeNumerically("~", 6.0, 1e-9))
-	g.Expect(parent.Children[0].Children[0].Radius).To(BeNumerically("~", 1.0, 1e-9))
+	g.Expect(parent.Children[0].Children[0].Geometry.Center.X).To(BeNumerically("~", 6.0, 1e-9))
+	g.Expect(parent.Children[0].Children[0].Geometry.Radius).To(BeNumerically("~", 1.0, 1e-9))
 }
 
 // ---------------------------------------------------------------------------
@@ -171,16 +176,16 @@ func TestOffsetNodes_RootAndChildren(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	child := BubbleNode{Position: geometry.Point{X: 5, Y: 5}, Radius: 1}
+	child := BubbleNode{Geometry: geometry.NewCircle(geometry.NewPoint(5, 5), 1)}
 	root := BubbleNode{
-		Position: geometry.Point{X: 10, Y: 10}, Radius: 20,
+		Geometry: geometry.NewCircle(geometry.NewPoint(10, 10), 20),
 		Children: []BubbleNode{child},
 	}
 
 	OffsetNodes(&root, geometry.Vector{X: 3, Y: -2})
 
-	g.Expect(root.Position.X).To(BeNumerically("~", 13.0, 1e-9))
-	g.Expect(root.Position.Y).To(BeNumerically("~", 8.0, 1e-9))
-	g.Expect(root.Children[0].Position.X).To(BeNumerically("~", 8.0, 1e-9))
-	g.Expect(root.Children[0].Position.Y).To(BeNumerically("~", 3.0, 1e-9))
+	g.Expect(root.Geometry.Center.X).To(BeNumerically("~", 13.0, 1e-9))
+	g.Expect(root.Geometry.Center.Y).To(BeNumerically("~", 8.0, 1e-9))
+	g.Expect(root.Children[0].Geometry.Center.X).To(BeNumerically("~", 8.0, 1e-9))
+	g.Expect(root.Children[0].Geometry.Center.Y).To(BeNumerically("~", 3.0, 1e-9))
 }

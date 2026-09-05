@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
@@ -104,33 +105,22 @@ func buildFileLabel(
 	lines = appendMetricLine(lines, file, metrics.Border)
 
 	fillColour := fillInk.Dip(inks.MetricValueForFile(file, fillInk))
+	size := rect.size()
+	size.Width -= 2 * blockLabelPadding
+	size.Height -= 2 * blockLabelPadding
 
 	return canvas.BlockLabel{
-		X:     bounds.x,
-		Y:     bounds.y,
-		W:     bounds.w,
-		H:     bounds.h,
-		Lines: lines,
-		Ink:   canvas.TextColourFor(fillColour),
+		Bounds:     bounds,
+		LayoutSize: size,
+		Lines:      lines,
+		Ink:        canvas.TextColourFor(fillColour),
 	}, true
 }
 
-type labelBounds struct {
-	x float64
-	y float64
-	w float64
-	h float64
-}
-
-func insetLabelBounds(rect TreemapRectangle, padding float64) (labelBounds, bool) {
-	bounds := labelBounds{
-		x: rect.X + padding,
-		y: rect.Y + padding,
-		w: rect.W - 2*padding,
-		h: rect.H - 2*padding,
-	}
-	if bounds.w <= 0 || bounds.h <= 0 {
-		return labelBounds{}, false
+func insetLabelBounds(rect TreemapRectangle, padding float64) (geometry.Rect, bool) {
+	bounds, ok := rect.Bounds.Inset(padding)
+	if !ok || bounds.Empty() {
+		return geometry.Rect{}, false
 	}
 
 	return bounds, true

@@ -9,31 +9,31 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
-func TestRefinementSampleLimitReservesHalfEdgeGrid(t *testing.T) {
+func TestRefinementPointLimitReservesHalfEdgeGrid(t *testing.T) {
 	t.Parallel()
 
-	region := Rect{MinX: 0, MinY: 0, MaxX: 16, MaxY: 16}
+	region := geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(16, 16)}
 
-	got := refinementSampleLimit(region, 3)
+	got := refinementPointLimit(region, 3)
 
 	want := 3 + 5*5 // Grid vertices at 0, 4, 8, 12, and 16 on both axes.
 	if got != want {
-		t.Fatalf("refinement sample limit = %d, want %d", got, want)
+		t.Fatalf("refinement point limit = %d, want %d", got, want)
 	}
 }
 
-func TestRefinementSamples_IgnoresDegenerateOversizedFace(t *testing.T) {
+func TestRefinementPoints_IgnoresDegenerateOversizedFace(t *testing.T) {
 	t.Parallel()
 
-	samples := []Sample{
-		{Position: geometry.Point{X: 0, Y: 0}},
-		{Position: geometry.Point{X: 12, Y: 0}},
-		{Position: geometry.Point{X: 6, Y: 0}},
+	points := []Sample{
+		{Position: geometry.NewPoint(0, 0)},
+		{Position: geometry.NewPoint(12, 0)},
+		{Position: geometry.NewPoint(6, 0)},
 	}
 
-	candidates, oversized := refinementSamples(
-		Rect{MinX: 0, MinY: -1, MaxX: 12, MaxY: 1},
-		samples,
+	candidates, oversized := refinementPoints(
+		geometry.Rect{Min: geometry.NewPoint(0, -1), Max: geometry.NewPoint(12, 1)},
+		points,
 		[]int{0, 1, 2},
 	)
 
@@ -49,16 +49,16 @@ func TestRefinementSamples_IgnoresDegenerateOversizedFace(t *testing.T) {
 func TestIsDegenerateTriangle_RecognizesMidpointVertex(t *testing.T) {
 	t.Parallel()
 
-	start := Sample{Position: geometry.Point{X: 103.9590562495064, Y: 142.30031597003037}}
-	end := Sample{Position: geometry.Point{X: 111.25205052331654, Y: 151.73148706176613}}
-	midpointSample := Sample{Position: geometry.Midpoint(start.Position, end.Position)}
+	start := Sample{Position: geometry.NewPoint(103.9590562495064, 142.30031597003037)}
+	end := Sample{Position: geometry.NewPoint(111.25205052331654, 151.73148706176613)}
+	midpoint := Sample{Position: geometry.Midpoint(start.Position, end.Position)}
 
-	if !isDegenerateTriangle(Triangle{Points: [3]Sample{start, end, midpointSample}}) {
+	if !isDegenerateTriangle(Triangle{Points: [3]Sample{start, end, midpoint}}) {
 		t.Fatal("triangle with a midpoint vertex must be degenerate")
 	}
 }
 
-func TestMeshSamples_RefinesInRegionTrianglesToMaximumEdge(t *testing.T) {
+func TestMeshPoints_RefinesInRegionTrianglesToMaximumEdge(t *testing.T) {
 	t.Parallel()
 
 	region, originals := refinementTestMesh()
@@ -68,12 +68,12 @@ func TestMeshSamples_RefinesInRegionTrianglesToMaximumEdge(t *testing.T) {
 		t.Fatal("expected interpolation model")
 	}
 
-	samples, complete := meshSamples(region, model, 42)
+	points, complete := meshPoints(region, model, 42)
 	if !complete {
 		t.Fatal("mesh refinement did not complete")
 	}
 
-	for _, triangle := range inRegionDelaunayTriangles(t, region, samples) {
+	for _, triangle := range inRegionDelaunayTriangles(t, region, points) {
 		if LongestEdge(triangle) > MaxTriangleEdge {
 			t.Fatalf(
 				"generated oversized in-region triangle with edge %.2f",
@@ -93,12 +93,12 @@ func TestBuild_CoversEveryInRegionDelaunayFaceAfterRefinement(t *testing.T) {
 		t.Fatal("expected interpolation model")
 	}
 
-	samples, complete := meshSamples(region, model, 42)
+	points, complete := meshPoints(region, model, 42)
 	if !complete {
 		t.Fatal("mesh refinement did not complete")
 	}
 
-	expected := inRegionDelaunayTriangles(t, region, samples)
+	expected := inRegionDelaunayTriangles(t, region, points)
 
 	actual := Build(region, originals, 42)
 	if len(actual) != len(expected) {
@@ -120,17 +120,17 @@ func TestBuild_CoversEveryInRegionDelaunayFaceAfterRefinement(t *testing.T) {
 	}
 }
 
-func inRegionDelaunayTriangles(t *testing.T, region Region, samples []Sample) []Triangle {
+func inRegionDelaunayTriangles(t *testing.T, region Region, points []Sample) []Triangle {
 	t.Helper()
 
-	triangulation, err := delaunay.Triangulate(delaunayPoints(samples))
+	triangulation, err := delaunay.Triangulate(delaunayPoints(points))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	triangles := make([]Triangle, 0, len(triangulation.Triangles)/3)
 	for index := 0; index+2 < len(triangulation.Triangles); index += 3 {
-		triangle, ok := triangleAt(samples, [3]int{
+		triangle, ok := triangleAt(points, [3]int{
 			triangulation.Triangles[index],
 			triangulation.Triangles[index+1],
 			triangulation.Triangles[index+2],
@@ -169,10 +169,10 @@ func refinementTestMesh() (Annulus, []Sample) {
 		theta := float64(i) * 4 * math.Pi / 31
 		radius := 60 + 100*float64(i)/31
 		originals = append(originals, Sample{
-			Position: geometry.Point{
-				X: region.CX + radius*math.Sin(theta),
-				Y: region.CY - radius*math.Cos(theta),
-			},
+			Position: geometry.NewPoint(
+				region.CX+radius*math.Sin(theta),
+				region.CY-radius*math.Cos(theta),
+			),
 		})
 	}
 

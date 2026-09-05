@@ -2,6 +2,7 @@ package legend
 
 import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 // MinReservableSize is the smallest canvas dimension (px) that still
@@ -18,10 +19,10 @@ func ReserveAndLayout(cfg *Config, width, height int) (layoutW, layoutH int) {
 		return width, height
 	}
 
-	wReduce, hReduce := cfg.ReserveSpace()
+	reserved := cfg.ReserveSpace()
 
-	w := width - int(wReduce)
-	h := height - int(hReduce)
+	w := width - int(reserved.Width)
+	h := height - int(reserved.Height)
 
 	if w < MinReservableSize || h < MinReservableSize {
 		return width, height
@@ -32,35 +33,35 @@ func ReserveAndLayout(cfg *Config, width, height int) (layoutW, layoutH int) {
 
 // LayoutOffset returns the (dx, dy) offset to apply to layout output
 // when space has been reserved for the legend.
-func LayoutOffset(cfg *Config, wReduce, hReduce float64) (dx, dy float64) {
+func LayoutOffset(cfg *Config, reserved geometry.Size) (dx, dy float64) {
 	if cfg == nil {
 		return 0, 0
 	}
 
 	switch cfg.Position {
 	case model.LegendPositionTopCenter:
-		return 0, hReduce
+		return 0, reserved.Height
 	case model.LegendPositionCenterLeft:
-		return wReduce, 0
+		return reserved.Width, 0
 	default:
-		return cornerOffset(cfg, wReduce, hReduce)
+		return cornerOffset(cfg, reserved)
 	}
 }
 
-func cornerOffset(cfg *Config, wReduce, hReduce float64) (dx, dy float64) {
+func cornerOffset(cfg *Config, reserved geometry.Size) (dx, dy float64) {
 	isTop := cfg.Position == model.LegendPositionTopLeft || cfg.Position == model.LegendPositionTopRight
 	isLeft := cfg.Position == model.LegendPositionTopLeft || cfg.Position == model.LegendPositionBottomLeft
 
 	if cfg.Orientation == model.LegendOrientationVertical {
 		if isLeft {
-			return wReduce, 0
+			return reserved.Width, 0
 		}
 
 		return 0, 0
 	}
 
 	if isTop {
-		return 0, hReduce
+		return 0, reserved.Height
 	}
 
 	return 0, 0

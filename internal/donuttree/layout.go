@@ -9,12 +9,14 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
+const donutRingWidthRatio = 0.9
+
 // Layout builds a concentric directory-sector layout. The root is represented
 // by the central anchor, while its directories begin in the first annular ring.
 func Layout(root *model.Directory, canvasSize int, sizeMetric metric.Name) LayoutResult {
 	center := float64(canvasSize) / 2
 	result := LayoutResult{
-		Center: geometry.Point{X: center, Y: center},
+		Center: geometry.NewPoint(center, center),
 	}
 
 	if root == nil {
@@ -51,7 +53,7 @@ func layoutChildren(
 	minimum := math.Min(math.Pi/180, sweepAngle/float64(len(dirs)))
 	remaining := sweepAngle - minimum*float64(len(dirs))
 	innerRadius := float64(depth) * ringWidth
-	outerRadius := innerRadius + ringWidth
+	outerRadius := innerRadius + ringWidth*donutRingWidthRatio
 	children := make([]DonutNode, 0, len(dirs))
 	childStart := startAngle
 

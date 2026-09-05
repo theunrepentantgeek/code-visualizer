@@ -52,15 +52,16 @@ func (s *svgBackend) writeHeader() {
 }
 
 func (s *svgBackend) DrawRectangle(
-	pos geometry.Point, size model.Size, fill, border model.Fill, borderWidth float64,
+	bounds geometry.Rect, fill, border model.Fill, borderWidth float64,
 ) {
 	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)
+	size := bounds.Size()
 
 	fmt.Fprintf(
 		&s.buf,
 		`<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="%s" stroke="%s" stroke-width="%.3f"/>`+"\n",
-		pos.X, pos.Y, size.Width, size.Height,
+		bounds.Min.X, bounds.Min.Y, size.Width, size.Height,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
 }
@@ -72,13 +73,12 @@ func (s *svgBackend) DrawRectangle(
 func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 	centerCSS := s.colourCSS(grad.Center)
 	edgeCSS := s.colourCSS(grad.Edge)
-	focusPercentX := grad.Focus.X * 100
-	focusPercentY := grad.Focus.Y * 100
+	focus := geometry.NewPoint(grad.Focus.X*100, grad.Focus.Y*100)
 
 	key := fmt.Sprintf(
 		"%s|%s|%.3f|%.3f",
 		centerCSS, edgeCSS,
-		focusPercentX, focusPercentY,
+		focus.X, focus.Y,
 	)
 
 	if urlRef, ok := s.gradCache[key]; ok {
@@ -97,7 +97,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 			`<stop offset="100%%" stop-color="%s"/>`+
 			`</radialGradient></defs>`+"\n",
 		id,
-		focusPercentX, focusPercentY,
+		focus.X, focus.Y,
 		centerCSS, edgeCSS,
 	)
 
@@ -107,7 +107,7 @@ func (s *svgBackend) emitRadialGradient(grad model.RadialGradientFill) string {
 }
 
 func (s *svgBackend) DrawDisc(
-	center geometry.Point, radius float64, fill, border model.Fill, borderWidth float64,
+	circle geometry.Circle, fill, border model.Fill, borderWidth float64,
 ) {
 	fillAttr := s.svgFillAttr(fill)
 	borderColour := model.SolidColor(border)
@@ -115,7 +115,7 @@ func (s *svgBackend) DrawDisc(
 	fmt.Fprintf(
 		&s.buf,
 		`<circle cx="%.3f" cy="%.3f" r="%.3f" fill="%s" stroke="%s" stroke-width="%.3f"/>`+"\n",
-		center.X, center.Y, radius,
+		circle.Center.X, circle.Center.Y, circle.Radius,
 		fillAttr, s.colourCSS(borderColour), borderWidth,
 	)
 }

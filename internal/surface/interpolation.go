@@ -3,8 +3,6 @@ package surface
 import (
 	"math"
 	"slices"
-
-	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
 const (
@@ -17,14 +15,14 @@ type interpolationModel struct {
 	radius       float64
 }
 
-// Interpolate estimates a point's value from observed samples with compact support.
-func Interpolate(point geometry.Point, originals []Sample) float64 {
+// Interpolate estimates a sample's value from observed samples with compact support.
+func Interpolate(sample Sample, originals []Sample) float64 {
 	model, ok := newInterpolationModel(originals)
 	if !ok {
 		return 0
 	}
 
-	value, ok := model.interpolate(point)
+	value, ok := model.interpolate(sample)
 	if !ok {
 		return 0
 	}
@@ -33,7 +31,7 @@ func Interpolate(point geometry.Point, originals []Sample) float64 {
 }
 
 func newInterpolationModel(originals []Sample) (interpolationModel, bool) {
-	observations := observedSamples(originals)
+	observations := observedPoints(originals)
 	if len(observations) == 0 {
 		return interpolationModel{}, false
 	}
@@ -104,21 +102,21 @@ func smootherstepWeight(t float64) float64 {
 	return 1 - t*t*t*(t*(6*t-15)+10)
 }
 
-func (model interpolationModel) interpolate(point geometry.Point) (float64, bool) {
-	if !point.Valid() || !isFinite(model.radius) || model.radius <= 0 {
+func (model interpolationModel) interpolate(sample Sample) (float64, bool) {
+	if !isFiniteSample(sample) || !isFinite(model.radius) || model.radius <= 0 {
 		return 0, false
 	}
 
-	if value, found := observedValueAt(point, model.observations); found {
+	if value, found := observedValueAt(sample, model.observations); found {
 		return value, true
 	}
 
-	return model.weightedValue(point)
+	return model.weightedValue(sample)
 }
 
-func observedValueAt(point geometry.Point, observations []Sample) (float64, bool) {
+func observedValueAt(sample Sample, observations []Sample) (float64, bool) {
 	for _, observation := range observations {
-		if point == observation.Position {
+		if sample.Position == observation.Position {
 			return observation.Value, true
 		}
 	}
@@ -126,14 +124,14 @@ func observedValueAt(point geometry.Point, observations []Sample) (float64, bool
 	return 0, false
 }
 
-func (model interpolationModel) weightedValue(point geometry.Point) (float64, bool) {
+func (model interpolationModel) weightedValue(sample Sample) (float64, bool) {
 	var (
 		weightedValue float64
 		totalWeight   float64
 	)
 
 	for _, observation := range model.observations {
-		distance := point.DistanceTo(observation.Position)
+		distance := sample.Position.DistanceTo(observation.Position)
 		if !isFinite(distance) {
 			continue
 		}
@@ -160,7 +158,7 @@ func (model interpolationModel) weightedValue(point geometry.Point) (float64, bo
 }
 
 func (model interpolationModel) assign(sample Sample) Sample {
-	value, supported := model.interpolate(sample.Position)
+	value, supported := model.interpolate(sample)
 	sample.Value = value
 	sample.unsupported = !supported
 

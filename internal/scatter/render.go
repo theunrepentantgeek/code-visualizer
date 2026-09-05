@@ -39,10 +39,9 @@ func addScatterBackground(cv *canvas.Canvas, width, height int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:  bgSpec,
-		W:     float64(width),
-		H:     float64(height),
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -52,7 +51,7 @@ func addScatterStructure(cv *canvas.Canvas, layout ScatterLayout) {
 	addScatterAxisLabels(cv, layout)
 }
 
-func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
+func addScatterPlotBorder(cv *canvas.Canvas, plot geometry.Rect) {
 	plotSpec := &canvas.RectangleSpec{
 		ShapeStyle: canvas.ShapeStyle{
 			Fill:        inks.FixedInk(scatterBgColour),
@@ -62,12 +61,9 @@ func addScatterPlotBorder(cv *canvas.Canvas, plot PlotRect) {
 	}
 
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
-		Spec:  plotSpec,
-		X:     plot.X,
-		Y:     plot.Y,
-		W:     plot.W,
-		H:     plot.H,
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   plotSpec,
+		Bounds: plot,
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -76,16 +72,16 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
-			From: geometry.Point{X: tick.Position, Y: layout.Plot.Y},
-			To:   geometry.Point{X: tick.Position, Y: layout.Plot.Y + layout.Plot.H},
+			From: geometry.NewPoint(tick.Position, layout.Plot.Min.Y),
+			To:   geometry.NewPoint(tick.Position, layout.Plot.Max.Y),
 		})
 	}
 
 	for _, tick := range layout.YAxis.NumericTicks() {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
-			From: geometry.Point{X: layout.Plot.X, Y: tick.Position},
-			To:   geometry.Point{X: layout.Plot.X + layout.Plot.W, Y: tick.Position},
+			From: geometry.NewPoint(layout.Plot.Min.X, tick.Position),
+			To:   geometry.NewPoint(layout.Plot.Max.X, tick.Position),
 		})
 	}
 
@@ -93,8 +89,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 	for _, band := range xBands {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
-			From: geometry.Point{X: band.Start, Y: layout.Plot.Y},
-			To:   geometry.Point{X: band.Start, Y: layout.Plot.Y + layout.Plot.H},
+			From: geometry.NewPoint(band.Start, layout.Plot.Min.Y),
+			To:   geometry.NewPoint(band.Start, layout.Plot.Max.Y),
 		})
 	}
 
@@ -102,8 +98,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 		last := xBands[len(xBands)-1]
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
-			From: geometry.Point{X: last.End, Y: layout.Plot.Y},
-			To:   geometry.Point{X: last.End, Y: layout.Plot.Y + layout.Plot.H},
+			From: geometry.NewPoint(last.End, layout.Plot.Min.Y),
+			To:   geometry.NewPoint(last.End, layout.Plot.Max.Y),
 		})
 	}
 
@@ -111,8 +107,8 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 	for _, band := range yBands {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
-			From: geometry.Point{X: layout.Plot.X, Y: band.Start},
-			To:   geometry.Point{X: layout.Plot.X + layout.Plot.W, Y: band.Start},
+			From: geometry.NewPoint(layout.Plot.Min.X, band.Start),
+			To:   geometry.NewPoint(layout.Plot.Max.X, band.Start),
 		})
 	}
 
@@ -120,27 +116,20 @@ func addScatterAxisGuides(cv *canvas.Canvas, layout ScatterLayout) {
 		last := yBands[len(yBands)-1]
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
-			From: geometry.Point{X: layout.Plot.X, Y: last.End},
-			To:   geometry.Point{X: layout.Plot.X + layout.Plot.W, Y: last.End},
+			From: geometry.NewPoint(layout.Plot.Min.X, last.End),
+			To:   geometry.NewPoint(layout.Plot.Max.X, last.End),
 		})
 	}
 }
 
 func addScatterAxisLabels(cv *canvas.Canvas, layout ScatterLayout) {
 	labelInk := inks.FixedInk(scatterLabelColour)
-	addScatterAxisTitles(cv, layout, labelInk)
-	addScatterTickLabels(cv, layout, labelInk)
-}
 
-func addScatterAxisTitles(cv *canvas.Canvas, layout ScatterLayout, labelInk inks.Ink) {
 	titleSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 12, Anchor: canvas.AnchorMiddle}
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec: titleSpec,
-		Position: geometry.Point{
-			X: layout.Plot.X + layout.Plot.W/2,
-			Y: layout.Plot.Y + layout.Plot.H + 56,
-		},
-		Content: layout.XAxis.Title,
+		Spec:     titleSpec,
+		Position: geometry.NewPoint(layout.Plot.Center().X, layout.Plot.Max.Y+56),
+		Content:  layout.XAxis.Title,
 	})
 
 	yTitleSpec := &canvas.TextSpec{
@@ -150,59 +139,42 @@ func addScatterAxisTitles(cv *canvas.Canvas, layout ScatterLayout, labelInk inks
 		Rotation: -math.Pi / 2,
 	}
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
-		Spec: yTitleSpec,
-		Position: geometry.Point{
-			X: layout.Plot.X - 72,
-			Y: layout.Plot.Y + layout.Plot.H/2,
-		},
-		Content: layout.YAxis.Title,
+		Spec:     yTitleSpec,
+		Position: geometry.NewPoint(layout.Plot.Min.X-72, layout.Plot.Center().Y),
+		Content:  layout.YAxis.Title,
 	})
-}
 
-func addScatterTickLabels(cv *canvas.Canvas, layout ScatterLayout, labelInk inks.Ink) {
 	tickSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 10, Anchor: canvas.AnchorMiddle}
 	for _, tick := range layout.XAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec: tickSpec,
-			Position: geometry.Point{
-				X: tick.Position,
-				Y: layout.Plot.Y + layout.Plot.H + 18,
-			},
-			Content: tick.Label,
+			Spec:     tickSpec,
+			Position: geometry.NewPoint(tick.Position, layout.Plot.Max.Y+18),
+			Content:  tick.Label,
 		})
 	}
 
 	for _, band := range layout.XAxis.CategoricalBands() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec: tickSpec,
-			Position: geometry.Point{
-				X: band.Center,
-				Y: layout.Plot.Y + layout.Plot.H + 18,
-			},
-			Content: band.Label,
+			Spec:     tickSpec,
+			Position: geometry.NewPoint(band.Center, layout.Plot.Max.Y+18),
+			Content:  band.Label,
 		})
 	}
 
 	yTickSpec := &canvas.TextSpec{Ink: labelInk, FontSize: 10, Anchor: canvas.AnchorEnd}
 	for _, tick := range layout.YAxis.NumericTicks() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec: yTickSpec,
-			Position: geometry.Point{
-				X: layout.Plot.X - 8,
-				Y: tick.Position,
-			},
-			Content: tick.Label,
+			Spec:     yTickSpec,
+			Position: geometry.NewPoint(layout.Plot.Min.X-8, tick.Position),
+			Content:  tick.Label,
 		})
 	}
 
 	for _, band := range layout.YAxis.CategoricalBands() {
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
-			Spec: yTickSpec,
-			Position: geometry.Point{
-				X: layout.Plot.X - 8,
-				Y: band.Center,
-			},
-			Content: band.Label,
+			Spec:     yTickSpec,
+			Position: geometry.NewPoint(layout.Plot.Min.X-8, band.Center),
+			Content:  band.Label,
 		})
 	}
 }
@@ -227,15 +199,13 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 		fillValue := metricValueForPoint(point, is.Fill)
 		borderValue := metricValueForPoint(point, is.Border)
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   discSpec,
-			X:      point.Position.X,
-			Y:      point.Position.Y,
-			Radius: point.Radius,
-			Fill:   fillValue,
-			Border: borderValue,
+			Spec:     discSpec,
+			Geometry: point.Geometry,
+			Fill:     fillValue,
+			Border:   borderValue,
 		})
 
-		label, fontSize := scatterLabel(point.Label, point.Radius)
+		label, fontSize := scatterLabel(point.Label, point.Geometry.Radius)
 		labelColour := canvas.TextColourFor(is.Fill.Dip(fillValue))
 
 		var labelInk inks.Ink
@@ -252,7 +222,7 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 		}
 		cv.AddText(canvas.LayerOverlay, canvas.Text{
 			Spec:     labelSpec,
-			Position: point.Position,
+			Position: point.Geometry.Center,
 			Content:  label,
 		})
 	}

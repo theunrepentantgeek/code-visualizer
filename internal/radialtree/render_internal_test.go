@@ -273,9 +273,8 @@ func TestCollectRadialDiscs_SortOrder(t *testing.T) {
 
 	nodes := Layout(root, 800, filesystem.FileSize, "", LabelNone, GrainFile)
 
-	cx := float64(800) / 2.0
-	cy := float64(800) / 2.0
-	entries := collectDiscs(&nodes, root, cx, cy)
+	center := geometry.Point{X: float64(800) / 2.0, Y: float64(800) / 2.0}
+	entries := collectDiscs(&nodes, root, center)
 
 	g.Expect(len(entries)).To(BeNumerically(">=", 2))
 
@@ -356,7 +355,7 @@ func TestCollectDiscsLeaf_ZeroRadius_ReturnsEmpty(t *testing.T) {
 	node := &RadialNode{Position: geometry.Vector{X: 0, Y: 0}, DiscRadius: 0}
 	file := radialTestFile("small.go", "go", 10)
 
-	entries := collectDiscsLeaf(node, file, 400, 400)
+	entries := collectDiscsLeaf(node, file, geometry.Point{X: 400, Y: 400})
 
 	g.Expect(entries).To(BeEmpty())
 }
@@ -368,7 +367,20 @@ func TestCollectDiscsLeaf_NegativeRadius_ReturnsEmpty(t *testing.T) {
 	node := &RadialNode{Position: geometry.Vector{X: 0, Y: 0}, DiscRadius: -5}
 	file := radialTestFile("neg.go", "go", 10)
 
-	entries := collectDiscsLeaf(node, file, 400, 400)
+	entries := collectDiscsLeaf(node, file, geometry.Point{X: 400, Y: 400})
 
 	g.Expect(entries).To(BeEmpty())
+}
+
+func TestCollectDiscsLeaf_TranslatesPositionFromCenter(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	node := &RadialNode{Position: geometry.Vector{X: 25, Y: -15}, DiscRadius: 5}
+	file := radialTestFile("positioned.go", "go", 10)
+
+	entries := collectDiscsLeaf(node, file, geometry.Point{X: 400, Y: 300})
+
+	g.Expect(entries).To(HaveLen(1))
+	g.Expect(entries[0].position).To(Equal(geometry.Point{X: 425, Y: 285}))
 }

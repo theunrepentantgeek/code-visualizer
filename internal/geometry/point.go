@@ -7,13 +7,22 @@ type Point struct {
 	Y float64
 }
 
+// OriginPoint is the point at (0, 0). It's a var, not a const, because Go
+// structs cannot be declared const.
+var OriginPoint = Point{}
+
+// NewPoint constructs a Point from Cartesian coordinates.
+func NewPoint(x, y float64) Point {
+	return Point{X: x, Y: y}
+}
+
 func (p Point) Valid() bool {
 	return !math.IsNaN(p.X) && !math.IsInf(p.X, 0) &&
 		!math.IsNaN(p.Y) && !math.IsInf(p.Y, 0)
 }
 
-func (p Point) Translate(v Vector) Point {
-	return Point{X: p.X + v.X, Y: p.Y + v.Y}
+func (p Point) Translate(vector Vector) Point {
+	return Point{X: p.X + vector.X, Y: p.Y + vector.Y}
 }
 
 func (p Point) VectorTo(other Point) Vector {
@@ -41,5 +50,16 @@ func Midpoint(a, b Point) Point {
 }
 
 func Lerp(a, b Point, fraction float64) Point {
-	return a.Translate(a.VectorTo(b).Scale(fraction))
+	if fraction == 0 {
+		return a
+	}
+
+	if fraction == 1 {
+		return b
+	}
+
+	return Point{
+		X: (1-fraction)*a.X + fraction*b.X,
+		Y: (1-fraction)*a.Y + fraction*b.Y,
+	}
 }

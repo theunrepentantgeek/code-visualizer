@@ -74,23 +74,23 @@ func BuildLegendStage(c *stages.CommonState, b *State) error {
 // offsets the result into the remaining canvas area.
 func LayoutStage(c *stages.CommonState, b *State) error {
 	bounds := c.DrawingBounds
-	availH := bounds.Height()
+	availH := int(bounds.Height())
 	layoutW, layoutH := legend.ReserveAndLayout(b.LegendConfig, c.Width, availH)
 
 	b.Nodes = Layout(c.Root, layoutW, layoutH, b.Size, b.Labels)
 
-	dx, dy := float64(0), float64(bounds.MinY)
+	dx, dy := float64(0), bounds.Min.Y
 
 	if layoutW < c.Width || layoutH < availH {
 		if b.LegendConfig != nil {
-			wReduce, hReduce := b.LegendConfig.ReserveSpace()
-			ldx, ldy := legend.LayoutOffset(b.LegendConfig, wReduce, hReduce)
+			reserved := b.LegendConfig.ReserveSpace()
+			ldx, ldy := legend.LayoutOffset(b.LegendConfig, reserved)
 			dx += ldx
 			dy += ldy
 		}
 	}
 
-	OffsetNodes(&b.Nodes, geometry.Vector{X: dx, Y: dy})
+	OffsetNodes(&b.Nodes, geometry.NewVector(dx, dy))
 
 	return nil
 }

@@ -77,6 +77,8 @@ func TestRenderDonutPipeline_WritesDecodablePNGAndSVG(t *testing.T) {
 
 				if decoded == nil {
 					t.Fatal("decoded PNG is nil")
+
+					return
 				}
 
 				g.Expect(decoded.Bounds().Dx()).To(Equal(360))
@@ -103,8 +105,8 @@ func TestRenderDonutPipeline_PreservesNonSquareDimensionsAfterReservations(t *te
 	output := filepath.Join(t.TempDir(), "donut.png")
 
 	common := renderDonutPipeline(t, output, width, height)
-	g.Expect(common.DrawingBounds.MinY).To(Equal(int(canvas.TitleReservedHeight)))
-	g.Expect(common.DrawingBounds.MaxY).To(Equal(height - int(canvas.FooterReservedHeight)))
+	g.Expect(common.DrawingBounds.Min.Y).To(Equal(canvas.TitleReservedHeight))
+	g.Expect(common.DrawingBounds.Max.Y).To(Equal(float64(height) - canvas.FooterReservedHeight))
 
 	file, err := os.Open(output)
 	g.Expect(err).NotTo(HaveOccurred())

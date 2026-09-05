@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -53,10 +54,9 @@ func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:  bgSpec,
-		W:     float64(width),
-		H:     float64(height),
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -75,7 +75,7 @@ func addBubbleDirDiscs(
 	entries := collectBubbleDirEntries(dirIndex, root)
 
 	slices.SortFunc(entries, func(a, b bubbleDirEntry) int {
-		return cmp.Compare(b.node.Radius, a.node.Radius)
+		return cmp.Compare(b.node.Geometry.Radius, a.node.Geometry.Radius)
 	})
 
 	dirFill := inks.FixedInk(bubbleDefaultDirFill, inks.WithOpacity(bubbleDirOpacity))
@@ -91,10 +91,11 @@ func addBubbleDirDiscs(
 
 	for _, e := range entries {
 		cv.AddDisc(canvas.LayerStructure, canvas.Disc{
-			Spec:   dirSpec,
-			X:      e.node.Position.X,
-			Y:      e.node.Position.Y,
-			Radius: bubbleDirDiscRadius(*e.node),
+			Spec: dirSpec,
+			Geometry: geometry.NewCircle(
+				e.node.Geometry.Center,
+				bubbleDirDiscRadius(*e.node),
+			),
 		})
 	}
 }
@@ -108,7 +109,7 @@ func collectBubbleDirEntries(
 	var entries []bubbleDirEntry
 
 	for _, d := range dir.Dirs {
-		if bn, ok := dirIndex[d.Path]; ok && bn.Radius > 0 {
+		if bn, ok := dirIndex[d.Path]; ok && bn.Geometry.Radius > 0 {
 			entries = append(entries, bubbleDirEntry{node: bn})
 			entries = append(entries, collectBubbleDirEntries(dirIndex, d)...)
 		}
@@ -149,7 +150,7 @@ func addBubbleFileDiscsWalk(
 
 	for _, f := range dir.Files {
 		bn, ok := fileIndex[f.Path]
-		if !ok || bn.Radius <= 0 {
+		if !ok || bn.Geometry.Radius <= 0 {
 			continue
 		}
 
@@ -157,12 +158,10 @@ func addBubbleFileDiscsWalk(
 		borderMV := inks.MetricValueForFile(f, is.Border)
 
 		cv.AddDisc(canvas.LayerContent, canvas.Disc{
-			Spec:   fileSpec,
-			X:      bn.Position.X,
-			Y:      bn.Position.Y,
-			Radius: bn.Radius,
-			Fill:   fillMV,
-			Border: borderMV,
+			Spec:     fileSpec,
+			Geometry: bn.Geometry,
+			Fill:     fillMV,
+			Border:   borderMV,
 		})
 	}
 
@@ -204,10 +203,10 @@ func addBubbleLabelsInner(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink,
 
 func bubbleDirDiscRadius(node BubbleNode) float64 {
 	if node.IsDirectory && node.ShowLabel {
-		return max(0.0, node.Radius-LabelReservation)
+		return max(0.0, node.Geometry.Radius-LabelReservation)
 	}
 
-	return node.Radius
+	return node.Geometry.Radius
 }
 
 func bubbleDirLabelRadius(node BubbleNode, fontSize float64) float64 {
@@ -237,7 +236,7 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 
 	cv.AddArcText(canvas.LayerOverlay, canvas.ArcText{
 		Spec:     arcSpec,
-		Position: node.Position,
+		Position: node.Geometry.Center,
 		Radius:   bubbleDirLabelRadius(node, fontSize),
 		Text:     node.Label,
 	})
@@ -247,7 +246,7 @@ func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 func addBubbleFileLabel(cv *canvas.Canvas, node BubbleNode, spec *canvas.TextSpec) {
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     spec,
-		Position: node.Position,
+		Position: node.Geometry.Center,
 		Content:  node.Label,
 	})
 }

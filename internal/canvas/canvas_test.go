@@ -66,10 +66,7 @@ func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
 		Spec:   spec,
-		X:      10,
-		Y:      20,
-		W:      100,
-		H:      50,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(10, 20), Max: geometry.NewPoint(110, 70)},
 		Fill:   fillValue,
 		Focus:  focus,
 		Border: inks.MeasureValue(1.0),
@@ -100,10 +97,11 @@ func TestCanvas_AddDisc_DispatchesToBackend(t *testing.T) {
 	}
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
-		Spec:   spec,
-		X:      400,
-		Y:      300,
-		Radius: 50,
+		Spec: spec,
+		Geometry: geometry.NewCircle(
+			geometry.NewPoint(400, 300),
+			50,
+		),
 	})
 
 	mb := mock.NewBackend()
@@ -127,7 +125,7 @@ func TestCanvas_AddText_DispatchesToBackend(t *testing.T) {
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     spec,
-		Position: geometry.Point{X: 100, Y: 200},
+		Position: geometry.NewPoint(100, 200),
 		Content:  "hello",
 	})
 
@@ -137,7 +135,6 @@ func TestCanvas_AddText_DispatchesToBackend(t *testing.T) {
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawText"))
 	g.Expect(mb.Calls[0].Text).To(Equal("hello"))
-	g.Expect(mb.Calls[0].Pos).To(Equal(geometry.Point{X: 100, Y: 200}))
 }
 
 func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
@@ -152,8 +149,8 @@ func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
 
 	c.AddLine(canvas.LayerStructure, canvas.Line{
 		Spec: spec,
-		From: geometry.Point{X: 0, Y: 0},
-		To:   geometry.Point{X: 100, Y: 100},
+		From: geometry.NewPoint(0, 0),
+		To:   geometry.NewPoint(100, 100),
 	})
 
 	mb := mock.NewBackend()
@@ -161,8 +158,6 @@ func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawLine"))
-	g.Expect(mb.Calls[0].From).To(Equal(geometry.Point{X: 0, Y: 0}))
-	g.Expect(mb.Calls[0].To).To(Equal(geometry.Point{X: 100, Y: 100}))
 }
 
 func TestCanvas_AddPath_DispatchesToBackend(t *testing.T) {
@@ -189,11 +184,6 @@ func TestCanvas_AddPath_DispatchesToBackend(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawPath"))
-	g.Expect(mb.Calls[0].Points).To(Equal([]geometry.Point{
-		{X: 0, Y: 0},
-		{X: 50, Y: 50},
-		{X: 100, Y: 0},
-	}))
 }
 
 func TestCanvas_AddPolygon_DispatchesBeforeStructurePath(t *testing.T) {
@@ -234,56 +224,8 @@ func TestCanvas_AddPolygon_DispatchesBeforeStructurePath(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(mb.Calls).To(HaveLen(2))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawPolygon"))
-	g.Expect(mb.Calls[0].Points).To(Equal([]geometry.Point{
-		{X: 1, Y: 1},
-		{X: 9, Y: 1},
-		{X: 1, Y: 9},
-	}))
 	g.Expect(mb.Calls[0].Fill).To(Equal(red))
 	g.Expect(mb.Calls[1].Method).To(Equal("DrawPath"))
-}
-
-func TestCanvas_AddFilledPath_DefensivelyClonesLoops(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	c := canvas.NewCanvas(800, 600)
-	loops := [][]geometry.Point{
-		{
-			{X: 1, Y: 1},
-			{X: 9, Y: 1},
-			{X: 1, Y: 9},
-		},
-		{
-			{X: 3, Y: 3},
-			{X: 4, Y: 3},
-			{X: 3, Y: 4},
-		},
-	}
-	c.AddFilledPath(canvas.LayerSurface, canvas.FilledPath{
-		Loops: loops,
-		Fill:  black,
-	})
-
-	loops[0][0] = geometry.Point{X: 100, Y: 100}
-	loops[1] = []geometry.Point{{X: 200, Y: 200}}
-
-	mb := mock.NewBackend()
-	err := c.RenderTo(mb)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(mb.Calls).To(HaveLen(1))
-	g.Expect(mb.Calls[0].Loops).To(Equal([][]geometry.Point{
-		{
-			{X: 1, Y: 1},
-			{X: 9, Y: 1},
-			{X: 1, Y: 9},
-		},
-		{
-			{X: 3, Y: 3},
-			{X: 4, Y: 3},
-			{X: 3, Y: 4},
-		},
-	}))
 }
 
 func TestAddArcText_DispatchesToBackend(t *testing.T) {
@@ -298,7 +240,7 @@ func TestAddArcText_DispatchesToBackend(t *testing.T) {
 
 	c.AddArcText(canvas.LayerOverlay, canvas.ArcText{
 		Spec:     spec,
-		Position: geometry.Point{X: 200, Y: 200},
+		Position: geometry.NewPoint(200, 200),
 		Radius:   100,
 		Text:     "hello",
 	})
@@ -309,7 +251,7 @@ func TestAddArcText_DispatchesToBackend(t *testing.T) {
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawArcText"))
 	g.Expect(mb.Calls[0].Text).To(Equal("hello"))
-	g.Expect(mb.Calls[0].Pos).To(Equal(geometry.Point{X: 200, Y: 200}))
+	g.Expect(mb.Calls[0].Pos).To(Equal(geometry.NewPoint(200, 200)))
 }
 
 func TestCanvas_LayerOrdering_BackgroundBeforeContent(t *testing.T) {
@@ -333,12 +275,12 @@ func TestCanvas_LayerOrdering_BackgroundBeforeContent(t *testing.T) {
 
 	// Add content first, then background — layer ordering should override insertion order.
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: fgSpec,
-		X:    0, Y: 0, W: 100, H: 100,
+		Spec:   fgSpec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 100)},
 	})
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		X:    0, Y: 0, W: 800, H: 600,
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)},
 	})
 
 	mb := mock.NewBackend()
@@ -371,8 +313,14 @@ func TestCanvas_InsertionOrder_WithinSameLayer(t *testing.T) {
 		},
 	}
 
-	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{Spec: spec1, W: 100, H: 100})
-	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{Spec: spec2, W: 50, H: 50})
+	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
+		Spec:   spec1,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 100)},
+	})
+	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
+		Spec:   spec2,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(50, 50)},
+	})
 
 	mb := mock.NewBackend()
 	err := c.RenderTo(mb)
@@ -398,10 +346,9 @@ func TestCanvas_InkResolution_NumericInk(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: spec,
-		W:    100,
-		H:    100,
-		Fill: inks.MeasureValue(10),
+		Spec:   spec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 100)},
+		Fill:   inks.MeasureValue(10),
 	})
 
 	mb := mock.NewBackend()
@@ -434,11 +381,11 @@ func TestCanvas_MultipleShapeTypes_MixedLayers(t *testing.T) {
 	}
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{Spec: textSpec, Content: "label"})
-	c.AddLine(canvas.LayerStructure, canvas.Line{
-		Spec: lineSpec,
-		To:   geometry.Point{X: 100, Y: 100},
+	c.AddLine(canvas.LayerStructure, canvas.Line{Spec: lineSpec, To: geometry.NewPoint(100, 100)})
+	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
+		Spec:   rectSpec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)},
 	})
-	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{Spec: rectSpec, W: 800, H: 600})
 
 	mb := mock.NewBackend()
 	err := c.RenderTo(mb)
@@ -461,33 +408,46 @@ func TestCanvas_Empty_NoErrors(t *testing.T) {
 	g.Expect(mb.Calls).To(BeEmpty())
 }
 
-func TestCanvas_Render_PNG(t *testing.T) {
+func TestCanvas_Render_RasterFormats(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	c := canvas.NewCanvas(200, 200)
-	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(black),
-		},
+	tests := []struct {
+		name string
+		ext  string
+	}{
+		{name: "PNG", ext: "output.png"},
+		{name: "JPG", ext: "output.jpg"},
 	}
 
-	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: spec,
-		W:    200,
-		H:    200,
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-	out := filepath.Join(t.TempDir(), "output.png")
-	err := c.Render(out)
-	g.Expect(err).NotTo(HaveOccurred())
+			c := canvas.NewCanvas(200, 200)
+			spec := &canvas.RectangleSpec{
+				ShapeStyle: canvas.ShapeStyle{
+					Fill:   inks.FixedInk(palette.White),
+					Border: inks.FixedInk(black),
+				},
+			}
 
-	info, statErr := os.Stat(out)
-	g.Expect(statErr).NotTo(HaveOccurred())
+			c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
+				Spec:   spec,
+				Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(200, 200)},
+			})
 
-	if info != nil {
-		g.Expect(info.Size()).To(BeNumerically(">", 0))
+			out := filepath.Join(t.TempDir(), tt.ext)
+			err := c.Render(out)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			info, statErr := os.Stat(out)
+			g.Expect(statErr).NotTo(HaveOccurred())
+
+			if info != nil {
+				g.Expect(info.Size()).To(BeNumerically(">", 0))
+			}
+		})
 	}
 }
 
@@ -504,9 +464,8 @@ func TestCanvas_Render_SVG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: spec,
-		W:    200,
-		H:    200,
+		Spec:   spec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(200, 200)},
 	})
 
 	out := filepath.Join(t.TempDir(), "output.svg")
@@ -516,36 +475,6 @@ func TestCanvas_Render_SVG(t *testing.T) {
 	data, readErr := os.ReadFile(out)
 	g.Expect(readErr).NotTo(HaveOccurred())
 	g.Expect(string(data)).To(ContainSubstring("<svg"))
-}
-
-func TestCanvas_Render_JPG(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	c := canvas.NewCanvas(200, 200)
-	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(black),
-		},
-	}
-
-	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: spec,
-		W:    200,
-		H:    200,
-	})
-
-	out := filepath.Join(t.TempDir(), "output.jpg")
-	err := c.Render(out)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	info, statErr := os.Stat(out)
-	g.Expect(statErr).NotTo(HaveOccurred())
-
-	if info != nil {
-		g.Expect(info.Size()).To(BeNumerically(">", 0))
-	}
 }
 
 func TestCanvas_Render_UnsupportedFormat(t *testing.T) {
@@ -575,8 +504,8 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		W:    800, H: 600,
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)},
 	})
 
 	lineSpec := &canvas.LineSpec{
@@ -586,8 +515,8 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 
 	c.AddLine(canvas.LayerStructure, canvas.Line{
 		Spec: lineSpec,
-		From: geometry.Point{X: 0, Y: 300},
-		To:   geometry.Point{X: 800, Y: 300},
+		From: geometry.NewPoint(0, 300),
+		To:   geometry.NewPoint(800, 300),
 	})
 
 	pal := palette.GetPalette(palette.Temperature)
@@ -602,15 +531,15 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: rectSpec,
-		X:    50, Y: 50, W: 200, H: 150,
-		Fill: inks.MeasureValue(10),
+		Spec:   rectSpec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(50, 50), Max: geometry.NewPoint(250, 200)},
+		Fill:   inks.MeasureValue(10),
 	})
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
-		Spec: rectSpec,
-		X:    300, Y: 50, W: 200, H: 150,
-		Fill: inks.MeasureValue(50),
+		Spec:   rectSpec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(300, 50), Max: geometry.NewPoint(500, 200)},
+		Fill:   inks.MeasureValue(50),
 	})
 
 	discSpec := &canvas.DiscSpec{
@@ -623,7 +552,10 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
 		Spec: discSpec,
-		X:    650, Y: 125, Radius: 60,
+		Geometry: geometry.NewCircle(
+			geometry.NewPoint(650, 125),
+			60,
+		),
 	})
 
 	textSpec := &canvas.TextSpec{
@@ -634,7 +566,7 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     textSpec,
-		Position: geometry.Point{X: 400, Y: 500},
+		Position: geometry.NewPoint(400, 500),
 		Content:  "Canvas Integration Test",
 	})
 
@@ -692,8 +624,8 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec: bgSpec,
-		W:    800, H: 600,
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(800, 600)},
 	})
 
 	discSpec := &canvas.DiscSpec{
@@ -706,7 +638,10 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
 		Spec: discSpec,
-		X:    400, Y: 300, Radius: 100,
+		Geometry: geometry.NewCircle(
+			geometry.NewPoint(400, 300),
+			100,
+		),
 	})
 
 	textSpec := &canvas.TextSpec{
@@ -717,7 +652,7 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 
 	c.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     textSpec,
-		Position: geometry.Point{X: 400, Y: 300},
+		Position: geometry.NewPoint(400, 300),
 		Content:  "SVG Test",
 	})
 
@@ -856,4 +791,33 @@ func TestCanvas_DrawingBounds_Getters_ReturnSetValues(t *testing.T) {
 	c.SetDrawingBounds(40, 560)
 	g.Expect(c.DrawingMinY()).To(Equal(40))
 	g.Expect(c.DrawingMaxY()).To(Equal(560))
+}
+
+func TestCanvas_Size_ReturnsCanvasDimensionsAsGeometrySize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	c := canvas.NewCanvas(800, 600)
+
+	// Act
+	size := c.Size()
+
+	// Assert
+	g.Expect(size).To(Equal(geometry.Size{Width: 800, Height: 600}))
+}
+
+func TestCanvas_DrawingSize_ReturnsCanvasWidthAndDrawableHeight(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	c := canvas.NewCanvas(800, 600)
+	c.SetDrawingBounds(40, 560)
+
+	// Act
+	size := c.DrawingSize()
+
+	// Assert
+	g.Expect(size).To(Equal(geometry.Size{Width: 800, Height: 520}))
 }

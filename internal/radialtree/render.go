@@ -31,7 +31,7 @@ func RenderToCanvas(
 	is Inks,
 ) *canvas.Canvas {
 	cv := canvas.NewCanvas(canvasWidth, canvasHeight)
-	center := geometry.Point{X: cx, Y: cy}
+	center := geometry.NewPoint(cx, cy)
 
 	addBackground(cv, canvasWidth, canvasHeight)
 	addEdges(cv, *nodes, center)
@@ -52,10 +52,9 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:  bgSpec,
-		W:     float64(canvasWidth),
-		H:     float64(canvasHeight),
-		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec:   bgSpec,
+		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(canvasWidth), float64(canvasHeight))},
+		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -70,12 +69,7 @@ func addEdges(cv *canvas.Canvas, node RadialNode, center geometry.Point) {
 
 // addEdgesInner is the recursive worker for addEdges. It accepts a pre-allocated
 // edgeSpec so the single allocation is not repeated for every node in the tree.
-func addEdgesInner(
-	cv *canvas.Canvas,
-	node RadialNode,
-	center geometry.Point,
-	edgeSpec *canvas.LineSpec,
-) {
+func addEdgesInner(cv *canvas.Canvas, node RadialNode, center geometry.Point, edgeSpec *canvas.LineSpec) {
 	position := center.Translate(node.Position)
 
 	for _, child := range node.Children {
@@ -100,19 +94,10 @@ type discEntry struct {
 	isDir     bool
 }
 
-// collectDiscs preserves the scalar helper contract used by internal tests.
-func collectDiscs(
-	node *RadialNode,
-	dir *model.Directory,
-	cx, cy float64,
-) []discEntry {
-	return collectDiscsFromCenter(node, dir, geometry.Point{X: cx, Y: cy})
-}
-
-// collectDiscsFromCenter recursively gathers all nodes with a positive DiscRadius,
+// collectDiscs recursively gathers all nodes with a positive DiscRadius,
 // along with their corresponding model.File (nil for directories).
 // INVARIANT: node.Children are ordered files-first, then subdirectories.
-func collectDiscsFromCenter(
+func collectDiscs(
 	node *RadialNode,
 	dir *model.Directory,
 	center geometry.Point,
@@ -120,9 +105,10 @@ func collectDiscsFromCenter(
 	entries := make([]discEntry, 0)
 
 	if node.DiscRadius > 0 {
+		position := center.Translate(node.Position)
 		entries = append(entries, discEntry{
 			node:      *node,
-			position:  center.Translate(node.Position),
+			position:  position,
 			isDir:     node.IsDirectory,
 			directory: dir,
 		})
@@ -134,10 +120,10 @@ func collectDiscsFromCenter(
 	for i := range node.Children {
 		child := &node.Children[i]
 		if child.IsDirectory && dirIdx < len(dir.Dirs) {
-			entries = append(entries, collectDiscsFromCenter(child, dir.Dirs[dirIdx], center)...)
+			entries = append(entries, collectDiscs(child, dir.Dirs[dirIdx], center)...)
 			dirIdx++
 		} else if !child.IsDirectory && fileIdx < len(dir.Files) {
-			childEntries := collectDiscsLeafFromCenter(child, dir.Files[fileIdx], center)
+			childEntries := collectDiscsLeaf(child, dir.Files[fileIdx], center)
 			entries = append(entries, childEntries...)
 			fileIdx++
 		}
@@ -146,17 +132,8 @@ func collectDiscsFromCenter(
 	return entries
 }
 
-// collectDiscsLeaf preserves the scalar helper contract for existing callers.
+// collectDiscsLeaf collects a single file node (leaf).
 func collectDiscsLeaf(
-	node *RadialNode,
-	file *model.File,
-	cx, cy float64,
-) []discEntry {
-	return collectDiscsLeafFromCenter(node, file, geometry.Point{X: cx, Y: cy})
-}
-
-// collectDiscsLeafFromCenter collects a single file node (leaf).
-func collectDiscsLeafFromCenter(
 	node *RadialNode,
 	file *model.File,
 	center geometry.Point,
@@ -165,10 +142,12 @@ func collectDiscsLeafFromCenter(
 		return make([]discEntry, 0)
 	}
 
+	position := center.Translate(node.Position)
+
 	return []discEntry{{
 		node:     *node,
 		file:     file,
-		position: center.Translate(node.Position),
+		position: position,
 	}}
 }
 
@@ -181,7 +160,7 @@ func addDiscs(
 	center geometry.Point,
 	is Inks,
 ) {
-	entries := collectDiscsFromCenter(nodes, root, center)
+	entries := collectDiscs(nodes, root, center)
 
 	slices.SortFunc(entries, func(a, b discEntry) int {
 		return cmp.Compare(b.node.DiscRadius, a.node.DiscRadius)
@@ -221,10 +200,12 @@ func addDisc(cv *canvas.Canvas, e discEntry, is Inks, fileSpec, dirSpec *canvas.
 	}
 
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{
-		Spec:   spec,
-		X:      e.position.X,
-		Y:      e.position.Y,
-		Radius: e.node.DiscRadius,
+		Spec: spec,
+		Geometry: geometry.NewCircle(
+			e.position,
+			e.node.DiscRadius,
+		),
+
 		Angle:  e.node.Angle,
 		Fill:   fillMV,
 		Border: borderMV,
@@ -324,6 +305,7 @@ func addRootLabel(
 		Anchor:   canvas.AnchorMiddle,
 		FontSize: 0,
 	}
+
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     labelSpec,
 		Position: center.Translate(node.Position),
@@ -345,10 +327,10 @@ func addExternalLabel(
 ) {
 	dist := node.Position.Length()
 	labelRadius := dist + node.DiscRadius + labelGap
-	position := center.Translate(geometry.Vector{
-		X: labelRadius * math.Cos(node.Angle),
-		Y: labelRadius * math.Sin(node.Angle),
-	})
+	labelDisplacement := geometry.NewVector(
+		labelRadius*math.Cos(node.Angle),
+		labelRadius*math.Sin(node.Angle),
+	)
 
 	angle := math.Mod(orientAngle, 2*math.Pi)
 	if angle < 0 {
@@ -376,7 +358,7 @@ func addExternalLabel(
 
 	cv.AddText(canvas.LayerOverlay, canvas.Text{
 		Spec:     labelSpec,
-		Position: position,
+		Position: center.Translate(labelDisplacement),
 		Content:  node.Label,
 	})
 }

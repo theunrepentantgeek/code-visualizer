@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -163,22 +164,26 @@ func buildDiscLabels(
 	buckets = buckets[:count]
 
 	for i, node := range nodes {
-		if node.DiscRadius <= 0 {
+		if node.Geometry.Radius <= 0 {
 			continue
 		}
 
-		size := 2 * (node.DiscRadius - discLabelPadding)
+		size := 2 * (node.Geometry.Radius - discLabelPadding)
 		if size <= 0 {
 			continue
 		}
 
 		bucket := buckets[i]
 		fill := fillInk.Dip(metricValue(bucket.FillValue, bucket.FillLabel, fillInk))
+		position := node.Geometry.Center.Translate(geometry.Vector{
+			X: -node.Geometry.Radius,
+			Y: -node.Geometry.Radius,
+		}).Translate(geometry.Vector{
+			X: discLabelPadding,
+			Y: discLabelPadding,
+		})
 		labels = append(labels, canvas.BlockLabel{
-			X:            node.Position.X - node.DiscRadius + discLabelPadding,
-			Y:            node.Position.Y - node.DiscRadius + discLabelPadding,
-			W:            size,
-			H:            size,
+			Bounds:       geometry.RectFromPositionSize(position, geometry.Size{Width: size, Height: size}),
 			Lines:        buildDiscLabel(bucket, metrics),
 			Ink:          canvas.TextColourFor(fill),
 			PreserveText: true,

@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -98,39 +99,39 @@ func TestDrawingBoundsWidth_ReturnsMaxXMinusMinX(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	b := stages.DrawingBounds{MinX: 10, MinY: 0, MaxX: 90, MaxY: 0}
-	g.Expect(b.Width()).To(Equal(80))
+	b := geometry.Rect{Min: geometry.Point{X: 10}, Max: geometry.Point{X: 90}}
+	g.Expect(b.Width()).To(Equal(80.0))
 }
 
 func TestDrawingBoundsWidth_ZeroWidth_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	b := stages.DrawingBounds{MinX: 50, MaxX: 50}
-	g.Expect(b.Width()).To(Equal(0))
+	b := geometry.Rect{Min: geometry.Point{X: 50}, Max: geometry.Point{X: 50}}
+	g.Expect(b.Width()).To(Equal(0.0))
 }
 
 func TestDrawingBoundsHeight_ReturnsMaxYMinusMinY(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	b := stages.DrawingBounds{MinX: 0, MinY: 20, MaxX: 0, MaxY: 180}
-	g.Expect(b.Height()).To(Equal(160))
+	b := geometry.Rect{Min: geometry.Point{Y: 20}, Max: geometry.Point{Y: 180}}
+	g.Expect(b.Height()).To(Equal(160.0))
 }
 
 func TestDrawingBoundsHeight_ZeroHeight_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	b := stages.DrawingBounds{MinY: 100, MaxY: 100}
-	g.Expect(b.Height()).To(Equal(0))
+	b := geometry.Rect{Min: geometry.Point{Y: 100}, Max: geometry.Point{Y: 100}}
+	g.Expect(b.Height()).To(Equal(0.0))
 }
 
 func TestDrawingBounds_FullCanvas_WidthAndHeight(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	b := stages.DrawingBounds{MinX: 0, MinY: 0, MaxX: 1920, MaxY: 1080}
-	g.Expect(b.Width()).To(Equal(1920))
-	g.Expect(b.Height()).To(Equal(1080))
+	b := geometry.Rect{Max: geometry.NewPoint(1920, 1080)}
+	g.Expect(b.Width()).To(Equal(1920.0))
+	g.Expect(b.Height()).To(Equal(1080.0))
 }
