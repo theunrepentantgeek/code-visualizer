@@ -43,12 +43,13 @@ type Config struct {
 	//nolint:tagliatelle // kebab-case is the user-facing config key
 	DonutTree *DonutTree `yaml:"donut-tree,omitempty" json:"donut-tree,omitempty"`
 	//nolint:tagliatelle // kebab-case names are intentional for user-facing YAML/JSON keys, see issue #445
-	Bubbletree *Bubbletree   `yaml:"bubble-tree,omitempty" json:"bubble-tree,omitempty"`
-	Spiral     *Spiral       `yaml:"spiral,omitempty"      json:"spiral,omitempty"`
-	Scatter    *Scatter      `yaml:"scatter,omitempty"     json:"scatter,omitempty"`
-	Title      *Title        `yaml:"title,omitempty"       json:"title,omitempty"`
-	Footer     *Footer       `yaml:"footer,omitempty"      json:"footer,omitempty"`
-	FileFilter []filter.Rule `yaml:"fileFilter,omitempty"  json:"fileFilter,omitempty"`
+	Bubbletree  *Bubbletree   `yaml:"bubble-tree,omitempty" json:"bubble-tree,omitempty"`
+	Spiral      *Spiral       `yaml:"spiral,omitempty"      json:"spiral,omitempty"`
+	Scatter     *Scatter      `yaml:"scatter,omitempty"     json:"scatter,omitempty"`
+	Title       *Title        `yaml:"title,omitempty"       json:"title,omitempty"`
+	Footer      *Footer       `yaml:"footer,omitempty"      json:"footer,omitempty"`
+	FileFilter  []filter.Rule `yaml:"fileFilter,omitempty"  json:"fileFilter,omitempty"`
+	ChangedOnly *bool         `yaml:"changedOnly,omitempty" json:"changedOnly,omitempty"`
 
 	// SelectionMetrics holds user-defined, filename-glob-based classification metrics.
 	// The map key is the metric name; the value is an ordered list of match rules.
@@ -172,11 +173,12 @@ func (c *Config) TryAutoLoad(outputPath string) error {
 // visualization section populated.
 func (c *Config) ForExport(vizName string) *Config {
 	exported := &Config{
-		ImageSize:  c.ImageSize,
-		Legend:     c.Legend,
-		FileFilter: c.FileFilter,
-		Authorship: c.Authorship,
-		Source:     c.Source,
+		ImageSize:   c.ImageSize,
+		Legend:      c.Legend,
+		FileFilter:  c.FileFilter,
+		ChangedOnly: c.ChangedOnly,
+		Authorship:  c.Authorship,
+		Source:      c.Source,
 	}
 
 	switch vizName {
@@ -322,6 +324,19 @@ func (c *Config) OverrideWidth(v int) {
 func (c *Config) OverrideHeight(v int) {
 	c.ensureImageSize()
 	overrideInt(&c.ImageSize.Height, v)
+}
+
+// ChangedOnlyEnabled reports whether the scanned tree should be limited to
+// files modified in the selected Git range.
+func (c *Config) ChangedOnlyEnabled() bool {
+	return c != nil && c.ChangedOnly != nil && *c.ChangedOnly
+}
+
+// OverrideChangedOnly enables changed-only filtering when v is true.
+func (c *Config) OverrideChangedOnly(v bool) {
+	if v {
+		c.ChangedOnly = &v
+	}
 }
 
 // OverrideTitleText sets Title.Text to v if v is non-empty.

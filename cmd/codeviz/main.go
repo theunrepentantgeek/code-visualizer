@@ -60,6 +60,7 @@ func toStagesFlags(f *Flags) *stages.Flags {
 		ExportConfig: f.ExportConfig,
 		ExportData:   f.ExportData,
 		Config:       f.Config,
+		ChangedOnly:  f.Config.ChangedOnlyEnabled(),
 	}
 }
 

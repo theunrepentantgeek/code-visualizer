@@ -24,6 +24,7 @@ type Flags struct {
 	ExportData   string
 	Config       *config.Config
 	HistoryRange git.HistoryRange
+	ChangedOnly  bool
 }
 
 // CommonState contains fields used by shared stages. Each viz pipeline

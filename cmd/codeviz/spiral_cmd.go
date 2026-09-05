@@ -13,10 +13,11 @@ import (
 )
 
 type SpiralCmd struct {
-	TargetPath string `arg:"" help:"Path to directory to scan."`
-	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
-	From       string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
-	Until      string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	TargetPath  string `arg:"" help:"Path to directory to scan."`
+	Output      string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
+	From        string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
+	Until       string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	ChangedOnly bool   `help:"Show only files modified in the selected Git range." name:"changed-only" optional:""`
 
 	Resolution string `short:"r" help:"Time resolution (hourly or daily)." enum:",hourly,daily" default:""`
 
@@ -165,6 +166,7 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.OverrideTitleText(c.Title)
 	cfg.OverrideFooterText(c.Footer)
 	cfg.OverrideHideFooter(c.HideFooter)
+	cfg.OverrideChangedOnly(c.ChangedOnly)
 
 	if cfg.Spiral == nil {
 		cfg.Spiral = &config.Spiral{}
