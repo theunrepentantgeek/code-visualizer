@@ -65,8 +65,12 @@ func TestBuildMetricProgressLogsCompletionAtTotal(t *testing.T) {
 	defer slog.SetDefault(oldDefault)
 
 	progress, stop := BuildMetricProgress(&Flags{}, 4)
-	for range 4 {
-		progress.OnFileProcessed("file-lines")
+	g.Expect(progress).NotTo(BeNil())
+
+	if progress != nil {
+		for range 4 {
+			progress.OnFileProcessed("file-lines")
+		}
 	}
 
 	stop()
@@ -87,8 +91,12 @@ func TestBuildMetricProgressOmitsCompletionBelowTotal(t *testing.T) {
 	defer slog.SetDefault(oldDefault)
 
 	progress, stop := BuildMetricProgress(&Flags{}, 4)
-	for range 3 {
-		progress.OnFileProcessed("file-lines")
+	g.Expect(progress).NotTo(BeNil())
+
+	if progress != nil {
+		for range 3 {
+			progress.OnFileProcessed("file-lines")
+		}
 	}
 
 	stop()
