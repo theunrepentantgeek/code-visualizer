@@ -51,6 +51,7 @@ func setupHistoryRepo(t *testing.T) string {
 
 	runAs("Alice", "alice@example.com", "git", "add", ".")
 	runAs("Alice", "alice@example.com", "git", "commit", "-m", "initial", "--date=2024-01-01T00:00:00+00:00")
+	runAs("Alice", "alice@example.com", "git", "tag", "v1.0")
 
 	_ = os.WriteFile(filepath.Join(dir, "b.go"), []byte("package b\n// edit\n"), 0o600)
 
@@ -210,6 +211,96 @@ func TestLoadGitHistory_PrewarmsRequestedGitMetricsForRunProviders(t *testing.T)
 	count, ok := bFile.Quantity(git.CommitCount)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(count).To(Equal(int64(2)))
+}
+
+func TestLoadGitHistory_PropagatesTagRangeToHistoryAndMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.Flags.HistoryRange = git.HistoryRange{FromTag: "v1.0"}
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
+
+	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(state.GitHistory).To(HaveLen(2))
+	g.Expect(RunProviders(state)).To(Succeed())
+
+	var bFile *model.File
+
+	for _, file := range state.Root.Files {
+		if file.Name == "b.go" {
+			bFile = file
+		}
+	}
+
+	g.Expect(bFile).NotTo(BeNil())
+
+	if bFile == nil {
+		t.Fatal("expected b.go in file tree")
+	}
+
+	count, ok := bFile.Quantity(git.CommitCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(1)))
+}
+
+func TestRunProviders_AppliesTagRangeWithoutTimelineStage(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.Flags.HistoryRange = git.HistoryRange{FromTag: "v1.0"}
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
+
+	g.Expect(RunProviders(state)).To(Succeed())
+
+	var bFile *model.File
+
+	for _, file := range state.Root.Files {
+		if file.Name == "b.go" {
+			bFile = file
+		}
+	}
+
+	g.Expect(bFile).NotTo(BeNil())
+
+	if bFile == nil {
+		t.Fatal("expected b.go in file tree")
+	}
+
+	count, ok := bFile.Quantity(git.CommitCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(1)))
+}
+
+func TestRunProviders_AppliesTagRangeToAuthorshipMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RootConfig = config.New()
+	state.Flags.HistoryRange = git.HistoryRange{FromTag: "v1.0"}
+	state.Requested.BaseMetrics = []metric.Name{git.CodeOwnerMetric}
+
+	g.Expect(RunProviders(state)).To(Succeed())
+
+	var bFile *model.File
+
+	for _, file := range state.Root.Files {
+		if file.Name == "b.go" {
+			bFile = file
+		}
+	}
+
+	g.Expect(bFile).NotTo(BeNil())
+
+	if bFile == nil {
+		t.Fatal("expected b.go in file tree")
+	}
+
+	owner, ok := bFile.Classification(git.CodeOwnerMetric)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(owner).To(Equal("bob@example.com"))
 }
 
 func TestGroupGitHistoryByFile_PointsBackIntoGitHistory(t *testing.T) {

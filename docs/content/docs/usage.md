@@ -40,6 +40,33 @@ Each visualisation has its own reference page describing the flags it accepts:
 See [Shared concepts]({{< relref "/docs/shared-concepts" >}}) for the metric names, palettes, and
 the include and exclude filter rules that every command shares.
 
+## Git history constraints
+
+Every visualization command and `render` accepts the following Git history
+constraints:
+
+| Flag                 | Includes                                      |
+| -------------------- | --------------------------------------------- |
+| `--from YYYY-MM-DD`  | Commits authored on or after the date         |
+| `--until YYYY-MM-DD` | Commits authored through the end of the date  |
+| `--from-tag TAG`     | Commits strictly after the tag                |
+| `--until-tag TAG`    | The tagged commit and its reachable history   |
+
+`--from` and `--from-tag` are mutually exclusive, as are `--until` and
+`--until-tag`. Opposite date and tag bounds may be mixed:
+
+```sh
+codeviz tree-map . -o release.png -f commit-count \
+  --from-tag v1.0 --until-tag v2.0
+```
+
+Tag ranges follow the full Git commit graph. The lower tag must be an ancestor
+of the upper tag, or of `HEAD` when `--until-tag` is omitted. An upper tag may
+be outside the current `HEAD` history.
+
+These options constrain Git-derived metrics and timeline history. They do not
+remove unchanged files from the current checkout.
+
 ## Examples
 
 The examples below exercise the global flags. Each visualisation page carries

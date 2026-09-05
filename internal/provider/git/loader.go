@@ -77,6 +77,56 @@ func loadGitMetrics(root *model.Directory, requested []metric.Name, onFile func(
 	return s.loadGitMetrics(root, requested, onFile)
 }
 
+// LoadFileMetricsInHistoryRange applies file-level Git metrics from historyRange.
+func LoadFileMetricsInHistoryRange(
+	root *model.Directory,
+	requested []metric.Name,
+	historyRange HistoryRange,
+	onFile func(),
+) error {
+	s, err := getService(root.Path)
+	if err != nil {
+		return eris.Wrapf(err, "git loader requires a git repository")
+	}
+
+	requirements := newMetricRequirements(requested)
+	pathSet := buildRelPathSet(s, root)
+
+	commitTotal := int64(0)
+
+	if onFile != nil {
+		total, err := s.commitTotalInHistoryRange(historyRange)
+		if err != nil {
+			return eris.Wrap(err, "failed to count git commits")
+		}
+
+		commitTotal = total
+	}
+
+	progressCallbacks := newFileProgressCallbacks(onFile, int64(model.CountFiles(root)), commitTotal)
+
+	if _, err := s.bulkCommitHistoryAndPrewarmInHistoryRange(
+		pathSet,
+		requirements,
+		historyRange,
+		progressCallbacks.onPrewarm,
+	); err != nil {
+		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
+	}
+
+	s.applySelectedFileMetrics(root, requirements)
+
+	if err := s.requireGitHistory(pathSet); err != nil {
+		return err
+	}
+
+	if progressCallbacks.onFinish != nil {
+		progressCallbacks.onFinish()
+	}
+
+	return nil
+}
+
 func (s *repoService) loadGitMetrics(
 	root *model.Directory,
 	requested []metric.Name,

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"os"
-	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/lmittmann/tint"
@@ -44,8 +43,6 @@ type Flags struct {
 	ExportConfig string
 	ExportData   string
 	Config       *config.Config
-	From         time.Time
-	Until        time.Time
 	configPath   string // path passed to --config, empty if not explicitly provided
 }
 
@@ -63,8 +60,6 @@ func toStagesFlags(f *Flags) *stages.Flags {
 		ExportConfig: f.ExportConfig,
 		ExportData:   f.ExportData,
 		Config:       f.Config,
-		From:         f.From,
-		Until:        f.Until,
 	}
 }
 

@@ -16,13 +16,23 @@ import (
 // It calls BulkAuthorHistory once and then applies computed values to every
 // file and directory node in the tree.
 type authorshipLoader struct {
-	params AuthorshipParams
+	params       AuthorshipParams
+	historyRange HistoryRange
 }
 
 // LoadAuthorshipMetrics applies authorship metrics using params. It is used by
 // the pipeline so configuration can be passed without mutable global state.
 func LoadAuthorshipMetrics(root *model.Directory, params AuthorshipParams) error {
 	return (&authorshipLoader{params: params}).Load(root, authorshipMetricNames)
+}
+
+// LoadAuthorshipMetricsInHistoryRange applies authorship metrics from historyRange.
+func LoadAuthorshipMetricsInHistoryRange(
+	root *model.Directory,
+	params AuthorshipParams,
+	historyRange HistoryRange,
+) error {
+	return (&authorshipLoader{params: params, historyRange: historyRange}).Load(root, authorshipMetricNames)
 }
 
 // Load computes and stores all nine authorship metrics on every file and directory node.
@@ -36,7 +46,13 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 	repoRoot := s.RepoRoot()
 	pathSet := buildRelPathSet(s, root)
 
-	result, err := BulkAuthorHistory(repoRoot, pathSet, al.params.HonorMailmap, nil)
+	result, err := BulkAuthorHistoryInHistoryRange(
+		repoRoot,
+		pathSet,
+		al.params.HonorMailmap,
+		al.historyRange,
+		nil,
+	)
 	if err != nil {
 		return eris.Wrap(err, "authorship loader failed to walk git history")
 	}

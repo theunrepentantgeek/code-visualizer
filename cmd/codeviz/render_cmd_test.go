@@ -133,6 +133,17 @@ func TestRenderCmd_ParsedFromCLI_NoArgs(t *testing.T) {
 	g.Expect(ctx).NotTo(BeNil())
 }
 
+func TestRenderCmd_ForwardsTagRangeToPresetCommand(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	render := &RenderCmd{FromTag: "v1.0", UntilTag: "v2.0"}
+	command := render.historyTreemap("Release")
+
+	g.Expect(command.FromTag).To(Equal("v1.0"))
+	g.Expect(command.UntilTag).To(Equal("v2.0"))
+}
+
 func TestFindPreset_KnownName_ReturnsPreset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

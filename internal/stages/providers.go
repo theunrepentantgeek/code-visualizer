@@ -25,17 +25,66 @@ func RunProviders(c *CommonState) error {
 
 	requested := c.Requested.BaseMetrics
 	if hasAuthorshipMetric(requested) {
-		if err := git.LoadAuthorshipMetrics(c.Root, authorshipParams(c.RootConfig)); err != nil {
+		if err := git.LoadAuthorshipMetricsInHistoryRange(
+			c.Root,
+			authorshipParams(c.RootConfig),
+			c.Flags.HistoryRange,
+		); err != nil {
 			return eris.Wrap(err, "failed to load authorship metrics")
 		}
 
 		requested = withoutAuthorshipMetrics(requested)
 	}
 
+	requested, err := loadFileGitMetrics(c, requested, metricProg)
+	if err != nil {
+		return err
+	}
+
 	return eris.Wrap(
 		provider.RunLoaders(c.Root, requested, metricProg),
 		"failed to load metrics",
 	)
+}
+
+func loadFileGitMetrics(
+	c *CommonState,
+	requested []metric.Name,
+	metricProg provider.MetricProgress,
+) ([]metric.Name, error) {
+	fileGitMetrics := onlyFileGitMetrics(requested)
+	if len(fileGitMetrics) == 0 || len(c.GitHistory) > 0 {
+		return requested, nil
+	}
+
+	onFile := func() {
+		for _, name := range fileGitMetrics {
+			metricProg.OnFileProcessed(name)
+		}
+	}
+
+	if err := git.LoadFileMetricsInHistoryRange(
+		c.Root,
+		fileGitMetrics,
+		c.Flags.HistoryRange,
+		onFile,
+	); err != nil {
+		return nil, eris.Wrap(err, "failed to load git metrics")
+	}
+
+	return withoutFileGitMetrics(requested), nil
+}
+
+func onlyFileGitMetrics(names []metric.Name) []metric.Name {
+	return slices.DeleteFunc(slices.Clone(names), func(name metric.Name) bool {
+		return !git.IsGitMetric(name) || git.IsAuthorshipMetric(name)
+	})
+}
+
+func withoutFileGitMetrics(names []metric.Name) []metric.Name {
+	return slices.DeleteFunc(slices.Clone(names), func(name metric.Name) bool {
+		return git.IsGitMetric(name) && !git.IsAuthorshipMetric(name)
+	})
 }
 
 func hasAuthorshipMetric(names []metric.Name) bool {

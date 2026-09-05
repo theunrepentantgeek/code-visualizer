@@ -60,3 +60,24 @@ func TestParseDate_AllowsEmptyValue(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(parsed.IsZero()).To(BeTrue())
 }
+
+func TestParseHistoryRange_AllowsMixedOppositeBounds(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	historyRange, err := parseHistoryRange("2025-01-01", "", "", "v2.0")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(historyRange.From.IsZero()).To(BeFalse())
+	g.Expect(historyRange.UntilTag).To(Equal("v2.0"))
+}
+
+func TestParseHistoryRange_RejectsSameSideDateAndTag(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	_, err := parseHistoryRange("2025-01-01", "", "v1.0", "")
+	g.Expect(err).To(MatchError("--from and --from-tag are mutually exclusive"))
+
+	_, err = parseHistoryRange("", "2025-12-31", "", "v2.0")
+	g.Expect(err).To(MatchError("--until and --until-tag are mutually exclusive"))
+}

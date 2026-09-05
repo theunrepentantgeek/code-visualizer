@@ -574,7 +574,7 @@ func (s *repoService) doBulkPrewarm(
 	visit := func(c *object.Commit, changed []trackedChange) {
 		prewarmTrackedChanges(cache, c, changed, requirements)
 	}
-	if err := s.walkTrackedHistoryInRange(paths, time.Time{}, time.Time{}, onCommitProcessed, visit); err != nil {
+	if err := s.walkTrackedHistoryInHistoryRange(paths, HistoryRange{}, onCommitProcessed, visit); err != nil {
 		return eris.Wrap(err, "bulk prewarm")
 	}
 

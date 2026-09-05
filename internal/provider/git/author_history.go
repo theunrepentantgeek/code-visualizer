@@ -3,8 +3,6 @@ package git
 import (
 	"time"
 
-	gogit "github.com/go-git/go-git/v5"
-
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
 )
@@ -74,7 +72,13 @@ func BulkAuthorHistory(
 	honorMailmap bool,
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
-	return BulkAuthorHistoryInRange(repoPath, filePaths, honorMailmap, time.Time{}, time.Time{}, onCommitProcessed)
+	return BulkAuthorHistoryInHistoryRange(
+		repoPath,
+		filePaths,
+		honorMailmap,
+		HistoryRange{},
+		onCommitProcessed,
+	)
 }
 
 // BulkAuthorHistoryInRange applies the same aggregation but only considers commits
@@ -89,6 +93,25 @@ func BulkAuthorHistoryInRange(
 	until time.Time,
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
+	return BulkAuthorHistoryInHistoryRange(
+		repoPath,
+		filePaths,
+		honorMailmap,
+		HistoryRange{From: from, Until: until},
+		onCommitProcessed,
+	)
+}
+
+// BulkAuthorHistoryInHistoryRange aggregates authorship for commits selected by historyRange.
+//
+//nolint:cyclop,funlen,maintidx,revive,nolintlint // A single-pass history walk keeps the accumulators local and coherent.
+func BulkAuthorHistoryInHistoryRange(
+	repoPath string,
+	filePaths map[string]bool,
+	honorMailmap bool,
+	historyRange HistoryRange,
+	onCommitProcessed func(),
+) (AuthorHistoryResult, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return AuthorHistoryResult{}, eris.Wrap(err, "failed to open git repository")
@@ -97,16 +120,10 @@ func BulkAuthorHistoryInRange(
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	head, err := s.repo.Head()
+	commits, err := s.commitIterator(historyRange)
 	if err != nil {
-		return AuthorHistoryResult{}, eris.Wrap(err, "failed to get HEAD")
+		return AuthorHistoryResult{}, err
 	}
-
-	iter, err := s.repo.Log(&gogit.LogOptions{From: head.Hash()})
-	if err != nil {
-		return AuthorHistoryResult{}, eris.Wrap(err, "failed to start log iteration")
-	}
-	defer iter.Close()
 
 	var mm mailmap
 	if honorMailmap {
@@ -127,13 +144,9 @@ func BulkAuthorHistoryInRange(
 	lastActive := make(map[string]time.Time)
 	headDate := time.Time{}
 
-	err = iter.ForEach(func(c *object.Commit) error {
-		if !from.IsZero() && c.Author.When.Before(from) {
-			return nil
-		}
-
-		if !until.IsZero() && c.Author.When.After(until) {
-			return nil
+	for c, iterationErr := range commits {
+		if iterationErr != nil {
+			return AuthorHistoryResult{}, eris.Wrap(iterationErr, "failed to iterate commits")
 		}
 
 		when := c.Author.When
@@ -156,7 +169,7 @@ func BulkAuthorHistoryInRange(
 		}
 
 		if len(changed) == 0 {
-			return nil
+			continue
 		}
 
 		// Compute per-file line stats in one batch (single DiffTree per commit).
@@ -205,11 +218,6 @@ func BulkAuthorHistoryInRange(
 				accum.lastSeen = when
 			}
 		}
-
-		return nil
-	})
-	if err != nil {
-		return AuthorHistoryResult{}, eris.Wrap(err, "failed to iterate commits")
 	}
 
 	// Convert accumulators to AuthorRecord slices.
