@@ -42,10 +42,6 @@ func (c *TreemapCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*TreemapCmd) Validate() error {
-	return nil
-}
-
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {

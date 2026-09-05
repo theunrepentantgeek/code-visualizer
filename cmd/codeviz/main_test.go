@@ -397,22 +397,6 @@ func TestTreemapCmd_Validate_InvalidFilterGlob(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("invalid exclude")))
 }
 
-func TestTreemapCmd_Validate_ValidFilters(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cmd := &TreemapCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		Size:       "file-size",
-		Include:    []filter.Rule{{Pattern: "*.go", Mode: filter.Include}},
-		Exclude:    []filter.Rule{{Pattern: ".*", Mode: filter.Exclude}, {Pattern: "**/*.log", Mode: filter.Exclude}},
-	}
-
-	err := cmd.Validate()
-	g.Expect(err).NotTo(HaveOccurred())
-}
-
 func TestCLI_ParsesIncludeExcludeFiltersInArgumentOrder(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -473,48 +457,6 @@ func expectRuleSlice(g *WithT, got, want []filter.Rule) {
 // After the fix, Validate() no longer checks size/disc-size metrics;
 // that validation moves to validateConfig() which validates the merged
 // config (the single source of truth) rather than CLI struct fields.
-
-func TestTreemapCmd_Validate_EmptySize_Passes(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cmd := &TreemapCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		Size:       "", // will be supplied by config file later in Run()
-	}
-
-	err := cmd.Validate()
-	g.Expect(err).NotTo(HaveOccurred())
-}
-
-func TestRadialCmd_Validate_EmptyFileDiscSize_Passes(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cmd := &RadialCmd{
-		TargetPath:   ".",
-		Output:       "out.png",
-		FileDiscSize: "", // will be supplied by config file later in Run()
-	}
-
-	err := cmd.Validate()
-	g.Expect(err).NotTo(HaveOccurred())
-}
-
-func TestBubbletreeCmd_Validate_EmptySize_Passes(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cmd := &BubbletreeCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		Size:       "", // will be supplied by config file later in Run()
-	}
-
-	err := cmd.Validate()
-	g.Expect(err).NotTo(HaveOccurred())
-}
 
 func TestTreemapCmd_ConfigSuppliesSize(t *testing.T) {
 	t.Parallel()
@@ -803,20 +745,6 @@ func TestTreemapCmd_ValidateConfig_MeasureMetricAccepted(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
-func TestSpiralCmd_Validate_EmptySize_Passes(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cmd := &SpiralCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		Size:       "", // will be supplied by config file later in Run()
-	}
-
-	err := cmd.Validate()
-	g.Expect(err).NotTo(HaveOccurred())
-}
-
 func TestSpiralCmd_ConfigSuppliesSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -1016,22 +944,6 @@ func TestCLI_ParsesScatterAxisFlags(t *testing.T) {
 	g.Expect(cli.Scatter.YAxis).To(Equal(metric.Name("file-lines")))
 	g.Expect(cli.Scatter.Size).To(Equal(metric.Name("file-size")))
 	g.Expect(cli.Scatter.Grain).To(Equal("directory"))
-}
-
-func TestScatterCmd_Validate_EmptyAxesPass(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cmd := &ScatterCmd{
-		TargetPath: ".",
-		Output:     "out.png",
-		XAxis:      "",
-		YAxis:      "",
-		Size:       "",
-	}
-
-	err := cmd.Validate()
-	g.Expect(err).NotTo(HaveOccurred())
 }
 
 func TestScatterCmd_ValidateConfig_CategoricalAxesAreAccepted(t *testing.T) {

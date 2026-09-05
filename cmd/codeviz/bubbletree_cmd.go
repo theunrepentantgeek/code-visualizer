@@ -45,10 +45,6 @@ func (c *BubbletreeCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*BubbletreeCmd) Validate() error {
-	return nil
-}
-
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {

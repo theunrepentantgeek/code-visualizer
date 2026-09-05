@@ -50,10 +50,6 @@ func (c *RadialCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*RadialCmd) Validate() error {
-	return nil
-}
-
 // validateConfig checks the effective configuration after all sources have been
 // merged. Called from mergeConfigAndValidate() after TryAutoLoad + applyOverrides.
 func (*RadialCmd) validateConfig(cfg *config.Radial) error {

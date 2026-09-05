@@ -42,10 +42,6 @@ func (c *DonutTreeCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*DonutTreeCmd) Validate() error {
-	return nil
-}
-
 func (*DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
 	if err := validateNumericMetric("size", metric.Name(ptrString(cfg.Size))); err != nil {
 		return err

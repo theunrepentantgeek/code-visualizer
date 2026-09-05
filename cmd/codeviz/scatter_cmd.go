@@ -50,10 +50,6 @@ func (c *ScatterCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
 }
 
-func (*ScatterCmd) Validate() error {
-	return nil
-}
-
 func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
 	level, err := scatterMetricLevel(cfg.Grain)
 	if err != nil {
