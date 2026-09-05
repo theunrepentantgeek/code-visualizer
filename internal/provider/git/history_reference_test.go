@@ -202,7 +202,7 @@ func TestParseHistoryDate_UpperTimestampUsesExactInstant(t *testing.T) {
 func runHistoryGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 
-	cmd := exec.Command("git", args...)
+	cmd := exec.Command("git", args...) //nolint:gosec // fixed test command
 	cmd.Dir = dir
 
 	output, err := cmd.CombinedOutput()
