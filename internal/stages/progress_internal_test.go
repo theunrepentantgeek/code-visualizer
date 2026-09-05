@@ -77,6 +77,7 @@ func TestBuildMetricProgressLogsCompletionAtTotal(t *testing.T) {
 
 	g.Expect(buf.String()).To(ContainSubstring(`msg="Loaded metrics" loaded=4/4 percentage=100.0`))
 	g.Expect(strings.Count(buf.String(), `msg="Loaded metrics"`)).To(Equal(1))
+	g.Expect(strings.TrimSpace(buf.String())).To(HaveSuffix(`msg="Loaded metrics" loaded=4/4 percentage=100.0`))
 }
 
 //nolint:paralleltest // mutates global slog default logger
