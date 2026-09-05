@@ -18,14 +18,11 @@ func FilterChangedOnly(c *CommonState) error {
 	}
 
 	historyRange := c.Flags.HistoryRange
-	if strings.TrimSpace(historyRange.From) == "" && strings.TrimSpace(historyRange.Until) == "" {
+	if !historyRangeConstrained(historyRange) {
 		return eris.New("--changed-only requires --from or --until")
 	}
 
-	targetPath := c.TargetPath
-	if targetPath == "" && c.Root != nil {
-		targetPath = c.Root.Path
-	}
+	targetPath := changedOnlyTargetPath(c)
 
 	if err := CheckGitRepoHelper(targetPath); err != nil {
 		return err
@@ -44,11 +41,24 @@ func FilterChangedOnly(c *CommonState) error {
 	}
 
 	pruneTreeToPaths(c.Root, repoRoot, changedPaths)
+
 	if model.CountFiles(c.Root) == 0 {
 		return &NoFilesAfterFilterError{Msg: NoFilesAfterChangedOnlyMsg}
 	}
 
 	return nil
+}
+
+func historyRangeConstrained(historyRange git.HistoryRange) bool {
+	return strings.TrimSpace(historyRange.From) != "" || strings.TrimSpace(historyRange.Until) != ""
+}
+
+func changedOnlyTargetPath(c *CommonState) string {
+	if c.TargetPath != "" || c.Root == nil {
+		return c.TargetPath
+	}
+
+	return c.Root.Path
 }
 
 func pruneTreeToPaths(root *model.Directory, repoRoot string, included map[string]bool) {
@@ -60,8 +70,13 @@ func pruneTreeToPaths(root *model.Directory, repoRoot string, included map[strin
 
 	dirs := root.Dirs[:0]
 	for _, child := range root.Dirs {
+		if child == nil {
+			continue
+		}
+
 		pruneTreeToPaths(child, repoRoot, included)
-		if child != nil && (len(child.Files) > 0 || len(child.Dirs) > 0) {
+
+		if len(child.Files) > 0 || len(child.Dirs) > 0 {
 			dirs = append(dirs, child)
 		}
 	}

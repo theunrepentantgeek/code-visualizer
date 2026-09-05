@@ -333,6 +333,8 @@ func (c *Config) ChangedOnlyEnabled() bool {
 }
 
 // OverrideChangedOnly enables changed-only filtering when v is true.
+//
+//nolint:revive,nolintlint // flag-parameter: v is a command-line enablement flag
 func (c *Config) OverrideChangedOnly(v bool) {
 	if v {
 		c.ChangedOnly = &v

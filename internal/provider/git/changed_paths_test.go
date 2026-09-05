@@ -84,6 +84,7 @@ func setupChangedPathsRepo(t *testing.T) string {
 
 		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // fixed test commands
 		cmd.Dir = dir
+
 		cmd.Env = append(
 			os.Environ(),
 			"GIT_AUTHOR_NAME=Alice",
