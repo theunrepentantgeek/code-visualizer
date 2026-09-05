@@ -152,6 +152,35 @@ func TestHistoryRange_TotalHistoryAndPrewarmUseSameSelection(t *testing.T) {
 	g.Expect(featureData.count).To(Equal(int64(2)))
 }
 
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestHistoryRange_PrewarmReplacesStalePaths(t *testing.T) {
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+
+	resetService()
+
+	s, err := getService(fixture.dir)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(s).NotTo(BeNil())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	s.commitCache["stale.go"] = &commitData{count: 99}
+
+	_, err = BulkCommitHistoryAndPrewarmInHistoryRange(
+		fixture.dir,
+		map[string]bool{"main.go": true},
+		[]metric.Name{CommitCount},
+		HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"},
+		nil,
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(s.cachedCommitData("stale.go")).To(BeNil())
+	g.Expect(s.cachedCommitData("main.go")).NotTo(BeNil())
+}
+
 func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

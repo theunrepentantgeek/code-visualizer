@@ -176,6 +176,34 @@ func TestMetricsLoaderReportsFileProgressThroughoutPrewarm(t *testing.T) {
 	g.Expect(firstProgressBeforeMetrics).To(BeTrue())
 }
 
+//nolint:paralleltest // resetService mutates the global service registry.
+func TestHistoryRangeLoaderReportsFileProgressThroughoutPrewarm(t *testing.T) {
+	g := NewGomegaWithT(t)
+	dir := setupTestGitRepo(t)
+	root := buildTree(dir, "old.go", "new.go")
+
+	var processed atomic.Int64
+
+	firstProgressBeforeMetrics := false
+
+	resetService()
+
+	err := LoadFileMetricsInHistoryRange(
+		root,
+		[]metric.Name{CommitCount},
+		HistoryRange{},
+		func() {
+			if processed.Add(1) == 1 {
+				_, metricApplied := root.Files[0].Quantity(CommitCount)
+				firstProgressBeforeMetrics = !metricApplied
+			}
+		},
+	)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(processed.Load()).To(Equal(int64(2)))
+	g.Expect(firstProgressBeforeMetrics).To(BeTrue())
+}
+
 func TestFileProgressCallbacksScaleCommitsAcrossFiles(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

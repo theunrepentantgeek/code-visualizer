@@ -92,11 +92,24 @@ func LoadFileMetricsInHistoryRange(
 	requirements := newMetricRequirements(requested)
 	pathSet := buildRelPathSet(s, root)
 
+	commitTotal := int64(0)
+
+	if onFile != nil {
+		total, err := s.commitTotalInHistoryRange(historyRange)
+		if err != nil {
+			return eris.Wrap(err, "failed to count git commits")
+		}
+
+		commitTotal = total
+	}
+
+	progressCallbacks := newFileProgressCallbacks(onFile, int64(model.CountFiles(root)), commitTotal)
+
 	if _, err := s.bulkCommitHistoryAndPrewarmInHistoryRange(
 		pathSet,
 		requirements,
 		historyRange,
-		nil,
+		progressCallbacks.onPrewarm,
 	); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
@@ -107,10 +120,8 @@ func LoadFileMetricsInHistoryRange(
 		return err
 	}
 
-	if onFile != nil {
-		for range model.CountFiles(root) {
-			onFile()
-		}
+	if progressCallbacks.onFinish != nil {
+		progressCallbacks.onFinish()
 	}
 
 	return nil

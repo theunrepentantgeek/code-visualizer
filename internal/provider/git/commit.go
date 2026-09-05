@@ -1,7 +1,6 @@
 package git
 
 import (
-	"maps"
 	"path/filepath"
 	"time"
 
@@ -259,7 +258,7 @@ func (s *repoService) replaceBulkPrewarmCache(cache map[string]*commitData) {
 	s.commitMu.Lock()
 	defer s.commitMu.Unlock()
 
-	maps.Copy(s.commitCache, cache)
+	s.commitCache = cache
 }
 
 func prewarmTrackedChanges(
