@@ -87,7 +87,7 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.TreeMap.Flat).To(BeTrue())
 }
 
-func TestCLI_ParsesDateRangeFlags(t *testing.T) {
+func TestCLI_ParsesUnifiedHistoryReferences(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -102,15 +102,15 @@ func TestCLI_ParsesDateRangeFlags(t *testing.T) {
 
 	_, err = parser.Parse([]string{
 		"tree-map", ".", "-o", "out.png",
-		"--from", "2024-01-02",
-		"--until", "2024-03-04",
+		"--from", "sha:abc1234",
+		"--until", "tag:v2.0",
 	})
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cli.TreeMap.From).To(Equal("2024-01-02"))
-	g.Expect(cli.TreeMap.Until).To(Equal("2024-03-04"))
+	g.Expect(cli.TreeMap.From).To(Equal("sha:abc1234"))
+	g.Expect(cli.TreeMap.Until).To(Equal("tag:v2.0"))
 }
 
-func TestCLI_ParsesTagRangeFlags(t *testing.T) {
+func TestCLI_RejectsRemovedTagRangeFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -126,11 +126,8 @@ func TestCLI_ParsesTagRangeFlags(t *testing.T) {
 	_, err = parser.Parse([]string{
 		"tree-map", ".", "-o", "out.png",
 		"--from-tag", "v1.0",
-		"--until-tag", "v2.0",
 	})
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cli.TreeMap.FromTag).To(Equal("v1.0"))
-	g.Expect(cli.TreeMap.UntilTag).To(Equal("v2.0"))
+	g.Expect(err).To(HaveOccurred())
 }
 
 func TestCLI_ParsesRadialFileAndDirectoryMetricFlags(t *testing.T) {
