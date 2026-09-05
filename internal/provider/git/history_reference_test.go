@@ -215,12 +215,7 @@ func addAmbiguousObjectPrefix(t *testing.T, s *repoService) string {
 	t.Helper()
 	g := NewGomegaWithT(t)
 	seen := make(map[string]plumbing.Hash)
-	repo, err := s.repository()
-	g.Expect(err).NotTo(HaveOccurred())
-
-	if repo == nil {
-		t.Fatal("expected Git repository")
-	}
+	repo := s.repo
 
 	for i := range 10_000 {
 		encoded := repo.Storer.NewEncodedObject()

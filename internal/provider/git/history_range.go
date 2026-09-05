@@ -101,12 +101,7 @@ func (s *repoService) resolveRangeTip(
 		return until.revision, strconv.Quote(label), nil
 	}
 
-	repo, err := s.repository()
-	if err != nil {
-		return plumbing.ZeroHash, "", err
-	}
-
-	head, err := repo.Head()
+	head, err := s.repo.Head()
 	if err != nil {
 		return plumbing.ZeroHash, "", eris.Wrap(err, "failed to get HEAD")
 	}
@@ -115,12 +110,7 @@ func (s *repoService) resolveRangeTip(
 }
 
 func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
-	repo, err := s.repository()
-	if err != nil {
-		return plumbing.ZeroHash, err
-	}
-
-	ref, err := repo.Reference(plumbing.NewTagReferenceName(name), true)
+	ref, err := s.repo.Reference(plumbing.NewTagReferenceName(name), true)
 	if err != nil {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
 			return plumbing.ZeroHash, eris.Errorf("tag %q not found", name)
@@ -131,7 +121,7 @@ func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
 
 	hash := ref.Hash()
 
-	return peelTagCommit(repo, name, hash)
+	return peelTagCommit(s.repo, name, hash)
 }
 
 func peelTagCommit(repo *gogit.Repository, name string, hash plumbing.Hash) (plumbing.Hash, error) {
@@ -158,12 +148,7 @@ func peelTagCommit(repo *gogit.Repository, name string, hash plumbing.Hash) (plu
 }
 
 func (s *repoService) reachableHashes(from plumbing.Hash) (map[plumbing.Hash]struct{}, error) {
-	repo, err := s.repository()
-	if err != nil {
-		return nil, err
-	}
-
-	commitIter, err := repo.Log(&gogit.LogOptions{From: from})
+	commitIter, err := s.repo.Log(&gogit.LogOptions{From: from})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to start reachable-history iteration")
 	}
@@ -187,12 +172,7 @@ func (s *repoService) commitIterator(r HistoryRange) (iter.Seq2[*object.Commit, 
 		return nil, err
 	}
 
-	repo, err := s.repository()
-	if err != nil {
-		return nil, err
-	}
-
-	commitIter, err := repo.Log(&gogit.LogOptions{From: resolved.tip})
+	commitIter, err := s.repo.Log(&gogit.LogOptions{From: resolved.tip})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to start log iteration")
 	}

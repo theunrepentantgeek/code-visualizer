@@ -84,12 +84,7 @@ func splitHistoryReference(value string) (prefix, payload string, explicit bool)
 }
 
 func (s *repoService) tryResolveTagCommit(name string) (plumbing.Hash, bool, error) {
-	repo, err := s.repository()
-	if err != nil {
-		return plumbing.ZeroHash, true, err
-	}
-
-	ref, err := repo.Reference(plumbing.NewTagReferenceName(name), true)
+	ref, err := s.repo.Reference(plumbing.NewTagReferenceName(name), true)
 	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return plumbing.ZeroHash, false, nil
 	}
@@ -98,7 +93,7 @@ func (s *repoService) tryResolveTagCommit(name string) (plumbing.Hash, bool, err
 		return plumbing.ZeroHash, true, eris.Wrapf(err, "failed to resolve tag %q", name)
 	}
 
-	hash, err := peelTagCommit(repo, name, ref.Hash())
+	hash, err := peelTagCommit(s.repo, name, ref.Hash())
 
 	return hash, true, err
 }
@@ -134,12 +129,7 @@ func (s *repoService) tryResolveCommitID(value string) (plumbing.Hash, bool, err
 	case 0:
 		return plumbing.ZeroHash, false, nil
 	case 1:
-		repo, err := s.repository()
-		if err != nil {
-			return plumbing.ZeroHash, true, err
-		}
-
-		if _, err := repo.CommitObject(matches[0]); err != nil {
+		if _, err := s.repo.CommitObject(matches[0]); err != nil {
 			return plumbing.ZeroHash, true, eris.Errorf(
 				"commit ID %q does not identify a commit",
 				value,
@@ -153,14 +143,9 @@ func (s *repoService) tryResolveCommitID(value string) (plumbing.Hash, bool, err
 }
 
 func (s *repoService) hashesMatchingPrefix(value string) ([]plumbing.Hash, error) {
-	repo, err := s.repository()
-	if err != nil {
-		return nil, err
-	}
-
 	if len(value) == len(plumbing.ZeroHash)*2 {
 		hash := plumbing.NewHash(value)
-		if objectErr := repo.Storer.HasEncodedObject(hash); objectErr != nil {
+		if objectErr := s.repo.Storer.HasEncodedObject(hash); objectErr != nil {
 			if errors.Is(objectErr, plumbing.ErrObjectNotFound) {
 				return nil, nil
 			}
@@ -195,18 +180,13 @@ func (s *repoService) hashesWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
 		HashesWithPrefix(prefix []byte) ([]plumbing.Hash, error)
 	}
 
-	repo, err := s.repository()
-	if err != nil {
-		return nil, err
-	}
-
-	if indexed, ok := repo.Storer.(prefixHasher); ok {
+	if indexed, ok := s.repo.Storer.(prefixHasher); ok {
 		hashes, indexErr := indexed.HashesWithPrefix(prefix)
 
 		return hashes, eris.Wrap(indexErr, "failed to inspect Git object index")
 	}
 
-	objects, err := repo.Storer.IterEncodedObjects(plumbing.AnyObject)
+	objects, err := s.repo.Storer.IterEncodedObjects(plumbing.AnyObject)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to inspect Git objects")
 	}

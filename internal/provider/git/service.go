@@ -27,14 +27,6 @@ type repoService struct {
 	bulkGroup         singleflight.Group
 }
 
-func (s *repoService) repository() (*gogit.Repository, error) {
-	if s == nil || s.repo == nil {
-		return nil, eris.New("git repository is not initialized")
-	}
-
-	return s.repo, nil
-}
-
 // RepoRoot returns the absolute path to the git worktree root.
 func (s *repoService) RepoRoot() string {
 	return s.rootPath
