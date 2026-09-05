@@ -66,8 +66,11 @@ func (s *scanCounter) OnDirectoryScanned(path string, fileCount int) {
 // Call the returned stop function when the operation completes.
 func startProgressTicker(logFn func()) (stop func()) {
 	done := make(chan struct{})
+	stopped := make(chan struct{})
 
 	go func() {
+		defer close(stopped)
+
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
@@ -82,7 +85,10 @@ func startProgressTicker(logFn func()) (stop func()) {
 		}
 	}()
 
-	return func() { close(done) }
+	return func() {
+		close(done)
+		<-stopped
+	}
 }
 
 // startScanTicker starts a goroutine that logs cumulative scan progress every second.
@@ -115,9 +121,21 @@ func (t *metricProgressTracker) OnFileProcessed(metric.Name) { t.loaded.Add(1) }
 func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
 	logMetricProgress(tracker)
 
-	return startProgressTicker(func() {
+	stopTicker := startProgressTicker(func() {
 		logMetricProgress(tracker)
 	})
+
+	return func() {
+		stopTicker()
+
+		if tracker.total > 0 && tracker.loaded.Load() == tracker.total {
+			slog.Info(
+				"Loaded metrics",
+				"loaded", fmt.Sprintf("%d/%d", tracker.total, tracker.total),
+				"percentage", "100.0",
+			)
+		}
+	}
 }
 
 func logMetricProgress(tracker *metricProgressTracker) {

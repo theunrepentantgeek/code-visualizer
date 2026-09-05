@@ -54,6 +54,49 @@ func TestBuildMetricProgressLogsInitialZeroProgress(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates global slog default logger
+func TestBuildMetricProgressLogsCompletionAtTotal(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	progress, stop := BuildMetricProgress(&Flags{}, 4)
+	for range 4 {
+		progress.OnFileProcessed("file-lines")
+	}
+
+	stop()
+
+	g.Expect(buf.String()).To(ContainSubstring(`msg="Loaded metrics" loaded=4/4 percentage=100.0`))
+	g.Expect(strings.Count(buf.String(), `msg="Loaded metrics"`)).To(Equal(1))
+}
+
+//nolint:paralleltest // mutates global slog default logger
+func TestBuildMetricProgressOmitsCompletionBelowTotal(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	progress, stop := BuildMetricProgress(&Flags{}, 4)
+	for range 3 {
+		progress.OnFileProcessed("file-lines")
+	}
+
+	stop()
+
+	g.Expect(buf.String()).NotTo(ContainSubstring(`msg="Loaded metrics"`))
+}
+
+//nolint:paralleltest // mutates global slog default logger
 func TestLogHistoryProgress_LogsAggregateProcessedCommits(t *testing.T) {
 	g := NewGomegaWithT(t)
 
