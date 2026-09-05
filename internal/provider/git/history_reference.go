@@ -214,10 +214,11 @@ func (s *repoService) hashesWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
 	defer objects.Close()
 
 	var hashes []plumbing.Hash
+	encodedPrefix := hex.EncodeToString(prefix)
 
 	err = objects.ForEach(func(object plumbing.EncodedObject) error {
 		hash := object.Hash()
-		if strings.HasPrefix(hash.String(), hex.EncodeToString(prefix)) {
+		if strings.HasPrefix(hash.String(), encodedPrefix) {
 			hashes = append(hashes, hash)
 		}
 
