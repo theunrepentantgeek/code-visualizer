@@ -70,8 +70,19 @@ exclusive and must be an ancestor of the upper revision, or of `HEAD` when the
 upper bound is a date or omitted. The upper revision is inclusive and may be
 outside the current `HEAD` history.
 
-These options constrain Git-derived metrics and timeline history. They do not
-remove unchanged files from the current checkout.
+By default, these options constrain Git-derived metrics and timeline history
+without removing unchanged files from the current checkout. Add
+`--changed-only` (or set `changedOnly: true` in configuration) to retain only
+current-tree files modified by commits in the effective range:
+
+```sh
+codeviz tree-map . -o release.png --from v1.0 --until v2.0 --changed-only
+```
+
+`--changed-only` requires at least one `--from` or `--until` bound. Existing
+include/exclude rules and binary-file exclusion run first. Deleted files remain
+absent because the visualization uses the current tree; a renamed file is shown
+under its current destination path. Empty directories are removed.
 
 ## Examples
 
