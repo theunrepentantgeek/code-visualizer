@@ -119,7 +119,18 @@ Add this block at the start of `linters.settings` in `.golangci.yml`:
 
 Including `identical` preserves the analyzer that `iface` enables by default when an explicit analyzer list is supplied. The two exclusions retain valid cross-package contract interfaces while keeping `unusedmethod` active for every other package.
 
-- [ ] **Step 5: Verify the configuration**
+- [ ] **Step 5: Remove the stale WSL v4 setting**
+
+Delete this invalid settings block from `.golangci.yml`:
+
+```yaml
+    wsl-v5:
+      allow-cuddle-declarations: true
+```
+
+`wsl_v5` has never supported `allow-cuddle-declarations`; the invalid key caused the setting to be ignored while preventing strict configuration verification. Removing the block preserves the v5 defaults that lint runs already used.
+
+- [ ] **Step 6: Verify the configuration**
 
 Run:
 
@@ -129,7 +140,7 @@ Run:
 
 Expected: exit status 0 and no configuration errors.
 
-- [ ] **Step 6: Run the scoped iface audit**
+- [ ] **Step 7: Run the scoped iface audit**
 
 Run:
 
@@ -139,11 +150,11 @@ Run:
 
 Expected: `0 issues`.
 
-- [ ] **Step 7: Remove the temporary audit configuration**
+- [ ] **Step 8: Remove the temporary audit configuration**
 
 Use `apply_patch` to delete `.golangci-iface-audit.yml`.
 
-- [ ] **Step 8: Commit the upgrade**
+- [ ] **Step 9: Commit the upgrade**
 
 ```bash
 git add .custom-gcl.yml .devcontainer/.custom-gcl.template.yml .devcontainer/install-dependencies.sh .golangci.yml
@@ -174,4 +185,4 @@ git --no-pager diff main...HEAD --check
 git --no-pager diff main...HEAD -- .custom-gcl.yml .devcontainer/.custom-gcl.template.yml .devcontainer/install-dependencies.sh .golangci.yml
 ```
 
-Expected: the worktree is clean, `diff --check` exits 0, all three pins are v2.13.2, and the only linter configuration addition enables `iface.unusedmethod` with the two documented package exclusions.
+Expected: the worktree is clean, `diff --check` exits 0, all three pins are v2.13.2, `iface.unusedmethod` is enabled with the two documented package exclusions, and the invalid legacy `wsl-v5.allow-cuddle-declarations` setting is gone.

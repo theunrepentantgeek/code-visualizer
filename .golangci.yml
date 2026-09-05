@@ -77,6 +77,15 @@ linters:
   disable:
     - musttag # Extremely slow, at least on CI machines
   settings:
+    iface:
+      enable:
+        - identical
+        - unusedmethod
+      settings:
+        unusedmethod:
+          exclude:
+            - github.com/theunrepentantgeek/code-visualizer/internal/canvas/model
+            - github.com/theunrepentantgeek/code-visualizer/internal/inks
     goconst:
       ignore-tests: true
     nestif:
@@ -141,8 +150,6 @@ linters:
         - eris.New(
         - eris.Wrap(
         - eris.Wrapf(
-    wsl-v5:
-      allow-cuddle-declarations: true
     custom:
       nilaway:
         type: module
