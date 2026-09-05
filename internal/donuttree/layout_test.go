@@ -43,6 +43,30 @@ func TestLayoutAllocatesDirectorySectorsByMetric(t *testing.T) {
 	g.Expect(nested.InnerRadius).To(BeNumerically(">", layout.Children[1].InnerRadius))
 }
 
+func TestLayoutLeavesTenPercentGapBetweenDepthRings(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	nested := directoryWithLines("nested", 10)
+	parent := directoryWithLines("parent", 10)
+	parent.Dirs = []*model.Directory{nested}
+	root := &model.Directory{Name: "root", Dirs: []*model.Directory{parent}}
+
+	layout := Layout(root, 600, filesystem.FileLines)
+	firstRing := layout.Children[0]
+	secondRing := firstRing.Children[0]
+	slotWidth := layout.AnchorRadius
+
+	g.Expect(firstRing.InnerRadius).To(BeNumerically("==", slotWidth))
+	g.Expect(firstRing.OuterRadius - firstRing.InnerRadius).
+		To(BeNumerically("~", slotWidth*donutRingWidthRatio, 1e-12))
+	g.Expect(secondRing.InnerRadius).To(BeNumerically("==", slotWidth*2))
+	g.Expect(secondRing.OuterRadius - secondRing.InnerRadius).
+		To(BeNumerically("~", slotWidth*donutRingWidthRatio, 1e-12))
+	g.Expect(secondRing.InnerRadius - firstRing.OuterRadius).
+		To(BeNumerically("~", slotWidth*0.1, 1e-12))
+}
+
 func TestLayoutNilAndEmptyRootsHaveNoSectors(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

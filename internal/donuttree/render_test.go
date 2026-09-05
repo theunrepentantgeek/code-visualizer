@@ -94,6 +94,42 @@ func TestRenderToCanvas_RendersOneSectorPerDirectoryAndOneRootAnchor(t *testing.
 	g.Expect(callsNamed(calls, "DrawText")).To(ContainElement(HaveField("Text", "project")))
 }
 
+func TestRenderToCanvas_UsesNarrowedRingGeometryForSectorsAndLabels(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	root := donutRoot()
+	layout := Layout(root, 600, filesystem.FileLines)
+	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+
+	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{}))
+	polygons := callsNamed(calls, "DrawPolygon")
+	expectedOuterRadius := layout.AnchorRadius * (1 + donutRingWidthRatio)
+
+	g.Expect(polygons).NotTo(BeEmpty())
+	g.Expect(layout.Center.DistanceTo(polygons[0].Points[0])).
+		To(BeNumerically("~", expectedOuterRadius, 0.000001))
+
+	var directoryLabel *mock.Call
+
+	for index := range calls {
+		if calls[index].Method == "DrawText" && calls[index].Text == "src" {
+			directoryLabel = &calls[index]
+
+			break
+		}
+	}
+
+	if directoryLabel == nil {
+		t.Fatal("expected src directory label")
+
+		return
+	}
+
+	expectedMidRadius := layout.AnchorRadius * 1.45
+	g.Expect(layout.Center.DistanceTo(directoryLabel.Pos)).
+		To(BeNumerically("~", expectedMidRadius, 0.000001))
+}
+
 func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -509,6 +545,8 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 
 	if legendBackground == nil {
 		t.Fatal("expected legend background")
+
+		return
 	}
 
 	g.Expect(legendBackground.Pos.Y).To(BeNumerically(">=", common.DrawingBounds.Min.Y))
