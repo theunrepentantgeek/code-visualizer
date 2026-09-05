@@ -75,6 +75,22 @@ func TestChangedPathsInHistoryRange_ReturnsEmptySetWhenNoCurrentPathChanged(t *t
 	g.Expect(changed).To(BeEmpty())
 }
 
+func TestChangedPathsInHistoryRange_OmitsUntrackedReplacementOfDeletedPath(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := setupChangedPathsRepo(t)
+	writeTestFile(t, filepath.Join(dir, "deleted.go"), "package replacement\n")
+
+	changed, err := ChangedPathsInHistoryRange(
+		dir,
+		map[string]bool{"deleted.go": true},
+		HistoryRange{From: "tag:before-changes"},
+	)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(changed).To(BeEmpty())
+}
+
 func setupChangedPathsRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()

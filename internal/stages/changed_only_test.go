@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -59,6 +60,8 @@ func TestFilterChangedOnly_RequiresGitRepository(t *testing.T) {
 
 	var gitRequired *stages.GitRequiredError
 	g.Expect(errors.As(err, &gitRequired)).To(BeTrue())
+	g.Expect(gitRequired.Feature).To(Equal("--changed-only"))
+	g.Expect(err.Error()).To(ContainSubstring("--changed-only requires a git repository"))
 }
 
 func TestFilterChangedOnly_PrunesUnchangedFilesAndEmptyDirectories(t *testing.T) {
@@ -131,6 +134,45 @@ func TestFilterChangedOnly_EmptyIntersectionReturnsTypedError(t *testing.T) {
 	))
 }
 
+func TestFilterChangedOnly_IntersectsWithScanTimePathFilters(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := setupChangedOnlyRepo(t)
+	excludeChanged, err := filter.NewRule("changed.go", filter.Exclude)
+	g.Expect(err).NotTo(HaveOccurred())
+	state := &stages.CommonState{
+		TargetPath:  dir,
+		FilterRules: []filter.Rule{excludeChanged},
+		Flags: &stages.Flags{
+			ChangedOnly:  true,
+			HistoryRange: git.HistoryRange{From: "tag:before-change"},
+		},
+	}
+
+	g.Expect(stages.ScanFilesystem(state)).To(Succeed())
+	g.Expect(stages.FilterChangedOnly(state)).To(
+		MatchError(stages.NoFilesAfterChangedOnlyMsg),
+	)
+}
+
+func TestFilterChangedOnly_IntersectsWithScanTimeBinaryFiltering(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	dir := setupChangedOnlyBinaryRepo(t)
+	state := &stages.CommonState{
+		TargetPath: dir,
+		Flags: &stages.Flags{
+			ChangedOnly:  true,
+			HistoryRange: git.HistoryRange{From: "tag:before-change"},
+		},
+	}
+
+	g.Expect(stages.ScanFilesystem(state)).To(Succeed())
+	g.Expect(stages.FilterChangedOnly(state)).To(
+		MatchError(stages.NoFilesAfterChangedOnlyMsg),
+	)
+}
+
 func setupChangedOnlyRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -177,6 +219,44 @@ func setupChangedOnlyRepo(t *testing.T) string {
 	)).To(Succeed())
 	run("git", "add", "changed.go")
 	run("git", "commit", "-m", "modify changed file")
+
+	return dir
+}
+
+func setupChangedOnlyBinaryRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+
+	run := func(args ...string) {
+		t.Helper()
+
+		cmd := exec.Command(args[0], args[1:]...) //nolint:gosec // fixed test commands
+		cmd.Dir = dir
+		cmd.Env = append(
+			os.Environ(),
+			"GIT_AUTHOR_NAME=Alice",
+			"GIT_AUTHOR_EMAIL=alice@example.com",
+			"GIT_COMMITTER_NAME=Alice",
+			"GIT_COMMITTER_EMAIL=alice@example.com",
+		)
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("command %v failed: %s\n%s", args, err, output)
+		}
+	}
+
+	g := NewGomegaWithT(t)
+	g.Expect(os.WriteFile(filepath.Join(dir, "stable.go"), []byte("package stable\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(dir, "changed.bin"), []byte{0x00, 0x01}, 0o600)).To(Succeed())
+	run("git", "init", "-b", "main")
+	run("git", "add", ".")
+	run("git", "commit", "-m", "initial")
+	run("git", "tag", "before-change")
+
+	g.Expect(os.WriteFile(filepath.Join(dir, "changed.bin"), []byte{0x00, 0x02}, 0o600)).To(Succeed())
+	run("git", "add", "changed.bin")
+	run("git", "commit", "-m", "modify binary file")
 
 	return dir
 }

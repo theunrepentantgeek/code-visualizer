@@ -17,6 +17,11 @@ func ChangedPathsInHistoryRange(
 		return nil, eris.Wrap(err, "failed to open git repository")
 	}
 
+	trackedPaths, err := s.intersectIndexPaths(currentPaths)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to find current tracked paths")
+	}
+
 	changedPaths := make(map[string]bool)
 	visit := func(_ *object.Commit, changes []trackedChange) {
 		for _, change := range changes {
@@ -25,7 +30,7 @@ func ChangedPathsInHistoryRange(
 	}
 
 	err = s.walkTrackedHistoryInHistoryRange(
-		normalizeTrackedPaths(currentPaths),
+		trackedPaths,
 		historyRange,
 		nil,
 		visit,
@@ -35,4 +40,25 @@ func ChangedPathsInHistoryRange(
 	}
 
 	return changedPaths, nil
+}
+
+func (s *repoService) intersectIndexPaths(currentPaths map[string]bool) (map[string]bool, error) {
+	s.repoMu.Lock()
+	defer s.repoMu.Unlock()
+
+	index, err := s.repo.Storer.Index()
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to read git index")
+	}
+
+	currentPaths = normalizeTrackedPaths(currentPaths)
+	trackedPaths := make(map[string]bool, len(currentPaths))
+
+	for _, entry := range index.Entries {
+		if currentPaths[entry.Name] {
+			trackedPaths[entry.Name] = true
+		}
+	}
+
+	return trackedPaths, nil
 }

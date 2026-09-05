@@ -24,7 +24,7 @@ func FilterChangedOnly(c *CommonState) error {
 
 	targetPath := changedOnlyTargetPath(c)
 
-	if err := CheckGitRepoHelper(targetPath); err != nil {
+	if err := checkGitRepoForFeature(targetPath, "--changed-only"); err != nil {
 		return err
 	}
 
