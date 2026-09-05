@@ -28,9 +28,9 @@ func BuildScanProgress(flags *Flags) (scan.Progress, func()) {
 // BuildMetricProgress creates a provider.MetricProgress adapter that logs periodic
 // progress during metric calculation.
 // The caller must invoke the returned stop function when metric calculation completes.
-func BuildMetricProgress(flags *Flags, total int64) (provider.MetricProgress, func()) {
+func BuildMetricProgress(flags *Flags, total int64) (provider.MetricProgress, func(bool)) {
 	if flags.Quiet {
-		return nil, func() {}
+		return nil, func(bool) {}
 	}
 
 	tracker := &metricProgressTracker{total: total}
@@ -118,17 +118,17 @@ func (t *metricProgressTracker) OnFileProcessed(metric.Name) { t.loaded.Add(1) }
 
 // startMetricTicker starts a goroutine that logs metric calculation progress every second.
 // Call the returned stop function when metric calculation is done.
-func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
+func startMetricTicker(tracker *metricProgressTracker) (stop func(bool)) {
 	logMetricProgress(tracker)
 
 	stopTicker := startProgressTicker(func() {
 		logMetricProgress(tracker)
 	})
 
-	return func() {
+	return func(succeeded bool) {
 		stopTicker()
 
-		if tracker.total > 0 && tracker.loaded.Load() == tracker.total {
+		if succeeded && tracker.loaded.Load() == tracker.total {
 			slog.Info(
 				"Loaded metrics",
 				"loaded", fmt.Sprintf("%d/%d", tracker.total, tracker.total),

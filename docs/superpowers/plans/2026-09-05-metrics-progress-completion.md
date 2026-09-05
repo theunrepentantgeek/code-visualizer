@@ -4,7 +4,7 @@
 
 **Goal:** Always report successful metric-loading completion at the stated total without claiming completion after an incomplete or failed load.
 
-**Architecture:** Extend the generic ticker shutdown with a completion signal so callers can wait until its goroutine has stopped. The metric-specific stop wrapper will then inspect the atomic counter and emit one terminal success line only when the loaded count equals the expected total.
+**Architecture:** Extend the generic ticker shutdown with a completion signal so callers can wait until its goroutine has stopped. The metric-specific stop wrapper receives the stage outcome, then emits one terminal success line only when loading succeeded and the atomic counter equals the expected total.
 
 **Tech Stack:** Go 1.26, `log/slog`, `sync/atomic`, Gomega
 
@@ -21,8 +21,9 @@ Add a test that builds metric progress with total `4`, sends four
 `OnFileProcessed` callbacks, invokes `stop`, and asserts exactly one
 `Loaded metrics` line with `loaded=4/4 percentage=100.0`.
 
-Add a second test that sends only three callbacks before `stop` and asserts no
-`Loaded metrics` line appears.
+Add a second test that reports all four callbacks but stops with a failed stage
+outcome and asserts no `Loaded metrics` line appears. Cover successful zero-work
+loading separately.
 
 - [ ] **Step 2: Run tests and verify failure**
 
@@ -48,7 +49,8 @@ exits, then make the returned stop function close `done` and wait on `stopped`.
 - [ ] **Step 2: Wrap metric ticker shutdown**
 
 In `startMetricTicker`, retain the ticker stop function and return a wrapper
-that stops the ticker first. If `tracker.loaded.Load() == tracker.total`, log:
+that accepts the stage outcome and stops the ticker first. If loading succeeded
+and `tracker.loaded.Load() == tracker.total`, log:
 
 ```text
 Loaded metrics loaded=N/N percentage=100.0

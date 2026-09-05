@@ -9,11 +9,12 @@ and never reports completion.
 
 ## Design
 
-The metric progress stop function will wait for the ticker goroutine to exit before
-examining the tracker. When the loaded count exactly matches the expected total, it
-will emit one terminal `Loaded metrics` line containing the final `loaded=N/N` and
-`percentage=100.0` fields. It will not emit a success line for incomplete progress,
-including failed metric loading.
+The metric progress stop function will receive the stage outcome and wait for the
+ticker goroutine to exit before examining the tracker. When loading succeeded and
+the loaded count exactly matches the expected total, it will emit one terminal
+`Loaded metrics` line containing the final `loaded=N/N` and `percentage=100.0`
+fields. It will not emit a success line for failed or incomplete metric loading.
+Successful zero-work loading will report `loaded=0/0 percentage=100.0`.
 
 Ticker shutdown remains idempotent only to the extent required by existing callers:
 each returned stop function is called once. Quiet mode continues to return a no-op
