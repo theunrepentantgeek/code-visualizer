@@ -22,6 +22,15 @@ type resolvedHistoryReference struct {
 	timestamp time.Time
 }
 
+type commitIDResolution uint8
+
+const (
+	commitIDMissing commitIDResolution = iota
+	commitIDResolved
+	commitIDAmbiguous
+	commitIDNotCommit
+)
+
 func (r resolvedHistoryReference) hasRevision() bool {
 	return !r.revision.IsZero()
 }
@@ -58,8 +67,15 @@ func (s *repoService) resolveHistoryReference(
 		return resolvedHistoryReference{revision: hash}, err
 	}
 
-	if hash, found, err := s.tryResolveCommitID(value); found {
-		return resolvedHistoryReference{revision: hash}, err
+	if isCommitIDSyntax(value) {
+		hash, resolution, err := s.inspectCommitID(value)
+		if err != nil {
+			return resolvedHistoryReference{}, err
+		}
+
+		if resolution == commitIDResolved {
+			return resolvedHistoryReference{revision: hash}, nil
+		}
 	}
 
 	if when, err := parseHistoryDate(value, bound); err == nil {
@@ -103,42 +119,44 @@ func (s *repoService) requireCommitID(value string) (plumbing.Hash, error) {
 		return plumbing.ZeroHash, eris.Errorf("invalid commit ID %q", value)
 	}
 
-	hash, found, err := s.tryResolveCommitID(value)
+	hash, resolution, err := s.inspectCommitID(value)
 	if err != nil {
 		return plumbing.ZeroHash, err
 	}
 
-	if !found {
+	switch resolution {
+	case commitIDMissing:
 		return plumbing.ZeroHash, eris.Errorf("unknown commit ID %q", value)
+	case commitIDAmbiguous:
+		return plumbing.ZeroHash, eris.Errorf("commit ID %q is ambiguous", value)
+	case commitIDNotCommit:
+		return plumbing.ZeroHash, eris.Errorf("commit ID %q does not identify a commit", value)
+	case commitIDResolved:
+		return hash, nil
 	}
 
-	return hash, nil
+	return plumbing.ZeroHash, eris.Errorf("unknown commit ID %q", value)
 }
 
-func (s *repoService) tryResolveCommitID(value string) (plumbing.Hash, bool, error) {
-	if !isCommitIDSyntax(value) {
-		return plumbing.ZeroHash, false, nil
-	}
-
+func (s *repoService) inspectCommitID(
+	value string,
+) (plumbing.Hash, commitIDResolution, error) {
 	matches, err := s.hashesMatchingPrefix(strings.ToLower(value))
 	if err != nil {
-		return plumbing.ZeroHash, true, err
+		return plumbing.ZeroHash, commitIDMissing, err
 	}
 
 	switch len(matches) {
 	case 0:
-		return plumbing.ZeroHash, false, nil
+		return plumbing.ZeroHash, commitIDMissing, nil
 	case 1:
 		if _, err := s.repo.CommitObject(matches[0]); err != nil {
-			return plumbing.ZeroHash, true, eris.Errorf(
-				"commit ID %q does not identify a commit",
-				value,
-			)
+			return plumbing.ZeroHash, commitIDNotCommit, nil
 		}
 
-		return matches[0], true, nil
+		return matches[0], commitIDResolved, nil
 	default:
-		return plumbing.ZeroHash, true, eris.Errorf("commit ID %q is ambiguous", value)
+		return plumbing.ZeroHash, commitIDAmbiguous, nil
 	}
 }
 

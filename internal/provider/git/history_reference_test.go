@@ -10,7 +10,17 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/storage"
 )
+
+type fixedPrefixStorer struct {
+	storage.Storer
+	hashes []plumbing.Hash
+}
+
+func (s *fixedPrefixStorer) HashesWithPrefix([]byte) ([]plumbing.Hash, error) {
+	return s.hashes, nil
+}
 
 func TestResolveHistoryReference_UsesExplicitPrefixes(t *testing.T) {
 	t.Parallel()
@@ -76,6 +86,46 @@ func TestResolveHistoryReference_UnprefixedCommitWinsOverDate(t *testing.T) {
 	resolved, err := s.resolveHistoryReference(fixture.main[:8], lowerBound)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)))
+}
+
+func TestResolveHistoryReference_CompactDateFallsThroughCommitIDCollisions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		hashes []plumbing.Hash
+	}{
+		{
+			name:   "non-commit object",
+			hashes: []plumbing.Hash{plumbing.NewHash("1111111111111111111111111111111111111111")},
+		},
+		{
+			name: "ambiguous prefix",
+			hashes: []plumbing.Hash{
+				plumbing.NewHash("1111111111111111111111111111111111111111"),
+				plumbing.NewHash("2222222222222222222222222222222222222222"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			fixture := setupTagRangeRepo(t)
+
+			s, err := getService(fixture.dir)
+			g.Expect(err).NotTo(HaveOccurred())
+			s.repo.Storer = &fixedPrefixStorer{
+				Storer: s.repo.Storer,
+				hashes: tt.hashes,
+			}
+
+			resolved, err := s.resolveHistoryReference("20260905", lowerBound)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(resolved.timestamp).To(Equal(time.Date(2026, 9, 5, 0, 0, 0, 0, time.Local)))
+		})
+	}
 }
 
 func TestResolveHistoryReference_RejectsInvalidExplicitReferences(t *testing.T) {
