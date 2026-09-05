@@ -89,7 +89,7 @@ func (s *repoService) tryResolveTagCommit(name string) (plumbing.Hash, bool, err
 		return plumbing.ZeroHash, true, err
 	}
 
-	_, err = repo.Reference(plumbing.NewTagReferenceName(name), true)
+	ref, err := repo.Reference(plumbing.NewTagReferenceName(name), true)
 	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return plumbing.ZeroHash, false, nil
 	}
@@ -98,7 +98,7 @@ func (s *repoService) tryResolveTagCommit(name string) (plumbing.Hash, bool, err
 		return plumbing.ZeroHash, true, eris.Wrapf(err, "failed to resolve tag %q", name)
 	}
 
-	hash, err := s.resolveTagCommit(name)
+	hash, err := peelTagCommit(repo, name, ref.Hash())
 
 	return hash, true, err
 }
