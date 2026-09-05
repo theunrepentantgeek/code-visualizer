@@ -21,7 +21,9 @@ func RunProviders(c *CommonState) error {
 		c.Flags,
 		provider.FileProgressTotal(c.Requested.BaseMetrics, model.CountFiles(c.Root)),
 	)
-	defer stopMetricTicker()
+
+	metricsLoaded := false
+	defer func() { stopMetricTicker(metricsLoaded) }()
 
 	requested := c.Requested.BaseMetrics
 	if hasAuthorshipMetric(requested) {
@@ -41,10 +43,13 @@ func RunProviders(c *CommonState) error {
 		return err
 	}
 
-	return eris.Wrap(
-		provider.RunLoaders(c.Root, requested, metricProg),
-		"failed to load metrics",
-	)
+	if err := provider.RunLoaders(c.Root, requested, metricProg); err != nil {
+		return eris.Wrap(err, "failed to load metrics")
+	}
+
+	metricsLoaded = true
+
+	return nil
 }
 
 func loadFileGitMetrics(
