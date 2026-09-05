@@ -42,7 +42,7 @@ func CommitTotal(repoPath string) (int64, error) {
 
 // CommitTotalInRange returns the number of reachable commits within the supplied window.
 func CommitTotalInRange(repoPath string, from time.Time, until time.Time) (int64, error) {
-	return CommitTotalInHistoryRange(repoPath, HistoryRange{From: from, Until: until})
+	return CommitTotalInHistoryRange(repoPath, historyRangeFromTimes(from, until))
 }
 
 // CommitTotalInHistoryRange returns the number of commits selected by historyRange.
@@ -106,7 +106,7 @@ func BulkCommitHistoryInRange(
 	return BulkCommitHistoryInHistoryRange(
 		repoPath,
 		tracked,
-		HistoryRange{From: from, Until: until},
+		historyRangeFromTimes(from, until),
 		onCommitProcessed,
 	)
 }
@@ -166,7 +166,7 @@ func BulkCommitHistoryAndPrewarmInRange(
 		repoPath,
 		tracked,
 		requested,
-		HistoryRange{From: from, Until: until},
+		historyRangeFromTimes(from, until),
 		onCommitProcessed,
 	)
 }

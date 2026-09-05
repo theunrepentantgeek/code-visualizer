@@ -109,7 +109,7 @@ func TestCommitTotalInRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
 func TestHistoryRange_TotalHistoryAndPrewarmUseSameSelection(t *testing.T) {
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
-	historyRange := HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"}
+	historyRange := HistoryRange{From: "v1.0", Until: "v2.0"}
 	tracked := map[string]bool{"main.go": true, "feature.go": true}
 
 	total, err := CommitTotalInHistoryRange(fixture.dir, historyRange)
@@ -173,7 +173,7 @@ func TestHistoryRange_PrewarmReplacesStalePaths(t *testing.T) {
 		fixture.dir,
 		map[string]bool{"main.go": true},
 		[]metric.Name{CommitCount},
-		HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"},
+		HistoryRange{From: "v1.0", Until: "v2.0"},
 		nil,
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -195,7 +195,7 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
 	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
 
-	commits, err := s.commitIterator(HistoryRange{From: from, Until: until})
+	commits, err := s.commitIterator(historyRangeFromTimes(from, until))
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var count int

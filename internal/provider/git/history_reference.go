@@ -216,3 +216,17 @@ func parseHistoryDateLayout(value string, candidate historyDateLayout) (time.Tim
 
 	return time.ParseInLocation(candidate.layout, value, time.Local)
 }
+
+func historyRangeFromTimes(from, until time.Time) HistoryRange {
+	var result HistoryRange
+
+	if !from.IsZero() {
+		result.From = "date:" + from.Format(time.RFC3339Nano)
+	}
+
+	if !until.IsZero() {
+		result.Until = "date:" + until.Format(time.RFC3339Nano)
+	}
+
+	return result
+}

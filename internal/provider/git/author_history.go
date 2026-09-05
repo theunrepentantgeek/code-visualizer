@@ -97,7 +97,7 @@ func BulkAuthorHistoryInRange(
 		repoPath,
 		filePaths,
 		honorMailmap,
-		HistoryRange{From: from, Until: until},
+		historyRangeFromTimes(from, until),
 		onCommitProcessed,
 	)
 }
