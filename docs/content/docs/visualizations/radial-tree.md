@@ -43,6 +43,7 @@ codeviz radial-tree [flags] <target-path>
 | `--include`            |       | none           | Include matching files; simple glob (repeatable)                  |
 | `--exclude`            |       | none           | Exclude matching files; simple glob (repeatable)                  |
 | `--include-binary-files` |     | `false`        | Include binary files, which are excluded by default               |
+| `--changed-only`       |       | `false`        | Show only files modified in the selected Git range                |
 
 See [Shared concepts]({{< relref "/docs/shared-concepts" >}}) for the list of metric names,
 palettes, and the include and exclude filter rules.

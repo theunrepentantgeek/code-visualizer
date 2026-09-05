@@ -34,6 +34,10 @@ func (e *OutputPathError) Error() string { return e.Msg }
 // NoFilesAfterFilterMsg is the message used when binary filtering empties the tree.
 const NoFilesAfterFilterMsg = "no files available for visualization after excluding binary files"
 
+// NoFilesAfterChangedOnlyMsg is used when Git range filtering empties the tree.
+const NoFilesAfterChangedOnlyMsg = "no files available for visualization after filtering to files changed " +
+	"in the selected Git range"
+
 // NoFilesAfterFilterError reports that no files remain after filtering.
 type NoFilesAfterFilterError struct {
 	Msg string

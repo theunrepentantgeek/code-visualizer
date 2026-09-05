@@ -144,6 +144,19 @@ func TestRenderCmd_ForwardsHistoryRangeToPresetCommand(t *testing.T) {
 	g.Expect(command.Until).To(Equal("tag:v2.0"))
 }
 
+func TestRenderCmd_ForwardsChangedOnlyToPresetCommand(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	render := &RenderCmd{ChangedOnly: true}
+
+	g.Expect(render.structureTreemap("Release").ChangedOnly).To(BeTrue())
+	g.Expect(render.structureBubbletree("Release").ChangedOnly).To(BeTrue())
+	g.Expect(render.historyTreemap("Release").ChangedOnly).To(BeTrue())
+	g.Expect(render.ageTreemap("Release").ChangedOnly).To(BeTrue())
+	g.Expect(render.contributorsTreemap("Release").ChangedOnly).To(BeTrue())
+}
+
 func TestFindPreset_KnownName_ReturnsPreset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

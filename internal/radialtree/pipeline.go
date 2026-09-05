@@ -8,6 +8,7 @@ import (
 // AcquireData runs scan, providers, and declaration population.
 func AcquireData(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncX(s, stages.FilterChangedOnly)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
 	pipeline.ApplyFuncX(s, stages.RunProviders)
 	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
