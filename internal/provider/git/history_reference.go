@@ -298,17 +298,3 @@ func parseHistoryDateLayout(
 
 	return parsed, eris.Wrap(err, "failed to parse local date")
 }
-
-func historyRangeFromTimes(from, until time.Time) HistoryRange {
-	var result HistoryRange
-
-	if !from.IsZero() {
-		result.From = "date:" + from.Format(time.RFC3339Nano)
-	}
-
-	if !until.IsZero() {
-		result.Until = "date:" + until.Format(time.RFC3339Nano)
-	}
-
-	return result
-}

@@ -3,7 +3,6 @@ package git
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -91,16 +90,17 @@ func TestCommitTotal_ReturnsReachableCommitCount(t *testing.T) {
 	g.Expect(total).To(Equal(int64(3)))
 }
 
-func TestCommitTotalInRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
+func TestCommitTotalInHistoryRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := setupTestGitRepo(t)
+	historyRange := HistoryRange{
+		From:  "date:2024-01-01T00:00:00Z",
+		Until: "date:2024-01-02T00:00:00Z",
+	}
 
-	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
-	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
-
-	total, err := CommitTotalInRange(dir, from, until)
+	total, err := CommitTotalInHistoryRange(dir, historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(total).To(Equal(int64(1)))
 }
@@ -192,10 +192,12 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
-	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
+	historyRange := HistoryRange{
+		From:  "date:2024-01-01T00:00:00Z",
+		Until: "date:2024-01-02T00:00:00Z",
+	}
 
-	commits, err := s.commitIterator(historyRangeFromTimes(from, until))
+	commits, err := s.commitIterator(historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var count int

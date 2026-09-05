@@ -40,11 +40,6 @@ func CommitTotal(repoPath string) (int64, error) {
 	return CommitTotalInHistoryRange(repoPath, HistoryRange{})
 }
 
-// CommitTotalInRange returns the number of reachable commits within the supplied window.
-func CommitTotalInRange(repoPath string, from time.Time, until time.Time) (int64, error) {
-	return CommitTotalInHistoryRange(repoPath, historyRangeFromTimes(from, until))
-}
-
 // CommitTotalInHistoryRange returns the number of commits selected by historyRange.
 func CommitTotalInHistoryRange(repoPath string, historyRange HistoryRange) (int64, error) {
 	s, err := getService(repoPath)
@@ -95,22 +90,6 @@ func BulkCommitHistory(
 	return BulkCommitHistoryInHistoryRange(repoPath, tracked, HistoryRange{}, onCommitProcessed)
 }
 
-// BulkCommitHistoryInRange filters traversed commits to the supplied date window.
-func BulkCommitHistoryInRange(
-	repoPath string,
-	tracked map[string]bool,
-	from time.Time,
-	until time.Time,
-	onCommitProcessed func(),
-) ([]Commit, error) {
-	return BulkCommitHistoryInHistoryRange(
-		repoPath,
-		tracked,
-		historyRangeFromTimes(from, until),
-		onCommitProcessed,
-	)
-}
-
 // BulkCommitHistoryInHistoryRange filters traversed commits to historyRange.
 func BulkCommitHistoryInHistoryRange(
 	repoPath string,
@@ -149,24 +128,6 @@ func BulkCommitHistoryAndPrewarm(
 		tracked,
 		requested,
 		HistoryRange{},
-		onCommitProcessed,
-	)
-}
-
-// BulkCommitHistoryAndPrewarmInRange filters traversed commits to the supplied date window.
-func BulkCommitHistoryAndPrewarmInRange(
-	repoPath string,
-	tracked map[string]bool,
-	requested []metric.Name,
-	from time.Time,
-	until time.Time,
-	onCommitProcessed func(),
-) ([]Commit, error) {
-	return BulkCommitHistoryAndPrewarmInHistoryRange(
-		repoPath,
-		tracked,
-		requested,
-		historyRangeFromTimes(from, until),
 		onCommitProcessed,
 	)
 }
