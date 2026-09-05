@@ -204,6 +204,7 @@ func TestHistoryRange_MixesRevisionAndDateBounds(t *testing.T) {
 
 	for commit, iterationErr := range commits {
 		g.Expect(iterationErr).NotTo(HaveOccurred())
+
 		hashes = append(hashes, commit.Hash.String())
 	}
 

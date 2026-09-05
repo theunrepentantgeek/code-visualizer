@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	. "github.com/onsi/gomega"
+
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 func TestResolveHistoryReference_UsesExplicitPrefixes(t *testing.T) {
@@ -145,10 +146,9 @@ func TestResolveHistoryReference_ReportsUnknownValue(t *testing.T) {
 }
 
 func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {
+	t.Parallel()
+
 	local := time.FixedZone("test-local", 12*60*60)
-	previous := time.Local
-	time.Local = local
-	t.Cleanup(func() { time.Local = previous })
 
 	tests := []struct {
 		value string
@@ -169,8 +169,9 @@ func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.value, func(t *testing.T) {
+			t.Parallel()
 			g := NewGomegaWithT(t)
-			got, err := parseHistoryDate(tt.value, lowerBound)
+			got, err := parseHistoryDateInLocation(tt.value, lowerBound, local)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(got.Equal(tt.want)).To(BeTrue())
 		})
@@ -178,13 +179,11 @@ func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {
 }
 
 func TestParseHistoryDate_UpperDateIncludesEntireDay(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 	local := time.FixedZone("test-local", 12*60*60)
-	previous := time.Local
-	time.Local = local
-	t.Cleanup(func() { time.Local = previous })
 
-	got, err := parseHistoryDate("20260905", upperBound)
+	got, err := parseHistoryDateInLocation("20260905", upperBound, local)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(got).To(Equal(
 		time.Date(2026, 9, 6, 0, 0, 0, 0, local).Add(-time.Nanosecond),
@@ -203,7 +202,7 @@ func TestParseHistoryDate_UpperTimestampUsesExactInstant(t *testing.T) {
 func runHistoryGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 
-	cmd := exec.Command("git", args...) //nolint:gosec // fixed test executable
+	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 
 	output, err := cmd.CombinedOutput()
@@ -216,18 +215,29 @@ func addAmbiguousObjectPrefix(t *testing.T, s *repoService) string {
 	t.Helper()
 	g := NewGomegaWithT(t)
 	seen := make(map[string]plumbing.Hash)
+	repo, err := s.repository()
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if repo == nil {
+		t.Fatal("expected Git repository")
+	}
 
 	for i := range 10_000 {
-		encoded := s.repo.Storer.NewEncodedObject()
+		encoded := repo.Storer.NewEncodedObject()
 		encoded.SetType(plumbing.BlobObject)
 
 		writer, err := encoded.Writer()
 		g.Expect(err).NotTo(HaveOccurred())
+
+		if writer == nil {
+			t.Fatal("expected Git object writer")
+		}
+
 		_, err = fmt.Fprintf(writer, "collision candidate %d", i)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(writer.Close()).To(Succeed())
 
-		hash, err := s.repo.Storer.SetEncodedObject(encoded)
+		hash, err := repo.Storer.SetEncodedObject(encoded)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		prefix := hash.String()[:4]

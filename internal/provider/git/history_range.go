@@ -57,25 +57,34 @@ func (s *repoService) resolveHistoryRange(r HistoryRange) (resolvedHistoryRange,
 		return resolved, nil
 	}
 
-	reachableFromTip, err := s.reachableHashes(tip)
+	return s.excludeLowerRevision(resolved, from.revision, r.From, tipLabel)
+}
+
+func (s *repoService) excludeLowerRevision(
+	resolved resolvedHistoryRange,
+	from plumbing.Hash,
+	fromLabel string,
+	tipLabel string,
+) (resolvedHistoryRange, error) {
+	reachableFromTip, err := s.reachableHashes(resolved.tip)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "failed to inspect effective tip history")
 	}
 
-	if _, ok := reachableFromTip[from.revision]; !ok {
+	if _, ok := reachableFromTip[from]; !ok {
 		return resolvedHistoryRange{}, eris.Errorf(
 			"history reference %q is not an ancestor of %s",
-			r.From,
+			fromLabel,
 			tipLabel,
 		)
 	}
 
-	excluded, err := s.reachableHashes(from.revision)
+	excluded, err := s.reachableHashes(from)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrapf(
 			err,
 			"failed to inspect history reference %q",
-			r.From,
+			fromLabel,
 		)
 	}
 
@@ -92,7 +101,12 @@ func (s *repoService) resolveRangeTip(
 		return until.revision, strconv.Quote(label), nil
 	}
 
-	head, err := s.repo.Head()
+	repo, err := s.repository()
+	if err != nil {
+		return plumbing.ZeroHash, "", err
+	}
+
+	head, err := repo.Head()
 	if err != nil {
 		return plumbing.ZeroHash, "", eris.Wrap(err, "failed to get HEAD")
 	}
@@ -101,7 +115,12 @@ func (s *repoService) resolveRangeTip(
 }
 
 func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
-	ref, err := s.repo.Reference(plumbing.NewTagReferenceName(name), true)
+	repo, err := s.repository()
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+
+	ref, err := repo.Reference(plumbing.NewTagReferenceName(name), true)
 	if err != nil {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
 			return plumbing.ZeroHash, eris.Errorf("tag %q not found", name)
@@ -111,10 +130,15 @@ func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
 	}
 
 	hash := ref.Hash()
+
+	return peelTagCommit(repo, name, hash)
+}
+
+func peelTagCommit(repo *gogit.Repository, name string, hash plumbing.Hash) (plumbing.Hash, error) {
 	seen := make(map[plumbing.Hash]struct{})
 
 	for {
-		if _, err := s.repo.CommitObject(hash); err == nil {
+		if _, err := repo.CommitObject(hash); err == nil {
 			return hash, nil
 		}
 
@@ -124,7 +148,7 @@ func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
 
 		seen[hash] = struct{}{}
 
-		tag, err := s.repo.TagObject(hash)
+		tag, err := repo.TagObject(hash)
 		if err != nil {
 			return plumbing.ZeroHash, eris.Errorf("tag %q does not reference a commit", name)
 		}
@@ -134,7 +158,12 @@ func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
 }
 
 func (s *repoService) reachableHashes(from plumbing.Hash) (map[plumbing.Hash]struct{}, error) {
-	commitIter, err := s.repo.Log(&gogit.LogOptions{From: from})
+	repo, err := s.repository()
+	if err != nil {
+		return nil, err
+	}
+
+	commitIter, err := repo.Log(&gogit.LogOptions{From: from})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to start reachable-history iteration")
 	}
@@ -158,7 +187,12 @@ func (s *repoService) commitIterator(r HistoryRange) (iter.Seq2[*object.Commit, 
 		return nil, err
 	}
 
-	commitIter, err := s.repo.Log(&gogit.LogOptions{From: resolved.tip})
+	repo, err := s.repository()
+	if err != nil {
+		return nil, err
+	}
+
+	commitIter, err := repo.Log(&gogit.LogOptions{From: resolved.tip})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to start log iteration")
 	}

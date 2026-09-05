@@ -75,8 +75,8 @@ func (s *repoService) resolveHistoryReference(
 func splitHistoryReference(value string) (prefix, payload string, explicit bool) {
 	for _, prefix := range []string{"tag", "sha", "date"} {
 		marker := prefix + ":"
-		if strings.HasPrefix(value, marker) {
-			return prefix, strings.TrimPrefix(value, marker), true
+		if after, ok := strings.CutPrefix(value, marker); ok {
+			return prefix, after, true
 		}
 	}
 
@@ -84,7 +84,12 @@ func splitHistoryReference(value string) (prefix, payload string, explicit bool)
 }
 
 func (s *repoService) tryResolveTagCommit(name string) (plumbing.Hash, bool, error) {
-	_, err := s.repo.Reference(plumbing.NewTagReferenceName(name), true)
+	repo, err := s.repository()
+	if err != nil {
+		return plumbing.ZeroHash, true, err
+	}
+
+	_, err = repo.Reference(plumbing.NewTagReferenceName(name), true)
 	if errors.Is(err, plumbing.ErrReferenceNotFound) {
 		return plumbing.ZeroHash, false, nil
 	}
@@ -129,7 +134,12 @@ func (s *repoService) tryResolveCommitID(value string) (plumbing.Hash, bool, err
 	case 0:
 		return plumbing.ZeroHash, false, nil
 	case 1:
-		if _, err := s.repo.CommitObject(matches[0]); err != nil {
+		repo, err := s.repository()
+		if err != nil {
+			return plumbing.ZeroHash, true, err
+		}
+
+		if _, err := repo.CommitObject(matches[0]); err != nil {
 			return plumbing.ZeroHash, true, eris.Errorf(
 				"commit ID %q does not identify a commit",
 				value,
@@ -143,20 +153,26 @@ func (s *repoService) tryResolveCommitID(value string) (plumbing.Hash, bool, err
 }
 
 func (s *repoService) hashesMatchingPrefix(value string) ([]plumbing.Hash, error) {
+	repo, err := s.repository()
+	if err != nil {
+		return nil, err
+	}
+
 	if len(value) == len(plumbing.ZeroHash)*2 {
 		hash := plumbing.NewHash(value)
-		if err := s.repo.Storer.HasEncodedObject(hash); err != nil {
-			if errors.Is(err, plumbing.ErrObjectNotFound) {
+		if objectErr := repo.Storer.HasEncodedObject(hash); objectErr != nil {
+			if errors.Is(objectErr, plumbing.ErrObjectNotFound) {
 				return nil, nil
 			}
 
-			return nil, eris.Wrap(err, "failed to inspect Git object")
+			return nil, eris.Wrap(objectErr, "failed to inspect Git object")
 		}
 
 		return []plumbing.Hash{hash}, nil
 	}
 
 	evenHex := value[:len(value)&^1]
+
 	prefix, err := hex.DecodeString(evenHex)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to decode commit ID")
@@ -176,16 +192,21 @@ func (s *repoService) hashesMatchingPrefix(value string) ([]plumbing.Hash, error
 
 func (s *repoService) hashesWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
 	type prefixHasher interface {
-		HashesWithPrefix([]byte) ([]plumbing.Hash, error)
+		HashesWithPrefix(prefix []byte) ([]plumbing.Hash, error)
 	}
 
-	if indexed, ok := s.repo.Storer.(prefixHasher); ok {
-		hashes, err := indexed.HashesWithPrefix(prefix)
-
-		return hashes, eris.Wrap(err, "failed to inspect Git object index")
+	repo, err := s.repository()
+	if err != nil {
+		return nil, err
 	}
 
-	objects, err := s.repo.Storer.IterEncodedObjects(plumbing.AnyObject)
+	if indexed, ok := repo.Storer.(prefixHasher); ok {
+		hashes, indexErr := indexed.HashesWithPrefix(prefix)
+
+		return hashes, eris.Wrap(indexErr, "failed to inspect Git object index")
+	}
+
+	objects, err := repo.Storer.IterEncodedObjects(plumbing.AnyObject)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to inspect Git objects")
 	}
@@ -254,8 +275,16 @@ var historyDateLayouts = []historyDateLayout{
 }
 
 func parseHistoryDate(value string, bound historyBound) (time.Time, error) {
+	return parseHistoryDateInLocation(value, bound, time.Now().Location())
+}
+
+func parseHistoryDateInLocation(
+	value string,
+	bound historyBound,
+	location *time.Location,
+) (time.Time, error) {
 	for _, candidate := range historyDateLayouts {
-		parsed, err := parseHistoryDateLayout(value, candidate)
+		parsed, err := parseHistoryDateLayout(value, candidate, location)
 		if err != nil {
 			continue
 		}
@@ -273,12 +302,20 @@ func parseHistoryDate(value string, bound historyBound) (time.Time, error) {
 	)
 }
 
-func parseHistoryDateLayout(value string, candidate historyDateLayout) (time.Time, error) {
+func parseHistoryDateLayout(
+	value string,
+	candidate historyDateLayout,
+	location *time.Location,
+) (time.Time, error) {
 	if candidate.explicitZone {
-		return time.Parse(candidate.layout, value)
+		parsed, err := time.Parse(candidate.layout, value)
+
+		return parsed, eris.Wrap(err, "failed to parse date")
 	}
 
-	return time.ParseInLocation(candidate.layout, value, time.Local)
+	parsed, err := time.ParseInLocation(candidate.layout, value, location)
+
+	return parsed, eris.Wrap(err, "failed to parse local date")
 }
 
 func historyRangeFromTimes(from, until time.Time) HistoryRange {
