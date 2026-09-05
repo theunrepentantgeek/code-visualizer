@@ -180,6 +180,7 @@ type historyDateLayout struct {
 
 var historyDateLayouts = []historyDateLayout{
 	{layout: time.RFC3339Nano, explicitZone: true},
+	{layout: "2006-01-02T15:04Z07:00", explicitZone: true},
 	{layout: "2006-01-02T15:04:05", explicitZone: false},
 	{layout: "2006-01-02T15:04", explicitZone: false},
 	{layout: "2006-01-02", dateOnly: true, explicitZone: false},

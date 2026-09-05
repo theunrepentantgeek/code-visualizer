@@ -45,24 +45,30 @@ the include and exclude filter rules that every command shares.
 Every visualization command and `render` accepts the following Git history
 constraints:
 
-| Flag                 | Includes                                      |
-| -------------------- | --------------------------------------------- |
-| `--from YYYY-MM-DD`  | Commits authored on or after the date         |
-| `--until YYYY-MM-DD` | Commits authored through the end of the date  |
-| `--from-tag TAG`     | Commits strictly after the tag                |
-| `--until-tag TAG`    | The tagged commit and its reachable history   |
+| Flag            | Includes                                                     |
+| --------------- | ------------------------------------------------------------ |
+| `--from <ref>`  | Commits after a revision, or on/after a date or timestamp    |
+| `--until <ref>` | A revision and its history, or commits on/before a timestamp |
 
-`--from` and `--from-tag` are mutually exclusive, as are `--until` and
-`--until-tag`. Opposite date and tag bounds may be mixed:
+`<ref>` is resolved as an exact tag, then a unique short or full commit ID,
+then a date. Use `tag:`, `sha:`, or `date:` to force an interpretation. Dates
+accept ISO 8601 or `YYYYMMDD[-HHMM][Z]`. Values without a timezone use local
+time; a date-only `--until` includes the complete day.
+
+Reference types may be mixed:
 
 ```sh
 codeviz tree-map . -o release.png -f commit-count \
-  --from-tag v1.0 --until-tag v2.0
+  --from v1.0 --until tag:v2.0
+
+codeviz tree-map . -o recent.png -f commit-count \
+  --from sha:a1b2c3d --until 20260905
 ```
 
-Tag ranges follow the full Git commit graph. The lower tag must be an ancestor
-of the upper tag, or of `HEAD` when `--until-tag` is omitted. An upper tag may
-be outside the current `HEAD` history.
+Revision ranges follow the full Git commit graph. The lower revision is
+exclusive and must be an ancestor of the upper revision, or of `HEAD` when the
+upper bound is a date or omitted. The upper revision is inclusive and may be
+outside the current `HEAD` history.
 
 These options constrain Git-derived metrics and timeline history. They do not
 remove unchanged files from the current checkout.

@@ -109,7 +109,6 @@ func TestResolveHistoryReference_ReportsUnknownValue(t *testing.T) {
 }
 
 func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {
-	g := NewGomegaWithT(t)
 	local := time.FixedZone("test-local", 12*60*60)
 	previous := time.Local
 	time.Local = local
@@ -126,11 +125,13 @@ func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {
 		{"20260905-1430Z", time.Date(2026, 9, 5, 14, 30, 0, 0, time.UTC)},
 		{"2026-09-05T14:30:45Z", time.Date(2026, 9, 5, 14, 30, 45, 0, time.UTC)},
 		{"2026-09-05T14:30:45+12:00", time.Date(2026, 9, 5, 14, 30, 45, 0, local)},
+		{"2026-09-05T14:30+12:00", time.Date(2026, 9, 5, 14, 30, 0, 0, local)},
 		{"2026-09-05T14:30:45", time.Date(2026, 9, 5, 14, 30, 45, 0, local)},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.value, func(t *testing.T) {
+			g := NewGomegaWithT(t)
 			got, err := parseHistoryDate(tt.value, lowerBound)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(got.Equal(tt.want)).To(BeTrue())

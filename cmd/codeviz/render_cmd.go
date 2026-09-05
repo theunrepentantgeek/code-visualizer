@@ -24,8 +24,8 @@ type RenderCmd struct {
 	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to render; omit to list available presets."`
 	TargetPath string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
-	From       string `help:"Git history lower bound: tag, commit ID, or date." name:"from" optional:""`
-	Until      string `help:"Git history upper bound: tag, commit ID, or date." name:"until" optional:""`
+	From       string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
+	Until      string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Title      string `help:"Override the preset's default title." optional:""`
 	Width      int    `default:"1920" help:"Image width in pixels."`
