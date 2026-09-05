@@ -1,6 +1,7 @@
 package git
 
 import (
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
@@ -119,41 +120,101 @@ func (s *repoService) tryResolveCommitID(value string) (plumbing.Hash, bool, err
 		return plumbing.ZeroHash, false, nil
 	}
 
-	objects, err := s.repo.Storer.IterEncodedObjects(plumbing.AnyObject)
+	matches, err := s.hashesMatchingPrefix(strings.ToLower(value))
 	if err != nil {
-		return plumbing.ZeroHash, true, eris.Wrap(err, "failed to inspect Git objects")
-	}
-
-	defer objects.Close()
-
-	var matches []plumbing.EncodedObject
-
-	err = objects.ForEach(func(object plumbing.EncodedObject) error {
-		if strings.HasPrefix(object.Hash().String(), strings.ToLower(value)) {
-			matches = append(matches, object)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return plumbing.ZeroHash, true, eris.Wrap(err, "failed to inspect Git objects")
+		return plumbing.ZeroHash, true, err
 	}
 
 	switch len(matches) {
 	case 0:
 		return plumbing.ZeroHash, false, nil
 	case 1:
-		if matches[0].Type() != plumbing.CommitObject {
+		if _, err := s.repo.CommitObject(matches[0]); err != nil {
 			return plumbing.ZeroHash, true, eris.Errorf(
 				"commit ID %q does not identify a commit",
 				value,
 			)
 		}
 
-		return matches[0].Hash(), true, nil
+		return matches[0], true, nil
 	default:
 		return plumbing.ZeroHash, true, eris.Errorf("commit ID %q is ambiguous", value)
 	}
+}
+
+func (s *repoService) hashesMatchingPrefix(value string) ([]plumbing.Hash, error) {
+	if len(value) == len(plumbing.ZeroHash)*2 {
+		hash := plumbing.NewHash(value)
+		if err := s.repo.Storer.HasEncodedObject(hash); err != nil {
+			if errors.Is(err, plumbing.ErrObjectNotFound) {
+				return nil, nil
+			}
+
+			return nil, eris.Wrap(err, "failed to inspect Git object")
+		}
+
+		return []plumbing.Hash{hash}, nil
+	}
+
+	evenHex := value[:len(value)&^1]
+	prefix, err := hex.DecodeString(evenHex)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to decode commit ID")
+	}
+
+	hashes, err := s.hashesWithPrefix(prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(evenHex) == len(value) {
+		return hashes, nil
+	}
+
+	return filterHashStringsByPrefix(hashes, value), nil
+}
+
+func (s *repoService) hashesWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
+	type prefixHasher interface {
+		HashesWithPrefix([]byte) ([]plumbing.Hash, error)
+	}
+
+	if indexed, ok := s.repo.Storer.(prefixHasher); ok {
+		hashes, err := indexed.HashesWithPrefix(prefix)
+
+		return hashes, eris.Wrap(err, "failed to inspect Git object index")
+	}
+
+	objects, err := s.repo.Storer.IterEncodedObjects(plumbing.AnyObject)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to inspect Git objects")
+	}
+
+	defer objects.Close()
+
+	var hashes []plumbing.Hash
+
+	err = objects.ForEach(func(object plumbing.EncodedObject) error {
+		hash := object.Hash()
+		if strings.HasPrefix(hash.String(), hex.EncodeToString(prefix)) {
+			hashes = append(hashes, hash)
+		}
+
+		return nil
+	})
+
+	return hashes, eris.Wrap(err, "failed to inspect Git objects")
+}
+
+func filterHashStringsByPrefix(hashes []plumbing.Hash, prefix string) []plumbing.Hash {
+	result := make([]plumbing.Hash, 0, len(hashes))
+	for _, hash := range hashes {
+		if strings.HasPrefix(hash.String(), prefix) {
+			result = append(result, hash)
+		}
+	}
+
+	return result
 }
 
 func isCommitIDSyntax(value string) bool {
@@ -181,6 +242,8 @@ type historyDateLayout struct {
 var historyDateLayouts = []historyDateLayout{
 	{layout: time.RFC3339Nano, explicitZone: true},
 	{layout: "2006-01-02T15:04Z07:00", explicitZone: true},
+	{layout: "2006-01-02T15:04:05Z0700", explicitZone: true},
+	{layout: "2006-01-02T15:04Z0700", explicitZone: true},
 	{layout: "2006-01-02T15:04:05", explicitZone: false},
 	{layout: "2006-01-02T15:04", explicitZone: false},
 	{layout: "2006-01-02", dateOnly: true, explicitZone: false},

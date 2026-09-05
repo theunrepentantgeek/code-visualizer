@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -29,6 +30,19 @@ func TestResolveHistoryReference_UsesExplicitPrefixes(t *testing.T) {
 	date, err := s.resolveHistoryReference("date:20250905-1430Z", lowerBound)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(date.timestamp).To(Equal(time.Date(2025, 9, 5, 14, 30, 0, 0, time.UTC)))
+}
+
+func TestResolveHistoryReference_AcceptsFullCommitID(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+
+	s, err := getService(fixture.dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	resolved, err := s.resolveHistoryReference("sha:"+fixture.main, lowerBound)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)))
 }
 
 func TestResolveHistoryReference_UnprefixedTagWinsOverCommitAndDate(t *testing.T) {
@@ -74,11 +88,33 @@ func TestResolveHistoryReference_RejectsInvalidExplicitReferences(t *testing.T) 
 	_, err = s.resolveHistoryReference("tag:", lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring("tag reference cannot be empty")))
 
+	_, err = s.resolveHistoryReference("sha:", lowerBound)
+	g.Expect(err).To(MatchError(ContainSubstring("sha reference cannot be empty")))
+
+	_, err = s.resolveHistoryReference("date:", lowerBound)
+	g.Expect(err).To(MatchError(ContainSubstring("date reference cannot be empty")))
+
 	_, err = s.resolveHistoryReference("sha:not-a-hash", lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring(`invalid commit ID "not-a-hash"`)))
 
+	_, err = s.resolveHistoryReference("sha:deadbeef", lowerBound)
+	g.Expect(err).To(MatchError(ContainSubstring(`unknown commit ID "deadbeef"`)))
+
 	_, err = s.resolveHistoryReference("date:tomorrow", lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring(`invalid date "tomorrow"`)))
+}
+
+func TestResolveHistoryReference_RejectsAmbiguousCommitID(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+
+	s, err := getService(fixture.dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	prefix := addAmbiguousObjectPrefix(t, s)
+	_, err = s.resolveHistoryReference("sha:"+prefix, lowerBound)
+	g.Expect(err).To(MatchError(ContainSubstring(`commit ID "` + prefix + `" is ambiguous`)))
 }
 
 func TestResolveHistoryReference_RejectsNonCommitObjectID(t *testing.T) {
@@ -125,7 +161,9 @@ func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {
 		{"20260905-1430Z", time.Date(2026, 9, 5, 14, 30, 0, 0, time.UTC)},
 		{"2026-09-05T14:30:45Z", time.Date(2026, 9, 5, 14, 30, 45, 0, time.UTC)},
 		{"2026-09-05T14:30:45+12:00", time.Date(2026, 9, 5, 14, 30, 45, 0, local)},
+		{"2026-09-05T14:30:45+1200", time.Date(2026, 9, 5, 14, 30, 45, 0, local)},
 		{"2026-09-05T14:30+12:00", time.Date(2026, 9, 5, 14, 30, 0, 0, local)},
+		{"2026-09-05T14:30+1200", time.Date(2026, 9, 5, 14, 30, 0, 0, local)},
 		{"2026-09-05T14:30:45", time.Date(2026, 9, 5, 14, 30, 45, 0, local)},
 	}
 
@@ -172,4 +210,35 @@ func runHistoryGit(t *testing.T, dir string, args ...string) string {
 	NewWithT(t).Expect(err).NotTo(HaveOccurred(), string(output))
 
 	return strings.TrimSpace(string(output))
+}
+
+func addAmbiguousObjectPrefix(t *testing.T, s *repoService) string {
+	t.Helper()
+	g := NewGomegaWithT(t)
+	seen := make(map[string]plumbing.Hash)
+
+	for i := range 10_000 {
+		encoded := s.repo.Storer.NewEncodedObject()
+		encoded.SetType(plumbing.BlobObject)
+
+		writer, err := encoded.Writer()
+		g.Expect(err).NotTo(HaveOccurred())
+		_, err = fmt.Fprintf(writer, "collision candidate %d", i)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(writer.Close()).To(Succeed())
+
+		hash, err := s.repo.Storer.SetEncodedObject(encoded)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		prefix := hash.String()[:4]
+		if previous, ok := seen[prefix]; ok && previous != hash {
+			return prefix
+		}
+
+		seen[prefix] = hash
+	}
+
+	t.Fatal("failed to generate a four-character object ID collision")
+
+	return ""
 }
