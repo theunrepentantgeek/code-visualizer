@@ -213,12 +213,12 @@ func TestLoadGitHistory_PrewarmsRequestedGitMetricsForRunProviders(t *testing.T)
 	g.Expect(count).To(Equal(int64(2)))
 }
 
-func TestLoadGitHistory_PropagatesTagRangeToHistoryAndMetrics(t *testing.T) {
+func TestLoadGitHistory_PropagatesRevisionRangeToHistoryAndMetrics(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	state.Flags.HistoryRange = git.HistoryRange{FromTag: "v1.0"}
+	state.Flags.HistoryRange = git.HistoryRange{From: "v1.0"}
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
 
 	g.Expect(LoadGitHistory(state)).To(Succeed())
@@ -244,12 +244,12 @@ func TestLoadGitHistory_PropagatesTagRangeToHistoryAndMetrics(t *testing.T) {
 	g.Expect(count).To(Equal(int64(1)))
 }
 
-func TestRunProviders_AppliesTagRangeWithoutTimelineStage(t *testing.T) {
+func TestRunProviders_AppliesRevisionRangeWithoutTimelineStage(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	state.Flags.HistoryRange = git.HistoryRange{FromTag: "v1.0"}
+	state.Flags.HistoryRange = git.HistoryRange{From: "v1.0"}
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
 
 	g.Expect(RunProviders(state)).To(Succeed())
@@ -273,13 +273,13 @@ func TestRunProviders_AppliesTagRangeWithoutTimelineStage(t *testing.T) {
 	g.Expect(count).To(Equal(int64(1)))
 }
 
-func TestRunProviders_AppliesTagRangeToAuthorshipMetrics(t *testing.T) {
+func TestRunProviders_AppliesRevisionRangeToAuthorshipMetrics(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
 	state.RootConfig = config.New()
-	state.Flags.HistoryRange = git.HistoryRange{FromTag: "v1.0"}
+	state.Flags.HistoryRange = git.HistoryRange{From: "v1.0"}
 	state.Requested.BaseMetrics = []metric.Name{git.CodeOwnerMetric}
 
 	g.Expect(RunProviders(state)).To(Succeed())

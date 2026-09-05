@@ -81,27 +81,6 @@ func BulkAuthorHistory(
 	)
 }
 
-// BulkAuthorHistoryInRange applies the same aggregation but only considers commits
-// whose author timestamps fall within the supplied date window.
-//
-//nolint:cyclop,funlen,maintidx,revive,nolintlint // A single-pass history walk keeps the accumulators local and coherent.
-func BulkAuthorHistoryInRange(
-	repoPath string,
-	filePaths map[string]bool,
-	honorMailmap bool,
-	from time.Time,
-	until time.Time,
-	onCommitProcessed func(),
-) (AuthorHistoryResult, error) {
-	return BulkAuthorHistoryInHistoryRange(
-		repoPath,
-		filePaths,
-		honorMailmap,
-		HistoryRange{From: from, Until: until},
-		onCommitProcessed,
-	)
-}
-
 // BulkAuthorHistoryInHistoryRange aggregates authorship for commits selected by historyRange.
 //
 //nolint:cyclop,funlen,maintidx,revive,nolintlint // A single-pass history walk keeps the accumulators local and coherent.

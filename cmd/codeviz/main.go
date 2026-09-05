@@ -63,6 +63,16 @@ func toStagesFlags(f *Flags) *stages.Flags {
 	}
 }
 
+func stagesFlagsForCommand(flags *Flags, fromValue, untilValue string) *stages.Flags {
+	parsedFlags := toStagesFlags(flags)
+	parsedFlags.HistoryRange = git.HistoryRange{
+		From:  fromValue,
+		Until: untilValue,
+	}
+
+	return parsedFlags
+}
+
 func setupLogger(quiet, verbose, debug bool) { //nolint:revive,nolintlint // flag-parameter: boolean toggles are idiomatic for log verbosity
 	level := slog.LevelInfo
 

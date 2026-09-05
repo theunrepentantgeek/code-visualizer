@@ -15,7 +15,7 @@ func TestBulkAuthorHistoryInHistoryRange_UsesTagSelection(t *testing.T) {
 		fixture.dir,
 		map[string]bool{"main.go": true, "feature.go": true},
 		false,
-		HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"},
+		HistoryRange{From: "v1.0", Until: "v2.0"},
 		nil,
 	)
 	g.Expect(err).NotTo(HaveOccurred())

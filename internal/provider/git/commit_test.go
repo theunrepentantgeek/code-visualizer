@@ -3,7 +3,6 @@ package git
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -91,16 +90,17 @@ func TestCommitTotal_ReturnsReachableCommitCount(t *testing.T) {
 	g.Expect(total).To(Equal(int64(3)))
 }
 
-func TestCommitTotalInRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
+func TestCommitTotalInHistoryRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := setupTestGitRepo(t)
+	historyRange := HistoryRange{
+		From:  "date:2024-01-01T00:00:00Z",
+		Until: "date:2024-01-02T00:00:00Z",
+	}
 
-	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
-	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
-
-	total, err := CommitTotalInRange(dir, from, until)
+	total, err := CommitTotalInHistoryRange(dir, historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(total).To(Equal(int64(1)))
 }
@@ -109,7 +109,7 @@ func TestCommitTotalInRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
 func TestHistoryRange_TotalHistoryAndPrewarmUseSameSelection(t *testing.T) {
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
-	historyRange := HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"}
+	historyRange := HistoryRange{From: "v1.0", Until: "v2.0"}
 	tracked := map[string]bool{"main.go": true, "feature.go": true}
 
 	total, err := CommitTotalInHistoryRange(fixture.dir, historyRange)
@@ -173,7 +173,7 @@ func TestHistoryRange_PrewarmReplacesStalePaths(t *testing.T) {
 		fixture.dir,
 		map[string]bool{"main.go": true},
 		[]metric.Name{CommitCount},
-		HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"},
+		HistoryRange{From: "v1.0", Until: "v2.0"},
 		nil,
 	)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -192,10 +192,12 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	from := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
-	until := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
+	historyRange := HistoryRange{
+		From:  "date:2024-01-01T00:00:00Z",
+		Until: "date:2024-01-02T00:00:00Z",
+	}
 
-	commits, err := s.commitIterator(HistoryRange{From: from, Until: until})
+	commits, err := s.commitIterator(historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var count int

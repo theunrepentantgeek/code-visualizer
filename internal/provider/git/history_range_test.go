@@ -94,7 +94,7 @@ func setupTagRangeRepo(t *testing.T) tagRangeFixture {
 	}
 }
 
-func TestHistoryRange_FromTagIsExclusiveAndUntilTagIsInclusive(t *testing.T) {
+func TestHistoryRange_FromRevisionIsExclusiveAndUntilRevisionIsInclusive(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
@@ -107,7 +107,7 @@ func TestHistoryRange_FromTagIsExclusiveAndUntilTagIsInclusive(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	commits, err := s.commitIterator(HistoryRange{FromTag: "v1.0", UntilTag: "v2.0"})
+	commits, err := s.commitIterator(HistoryRange{From: "v1.0", Until: "v2.0"})
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var hashes []string
@@ -122,7 +122,7 @@ func TestHistoryRange_FromTagIsExclusiveAndUntilTagIsInclusive(t *testing.T) {
 	g.Expect(hashes).NotTo(ContainElement(fixture.initial))
 }
 
-func TestHistoryRange_UntilTagCanBeOutsideHeadAncestry(t *testing.T) {
+func TestHistoryRange_UntilRevisionCanBeOutsideHeadAncestry(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
@@ -135,7 +135,7 @@ func TestHistoryRange_UntilTagCanBeOutsideHeadAncestry(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	commits, err := s.commitIterator(HistoryRange{UntilTag: "detached"})
+	commits, err := s.commitIterator(HistoryRange{Until: "detached"})
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var hashes []string
@@ -149,7 +149,7 @@ func TestHistoryRange_UntilTagCanBeOutsideHeadAncestry(t *testing.T) {
 	g.Expect(hashes).To(Equal([]string{fixture.detached}))
 }
 
-func TestHistoryRange_RejectsFromTagOutsideTipAncestry(t *testing.T) {
+func TestHistoryRange_RejectsFromRevisionOutsideTipAncestry(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
@@ -162,8 +162,8 @@ func TestHistoryRange_RejectsFromTagOutsideTipAncestry(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	_, err = s.commitIterator(HistoryRange{FromTag: "detached", UntilTag: "v2.0"})
-	g.Expect(err).To(MatchError(ContainSubstring(`tag "detached" is not an ancestor of tag "v2.0"`)))
+	_, err = s.commitIterator(HistoryRange{From: "detached", Until: "v2.0"})
+	g.Expect(err).To(MatchError(ContainSubstring(`history reference "detached" is not an ancestor of "v2.0"`)))
 }
 
 func TestHistoryRange_ReportsInvalidTags(t *testing.T) {
@@ -179,9 +179,55 @@ func TestHistoryRange_ReportsInvalidTags(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	_, err = s.commitIterator(HistoryRange{UntilTag: "missing"})
+	_, err = s.commitIterator(HistoryRange{Until: "tag:missing"})
 	g.Expect(err).To(MatchError(ContainSubstring(`tag "missing" not found`)))
 
-	_, err = s.commitIterator(HistoryRange{UntilTag: "blob-tag"})
+	_, err = s.commitIterator(HistoryRange{Until: "tag:blob-tag"})
 	g.Expect(err).To(MatchError(ContainSubstring(`tag "blob-tag" does not reference a commit`)))
+}
+
+func TestHistoryRange_MixesRevisionAndDateBounds(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+
+	s, err := getService(fixture.dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	commits, err := s.commitIterator(HistoryRange{
+		From:  "tag:v1.0",
+		Until: "date:2025-03-01T23:59:59Z",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	var hashes []string
+
+	for commit, iterationErr := range commits {
+		g.Expect(iterationErr).NotTo(HaveOccurred())
+
+		hashes = append(hashes, commit.Hash.String())
+	}
+
+	g.Expect(hashes).To(ContainElements(fixture.main, fixture.feature))
+	g.Expect(hashes).NotTo(ContainElement(fixture.initial))
+}
+
+func TestHistoryRange_RejectsReversedDateRange(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+
+	s, err := getService(fixture.dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	_, err = s.commitIterator(HistoryRange{From: "2025-03-01", Until: "2025-01-01"})
+	g.Expect(err).To(MatchError(ContainSubstring("--from must be before or equal to --until")))
 }

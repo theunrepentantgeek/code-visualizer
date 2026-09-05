@@ -16,10 +16,8 @@ import (
 type ScatterCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
-	From       string `help:"Filter git activity from this date (YYYY-MM-DD)." name:"from" optional:""`
-	Until      string `help:"Filter git activity until this date (YYYY-MM-DD)." name:"until" optional:""`
-	FromTag    string `help:"Filter git activity strictly after this tag." name:"from-tag" optional:""`
-	UntilTag   string `help:"Filter git activity through and including this tag." name:"until-tag" optional:""`
+	From       string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
+	Until      string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	XAxis metric.Name `default:"" help:"Metric for X-axis position; run 'codeviz help metrics' for available metrics." name:"x-axis" short:"x"` //nolint:revive,nolintlint // kong struct tags require long lines
 	YAxis metric.Name `default:"" help:"Metric for Y-axis position; run 'codeviz help metrics' for available metrics." name:"y-axis" short:"y"` //nolint:revive,nolintlint // kong struct tags require long lines
@@ -50,12 +48,6 @@ type ScatterCmd struct {
 
 func (c *ScatterCmd) Filters() []filter.Rule {
 	return filter.Merge(c.Include, c.Exclude)
-}
-
-func (c *ScatterCmd) Validate() error {
-	_, err := parseHistoryRange(c.From, c.Until, c.FromTag, c.UntilTag)
-
-	return err
 }
 
 func (*ScatterCmd) validateConfig(cfg *config.Scatter) error {
@@ -177,10 +169,7 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 		return err
 	}
 
-	stagesFlags, err := stagesFlagsForCommand(flags, c.From, c.Until, c.FromTag, c.UntilTag)
-	if err != nil {
-		return err
-	}
+	stagesFlags := stagesFlagsForCommand(flags, c.From, c.Until)
 
 	common := &stages.CommonState{
 		TargetPath:         c.TargetPath,

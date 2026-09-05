@@ -24,10 +24,8 @@ type RenderCmd struct {
 	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to render; omit to list available presets."`
 	TargetPath string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
-	From       string `help:"Filter git activity from this date (YYYY-MM-DD)." name:"from" optional:""`
-	Until      string `help:"Filter git activity until this date (YYYY-MM-DD)." name:"until" optional:""`
-	FromTag    string `help:"Filter git activity strictly after this tag." name:"from-tag" optional:""`
-	UntilTag   string `help:"Filter git activity through and including this tag." name:"until-tag" optional:""`
+	From       string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
+	Until      string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Title      string `help:"Override the preset's default title." optional:""`
 	Width      int    `default:"1920" help:"Image width in pixels."`
@@ -114,10 +112,6 @@ func (r *RenderCmd) Validate() error {
 
 	if r.Output == "" {
 		return eris.Errorf("output path (-o) is required when a preset is specified")
-	}
-
-	if _, err := parseHistoryRange(r.From, r.Until, r.FromTag, r.UntilTag); err != nil {
-		return err
 	}
 
 	return nil
@@ -208,8 +202,6 @@ func (r *RenderCmd) structureTreemap(title string) *TreemapCmd {
 		Title:      title,
 		From:       r.From,
 		Until:      r.Until,
-		FromTag:    r.FromTag,
-		UntilTag:   r.UntilTag,
 	}
 }
 
@@ -225,8 +217,6 @@ func (r *RenderCmd) structureBubbletree(title string) *BubbletreeCmd {
 		Title:      title,
 		From:       r.From,
 		Until:      r.Until,
-		FromTag:    r.FromTag,
-		UntilTag:   r.UntilTag,
 	}
 }
 
@@ -242,8 +232,6 @@ func (r *RenderCmd) historyTreemap(title string) *TreemapCmd {
 		Title:      title,
 		From:       r.From,
 		Until:      r.Until,
-		FromTag:    r.FromTag,
-		UntilTag:   r.UntilTag,
 	}
 }
 
@@ -259,8 +247,6 @@ func (r *RenderCmd) ageTreemap(title string) *TreemapCmd {
 		Title:      title,
 		From:       r.From,
 		Until:      r.Until,
-		FromTag:    r.FromTag,
-		UntilTag:   r.UntilTag,
 	}
 }
 
@@ -276,7 +262,5 @@ func (r *RenderCmd) contributorsTreemap(title string) *TreemapCmd {
 		Title:      title,
 		From:       r.From,
 		Until:      r.Until,
-		FromTag:    r.FromTag,
-		UntilTag:   r.UntilTag,
 	}
 }

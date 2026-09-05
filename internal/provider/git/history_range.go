@@ -16,10 +16,8 @@ import (
 
 // HistoryRange selects commits by graph position and author timestamp.
 type HistoryRange struct {
-	From     time.Time
-	Until    time.Time
-	FromTag  string
-	UntilTag string
+	From  string
+	Until string
 }
 
 type resolvedHistoryRange struct {
@@ -30,41 +28,64 @@ type resolvedHistoryRange struct {
 }
 
 func (s *repoService) resolveHistoryRange(r HistoryRange) (resolvedHistoryRange, error) {
-	tip, tipLabel, err := s.resolveRangeTip(r.UntilTag)
+	from, err := s.resolveHistoryReference(r.From, lowerBound)
+	if err != nil {
+		return resolvedHistoryRange{}, eris.Wrap(err, "invalid --from")
+	}
+
+	until, err := s.resolveHistoryReference(r.Until, upperBound)
+	if err != nil {
+		return resolvedHistoryRange{}, eris.Wrap(err, "invalid --until")
+	}
+
+	if !from.timestamp.IsZero() && !until.timestamp.IsZero() &&
+		from.timestamp.After(until.timestamp) {
+		return resolvedHistoryRange{}, eris.New("--from must be before or equal to --until")
+	}
+
+	tip, tipLabel, err := s.resolveRangeTip(until, r.Until)
 	if err != nil {
 		return resolvedHistoryRange{}, err
 	}
 
 	resolved := resolvedHistoryRange{
 		tip:   tip,
-		from:  r.From,
-		until: r.Until,
+		from:  from.timestamp,
+		until: until.timestamp,
 	}
-	if r.FromTag == "" {
+	if !from.hasRevision() {
 		return resolved, nil
 	}
 
-	from, err := s.resolveTagCommit(r.FromTag)
-	if err != nil {
-		return resolvedHistoryRange{}, err
-	}
+	return s.excludeLowerRevision(resolved, from.revision, r.From, tipLabel)
+}
 
-	reachableFromTip, err := s.reachableHashes(tip)
+func (s *repoService) excludeLowerRevision(
+	resolved resolvedHistoryRange,
+	from plumbing.Hash,
+	fromLabel string,
+	tipLabel string,
+) (resolvedHistoryRange, error) {
+	reachableFromTip, err := s.reachableHashes(resolved.tip)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "failed to inspect effective tip history")
 	}
 
 	if _, ok := reachableFromTip[from]; !ok {
 		return resolvedHistoryRange{}, eris.Errorf(
-			"tag %q is not an ancestor of %s",
-			r.FromTag,
+			"history reference %q is not an ancestor of %s",
+			fromLabel,
 			tipLabel,
 		)
 	}
 
 	excluded, err := s.reachableHashes(from)
 	if err != nil {
-		return resolvedHistoryRange{}, eris.Wrapf(err, "failed to inspect tag %q history", r.FromTag)
+		return resolvedHistoryRange{}, eris.Wrapf(
+			err,
+			"failed to inspect history reference %q",
+			fromLabel,
+		)
 	}
 
 	resolved.excluded = excluded
@@ -72,11 +93,12 @@ func (s *repoService) resolveHistoryRange(r HistoryRange) (resolvedHistoryRange,
 	return resolved, nil
 }
 
-func (s *repoService) resolveRangeTip(untilTag string) (plumbing.Hash, string, error) {
-	if untilTag != "" {
-		hash, err := s.resolveTagCommit(untilTag)
-
-		return hash, "tag " + strconv.Quote(untilTag), err
+func (s *repoService) resolveRangeTip(
+	until resolvedHistoryReference,
+	label string,
+) (plumbing.Hash, string, error) {
+	if until.hasRevision() {
+		return until.revision, strconv.Quote(label), nil
 	}
 
 	head, err := s.repo.Head()
@@ -98,10 +120,15 @@ func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
 	}
 
 	hash := ref.Hash()
+
+	return peelTagCommit(s.repo, name, hash)
+}
+
+func peelTagCommit(repo *gogit.Repository, name string, hash plumbing.Hash) (plumbing.Hash, error) {
 	seen := make(map[plumbing.Hash]struct{})
 
 	for {
-		if _, err := s.repo.CommitObject(hash); err == nil {
+		if _, err := repo.CommitObject(hash); err == nil {
 			return hash, nil
 		}
 
@@ -111,7 +138,7 @@ func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
 
 		seen[hash] = struct{}{}
 
-		tag, err := s.repo.TagObject(hash)
+		tag, err := repo.TagObject(hash)
 		if err != nil {
 			return plumbing.ZeroHash, eris.Errorf("tag %q does not reference a commit", name)
 		}
