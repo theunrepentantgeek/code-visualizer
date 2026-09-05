@@ -11,6 +11,7 @@ import (
 // that supply synthetic history set those fields directly and skip AcquireData.
 func AcquireData(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncX(s, stages.FilterChangedOnly)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
 	pipeline.ApplyFuncX(s, stages.LoadGitHistory)
 	pipeline.ApplyFuncX(s, stages.RunProviders)
