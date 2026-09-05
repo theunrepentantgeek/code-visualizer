@@ -194,6 +194,10 @@ func TestHistoryRange_MixesRevisionAndDateBounds(t *testing.T) {
 	s, err := getService(fixture.dir)
 	g.Expect(err).NotTo(HaveOccurred())
 
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
 	commits, err := s.commitIterator(HistoryRange{
 		From:  "tag:v1.0",
 		Until: "date:2025-03-01T23:59:59Z",
@@ -219,6 +223,10 @@ func TestHistoryRange_RejectsReversedDateRange(t *testing.T) {
 
 	s, err := getService(fixture.dir)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
 
 	_, err = s.commitIterator(HistoryRange{From: "2025-03-01", Until: "2025-01-01"})
 	g.Expect(err).To(MatchError(ContainSubstring("--from must be before or equal to --until")))

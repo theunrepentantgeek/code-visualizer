@@ -63,19 +63,19 @@ func (s *repoService) resolveHistoryReference(
 		return resolvedHistoryReference{timestamp: when}, err
 	}
 
+	return s.resolveUnprefixedHistoryReference(value, bound)
+}
+
+func (s *repoService) resolveUnprefixedHistoryReference(
+	value string,
+	bound historyBound,
+) (resolvedHistoryReference, error) {
 	if hash, found, err := s.tryResolveTagCommit(value); found {
 		return resolvedHistoryReference{revision: hash}, err
 	}
 
-	if isCommitIDSyntax(value) {
-		hash, resolution, err := s.inspectCommitID(value)
-		if err != nil {
-			return resolvedHistoryReference{}, err
-		}
-
-		if resolution == commitIDResolved {
-			return resolvedHistoryReference{revision: hash}, nil
-		}
+	if resolved, found, err := s.tryResolveCommitID(value); found || err != nil {
+		return resolved, err
 	}
 
 	if when, err := parseHistoryDate(value, bound); err == nil {
@@ -138,6 +138,25 @@ func (s *repoService) requireCommitID(value string) (plumbing.Hash, error) {
 	return plumbing.ZeroHash, eris.Errorf("unknown commit ID %q", value)
 }
 
+func (s *repoService) tryResolveCommitID(
+	value string,
+) (resolvedHistoryReference, bool, error) {
+	if !isCommitIDSyntax(value) {
+		return resolvedHistoryReference{}, false, nil
+	}
+
+	hash, resolution, err := s.inspectCommitID(value)
+	if err != nil {
+		return resolvedHistoryReference{}, false, err
+	}
+
+	if resolution != commitIDResolved {
+		return resolvedHistoryReference{}, false, nil
+	}
+
+	return resolvedHistoryReference{revision: hash}, true, nil
+}
+
 func (s *repoService) inspectCommitID(
 	value string,
 ) (plumbing.Hash, commitIDResolution, error) {
@@ -150,7 +169,7 @@ func (s *repoService) inspectCommitID(
 	case 0:
 		return plumbing.ZeroHash, commitIDMissing, nil
 	case 1:
-		if _, err := s.repo.CommitObject(matches[0]); err != nil {
+		if !s.isCommit(matches[0]) {
 			return plumbing.ZeroHash, commitIDNotCommit, nil
 		}
 
@@ -158,6 +177,12 @@ func (s *repoService) inspectCommitID(
 	default:
 		return plumbing.ZeroHash, commitIDAmbiguous, nil
 	}
+}
+
+func (s *repoService) isCommit(hash plumbing.Hash) bool {
+	_, err := s.repo.CommitObject(hash)
+
+	return err == nil
 }
 
 func (s *repoService) hashesMatchingPrefix(value string) ([]plumbing.Hash, error) {
@@ -212,6 +237,7 @@ func (s *repoService) hashesWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
 	defer objects.Close()
 
 	var hashes []plumbing.Hash
+
 	encodedPrefix := hex.EncodeToString(prefix)
 
 	err = objects.ForEach(func(object plumbing.EncodedObject) error {

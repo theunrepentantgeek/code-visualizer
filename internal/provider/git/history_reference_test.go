@@ -27,8 +27,7 @@ func TestResolveHistoryReference_UsesExplicitPrefixes(t *testing.T) {
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
 	tag, err := s.resolveHistoryReference("tag:v1.0", lowerBound)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -48,8 +47,7 @@ func TestResolveHistoryReference_AcceptsFullCommitID(t *testing.T) {
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
 	resolved, err := s.resolveHistoryReference("sha:"+fixture.main, lowerBound)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -63,8 +61,7 @@ func TestResolveHistoryReference_UnprefixedTagWinsOverCommitAndDate(t *testing.T
 	runHistoryGit(t, fixture.dir, "tag", fixture.main[:8], fixture.initial)
 	runHistoryGit(t, fixture.dir, "tag", "20250501", fixture.main)
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
 	shortCollision, err := s.resolveHistoryReference(fixture.main[:8], lowerBound)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -80,8 +77,7 @@ func TestResolveHistoryReference_UnprefixedCommitWinsOverDate(t *testing.T) {
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
 	resolved, err := s.resolveHistoryReference(fixture.main[:8], lowerBound)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -114,8 +110,7 @@ func TestResolveHistoryReference_CompactDateFallsThroughCommitIDCollisions(t *te
 			g := NewGomegaWithT(t)
 			fixture := setupTagRangeRepo(t)
 
-			s, err := getService(fixture.dir)
-			g.Expect(err).NotTo(HaveOccurred())
+			s := requireRepoService(t, fixture.dir)
 			s.repo.Storer = &fixedPrefixStorer{
 				Storer: s.repo.Storer,
 				hashes: tt.hashes,
@@ -123,7 +118,7 @@ func TestResolveHistoryReference_CompactDateFallsThroughCommitIDCollisions(t *te
 
 			resolved, err := s.resolveHistoryReference("20260905", lowerBound)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(resolved.timestamp).To(Equal(time.Date(2026, 9, 5, 0, 0, 0, 0, time.Local)))
+			g.Expect(resolved.timestamp.Format("20060102-150405")).To(Equal("20260905-000000"))
 		})
 	}
 }
@@ -133,10 +128,9 @@ func TestResolveHistoryReference_RejectsInvalidExplicitReferences(t *testing.T) 
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
-	_, err = s.resolveHistoryReference("tag:", lowerBound)
+	_, err := s.resolveHistoryReference("tag:", lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring("tag reference cannot be empty")))
 
 	_, err = s.resolveHistoryReference("sha:", lowerBound)
@@ -160,11 +154,10 @@ func TestResolveHistoryReference_RejectsAmbiguousCommitID(t *testing.T) {
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
 	prefix := addAmbiguousObjectPrefix(t, s)
-	_, err = s.resolveHistoryReference("sha:"+prefix, lowerBound)
+	_, err := s.resolveHistoryReference("sha:"+prefix, lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring(`commit ID "` + prefix + `" is ambiguous`)))
 }
 
@@ -174,10 +167,9 @@ func TestResolveHistoryReference_RejectsNonCommitObjectID(t *testing.T) {
 	fixture := setupTagRangeRepo(t)
 	blob := runHistoryGit(t, fixture.dir, "rev-parse", "blob-tag^{blob}")
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
-	_, err = s.resolveHistoryReference("sha:"+blob, lowerBound)
+	_, err := s.resolveHistoryReference("sha:"+blob, lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring("does not identify a commit")))
 }
 
@@ -186,10 +178,9 @@ func TestResolveHistoryReference_ReportsUnknownValue(t *testing.T) {
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
 
-	s, err := getService(fixture.dir)
-	g.Expect(err).NotTo(HaveOccurred())
+	s := requireRepoService(t, fixture.dir)
 
-	_, err = s.resolveHistoryReference("not-a-reference", lowerBound)
+	_, err := s.resolveHistoryReference("not-a-reference", lowerBound)
 	g.Expect(err).To(MatchError(
 		`history reference "not-a-reference" is not a tag, commit ID, or supported date`,
 	))
@@ -249,10 +240,24 @@ func TestParseHistoryDate_UpperTimestampUsesExactInstant(t *testing.T) {
 	g.Expect(got).To(Equal(time.Date(2026, 9, 5, 14, 30, 45, 0, time.UTC)))
 }
 
+func requireRepoService(t *testing.T, dir string) *repoService {
+	t.Helper()
+	g := NewGomegaWithT(t)
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	return s
+}
+
 func runHistoryGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 
-	cmd := exec.Command("git", args...) //nolint:gosec // fixed test command
+	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 
 	output, err := cmd.CombinedOutput()
