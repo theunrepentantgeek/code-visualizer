@@ -29,7 +29,7 @@ func BuildScanProgress(flags *Flags) (scan.Progress, func()) {
 // progress during metric calculation.
 // The caller must invoke the returned stop function when metric calculation completes.
 func BuildMetricProgress(flags *Flags, total int64) (provider.MetricProgress, func()) {
-	if flags.Quiet {
+	if flags.Quiet || total <= 0 {
 		return nil, func() {}
 	}
 

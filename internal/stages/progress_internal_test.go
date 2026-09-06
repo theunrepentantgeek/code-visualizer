@@ -36,7 +36,7 @@ func TestLogMetricProgress_LogsAggregateLoadedObservations(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates global slog default logger
-func TestBuildMetricProgressLogsInitialZeroProgress(t *testing.T) {
+func TestBuildMetricProgressSuppressesZeroTotal(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	var buf bytes.Buffer
@@ -46,11 +46,11 @@ func TestBuildMetricProgressLogsInitialZeroProgress(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
 	defer slog.SetDefault(oldDefault)
 
-	_, stop := BuildMetricProgress(&Flags{}, 4)
+	progress, stop := BuildMetricProgress(&Flags{}, 0)
 	stop()
 
-	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading metrics." loaded=0/4 percentage=0.0`))
-	g.Expect(strings.Count(buf.String(), "\n")).To(Equal(1))
+	g.Expect(progress).To(BeNil())
+	g.Expect(buf.String()).To(BeEmpty())
 }
 
 //nolint:paralleltest // mutates global slog default logger

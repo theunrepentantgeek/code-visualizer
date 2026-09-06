@@ -19,7 +19,7 @@ func TestBuildMetricProgress_VerboseMode_ReturnsTracker(t *testing.T) {
 
 	flags := &stages.Flags{Verbose: true}
 
-	prog, stop := stages.BuildMetricProgress(flags, 0)
+	prog, stop := stages.BuildMetricProgress(flags, 1)
 	defer stop()
 
 	g.Expect(prog).NotTo(BeNil())
@@ -31,7 +31,7 @@ func TestBuildMetricProgress_DebugMode_ReturnsTracker(t *testing.T) {
 
 	flags := &stages.Flags{Debug: true}
 
-	prog, stop := stages.BuildMetricProgress(flags, 0)
+	prog, stop := stages.BuildMetricProgress(flags, 1)
 	defer stop()
 
 	g.Expect(prog).NotTo(BeNil())
@@ -53,7 +53,7 @@ func TestBuildMetricProgress_Stop_IsCallable(t *testing.T) {
 	t.Parallel()
 
 	flags := &stages.Flags{Verbose: true}
-	_, stop := stages.BuildMetricProgress(flags, 0)
+	_, stop := stages.BuildMetricProgress(flags, 1)
 
 	// Stop must not panic or block.
 	stop()
@@ -79,7 +79,7 @@ func TestBuildMetricProgress_OnMetricStarted_RecordsMetric(t *testing.T) {
 
 	flags := &stages.Flags{Verbose: true}
 
-	prog, stop := stages.BuildMetricProgress(flags, 0)
+	prog, stop := stages.BuildMetricProgress(flags, 2)
 	defer stop()
 
 	g.Expect(prog).NotTo(BeNil())
@@ -107,7 +107,7 @@ func TestBuildMetricProgress_OnFileProcessed_UnknownMetric_IsNoop(t *testing.T) 
 
 	flags := &stages.Flags{Verbose: true}
 
-	prog, stop := stages.BuildMetricProgress(flags, 0)
+	prog, stop := stages.BuildMetricProgress(flags, 1)
 	defer stop()
 
 	if prog != nil {
