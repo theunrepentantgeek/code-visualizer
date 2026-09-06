@@ -18,16 +18,20 @@ func CheckGitRequirementHelper(targetPath string, requested []metric.Name) error
 		return nil
 	}
 
-	return verifyGitRepo(targetPath, name)
+	return verifyGitRepo(targetPath, &GitRequiredError{Metric: name})
 }
 
 // CheckGitRepoHelper verifies the target path is inside a git repository.
 // Used by visualizations (such as spiral) that always require git.
 func CheckGitRepoHelper(targetPath string) error {
-	return verifyGitRepo(targetPath, "spiral")
+	return verifyGitRepo(targetPath, &GitRequiredError{Metric: "spiral"})
 }
 
-func verifyGitRepo(targetPath string, metricLabel metric.Name) error {
+func checkGitRepoForFeature(targetPath, feature string) error {
+	return verifyGitRepo(targetPath, &GitRequiredError{Feature: feature})
+}
+
+func verifyGitRepo(targetPath string, requiredError *GitRequiredError) error {
 	absPath, err := filepath.Abs(targetPath)
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve absolute path")
@@ -39,7 +43,9 @@ func verifyGitRepo(targetPath string, metricLabel metric.Name) error {
 	}
 
 	if !isGit {
-		return &GitRequiredError{Metric: metricLabel, Target: targetPath}
+		requiredError.Target = targetPath
+
+		return requiredError
 	}
 
 	return nil

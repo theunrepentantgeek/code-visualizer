@@ -629,6 +629,46 @@ func TestSave_Load_RoundTripsFileFilter(t *testing.T) {
 	g.Expect(loaded.FileFilter[1].Mode).To(Equal(filter.Include))
 }
 
+func TestLoad_YAMLChangedOnly(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	g.Expect(os.WriteFile(path, []byte("changedOnly: true\n"), 0o600)).To(Succeed())
+
+	cfg := New()
+	g.Expect(cfg.Load(path)).To(Succeed())
+	g.Expect(cfg.ChangedOnlyEnabled()).To(BeTrue())
+}
+
+func TestSaveLoad_RoundTripsChangedOnlyAsJSON(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	original := New()
+	original.OverrideChangedOnly(true)
+
+	g.Expect(original.Save(path)).To(Succeed())
+
+	loaded := New()
+	g.Expect(loaded.Load(path)).To(Succeed())
+	g.Expect(loaded.ChangedOnlyEnabled()).To(BeTrue())
+}
+
+func TestOverrideChangedOnly_OmittedFalsePreservesConfigValue(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+	cfg.OverrideChangedOnly(true)
+	cfg.OverrideChangedOnly(false)
+
+	g.Expect(cfg.ChangedOnlyEnabled()).To(BeTrue())
+}
+
 // FindAutoConfig tests
 
 func TestFindAutoConfig_NoFileExists_ReturnsEmpty(t *testing.T) {

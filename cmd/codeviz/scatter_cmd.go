@@ -14,10 +14,11 @@ import (
 )
 
 type ScatterCmd struct {
-	TargetPath string `arg:"" help:"Path to directory to scan."`
-	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
-	From       string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
-	Until      string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	TargetPath  string `arg:"" help:"Path to directory to scan."`
+	Output      string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
+	From        string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
+	Until       string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	ChangedOnly bool   `help:"Show only files modified in the selected Git range." name:"changed-only" optional:""`
 
 	XAxis metric.Name `default:"" help:"Metric for X-axis position; run 'codeviz help metrics' for available metrics." name:"x-axis" short:"x"` //nolint:revive,nolintlint // kong struct tags require long lines
 	YAxis metric.Name `default:"" help:"Metric for Y-axis position; run 'codeviz help metrics' for available metrics." name:"y-axis" short:"y"` //nolint:revive,nolintlint // kong struct tags require long lines
@@ -203,6 +204,7 @@ func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
 	cfg.OverrideTitleText(c.Title)
 	cfg.OverrideFooterText(c.Footer)
 	cfg.OverrideHideFooter(c.HideFooter)
+	cfg.OverrideChangedOnly(c.ChangedOnly)
 
 	if cfg.Scatter == nil {
 		cfg.Scatter = &config.Scatter{}

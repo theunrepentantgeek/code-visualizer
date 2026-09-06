@@ -21,11 +21,12 @@ import (
 //	codeviz render <preset> <target> -o <output>    # render a preset
 type RenderCmd struct {
 	//nolint:revive,nolintlint // Long help text is more important than minimizing line length, and annotations can't be wrapped
-	Preset     string `arg:"" optional:"" name:"preset" help:"Name of the preset to render; omit to list available presets."`
-	TargetPath string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
-	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
-	From       string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
-	Until      string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	Preset      string `arg:"" optional:"" name:"preset" help:"Name of the preset to render; omit to list available presets."`
+	TargetPath  string `arg:"" optional:"" name:"target" help:"Path to directory to scan."`
+	Output      string `help:"Output image file path (png, jpg, jpeg, svg)." optional:"" short:"o"`
+	From        string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
+	Until       string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	ChangedOnly bool   `help:"Show only files modified in the selected Git range." name:"changed-only" optional:""`
 
 	Title      string `help:"Override the preset's default title." optional:""`
 	Width      int    `default:"1920" help:"Image width in pixels."`
@@ -192,75 +193,80 @@ func (r *RenderCmd) runPreset(preset *presetDef, flags *Flags) error {
 
 func (r *RenderCmd) structureTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
-		TargetPath: r.TargetPath,
-		Output:     r.Output,
-		Size:       metric.Name("file-lines"),
-		Fill:       config.MetricSpec{Metric: "file-type"},
-		Width:      r.Width,
-		Height:     r.Height,
-		HideFooter: r.HideFooter,
-		Title:      title,
-		From:       r.From,
-		Until:      r.Until,
+		TargetPath:  r.TargetPath,
+		Output:      r.Output,
+		Size:        metric.Name("file-lines"),
+		Fill:        config.MetricSpec{Metric: "file-type"},
+		Width:       r.Width,
+		Height:      r.Height,
+		HideFooter:  r.HideFooter,
+		Title:       title,
+		From:        r.From,
+		Until:       r.Until,
+		ChangedOnly: r.ChangedOnly,
 	}
 }
 
 func (r *RenderCmd) structureBubbletree(title string) *BubbletreeCmd {
 	return &BubbletreeCmd{
-		TargetPath: r.TargetPath,
-		Output:     r.Output,
-		Size:       metric.Name("file-lines"),
-		Fill:       config.MetricSpec{Metric: "file-type"},
-		Width:      r.Width,
-		Height:     r.Height,
-		HideFooter: r.HideFooter,
-		Title:      title,
-		From:       r.From,
-		Until:      r.Until,
+		TargetPath:  r.TargetPath,
+		Output:      r.Output,
+		Size:        metric.Name("file-lines"),
+		Fill:        config.MetricSpec{Metric: "file-type"},
+		Width:       r.Width,
+		Height:      r.Height,
+		HideFooter:  r.HideFooter,
+		Title:       title,
+		From:        r.From,
+		Until:       r.Until,
+		ChangedOnly: r.ChangedOnly,
 	}
 }
 
 func (r *RenderCmd) historyTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
-		TargetPath: r.TargetPath,
-		Output:     r.Output,
-		Size:       metric.Name("file-lines"),
-		Fill:       config.MetricSpec{Metric: "commit-count"},
-		Width:      r.Width,
-		Height:     r.Height,
-		HideFooter: r.HideFooter,
-		Title:      title,
-		From:       r.From,
-		Until:      r.Until,
+		TargetPath:  r.TargetPath,
+		Output:      r.Output,
+		Size:        metric.Name("file-lines"),
+		Fill:        config.MetricSpec{Metric: "commit-count"},
+		Width:       r.Width,
+		Height:      r.Height,
+		HideFooter:  r.HideFooter,
+		Title:       title,
+		From:        r.From,
+		Until:       r.Until,
+		ChangedOnly: r.ChangedOnly,
 	}
 }
 
 func (r *RenderCmd) ageTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
-		TargetPath: r.TargetPath,
-		Output:     r.Output,
-		Size:       metric.Name("file-lines"),
-		Fill:       config.MetricSpec{Metric: "file-age"},
-		Width:      r.Width,
-		Height:     r.Height,
-		HideFooter: r.HideFooter,
-		Title:      title,
-		From:       r.From,
-		Until:      r.Until,
+		TargetPath:  r.TargetPath,
+		Output:      r.Output,
+		Size:        metric.Name("file-lines"),
+		Fill:        config.MetricSpec{Metric: "file-age"},
+		Width:       r.Width,
+		Height:      r.Height,
+		HideFooter:  r.HideFooter,
+		Title:       title,
+		From:        r.From,
+		Until:       r.Until,
+		ChangedOnly: r.ChangedOnly,
 	}
 }
 
 func (r *RenderCmd) contributorsTreemap(title string) *TreemapCmd {
 	return &TreemapCmd{
-		TargetPath: r.TargetPath,
-		Output:     r.Output,
-		Size:       metric.Name("file-lines"),
-		Fill:       config.MetricSpec{Metric: "author-count"},
-		Width:      r.Width,
-		Height:     r.Height,
-		HideFooter: r.HideFooter,
-		Title:      title,
-		From:       r.From,
-		Until:      r.Until,
+		TargetPath:  r.TargetPath,
+		Output:      r.Output,
+		Size:        metric.Name("file-lines"),
+		Fill:        config.MetricSpec{Metric: "author-count"},
+		Width:       r.Width,
+		Height:      r.Height,
+		HideFooter:  r.HideFooter,
+		Title:       title,
+		From:        r.From,
+		Until:       r.Until,
+		ChangedOnly: r.ChangedOnly,
 	}
 }

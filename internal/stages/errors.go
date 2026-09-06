@@ -6,14 +6,19 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
-// GitRequiredError reports that a requested metric needs a git repository
-// but the target path is not inside one.
+// GitRequiredError reports that a requested metric or feature needs a Git
+// repository but the target path is not inside one.
 type GitRequiredError struct {
-	Metric metric.Name
-	Target string
+	Metric  metric.Name
+	Feature string
+	Target  string
 }
 
 func (e *GitRequiredError) Error() string {
+	if e.Feature != "" {
+		return fmt.Sprintf("%s requires a git repository, but %q is not a git repository", e.Feature, e.Target)
+	}
+
 	return fmt.Sprintf("metric %q requires a git repository, but %q is not a git repository", e.Metric, e.Target)
 }
 
@@ -33,6 +38,10 @@ func (e *OutputPathError) Error() string { return e.Msg }
 
 // NoFilesAfterFilterMsg is the message used when binary filtering empties the tree.
 const NoFilesAfterFilterMsg = "no files available for visualization after excluding binary files"
+
+// NoFilesAfterChangedOnlyMsg is used when Git range filtering empties the tree.
+const NoFilesAfterChangedOnlyMsg = "no files available for visualization after filtering to files changed " +
+	"in the selected Git range"
 
 // NoFilesAfterFilterError reports that no files remain after filtering.
 type NoFilesAfterFilterError struct {
