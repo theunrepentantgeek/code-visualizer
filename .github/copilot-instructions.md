@@ -48,6 +48,12 @@ Go 1.26+: Follow standard conventions, gofumpt formatting, eris error wrapping
 
 ## Agent Workflow Rules
 
+### Development shell
+
+If a command-line tool you need is missing, run `./dev.sh` and retry the command
+inside the shell it starts. The first invocation installs any missing dependencies
+and may take a few minutes; later invocations are fast.
+
 ### Running `task lint` / `task ci`
 
 `task lint` runs golangci-lint with `--verbose` on purpose: when issues appear, the surrounding INFO lines are needed to diagnose linter config, exclusion rules, and analyzer stages. Do **not** strip `--verbose`.
