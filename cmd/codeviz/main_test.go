@@ -133,28 +133,32 @@ func TestCLI_RejectsRemovedTagRangeFlags(t *testing.T) {
 func TestCLI_ParsesChangedOnlyForEveryVisualizationAndRender(t *testing.T) {
 	t.Parallel()
 
-	testCases := [][]string{
-		{"tree-map", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
-		{"radial-tree", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
-		{"donut-tree", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
-		{"bubble-tree", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
-		{"spiral", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
-		{"scatter", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
-		{"render", "history-tree-map", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
+	testCases := map[string][]string{
+		"tree map":    {"tree-map", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
+		"radial tree": {"radial-tree", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
+		"donut tree":  {"donut-tree", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
+		"bubble tree": {"bubble-tree", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
+		"spiral":      {"spiral", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
+		"scatter":     {"scatter", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
+		"render":      {"render", "history-tree-map", ".", "-o", "out.png", "--from", "v1.0", "--changed-only"},
 	}
 
-	for _, args := range testCases {
-		cli := CLI{}
-		parser, err := kong.New(
-			&cli,
-			kong.Name("codeviz"),
-			filterMapperOption(),
-			kong.Exit(func(int) {}),
-		)
-		NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred())
+	for name, args := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			cli := CLI{}
+			parser, err := kong.New(
+				&cli,
+				kong.Name("codeviz"),
+				filterMapperOption(),
+				kong.Exit(func(int) {}),
+			)
+			g.Expect(err).NotTo(HaveOccurred())
 
-		_, err = parser.Parse(args)
-		NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred(), "arguments: %v", args)
+			_, err = parser.Parse(args)
+			g.Expect(err).NotTo(HaveOccurred(), "arguments: %v", args)
+		})
 	}
 }
 
