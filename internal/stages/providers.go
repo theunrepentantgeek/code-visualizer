@@ -17,12 +17,24 @@ import (
 func RunProviders(c *CommonState) error {
 	slog.Info("Calculating metrics")
 
-	metricProg, stopMetricTicker := BuildMetricProgress(
-		c.Flags,
-		provider.FileProgressTotal(c.Requested.BaseMetrics, model.CountFiles(c.Root)),
-	)
-	defer stopMetricTicker()
+	total := provider.FileProgressTotal(c.Requested.BaseMetrics, model.CountFiles(c.Root))
+	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, total)
 
+	err := loadRequestedMetrics(c, metricProg)
+	stopMetricTicker()
+
+	if err != nil {
+		return err
+	}
+
+	if metricProg != nil {
+		logMetricCompletion(total)
+	}
+
+	return nil
+}
+
+func loadRequestedMetrics(c *CommonState, metricProg provider.MetricProgress) error {
 	requested := c.Requested.BaseMetrics
 	if hasAuthorshipMetric(requested) {
 		if err := git.LoadAuthorshipMetricsInHistoryRange(
