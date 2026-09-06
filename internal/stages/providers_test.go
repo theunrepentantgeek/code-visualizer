@@ -93,6 +93,25 @@ func TestRunProvidersReportsCompletedMetricProgress(t *testing.T) {
 		To(BeNumerically(">", strings.LastIndex(output, `msg="Loading metrics."`)))
 }
 
+//nolint:paralleltest // mutates the global provider registry
+func TestSampleMetricProgressTotalTracksLongRunningGitWork(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	provider.ResetBaseRegistryForTesting()
+	t.Cleanup(func() {
+		provider.ResetBaseRegistryForTesting()
+		filesystem.Register()
+		git.Register()
+	})
+
+	filesystem.Register()
+	git.Register()
+
+	requested := []metric.Name{filesystem.FileLines, git.FileFreshness}
+
+	g.Expect(provider.FileProgressTotal(requested, 2)).To(Equal(int64(2)))
+}
+
 //nolint:paralleltest // mutates the global provider registry and slog logger
 func TestRunProvidersOmitsCompletionWhenLoadingFailsAtTotal(t *testing.T) {
 	g := NewGomegaWithT(t)

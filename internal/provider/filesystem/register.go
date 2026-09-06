@@ -17,13 +17,11 @@ func Register() {
 		},
 	})
 
-	fileLinesProvider := &FileLinesProvider{}
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{FileLines},
 		Load: func(root *model.Directory, _ []metric.Name) error {
-			return fileLinesProvider.Load(root)
+			return (&FileLinesProvider{}).Load(root)
 		},
-		Reporter: fileLinesProvider,
 	})
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{FileType},
