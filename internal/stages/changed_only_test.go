@@ -60,8 +60,9 @@ func TestFilterChangedOnly_RequiresGitRepository(t *testing.T) {
 
 	var gitRequired *stages.GitRequiredError
 	g.Expect(errors.As(err, &gitRequired)).To(BeTrue())
-	g.Expect(gitRequired.Feature).To(Equal("--changed-only"))
-	g.Expect(err.Error()).To(ContainSubstring("--changed-only requires a git repository"))
+	g.Expect(err).To(MatchError(
+		(&stages.GitRequiredError{Feature: "--changed-only", Target: dir}).Error(),
+	))
 }
 
 func TestFilterChangedOnly_PrunesUnchangedFilesAndEmptyDirectories(t *testing.T) {
