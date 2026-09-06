@@ -21,6 +21,7 @@ func RunProviders(c *CommonState) error {
 	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, total)
 
 	err := loadRequestedMetrics(c, metricProg)
+
 	stopMetricTicker()
 
 	if err != nil {
