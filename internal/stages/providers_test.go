@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -21,9 +23,11 @@ import (
 const progressMetric metric.Name = "test-progress"
 
 type progressLoader struct {
-	onFile func()
-	mu     sync.Mutex
-	err    error
+	onFile          func()
+	mu              sync.Mutex
+	err             error
+	pauseBeforeLast time.Duration
+	ran             *atomic.Bool
 }
 
 func (l *progressLoader) SetOnFileProcessed(fn func()) {
@@ -35,7 +39,15 @@ func (l *progressLoader) FileProgressMutex() *sync.Mutex {
 }
 
 func (l *progressLoader) Load(root *model.Directory, _ []metric.Name) error {
-	for range root.Files {
+	if l.ran != nil {
+		l.ran.Store(true)
+	}
+
+	for i := range root.Files {
+		if i == len(root.Files)-1 {
+			time.Sleep(l.pauseBeforeLast)
+		}
+
 		l.onFile()
 	}
 
@@ -93,8 +105,8 @@ func TestRunProvidersReportsCompletedMetricProgress(t *testing.T) {
 		To(BeNumerically(">", strings.LastIndex(output, `msg="Loading metrics."`)))
 }
 
-//nolint:paralleltest // mutates the global provider registry
-func TestSampleMetricProgressTotalTracksLongRunningGitWork(t *testing.T) {
+//nolint:paralleltest // mutates the global provider registry and slog logger
+func TestRunProvidersReportsOnlyWorkRemainingAfterGitPrewarm(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	provider.ResetBaseRegistryForTesting()
@@ -104,12 +116,53 @@ func TestSampleMetricProgressTotalTracksLongRunningGitWork(t *testing.T) {
 		git.Register()
 	})
 
-	filesystem.Register()
-	git.Register()
+	remaining := &progressLoader{pauseBeforeLast: 1100 * time.Millisecond}
+	prewarmedGitRan := &atomic.Bool{}
+	prewarmedGit := &progressLoader{ran: prewarmedGitRan}
 
-	requested := []metric.Name{filesystem.FileLines, git.FileFreshness}
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:      []metric.Name{progressMetric},
+		Dependencies: []metric.Name{git.FileFreshness},
+		Load:         remaining.Load,
+		Reporter:     remaining,
+	})
+	provider.RegisterLoader(provider.BaseMetricLoader{
+		Metrics:  []metric.Name{git.FileFreshness},
+		Load:     prewarmedGit.Load,
+		Reporter: prewarmedGit,
+	})
 
-	g.Expect(provider.FileProgressTotal(requested, 2)).To(Equal(int64(2)))
+	files := make([]*model.File, 10)
+	for i := range files {
+		files[i] = &model.File{}
+	}
+
+	state := &stages.CommonState{
+		Flags:      &stages.Flags{},
+		Root:       &model.Directory{Files: files},
+		GitHistory: []git.Commit{{Hash: "prewarmed"}},
+		Requested: stages.RequestedMetrics{
+			BaseMetrics: []metric.Name{progressMetric, git.FileFreshness},
+		},
+	}
+
+	var buf bytes.Buffer
+
+	oldDefault := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
+	defer slog.SetDefault(oldDefault)
+
+	g.Expect(stages.RunProviders(state)).To(Succeed())
+
+	output := buf.String()
+
+	g.Expect(prewarmedGitRan.Load()).To(BeTrue())
+	g.Expect(output).To(ContainSubstring(`msg="Loading metrics." loaded=0/10 percentage=0.0`))
+	g.Expect(output).To(ContainSubstring(`msg="Loading metrics." loaded=9/10 percentage=90.0`))
+	g.Expect(output).To(ContainSubstring(`msg="Loaded metrics" loaded=10/10 percentage=100.0`))
+	g.Expect(strings.LastIndex(output, `msg="Loading metrics." loaded=9/10`)).
+		To(BeNumerically("<", strings.LastIndex(output, `msg="Loaded metrics"`)))
 }
 
 //nolint:paralleltest // mutates the global provider registry and slog logger

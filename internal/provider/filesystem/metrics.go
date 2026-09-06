@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"sync"
 
 	"github.com/rotisserie/eris"
 	"golang.org/x/text/encoding/unicode"
@@ -44,10 +45,22 @@ type FileTypeProvider struct{}
 func (FileTypeProvider) Load(_ *model.Directory) error { return nil }
 
 // FileLinesProvider counts lines in each text file.
-type FileLinesProvider struct{}
+type FileLinesProvider struct {
+	onFile func()
+	mu     sync.Mutex
+}
 
-func (*FileLinesProvider) Load(root *model.Directory) error {
+func (p *FileLinesProvider) SetOnFileProcessed(fn func()) { p.onFile = fn }
+func (p *FileLinesProvider) FileProgressMutex() *sync.Mutex {
+	return &p.mu
+}
+
+func (p *FileLinesProvider) Load(root *model.Directory) error {
 	model.WalkFiles(root, func(f *model.File) {
+		if p.onFile != nil {
+			defer p.onFile()
+		}
+
 		if f.IsBinary {
 			return
 		}

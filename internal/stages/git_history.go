@@ -71,6 +71,16 @@ func LoadGitHistory(c *CommonState) error {
 	return nil
 }
 
+// PrewarmGitMetrics loads history only when the requested metrics need the
+// file-level Git cache populated before provider execution.
+func PrewarmGitMetrics(c *CommonState) error {
+	if len(c.GitHistory) > 0 || len(onlyFileGitMetrics(c.Requested.BaseMetrics)) == 0 {
+		return nil
+	}
+
+	return LoadGitHistory(c)
+}
+
 // GroupGitHistoryByFile joins c.GitHistory against c.Root and writes
 // c.FileHistory: each file maps to the CommitRefs that touched it.
 func GroupGitHistoryByFile(c *CommonState) error {
