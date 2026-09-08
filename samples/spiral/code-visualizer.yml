@@ -11,7 +11,7 @@ spiral:
     size: commit-count
     fill:
         metric: commit-count
-        palette: foliage
+        palette: temperature
     surface: true
     x-axis: log
 fileFilter:
