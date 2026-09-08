@@ -213,6 +213,28 @@ func TestLoadGitHistory_PrewarmsRequestedGitMetricsForRunProviders(t *testing.T)
 	g.Expect(count).To(Equal(int64(2)))
 }
 
+func TestPrewarmGitMetricsLoadsHistoryForRequestedFileGitMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.Requested.BaseMetrics = []metric.Name{git.FileFreshness}
+
+	g.Expect(PrewarmGitMetrics(state)).To(Succeed())
+	g.Expect(state.GitHistory).NotTo(BeEmpty())
+}
+
+func TestPrewarmGitMetricsSkipsWhenNoFileGitMetricIsRequested(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState("/path/that/does/not/exist")
+	state.Requested.BaseMetrics = []metric.Name{"file-lines"}
+
+	g.Expect(PrewarmGitMetrics(state)).To(Succeed())
+	g.Expect(state.GitHistory).To(BeEmpty())
+}
+
 func TestLoadGitHistory_PropagatesRevisionRangeToHistoryAndMetrics(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
