@@ -1,8 +1,11 @@
 package golang
 
 import (
+	"io/fs"
 	"log/slog"
+	"path"
 	"runtime"
+	"strings"
 
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
@@ -49,7 +52,7 @@ func populateFileMetrics(f *model.File) {
 		return
 	}
 
-	stats, err := getOrAnalyze(f.Path)
+	stats, err := analyzeModelFile(f)
 	if err != nil {
 		slog.Warn("could not analyze Go file for metrics", "path", f.Path, "error", err)
 
@@ -61,4 +64,38 @@ func populateFileMetrics(f *model.File) {
 	f.SetQuantity(externalImportsMetric, stats.externalImports)
 	f.SetQuantity(internalImportsMetric, stats.internalImports)
 	f.SetMeasure(CommentRatio, stats.commentRatio)
+}
+
+func analyzeModelFile(f *model.File) (*fileStats, error) {
+	if f.Source == nil {
+		return getOrAnalyze(f.Path)
+	}
+
+	src, err := f.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return analyzeSource(f.Path, src, findModulePathFS(f.Source, path.Dir(f.SourcePath)))
+}
+
+func findModulePathFS(fsys fs.FS, start string) string {
+	for dir := path.Clean(start); ; dir = path.Dir(dir) {
+		name := "go.mod"
+		if dir != "." {
+			name = path.Join(dir, name)
+		}
+
+		data, err := fs.ReadFile(fsys, name)
+		if err == nil {
+			for _, line := range strings.Split(string(data), "\n") {
+				if value, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
+					return strings.TrimSpace(value)
+				}
+			}
+		}
+		if dir == "." {
+			return ""
+		}
+	}
 }
