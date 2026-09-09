@@ -37,6 +37,30 @@ func TestScanTreeReadsVirtualSource(t *testing.T) {
 	g.Expect(root.Dirs[0].Files[0].SourcePath).To(Equal("src/main.go"))
 }
 
+func TestScanTreeKeepsSymlinkIdentityWhileReadingTarget(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	g.Expect(os.WriteFile(filepath.Join(dir, "target.txt"), []byte("target\n"), 0o600)).To(Succeed())
+	g.Expect(os.Symlink("target.txt", filepath.Join(dir, "link.txt"))).To(Succeed())
+	tree, err := source.WorkingTree(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+	tree.RepoBase = "project"
+
+	root, err := ScanTree(tree, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	var link *model.File
+	for _, file := range root.Files {
+		if file.Name == "link.txt" {
+			link = file
+		}
+	}
+	g.Expect(link).NotTo(BeNil())
+	g.Expect(link.RepoPath).To(Equal("project/link.txt"))
+	g.Expect(link.SourcePath).To(Equal("target.txt"))
+}
+
 func TestScanFlat(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

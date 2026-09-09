@@ -148,7 +148,16 @@ func (w fsWalker) processSymlink(node *model.Directory, sourcePath string, entry
 		return nil
 	}
 
-	return w.processFile(node, resolved, entry.Name())
+	if err := w.processFile(node, resolved, entry.Name()); err != nil {
+		return err
+	}
+	if len(node.Files) > 0 {
+		file := node.Files[len(node.Files)-1]
+		file.Path = w.displayPath(sourcePath)
+		file.RepoPath = w.tree.RepoPath(sourcePath)
+	}
+
+	return nil
 }
 
 func (w fsWalker) displayPath(name string) string {
