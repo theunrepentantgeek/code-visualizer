@@ -132,6 +132,7 @@ func loadFileGitMetrics(
 		fileGitMetrics,
 		c.Flags.HistoryRange,
 		onFile,
+		c.ReferenceNow,
 	); err != nil {
 		return nil, eris.Wrap(err, "failed to load git metrics")
 	}
