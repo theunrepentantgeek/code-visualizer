@@ -13,6 +13,7 @@ type File struct {
 	MetricContainer
 	Path         string
 	RepoPath     string
+	SourcePath   string
 	Name         string
 	Extension    string
 	IsBinary     bool
@@ -27,7 +28,12 @@ func (f *File) Open() (fs.File, error) {
 		return nil, eris.New("file has no content source")
 	}
 
-	file, err := f.Source.Open(f.Path)
+	sourcePath := f.SourcePath
+	if sourcePath == "" {
+		sourcePath = f.Path
+	}
+
+	file, err := f.Source.Open(sourcePath)
 	if err != nil {
 		return nil, eris.Wrapf(err, "opening %s", f.Path)
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 )
 
 // Progress receives notifications as directories are scanned.
@@ -17,6 +18,22 @@ type Progress interface {
 	// OnDirectoryScanned is called after each directory is fully processed.
 	// fileCount is the number of direct (non-recursive) files in that directory.
 	OnDirectoryScanned(path string, fileCount int)
+}
+
+// ScanTree scans a read-only content source.
+func ScanTree(tree source.Tree, rules []filter.Rule, progress Progress, includeBinary bool) (*model.Directory, error) {
+	root, err := newFSWalker(tree, rules, progress, includeBinary).scanDir(".")
+	if err != nil {
+		return nil, err
+	}
+
+	if !hasFiles(root) {
+		return nil, errors.New("no files found in directory")
+	}
+
+	slog.Info("Scan complete", "files", root.AllFileCount, "directories", root.AllDirCount)
+
+	return root, nil
 }
 
 // Scan recursively scans the directory at path and returns a model.Directory tree.

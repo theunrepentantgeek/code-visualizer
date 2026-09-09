@@ -15,6 +15,7 @@ import (
 type Tree struct {
 	FS       fs.FS
 	RootName string
+	RootPath string
 	RepoRoot string
 	RepoBase string
 	Clock    time.Time
@@ -30,6 +31,7 @@ func WorkingTree(rootPath string) (Tree, error) {
 	return Tree{
 		FS:       os.DirFS(absolute),
 		RootName: filepath.Base(absolute),
+		RootPath: absolute,
 	}, nil
 }
 

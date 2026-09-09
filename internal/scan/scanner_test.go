@@ -6,13 +6,36 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
+	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 )
+
+func TestScanTreeReadsVirtualSource(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	tree := source.Tree{
+		FS:       fstest.MapFS{"src/main.go": {Data: []byte("package main\n")}},
+		RootName: "project",
+		RootPath: "/display/project",
+		RepoBase: "packages/project",
+	}
+
+	root, err := ScanTree(tree, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root.Path).To(Equal("/display/project"))
+	g.Expect(root.Files).To(BeEmpty())
+	g.Expect(root.Dirs).To(HaveLen(1))
+	g.Expect(root.Dirs[0].Files).To(HaveLen(1))
+	g.Expect(root.Dirs[0].Files[0].Path).To(Equal("/display/project/src/main.go"))
+	g.Expect(root.Dirs[0].Files[0].RepoPath).To(Equal("packages/project/src/main.go"))
+	g.Expect(root.Dirs[0].Files[0].SourcePath).To(Equal("src/main.go"))
+}
 
 func TestScanFlat(t *testing.T) {
 	t.Parallel()
