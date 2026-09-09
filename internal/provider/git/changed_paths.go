@@ -12,38 +12,38 @@ func ChangedPathsInHistoryRange(
 	currentPaths map[string]bool,
 	historyRange HistoryRange,
 ) (map[string]bool, error) {
-	return changedPathsInHistoryRange(repoPath, currentPaths, historyRange, true)
+	s, err := getService(repoPath)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to open git repository")
+	}
+
+	trackedPaths, err := s.intersectIndexPaths(currentPaths)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to find current tracked paths")
+	}
+
+	return s.changedPathsForTrackedPaths(trackedPaths, historyRange)
 }
 
-// ChangedPathsInHistoryRangeForSnapshot treats currentPaths as the authoritative
+// SnapshotChangedPathsInHistoryRange treats currentPaths as the authoritative
 // path set from a historical tree rather than intersecting the live index.
-func ChangedPathsInHistoryRangeForSnapshot(
+func SnapshotChangedPathsInHistoryRange(
 	repoPath string,
 	currentPaths map[string]bool,
 	historyRange HistoryRange,
-) (map[string]bool, error) {
-	return changedPathsInHistoryRange(repoPath, currentPaths, historyRange, false)
-}
-
-func changedPathsInHistoryRange(
-	repoPath string,
-	currentPaths map[string]bool,
-	historyRange HistoryRange,
-	intersectIndex bool,
 ) (map[string]bool, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to open git repository")
 	}
 
-	trackedPaths := normalizeTrackedPaths(currentPaths)
-	if intersectIndex {
-		trackedPaths, err = s.intersectIndexPaths(currentPaths)
-		if err != nil {
-			return nil, eris.Wrap(err, "failed to find current tracked paths")
-		}
-	}
+	return s.changedPathsForTrackedPaths(normalizeTrackedPaths(currentPaths), historyRange)
+}
 
+func (s *repoService) changedPathsForTrackedPaths(
+	trackedPaths map[string]bool,
+	historyRange HistoryRange,
+) (map[string]bool, error) {
 	changedPaths := make(map[string]bool)
 	visit := func(_ *object.Commit, changes []trackedChange) {
 		for _, change := range changes {
@@ -51,7 +51,7 @@ func changedPathsInHistoryRange(
 		}
 	}
 
-	err = s.walkTrackedHistoryInHistoryRange(
+	err := s.walkTrackedHistoryInHistoryRange(
 		trackedPaths,
 		historyRange,
 		nil,

@@ -2,6 +2,8 @@ package scan
 
 import (
 	"bytes"
+	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -16,6 +18,23 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 )
 
+type permissionFS struct {
+	fstest.MapFS
+}
+
+func (p permissionFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if name == "blocked" {
+		return nil, &fs.PathError{Op: "readdir", Path: name, Err: fs.ErrPermission}
+	}
+
+	entries, err := p.MapFS.ReadDir(name)
+	if err != nil {
+		return nil, &fs.PathError{Op: "readdir", Path: name, Err: err}
+	}
+
+	return entries, nil
+}
+
 func TestScanTreeReadsVirtualSource(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -28,6 +47,11 @@ func TestScanTreeReadsVirtualSource(t *testing.T) {
 
 	root, err := ScanTree(tree, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
 	g.Expect(root.Path).To(Equal("/display/project"))
 	g.Expect(root.Files).To(BeEmpty())
 	g.Expect(root.Dirs).To(HaveLen(1))
@@ -45,20 +69,136 @@ func TestScanTreeKeepsSymlinkIdentityWhileReadingTarget(t *testing.T) {
 	g.Expect(os.Symlink("target.txt", filepath.Join(dir, "link.txt"))).To(Succeed())
 	tree, err := source.WorkingTree(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+
 	tree.RepoBase = "project"
 
 	root, err := ScanTree(tree, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
 	var link *model.File
+
 	for _, file := range root.Files {
 		if file.Name == "link.txt" {
 			link = file
 		}
 	}
+
 	g.Expect(link).NotTo(BeNil())
+
+	if link == nil {
+		t.Fatal("expected scanned symlink")
+	}
+
 	g.Expect(link.RepoPath).To(Equal("project/link.txt"))
 	g.Expect(link.SourcePath).To(Equal("target.txt"))
+}
+
+func TestScanTreeSkipsSymlinkChainEscapingSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	parent := t.TempDir()
+	dir := filepath.Join(parent, "source")
+	g.Expect(os.Mkdir(dir, 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(dir, "safe.txt"), []byte("safe\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(parent, "outside.txt"), []byte("outside\n"), 0o600)).To(Succeed())
+	g.Expect(os.Symlink("../outside.txt", filepath.Join(dir, "inside-link.txt"))).To(Succeed())
+	g.Expect(os.Symlink("inside-link.txt", filepath.Join(dir, "chain-link.txt"))).To(Succeed())
+	g.Expect(os.Symlink("..", filepath.Join(dir, "outside-dir"))).To(Succeed())
+	g.Expect(os.Symlink("outside-dir/outside.txt", filepath.Join(dir, "component-link.txt"))).To(Succeed())
+
+	tree, err := source.WorkingTree(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	root, err := ScanTree(tree, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.Files).To(HaveLen(1))
+	g.Expect(root.Files[0].Name).To(Equal("safe.txt"))
+}
+
+func TestScanTreeFollowsAbsoluteSymlinkInsideSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target.txt")
+	g.Expect(os.WriteFile(target, []byte("target\n"), 0o600)).To(Succeed())
+	g.Expect(os.Symlink(target, filepath.Join(dir, "link.txt"))).To(Succeed())
+
+	tree, err := source.WorkingTree(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	root, err := ScanTree(tree, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.Files).To(HaveLen(2))
+}
+
+func TestScanTreeSkipsCyclicAndDeepSymlinks(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	fsys := fstest.MapFS{
+		"safe.txt": {Data: []byte("safe\n")},
+		"cycle-a":  {Data: []byte("cycle-b"), Mode: fs.ModeSymlink},
+		"cycle-b":  {Data: []byte("cycle-a"), Mode: fs.ModeSymlink},
+	}
+
+	for depth := range maxSymlinkDepth + 1 {
+		name := fmt.Sprintf("link-%02d", depth)
+
+		target := "safe.txt"
+		if depth < maxSymlinkDepth {
+			target = fmt.Sprintf("link-%02d", depth+1)
+		}
+
+		fsys[name] = &fstest.MapFile{Data: []byte(target), Mode: fs.ModeSymlink}
+	}
+
+	root, err := ScanTree(source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	names := make(map[string]bool, len(root.Files))
+	for _, file := range root.Files {
+		names[file.Name] = true
+	}
+
+	g.Expect(names).NotTo(HaveKey("cycle-a"))
+	g.Expect(names).NotTo(HaveKey("cycle-b"))
+	g.Expect(names).NotTo(HaveKey("link-00"))
+}
+
+func TestScanTreeSkipsInaccessibleDirectories(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	fsys := permissionFS{MapFS: fstest.MapFS{
+		"safe.txt":         {Data: []byte("safe\n")},
+		"blocked/file.txt": {Data: []byte("hidden\n")},
+	}}
+
+	root, err := ScanTree(source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.Files).To(HaveLen(1))
+	g.Expect(root.Dirs).To(BeEmpty())
 }
 
 func TestScanFlat(t *testing.T) {

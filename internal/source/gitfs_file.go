@@ -19,7 +19,7 @@ func (i gitFileInfo) Size() int64        { return i.size }
 func (i gitFileInfo) Mode() fs.FileMode  { return i.mode }
 func (i gitFileInfo) ModTime() time.Time { return i.modTime }
 func (i gitFileInfo) IsDir() bool        { return i.mode.IsDir() }
-func (i gitFileInfo) Sys() any           { return nil }
+func (gitFileInfo) Sys() any             { return nil }
 
 type gitDirEntry struct {
 	info gitFileInfo
@@ -36,8 +36,22 @@ type gitFile struct {
 }
 
 func (f *gitFile) Stat() (fs.FileInfo, error) { return f.info, nil }
-func (f *gitFile) Read(p []byte) (int, error) { return f.reader.Read(p) }
-func (f *gitFile) Close() error               { return f.reader.Close() }
+func (f *gitFile) Read(p []byte) (int, error) {
+	n, err := f.reader.Read(p)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return n, &fs.PathError{Op: gitFSOpRead, Path: f.info.name, Err: err}
+	}
+
+	return n, err //nolint:wrapcheck // io.Reader requires the standard io.EOF sentinel.
+}
+
+func (f *gitFile) Close() error {
+	if err := f.reader.Close(); err != nil {
+		return &fs.PathError{Op: gitFSOpClose, Path: f.info.name, Err: err}
+	}
+
+	return nil
+}
 
 type gitDir struct {
 	info    gitFileInfo
@@ -49,7 +63,7 @@ type gitDir struct {
 func (d *gitDir) Stat() (fs.FileInfo, error) { return d.info, nil }
 
 func (d *gitDir) Read([]byte) (int, error) {
-	return 0, &fs.PathError{Op: "read", Path: d.info.name, Err: errors.New("is a directory")}
+	return 0, &fs.PathError{Op: gitFSOpRead, Path: d.info.name, Err: errors.New("is a directory")}
 }
 
 func (d *gitDir) Close() error {
@@ -60,8 +74,9 @@ func (d *gitDir) Close() error {
 
 func (d *gitDir) ReadDir(n int) ([]fs.DirEntry, error) {
 	if d.closed {
-		return nil, &fs.PathError{Op: "readdir", Path: d.info.name, Err: fs.ErrClosed}
+		return nil, &fs.PathError{Op: gitFSOpReadDir, Path: d.info.name, Err: fs.ErrClosed}
 	}
+
 	if d.offset >= len(d.entries) && n > 0 {
 		return nil, io.EOF
 	}

@@ -39,10 +39,40 @@ func TestResolveSourceUsesHistoricalTreeForUntil(t *testing.T) {
 	g.Expect(string(data)).To(Equal("historical\n"))
 }
 
+func TestResolveSourceUsesHistoricalSubtreeDeletedFromWorkingTree(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	runGitForSourceTest(t, dir, "init", "-b", "main")
+	runGitForSourceTest(t, dir, "config", "user.name", "Test")
+	runGitForSourceTest(t, dir, "config", "user.email", "test@example.com")
+	oldDir := filepath.Join(dir, "old")
+	g.Expect(os.Mkdir(oldDir, 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(oldDir, "file.txt"), []byte("historical\n"), 0o600)).To(Succeed())
+	runGitForSourceTest(t, dir, "add", ".")
+	runGitForSourceTest(t, dir, "commit", "-m", "historical")
+	oldCommit := runGitForSourceTest(t, dir, "rev-parse", "HEAD")
+
+	g.Expect(os.RemoveAll(oldDir)).To(Succeed())
+
+	state := &CommonState{
+		TargetPath: oldDir,
+		Output:     filepath.Join(dir, "out.png"),
+		Flags:      &Flags{HistoryRange: git.HistoryRange{Until: "sha:" + oldCommit}},
+	}
+	g.Expect(ValidatePaths(state)).To(Succeed())
+	g.Expect(ResolveSource(state)).To(Succeed())
+	g.Expect(ScanFilesystem(state)).To(Succeed())
+	g.Expect(state.Root.Files).To(HaveLen(1))
+	g.Expect(state.Root.Files[0].Name).To(Equal("file.txt"))
+}
+
 func runGitForSourceTest(t *testing.T, dir string, args ...string) string {
 	t.Helper()
-	cmd := exec.Command("git", args...) //nolint:gosec // fixed test helper
+
+	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git %v failed: %v\n%s", args, err, out)

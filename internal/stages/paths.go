@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rotisserie/eris"
 
@@ -13,8 +14,8 @@ import (
 // ValidatePathsHelper validates the target directory and output file paths.
 // Returns *TargetPathError or *OutputPathError on failure.
 func ValidatePathsHelper(targetPath, output string) error {
-	if _, err := canvas.FormatFromPath(output); err != nil {
-		return &OutputPathError{Msg: err.Error()}
+	if err := validateOutputPath(output); err != nil {
+		return err
 	}
 
 	info, err := os.Stat(targetPath)
@@ -30,12 +31,20 @@ func ValidatePathsHelper(targetPath, output string) error {
 		return &TargetPathError{Msg: "target path is not a directory: " + targetPath}
 	}
 
+	return nil
+}
+
+func validateOutputPath(output string) error {
+	if _, err := canvas.FormatFromPath(output); err != nil {
+		return &OutputPathError{Msg: err.Error()}
+	}
+
 	outDir := filepath.Dir(output)
 	if outDir == "." {
 		return nil
 	}
 
-	info, err = os.Stat(outDir)
+	info, err := os.Stat(outDir)
 	if err != nil {
 		return &OutputPathError{Msg: "output directory does not exist: " + outDir}
 	}
@@ -49,7 +58,14 @@ func ValidatePathsHelper(targetPath, output string) error {
 
 // ValidatePaths validates c.TargetPath and c.Output.
 func ValidatePaths(c *CommonState) error {
-	if err := ValidatePathsHelper(c.TargetPath, c.Output); err != nil {
+	var err error
+	if c.Flags != nil && strings.TrimSpace(c.Flags.HistoryRange.Until) != "" {
+		err = validateOutputPath(c.Output)
+	} else {
+		err = ValidatePathsHelper(c.TargetPath, c.Output)
+	}
+
+	if err != nil {
 		return eris.Wrap(err, "invalid paths")
 	}
 

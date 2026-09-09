@@ -1,10 +1,12 @@
 package source
 
 import (
+	"cmp"
 	"errors"
 	"io"
 	"io/fs"
 	"path"
+	"slices"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/filemode"
@@ -15,6 +17,15 @@ type gitFS struct {
 	tree    *object.Tree
 	modTime time.Time
 }
+
+const (
+	gitFSOpClose    = "close"
+	gitFSOpOpen     = "open"
+	gitFSOpRead     = "read"
+	gitFSOpReadDir  = "readdir"
+	gitFSOpReadLink = "readlink"
+	gitFSOpStat     = "stat"
+)
 
 var (
 	_ fs.FS         = (*gitFS)(nil)
@@ -30,7 +41,7 @@ func NewGitFS(tree *object.Tree, modTime time.Time) fs.FS {
 }
 
 func (g *gitFS) Open(name string) (fs.File, error) {
-	if err := validGitFSPath("open", name); err != nil {
+	if err := validGitFSPath(gitFSOpOpen, name); err != nil {
 		return nil, err
 	}
 
@@ -40,28 +51,28 @@ func (g *gitFS) Open(name string) (fs.File, error) {
 
 	entry, err := g.tree.FindEntry(name)
 	if err != nil {
-		return nil, gitFSPathError("open", name, err)
+		return nil, gitFSPathError(gitFSOpOpen, name, err)
 	}
 
 	switch entry.Mode {
 	case filemode.Dir:
 		tree, treeErr := g.tree.Tree(name)
 		if treeErr != nil {
-			return nil, gitFSPathError("open", name, treeErr)
+			return nil, gitFSPathError(gitFSOpOpen, name, treeErr)
 		}
 
 		return g.openDir(name, tree)
 	case filemode.Submodule:
-		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrNotExist}
+		return nil, &fs.PathError{Op: gitFSOpOpen, Path: name, Err: fs.ErrNotExist}
 	default:
 		file, fileErr := g.tree.TreeEntryFile(entry)
 		if fileErr != nil {
-			return nil, gitFSPathError("open", name, fileErr)
+			return nil, gitFSPathError(gitFSOpOpen, name, fileErr)
 		}
 
 		reader, readerErr := file.Reader()
 		if readerErr != nil {
-			return nil, gitFSPathError("open", name, readerErr)
+			return nil, gitFSPathError(gitFSOpOpen, name, readerErr)
 		}
 
 		return &gitFile{
@@ -80,10 +91,15 @@ func (g *gitFS) ReadDir(name string) ([]fs.DirEntry, error) {
 
 	dir, ok := file.(fs.ReadDirFile)
 	if !ok {
-		return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not a directory")}
+		return nil, &fs.PathError{Op: gitFSOpReadDir, Path: name, Err: errors.New("not a directory")}
 	}
 
-	return dir.ReadDir(-1)
+	entries, err := dir.ReadDir(-1)
+	if err != nil {
+		return nil, &fs.PathError{Op: gitFSOpReadDir, Path: name, Err: err}
+	}
+
+	return entries, nil
 }
 
 func (g *gitFS) ReadFile(name string) ([]byte, error) {
@@ -95,14 +111,14 @@ func (g *gitFS) ReadFile(name string) ([]byte, error) {
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		return nil, &fs.PathError{Op: "read", Path: name, Err: err}
+		return nil, &fs.PathError{Op: gitFSOpRead, Path: name, Err: err}
 	}
 
 	return data, nil
 }
 
 func (g *gitFS) Stat(name string) (fs.FileInfo, error) {
-	if err := validGitFSPath("stat", name); err != nil {
+	if err := validGitFSPath(gitFSOpStat, name); err != nil {
 		return nil, err
 	}
 
@@ -112,17 +128,18 @@ func (g *gitFS) Stat(name string) (fs.FileInfo, error) {
 
 	entry, err := g.tree.FindEntry(name)
 	if err != nil {
-		return nil, gitFSPathError("stat", name, err)
+		return nil, gitFSPathError(gitFSOpStat, name, err)
 	}
+
 	if entry.Mode == filemode.Submodule {
-		return nil, &fs.PathError{Op: "stat", Path: name, Err: fs.ErrNotExist}
+		return nil, &fs.PathError{Op: gitFSOpStat, Path: name, Err: fs.ErrNotExist}
 	}
 
 	size := int64(0)
 	if entry.Mode != filemode.Dir {
 		size, err = g.tree.Size(name)
 		if err != nil {
-			return nil, gitFSPathError("stat", name, err)
+			return nil, gitFSPathError(gitFSOpStat, name, err)
 		}
 	}
 
@@ -134,16 +151,17 @@ func (g *gitFS) Lstat(name string) (fs.FileInfo, error) {
 }
 
 func (g *gitFS) ReadLink(name string) (string, error) {
-	if err := validGitFSPath("readlink", name); err != nil {
+	if err := validGitFSPath(gitFSOpReadLink, name); err != nil {
 		return "", err
 	}
 
 	entry, err := g.tree.FindEntry(name)
 	if err != nil {
-		return "", gitFSPathError("readlink", name, err)
+		return "", gitFSPathError(gitFSOpReadLink, name, err)
 	}
+
 	if entry.Mode != filemode.Symlink {
-		return "", &fs.PathError{Op: "readlink", Path: name, Err: fs.ErrInvalid}
+		return "", &fs.PathError{Op: gitFSOpReadLink, Path: name, Err: fs.ErrInvalid}
 	}
 
 	data, err := g.ReadFile(name)
@@ -157,28 +175,49 @@ func (g *gitFS) ReadLink(name string) (string, error) {
 func (g *gitFS) openDir(name string, tree *object.Tree) (fs.File, error) {
 	entries := make([]fs.DirEntry, 0, len(tree.Entries))
 	for _, entry := range tree.Entries {
+		if !validGitTreeEntryName(entry.Name) {
+			return nil, &fs.PathError{Op: gitFSOpReadDir, Path: entry.Name, Err: fs.ErrInvalid}
+		}
+
 		if entry.Mode == filemode.Submodule {
 			continue
 		}
 
-		size := int64(0)
-		if entry.Mode != filemode.Dir {
-			entryName := entry.Name
-			if name != "." {
-				entryName = path.Join(name, entry.Name)
-			}
+		entryName := entry.Name
+		if name != "." {
+			entryName = path.Join(name, entry.Name)
+		}
 
-			var err error
-			size, err = g.tree.Size(entryName)
-			if err != nil {
-				return nil, gitFSPathError("readdir", entryName, err)
-			}
+		size, err := g.entrySize(entryName, entry.Mode)
+		if err != nil {
+			return nil, err
 		}
 
 		entries = append(entries, gitDirEntry{info: g.info(entry.Name, entry.Mode, size)})
 	}
 
+	slices.SortFunc(entries, func(a, b fs.DirEntry) int {
+		return cmp.Compare(a.Name(), b.Name())
+	})
+
 	return &gitDir{info: g.info(path.Base(name), filemode.Dir, 0), entries: entries}, nil
+}
+
+func validGitTreeEntryName(name string) bool {
+	return name != "." && path.Base(name) == name && fs.ValidPath(name)
+}
+
+func (g *gitFS) entrySize(name string, mode filemode.FileMode) (int64, error) {
+	if mode == filemode.Dir {
+		return 0, nil
+	}
+
+	size, err := g.tree.Size(name)
+	if err != nil {
+		return 0, gitFSPathError(gitFSOpReadDir, name, err)
+	}
+
+	return size, nil
 }
 
 func (g *gitFS) info(name string, mode filemode.FileMode, size int64) gitFileInfo {

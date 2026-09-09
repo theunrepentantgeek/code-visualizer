@@ -37,10 +37,11 @@ func FilterChangedOnly(c *CommonState) error {
 
 	var changedPaths map[string]bool
 	if c.Snapshot != nil {
-		changedPaths, err = git.ChangedPathsInHistoryRangeForSnapshot(repoRoot, currentPaths, historyRange)
+		changedPaths, err = git.SnapshotChangedPathsInHistoryRange(repoRoot, currentPaths, historyRange)
 	} else {
 		changedPaths, err = git.ChangedPathsInHistoryRange(repoRoot, currentPaths, historyRange)
 	}
+
 	if err != nil {
 		return eris.Wrap(err, "failed to filter files by git range")
 	}

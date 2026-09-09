@@ -91,12 +91,12 @@ func TestChangedPathsInHistoryRange_OmitsUntrackedReplacementOfDeletedPath(t *te
 	g.Expect(changed).To(BeEmpty())
 }
 
-func TestChangedPathsInHistoryRangeForSnapshotKeepsHistoricalPath(t *testing.T) {
+func TestSnapshotChangedPathsInHistoryRangeKeepsHistoricalPath(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 	dir := setupChangedPathsRepo(t)
 
-	changed, err := ChangedPathsInHistoryRangeForSnapshot(
+	changed, err := SnapshotChangedPathsInHistoryRange(
 		dir,
 		map[string]bool{"deleted.go": true},
 		HistoryRange{From: "tag:before-changes"},

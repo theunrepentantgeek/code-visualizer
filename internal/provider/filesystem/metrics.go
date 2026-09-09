@@ -91,7 +91,7 @@ func countLinesFile(file *model.File) (int64, error) {
 
 	data, err := file.ReadAll()
 	if err != nil {
-		return 0, err
+		return 0, eris.Wrap(err, "reading file for line count")
 	}
 
 	return countLinesReader(bytes.NewReader(data))

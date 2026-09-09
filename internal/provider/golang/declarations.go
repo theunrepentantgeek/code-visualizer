@@ -63,7 +63,7 @@ func analyzeModelDeclarations(f *model.File) (*declarationAnalysis, error) {
 
 	src, err := f.ReadAll()
 	if err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "reading Go declarations")
 	}
 
 	return analyzeDeclarationSource(f.Path, src)

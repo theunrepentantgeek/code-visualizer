@@ -18,6 +18,7 @@ type File struct {
 	Extension    string
 	IsBinary     bool
 	Source       fs.FS
+	RepoSource   fs.FS
 	Declarations []*Declaration
 	Commits      []*Commit
 }

@@ -20,6 +20,7 @@ func TestWorkingTreeReadsThroughModelFile(t *testing.T) {
 
 	tree, err := source.WorkingTree(dir)
 	g.Expect(err).NotTo(HaveOccurred())
+
 	file := model.File{
 		Path:     "src/main.go",
 		RepoPath: "project/src/main.go",

@@ -14,6 +14,7 @@ import (
 // Tree identifies a content filesystem and its repository-relative root.
 type Tree struct {
 	FS       fs.FS
+	RepoFS   fs.FS
 	RootName string
 	RootPath string
 	RepoRoot string

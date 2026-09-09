@@ -22,7 +22,7 @@ func (l *metricsLoader) FileProgressMutex() *sync.Mutex {
 }
 
 func (l *metricsLoader) Load(root *model.Directory, requested []metric.Name) error {
-	return loadGitMetrics(root, requested, l.onFile)
+	return loadGitMetrics(root, requested, l.onFile, root.ReferenceTime)
 }
 
 // loadAllFileMetrics runs the git analysis once and populates all 7 file-level
@@ -74,13 +74,18 @@ func newMetricRequirements(requested []metric.Name) metricRequirements {
 // no history, or contains none of the scanned files, loadGitMetrics returns
 // an error rather than producing an empty result that would cascade into
 // confusing downstream failures.
-func loadGitMetrics(root *model.Directory, requested []metric.Name, onFile func()) error {
+func loadGitMetrics(
+	root *model.Directory,
+	requested []metric.Name,
+	onFile func(),
+	referenceTimes ...time.Time,
+) error {
 	s, err := getService(root.Path)
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
 
-	return s.loadGitMetrics(root, requested, onFile)
+	return s.loadGitMetrics(root, requested, onFile, referenceTimes...)
 }
 
 // LoadFileMetricsInHistoryRange applies file-level Git metrics from historyRange.
@@ -138,6 +143,7 @@ func (s *repoService) loadGitMetrics(
 	root *model.Directory,
 	requested []metric.Name,
 	onFile func(),
+	referenceTimes ...time.Time,
 ) error {
 	requirements := newMetricRequirements(requested)
 
@@ -162,7 +168,7 @@ func (s *repoService) loadGitMetrics(
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
-	s.applySelectedFileMetrics(root, requirements, time.Now())
+	s.applySelectedFileMetrics(root, requirements, selectedReferenceTime(referenceTimes))
 
 	if err := s.requireGitHistory(pathSet); err != nil {
 		return err
@@ -214,10 +220,12 @@ func (s *repoService) applySelectedFileMetrics(
 ) {
 	model.WalkFiles(root, func(f *model.File) {
 		relPath := f.RepoPath
+
 		var relErr error
 		if relPath == "" {
 			relPath, relErr = repoRelativePath(s.RepoRoot(), f.Path)
 		}
+
 		if relErr != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", relErr)
 

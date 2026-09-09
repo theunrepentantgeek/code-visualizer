@@ -24,6 +24,7 @@ func TestFileLinesProviderReadsAttachedSource(t *testing.T) {
 	root := &model.Directory{Files: []*model.File{f}}
 
 	g.Expect((&FileLinesProvider{}).Load(root)).To(Succeed())
+
 	lines, ok := f.Quantity(FileLines)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(lines).To(Equal(int64(3)))
