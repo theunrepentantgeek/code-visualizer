@@ -217,6 +217,12 @@ func CommitTimeRange(fileRanges map[*model.File]TimeRange) TimeRange {
 // relative to repoRoot are skipped silently.
 func walkFilesWithRepoRelPaths(root *model.Directory, repoRoot string, fn func(rel string, f *model.File)) {
 	model.WalkFiles(root, func(f *model.File) {
+		if f.RepoPath != "" {
+			fn(f.RepoPath, f)
+
+			return
+		}
+
 		rel, err := filepath.Rel(repoRoot, f.Path)
 		if err != nil {
 			return

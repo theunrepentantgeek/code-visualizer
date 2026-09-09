@@ -12,14 +12,36 @@ func ChangedPathsInHistoryRange(
 	currentPaths map[string]bool,
 	historyRange HistoryRange,
 ) (map[string]bool, error) {
+	return changedPathsInHistoryRange(repoPath, currentPaths, historyRange, true)
+}
+
+// ChangedPathsInHistoryRangeForSnapshot treats currentPaths as the authoritative
+// path set from a historical tree rather than intersecting the live index.
+func ChangedPathsInHistoryRangeForSnapshot(
+	repoPath string,
+	currentPaths map[string]bool,
+	historyRange HistoryRange,
+) (map[string]bool, error) {
+	return changedPathsInHistoryRange(repoPath, currentPaths, historyRange, false)
+}
+
+func changedPathsInHistoryRange(
+	repoPath string,
+	currentPaths map[string]bool,
+	historyRange HistoryRange,
+	intersectIndex bool,
+) (map[string]bool, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to open git repository")
 	}
 
-	trackedPaths, err := s.intersectIndexPaths(currentPaths)
-	if err != nil {
-		return nil, eris.Wrap(err, "failed to find current tracked paths")
+	trackedPaths := normalizeTrackedPaths(currentPaths)
+	if intersectIndex {
+		trackedPaths, err = s.intersectIndexPaths(currentPaths)
+		if err != nil {
+			return nil, eris.Wrap(err, "failed to find current tracked paths")
+		}
 	}
 
 	changedPaths := make(map[string]bool)

@@ -205,7 +205,11 @@ func (s *repoService) applySelectedFileMetrics(
 	requirements metricRequirements,
 ) {
 	model.WalkFiles(root, func(f *model.File) {
-		relPath, relErr := repoRelativePath(s.RepoRoot(), f.Path)
+		relPath := f.RepoPath
+		var relErr error
+		if relPath == "" {
+			relPath, relErr = repoRelativePath(s.RepoRoot(), f.Path)
+		}
 		if relErr != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", relErr)
 

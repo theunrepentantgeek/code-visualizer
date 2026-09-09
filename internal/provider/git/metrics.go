@@ -103,6 +103,12 @@ func buildRelPathSet(s *repoService, root *model.Directory) map[string]bool {
 	paths := make(map[string]bool)
 
 	model.WalkFiles(root, func(f *model.File) {
+		if f.RepoPath != "" {
+			paths[f.RepoPath] = true
+
+			return
+		}
+
 		relPath, err := repoRelativePath(s.RepoRoot(), f.Path)
 		if err == nil {
 			paths[relPath] = true
