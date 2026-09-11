@@ -45,7 +45,7 @@ func PopulateDeclarations(f *model.File) {
 		return
 	}
 
-	analysis, err := getOrAnalyzeDeclarations(f.Path)
+	analysis, err := analyzeModelDeclarations(f)
 	if err != nil {
 		slog.Warn("could not analyze Go declarations", "path", f.Path, "error", err)
 		f.Declarations = nil
@@ -54,6 +54,19 @@ func PopulateDeclarations(f *model.File) {
 	}
 
 	f.Declarations = append(f.Declarations, buildDeclarations(analysis.declarations)...)
+}
+
+func analyzeModelDeclarations(f *model.File) (*declarationAnalysis, error) {
+	if f.Source == nil {
+		return getOrAnalyzeDeclarations(f.Path)
+	}
+
+	src, err := f.ReadAll()
+	if err != nil {
+		return nil, eris.Wrap(err, "reading Go declarations")
+	}
+
+	return analyzeDeclarationSource(f.Path, src)
 }
 
 func getOrAnalyzeDeclarations(path string) (*declarationAnalysis, error) {
@@ -105,12 +118,16 @@ func analyzeDeclarations(path string) (*declarationAnalysis, error) {
 		return nil, eris.Wrapf(err, "reading Go file %s", path)
 	}
 
+	return analyzeDeclarationSource(path, src)
+}
+
+func analyzeDeclarationSource(name string, src []byte) (*declarationAnalysis, error) {
 	fset := token.NewFileSet()
 	dec := decorator.NewDecorator(fset)
 
-	dstFile, err := dec.ParseFile(path, src, 0)
+	dstFile, err := dec.ParseFile(name, src, 0)
 	if err != nil {
-		return nil, eris.Wrapf(err, "parsing Go file %s", path)
+		return nil, eris.Wrapf(err, "parsing Go file %s", name)
 	}
 
 	return &declarationAnalysis{

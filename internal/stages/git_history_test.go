@@ -224,6 +224,34 @@ func TestPrewarmGitMetricsLoadsHistoryForRequestedFileGitMetric(t *testing.T) {
 	g.Expect(state.GitHistory).NotTo(BeEmpty())
 }
 
+func TestPrewarmedGitMetricsUseSnapshotClock(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.ReferenceNow = time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	state.Requested.BaseMetrics = []metric.Name{git.FileAge}
+
+	g.Expect(PrewarmGitMetrics(state)).To(Succeed())
+	g.Expect(RunProviders(state)).To(Succeed())
+
+	var currentFile *model.File
+
+	for _, file := range state.Root.Files {
+		if file.Name == "c.go" {
+			currentFile = file
+		}
+	}
+
+	if currentFile == nil {
+		t.Fatal("expected c.go in file tree")
+	}
+
+	age, ok := currentFile.Quantity(git.FileAge)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(age).To(BeNumerically(">", 1_000))
+}
+
 func TestPrewarmGitMetricsSkipsWhenNoFileGitMetricIsRequested(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -323,6 +351,24 @@ func TestRunProviders_AppliesRevisionRangeToAuthorshipMetrics(t *testing.T) {
 	owner, ok := bFile.Classification(git.CodeOwnerMetric)
 	g.Expect(ok).To(BeTrue())
 	g.Expect(owner).To(Equal("bob@example.com"))
+}
+
+func TestRunProviders_UsesSnapshotClockForAuthorshipWindows(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RootConfig = config.New()
+	state.ReferenceNow = time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	state.Requested.BaseMetrics = []metric.Name{git.CurrentMaintainerMetric}
+
+	g.Expect(RunProviders(state)).To(Succeed())
+
+	for _, file := range state.Root.Files {
+		maintainer, ok := file.Classification(git.CurrentMaintainerMetric)
+		g.Expect(ok).To(BeTrue())
+		g.Expect(maintainer).To(Equal(git.Unmaintained))
+	}
 }
 
 func TestGroupGitHistoryByFile_PointsBackIntoGitHistory(t *testing.T) {

@@ -3,6 +3,7 @@ package git
 import (
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/rotisserie/eris"
 
@@ -21,7 +22,7 @@ func (l *metricsLoader) FileProgressMutex() *sync.Mutex {
 }
 
 func (l *metricsLoader) Load(root *model.Directory, requested []metric.Name) error {
-	return loadGitMetrics(root, requested, l.onFile)
+	return loadGitMetrics(root, requested, l.onFile, root.ReferenceTime)
 }
 
 // loadAllFileMetrics runs the git analysis once and populates all 7 file-level
@@ -32,8 +33,13 @@ func loadAllFileMetrics(root *model.Directory) error {
 }
 
 type metricRequirements struct {
-	processors     []providerDef
+	processors     []selectedProvider
 	needsLineStats bool
+}
+
+type selectedProvider struct {
+	name metric.Name
+	def  providerDef
 }
 
 type fileProgressCallbacks struct {
@@ -43,7 +49,7 @@ type fileProgressCallbacks struct {
 
 func newMetricRequirements(requested []metric.Name) metricRequirements {
 	requirements := metricRequirements{
-		processors: make([]providerDef, 0, len(requested)),
+		processors: make([]selectedProvider, 0, len(requested)),
 	}
 
 	for _, name := range requested {
@@ -52,7 +58,7 @@ func newMetricRequirements(requested []metric.Name) metricRequirements {
 			continue
 		}
 
-		requirements.processors = append(requirements.processors, def)
+		requirements.processors = append(requirements.processors, selectedProvider{name: name, def: def})
 		if name == TotalLinesAdded || name == TotalLinesRemoved {
 			requirements.needsLineStats = true
 		}
@@ -68,13 +74,18 @@ func newMetricRequirements(requested []metric.Name) metricRequirements {
 // no history, or contains none of the scanned files, loadGitMetrics returns
 // an error rather than producing an empty result that would cascade into
 // confusing downstream failures.
-func loadGitMetrics(root *model.Directory, requested []metric.Name, onFile func()) error {
-	s, err := getService(root.Path)
+func loadGitMetrics(
+	root *model.Directory,
+	requested []metric.Name,
+	onFile func(),
+	referenceTimes ...time.Time,
+) error {
+	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
 
-	return s.loadGitMetrics(root, requested, onFile)
+	return s.loadGitMetrics(root, requested, onFile, referenceTimes...)
 }
 
 // LoadFileMetricsInHistoryRange applies file-level Git metrics from historyRange.
@@ -83,8 +94,9 @@ func LoadFileMetricsInHistoryRange(
 	requested []metric.Name,
 	historyRange HistoryRange,
 	onFile func(),
+	referenceTimes ...time.Time,
 ) error {
-	s, err := getService(root.Path)
+	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
@@ -114,7 +126,7 @@ func LoadFileMetricsInHistoryRange(
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
-	s.applySelectedFileMetrics(root, requirements)
+	s.applySelectedFileMetrics(root, requirements, selectedReferenceTime(referenceTimes))
 
 	if err := s.requireGitHistory(pathSet); err != nil {
 		return err
@@ -131,6 +143,7 @@ func (s *repoService) loadGitMetrics(
 	root *model.Directory,
 	requested []metric.Name,
 	onFile func(),
+	referenceTimes ...time.Time,
 ) error {
 	requirements := newMetricRequirements(requested)
 
@@ -155,7 +168,7 @@ func (s *repoService) loadGitMetrics(
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
-	s.applySelectedFileMetrics(root, requirements)
+	s.applySelectedFileMetrics(root, requirements, selectedReferenceTime(referenceTimes))
 
 	if err := s.requireGitHistory(pathSet); err != nil {
 		return err
@@ -203,19 +216,58 @@ func newFileProgressCallbacks(onFile func(), fileTotal int64, commitTotal int64)
 func (s *repoService) applySelectedFileMetrics(
 	root *model.Directory,
 	requirements metricRequirements,
+	referenceTime time.Time,
 ) {
 	model.WalkFiles(root, func(f *model.File) {
-		relPath, relErr := repoRelativePath(s.RepoRoot(), f.Path)
+		relPath := f.RepoPath
+
+		var relErr error
+		if relPath == "" {
+			relPath, relErr = repoRelativePath(s.RepoRoot(), f.Path)
+		}
+
 		if relErr != nil {
 			slog.Warn("could not compute relative path", "path", f.Path, "error", relErr)
 
 			return
 		}
 
-		for _, def := range requirements.processors {
-			def.process(s, f, relPath)
+		for _, selected := range requirements.processors {
+			switch selected.name {
+			case FileAge:
+				value, valueErr := s.fileAgeAt(relPath, referenceTime)
+				applyQuantity(f, FileAge, value, valueErr)
+			case FileFreshness:
+				value, valueErr := s.fileFreshnessAt(relPath, referenceTime)
+				applyQuantity(f, FileFreshness, value, valueErr)
+			case CommitDensity:
+				value, valueErr := s.commitDensityAt(relPath, referenceTime)
+				applyMeasure(f, CommitDensity, value, valueErr)
+			default:
+				selected.def.process(s, f, relPath)
+			}
 		}
 	})
+}
+
+func selectedReferenceTime(values []time.Time) time.Time {
+	if len(values) > 0 && !values[0].IsZero() {
+		return values[0]
+	}
+
+	return time.Now()
+}
+
+func applyQuantity(file *model.File, name metric.Name, value int64, err error) {
+	if err == nil {
+		file.SetQuantity(name, value)
+	}
+}
+
+func applyMeasure(file *model.File, name metric.Name, value float64, err error) {
+	if err == nil {
+		file.SetMeasure(name, value)
+	}
 }
 
 func (s *repoService) requireGitHistory(pathSet map[string]bool) error {

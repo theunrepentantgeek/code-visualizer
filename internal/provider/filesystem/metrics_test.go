@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	. "github.com/onsi/gomega"
 
@@ -11,6 +12,23 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
+
+func TestFileLinesProviderReadsAttachedSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	f := &model.File{
+		Path:       "/virtual/main.go",
+		SourcePath: "main.go",
+		Source:     fstest.MapFS{"main.go": {Data: []byte("package main\n\nfunc main() {}\n")}},
+	}
+	root := &model.Directory{Files: []*model.File{f}}
+
+	g.Expect((&FileLinesProvider{}).Load(root)).To(Succeed())
+
+	lines, ok := f.Quantity(FileLines)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(lines).To(Equal(int64(3)))
+}
 
 func TestFileSizeProvider(t *testing.T) {
 	t.Parallel()

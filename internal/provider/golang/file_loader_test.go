@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	. "github.com/onsi/gomega"
 
@@ -11,6 +12,101 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
+
+func TestLoadFileMetricsReadsAttachedSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	fsys := fstest.MapFS{
+		"go.mod":  {Data: []byte("module github.com/test/project\n")},
+		"main.go": {Data: []byte("package main\nimport \"github.com/test/project/internal/x\"\nfunc main() {}\n")},
+	}
+
+	file := &model.File{
+		Path:       "/virtual/main.go",
+		SourcePath: "main.go",
+		Source:     fsys,
+		Extension:  "go",
+	}
+	root := &model.Directory{Files: []*model.File{file}}
+
+	g.Expect(loadFileMetrics(root)).To(Succeed())
+
+	imports, ok := file.Quantity(Imports)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(imports).To(Equal(int64(1)))
+
+	internal, ok := file.Quantity(internalImportsMetric)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(internal).To(Equal(int64(1)))
+}
+
+func TestLoadFileMetricsFindsModuleAboveScopedSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	repoFS := fstest.MapFS{
+		"go.mod":      {Data: []byte("module github.com/test/project\n")},
+		"pkg/main.go": {Data: []byte("package pkg\nimport \"github.com/test/project/internal/x\"\n")},
+	}
+	file := &model.File{
+		Path:       "/virtual/pkg/main.go",
+		RepoPath:   "pkg/main.go",
+		SourcePath: "main.go",
+		Source:     fstest.MapFS{"main.go": repoFS["pkg/main.go"]},
+		RepoSource: repoFS,
+		Extension:  "go",
+	}
+
+	g.Expect(loadFileMetrics(&model.Directory{Files: []*model.File{file}})).To(Succeed())
+
+	internal, ok := file.Quantity(internalImportsMetric)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(internal).To(Equal(int64(1)))
+}
+
+func TestLoadFileMetricsFindsParentModuleForLiveNonGitSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	pkgDir := filepath.Join(dir, "pkg")
+	g.Expect(os.Mkdir(pkgDir, 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(
+		filepath.Join(dir, "go.mod"),
+		[]byte("module github.com/test/project\n"),
+		0o600,
+	)).To(Succeed())
+
+	sourceFS := fstest.MapFS{
+		"main.go": {Data: []byte("package pkg\nimport \"github.com/test/project/internal/x\"\n")},
+	}
+	file := &model.File{
+		Path:       filepath.Join(pkgDir, "main.go"),
+		SourcePath: "main.go",
+		Source:     sourceFS,
+		Extension:  "go",
+	}
+
+	g.Expect(loadFileMetrics(&model.Directory{Files: []*model.File{file}})).To(Succeed())
+
+	internal, ok := file.Quantity(internalImportsMetric)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(internal).To(Equal(int64(1)))
+}
+
+func TestPopulateDeclarationsReadsAttachedSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	file := &model.File{
+		Path:       "/virtual/main.go",
+		SourcePath: "main.go",
+		Source:     fstest.MapFS{"main.go": {Data: []byte("package main\nfunc main() {}\n")}},
+		Extension:  "go",
+	}
+
+	PopulateDeclarations(file)
+
+	g.Expect(file.Declarations).To(HaveLen(1))
+	g.Expect(file.Declarations[0].Name).To(Equal("main"))
+}
 
 //nolint:paralleltest // mutates package globals via ResetCacheForTesting
 func TestLoadFileMetrics_PopulatesGoFileMetrics(t *testing.T) {

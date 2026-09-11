@@ -134,12 +134,16 @@ func analyzeFile(path string, modulePath string) (*fileStats, error) {
 		return nil, eris.Wrapf(err, "reading Go file %s", path)
 	}
 
+	return analyzeSource(path, src, modulePath)
+}
+
+func analyzeSource(name string, src []byte, modulePath string) (*fileStats, error) {
 	fset := token.NewFileSet()
 	dec := decorator.NewDecorator(fset)
 
-	dstFile, err := dec.ParseFile(path, src, 0)
+	dstFile, err := dec.ParseFile(name, src, 0)
 	if err != nil {
-		return nil, eris.Wrapf(err, "parsing Go file %s", path)
+		return nil, eris.Wrapf(err, "parsing Go file %s", name)
 	}
 
 	stats := &fileStats{}

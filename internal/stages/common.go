@@ -4,12 +4,15 @@
 package stages
 
 import (
+	"time"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 )
 
 // Flags is the cross-cutting flag bundle passed to every viz command's Run.
@@ -48,6 +51,10 @@ type CommonState struct {
 	Height        int              // ResolveDimensions
 	DrawingBounds geometry.Rect    // InitDrawingBounds + Reserve*Bounds
 	Canvas        *canvas.Canvas   // viz-specific Render
+	Source        source.Tree      // ResolveSource
+	Snapshot      *git.Snapshot    // ResolveSource, non-nil for --until
+	RepoRoot      string           // ResolveSource
+	ReferenceNow  time.Time        // ResolveSource
 
 	// Git history (populated by LoadGitHistory / GroupGitHistoryByFile / ExtractFileHistory).
 	// GitHistory is written once and not mutated afterward; consumers may hold

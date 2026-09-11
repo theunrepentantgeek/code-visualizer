@@ -33,7 +33,7 @@ func LoadGitHistory(c *CommonState) error {
 		slog.Info("Loading git history")
 	}
 
-	repoRoot, err := git.RepoRootFor(c.Root.Path)
+	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
 	}
@@ -84,7 +84,7 @@ func PrewarmGitMetrics(c *CommonState) error {
 // GroupGitHistoryByFile joins c.GitHistory against c.Root and writes
 // c.FileHistory: each file maps to the CommitRefs that touched it.
 func GroupGitHistoryByFile(c *CommonState) error {
-	repoRoot, err := git.RepoRootFor(c.Root.Path)
+	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
 	}
@@ -217,6 +217,12 @@ func CommitTimeRange(fileRanges map[*model.File]TimeRange) TimeRange {
 // relative to repoRoot are skipped silently.
 func walkFilesWithRepoRelPaths(root *model.Directory, repoRoot string, fn func(rel string, f *model.File)) {
 	model.WalkFiles(root, func(f *model.File) {
+		if f.RepoPath != "" {
+			fn(f.RepoPath, f)
+
+			return
+		}
+
 		rel, err := filepath.Rel(repoRoot, f.Path)
 		if err != nil {
 			return

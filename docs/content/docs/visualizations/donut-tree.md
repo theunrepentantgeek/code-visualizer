@@ -16,6 +16,12 @@ Files contribute their metrics to their directories but are never drawn.
 codeviz donut-tree [flags] <target-path>
 ```
 
+When `--until` is set, the donut-tree uses the files, directories, and contents
+from the selected commit rather than the live working tree. Date bounds select
+the latest reachable commit within the inclusive bound, and age-style metrics
+use that commit as their reference time. `--from` alone keeps the live tree;
+with `--changed-only`, filtering is intersected with files in the snapshot.
+
 ## Required settings
 
 | Flag       | Short | Values                          | Description                                                             |

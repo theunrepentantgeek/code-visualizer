@@ -70,19 +70,29 @@ exclusive and must be an ancestor of the upper revision, or of `HEAD` when the
 upper bound is a date or omitted. The upper revision is inclusive and may be
 outside the current `HEAD` history.
 
-By default, these options constrain Git-derived metrics and timeline history
-without removing unchanged files from the current checkout. Add
-`--changed-only` (or set `changedOnly: true` in configuration) to retain only
-current-tree files modified by commits in the effective range:
+`--until` also selects the committed filesystem snapshot used by the
+visualization. Tags and commit IDs select their commit directly. A date selects
+the reachable commit with the latest author timestamp within the inclusive
+bound. Files, directories, file contents, language analysis, and age-style
+metrics therefore describe one consistent historical point.
+
+Omitting `--until` retains the live working tree, including modified and
+untracked files. `--from` alone constrains Git-derived metrics without changing
+that live filesystem view.
+
+Add `--changed-only` (or set `changedOnly: true` in configuration) to retain
+only snapshot files modified by commits in the effective range:
 
 ```sh
 codeviz tree-map . -o release.png --from v1.0 --until v2.0 --changed-only
 ```
 
 `--changed-only` requires at least one `--from` or `--until` bound. Existing
-include/exclude rules and binary-file exclusion run first. Deleted files remain
-absent because the visualization uses the current tree; a renamed file is shown
-under its current destination path. Empty directories are removed.
+include/exclude rules and binary-file exclusion run first. With `--until`, files
+deleted later remain visible when they existed in the selected snapshot, while
+files added later are absent. Without `--until`, current-tree behavior is
+unchanged. Historical submodules are not expanded because the parent repository
+records only their commit ID. Empty directories are removed.
 
 ## Examples
 

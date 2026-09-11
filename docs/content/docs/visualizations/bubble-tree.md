@@ -15,6 +15,12 @@ alternative to the tree-map while conveying the same nested structure.
 codeviz bubble-tree [flags] <target-path>
 ```
 
+When `--until` is set, the bubble-tree uses the files, directories, and contents
+from the selected commit rather than the live working tree. Date bounds select
+the latest reachable commit within the inclusive bound, and age-style metrics
+use that commit as their reference time. `--from` alone keeps the live tree;
+with `--changed-only`, filtering is intersected with files in the snapshot.
+
 ## Required flags
 
 | Flag       | Short | Values                          | Description                    |

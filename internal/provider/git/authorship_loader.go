@@ -18,6 +18,7 @@ import (
 type authorshipLoader struct {
 	params       AuthorshipParams
 	historyRange HistoryRange
+	referenceNow time.Time
 }
 
 // LoadAuthorshipMetrics applies authorship metrics using params. It is used by
@@ -31,14 +32,19 @@ func LoadAuthorshipMetricsInHistoryRange(
 	root *model.Directory,
 	params AuthorshipParams,
 	historyRange HistoryRange,
+	referenceNow time.Time,
 ) error {
-	return (&authorshipLoader{params: params, historyRange: historyRange}).Load(root, authorshipMetricNames)
+	return (&authorshipLoader{
+		params:       params,
+		historyRange: historyRange,
+		referenceNow: referenceNow,
+	}).Load(root, authorshipMetricNames)
 }
 
 // Load computes and stores all nine authorship metrics on every file and directory node.
 // The requested slice is ignored because the metrics share a single source history walk.
 func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
-	s, err := getService(root.Path)
+	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrap(err, "authorship loader requires a git repository")
 	}
@@ -55,6 +61,10 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 	)
 	if err != nil {
 		return eris.Wrap(err, "authorship loader failed to walk git history")
+	}
+
+	if !al.referenceNow.IsZero() {
+		result.HeadDate = al.referenceNow
 	}
 
 	// Apply to every file.

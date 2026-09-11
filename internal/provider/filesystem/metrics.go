@@ -65,7 +65,7 @@ func (p *FileLinesProvider) Load(root *model.Directory) error {
 			return
 		}
 
-		count, err := countLines(f.Path)
+		count, err := countLinesFile(f)
 		if err != nil {
 			if errors.Is(err, errBinaryFile) {
 				f.IsBinary = true
@@ -82,6 +82,19 @@ func (p *FileLinesProvider) Load(root *model.Directory) error {
 	})
 
 	return nil
+}
+
+func countLinesFile(file *model.File) (int64, error) {
+	if file.Source == nil {
+		return countLines(file.Path)
+	}
+
+	data, err := file.ReadAll()
+	if err != nil {
+		return 0, eris.Wrap(err, "reading file for line count")
+	}
+
+	return countLinesReader(bytes.NewReader(data))
 }
 
 var errBinaryFile = errors.New("file appears to be binary")
@@ -106,6 +119,10 @@ func countLines(path string) (int64, error) {
 	}
 	defer file.Close()
 
+	return countLinesReader(file)
+}
+
+func countLinesReader(file io.ReadSeeker) (int64, error) {
 	isBinary, enc, err := probeBinary(file)
 	if err != nil {
 		return 0, err
@@ -145,7 +162,7 @@ func countLines(path string) (int64, error) {
 // contains null bytes.
 //
 // On return the file is seeked back to the start, ready for line counting.
-func probeBinary(f *os.File) (isBinary bool, enc utf16Encoding, err error) {
+func probeBinary(f io.ReadSeeker) (isBinary bool, enc utf16Encoding, err error) {
 	header := make([]byte, binaryProbeSize)
 
 	n, readErr := f.Read(header)

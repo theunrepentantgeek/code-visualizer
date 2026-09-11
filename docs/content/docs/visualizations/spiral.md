@@ -17,6 +17,12 @@ repository.
 codeviz spiral [flags] <target-path>
 ```
 
+When `--until` is set, the spiral uses the files present in the selected commit
+rather than the live working tree while retaining the selected Git history
+range. Date bounds select the latest reachable commit within the inclusive
+bound. `--from` alone keeps the live tree; with `--changed-only`, filtering is
+intersected with files in the snapshot.
+
 ## Required flags
 
 | Flag       | Short | Values                          | Description            |

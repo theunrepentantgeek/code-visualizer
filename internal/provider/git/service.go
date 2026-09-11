@@ -140,14 +140,22 @@ func metricFor[T int64 | float64](
 }
 
 func (s *repoService) fileAge(relPath string) (int64, error) {
+	return s.fileAgeAt(relPath, time.Now())
+}
+
+func (s *repoService) fileAgeAt(relPath string, now time.Time) (int64, error) {
 	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) int64 {
-		return int64(time.Since(data.oldest).Hours() / 24)
+		return int64(now.Sub(data.oldest).Hours() / 24)
 	})
 }
 
 func (s *repoService) fileFreshness(relPath string) (int64, error) {
+	return s.fileFreshnessAt(relPath, time.Now())
+}
+
+func (s *repoService) fileFreshnessAt(relPath string, now time.Time) (int64, error) {
 	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) int64 {
-		return int64(time.Since(data.newest).Hours() / 24)
+		return int64(now.Sub(data.newest).Hours() / 24)
 	})
 }
 
@@ -178,8 +186,12 @@ func (s *repoService) totalLinesRemoved(relPath string) (int64, error) {
 const monthHours = 24 * 30.44
 
 func (s *repoService) commitDensity(relPath string) (float64, error) {
+	return s.commitDensityAt(relPath, time.Now())
+}
+
+func (s *repoService) commitDensityAt(relPath string, now time.Time) (float64, error) {
 	return metricFor(relPath, s.getMetadataCommitData, func(data *commitData) float64 {
-		fileAgeMonths := time.Since(data.oldest).Hours() / monthHours
+		fileAgeMonths := now.Sub(data.oldest).Hours() / monthHours
 		if fileAgeMonths < 1 {
 			fileAgeMonths = 1
 		}

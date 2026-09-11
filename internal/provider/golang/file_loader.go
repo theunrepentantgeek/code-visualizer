@@ -1,8 +1,12 @@
 package golang
 
 import (
+	"io/fs"
 	"log/slog"
+	"path"
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
@@ -49,7 +53,7 @@ func populateFileMetrics(f *model.File) {
 		return
 	}
 
-	stats, err := getOrAnalyze(f.Path)
+	stats, err := analyzeModelFile(f)
 	if err != nil {
 		slog.Warn("could not analyze Go file for metrics", "path", f.Path, "error", err)
 
@@ -61,4 +65,62 @@ func populateFileMetrics(f *model.File) {
 	f.SetQuantity(externalImportsMetric, stats.externalImports)
 	f.SetQuantity(internalImportsMetric, stats.internalImports)
 	f.SetMeasure(CommentRatio, stats.commentRatio)
+}
+
+func analyzeModelFile(f *model.File) (*fileStats, error) {
+	if f.Source == nil {
+		return getOrAnalyze(f.Path)
+	}
+
+	src, err := f.ReadAll()
+	if err != nil {
+		return nil, eris.Wrap(err, "reading Go file metrics")
+	}
+
+	moduleFS := f.Source
+
+	moduleDir := path.Dir(f.SourcePath)
+	if f.RepoSource != nil {
+		moduleFS = f.RepoSource
+		moduleDir = path.Dir(f.RepoPath)
+	}
+
+	modulePath := findModulePathFS(moduleFS, moduleDir)
+	if modulePath == "" && f.RepoSource == nil {
+		modulePath = globalModuleCache.findModulePath(filepath.Dir(f.Path))
+	}
+
+	return analyzeSource(f.Path, src, modulePath)
+}
+
+func findModulePathFS(fsys fs.FS, start string) string {
+	for dir := path.Clean(start); ; dir = path.Dir(dir) {
+		if module := modulePathAt(fsys, dir); module != "" {
+			return module
+		}
+
+		if dir == "." {
+			return ""
+		}
+	}
+}
+
+func modulePathAt(fsys fs.FS, dir string) string {
+	name := "go.mod"
+	if dir != "." {
+		name = path.Join(dir, name)
+	}
+
+	data, err := fs.ReadFile(fsys, name)
+	if err != nil {
+		return ""
+	}
+
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
+			return strings.TrimSpace(value)
+		}
+	}
+
+	return ""
 }

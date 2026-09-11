@@ -149,6 +149,23 @@ func TestFileAgeProvider(t *testing.T) {
 	g.Expect(ageOld).To(BeNumerically(">", ageNew))
 }
 
+func TestFileAgeAtUsesReferenceClock(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	oldest := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	reference := oldest.Add(10 * 24 * time.Hour)
+	service := &repoService{
+		commitCache: map[string]*commitData{
+			"main.go": {count: 1, oldest: oldest, newest: oldest},
+		},
+	}
+
+	age, err := service.fileAgeAt("main.go", reference)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(age).To(Equal(int64(10)))
+}
+
 func TestMetricsLoaderReportsFileProgressThroughoutPrewarm(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

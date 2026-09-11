@@ -1,12 +1,21 @@
 package model
 
+import (
+	"io/fs"
+	"time"
+)
+
 // Directory represents a directory in the scanned tree.
 type Directory struct {
 	MetricContainer
-	Path  string
-	Name  string
-	Files []*File
-	Dirs  []*Directory
+	Path          string
+	RepoPath      string
+	RepoRoot      string
+	Name          string
+	Source        fs.FS
+	ReferenceTime time.Time
+	Files         []*File
+	Dirs          []*Directory
 
 	// DirectFileCount is the number of files directly in this directory (not in subdirectories).
 	// Populated during the file scan; zero if the directory was constructed manually.

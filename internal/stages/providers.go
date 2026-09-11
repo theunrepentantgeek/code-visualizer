@@ -87,12 +87,15 @@ func (f *metricProgressFilter) OnFileProcessed(name metric.Name) {
 }
 
 func loadRequestedMetrics(c *CommonState, metricProg provider.MetricProgress) error {
+	c.Root.ReferenceTime = c.ReferenceNow
+
 	requested := c.Requested.BaseMetrics
 	if hasAuthorshipMetric(requested) {
 		if err := git.LoadAuthorshipMetricsInHistoryRange(
 			c.Root,
 			authorshipParams(c.RootConfig),
 			c.Flags.HistoryRange,
+			c.ReferenceNow,
 		); err != nil {
 			return eris.Wrap(err, "failed to load authorship metrics")
 		}
@@ -132,6 +135,7 @@ func loadFileGitMetrics(
 		fileGitMetrics,
 		c.Flags.HistoryRange,
 		onFile,
+		c.ReferenceNow,
 	); err != nil {
 		return nil, eris.Wrap(err, "failed to load git metrics")
 	}
