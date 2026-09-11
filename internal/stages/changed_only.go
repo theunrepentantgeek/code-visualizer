@@ -22,15 +22,9 @@ func FilterChangedOnly(c *CommonState) error {
 		return eris.New("--changed-only requires --from or --until")
 	}
 
-	targetPath := changedOnlyTargetPath(c)
-
-	if err := checkGitRepoForFeature(targetPath, "--changed-only"); err != nil {
-		return err
-	}
-
-	repoRoot, err := git.RepoRootFor(targetPath)
+	repoRoot, err := repoRootForState(c, "--changed-only")
 	if err != nil {
-		return eris.Wrap(err, "failed to resolve git root")
+		return err
 	}
 
 	currentPaths := buildTrackedPathSet(c.Root, repoRoot)
@@ -59,12 +53,30 @@ func historyRangeConstrained(historyRange git.HistoryRange) bool {
 	return strings.TrimSpace(historyRange.From) != "" || strings.TrimSpace(historyRange.Until) != ""
 }
 
-func changedOnlyTargetPath(c *CommonState) string {
+func stateTargetPath(c *CommonState) string {
 	if c.TargetPath != "" || c.Root == nil {
 		return c.TargetPath
 	}
 
 	return c.Root.Path
+}
+
+func repoRootForState(c *CommonState, feature string) (string, error) {
+	if c.RepoRoot != "" {
+		return c.RepoRoot, nil
+	}
+
+	targetPath := stateTargetPath(c)
+	if err := checkGitRepoForFeature(targetPath, feature); err != nil {
+		return "", err
+	}
+
+	repoRoot, err := git.RepoRootFor(targetPath)
+	if err != nil {
+		return "", eris.Wrap(err, "failed to resolve git root")
+	}
+
+	return repoRoot, nil
 }
 
 func pruneTreeToPaths(root *model.Directory, repoRoot string, included map[string]bool) {

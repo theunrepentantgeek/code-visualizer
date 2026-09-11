@@ -80,7 +80,7 @@ func loadGitMetrics(
 	onFile func(),
 	referenceTimes ...time.Time,
 ) error {
-	s, err := getService(root.Path)
+	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
@@ -96,7 +96,7 @@ func LoadFileMetricsInHistoryRange(
 	onFile func(),
 	referenceTimes ...time.Time,
 ) error {
-	s, err := getService(root.Path)
+	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}

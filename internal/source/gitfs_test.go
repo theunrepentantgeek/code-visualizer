@@ -47,6 +47,33 @@ func TestGitFSReadDirSortsByFilename(t *testing.T) {
 	g.Expect(names).To(Equal([]string{"README.md", "cmd", "foo", "foo.bar", "link", "script.sh"}))
 }
 
+func TestGitFSDirectoryErrorsPreserveRequestedPath(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	file, err := newFixtureGitFS(t).Open("cmd/tool")
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if file == nil {
+		t.Fatal("expected directory handle")
+	}
+
+	g.Expect(file.Close()).To(Succeed())
+
+	dir, ok := file.(fs.ReadDirFile)
+	g.Expect(ok).To(BeTrue())
+
+	_, err = dir.ReadDir(1)
+
+	var pathErr *fs.PathError
+	g.Expect(errors.As(err, &pathErr)).To(BeTrue())
+
+	if pathErr == nil {
+		t.Fatal("expected path error")
+	}
+
+	g.Expect(pathErr.Path).To(Equal("cmd/tool"))
+}
+
 func TestGitFSRejectsMalformedTreeEntryName(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

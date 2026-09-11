@@ -78,6 +78,7 @@ func (g *gitFS) Open(name string) (fs.File, error) {
 		return &gitFile{
 			reader: reader,
 			info:   g.info(entry.Name, entry.Mode, file.Size),
+			path:   name,
 		}, nil
 	}
 }
@@ -200,7 +201,11 @@ func (g *gitFS) openDir(name string, tree *object.Tree) (fs.File, error) {
 		return cmp.Compare(a.Name(), b.Name())
 	})
 
-	return &gitDir{info: g.info(path.Base(name), filemode.Dir, 0), entries: entries}, nil
+	return &gitDir{
+		info:    g.info(path.Base(name), filemode.Dir, 0),
+		path:    name,
+		entries: entries,
+	}, nil
 }
 
 func validGitTreeEntryName(name string) bool {

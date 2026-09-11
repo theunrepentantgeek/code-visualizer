@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
@@ -58,13 +59,24 @@ func TestResolveSourceUsesHistoricalSubtreeDeletedFromWorkingTree(t *testing.T) 
 	state := &CommonState{
 		TargetPath: oldDir,
 		Output:     filepath.Join(dir, "out.png"),
-		Flags:      &Flags{HistoryRange: git.HistoryRange{Until: "sha:" + oldCommit}},
+		Flags: &Flags{
+			ChangedOnly:  true,
+			HistoryRange: git.HistoryRange{Until: "sha:" + oldCommit},
+		},
+		Requested: RequestedMetrics{BaseMetrics: []metric.Name{git.CommitCount}},
 	}
 	g.Expect(ValidatePaths(state)).To(Succeed())
 	g.Expect(ResolveSource(state)).To(Succeed())
 	g.Expect(ScanFilesystem(state)).To(Succeed())
+	g.Expect(FilterChangedOnly(state)).To(Succeed())
+	g.Expect(CheckGitRequirement(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(RunProviders(state)).To(Succeed())
 	g.Expect(state.Root.Files).To(HaveLen(1))
 	g.Expect(state.Root.Files[0].Name).To(Equal("file.txt"))
+	count, ok := state.Root.Files[0].Quantity(git.CommitCount)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(count).To(Equal(int64(1)))
 }
 
 func runGitForSourceTest(t *testing.T, dir string, args ...string) string {

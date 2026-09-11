@@ -27,6 +27,8 @@ type fsWalker struct {
 
 const maxSymlinkDepth = 40
 
+var errFileSkipped = errors.New("file skipped during scan")
+
 func newFSWalker(tree source.Tree, rules []filter.Rule, progress Progress, includeBinary bool) fsWalker {
 	return fsWalker{tree: tree, rules: rules, progress: progress, includeBinary: includeBinary}
 }
@@ -40,6 +42,7 @@ func (w fsWalker) scanDir(name string) (*model.Directory, error) {
 	node := &model.Directory{
 		Path:          w.displayPath(name),
 		RepoPath:      w.tree.RepoPath(name),
+		RepoRoot:      w.tree.RepoRoot,
 		Name:          w.directoryName(name),
 		Source:        w.tree.FS,
 		ReferenceTime: w.tree.Clock,
@@ -81,7 +84,12 @@ func (w fsWalker) processEntry(node *model.Directory, dirName string, entry fs.D
 	}
 
 	if entry.Type().IsRegular() {
-		return w.processFile(node, entryName, entry.Name())
+		_, err := w.processFile(node, entryName, entry.Name())
+		if errors.Is(err, errFileSkipped) {
+			return nil
+		}
+
+		return err
 	}
 
 	return nil
@@ -106,10 +114,16 @@ func (w fsWalker) processDir(node *model.Directory, name string) error {
 	return nil
 }
 
-func (w fsWalker) processFile(node *model.Directory, sourcePath, fileName string) error {
+func (w fsWalker) processFile(node *model.Directory, sourcePath, fileName string) (*model.File, error) {
 	info, err := fs.Stat(w.tree.FS, sourcePath)
 	if err != nil {
-		return eris.Wrapf(err, "failed to stat %s", sourcePath)
+		if errors.Is(err, fs.ErrNotExist) {
+			slog.Debug("file disappeared during scan", "path", w.displayPath(sourcePath))
+
+			return nil, errFileSkipped
+		}
+
+		return nil, eris.Wrapf(err, "failed to stat %s", sourcePath)
 	}
 
 	binary, err := isBinaryFS(w.tree.FS, sourcePath)
@@ -118,7 +132,7 @@ func (w fsWalker) processFile(node *model.Directory, sourcePath, fileName string
 	}
 
 	if binary && !w.includeBinary {
-		return nil
+		return nil, errFileSkipped
 	}
 
 	ext := strings.TrimPrefix(path.Ext(fileName), ".")
@@ -142,7 +156,7 @@ func (w fsWalker) processFile(node *model.Directory, sourcePath, fileName string
 	file.SetClassification(filesystem.FileType, fileType)
 	node.Files = append(node.Files, file)
 
-	return nil
+	return file, nil
 }
 
 func (w fsWalker) processSymlink(node *model.Directory, sourcePath string, entry fs.DirEntry) error {
@@ -151,12 +165,16 @@ func (w fsWalker) processSymlink(node *model.Directory, sourcePath string, entry
 		return nil
 	}
 
-	if err := w.processFile(node, resolved, entry.Name()); err != nil {
+	file, err := w.processFile(node, resolved, entry.Name())
+	if errors.Is(err, errFileSkipped) {
+		return nil
+	}
+
+	if err != nil {
 		return err
 	}
 
-	if len(node.Files) > 0 {
-		file := node.Files[len(node.Files)-1]
+	if file != nil {
 		file.Path = w.displayPath(sourcePath)
 		file.RepoPath = w.tree.RepoPath(sourcePath)
 	}

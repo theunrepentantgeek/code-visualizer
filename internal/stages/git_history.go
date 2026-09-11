@@ -33,7 +33,7 @@ func LoadGitHistory(c *CommonState) error {
 		slog.Info("Loading git history")
 	}
 
-	repoRoot, err := git.RepoRootFor(c.Root.Path)
+	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
 	}
@@ -84,7 +84,7 @@ func PrewarmGitMetrics(c *CommonState) error {
 // GroupGitHistoryByFile joins c.GitHistory against c.Root and writes
 // c.FileHistory: each file maps to the CommitRefs that touched it.
 func GroupGitHistoryByFile(c *CommonState) error {
-	repoRoot, err := git.RepoRootFor(c.Root.Path)
+	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
 	}

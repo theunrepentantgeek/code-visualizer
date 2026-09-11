@@ -60,13 +60,34 @@ func validateOutputPath(output string) error {
 func ValidatePaths(c *CommonState) error {
 	var err error
 	if c.Flags != nil && strings.TrimSpace(c.Flags.HistoryRange.Until) != "" {
-		err = validateOutputPath(c.Output)
+		err = validateHistoricalPaths(c.TargetPath, c.Output)
 	} else {
 		err = ValidatePathsHelper(c.TargetPath, c.Output)
 	}
 
 	if err != nil {
 		return eris.Wrap(err, "invalid paths")
+	}
+
+	return nil
+}
+
+func validateHistoricalPaths(targetPath, output string) error {
+	if err := validateOutputPath(output); err != nil {
+		return err
+	}
+
+	info, err := os.Stat(targetPath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	if err != nil {
+		return &TargetPathError{Msg: fmt.Sprintf("cannot access target path: %s", err)}
+	}
+
+	if !info.IsDir() {
+		return &TargetPathError{Msg: "target path is not a directory: " + targetPath}
 	}
 
 	return nil

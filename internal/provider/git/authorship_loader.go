@@ -44,7 +44,7 @@ func LoadAuthorshipMetricsInHistoryRange(
 // Load computes and stores all nine authorship metrics on every file and directory node.
 // The requested slice is ignored because the metrics share a single source history walk.
 func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
-	s, err := getService(root.Path)
+	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrap(err, "authorship loader requires a git repository")
 	}

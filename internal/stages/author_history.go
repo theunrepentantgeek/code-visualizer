@@ -13,7 +13,7 @@ import (
 // This is the data foundation for all authorship metrics (#550).
 // It must be called after ScanFilesystem (c.Root must be populated).
 func LoadAuthorHistory(c *CommonState) error {
-	repoRoot, err := git.RepoRootFor(c.Root.Path)
+	repoRoot, err := repoRootForState(c, "author history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
 	}

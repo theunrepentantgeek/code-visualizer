@@ -10,6 +10,7 @@ type Directory struct {
 	MetricContainer
 	Path          string
 	RepoPath      string
+	RepoRoot      string
 	Name          string
 	Source        fs.FS
 	ReferenceTime time.Time

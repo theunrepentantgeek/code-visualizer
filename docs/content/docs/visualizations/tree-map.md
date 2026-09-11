@@ -15,6 +15,12 @@ It is the quickest way to see where the bulk of a codebase lives.
 codeviz tree-map [flags] <target-path>
 ```
 
+When `--until` is set, the tree-map uses the files, directories, and contents
+from the selected commit rather than the live working tree. Date bounds select
+the latest reachable commit within the inclusive bound, and age-style metrics
+use that commit as their reference time. `--from` alone keeps the live tree;
+with `--changed-only`, filtering is intersected with files in the snapshot.
+
 ## Required flags
 
 | Flag       | Short | Values                             | Description                    |

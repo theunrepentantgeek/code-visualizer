@@ -118,6 +118,14 @@ func buildRelPathSet(s *repoService, root *model.Directory) map[string]bool {
 	return paths
 }
 
+func repositoryPath(root *model.Directory) string {
+	if root.RepoRoot != "" {
+		return root.RepoRoot
+	}
+
+	return root.Path
+}
+
 func repoRelativePath(repoRoot, path string) (string, error) {
 	relPath, err := filepath.Rel(repoRoot, path)
 	if err != nil {

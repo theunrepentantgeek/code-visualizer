@@ -22,6 +22,23 @@ type permissionFS struct {
 	fstest.MapFS
 }
 
+type disappearingFS struct {
+	fstest.MapFS
+}
+
+func (d disappearingFS) Stat(name string) (fs.FileInfo, error) {
+	if name == "gone.txt" {
+		return nil, &fs.PathError{Op: "stat", Path: name, Err: fs.ErrNotExist}
+	}
+
+	info, err := d.MapFS.Stat(name)
+	if err != nil {
+		return nil, &fs.PathError{Op: "stat", Path: name, Err: err}
+	}
+
+	return info, nil
+}
+
 func (p permissionFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	if name == "blocked" {
 		return nil, &fs.PathError{Op: "readdir", Path: name, Err: fs.ErrPermission}
@@ -95,6 +112,30 @@ func TestScanTreeKeepsSymlinkIdentityWhileReadingTarget(t *testing.T) {
 
 	g.Expect(link.RepoPath).To(Equal("project/link.txt"))
 	g.Expect(link.SourcePath).To(Equal("target.txt"))
+}
+
+func TestScanTreeDoesNotRewritePreviousFileWhenSymlinkTargetIsExcluded(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	safePath := filepath.Join(dir, "safe.txt")
+	g.Expect(os.WriteFile(safePath, []byte("safe\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(dir, "target.bin"), []byte{0}, 0o600)).To(Succeed())
+	g.Expect(os.Symlink("target.bin", filepath.Join(dir, "z-link.txt"))).To(Succeed())
+
+	tree, err := source.WorkingTree(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	root, err := ScanTree(tree, nil, nil, false)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.Files).To(HaveLen(1))
+	g.Expect(root.Files[0].Path).To(Equal(safePath))
+	g.Expect(root.Files[0].RepoPath).To(Equal("safe.txt"))
 }
 
 func TestScanTreeSkipsSymlinkChainEscapingSource(t *testing.T) {
@@ -199,6 +240,25 @@ func TestScanTreeSkipsInaccessibleDirectories(t *testing.T) {
 
 	g.Expect(root.Files).To(HaveLen(1))
 	g.Expect(root.Dirs).To(BeEmpty())
+}
+
+func TestScanTreeSkipsFilesRemovedAfterDirectoryRead(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	fsys := disappearingFS{MapFS: fstest.MapFS{
+		"safe.txt": {Data: []byte("safe\n")},
+		"gone.txt": {Data: []byte("gone\n")},
+	}}
+
+	root, err := ScanTree(source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.Files).To(HaveLen(1))
+	g.Expect(root.Files[0].Name).To(Equal("safe.txt"))
 }
 
 func TestScanFlat(t *testing.T) {
