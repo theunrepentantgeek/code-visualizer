@@ -215,5 +215,5 @@ func sectorSteps(sweepAngle float64) int {
 }
 
 func polarPosition(center geometry.Point, radius, angle float64) geometry.Point {
-	return center.Translate(geometry.NewVector(radius*math.Cos(angle), radius*math.Sin(angle)))
+	return center.Translate(geometry.NewRadialVector(angle, radius))
 }
