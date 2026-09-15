@@ -65,10 +65,10 @@ func (r *rasterBackend) drawRadialGradientRect(
 ) {
 	pos := bounds.Min
 	size := bounds.Size()
-	focus := geometry.NewPoint(
-		pos.X+grad.Focus.X*size.Width,
-		pos.Y+grad.Focus.Y*size.Height,
-	)
+	focus := pos.Translate(geometry.NewVector(
+		grad.Focus.X*size.Width,
+		grad.Focus.Y*size.Height,
+	))
 
 	maxDist := maxCornerDist(focus.X, focus.Y, bounds)
 
