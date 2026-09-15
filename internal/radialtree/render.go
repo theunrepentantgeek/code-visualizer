@@ -327,10 +327,7 @@ func addExternalLabel(
 ) {
 	dist := node.Position.Length()
 	labelRadius := dist + node.DiscRadius + labelGap
-	labelDisplacement := geometry.NewVector(
-		labelRadius*math.Cos(node.Angle),
-		labelRadius*math.Sin(node.Angle),
-	)
+	labelDisplacement := geometry.NewRadialVector(node.Angle, labelRadius)
 
 	angle := math.Mod(orientAngle, 2*math.Pi)
 	if angle < 0 {
