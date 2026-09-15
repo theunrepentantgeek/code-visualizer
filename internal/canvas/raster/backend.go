@@ -359,19 +359,17 @@ func (r *rasterBackend) DrawArcText(
 	if arcRadius <= 0 {
 		return
 	}
-
 	forEachArcTextRune(text, fontSize, arcRadius, func(ch rune, angle float64) {
-		cx := center.X + arcRadius*math.Cos(angle)
-		cy := center.Y + arcRadius*math.Sin(angle)
+		position := center.Translate(geometry.NewRadialVector(angle, arcRadius))
 
 		r.dc.Push()
-		r.dc.RotateAbout(angle+math.Pi/2.0, cx, cy)
-		// gg's DrawStringAnchored places the baseline at cy + ay*h. Using
+		r.dc.RotateAbout(angle+math.Pi/2.0, position.X, position.Y)
+		// gg's DrawStringAnchored places the baseline at y + ay*h. Using
 		// ay=0.5 puts the baseline at the rim of the underlying circle so
 		// non-descender letters touch the rim. Use ay=0.25 to match the
 		// SVG backend's dominant-baseline="middle" behaviour, which lifts
 		// the baseline so descenders just graze the rim instead.
-		r.dc.DrawStringAnchored(string(ch), cx, cy, 0.5, 0.25)
+		r.dc.DrawStringAnchored(string(ch), position.X, position.Y, 0.5, 0.25)
 		r.dc.Pop()
 	})
 }
