@@ -169,7 +169,7 @@ func circularBoundaryPoints(cx, cy, radius, maximumSegmentLength float64) []Samp
 	for index := range segments {
 		angle := 2 * math.Pi * float64(index) / float64(segments)
 		points = append(points, Sample{
-			Position: geometry.NewPoint(cx+radius*math.Cos(angle), cy+radius*math.Sin(angle)),
+			Position: geometry.NewPoint(cx, cy).Translate(geometry.NewRadialVector(angle, radius)),
 		})
 	}
 
