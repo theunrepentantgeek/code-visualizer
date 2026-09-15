@@ -96,10 +96,7 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center geometry.Point, li
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
-	blockCenter := center.Translate(geometry.NewVector(
-		midRadius*math.Cos(midpoint),
-		midRadius*math.Sin(midpoint),
-	))
+	blockCenter := center.Translate(geometry.NewRadialVector(midpoint, midRadius))
 
 	rotation := midpoint + math.Pi/2
 	if isLowerHalf(midpoint) {
