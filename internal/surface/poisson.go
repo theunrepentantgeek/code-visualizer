@@ -159,7 +159,7 @@ func annulusCandidate(sample Sample, minimumDistance float64, random *rand.Rand)
 	radius := minimumDistance * math.Sqrt(1+3*random.Float64())
 
 	return Sample{
-		Position: sample.Position.Translate(geometry.NewVector(radius*math.Cos(angle), radius*math.Sin(angle))),
+		Position: sample.Position.Translate(geometry.NewRadialVector(angle, radius)),
 	}
 }
 
