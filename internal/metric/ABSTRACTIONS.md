@@ -40,15 +40,17 @@
 
 - The three kinds map one-to-one onto the three metric maps on a model node ([../model/metric_container.go#L12](../model/metric_container.go#L12)).
 - Kind is not fixed by the base metric alone: aggregation can change it (for example `.mean` over quantities yields a `Measure`) ([../provider/resolution.go#L158](../provider/resolution.go#L158)).
+- Each known kind has a conventional aggregation — quantity uses sum, measure uses mean, and classification uses mode — while an unknown kind has no default ([metric.go#L18](metric.go#L18)).
 
 **Related operations.**
 
-- `provider.BaseMetricDescriptor.Kind` declares a base metric's kind; `ResolvedMetric.ResultKind` reports the kind after aggregation ([../provider/base_descriptor.go#L25](../provider/base_descriptor.go#L25), [../provider/resolution.go#L12](../provider/resolution.go#L12)).
+- `DefaultAggregation` returns the kind's conventional aggregation and an `ok` result; `provider.BaseMetricDescriptor.Kind` declares a base metric's kind, while `ResolvedMetric.ResultKind` reports the kind after aggregation ([metric.go#L18](metric.go#L18), [../provider/base_descriptor.go#L25](../provider/base_descriptor.go#L25), [../provider/resolution.go#L12](../provider/resolution.go#L12)).
 
 **Proper-use patterns.**
 
 - Branch on kind when building an ink: numeric kinds get bucketed colours, classifications get categorical mapping ([../inks/inks.go#L29](../inks/inks.go#L29)).
 - Carry the kind alongside the value when passing a metric value to the colour layer ([../inks/metric_value.go#L9](../inks/metric_value.go#L9)).
+- Use `DefaultAggregation` when a metric must cross levels without an explicit aggregation, then let provider resolution validate that the metric supports it ([../donuttree/stages.go#L68](../donuttree/stages.go#L68), [../provider/resolution.go#L126](../provider/resolution.go#L126)).
 
 **Anti-patterns.**
 

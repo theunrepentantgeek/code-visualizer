@@ -13,3 +13,17 @@ const (
 	Measure                    // float64 values (percentages, rates)
 	Classification             // string values (file type, category)
 )
+
+// DefaultAggregation returns the conventional aggregation for values of this kind.
+func (k Kind) DefaultAggregation() (AggregationName, bool) {
+	switch k {
+	case Quantity:
+		return AggSum, true
+	case Measure:
+		return AggMean, true
+	case Classification:
+		return AggMode, true
+	default:
+		return "", false
+	}
+}
