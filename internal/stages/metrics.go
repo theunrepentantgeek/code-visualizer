@@ -64,16 +64,3 @@ func ResolveFillPalette(fill *config.MetricSpec, fillMetric metric.Name) palette
 
 	return palette.Neutral
 }
-
-// ResolveBorderMetricAndPalette returns the effective border metric and
-// palette name, or ("", "") when no border is configured. For expression
-// metrics (e.g. "commit-count.mean"), the base metric's default palette is
-// used so aggregations inherit meaningful colour schemes.
-func ResolveBorderMetricAndPalette(border *config.MetricSpec) (metric.Name, palette.PaletteName) {
-	borderMetric := border.MetricName()
-	if borderMetric == "" {
-		return "", ""
-	}
-
-	return borderMetric, ResolveFillPalette(border, borderMetric)
-}
