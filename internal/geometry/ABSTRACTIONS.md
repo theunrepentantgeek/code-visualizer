@@ -107,12 +107,13 @@ All types here are immutable value types: every operation returns a new value ra
 
 **Related operations.**
 
-- `RectFromPositionSize`, `Width`/`Height`/`Size`/`Center`, `Contains`, `Translate`, `Inset`, `ExpandToInclude`, `Union` ([rect.go#L10](rect.go#L10), [rect.go#L32](rect.go#L32), [rect.go#L37](rect.go#L37)).
+- `RectFromPositionSize`, `Width`/`Height`/`Size`/`Center`, `PointAt`, `Contains`, `Translate`, `Inset`, `ExpandToInclude`, `Union` ([rect.go#L10](rect.go#L10), [rect.go#L32](rect.go#L32), [rect.go#L39](rect.go#L39)).
 
 **Proper-use patterns.**
 
 - Check the `ok` result before using an inset or unioned rectangle, and skip the work when it collapses ([../treemap/labels.go#L120](../treemap/labels.go#L120), [../bubbletree/transforms.go#L47](../bubbletree/transforms.go#L47)).
 - Convert a position-plus-size layout result with `RectFromPositionSize` rather than computing `Max` inline ([rect.go#L10](rect.go#L10), [../legend/render.go#L498](../legend/render.go#L498)).
+- Use `PointAt` to convert independent horizontal and vertical fractions into a point relative to the rectangle; values outside `[0,1]` intentionally extrapolate beyond it ([rect.go#L37](rect.go#L37), [../canvas/raster/backend.go#L68](../canvas/raster/backend.go#L68)).
 
 **Anti-patterns.**
 
