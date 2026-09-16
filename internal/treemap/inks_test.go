@@ -6,12 +6,18 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
+
+func colourEncoding(name metric.Name, pal palette.PaletteName) viz.ColourEncoding {
+	return viz.ColourEncoding{Metric: name, Palette: pal}
+}
 
 func TestBuildTreemapInks_DefaultColours(t *testing.T) {
 	t.Parallel()
@@ -22,7 +28,7 @@ func TestBuildTreemapInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeTestFile("a.go", "go", 100)},
 	}
 
-	is := treemap.BuildInks(root, stages.RequestedMetrics{}, "", "", "", "")
+	is := treemap.BuildInks(root, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindFixed))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -40,7 +46,12 @@ func TestBuildTreemapInks_NumericFill(t *testing.T) {
 		},
 	}
 
-	is := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	is := treemap.BuildInks(
+		root,
+		stages.RequestedMetrics{},
+		colourEncoding(filesystem.FileSize, palette.Temperature),
+		viz.ColourEncoding{},
+	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -58,7 +69,12 @@ func TestBuildTreemapInks_CategoricalFill(t *testing.T) {
 		},
 	}
 
-	is := treemap.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
+	is := treemap.BuildInks(
+		root,
+		stages.RequestedMetrics{},
+		colourEncoding(filesystem.FileType, palette.Categorization),
+		viz.ColourEncoding{},
+	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -78,8 +94,8 @@ func TestBuildTreemapInks_BorderMetric(t *testing.T) {
 
 	is := treemap.BuildInks(
 		root, stages.RequestedMetrics{},
-		filesystem.FileSize, palette.Temperature,
-		filesystem.FileType, palette.Categorization,
+		colourEncoding(filesystem.FileSize, palette.Temperature),
+		colourEncoding(filesystem.FileType, palette.Categorization),
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
@@ -100,8 +116,8 @@ func TestBuildTreemapInks_NumericBorder(t *testing.T) {
 
 	is := treemap.BuildInks(
 		root, stages.RequestedMetrics{},
-		filesystem.FileSize, palette.Temperature,
-		filesystem.FileSize, palette.Temperature,
+		colourEncoding(filesystem.FileSize, palette.Temperature),
+		colourEncoding(filesystem.FileSize, palette.Temperature),
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))

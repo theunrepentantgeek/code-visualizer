@@ -5,6 +5,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // CollectRequestedMetrics returns the classified set of metrics
@@ -21,6 +22,23 @@ func CollectRequestedMetrics(size metric.Name, specs ...*config.MetricSpec) Requ
 	}
 
 	return ClassifyRequestedMetrics(names, metric.LevelDirectory)
+}
+
+// ResolveColourEncoding returns the effective metric and palette for a colour
+// channel. The fallback metric is used when the config does not select one.
+func ResolveColourEncoding(spec *config.MetricSpec, fallback metric.Name) viz.ColourEncoding {
+	name := spec.MetricName()
+	if name == "" {
+		name = fallback
+	}
+	if name == "" {
+		return viz.ColourEncoding{}
+	}
+
+	return viz.ColourEncoding{
+		Metric:  name,
+		Palette: ResolveFillPalette(spec, name),
+	}
 }
 
 // ResolveFillPalette returns the fill palette to use, consulting (in order)

@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestMain(m *testing.M) {
@@ -76,6 +77,25 @@ func TestCollectRequestedMetrics_AllThreeDistinct(t *testing.T) {
 		metric.Name("file-lines"),
 		metric.Name("file-type"),
 	))
+}
+
+func TestResolveColourEncoding(t *testing.T) {
+	t.Parallel()
+
+	g := NewGomegaWithT(t)
+
+	g.Expect(stages.ResolveColourEncoding(nil, "")).To(Equal(viz.ColourEncoding{}))
+	g.Expect(stages.ResolveColourEncoding(nil, "file-type")).To(Equal(viz.ColourEncoding{
+		Metric:  metric.Name("file-type"),
+		Palette: palette.Categorization,
+	}))
+	g.Expect(stages.ResolveColourEncoding(
+		&config.MetricSpec{Metric: "file-size", Palette: "terrain"},
+		"file-type",
+	)).To(Equal(viz.ColourEncoding{
+		Metric:  metric.Name("file-size"),
+		Palette: palette.PaletteName("terrain"),
+	}))
 }
 
 // ---------------------------------------------------------------------------
