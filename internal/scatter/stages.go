@@ -47,9 +47,8 @@ func ResolveMetrics(c *stages.CommonState, x *State, cfg *config.Scatter) error 
 	x.XAxis = xAxis
 	x.YAxis = yAxis
 	x.Size = size
-	x.FillMetric = resolveFillMetric(cfg, size)
-	x.FillPalette = stages.ResolveFillPalette(cfg.Fill, x.FillMetric)
-	x.BorderMetric, x.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	x.Fill = stages.ResolveColourEncoding(cfg.Fill, size)
+	x.Border = stages.ResolveColourEncoding(cfg.Border, "")
 	c.Requested = collectRequestedMetrics(xAxis.Metric, yAxis.Metric, size, cfg.Fill, cfg.Border, level)
 
 	return nil
@@ -142,14 +141,6 @@ func resolveAxisSpec(name *string, scale *string, level metric.MetricLevel) (Axi
 	return spec, nil
 }
 
-func resolveFillMetric(cfg *config.Scatter, size metric.Name) metric.Name {
-	if fill := cfg.Fill.MetricName(); fill != "" {
-		return fill
-	}
-
-	return size
-}
-
 func collectRequestedMetrics(
 	xAxis, yAxis, size metric.Name,
 	fill, border *config.MetricSpec,
@@ -197,7 +188,7 @@ func BuildInksStage(c *stages.CommonState, x *State) error {
 		return err
 	}
 
-	x.Inks = BuildInks(x.Dataset, c.Requested, x.FillMetric, x.FillPalette, x.BorderMetric, x.BorderPalette)
+	x.Inks = BuildInks(x.Dataset, c.Requested, x.Fill.Metric, x.Fill.Palette, x.Border.Metric, x.Border.Palette)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
@@ -242,8 +233,8 @@ func BuildLegendStage(c *stages.CommonState, x *State) error {
 
 	x.LegendConfig = legend.Builder{
 		Position: pos, Orientation: orient,
-		FillInk: x.Inks.Fill, FillMetric: x.FillMetric,
-		BorderInk: x.Inks.Border, BorderMetric: x.BorderMetric,
+		FillInk: x.Inks.Fill, FillMetric: x.Fill.Metric,
+		BorderInk: x.Inks.Border, BorderMetric: x.Border.Metric,
 		SizeMetric: x.Size,
 	}.Build()
 
@@ -303,10 +294,10 @@ func LogResult(c *stages.CommonState, x *State) error {
 		"x_axis", string(x.XAxis.Metric),
 		"y_axis", string(x.YAxis.Metric),
 		"size_metric", string(x.Size),
-		"fill_metric", string(x.FillMetric),
-		"fill_palette", string(x.FillPalette),
-		"border_metric", string(x.BorderMetric),
-		"border_palette", string(x.BorderPalette),
+		"fill_metric", string(x.Fill.Metric),
+		"fill_palette", string(x.Fill.Palette),
+		"border_metric", string(x.Border.Metric),
+		"border_palette", string(x.Border.Palette),
 	)
 
 	return nil

@@ -14,6 +14,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	vizmodel "github.com/theunrepentantgeek/code-visualizer/internal/viz"
 	vizpkg "github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
@@ -34,7 +35,7 @@ func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
 	g.Expect(viz.XAxis).To(Equal(scatter.AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification}))
 	g.Expect(viz.YAxis).To(Equal(scatter.AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity}))
 	g.Expect(viz.Size).To(Equal(filesystem.FileSize))
-	g.Expect(viz.FillMetric).To(Equal(filesystem.FileSize))
+	g.Expect(viz.Fill.Metric).To(Equal(filesystem.FileSize))
 	g.Expect(common.Requested.BaseMetrics).To(Equal([]metric.Name{
 		filesystem.FileType,
 		filesystem.FileLines,
@@ -152,8 +153,8 @@ func TestResolveMetrics_FillAndBorderOverrideDefaults(t *testing.T) {
 
 	err := scatter.ResolveMetrics(common, viz, cfg)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(viz.FillMetric).To(Equal(filesystem.FileType))
-	g.Expect(viz.BorderMetric).To(Equal(filesystem.FileLines))
+	g.Expect(viz.Fill.Metric).To(Equal(filesystem.FileType))
+	g.Expect(viz.Border.Metric).To(Equal(filesystem.FileLines))
 	g.Expect(common.Requested.BaseMetrics).To(Equal([]metric.Name{
 		filesystem.FileLines,
 		filesystem.FileSize,
@@ -187,11 +188,10 @@ func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
 		},
 	}
 	viz := &scatter.State{
-		XAxis:       scatter.AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: scatter.Linear},
-		YAxis:       scatter.AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: scatter.Linear},
-		Size:        filesystem.FileSize,
-		FillMetric:  expressionMetric,
-		FillPalette: palette.Temperature,
+		XAxis: scatter.AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity, Scale: scatter.Linear},
+		YAxis: scatter.AxisSpec{Metric: filesystem.FileSize, Kind: metric.Quantity, Scale: scatter.Linear},
+		Size:  filesystem.FileSize,
+		Fill:  vizmodel.ColourEncoding{Metric: expressionMetric, Palette: palette.Temperature},
 	}
 
 	err := scatter.BuildInksStage(common, viz)
