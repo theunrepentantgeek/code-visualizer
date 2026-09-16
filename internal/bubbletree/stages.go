@@ -15,22 +15,13 @@ import (
 // and populates c.Requested.
 func ResolveMetrics(c *stages.CommonState, b *State, cfg *config.Bubbletree) error {
 	b.Size = metric.Name(stages.PtrString(cfg.Size))
-	b.FillMetric = resolveFillMetric(cfg, b.Size)
-	b.FillPalette = stages.ResolveFillPalette(cfg.Fill, b.FillMetric)
-	b.BorderMetric, b.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	b.Fill = stages.ResolveColourEncoding(cfg.Fill, b.Size)
+	b.Border = stages.ResolveColourEncoding(cfg.Border, "")
 	b.Labels = resolveLabels(cfg)
 
 	c.Requested = stages.CollectRequestedMetrics(b.Size, cfg.Fill, cfg.Border)
 
 	return nil
-}
-
-func resolveFillMetric(cfg *config.Bubbletree, size metric.Name) metric.Name {
-	if fill := cfg.Fill.MetricName(); fill != "" {
-		return fill
-	}
-
-	return size
 }
 
 func resolveLabels(cfg *config.Bubbletree) LabelMode {
@@ -45,7 +36,7 @@ func resolveLabels(cfg *config.Bubbletree) LabelMode {
 func BuildInksStage(c *stages.CommonState, b *State) error {
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
-	b.Inks = BuildInks(c.Root, c.Requested, b.FillMetric, b.FillPalette, b.BorderMetric, b.BorderPalette)
+	b.Inks = BuildInks(c.Root, c.Requested, b.Fill, b.Border)
 	if !b.Flat {
 		b.Inks.Fill = inks.NewRadialGradientInk(b.Inks.Fill)
 	}
@@ -62,8 +53,8 @@ func BuildLegendStage(c *stages.CommonState, b *State) error {
 
 	b.LegendConfig = legend.Builder{
 		Position: pos, Orientation: orient,
-		FillInk: b.Inks.Fill, FillMetric: b.FillMetric,
-		BorderInk: b.Inks.Border, BorderMetric: b.BorderMetric,
+		FillInk: b.Inks.Fill, FillMetric: b.Fill.Metric,
+		BorderInk: b.Inks.Border, BorderMetric: b.Border.Metric,
 		SizeMetric: b.Size,
 	}.Build()
 
@@ -117,10 +108,10 @@ func LogResult(c *stages.CommonState, b *State) error {
 		"width", c.Width,
 		"height", c.Height,
 		"size_metric", string(b.Size),
-		"fill_metric", string(b.FillMetric),
-		"fill_palette", string(b.FillPalette),
-		"border_metric", string(b.BorderMetric),
-		"border_palette", string(b.BorderPalette),
+		"fill_metric", string(b.Fill.Metric),
+		"fill_palette", string(b.Fill.Palette),
+		"border_metric", string(b.Border.Metric),
+		"border_palette", string(b.Border.Palette),
 	)
 
 	return nil

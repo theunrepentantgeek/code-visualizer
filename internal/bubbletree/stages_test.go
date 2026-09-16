@@ -22,7 +22,7 @@ func TestResolveMetrics_SizeOnly(t *testing.T) {
 
 	g.Expect(bubbletree.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Size).To(Equal(metric.Name("file-size")))
-	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-size")))
+	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("file-size")))
 	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
@@ -39,7 +39,7 @@ func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
 	}
 
 	g.Expect(bubbletree.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-type")))
+	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("file-type")))
 	g.Expect(common.Requested.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
