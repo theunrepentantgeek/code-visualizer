@@ -16,6 +16,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	vizmodel "github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestResolveMetrics_SizeOnly(t *testing.T) {
@@ -31,7 +32,7 @@ func TestResolveMetrics_SizeOnly(t *testing.T) {
 	g.Expect(viz.Size).To(Equal(metric.Name("file-size")))
 	// Spiral does not fall back FillMetric to Size; without an explicit Fill
 	// the spiral renders without a fill metric.
-	g.Expect(viz.FillMetric).To(Equal(metric.Name("")))
+	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("")))
 	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
@@ -65,7 +66,7 @@ func TestResolveMetrics_FillMetricSetWhenFillConfigured(t *testing.T) {
 	}
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-type")))
+	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("file-type")))
 }
 
 func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
@@ -81,7 +82,7 @@ func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
 	}
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-type")))
+	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("file-type")))
 	g.Expect(common.Requested.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
@@ -126,8 +127,8 @@ func TestResolveMetrics_SurfaceDefaultsToFill(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.SurfaceEnabled).To(BeTrue())
-	g.Expect(viz.SurfaceMetric).To(Equal(metric.Name("file-lines")))
-	g.Expect(viz.SurfacePalette).To(Equal(palette.Foliage))
+	g.Expect(viz.Surface.Metric).To(Equal(metric.Name("file-lines")))
+	g.Expect(viz.Surface.Palette).To(Equal(palette.Foliage))
 	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-lines")))
 }
 
@@ -147,8 +148,8 @@ func TestResolveMetrics_SurfaceMetricOverridesFill(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.SurfaceEnabled).To(BeTrue())
-	g.Expect(viz.SurfaceMetric).To(Equal(metric.Name("file-size")))
-	g.Expect(viz.SurfacePalette).To(Equal(palette.Temperature))
+	g.Expect(viz.Surface.Metric).To(Equal(metric.Name("file-size")))
+	g.Expect(viz.Surface.Palette).To(Equal(palette.Temperature))
 	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(
 		metric.Name("file-lines"), metric.Name("file-size"),
 	))
@@ -163,7 +164,7 @@ func TestResolveMetrics_SurfaceDisabledHasNoMetric(t *testing.T) {
 
 	g.Expect(spiral.ResolveMetrics(common, viz, &config.Spiral{})).To(Succeed())
 	g.Expect(viz.SurfaceEnabled).To(BeFalse())
-	g.Expect(viz.SurfaceMetric).To(BeEmpty())
+	g.Expect(viz.Surface.Metric).To(BeEmpty())
 }
 
 func TestAggregateBucketMetricsStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
@@ -187,7 +188,7 @@ func TestAggregateBucketMetricsStage_UsesRequestedDescriptorForExpressionFill(t 
 		},
 	}
 	viz := &spiral.State{
-		FillMetric: expressionMetric,
+		Fill: vizmodel.ColourEncoding{Metric: expressionMetric},
 		Buckets: []spiral.TimeBucket{{
 			Files: []*model.File{first, second},
 		}},
@@ -204,11 +205,9 @@ func TestBuildInksStage_SurfaceUsesFillInkForSameMetric(t *testing.T) {
 	common := &stages.CommonState{}
 	viz := &spiral.State{
 		Buckets:        []spiral.TimeBucket{{FillValue: 4, SurfaceValue: 4}},
-		FillMetric:     "file-lines",
-		FillPalette:    palette.Foliage,
+		Fill:           vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
 		SurfaceEnabled: true,
-		SurfaceMetric:  "file-lines",
-		SurfacePalette: palette.Foliage,
+		Surface:        vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
 	}
 
 	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
@@ -229,11 +228,9 @@ func TestBuildInksStage_BuildsIndependentSurfaceInkForSameMetricWithDifferentPal
 			{FillValue: 1, SurfaceValue: 1},
 			{FillValue: 10, SurfaceValue: 10},
 		},
-		FillMetric:     "file-lines",
-		FillPalette:    palette.Foliage,
+		Fill:           vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
 		SurfaceEnabled: true,
-		SurfaceMetric:  "file-lines",
-		SurfacePalette: palette.Temperature,
+		Surface:        vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Temperature},
 	}
 
 	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
@@ -249,8 +246,7 @@ func TestBuildInksStage_BuildsNumericSurfaceInk(t *testing.T) {
 	viz := &spiral.State{
 		Buckets:        []spiral.TimeBucket{{SurfaceValue: 4}},
 		SurfaceEnabled: true,
-		SurfaceMetric:  "file-lines",
-		SurfacePalette: palette.Foliage,
+		Surface:        vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
 	}
 
 	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
@@ -276,8 +272,7 @@ func TestBuildInksStage_UsesRequestedDescriptorForExpressionFill(t *testing.T) {
 			{FillLabel: "go"},
 			{FillLabel: "py"},
 		},
-		FillMetric:  expressionMetric,
-		FillPalette: palette.Categorization,
+		Fill: vizmodel.ColourEncoding{Metric: expressionMetric, Palette: palette.Categorization},
 	}
 
 	g.Expect(spiral.BuildInksStage(common, viz)).To(Succeed())
@@ -290,10 +285,10 @@ func TestBuildLegendStage_AddsDistinctSurfaceMetric(t *testing.T) {
 
 	common := &stages.CommonState{RootConfig: config.New()}
 	viz := &spiral.State{
-		FillMetric:    "file-lines",
-		SurfaceMetric: "file-size",
-		Inks:          spiral.Inks{Fill: inks.FixedInk(palette.White)},
-		SurfaceInk:    inks.FixedInk(palette.White),
+		Fill:       vizmodel.ColourEncoding{Metric: "file-lines"},
+		Surface:    vizmodel.ColourEncoding{Metric: "file-size"},
+		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
+		SurfaceInk: inks.FixedInk(palette.White),
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
@@ -308,12 +303,10 @@ func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
 
 	common := &stages.CommonState{RootConfig: config.New()}
 	viz := &spiral.State{
-		FillMetric:     "file-lines",
-		FillPalette:    palette.Foliage,
-		SurfaceMetric:  "file-lines",
-		SurfacePalette: palette.Foliage,
-		Inks:           spiral.Inks{Fill: inks.FixedInk(palette.White)},
-		SurfaceInk:     inks.FixedInk(palette.White),
+		Fill:       vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
+		Surface:    vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
+		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
+		SurfaceInk: inks.FixedInk(palette.White),
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
@@ -327,12 +320,10 @@ func TestBuildLegendStage_AddsSurfaceForSameMetricWithDifferentPalette(t *testin
 
 	common := &stages.CommonState{RootConfig: config.New()}
 	viz := &spiral.State{
-		FillMetric:     "file-lines",
-		FillPalette:    palette.Foliage,
-		SurfaceMetric:  "file-lines",
-		SurfacePalette: palette.Temperature,
-		Inks:           spiral.Inks{Fill: inks.FixedInk(palette.White)},
-		SurfaceInk:     inks.FixedInk(palette.White),
+		Fill:       vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
+		Surface:    vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Temperature},
+		Inks:       spiral.Inks{Fill: inks.FixedInk(palette.White)},
+		SurfaceInk: inks.FixedInk(palette.White),
 	}
 
 	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())

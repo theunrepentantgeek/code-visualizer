@@ -14,26 +14,22 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/surface"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // ResolveMetrics resolves metric and resolution settings from the spiral config
 // and populates c.Requested.
 func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	p.Size = metric.Name(stages.PtrString(cfg.Size))
-	p.FillMetric = cfg.Fill.MetricName()
-	p.FillPalette = stages.ResolveFillPalette(cfg.Fill, p.FillMetric)
-	p.BorderMetric, p.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	p.Fill = stages.ResolveColourEncoding(cfg.Fill, "")
+	p.Border = stages.ResolveColourEncoding(cfg.Border, "")
 	p.SurfaceEnabled = cfg.SurfaceEnabled()
-	p.SurfaceMetric = ""
-
-	p.SurfacePalette = ""
+	p.Surface = viz.ColourEncoding{}
 	if p.SurfaceEnabled {
 		if cfg.SurfaceMetric != nil && !cfg.SurfaceMetric.IsZero() {
-			p.SurfaceMetric = cfg.SurfaceMetric.MetricName()
-			p.SurfacePalette = stages.ResolveFillPalette(cfg.SurfaceMetric, p.SurfaceMetric)
+			p.Surface = stages.ResolveColourEncoding(cfg.SurfaceMetric, "")
 		} else {
-			p.SurfaceMetric = p.FillMetric
-			p.SurfacePalette = p.FillPalette
+			p.Surface = p.Fill
 		}
 	}
 
@@ -99,18 +95,18 @@ func BuildTimeBucketsStage(c *stages.CommonState, p *State) error {
 
 // AggregateBucketMetricsStage fills in per-bucket aggregated metric values.
 func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
-	AggregateBucketMetrics(p.Buckets, c.Requested, p.Size, p.FillMetric, p.BorderMetric, p.SurfaceMetric)
+	AggregateBucketMetrics(p.Buckets, c.Requested, p.Size, p.Fill.Metric, p.Border.Metric, p.Surface.Metric)
 
 	return nil
 }
 
 // BuildInksStage builds spiral inks and emits the Rendering image log line.
 func BuildInksStage(c *stages.CommonState, p *State) error {
-	p.Inks = BuildInks(p.Buckets, c.Requested, p.FillMetric, p.FillPalette, p.BorderMetric, p.BorderPalette)
+	p.Inks = BuildInks(p.Buckets, c.Requested, p.Fill.Metric, p.Fill.Palette, p.Border.Metric, p.Border.Palette)
 
 	p.SurfaceInk = nil
 	if p.SurfaceEnabled {
-		if p.SurfaceMetric == p.FillMetric && p.SurfacePalette == p.FillPalette {
+		if p.Surface == p.Fill {
 			p.SurfaceInk = p.Inks.Fill
 		} else {
 			values := make([]float64, len(p.Buckets))
@@ -118,7 +114,7 @@ func BuildInksStage(c *stages.CommonState, p *State) error {
 				values[i] = p.Buckets[i].SurfaceValue
 			}
 
-			p.SurfaceInk = inks.NumericInk(p.SurfaceMetric, values, palette.GetPalette(p.SurfacePalette))
+			p.SurfaceInk = inks.NumericInk(p.Surface.Metric, values, palette.GetPalette(p.Surface.Palette))
 		}
 	}
 
@@ -136,14 +132,14 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 
 	builder := legend.Builder{
 		Position: pos, Orientation: orient,
-		FillInk: p.Inks.Fill, FillMetric: p.FillMetric,
-		BorderInk: p.Inks.Border, BorderMetric: p.BorderMetric,
+		FillInk: p.Inks.Fill, FillMetric: p.Fill.Metric,
+		BorderInk: p.Inks.Border, BorderMetric: p.Border.Metric,
 		SizeMetric: effectiveSizeMetric(p.Size),
 	}
 
-	if p.SurfaceMetric != "" && (p.SurfaceMetric != p.FillMetric || p.SurfacePalette != p.FillPalette) {
+	if p.Surface.IsSet() && p.Surface != p.Fill {
 		builder.AdditionalEntries = append(builder.AdditionalEntries, legend.Entry{
-			Role: legend.RoleSurface, MetricName: string(p.SurfaceMetric), Ink: p.SurfaceInk,
+			Role: legend.RoleSurface, MetricName: string(p.Surface.Metric), Ink: p.SurfaceInk,
 		})
 	}
 
@@ -153,9 +149,9 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 			Shape: legend.LabelSampleCircle,
 			Lines: buildLegendLabelSample(LabelMetrics{
 				Size:    p.Size,
-				Fill:    p.FillMetric,
-				Border:  p.BorderMetric,
-				Surface: p.SurfaceMetric,
+				Fill:    p.Fill.Metric,
+				Border:  p.Border.Metric,
+				Surface: p.Surface.Metric,
 			}),
 		}
 	}
@@ -186,9 +182,9 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 	p.Layout = layout
 	p.DiscLabels = buildDiscLabels(layout.Nodes, p.Buckets, p.Inks.Fill, LabelMetrics{
 		Size:      effectiveSizeMetric(p.Size),
-		Fill:      p.FillMetric,
-		Border:    p.BorderMetric,
-		Surface:   p.SurfaceMetric,
+		Fill:      p.Fill.Metric,
+		Border:    p.Border.Metric,
+		Surface:   p.Surface.Metric,
 		Requested: c.Requested,
 	})
 
@@ -254,10 +250,10 @@ func LogResult(c *stages.CommonState, p *State) error {
 		"width", c.Width,
 		"height", c.Height,
 		"size_metric", string(p.Size),
-		"fill_metric", string(p.FillMetric),
-		"fill_palette", string(p.FillPalette),
-		"border_metric", string(p.BorderMetric),
-		"border_palette", string(p.BorderPalette),
+		"fill_metric", string(p.Fill.Metric),
+		"fill_palette", string(p.Fill.Palette),
+		"border_metric", string(p.Border.Metric),
+		"border_palette", string(p.Border.Palette),
 	)
 
 	return nil
