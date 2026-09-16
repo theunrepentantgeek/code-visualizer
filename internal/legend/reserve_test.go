@@ -5,194 +5,139 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	model0 "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
-// zeroReductionCfg returns a Config whose ReserveSpace() returns a zero size.
-// Position=None causes toLegendData to return nil, so legendlayout.ReserveSpace
-// gets nil and produces no reduction.
-func zeroReductionCfg(pos model0.LegendPosition, orient model0.LegendOrientation) *legend.Config {
-	return &legend.Config{Position: pos, Orientation: orient}
-}
-
-// --- ReserveAndLayout ---
-
-func TestReserveAndLayout_NilConfig_Passthrough(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	w, h := legend.ReserveAndLayout(nil, 1000, 800)
-	g.Expect(w).To(Equal(1000))
-	g.Expect(h).To(Equal(800))
-}
-
-func TestReserveAndLayout_LargeCanvas_ZeroReduction_Passthrough(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	// A config with no entries produces zero reduction; the full dims are returned.
-	cfg := zeroReductionCfg(model0.LegendPositionNone, model0.LegendOrientationVertical)
-	w, h := legend.ReserveAndLayout(cfg, 1000, 800)
-	g.Expect(w).To(Equal(1000))
-	g.Expect(h).To(Equal(800))
-}
-
-func TestReserveAndLayout_SmallCanvas_FallsBack(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	// Canvas smaller than MinReservableSize triggers the fallback even with zero reduction.
-	cfg := zeroReductionCfg(model0.LegendPositionNone, model0.LegendOrientationVertical)
-	w, h := legend.ReserveAndLayout(cfg, 50, 50)
-	g.Expect(w).To(Equal(50))
-	g.Expect(h).To(Equal(50))
-}
-
-func TestReserveAndLayout_ExactlyMinSize_Passthrough(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	// Exactly at MinReservableSize should NOT fall back (boundary: >= 100 is fine).
-	cfg := zeroReductionCfg(model0.LegendPositionNone, model0.LegendOrientationVertical)
-	w, h := legend.ReserveAndLayout(cfg, legend.MinReservableSize, legend.MinReservableSize)
-	g.Expect(w).To(Equal(legend.MinReservableSize))
-	g.Expect(h).To(Equal(legend.MinReservableSize))
-}
-
-// --- LayoutOffset ---
-
-func TestLayoutOffset_NilConfig_ZeroOffset(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	dx, dy := legend.LayoutOffset(nil, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(0.0))
-}
-
-func TestLayoutOffset_TopCenter_YOffset(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := &legend.Config{
-		Position:    model0.LegendPositionTopCenter,
-		Orientation: model0.LegendOrientationHorizontal,
+func reservingCfg(
+	position canvasmodel.LegendPosition,
+	orientation canvasmodel.LegendOrientation,
+) *legend.Config {
+	return &legend.Config{
+		Position:    position,
+		Orientation: orientation,
+		Entries: []legend.Entry{{
+			Role:       legend.RoleFill,
+			MetricName: "file-size",
+			Ink:        inks.FixedInk(palette.White),
+		}},
 	}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(0, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(150.0))
 }
 
-func TestLayoutOffset_CenterLeft_XOffset(t *testing.T) {
+func TestReserveLayoutPassthrough(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	cfg := &legend.Config{
-		Position:    model0.LegendPositionCenterLeft,
-		Orientation: model0.LegendOrientationVertical,
+	tests := []struct {
+		name string
+		cfg  *legend.Config
+	}{
+		{name: "nil config"},
+		{
+			name: "config without entries",
+			cfg: &legend.Config{
+				Position:    canvasmodel.LegendPositionTopCenter,
+				Orientation: canvasmodel.LegendOrientationHorizontal,
+			},
+		},
 	}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 0))
-	g.Expect(dx).To(Equal(200.0))
-	g.Expect(dy).To(Equal(0.0))
-}
 
-// cornerOffset: vertical orientation, left-side positions shift X.
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-func TestLayoutOffset_TopLeft_Vertical_XOffset(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
+			got := legend.ReserveLayout(tt.cfg, 1000, 800)
 
-	cfg := &legend.Config{Position: model0.LegendPositionTopLeft, Orientation: model0.LegendOrientationVertical}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(200.0))
-	g.Expect(dy).To(Equal(0.0))
-}
-
-func TestLayoutOffset_BottomLeft_Vertical_XOffset(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := &legend.Config{
-		Position:    model0.LegendPositionBottomLeft,
-		Orientation: model0.LegendOrientationVertical,
+			g.Expect(got).To(Equal(legend.Reservation{Width: 1000, Height: 800}))
+		})
 	}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(200.0))
-	g.Expect(dy).To(Equal(0.0))
 }
 
-func TestLayoutOffset_TopRight_Vertical_ZeroOffset(t *testing.T) {
+func TestReserveLayoutReturnsMatchingDimensionsAndOffset(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	cfg := &legend.Config{Position: model0.LegendPositionTopRight, Orientation: model0.LegendOrientationVertical}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(0.0))
-}
-
-func TestLayoutOffset_BottomRight_Vertical_ZeroOffset(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := &legend.Config{
-		Position:    model0.LegendPositionBottomRight,
-		Orientation: model0.LegendOrientationVertical,
+	tests := []struct {
+		name        string
+		position    canvasmodel.LegendPosition
+		orientation canvasmodel.LegendOrientation
+		offset      func(geometry.Size) geometry.Vector
+	}{
+		{
+			name:        "top centre",
+			position:    canvasmodel.LegendPositionTopCenter,
+			orientation: canvasmodel.LegendOrientationHorizontal,
+			offset:      func(size geometry.Size) geometry.Vector { return geometry.NewVector(0, size.Height) },
+		},
+		{
+			name:        "centre left",
+			position:    canvasmodel.LegendPositionCenterLeft,
+			orientation: canvasmodel.LegendOrientationVertical,
+			offset:      func(size geometry.Size) geometry.Vector { return geometry.NewVector(size.Width, 0) },
+		},
+		{
+			name:        "top left vertical",
+			position:    canvasmodel.LegendPositionTopLeft,
+			orientation: canvasmodel.LegendOrientationVertical,
+			offset:      func(size geometry.Size) geometry.Vector { return geometry.NewVector(size.Width, 0) },
+		},
+		{
+			name:        "top right horizontal",
+			position:    canvasmodel.LegendPositionTopRight,
+			orientation: canvasmodel.LegendOrientationHorizontal,
+			offset:      func(size geometry.Size) geometry.Vector { return geometry.NewVector(0, size.Height) },
+		},
+		{
+			name:        "bottom right",
+			position:    canvasmodel.LegendPositionBottomRight,
+			orientation: canvasmodel.LegendOrientationVertical,
+			offset:      func(geometry.Size) geometry.Vector { return geometry.ZeroVector },
+		},
 	}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(0.0))
-}
 
-// cornerOffset: horizontal orientation, top positions shift Y.
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			cfg := reservingCfg(tt.position, tt.orientation)
+			reserved := cfg.ReserveSpace()
 
-func TestLayoutOffset_TopLeft_Horizontal_YOffset(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
+			got := legend.ReserveLayout(cfg, 1000, 800)
 
-	cfg := &legend.Config{Position: model0.LegendPositionTopLeft, Orientation: model0.LegendOrientationHorizontal}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(150.0))
-}
-
-func TestLayoutOffset_TopRight_Horizontal_YOffset(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := &legend.Config{
-		Position:    model0.LegendPositionTopRight,
-		Orientation: model0.LegendOrientationHorizontal,
+			g.Expect(got).To(Equal(legend.Reservation{
+				Width:  1000 - int(reserved.Width),
+				Height: 800 - int(reserved.Height),
+				Offset: tt.offset(reserved),
+			}))
+		})
 	}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(150.0))
 }
 
-func TestLayoutOffset_BottomLeft_Horizontal_ZeroOffset(t *testing.T) {
+func TestReserveLayoutFallbackReturnsFullDimensionsAndZeroOffset(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+	cfg := reservingCfg(canvasmodel.LegendPositionTopCenter, canvasmodel.LegendOrientationHorizontal)
 
-	cfg := &legend.Config{
-		Position:    model0.LegendPositionBottomLeft,
-		Orientation: model0.LegendOrientationHorizontal,
-	}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(0.0))
+	got := legend.ReserveLayout(cfg, 50, 50)
+
+	g.Expect(got).To(Equal(legend.Reservation{Width: 50, Height: 50}))
 }
 
-func TestLayoutOffset_BottomRight_Horizontal_ZeroOffset(t *testing.T) {
+func TestReserveLayoutAcceptsExactlyMinimumContentSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
+	cfg := reservingCfg(canvasmodel.LegendPositionTopCenter, canvasmodel.LegendOrientationHorizontal)
+	reserved := cfg.ReserveSpace()
 
-	cfg := &legend.Config{
-		Position:    model0.LegendPositionBottomRight,
-		Orientation: model0.LegendOrientationHorizontal,
-	}
-	dx, dy := legend.LayoutOffset(cfg, geometry.NewSize(200, 150))
-	g.Expect(dx).To(Equal(0.0))
-	g.Expect(dy).To(Equal(0.0))
+	got := legend.ReserveLayout(
+		cfg,
+		legend.MinReservableSize+int(reserved.Width),
+		legend.MinReservableSize+int(reserved.Height),
+	)
+
+	g.Expect(got.Width).To(Equal(legend.MinReservableSize))
+	g.Expect(got.Height).To(Equal(legend.MinReservableSize))
+	g.Expect(got.Offset).To(Equal(geometry.NewVector(0, reserved.Height)))
 }
