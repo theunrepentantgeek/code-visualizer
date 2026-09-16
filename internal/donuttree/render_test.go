@@ -26,6 +26,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func donutDirectory(name string, lines int64) *model.Directory {
@@ -139,9 +140,9 @@ func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
 	cfg.DonutTree.Fill = &config.MetricSpec{Metric: "file-type"}
 	cfg.DonutTree.Border = &config.MetricSpec{Metric: "file-size"}
 	state := &State{
-		SizeMetric:   "file-lines.sum",
-		FillMetric:   "file-type.mode",
-		BorderMetric: "file-size.sum",
+		SizeMetric: "file-lines.sum",
+		Fill:       viz.ColourEncoding{Metric: "file-type.mode"},
+		Border:     viz.ColourEncoding{Metric: "file-size.sum"},
 		Inks: Inks{ShapeInks: inks.ShapeInks{
 			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
 			Border: inks.FixedInk(color.RGBA{A: 255}),
@@ -168,9 +169,9 @@ func TestBuildLegendStage_OmitsDerivedMetricsFromLabelSample(t *testing.T) {
 	cfg := config.New()
 	cfg.Legend = &config.Legend{Position: new("bottom-right")}
 	state := &State{
-		SizeMetric:   "file-lines.sum",
-		FillMetric:   "file-lines.sum",
-		BorderMetric: "file-size.sum",
+		SizeMetric: "file-lines.sum",
+		Fill:       viz.ColourEncoding{Metric: "file-lines.sum"},
+		Border:     viz.ColourEncoding{Metric: "file-size.sum"},
 		Inks: Inks{ShapeInks: inks.ShapeInks{
 			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
 			Border: inks.FixedInk(color.RGBA{A: 255}),
@@ -517,9 +518,8 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 	g.Expect(stages.ReserveFooterBounds(common)).To(Succeed())
 
 	state := &State{
-		SizeMetric:  filesystem.FileLines,
-		FillMetric:  filesystem.FileLines,
-		FillPalette: palette.Neutral,
+		SizeMetric: filesystem.FileLines,
+		Fill:       viz.ColourEncoding{Metric: filesystem.FileLines, Palette: palette.Neutral},
 	}
 
 	g.Expect(BuildInksStage(common, state)).To(Succeed())
@@ -576,9 +576,8 @@ func TestRenderStage_KeepsConfiguredDimensionsAfterTitleAndFooterReservation(t *
 	g.Expect(stages.ReserveFooterBounds(common)).To(Succeed())
 
 	state := &State{
-		SizeMetric:  filesystem.FileLines,
-		FillMetric:  filesystem.FileLines,
-		FillPalette: palette.Neutral,
+		SizeMetric: filesystem.FileLines,
+		Fill:       viz.ColourEncoding{Metric: filesystem.FileLines, Palette: palette.Neutral},
 	}
 
 	g.Expect(BuildInksStage(common, state)).To(Succeed())

@@ -12,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // ResolveMetrics resolves directory aggregation expressions and palettes.
@@ -28,26 +29,29 @@ func ResolveMetrics(c *stages.CommonState, d *State, cfg *config.DonutTree) erro
 		fillBase = metric.Name(stages.PtrString(cfg.Size))
 	}
 
-	d.FillMetric, err = resolveDirectoryMetric(fillBase)
+	fillMetric, err := resolveDirectoryMetric(fillBase)
 	if err != nil {
 		return eris.Wrap(err, "invalid fill metric")
 	}
 
-	d.FillPalette = stages.ResolveFillPalette(cfg.Fill, d.FillMetric)
+	d.Fill = viz.ColourEncoding{Metric: fillMetric, Palette: stages.ResolveFillPalette(cfg.Fill, fillMetric)}
 
 	if borderBase := cfg.Border.MetricName(); borderBase != "" {
-		d.BorderMetric, err = resolveDirectoryMetric(borderBase)
+		borderMetric, resolveErr := resolveDirectoryMetric(borderBase)
+		err = resolveErr
 		if err != nil {
 			return eris.Wrap(err, "invalid border metric")
 		}
 
-		d.BorderPalette = stages.ResolveFillPalette(cfg.Border, d.BorderMetric)
+		d.Border = viz.ColourEncoding{
+			Metric: borderMetric, Palette: stages.ResolveFillPalette(cfg.Border, borderMetric),
+		}
 	}
 
 	c.Requested = stages.CollectRequestedMetrics(
 		d.SizeMetric,
-		effectiveMetricSpec(cfg.Fill, d.FillMetric),
-		effectiveMetricSpec(cfg.Border, d.BorderMetric),
+		effectiveMetricSpec(cfg.Fill, d.Fill.Metric),
+		effectiveMetricSpec(cfg.Border, d.Border.Metric),
 	)
 
 	return nil
@@ -101,10 +105,10 @@ func BuildInksStage(c *stages.CommonState, d *State) error {
 	d.Inks = BuildInks(
 		c.Root,
 		c.Requested,
-		d.FillMetric,
-		d.FillPalette,
-		d.BorderMetric,
-		d.BorderPalette,
+		d.Fill.Metric,
+		d.Fill.Palette,
+		d.Border.Metric,
+		d.Border.Palette,
 	)
 
 	return nil
@@ -121,9 +125,9 @@ func BuildLegendStage(c *stages.CommonState, d *State) error {
 		Position:     pos,
 		Orientation:  orient,
 		FillInk:      d.Inks.Fill,
-		FillMetric:   d.FillMetric,
+		FillMetric:   d.Fill.Metric,
 		BorderInk:    d.Inks.Border,
-		BorderMetric: d.BorderMetric,
+		BorderMetric: d.Border.Metric,
 		SizeMetric:   d.SizeMetric,
 	}.Build()
 	if d.LegendConfig != nil {
@@ -200,12 +204,12 @@ func labelMetricsFor(d *State, cfg *config.DonutTree) LabelMetrics {
 	}
 
 	if cfg.Fill != nil && cfg.Fill.MetricName() != "" {
-		metrics.Fill = d.FillMetric
+		metrics.Fill = d.Fill.Metric
 		metrics.IncludeFill = true
 	}
 
 	if cfg.Border != nil && cfg.Border.MetricName() != "" {
-		metrics.Border = d.BorderMetric
+		metrics.Border = d.Border.Metric
 		metrics.IncludeBorder = true
 	}
 
@@ -223,10 +227,10 @@ func LogResult(c *stages.CommonState, d *State) error {
 		"output", c.Output,
 		"canvas_size", donutCanvasSize(c),
 		"size_metric", string(d.SizeMetric),
-		"fill_metric", string(d.FillMetric),
-		"fill_palette", string(d.FillPalette),
-		"border_metric", string(d.BorderMetric),
-		"border_palette", string(d.BorderPalette),
+		"fill_metric", string(d.Fill.Metric),
+		"fill_palette", string(d.Fill.Palette),
+		"border_metric", string(d.Border.Metric),
+		"border_palette", string(d.Border.Palette),
 	)
 
 	return nil
