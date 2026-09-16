@@ -19,18 +19,17 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 	r.DiscSize = metric.Name(stages.PtrString(cfg.FileDiscSize))
 	directoryDiscSize := &config.MetricSpec{Metric: metric.Name(stages.PtrString(cfg.DirectoryDiscSize))}
 	r.DirectoryDiscSize = resolveDirectoryMetric(directoryDiscSize, r.DiscSize)
-	r.FillMetric = resolveFillMetric(cfg, r.DiscSize)
-	r.FillPalette = stages.ResolveFillPalette(cfg.FileFill, r.FillMetric)
-	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.FileBorder)
-	r.DirectoryFillMetric = resolveDirectoryMetric(cfg.DirectoryFill, r.FillMetric)
-	r.DirectoryFillPalette = stages.ResolveFillPalette(
-		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
-		r.DirectoryFillMetric,
+	r.Fill = stages.ResolveColourEncoding(cfg.FileFill, r.DiscSize)
+	r.Border = stages.ResolveColourEncoding(cfg.FileBorder, "")
+	directoryFillMetric := resolveDirectoryMetric(cfg.DirectoryFill, r.Fill.Metric)
+	r.DirectoryFill = stages.ResolveColourEncoding(
+		directoryMetricSpec(cfg.DirectoryFill, directoryFillMetric),
+		"",
 	)
-	r.DirectoryBorderMetric = resolveDirectoryMetric(cfg.DirectoryBorder, r.BorderMetric)
-	r.DirectoryBorderPalette = stages.ResolveFillPalette(
-		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
-		r.DirectoryBorderMetric,
+	directoryBorderMetric := resolveDirectoryMetric(cfg.DirectoryBorder, r.Border.Metric)
+	r.DirectoryBorder = stages.ResolveColourEncoding(
+		directoryMetricSpec(cfg.DirectoryBorder, directoryBorderMetric),
+		"",
 	)
 	r.Labels = resolveLabels(cfg)
 	r.Grain = resolveGrain(cfg)
@@ -40,19 +39,11 @@ func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 		cfg.FileFill,
 		cfg.FileBorder,
 		directoryMetricSpec(directoryDiscSize, r.DirectoryDiscSize),
-		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
-		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
+		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFill.Metric),
+		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorder.Metric),
 	)
 
 	return nil
-}
-
-func resolveFillMetric(cfg *config.Radial, discSize metric.Name) metric.Name {
-	if fill := cfg.FileFill.MetricName(); fill != "" {
-		return fill
-	}
-
-	return discSize
 }
 
 func resolveDirectoryMetric(spec *config.MetricSpec, fallback metric.Name) metric.Name {
@@ -126,14 +117,14 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
-	r.Inks = BuildInks(c.Root, c.Requested, r.FillMetric, r.FillPalette, r.BorderMetric, r.BorderPalette)
+	r.Inks = BuildInks(c.Root, c.Requested, r.Fill.Metric, r.Fill.Palette, r.Border.Metric, r.Border.Palette)
 	r.Inks.DirectoryFill, r.Inks.DirectoryBorder = buildDirectoryInks(
 		c.Root,
 		c.Requested,
-		r.DirectoryFillMetric,
-		r.DirectoryFillPalette,
-		r.DirectoryBorderMetric,
-		r.DirectoryBorderPalette,
+		r.DirectoryFill.Metric,
+		r.DirectoryFill.Palette,
+		r.DirectoryBorder.Metric,
+		r.DirectoryBorder.Palette,
 	)
 
 	return nil
@@ -167,14 +158,14 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 
 	builder := legend.Builder{
 		Position: pos, Orientation: orient,
-		FillInk: r.Inks.Fill, FillMetric: r.FillMetric,
-		BorderInk: r.Inks.Border, BorderMetric: r.BorderMetric,
+		FillInk: r.Inks.Fill, FillMetric: r.Fill.Metric,
+		BorderInk: r.Inks.Border, BorderMetric: r.Border.Metric,
 		SizeMetric: r.DiscSize,
 	}
 
 	if r.Grain == GrainDirectory {
-		builder.FillInk, builder.FillMetric = r.Inks.DirectoryFill, r.DirectoryFillMetric
-		builder.BorderInk, builder.BorderMetric = r.Inks.DirectoryBorder, r.DirectoryBorderMetric
+		builder.FillInk, builder.FillMetric = r.Inks.DirectoryFill, r.DirectoryFill.Metric
+		builder.BorderInk, builder.BorderMetric = r.Inks.DirectoryBorder, r.DirectoryBorder.Metric
 		builder.SizeMetric = r.DirectoryDiscSize
 	}
 
@@ -235,10 +226,10 @@ func LogResult(c *stages.CommonState, r *State) error {
 		"canvas_size", canvasSize,
 		"grain", string(r.Grain),
 		"disc_metric", string(r.DiscSize),
-		"fill_metric", string(r.FillMetric),
-		"fill_palette", string(r.FillPalette),
-		"border_metric", string(r.BorderMetric),
-		"border_palette", string(r.BorderPalette),
+		"fill_metric", string(r.Fill.Metric),
+		"fill_palette", string(r.Fill.Palette),
+		"border_metric", string(r.Border.Metric),
+		"border_palette", string(r.Border.Palette),
 	)
 
 	return nil

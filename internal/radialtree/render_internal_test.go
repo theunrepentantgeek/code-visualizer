@@ -22,6 +22,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func radialTestFile(name, ext string, size int64) *model.File {
@@ -233,10 +234,9 @@ func TestRenderStage_DefaultFooterKeepsConfiguredCanvasSize(t *testing.T) {
 		Height:     1080,
 	}
 	state := &State{
-		DiscSize:    filesystem.FileSize,
-		FillMetric:  filesystem.FileSize,
-		FillPalette: palette.Temperature,
-		Labels:      LabelNone,
+		DiscSize: filesystem.FileSize,
+		Fill:     viz.ColourEncoding{Metric: filesystem.FileSize, Palette: palette.Temperature},
+		Labels:   LabelNone,
 	}
 
 	g.Expect(BuildInksStage(common, state)).To(Succeed())
