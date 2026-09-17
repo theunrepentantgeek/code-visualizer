@@ -79,23 +79,49 @@ func TestCollectRequestedMetrics_AllThreeDistinct(t *testing.T) {
 	))
 }
 
-func TestResolveColourEncoding(t *testing.T) {
+// ---------------------------------------------------------------------------
+// ResolveColourEncoding
+// ---------------------------------------------------------------------------
+
+func TestResolveColourEncoding_VariousInputs_ReturnsEffectiveEncoding(t *testing.T) {
 	t.Parallel()
 
-	g := NewGomegaWithT(t)
+	// Arrange
+	cases := map[string]struct {
+		spec     *config.MetricSpec
+		fallback metric.Name
+		expected viz.ColourEncoding
+	}{
+		"empty": {},
+		"fallback metric": {
+			fallback: "file-type",
+			expected: viz.ColourEncoding{
+				Metric:  metric.Name("file-type"),
+				Palette: palette.Categorization,
+			},
+		},
+		"explicit metric and palette": {
+			spec:     &config.MetricSpec{Metric: "file-size", Palette: "terrain"},
+			fallback: "file-type",
+			expected: viz.ColourEncoding{
+				Metric:  metric.Name("file-size"),
+				Palette: palette.PaletteName("terrain"),
+			},
+		},
+	}
 
-	g.Expect(stages.ResolveColourEncoding(nil, "")).To(Equal(viz.ColourEncoding{}))
-	g.Expect(stages.ResolveColourEncoding(nil, "file-type")).To(Equal(viz.ColourEncoding{
-		Metric:  metric.Name("file-type"),
-		Palette: palette.Categorization,
-	}))
-	g.Expect(stages.ResolveColourEncoding(
-		&config.MetricSpec{Metric: "file-size", Palette: "terrain"},
-		"file-type",
-	)).To(Equal(viz.ColourEncoding{
-		Metric:  metric.Name("file-size"),
-		Palette: palette.PaletteName("terrain"),
-	}))
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			// Act
+			actual := stages.ResolveColourEncoding(c.spec, c.fallback)
+
+			// Assert
+			g.Expect(actual).To(Equal(c.expected))
+		})
+	}
 }
 
 // ---------------------------------------------------------------------------
