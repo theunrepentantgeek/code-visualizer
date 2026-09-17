@@ -46,9 +46,12 @@ func addDonutBackground(cv *canvas.Canvas, width, height int) {
 		},
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:   spec,
-		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
-		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec: spec,
+		Bounds: geometry.RectFromPositionSize(
+			geometry.OriginPoint,
+			geometry.NewSize(float64(width), float64(height)),
+		),
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -215,5 +218,5 @@ func sectorSteps(sweepAngle float64) int {
 }
 
 func polarPosition(center geometry.Point, radius, angle float64) geometry.Point {
-	return center.Translate(geometry.NewVector(radius*math.Cos(angle), radius*math.Sin(angle)))
+	return center.Translate(geometry.NewRadialVector(angle, radius))
 }

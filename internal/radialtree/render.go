@@ -52,9 +52,12 @@ func addBackground(cv *canvas.Canvas, canvasWidth, canvasHeight int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:   bgSpec,
-		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(canvasWidth), float64(canvasHeight))},
-		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec: bgSpec,
+		Bounds: geometry.RectFromPositionSize(
+			geometry.OriginPoint,
+			geometry.NewSize(float64(canvasWidth), float64(canvasHeight)),
+		),
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 
@@ -327,10 +330,7 @@ func addExternalLabel(
 ) {
 	dist := node.Position.Length()
 	labelRadius := dist + node.DiscRadius + labelGap
-	labelDisplacement := geometry.NewVector(
-		labelRadius*math.Cos(node.Angle),
-		labelRadius*math.Sin(node.Angle),
-	)
+	labelDisplacement := geometry.NewRadialVector(node.Angle, labelRadius)
 
 	angle := math.Mod(orientAngle, 2*math.Pi)
 	if angle < 0 {

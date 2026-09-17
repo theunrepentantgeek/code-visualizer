@@ -39,9 +39,12 @@ func addScatterBackground(cv *canvas.Canvas, width, height int) {
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
-		Spec:   bgSpec,
-		Bounds: geometry.Rect{Max: geometry.NewPoint(float64(width), float64(height))},
-		Focus:  canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
+		Spec: bgSpec,
+		Bounds: geometry.RectFromPositionSize(
+			geometry.OriginPoint,
+			geometry.NewSize(float64(width), float64(height)),
+		),
+		Focus: canvasmodel.GradientPoint{X: 0.5, Y: 0.5},
 	})
 }
 

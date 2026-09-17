@@ -245,22 +245,12 @@ func BuildLegendStage(c *stages.CommonState, x *State) error {
 func LayoutStage(c *stages.CommonState, x *State) error {
 	bounds := c.DrawingBounds
 	availH := int(bounds.Height())
-	layoutW, layoutH := legend.ReserveAndLayout(x.LegendConfig, c.Width, availH)
+	reservation := legend.ReserveLayout(x.LegendConfig, c.Width, availH)
 
-	layout := Layout(x.Dataset, layoutW, layoutH, x.XAxis, x.YAxis)
+	layout := Layout(x.Dataset, reservation.Width, reservation.Height, x.XAxis, x.YAxis)
 
-	dx, dy := float64(0), bounds.Min.Y
-
-	if layoutW < c.Width || layoutH < availH {
-		if x.LegendConfig != nil {
-			reserved := x.LegendConfig.ReserveSpace()
-			ldx, ldy := legend.LayoutOffset(x.LegendConfig, reserved)
-			dx += ldx
-			dy += ldy
-		}
-	}
-
-	OffsetLayout(&layout, geometry.NewVector(dx, dy))
+	offset := reservation.Offset.Add(geometry.NewVector(0, bounds.Min.Y))
+	OffsetLayout(&layout, offset)
 	x.Layout = layout
 
 	return nil

@@ -7,33 +7,41 @@ import (
 
 // MinReservableSize is the smallest canvas dimension (px) that still
 // produces a usable visualization. If reserving legend space would shrink
-// either dimension below this, ReserveAndLayout falls back to the full
-// canvas (overlay behaviour).
+// either dimension below this, ReserveLayout falls back to the full canvas
+// with no offset (overlay behaviour).
 const MinReservableSize = 100
 
-// ReserveAndLayout returns the layout dimensions after reserving space
-// for the legend. Falls back to (width, height) when reservation would
-// shrink either dimension below MinReservableSize.
-func ReserveAndLayout(cfg *Config, width, height int) (layoutW, layoutH int) {
+// Reservation describes the content area left after reserving legend space.
+type Reservation struct {
+	Width  int
+	Height int
+	Offset geometry.Vector
+}
+
+// ReserveLayout returns content dimensions and their matching offset after
+// reserving legend space. It returns the full dimensions and zero offset when
+// reservation would leave an unusably small content area.
+func ReserveLayout(cfg *Config, width, height int) Reservation {
+	result := Reservation{Width: width, Height: height}
 	if cfg == nil {
-		return width, height
+		return result
 	}
 
 	reserved := cfg.ReserveSpace()
+	result.Width -= int(reserved.Width)
+	result.Height -= int(reserved.Height)
 
-	w := width - int(reserved.Width)
-	h := height - int(reserved.Height)
-
-	if w < MinReservableSize || h < MinReservableSize {
-		return width, height
+	if result.Width < MinReservableSize || result.Height < MinReservableSize {
+		return Reservation{Width: width, Height: height}
 	}
 
-	return w, h
+	dx, dy := layoutOffset(cfg, reserved)
+	result.Offset = geometry.NewVector(dx, dy)
+
+	return result
 }
 
-// LayoutOffset returns the (dx, dy) offset to apply to layout output
-// when space has been reserved for the legend.
-func LayoutOffset(cfg *Config, reserved geometry.Size) (dx, dy float64) {
+func layoutOffset(cfg *Config, reserved geometry.Size) (dx, dy float64) {
 	if cfg == nil {
 		return 0, 0
 	}

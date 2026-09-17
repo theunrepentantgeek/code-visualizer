@@ -68,7 +68,12 @@ func resolveDirectoryMetric(name metric.Name) (metric.Name, error) {
 	}
 
 	if expr.Aggregation.IsZero() {
-		expr.Aggregation = aggregationForKind(desc.Kind)
+		aggregation, ok := desc.Kind.DefaultAggregation()
+		if !ok {
+			return "", eris.Errorf("unsupported metric kind %d", desc.Kind)
+		}
+
+		expr.Aggregation = aggregation
 	}
 
 	if _, err := provider.ResolveExpression(expr, metric.LevelDirectory); err != nil {
@@ -76,17 +81,6 @@ func resolveDirectoryMetric(name metric.Name) (metric.Name, error) {
 	}
 
 	return expr.ResultName(), nil
-}
-
-func aggregationForKind(kind metric.Kind) metric.AggregationName {
-	switch kind {
-	case metric.Quantity:
-		return metric.AggSum
-	case metric.Measure:
-		return metric.AggMean
-	default:
-		return metric.AggMode
-	}
 }
 
 // BuildInksStage builds the donut tree's directory inks.

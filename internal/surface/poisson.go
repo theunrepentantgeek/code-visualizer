@@ -141,10 +141,7 @@ func validBounds(bounds geometry.Rect) bool {
 func initialSample(region Region, bounds geometry.Rect, random *rand.Rand) (Sample, bool) {
 	for range attemptsPerActivePoint {
 		candidate := Sample{
-			Position: geometry.NewPoint(
-				bounds.Min.X+random.Float64()*bounds.Width(),
-				bounds.Min.Y+random.Float64()*bounds.Height(),
-			),
+			Position: bounds.PointAt(random.Float64(), random.Float64()),
 		}
 		if region.Contains(candidate.Position) {
 			return candidate, true
@@ -159,7 +156,7 @@ func annulusCandidate(sample Sample, minimumDistance float64, random *rand.Rand)
 	radius := minimumDistance * math.Sqrt(1+3*random.Float64())
 
 	return Sample{
-		Position: sample.Position.Translate(geometry.NewVector(radius*math.Cos(angle), radius*math.Sin(angle))),
+		Position: sample.Position.Translate(geometry.NewRadialVector(angle, radius)),
 	}
 }
 
