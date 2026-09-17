@@ -65,10 +65,7 @@ func (r *rasterBackend) drawRadialGradientRect(
 ) {
 	pos := bounds.Min
 	size := bounds.Size()
-	focus := geometry.NewPoint(
-		pos.X+grad.Focus.X*size.Width,
-		pos.Y+grad.Focus.Y*size.Height,
-	)
+	focus := bounds.PointAt(grad.Focus.X, grad.Focus.Y)
 
 	maxDist := maxCornerDist(focus.X, focus.Y, bounds)
 
@@ -215,10 +212,10 @@ func (r *rasterBackend) drawRadialGradientPolygon(
 
 	// Focus is relative to the polygon's bounding box; the farthest vertex
 	// establishes the radius, matching rectangle gradient normalization.
-	focus := geometry.NewPoint(
-		minX+grad.Focus.X*(maxX-minX),
-		minY+grad.Focus.Y*(maxY-minY),
-	)
+	focus := (geometry.Rect{
+		Min: geometry.NewPoint(minX, minY),
+		Max: geometry.NewPoint(maxX, maxY),
+	}).PointAt(grad.Focus.X, grad.Focus.Y)
 
 	maxDist := 0.0
 	for _, point := range points {
@@ -261,12 +258,8 @@ func (r *rasterBackend) drawRadialGradientDisc(
 		return
 	}
 
-	focus := geometry.NewPoint(
-		center.X+(grad.Focus.X-0.5)*2*radius,
-		center.Y+(grad.Focus.Y-0.5)*2*radius,
-	)
-
 	discBounds := circle.Bounds()
+	focus := discBounds.PointAt(grad.Focus.X, grad.Focus.Y)
 	bounds := img.Bounds()
 	x0 := max(int(discBounds.Min.X), bounds.Min.X)
 	y0 := max(int(discBounds.Min.Y), bounds.Min.Y)
@@ -359,19 +352,17 @@ func (r *rasterBackend) DrawArcText(
 	if arcRadius <= 0 {
 		return
 	}
-
 	forEachArcTextRune(text, fontSize, arcRadius, func(ch rune, angle float64) {
-		cx := center.X + arcRadius*math.Cos(angle)
-		cy := center.Y + arcRadius*math.Sin(angle)
+		position := center.Translate(geometry.NewRadialVector(angle, arcRadius))
 
 		r.dc.Push()
-		r.dc.RotateAbout(angle+math.Pi/2.0, cx, cy)
-		// gg's DrawStringAnchored places the baseline at cy + ay*h. Using
+		r.dc.RotateAbout(angle+math.Pi/2.0, position.X, position.Y)
+		// gg's DrawStringAnchored places the baseline at y + ay*h. Using
 		// ay=0.5 puts the baseline at the rim of the underlying circle so
 		// non-descender letters touch the rim. Use ay=0.25 to match the
 		// SVG backend's dominant-baseline="middle" behaviour, which lifts
 		// the baseline so descenders just graze the rim instead.
-		r.dc.DrawStringAnchored(string(ch), cx, cy, 0.5, 0.25)
+		r.dc.DrawStringAnchored(string(ch), position.X, position.Y, 0.5, 0.25)
 		r.dc.Pop()
 	})
 }

@@ -117,6 +117,33 @@ func TestRectCenter(t *testing.T) {
 	g.Expect(rect.Center()).To(Equal(Point{X: 20, Y: 35}))
 }
 
+func TestRectPointAt(t *testing.T) {
+	t.Parallel()
+
+	rect := Rect{Min: Point{X: 10, Y: 20}, Max: Point{X: 30, Y: 50}}
+
+	tests := []struct {
+		name      string
+		xFraction float64
+		yFraction float64
+		want      Point
+	}{
+		{name: "minimum corner", xFraction: 0, yFraction: 0, want: rect.Min},
+		{name: "centre", xFraction: 0.5, yFraction: 0.5, want: Point{X: 20, Y: 35}},
+		{name: "maximum corner", xFraction: 1, yFraction: 1, want: rect.Max},
+		{name: "outside rectangle", xFraction: -0.5, yFraction: 2, want: Point{X: 0, Y: 80}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+
+			g.Expect(rect.PointAt(tt.xFraction, tt.yFraction)).To(Equal(tt.want))
+		})
+	}
+}
+
 func TestRectContains(t *testing.T) {
 	t.Parallel()
 
@@ -346,6 +373,7 @@ func TestRectMethodsDoNotMutateReceiver(t *testing.T) {
 	_ = original.Height()
 	_ = original.Size()
 	_ = original.Center()
+	_ = original.PointAt(0.5, 0.5)
 	_ = original.Contains(Point{X: 20, Y: 35})
 	_ = original.Translate(Vector{X: 1, Y: 1})
 	_, _ = original.Inset(1)

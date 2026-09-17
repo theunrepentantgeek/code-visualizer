@@ -34,6 +34,15 @@ func (r Rect) Height() float64 { return r.Max.Y - r.Min.Y }
 func (r Rect) Size() Size      { return Size{Width: r.Width(), Height: r.Height()} }
 func (r Rect) Center() Point   { return Midpoint(r.Min, r.Max) }
 
+// PointAt returns the point at the given fractions across and down the
+// rectangle. Fractions outside [0,1] produce points outside the rectangle.
+func (r Rect) PointAt(xFraction, yFraction float64) Point {
+	return Point{
+		X: r.Min.X + xFraction*r.Width(),
+		Y: r.Min.Y + yFraction*r.Height(),
+	}
+}
+
 func (r Rect) Contains(point Point) bool {
 	return r.Valid() && point.Valid() &&
 		point.X >= r.Min.X && point.X <= r.Max.X &&

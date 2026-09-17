@@ -70,15 +70,9 @@ func resolveDirectoryMetric(spec *config.MetricSpec, fallback metric.Name) metri
 		return ""
 	}
 
-	var aggregation metric.AggregationName
-
-	switch desc.Kind {
-	case metric.Quantity:
-		aggregation = metric.AggSum
-	case metric.Measure:
-		aggregation = metric.AggMean
-	default:
-		aggregation = metric.AggMode
+	aggregation, ok := desc.Kind.DefaultAggregation()
+	if !ok {
+		return ""
 	}
 
 	expression := metric.MetricExpression{Filter: expr.Filter, Base: expr.Base, Aggregation: aggregation}

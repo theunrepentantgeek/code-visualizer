@@ -224,5 +224,5 @@ func placeFallback(circles []BubbleNode, i int) {
 
 	angle := float64(i) * goldenAngle
 	r := maxDist + circles[i].Geometry.Radius + siblingPadding
-	circles[i].Geometry.Center = geometry.NewPoint(r*math.Cos(angle), r*math.Sin(angle))
+	circles[i].Geometry.Center = geometry.OriginPoint.Translate(geometry.NewRadialVector(angle, r))
 }

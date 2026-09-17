@@ -56,24 +56,22 @@ func TestLayoutStage_ReservesLegendSpace(t *testing.T) {
 
 			g.Expect(LayoutStage(common, viz)).To(Succeed())
 
-			reserved := cfg.ReserveSpace()
-			layoutW, layoutH := legend.ReserveAndLayout(cfg, common.Width, common.Height)
-			dx, dy := legend.LayoutOffset(cfg, reserved)
+			reservation := legend.ReserveLayout(cfg, common.Width, common.Height)
 			box := contentBoundsForTest(viz.Nodes)
 
 			if tt.startOnX {
-				g.Expect(box.Min.X).To(BeNumerically(">=", dx-1.0), tt.startMessage)
-				g.Expect(box.Max.X).To(BeNumerically("<=", dx+float64(layoutW)+1.0))
-				g.Expect(box.Min.Y).To(BeNumerically(">=", dy-1.0))
-				g.Expect(box.Max.Y).To(BeNumerically("<=", dy+float64(layoutH)+1.0))
+				g.Expect(box.Min.X).To(BeNumerically(">=", reservation.Offset.X-1.0), tt.startMessage)
+				g.Expect(box.Max.X).To(BeNumerically("<=", reservation.Offset.X+float64(reservation.Width)+1.0))
+				g.Expect(box.Min.Y).To(BeNumerically(">=", reservation.Offset.Y-1.0))
+				g.Expect(box.Max.Y).To(BeNumerically("<=", reservation.Offset.Y+float64(reservation.Height)+1.0))
 
 				return
 			}
 
-			g.Expect(box.Min.Y).To(BeNumerically(">=", dy-1.0), tt.startMessage)
-			g.Expect(box.Max.Y).To(BeNumerically("<=", dy+float64(layoutH)+1.0))
-			g.Expect(box.Min.X).To(BeNumerically(">=", dx-1.0))
-			g.Expect(box.Max.X).To(BeNumerically("<=", dx+float64(layoutW)+1.0))
+			g.Expect(box.Min.Y).To(BeNumerically(">=", reservation.Offset.Y-1.0), tt.startMessage)
+			g.Expect(box.Max.Y).To(BeNumerically("<=", reservation.Offset.Y+float64(reservation.Height)+1.0))
+			g.Expect(box.Min.X).To(BeNumerically(">=", reservation.Offset.X-1.0))
+			g.Expect(box.Max.X).To(BeNumerically("<=", reservation.Offset.X+float64(reservation.Width)+1.0))
 		})
 	}
 }

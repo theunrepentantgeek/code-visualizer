@@ -73,22 +73,12 @@ func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) erro
 func LayoutStage(c *stages.CommonState, t *State) error {
 	bounds := c.DrawingBounds
 	availH := int(bounds.Height())
-	layoutW, layoutH := legend.ReserveAndLayout(t.LegendConfig, c.Width, availH)
+	reservation := legend.ReserveLayout(t.LegendConfig, c.Width, availH)
 
-	rect := Layout(c.Root, layoutW, layoutH, t.Size)
+	rect := Layout(c.Root, reservation.Width, reservation.Height, t.Size)
 
-	dx, dy := float64(0), bounds.Min.Y
-
-	if layoutW < c.Width || layoutH < availH {
-		if t.LegendConfig != nil {
-			reserved := t.LegendConfig.ReserveSpace()
-			ldx, ldy := legend.LayoutOffset(t.LegendConfig, reserved)
-			dx += ldx
-			dy += ldy
-		}
-	}
-
-	OffsetRects(&rect, geometry.NewVector(dx, dy))
+	offset := reservation.Offset.Add(geometry.NewVector(0, bounds.Min.Y))
+	OffsetRects(&rect, offset)
 	t.Root = rect
 
 	return nil
