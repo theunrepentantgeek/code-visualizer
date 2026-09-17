@@ -6,11 +6,13 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func makeRadialFile(name, ext string, size int64) *model.File {
@@ -19,6 +21,10 @@ func makeRadialFile(name, ext string, size int64) *model.File {
 	f.SetClassification(filesystem.FileType, ext)
 
 	return f
+}
+
+func radialEncoding(name metric.Name, pal palette.PaletteName) viz.ColourEncoding {
+	return viz.ColourEncoding{Metric: name, Palette: pal}
 }
 
 func TestBuildRadialInks_DefaultColours(t *testing.T) {
@@ -30,7 +36,7 @@ func TestBuildRadialInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeRadialFile("a.go", "go", 100)},
 	}
 
-	is := radialtree.BuildInks(root, stages.RequestedMetrics{}, "", "", "", "")
+	is := radialtree.BuildInks(root, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindFixed))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -48,7 +54,11 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 		},
 	}
 
-	is := radialtree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	is := radialtree.BuildInks(
+		root, stages.RequestedMetrics{},
+		radialEncoding(filesystem.FileSize, palette.Temperature),
+		viz.ColourEncoding{},
+	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -66,7 +76,11 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 		},
 	}
 
-	is := radialtree.BuildInks(root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "")
+	is := radialtree.BuildInks(
+		root, stages.RequestedMetrics{},
+		radialEncoding(filesystem.FileType, palette.Categorization),
+		viz.ColourEncoding{},
+	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -86,8 +100,8 @@ func TestBuildRadialInks_BorderMetric(t *testing.T) {
 
 	is := radialtree.BuildInks(
 		root, stages.RequestedMetrics{},
-		filesystem.FileSize, palette.Temperature,
-		filesystem.FileType, palette.Categorization,
+		radialEncoding(filesystem.FileSize, palette.Temperature),
+		radialEncoding(filesystem.FileType, palette.Categorization),
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
@@ -108,8 +122,8 @@ func TestBuildRadialInks_NumericBorder(t *testing.T) {
 
 	is := radialtree.BuildInks(
 		root, stages.RequestedMetrics{},
-		filesystem.FileSize, palette.Temperature,
-		filesystem.FileSize, palette.Temperature,
+		radialEncoding(filesystem.FileSize, palette.Temperature),
+		radialEncoding(filesystem.FileSize, palette.Temperature),
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))

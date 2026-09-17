@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 var (
@@ -31,24 +32,22 @@ type Inks struct {
 func BuildInks(
 	dataset Dataset,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
+	fill viz.ColourEncoding,
+	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
 		ShapeInks: inks.ShapeInks{
-			Fill:   buildMetricInk(dataset.metricSources(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
+			Fill:   buildMetricInk(dataset.metricSources(), requested, fill.Metric, fill.Palette, scatterDefaultFill),
 			Border: inks.FixedInk(scatterDefaultBorder),
 		},
 	}
 
-	if borderMetric != "" {
+	if border.IsSet() {
 		is.Border = buildMetricInk(
 			dataset.metricSources(),
 			requested,
-			borderMetric,
-			borderPaletteName,
+			border.Metric,
+			border.Palette,
 			scatterDefaultBorder,
 		)
 		is.HasBorderMetric = true

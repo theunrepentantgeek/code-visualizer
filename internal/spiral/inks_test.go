@@ -12,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestMain(m *testing.M) {
@@ -62,10 +63,8 @@ func TestBuildInks_Numeric(t *testing.T) {
 	is := spiral.BuildInks(
 		buckets,
 		stages.RequestedMetrics{},
-		filesystem.FileSize,
-		palette.Temperature,
-		"",
-		"",
+		viz.ColourEncoding{Metric: filesystem.FileSize, Palette: palette.Temperature},
+		viz.ColourEncoding{},
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
@@ -80,10 +79,8 @@ func TestBuildInks_Categorical(t *testing.T) {
 	is := spiral.BuildInks(
 		buckets,
 		stages.RequestedMetrics{},
-		filesystem.FileType,
-		palette.Categorization,
-		"",
-		"",
+		viz.ColourEncoding{Metric: filesystem.FileType, Palette: palette.Categorization},
+		viz.ColourEncoding{},
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
@@ -94,7 +91,7 @@ func TestBuildInks_NoMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	is := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
+	is := spiral.BuildInks(buckets, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindFixed))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))

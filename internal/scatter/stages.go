@@ -188,7 +188,7 @@ func BuildInksStage(c *stages.CommonState, x *State) error {
 		return err
 	}
 
-	x.Inks = BuildInks(x.Dataset, c.Requested, x.Fill.Metric, x.Fill.Palette, x.Border.Metric, x.Border.Palette)
+	x.Inks = BuildInks(x.Dataset, c.Requested, x.Fill, x.Border)
 
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 

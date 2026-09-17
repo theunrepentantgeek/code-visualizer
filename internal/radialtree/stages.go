@@ -117,7 +117,7 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
-	r.Inks = BuildInks(c.Root, c.Requested, r.Fill.Metric, r.Fill.Palette, r.Border.Metric, r.Border.Palette)
+	r.Inks = BuildInks(c.Root, c.Requested, r.Fill, r.Border)
 	r.Inks.DirectoryFill, r.Inks.DirectoryBorder = buildDirectoryInks(
 		c.Root,
 		c.Requested,

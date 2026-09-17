@@ -29,6 +29,22 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
+func buildTestInks(
+	root *model.Directory,
+	requested stages.RequestedMetrics,
+	fillMetric metric.Name,
+	fillPalette palette.PaletteName,
+	borderMetric metric.Name,
+	borderPalette palette.PaletteName,
+) Inks {
+	return BuildInks(
+		root,
+		requested,
+		viz.ColourEncoding{Metric: fillMetric, Palette: fillPalette},
+		viz.ColourEncoding{Metric: borderMetric, Palette: borderPalette},
+	)
+}
+
 func donutDirectory(name string, lines int64) *model.Directory {
 	dir := &model.Directory{Name: name}
 	dir.SetQuantity(filesystem.FileLines, lines)
@@ -86,7 +102,7 @@ func TestRenderToCanvas_RendersOneSectorPerDirectoryAndOneRootAnchor(t *testing.
 	g := NewGomegaWithT(t)
 	root := donutRoot()
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
 
 	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{Size: filesystem.FileLines}))
 
@@ -100,7 +116,7 @@ func TestRenderToCanvas_UsesNarrowedRingGeometryForSectorsAndLabels(t *testing.T
 	g := NewGomegaWithT(t)
 	root := donutRoot()
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
 
 	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{}))
 	polygons := callsNamed(calls, "DrawPolygon")
@@ -196,7 +212,7 @@ func TestRenderToCanvas_OmitsBorderPolygonsUnlessConfigured(t *testing.T) {
 
 	polygons := callsNamed(renderCalls(t, RenderToCanvas(
 		layout, root, 600, 600,
-		BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", ""),
+		buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", ""),
 		LabelMetrics{Size: filesystem.FileLines},
 	)), "DrawPolygon")
 
@@ -221,7 +237,7 @@ func TestRenderToCanvas_InsetsMetricBordersInsideAdjacentSectors(t *testing.T) {
 	right.SetQuantity(borderMetric, 2)
 
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := BuildInks(
+	is := buildTestInks(
 		root,
 		stages.CollectRequestedMetrics(borderMetric),
 		filesystem.FileLines,
@@ -432,7 +448,7 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	root.Dirs[0].SetQuantity(borderMetric, 2)
 	root.Dirs[0].Dirs[0].SetQuantity(borderMetric, 3)
 	layout := Layout(root, width, filesystem.FileLines)
-	is := BuildInks(
+	is := buildTestInks(
 		root,
 		stages.CollectRequestedMetrics(borderMetric),
 		filesystem.FileLines,

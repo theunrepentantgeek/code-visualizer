@@ -18,12 +18,29 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
+
+func buildTestInks(
+	root *model.Directory,
+	requested stages.RequestedMetrics,
+	fillMetric metric.Name,
+	fillPalette palette.PaletteName,
+	borderMetric metric.Name,
+	borderPalette palette.PaletteName,
+) Inks {
+	return BuildInks(
+		root,
+		requested,
+		viz.ColourEncoding{Metric: fillMetric, Palette: fillPalette},
+		viz.ColourEncoding{Metric: borderMetric, Palette: borderPalette},
+	)
+}
 
 func radialTestFile(name, ext string, size int64) *model.File {
 	f := &model.File{Name: name, Extension: ext}
@@ -45,7 +62,7 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 		},
 	}
 
-	is := BuildInks(
+	is := buildTestInks(
 		root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "",
 	)
 
@@ -65,7 +82,7 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 		},
 	}
 
-	is := BuildInks(
+	is := buildTestInks(
 		root, stages.RequestedMetrics{}, filesystem.FileType, palette.Categorization, "", "",
 	)
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
@@ -83,7 +100,7 @@ func TestBuildRadialInks_WithBorder(t *testing.T) {
 		},
 	}
 
-	is := BuildInks(
+	is := buildTestInks(
 		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,
@@ -110,7 +127,7 @@ func TestRenderRadialToCanvas_PNG(t *testing.T) {
 
 	root := radialTestRoot()
 	nodes := Layout(root, 800, filesystem.FileSize, "", LabelNone, GrainFile)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
 	out := filepath.Join(t.TempDir(), "radial.png")
@@ -133,7 +150,7 @@ func TestRenderRadialToCanvas_SVG(t *testing.T) {
 
 	root := radialTestRoot()
 	nodes := Layout(root, 400, filesystem.FileSize, "", LabelNone, GrainFile)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
 	out := filepath.Join(t.TempDir(), "radial.svg")
@@ -184,7 +201,7 @@ func TestRenderRadialToCanvas_NestedDirs(t *testing.T) {
 	}
 
 	nodes := Layout(root, 800, filesystem.FileSize, "", LabelAll, GrainFile)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 800, 800, 400.0, 400.0, is)
 
 	out := filepath.Join(t.TempDir(), "nested.png")
@@ -206,7 +223,7 @@ func TestRenderRadialToCanvas_EmptyDir(t *testing.T) {
 	root := &model.Directory{Name: "empty"}
 
 	nodes := Layout(root, 400, filesystem.FileSize, "", LabelNone, GrainFile)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
 	cv := RenderToCanvas(&nodes, root, 400, 400, 200.0, 200.0, is)
 
 	out := filepath.Join(t.TempDir(), "empty.png")
@@ -322,7 +339,7 @@ func TestRenderRadialToCanvas_DirectoryUsesDirectoryInks(t *testing.T) {
 		},
 	}
 
-	is := BuildInks(
+	is := buildTestInks(
 		root, stages.RequestedMetrics{},
 		filesystem.FileSize, palette.Temperature,
 		filesystem.FileSize, palette.Temperature,

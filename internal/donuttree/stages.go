@@ -105,10 +105,8 @@ func BuildInksStage(c *stages.CommonState, d *State) error {
 	d.Inks = BuildInks(
 		c.Root,
 		c.Requested,
-		d.Fill.Metric,
-		d.Fill.Palette,
-		d.Border.Metric,
-		d.Border.Palette,
+		d.Fill,
+		d.Border,
 	)
 
 	return nil

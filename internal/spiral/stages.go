@@ -102,7 +102,7 @@ func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
 
 // BuildInksStage builds spiral inks and emits the Rendering image log line.
 func BuildInksStage(c *stages.CommonState, p *State) error {
-	p.Inks = BuildInks(p.Buckets, c.Requested, p.Fill.Metric, p.Fill.Palette, p.Border.Metric, p.Border.Palette)
+	p.Inks = BuildInks(p.Buckets, c.Requested, p.Fill, p.Border)
 
 	p.SurfaceInk = nil
 	if p.SurfaceEnabled {

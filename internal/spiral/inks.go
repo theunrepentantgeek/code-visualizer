@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 var (
@@ -22,28 +23,26 @@ type Inks = inks.ShapeInks
 func BuildInks(
 	buckets []TimeBucket,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
+	fill viz.ColourEncoding,
+	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
 		Fill:   inks.FixedInk(defaultFill),
 		Border: inks.FixedInk(defaultBorder),
 	}
 
-	if fillMetric != "" {
+	if fill.IsSet() {
 		is.Fill = buildBucketInk(
-			buckets, requested, fillMetric, fillPaletteName,
+			buckets, requested, fill.Metric, fill.Palette,
 			func(b *TimeBucket) float64 { return b.FillValue },
 			func(b *TimeBucket) string { return b.FillLabel },
 			defaultFill,
 		)
 	}
 
-	if borderMetric != "" {
+	if border.IsSet() {
 		is.Border = buildBucketInk(
-			buckets, requested, borderMetric, borderPaletteName,
+			buckets, requested, border.Metric, border.Palette,
 			func(b *TimeBucket) float64 { return b.BorderValue },
 			func(b *TimeBucket) string { return b.BorderLabel },
 			defaultBorder,
