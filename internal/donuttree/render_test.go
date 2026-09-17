@@ -32,15 +32,13 @@ import (
 func buildTestInks(
 	root *model.Directory,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPalette palette.PaletteName,
 	borderMetric metric.Name,
 	borderPalette palette.PaletteName,
 ) Inks {
 	return BuildInks(
 		root,
 		requested,
-		viz.ColourEncoding{Metric: fillMetric, Palette: fillPalette},
+		viz.ColourEncoding{Metric: filesystem.FileLines, Palette: palette.Neutral},
 		viz.ColourEncoding{Metric: borderMetric, Palette: borderPalette},
 	)
 }
@@ -102,7 +100,7 @@ func TestRenderToCanvas_RendersOneSectorPerDirectoryAndOneRootAnchor(t *testing.
 	g := NewGomegaWithT(t)
 	root := donutRoot()
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, "", "")
 
 	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{Size: filesystem.FileLines}))
 
@@ -116,7 +114,7 @@ func TestRenderToCanvas_UsesNarrowedRingGeometryForSectorsAndLabels(t *testing.T
 	g := NewGomegaWithT(t)
 	root := donutRoot()
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, "", "")
 
 	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{}))
 	polygons := callsNamed(calls, "DrawPolygon")
@@ -212,7 +210,7 @@ func TestRenderToCanvas_OmitsBorderPolygonsUnlessConfigured(t *testing.T) {
 
 	polygons := callsNamed(renderCalls(t, RenderToCanvas(
 		layout, root, 600, 600,
-		buildTestInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", ""),
+		buildTestInks(root, stages.RequestedMetrics{}, "", ""),
 		LabelMetrics{Size: filesystem.FileLines},
 	)), "DrawPolygon")
 
@@ -240,8 +238,6 @@ func TestRenderToCanvas_InsetsMetricBordersInsideAdjacentSectors(t *testing.T) {
 	is := buildTestInks(
 		root,
 		stages.CollectRequestedMetrics(borderMetric),
-		filesystem.FileLines,
-		palette.Neutral,
 		borderMetric,
 		palette.GoodBad,
 	)
@@ -451,8 +447,6 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	is := buildTestInks(
 		root,
 		stages.CollectRequestedMetrics(borderMetric),
-		filesystem.FileLines,
-		palette.Neutral,
 		borderMetric,
 		palette.GoodBad,
 	)

@@ -15,7 +15,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	vizmodel "github.com/theunrepentantgeek/code-visualizer/internal/viz"
-	vizpkg "github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestResolveMetrics_FillDefaultsToSize(t *testing.T) {
@@ -57,7 +56,7 @@ func TestResolveMetrics_GrainDefaultsToFile(t *testing.T) {
 	err := scatter.ResolveMetrics(common, vizState, cfg)
 
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(vizState.Grain).To(Equal(vizpkg.GrainFile))
+	g.Expect(vizState.Grain).To(Equal(vizmodel.GrainFile))
 }
 
 func TestResolveMetrics_DirectoryGrainResolvesAggregations(t *testing.T) {
@@ -75,7 +74,7 @@ func TestResolveMetrics_DirectoryGrainResolvesAggregations(t *testing.T) {
 	err := scatter.ResolveMetrics(common, vizState, cfg)
 
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(vizState.Grain).To(Equal(vizpkg.GrainDirectory))
+	g.Expect(vizState.Grain).To(Equal(vizmodel.GrainDirectory))
 	g.Expect(vizState.XAxis.Kind).To(Equal(metric.Quantity))
 	g.Expect(common.Requested.Expressions).To(HaveLen(2))
 }

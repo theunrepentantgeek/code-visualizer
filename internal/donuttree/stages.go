@@ -37,8 +37,7 @@ func ResolveMetrics(c *stages.CommonState, d *State, cfg *config.DonutTree) erro
 	d.Fill = viz.ColourEncoding{Metric: fillMetric, Palette: stages.ResolveFillPalette(cfg.Fill, fillMetric)}
 
 	if borderBase := cfg.Border.MetricName(); borderBase != "" {
-		borderMetric, resolveErr := resolveDirectoryMetric(borderBase)
-		err = resolveErr
+		borderMetric, err := resolveDirectoryMetric(borderBase)
 		if err != nil {
 			return eris.Wrap(err, "invalid border metric")
 		}

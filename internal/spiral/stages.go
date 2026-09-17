@@ -22,12 +22,16 @@ import (
 func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	p.Size = metric.Name(stages.PtrString(cfg.Size))
 	p.Fill = stages.ResolveColourEncoding(cfg.Fill, "")
+
 	if !p.Fill.IsSet() {
 		p.Fill.Palette = stages.ResolveFillPalette(cfg.Fill, "")
 	}
+
 	p.Border = stages.ResolveColourEncoding(cfg.Border, "")
 	p.SurfaceEnabled = cfg.SurfaceEnabled()
+
 	p.Surface = viz.ColourEncoding{}
+
 	if p.SurfaceEnabled {
 		if cfg.SurfaceMetric != nil && !cfg.SurfaceMetric.IsZero() {
 			p.Surface = stages.ResolveColourEncoding(cfg.SurfaceMetric, "")
