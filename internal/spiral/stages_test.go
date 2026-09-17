@@ -33,6 +33,7 @@ func TestResolveMetrics_SizeOnly(t *testing.T) {
 	// Spiral does not fall back FillMetric to Size; without an explicit Fill
 	// the spiral renders without a fill metric.
 	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("")))
+	g.Expect(viz.Fill.Palette).To(Equal(palette.Neutral))
 	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
