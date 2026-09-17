@@ -17,37 +17,33 @@ import (
 // fills c.Requested.
 func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 	r.DiscSize = metric.Name(stages.PtrString(cfg.FileDiscSize))
-	directoryDiscSize := &config.MetricSpec{Metric: metric.Name(stages.PtrString(cfg.DirectoryDiscSize))}
-	r.DirectoryDiscSize = resolveDirectoryMetric(directoryDiscSize, r.DiscSize)
+	r.DirectoryDiscSize = resolveDirectoryMetric(
+		metric.Name(stages.PtrString(cfg.DirectoryDiscSize)),
+		r.DiscSize,
+	)
 	r.Fill = stages.ResolveColourEncoding(cfg.FileFill, r.DiscSize)
 	r.Border = stages.ResolveColourEncoding(cfg.FileBorder, "")
-	directoryFillMetric := resolveDirectoryMetric(cfg.DirectoryFill, r.Fill.Metric)
-	r.DirectoryFill = stages.ResolveColourEncoding(
-		directoryMetricSpec(cfg.DirectoryFill, directoryFillMetric),
-		"",
-	)
-	directoryBorderMetric := resolveDirectoryMetric(cfg.DirectoryBorder, r.Border.Metric)
-	r.DirectoryBorder = stages.ResolveColourEncoding(
-		directoryMetricSpec(cfg.DirectoryBorder, directoryBorderMetric),
-		"",
-	)
+	directoryFillMetric := resolveDirectoryMetric(cfg.DirectoryFill.MetricName(), r.Fill.Metric)
+	r.DirectoryFill = stages.ResolveColourEncoding(cfg.DirectoryFill, directoryFillMetric)
+	directoryBorderMetric := resolveDirectoryMetric(cfg.DirectoryBorder.MetricName(), r.Border.Metric)
+	r.DirectoryBorder = stages.ResolveColourEncoding(cfg.DirectoryBorder, directoryBorderMetric)
 	r.Labels = resolveLabels(cfg)
 	r.Grain = resolveGrain(cfg)
 
-	c.Requested = stages.CollectRequestedMetrics(
+	c.Requested = stages.CollectRequestedMetricNames(
 		r.DiscSize,
-		cfg.FileFill,
-		cfg.FileBorder,
-		directoryMetricSpec(directoryDiscSize, r.DirectoryDiscSize),
-		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFill.Metric),
-		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorder.Metric),
+		r.Fill.Metric,
+		r.Border.Metric,
+		r.DirectoryDiscSize,
+		r.DirectoryFill.Metric,
+		r.DirectoryBorder.Metric,
 	)
 
 	return nil
 }
 
-func resolveDirectoryMetric(spec *config.MetricSpec, fallback metric.Name) metric.Name {
-	if name := spec.MetricName(); name != "" {
+func resolveDirectoryMetric(name, fallback metric.Name) metric.Name {
+	if name != "" {
 		return name
 	}
 
@@ -78,14 +74,6 @@ func resolveDirectoryMetric(spec *config.MetricSpec, fallback metric.Name) metri
 	}
 
 	return expression.ResultName()
-}
-
-func directoryMetricSpec(spec *config.MetricSpec, fallback metric.Name) *config.MetricSpec {
-	if spec.MetricName() != "" || fallback == "" {
-		return spec
-	}
-
-	return &config.MetricSpec{Metric: fallback}
 }
 
 func resolveLabels(cfg *config.Radial) LabelMode {

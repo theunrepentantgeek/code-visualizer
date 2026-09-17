@@ -24,6 +24,22 @@ func CollectRequestedMetrics(size metric.Name, specs ...*config.MetricSpec) Requ
 	return ClassifyRequestedMetrics(names, metric.LevelDirectory)
 }
 
+// CollectRequestedMetricNames returns the directory-level requested metrics
+// implied by already-resolved metric names.
+func CollectRequestedMetricNames(names ...metric.Name) RequestedMetrics {
+	seen := make(map[metric.Name]bool, len(names))
+	distinct := make([]metric.Name, 0, len(names))
+
+	for _, name := range names {
+		if name != "" && !seen[name] {
+			seen[name] = true
+			distinct = append(distinct, name)
+		}
+	}
+
+	return ClassifyRequestedMetrics(distinct, metric.LevelDirectory)
+}
+
 // ResolveColourEncoding returns the effective metric and palette for a colour
 // channel. The fallback metric is used when the config does not select one.
 func ResolveColourEncoding(spec *config.MetricSpec, fallback metric.Name) viz.ColourEncoding {

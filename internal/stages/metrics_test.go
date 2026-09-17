@@ -79,6 +79,20 @@ func TestCollectRequestedMetrics_AllThreeDistinct(t *testing.T) {
 	))
 }
 
+func TestCollectRequestedMetricNames_DuplicatesAndEmptyNames_ReturnsDistinctMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	names := []metric.Name{"file-size", "", "file-size", "file-type"}
+
+	// Act
+	got := stages.CollectRequestedMetricNames(names...)
+
+	// Assert
+	g.Expect(got.BaseMetrics).To(ConsistOf(metric.Name("file-size"), metric.Name("file-type")))
+}
+
 // ---------------------------------------------------------------------------
 // ResolveColourEncoding
 // ---------------------------------------------------------------------------

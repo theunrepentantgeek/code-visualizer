@@ -48,10 +48,10 @@ func ResolveMetrics(c *stages.CommonState, d *State, cfg *config.DonutTree) erro
 		}
 	}
 
-	c.Requested = stages.CollectRequestedMetrics(
+	c.Requested = stages.CollectRequestedMetricNames(
 		d.SizeMetric,
-		effectiveMetricSpec(cfg.Fill, d.Fill.Metric),
-		effectiveMetricSpec(cfg.Border, d.Border.Metric),
+		d.Fill.Metric,
+		d.Border.Metric,
 	)
 
 	return nil
@@ -88,14 +88,6 @@ func aggregationForKind(kind metric.Kind) metric.AggregationName {
 	default:
 		return metric.AggMode
 	}
-}
-
-func effectiveMetricSpec(spec *config.MetricSpec, name metric.Name) *config.MetricSpec {
-	if name == "" {
-		return nil
-	}
-
-	return &config.MetricSpec{Metric: name, Palette: spec.PaletteName()}
 }
 
 // BuildInksStage builds the donut tree's directory inks.
