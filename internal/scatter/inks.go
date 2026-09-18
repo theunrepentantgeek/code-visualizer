@@ -37,7 +37,7 @@ func BuildInks(
 ) Inks {
 	is := Inks{
 		ShapeInks: inks.ShapeInks{
-			Fill:   buildMetricInk(dataset.metricSources(), requested, fill.Metric, fill.Palette, scatterDefaultFill),
+			Fill:   buildMetricInk(dataset.metricSources(), requested, fill, scatterDefaultFill),
 			Border: inks.FixedInk(scatterDefaultBorder),
 		},
 	}
@@ -46,8 +46,7 @@ func BuildInks(
 		is.Border = buildMetricInk(
 			dataset.metricSources(),
 			requested,
-			border.Metric,
-			border.Palette,
+			border,
 			scatterDefaultBorder,
 		)
 		is.HasBorderMetric = true
@@ -59,26 +58,25 @@ func BuildInks(
 func buildMetricInk[T metricSource](
 	sources []T,
 	requested stages.RequestedMetrics,
-	name metric.Name,
-	paletteName palette.PaletteName,
+	encoding viz.ColourEncoding,
 	fallback color.RGBA,
 ) inks.Ink {
-	if name == "" {
+	if !encoding.IsSet() {
 		return inks.FixedInk(fallback)
 	}
 
-	descriptor, ok := requested.DescriptorFor(name)
+	descriptor, ok := requested.DescriptorFor(encoding.Metric)
 	if !ok {
 		return inks.FixedInk(fallback)
 	}
 
-	pal := palette.GetPalette(paletteName)
+	pal := palette.GetPalette(encoding.Palette)
 
 	if descriptor.Kind == metric.Quantity || descriptor.Kind == metric.Measure {
-		return buildNumericInk(sources, name, pal, fallback)
+		return buildNumericInk(sources, encoding.Metric, pal, fallback)
 	}
 
-	return buildCategoricalInk(sources, name, pal, fallback)
+	return buildCategoricalInk(sources, encoding.Metric, pal, fallback)
 }
 
 func buildNumericInk[T metricSource](
