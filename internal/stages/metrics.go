@@ -48,6 +48,12 @@ func ResolveColourEncoding(spec *config.MetricSpec, fallback metric.Name) viz.Co
 		name = fallback
 	}
 
+	return ResolveColourEncodingForMetric(spec, name)
+}
+
+// ResolveColourEncodingForMetric returns the effective palette for a
+// pre-resolved colour metric.
+func ResolveColourEncodingForMetric(spec *config.MetricSpec, name metric.Name) viz.ColourEncoding {
 	if name == "" {
 		return viz.ColourEncoding{}
 	}

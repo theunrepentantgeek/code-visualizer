@@ -12,7 +12,6 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
-	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // ResolveMetrics resolves directory aggregation expressions and palettes.
@@ -34,7 +33,7 @@ func ResolveMetrics(c *stages.CommonState, d *State, cfg *config.DonutTree) erro
 		return eris.Wrap(err, "invalid fill metric")
 	}
 
-	d.Fill = viz.ColourEncoding{Metric: fillMetric, Palette: stages.ResolveFillPalette(cfg.Fill, fillMetric)}
+	d.Fill = stages.ResolveColourEncodingForMetric(cfg.Fill, fillMetric)
 
 	if borderBase := cfg.Border.MetricName(); borderBase != "" {
 		borderMetric, err := resolveDirectoryMetric(borderBase)
@@ -42,9 +41,7 @@ func ResolveMetrics(c *stages.CommonState, d *State, cfg *config.DonutTree) erro
 			return eris.Wrap(err, "invalid border metric")
 		}
 
-		d.Border = viz.ColourEncoding{
-			Metric: borderMetric, Palette: stages.ResolveFillPalette(cfg.Border, borderMetric),
-		}
+		d.Border = stages.ResolveColourEncodingForMetric(cfg.Border, borderMetric)
 	}
 
 	c.Requested = stages.CollectRequestedMetricNames(
