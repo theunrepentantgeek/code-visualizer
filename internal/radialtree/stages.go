@@ -8,9 +8,9 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // ResolveMetrics resolves disc-size, fill, and border metrics + palettes and
@@ -103,10 +103,8 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 	r.Inks.DirectoryFill, r.Inks.DirectoryBorder = buildDirectoryInks(
 		c.Root,
 		c.Requested,
-		r.DirectoryFill.Metric,
-		r.DirectoryFill.Palette,
-		r.DirectoryBorder.Metric,
-		r.DirectoryBorder.Palette,
+		r.DirectoryFill,
+		r.DirectoryBorder,
 	)
 
 	return nil
@@ -115,16 +113,14 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 func buildDirectoryInks(
 	root *model.Directory,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPalette palette.PaletteName,
-	borderMetric metric.Name,
-	borderPalette palette.PaletteName,
+	fillEncoding viz.ColourEncoding,
+	borderEncoding viz.ColourEncoding,
 ) (fill inks.Ink, border inks.Ink) {
-	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	fill = inks.BuildDirectoryMetricInk(root, fillDesc, fillPalette, defaultDirFill)
+	fillDesc, _ := requested.DescriptorFor(fillEncoding.Metric)
+	fill = inks.BuildDirectoryMetricInk(root, fillDesc, fillEncoding.Palette, defaultDirFill)
 
-	borderDesc, _ := requested.DescriptorFor(borderMetric)
-	border = inks.BuildDirectoryMetricInk(root, borderDesc, borderPalette, defaultBorder)
+	borderDesc, _ := requested.DescriptorFor(borderEncoding.Metric)
+	border = inks.BuildDirectoryMetricInk(root, borderDesc, borderEncoding.Palette, defaultBorder)
 
 	return fill, border
 }
