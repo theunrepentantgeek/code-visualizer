@@ -33,7 +33,7 @@ func BuildInks(
 
 	if fill.IsSet() {
 		is.Fill = buildBucketInk(
-			buckets, requested, fill.Metric, fill.Palette,
+			buckets, requested, fill,
 			func(b *TimeBucket) float64 { return b.FillValue },
 			func(b *TimeBucket) string { return b.FillLabel },
 			defaultFill,
@@ -42,7 +42,7 @@ func BuildInks(
 
 	if border.IsSet() {
 		is.Border = buildBucketInk(
-			buckets, requested, border.Metric, border.Palette,
+			buckets, requested, border,
 			func(b *TimeBucket) float64 { return b.BorderValue },
 			func(b *TimeBucket) string { return b.BorderLabel },
 			defaultBorder,
@@ -58,18 +58,17 @@ func BuildInks(
 func buildBucketInk(
 	buckets []TimeBucket,
 	requested stages.RequestedMetrics,
-	m metric.Name,
-	palName palette.PaletteName,
+	encoding viz.ColourEncoding,
 	numericFn func(*TimeBucket) float64,
 	categoryFn func(*TimeBucket) string,
 	fallback color.RGBA,
 ) inks.Ink {
-	d, ok := requested.DescriptorFor(m)
+	d, ok := requested.DescriptorFor(encoding.Metric)
 	if !ok {
 		return inks.FixedInk(fallback)
 	}
 
-	pal := palette.GetPalette(palName)
+	pal := palette.GetPalette(encoding.Palette)
 
 	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
 		values := make([]float64, len(buckets))
@@ -77,7 +76,7 @@ func buildBucketInk(
 			values[i] = numericFn(&buckets[i])
 		}
 
-		return inks.NumericInk(m, values, pal)
+		return inks.NumericInk(encoding.Metric, values, pal)
 	}
 
 	seen := map[string]bool{}
@@ -92,5 +91,5 @@ func buildBucketInk(
 		}
 	}
 
-	return inks.CategoricalInk(m, categories, pal)
+	return inks.CategoricalInk(encoding.Metric, categories, pal)
 }
