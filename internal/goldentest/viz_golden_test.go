@@ -282,7 +282,9 @@ func runVizGolden(t *testing.T, name string, render func(*stages.CommonState) er
 			out := filepath.Join(t.TempDir(), "out."+ext)
 			data := runViz(t, out, render)
 
-			g := goldie.New(t)
+			g := goldie.New(t, goldie.WithDiffFn(func(_, _ string) string {
+				return "binary content differs"
+			}))
 			g.Assert(t, name+"-"+ext, data)
 		})
 	}
