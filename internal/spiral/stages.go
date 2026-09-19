@@ -30,7 +30,7 @@ func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	p.Border = stages.ResolveColourEncoding(cfg.Border, "")
 	p.SurfaceEnabled = cfg.SurfaceEnabled()
 
-	p.Surface = viz.ColourEncoding{}
+	p.Surface = viz.NoColourEncoding
 
 	if p.SurfaceEnabled {
 		if cfg.SurfaceMetric != nil && !cfg.SurfaceMetric.IsZero() {

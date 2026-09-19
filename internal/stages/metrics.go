@@ -55,7 +55,7 @@ func ResolveColourEncoding(spec *config.MetricSpec, fallback metric.Name) viz.Co
 // pre-resolved colour metric.
 func ResolveColourEncodingForMetric(spec *config.MetricSpec, name metric.Name) viz.ColourEncoding {
 	if name == "" {
-		return viz.ColourEncoding{}
+		return viz.NoColourEncoding
 	}
 
 	return viz.ColourEncoding{
