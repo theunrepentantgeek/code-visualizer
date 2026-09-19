@@ -11,7 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 )
 
-func TestAlluvialCmd_Run_ReportsUnavailablePipeline(t *testing.T) {
+func TestAlluvialCmd_Run_EntersDataPipeline(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -21,7 +21,7 @@ func TestAlluvialCmd_Run_ReportsUnavailablePipeline(t *testing.T) {
 		Metric:     "file-size",
 	}).Run(&Flags{Config: config.New()})
 
-	g.Expect(err).To(MatchError(ContainSubstring("alluvial pipeline is not implemented")))
+	g.Expect(err).To(MatchError(ContainSubstring("alluvial pipeline failed")))
 }
 
 func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {

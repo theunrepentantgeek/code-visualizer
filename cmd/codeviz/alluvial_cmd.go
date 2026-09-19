@@ -6,9 +6,12 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/alluvial"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 type AlluvialCmd struct {
@@ -79,14 +82,34 @@ func (c *AlluvialCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Alluvial)
 }
 
-// Run validates the public command contract. Snapshot acquisition and rendering
-// are introduced by subsequent alluvial implementation units.
+// Run acquires per-reference snapshot data. Layout and output writing are
+// introduced by the alluvial rendering unit.
 func (c *AlluvialCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
 	}
 
-	return eris.New("alluvial pipeline is not implemented")
+	common := &stages.CommonState{
+		TargetPath:         c.TargetPath,
+		Output:             c.Output,
+		Flags:              stagesFlagsForCommand(flags, "", flags.Config.Alluvial.References[0]),
+		RootConfig:         flags.Config,
+		VizName:            "alluvial",
+		CLIFilters:         c.Filters(),
+		IncludeBinaryFiles: c.IncludeBinaryFiles,
+	}
+	viz := &alluvial.State{}
+	cfg := flags.Config.Alluvial
+	s := pipeline.NewState(common, cfg, viz)
+
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
+	alluvial.AcquireData(s)
+
+	return eris.Wrap(s.Err(), "alluvial pipeline failed")
 }
 
 func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {
