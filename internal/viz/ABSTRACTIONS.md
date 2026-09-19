@@ -10,8 +10,10 @@
 
 **Boundary and invariants.**
 
-- The zero value selects no metric; `IsSet` is true exactly when `Metric` is
-  non-empty, regardless of the palette value ([colour_encoding.go#L15](colour_encoding.go#L15),
+- `NoColourEncoding` is the canonical no-colour value. It uses the
+  zero-value encoding, so `IsSet` is false; a non-empty `Metric` makes
+  `IsSet` true regardless of the palette value
+  ([colour_encoding.go#L16](colour_encoding.go#L16),
   [colour_encoding_test.go#L19](colour_encoding_test.go#L19)).
 - `stages.ResolveColourEncoding` selects a configured metric or its fallback;
   `ResolveColourEncodingForMetric` preserves a metric already resolved for a
