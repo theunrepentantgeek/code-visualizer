@@ -23,8 +23,8 @@ func TestResolveMetrics_AggregatesSizeAndDefaultFill(t *testing.T) {
 
 	g.Expect(donuttree.ResolveMetrics(common, state, cfg)).To(Succeed())
 	g.Expect(state.SizeMetric).To(Equal(metric.Name("file-lines.sum")))
-	g.Expect(state.FillMetric).To(Equal(metric.Name("file-lines.sum")))
-	g.Expect(state.BorderMetric).To(BeEmpty())
+	g.Expect(state.Fill.Metric).To(Equal(metric.Name("file-lines.sum")))
+	g.Expect(state.Border.Metric).To(BeEmpty())
 	g.Expect(common.Requested.Expressions).To(ConsistOf(
 		HaveField("ResultName", metric.Name("file-lines.sum")),
 	))
@@ -41,7 +41,7 @@ func TestResolveMetrics_AggregatesBareMeasure(t *testing.T) {
 
 	g.Expect(donuttree.ResolveMetrics(common, state, cfg)).To(Succeed())
 	g.Expect(state.SizeMetric).To(Equal(metric.Name("commit-density.mean")))
-	g.Expect(state.FillMetric).To(Equal(metric.Name("commit-density.mean")))
+	g.Expect(state.Fill.Metric).To(Equal(metric.Name("commit-density.mean")))
 
 	desc, ok := common.Requested.DescriptorFor(state.SizeMetric)
 	g.Expect(ok).To(BeTrue())
@@ -69,10 +69,10 @@ func TestResolveMetrics_AggregatesExplicitFillAndBorder(t *testing.T) {
 	}
 
 	g.Expect(donuttree.ResolveMetrics(common, state, cfg)).To(Succeed())
-	g.Expect(state.FillMetric).To(Equal(metric.Name("file-type.mode")))
-	g.Expect(state.FillPalette).To(Equal(palette.Categorization))
-	g.Expect(state.BorderMetric).To(Equal(metric.Name("file-freshness.sum")))
-	g.Expect(state.BorderPalette).To(Equal(palette.GoodBad))
+	g.Expect(state.Fill.Metric).To(Equal(metric.Name("file-type.mode")))
+	g.Expect(state.Fill.Palette).To(Equal(palette.Categorization))
+	g.Expect(state.Border.Metric).To(Equal(metric.Name("file-freshness.sum")))
+	g.Expect(state.Border.Palette).To(Equal(palette.GoodBad))
 	g.Expect(common.Requested.Expressions).To(ConsistOf(
 		HaveField("ResultName", metric.Name("file-lines.sum")),
 		HaveField("ResultName", metric.Name("file-type.mode")),
@@ -91,7 +91,7 @@ func TestResolveMetrics_PreservesExistingAggregation(t *testing.T) {
 
 	g.Expect(donuttree.ResolveMetrics(common, state, cfg)).To(Succeed())
 	g.Expect(state.SizeMetric).To(Equal(metric.Name("file-size.sum")))
-	g.Expect(state.FillMetric).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(state.Fill.Metric).To(Equal(metric.Name("file-size.sum")))
 	g.Expect(common.Requested.Expressions).To(ConsistOf(
 		HaveField("ResultName", metric.Name("file-size.sum")),
 	))

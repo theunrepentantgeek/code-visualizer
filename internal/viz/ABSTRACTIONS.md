@@ -1,5 +1,63 @@
 # Abstractions — `internal/viz`
 
+## ColourEncoding
+
+**Purpose.**
+
+- `ColourEncoding` is one visual channel's resolved metric and palette: the
+  pair used to map a metric value to colour ([colour_encoding.go#L8](colour_encoding.go#L8),
+  [colour_encoding.go#L10](colour_encoding.go#L10)).
+
+**Boundary and invariants.**
+
+- `NoColourEncoding` is the canonical no-colour value. It uses the
+  zero-value encoding, so `IsSet` is false; a non-empty `Metric` makes
+  `IsSet` true regardless of the palette value
+  ([colour_encoding.go#L16](colour_encoding.go#L16),
+  [colour_encoding_test.go#L19](colour_encoding_test.go#L19)).
+- `stages.ResolveColourEncoding` selects a configured metric or its fallback;
+  `ResolveColourEncodingForMetric` preserves a metric already resolved for a
+  visualization-specific grain while selecting its palette
+  ([../stages/metrics.go#L43](../stages/metrics.go#L43),
+  [../stages/metrics.go#L54](../stages/metrics.go#L54)).
+
+**Related operations.**
+
+- `IsSet` distinguishes a metric-backed channel from a fixed-colour fallback
+  ([colour_encoding.go#L15](colour_encoding.go#L15)).
+- Visualization ink builders consume an encoding to construct the matching
+  metric ink ([../scatter/inks.go#L40](../scatter/inks.go#L40),
+  [../spiral/inks.go#L35](../spiral/inks.go#L35)).
+
+**Proper-use patterns.**
+
+- Carry the resolved encoding in visualization state and pass it intact to
+  ink-building helpers ([../radialtree/stages.go#L103](../radialtree/stages.go#L103),
+  [../donuttree/stages.go#L36](../donuttree/stages.go#L36)).
+- Read only `Metric` when the consumer genuinely needs the metric name alone,
+  such as requested-metric collection or legend labels
+  ([../radialtree/stages.go#L32](../radialtree/stages.go#L32),
+  [../treemap/stages.go#L48](../treemap/stages.go#L48)).
+
+**Anti-patterns.**
+
+- Do not reconstruct an encoding with a visualization-specific metric plus a
+  separately resolved palette; use the appropriate shared resolver
+  ([../stages/metrics.go#L43](../stages/metrics.go#L43),
+  [../stages/metrics.go#L54](../stages/metrics.go#L54)).
+- Do not split the metric and palette into parallel helper parameters; accept
+  `ColourEncoding` so the colour-channel contract stays coupled
+  ([../scatter/inks.go#L55](../scatter/inks.go#L55),
+  [../spiral/inks.go#L58](../spiral/inks.go#L58)).
+
+**Source locations.**
+
+- [colour_encoding.go#L10](colour_encoding.go#L10) — `ColourEncoding` and
+  `IsSet`.
+- [../stages/metrics.go#L43](../stages/metrics.go#L43) — shared resolution.
+- [../radialtree/stages.go#L115](../radialtree/stages.go#L115) — coupled
+  directory ink construction.
+
 ## Grain
 
 **Purpose.**

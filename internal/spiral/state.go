@@ -5,20 +5,17 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // State is the viz-specific pipeline state for the spiral visualization.
 type State struct {
 	// Resolved during the pipeline:
 	Size           metric.Name
-	FillMetric     metric.Name
-	FillPalette    palette.PaletteName
-	BorderMetric   metric.Name
-	BorderPalette  palette.PaletteName
+	Fill           viz.ColourEncoding
+	Border         viz.ColourEncoding
 	SurfaceEnabled bool
-	SurfaceMetric  metric.Name
-	SurfacePalette palette.PaletteName
+	Surface        viz.ColourEncoding
 	Resolution     Resolution
 	SpotsPerLap    int
 

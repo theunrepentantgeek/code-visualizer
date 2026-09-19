@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 var (
@@ -31,24 +32,21 @@ type Inks struct {
 func BuildInks(
 	dataset Dataset,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
+	fill viz.ColourEncoding,
+	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
 		ShapeInks: inks.ShapeInks{
-			Fill:   buildMetricInk(dataset.metricSources(), requested, fillMetric, fillPaletteName, scatterDefaultFill),
+			Fill:   buildMetricInk(dataset.metricSources(), requested, fill, scatterDefaultFill),
 			Border: inks.FixedInk(scatterDefaultBorder),
 		},
 	}
 
-	if borderMetric != "" {
+	if border.IsSet() {
 		is.Border = buildMetricInk(
 			dataset.metricSources(),
 			requested,
-			borderMetric,
-			borderPaletteName,
+			border,
 			scatterDefaultBorder,
 		)
 		is.HasBorderMetric = true
@@ -60,26 +58,25 @@ func BuildInks(
 func buildMetricInk[T metricSource](
 	sources []T,
 	requested stages.RequestedMetrics,
-	name metric.Name,
-	paletteName palette.PaletteName,
+	encoding viz.ColourEncoding,
 	fallback color.RGBA,
 ) inks.Ink {
-	if name == "" {
+	if !encoding.IsSet() {
 		return inks.FixedInk(fallback)
 	}
 
-	descriptor, ok := requested.DescriptorFor(name)
+	descriptor, ok := requested.DescriptorFor(encoding.Metric)
 	if !ok {
 		return inks.FixedInk(fallback)
 	}
 
-	pal := palette.GetPalette(paletteName)
+	pal := palette.GetPalette(encoding.Palette)
 
 	if descriptor.Kind == metric.Quantity || descriptor.Kind == metric.Measure {
-		return buildNumericInk(sources, name, pal, fallback)
+		return buildNumericInk(sources, encoding.Metric, pal, fallback)
 	}
 
-	return buildCategoricalInk(sources, name, pal, fallback)
+	return buildCategoricalInk(sources, encoding.Metric, pal, fallback)
 }
 
 func buildNumericInk[T metricSource](

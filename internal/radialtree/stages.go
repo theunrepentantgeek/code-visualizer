@@ -8,55 +8,42 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // ResolveMetrics resolves disc-size, fill, and border metrics + palettes and
 // fills c.Requested.
 func ResolveMetrics(c *stages.CommonState, r *State, cfg *config.Radial) error {
 	r.DiscSize = metric.Name(stages.PtrString(cfg.FileDiscSize))
-	directoryDiscSize := &config.MetricSpec{Metric: metric.Name(stages.PtrString(cfg.DirectoryDiscSize))}
-	r.DirectoryDiscSize = resolveDirectoryMetric(directoryDiscSize, r.DiscSize)
-	r.FillMetric = resolveFillMetric(cfg, r.DiscSize)
-	r.FillPalette = stages.ResolveFillPalette(cfg.FileFill, r.FillMetric)
-	r.BorderMetric, r.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.FileBorder)
-	r.DirectoryFillMetric = resolveDirectoryMetric(cfg.DirectoryFill, r.FillMetric)
-	r.DirectoryFillPalette = stages.ResolveFillPalette(
-		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
-		r.DirectoryFillMetric,
+	r.DirectoryDiscSize = resolveDirectoryMetric(
+		metric.Name(stages.PtrString(cfg.DirectoryDiscSize)),
+		r.DiscSize,
 	)
-	r.DirectoryBorderMetric = resolveDirectoryMetric(cfg.DirectoryBorder, r.BorderMetric)
-	r.DirectoryBorderPalette = stages.ResolveFillPalette(
-		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
-		r.DirectoryBorderMetric,
-	)
+	r.Fill = stages.ResolveColourEncoding(cfg.FileFill, r.DiscSize)
+	r.Border = stages.ResolveColourEncoding(cfg.FileBorder, "")
+	directoryFillMetric := resolveDirectoryMetric(cfg.DirectoryFill.MetricName(), r.Fill.Metric)
+	r.DirectoryFill = stages.ResolveColourEncoding(cfg.DirectoryFill, directoryFillMetric)
+	directoryBorderMetric := resolveDirectoryMetric(cfg.DirectoryBorder.MetricName(), r.Border.Metric)
+	r.DirectoryBorder = stages.ResolveColourEncoding(cfg.DirectoryBorder, directoryBorderMetric)
 	r.Labels = resolveLabels(cfg)
 	r.Grain = resolveGrain(cfg)
 
-	c.Requested = stages.CollectRequestedMetrics(
+	c.Requested = stages.CollectRequestedMetricNames(
 		r.DiscSize,
-		cfg.FileFill,
-		cfg.FileBorder,
-		directoryMetricSpec(directoryDiscSize, r.DirectoryDiscSize),
-		directoryMetricSpec(cfg.DirectoryFill, r.DirectoryFillMetric),
-		directoryMetricSpec(cfg.DirectoryBorder, r.DirectoryBorderMetric),
+		r.Fill.Metric,
+		r.Border.Metric,
+		r.DirectoryDiscSize,
+		r.DirectoryFill.Metric,
+		r.DirectoryBorder.Metric,
 	)
 
 	return nil
 }
 
-func resolveFillMetric(cfg *config.Radial, discSize metric.Name) metric.Name {
-	if fill := cfg.FileFill.MetricName(); fill != "" {
-		return fill
-	}
-
-	return discSize
-}
-
-func resolveDirectoryMetric(spec *config.MetricSpec, fallback metric.Name) metric.Name {
-	if name := spec.MetricName(); name != "" {
+func resolveDirectoryMetric(name, fallback metric.Name) metric.Name {
+	if name != "" {
 		return name
 	}
 
@@ -81,14 +68,6 @@ func resolveDirectoryMetric(spec *config.MetricSpec, fallback metric.Name) metri
 	}
 
 	return expression.ResultName()
-}
-
-func directoryMetricSpec(spec *config.MetricSpec, fallback metric.Name) *config.MetricSpec {
-	if spec.MetricName() != "" || fallback == "" {
-		return spec
-	}
-
-	return &config.MetricSpec{Metric: fallback}
 }
 
 func resolveLabels(cfg *config.Radial) LabelMode {
@@ -120,14 +99,12 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 
 	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
 
-	r.Inks = BuildInks(c.Root, c.Requested, r.FillMetric, r.FillPalette, r.BorderMetric, r.BorderPalette)
+	r.Inks = BuildInks(c.Root, c.Requested, r.Fill, r.Border)
 	r.Inks.DirectoryFill, r.Inks.DirectoryBorder = buildDirectoryInks(
 		c.Root,
 		c.Requested,
-		r.DirectoryFillMetric,
-		r.DirectoryFillPalette,
-		r.DirectoryBorderMetric,
-		r.DirectoryBorderPalette,
+		r.DirectoryFill,
+		r.DirectoryBorder,
 	)
 
 	return nil
@@ -136,16 +113,14 @@ func BuildInksStage(c *stages.CommonState, r *State) error {
 func buildDirectoryInks(
 	root *model.Directory,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPalette palette.PaletteName,
-	borderMetric metric.Name,
-	borderPalette palette.PaletteName,
+	fillEncoding viz.ColourEncoding,
+	borderEncoding viz.ColourEncoding,
 ) (fill inks.Ink, border inks.Ink) {
-	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	fill = inks.BuildDirectoryMetricInk(root, fillDesc, fillPalette, defaultDirFill)
+	fillDesc, _ := requested.DescriptorFor(fillEncoding.Metric)
+	fill = inks.BuildDirectoryMetricInk(root, fillDesc, fillEncoding.Palette, defaultDirFill)
 
-	borderDesc, _ := requested.DescriptorFor(borderMetric)
-	border = inks.BuildDirectoryMetricInk(root, borderDesc, borderPalette, defaultBorder)
+	borderDesc, _ := requested.DescriptorFor(borderEncoding.Metric)
+	border = inks.BuildDirectoryMetricInk(root, borderDesc, borderEncoding.Palette, defaultBorder)
 
 	return fill, border
 }
@@ -161,14 +136,14 @@ func BuildLegendStage(c *stages.CommonState, r *State) error {
 
 	builder := legend.Builder{
 		Position: pos, Orientation: orient,
-		FillInk: r.Inks.Fill, FillMetric: r.FillMetric,
-		BorderInk: r.Inks.Border, BorderMetric: r.BorderMetric,
+		FillInk: r.Inks.Fill, FillMetric: r.Fill.Metric,
+		BorderInk: r.Inks.Border, BorderMetric: r.Border.Metric,
 		SizeMetric: r.DiscSize,
 	}
 
 	if r.Grain == GrainDirectory {
-		builder.FillInk, builder.FillMetric = r.Inks.DirectoryFill, r.DirectoryFillMetric
-		builder.BorderInk, builder.BorderMetric = r.Inks.DirectoryBorder, r.DirectoryBorderMetric
+		builder.FillInk, builder.FillMetric = r.Inks.DirectoryFill, r.DirectoryFill.Metric
+		builder.BorderInk, builder.BorderMetric = r.Inks.DirectoryBorder, r.DirectoryBorder.Metric
 		builder.SizeMetric = r.DirectoryDiscSize
 	}
 
@@ -229,10 +204,10 @@ func LogResult(c *stages.CommonState, r *State) error {
 		"canvas_size", canvasSize,
 		"grain", string(r.Grain),
 		"disc_metric", string(r.DiscSize),
-		"fill_metric", string(r.FillMetric),
-		"fill_palette", string(r.FillPalette),
-		"border_metric", string(r.BorderMetric),
-		"border_palette", string(r.BorderPalette),
+		"fill_metric", string(r.Fill.Metric),
+		"fill_palette", string(r.Fill.Palette),
+		"border_metric", string(r.Border.Metric),
+		"border_palette", string(r.Border.Palette),
 	)
 
 	return nil

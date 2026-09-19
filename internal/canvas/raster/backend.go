@@ -352,6 +352,7 @@ func (r *rasterBackend) DrawArcText(
 	if arcRadius <= 0 {
 		return
 	}
+
 	forEachArcTextRune(text, fontSize, arcRadius, func(ch rune, angle float64) {
 		position := center.Translate(geometry.NewRadialVector(angle, arcRadius))
 

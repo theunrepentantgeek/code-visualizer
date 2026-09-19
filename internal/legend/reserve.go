@@ -30,6 +30,7 @@ func ReserveLayout(cfg *Config, width, height int) Reservation {
 	reserved := cfg.ReserveSpace()
 	result.Width -= int(reserved.Width)
 	result.Height -= int(reserved.Height)
+
 	if result.Width < MinReservableSize || result.Height < MinReservableSize {
 		return Reservation{Width: width, Height: height}
 	}

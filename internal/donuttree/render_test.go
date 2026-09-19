@@ -26,7 +26,22 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
+
+func buildTestInks(
+	root *model.Directory,
+	requested stages.RequestedMetrics,
+	borderMetric metric.Name,
+	borderPalette palette.PaletteName,
+) Inks {
+	return BuildInks(
+		root,
+		requested,
+		viz.ColourEncoding{Metric: filesystem.FileLines, Palette: palette.Neutral},
+		viz.ColourEncoding{Metric: borderMetric, Palette: borderPalette},
+	)
+}
 
 func donutDirectory(name string, lines int64) *model.Directory {
 	dir := &model.Directory{Name: name}
@@ -85,7 +100,7 @@ func TestRenderToCanvas_RendersOneSectorPerDirectoryAndOneRootAnchor(t *testing.
 	g := NewGomegaWithT(t)
 	root := donutRoot()
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, "", "")
 
 	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{Size: filesystem.FileLines}))
 
@@ -99,7 +114,7 @@ func TestRenderToCanvas_UsesNarrowedRingGeometryForSectorsAndLabels(t *testing.T
 	g := NewGomegaWithT(t)
 	root := donutRoot()
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", "")
+	is := buildTestInks(root, stages.RequestedMetrics{}, "", "")
 
 	calls := renderCalls(t, RenderToCanvas(layout, root, 600, 600, is, LabelMetrics{}))
 	polygons := callsNamed(calls, "DrawPolygon")
@@ -139,9 +154,9 @@ func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
 	cfg.DonutTree.Fill = &config.MetricSpec{Metric: "file-type"}
 	cfg.DonutTree.Border = &config.MetricSpec{Metric: "file-size"}
 	state := &State{
-		SizeMetric:   "file-lines.sum",
-		FillMetric:   "file-type.mode",
-		BorderMetric: "file-size.sum",
+		SizeMetric: "file-lines.sum",
+		Fill:       viz.ColourEncoding{Metric: "file-type.mode"},
+		Border:     viz.ColourEncoding{Metric: "file-size.sum"},
 		Inks: Inks{ShapeInks: inks.ShapeInks{
 			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
 			Border: inks.FixedInk(color.RGBA{A: 255}),
@@ -168,9 +183,9 @@ func TestBuildLegendStage_OmitsDerivedMetricsFromLabelSample(t *testing.T) {
 	cfg := config.New()
 	cfg.Legend = &config.Legend{Position: new("bottom-right")}
 	state := &State{
-		SizeMetric:   "file-lines.sum",
-		FillMetric:   "file-lines.sum",
-		BorderMetric: "file-size.sum",
+		SizeMetric: "file-lines.sum",
+		Fill:       viz.ColourEncoding{Metric: "file-lines.sum"},
+		Border:     viz.ColourEncoding{Metric: "file-size.sum"},
 		Inks: Inks{ShapeInks: inks.ShapeInks{
 			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
 			Border: inks.FixedInk(color.RGBA{A: 255}),
@@ -195,7 +210,7 @@ func TestRenderToCanvas_OmitsBorderPolygonsUnlessConfigured(t *testing.T) {
 
 	polygons := callsNamed(renderCalls(t, RenderToCanvas(
 		layout, root, 600, 600,
-		BuildInks(root, stages.RequestedMetrics{}, filesystem.FileLines, palette.Neutral, "", ""),
+		buildTestInks(root, stages.RequestedMetrics{}, "", ""),
 		LabelMetrics{Size: filesystem.FileLines},
 	)), "DrawPolygon")
 
@@ -220,11 +235,9 @@ func TestRenderToCanvas_InsetsMetricBordersInsideAdjacentSectors(t *testing.T) {
 	right.SetQuantity(borderMetric, 2)
 
 	layout := Layout(root, 600, filesystem.FileLines)
-	is := BuildInks(
+	is := buildTestInks(
 		root,
 		stages.CollectRequestedMetrics(borderMetric),
-		filesystem.FileLines,
-		palette.Neutral,
 		borderMetric,
 		palette.GoodBad,
 	)
@@ -431,11 +444,9 @@ func TestRenderToCanvas_WritesRecognizablePNGAndSVG(t *testing.T) {
 	root.Dirs[0].SetQuantity(borderMetric, 2)
 	root.Dirs[0].Dirs[0].SetQuantity(borderMetric, 3)
 	layout := Layout(root, width, filesystem.FileLines)
-	is := BuildInks(
+	is := buildTestInks(
 		root,
 		stages.CollectRequestedMetrics(borderMetric),
-		filesystem.FileLines,
-		palette.Neutral,
 		borderMetric,
 		palette.GoodBad,
 	)
@@ -517,9 +528,8 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 	g.Expect(stages.ReserveFooterBounds(common)).To(Succeed())
 
 	state := &State{
-		SizeMetric:  filesystem.FileLines,
-		FillMetric:  filesystem.FileLines,
-		FillPalette: palette.Neutral,
+		SizeMetric: filesystem.FileLines,
+		Fill:       viz.ColourEncoding{Metric: filesystem.FileLines, Palette: palette.Neutral},
 	}
 
 	g.Expect(BuildInksStage(common, state)).To(Succeed())
@@ -576,9 +586,8 @@ func TestRenderStage_KeepsConfiguredDimensionsAfterTitleAndFooterReservation(t *
 	g.Expect(stages.ReserveFooterBounds(common)).To(Succeed())
 
 	state := &State{
-		SizeMetric:  filesystem.FileLines,
-		FillMetric:  filesystem.FileLines,
-		FillPalette: palette.Neutral,
+		SizeMetric: filesystem.FileLines,
+		Fill:       viz.ColourEncoding{Metric: filesystem.FileLines, Palette: palette.Neutral},
 	}
 
 	g.Expect(BuildInksStage(common, state)).To(Succeed())

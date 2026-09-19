@@ -21,6 +21,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 //nolint:dupl // Intentionally parallel structure testing different output formats
@@ -30,7 +31,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 800, 600, spiral.Hourly)
-	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
+	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 	cv := spiral.RenderToCanvas(layout, buckets, 800, 600, shapeInks, spiral.RenderOptions{
 		Format: canvas.FormatPNG,
 	})
@@ -55,7 +56,7 @@ func TestRenderToCanvas_SVG(t *testing.T) {
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly)
-	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
+	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, shapeInks, spiral.RenderOptions{
 		Format: canvas.FormatSVG,
 	})
@@ -94,7 +95,7 @@ func TestRenderToCanvas_JPG(t *testing.T) {
 
 	buckets := sampleTimeBuckets()
 	layout := spiral.Layout(buckets, 400, 300, spiral.Hourly)
-	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, "", "", "", "")
+	shapeInks := spiral.BuildInks(buckets, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 	cv := spiral.RenderToCanvas(layout, buckets, 400, 300, shapeInks, spiral.RenderOptions{
 		Format: canvas.FormatJPG,
 	})

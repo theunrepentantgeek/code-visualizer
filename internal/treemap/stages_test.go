@@ -29,7 +29,7 @@ func TestResolveMetrics_SizeOnly(t *testing.T) {
 
 	g.Expect(treemap.ResolveMetrics(common, viz, cfg)).To(Succeed())
 	g.Expect(viz.Size).To(Equal(metric.Name("file-size")))
-	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-size")))
+	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("file-size")))
 	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
@@ -46,7 +46,7 @@ func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
 	}
 
 	g.Expect(treemap.ResolveMetrics(common, viz, cfg)).To(Succeed())
-	g.Expect(viz.FillMetric).To(Equal(metric.Name("file-type")))
+	g.Expect(viz.Fill.Metric).To(Equal(metric.Name("file-type")))
 	g.Expect(common.Requested.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
@@ -72,9 +72,8 @@ func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
 
 			common := &stages.CommonState{Root: root, Output: "out.png", Width: 100, Height: 100}
 			viz := &treemap.State{
-				FillMetric:  filesystem.FileSize,
-				FillPalette: palette.Temperature,
-				Flat:        tc.flat,
+				Fill: colourEncoding(filesystem.FileSize, palette.Temperature),
+				Flat: tc.flat,
 			}
 
 			g.Expect(treemap.BuildInksStage(common, viz)).To(Succeed())
@@ -91,9 +90,9 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 
 	common := &stages.CommonState{}
 	viz := &treemap.State{
-		FillMetric:   metric.Name("file-type"),
-		BorderMetric: metric.Name("file-lines"),
-		Size:         metric.Name("file-size"),
+		Fill:   colourEncoding(metric.Name("file-type"), ""),
+		Border: colourEncoding(metric.Name("file-lines"), ""),
+		Size:   metric.Name("file-size"),
 		Inks: treemap.Inks{
 			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
 			Border: inks.FixedInk(color.RGBA{R: 0, G: 0, B: 0, A: 255}),
@@ -147,9 +146,8 @@ func TestLayoutStage_FooterEnabled_ReducesAvailableHeight(t *testing.T) {
 	g.Expect(stages.ReserveFooterBounds(common)).To(Succeed())
 
 	viz := &treemap.State{
-		Size:        metric.Name("file-size"),
-		FillMetric:  metric.Name("file-size"),
-		FillPalette: palette.Temperature,
+		Size: metric.Name("file-size"),
+		Fill: colourEncoding(metric.Name("file-size"), palette.Temperature),
 	}
 
 	g.Expect(treemap.LayoutStage(common, viz)).To(Succeed())
@@ -186,9 +184,8 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 	g.Expect(stages.ReserveFooterBounds(commonNoFooter)).To(Succeed())
 
 	vizNoFooter := &treemap.State{
-		Size:        metric.Name("file-size"),
-		FillMetric:  metric.Name("file-size"),
-		FillPalette: palette.Temperature,
+		Size: metric.Name("file-size"),
+		Fill: colourEncoding(metric.Name("file-size"), palette.Temperature),
 	}
 
 	commonWithFooter := &stages.CommonState{
@@ -201,9 +198,8 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 	g.Expect(stages.ReserveFooterBounds(commonWithFooter)).To(Succeed())
 
 	vizWithFooter := &treemap.State{
-		Size:        metric.Name("file-size"),
-		FillMetric:  metric.Name("file-size"),
-		FillPalette: palette.Temperature,
+		Size: metric.Name("file-size"),
+		Fill: colourEncoding(metric.Name("file-size"), palette.Temperature),
 	}
 
 	g.Expect(treemap.LayoutStage(commonNoFooter, vizNoFooter)).To(Succeed())

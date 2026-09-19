@@ -4,10 +4,9 @@ import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 var (
@@ -25,21 +24,19 @@ type Inks struct {
 func BuildInks(
 	root *model.Directory,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
+	fill viz.ColourEncoding,
+	border viz.ColourEncoding,
 ) Inks {
 	result := Inks{
 		ShapeInks: inks.ShapeInks{Border: inks.FixedInk(donutFallbackBorder)},
 	}
 
-	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	result.Fill = inks.BuildDirectoryMetricInk(root, fillDesc, fillPaletteName, donutFallbackFill)
+	fillDesc, _ := requested.DescriptorFor(fill.Metric)
+	result.Fill = inks.BuildDirectoryMetricInk(root, fillDesc, fill.Palette, donutFallbackFill)
 
-	if borderMetric != "" {
-		borderDesc, _ := requested.DescriptorFor(borderMetric)
-		result.Border = inks.BuildDirectoryMetricInk(root, borderDesc, borderPaletteName, donutFallbackBorder)
+	if border.IsSet() {
+		borderDesc, _ := requested.DescriptorFor(border.Metric)
+		result.Border = inks.BuildDirectoryMetricInk(root, borderDesc, border.Palette, donutFallbackBorder)
 		result.HasBorderMetric = true
 	}
 

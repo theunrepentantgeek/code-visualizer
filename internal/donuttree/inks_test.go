@@ -12,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestBuildDonutInks_OmittedBorderUsesFixedFallback(t *testing.T) {
@@ -23,7 +24,12 @@ func TestBuildDonutInks_OmittedBorderUsesFixedFallback(t *testing.T) {
 
 	requested := stages.CollectRequestedMetrics(metric.Name("file-lines.sum"))
 
-	result := donuttree.BuildInks(root, requested, "file-lines.sum", palette.Neutral, "", "")
+	result := donuttree.BuildInks(
+		root,
+		requested,
+		viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
+		viz.NoColourEncoding,
+	)
 
 	g.Expect(result.HasBorderMetric).To(BeFalse())
 	g.Expect(result.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -45,10 +51,8 @@ func TestBuildDonutInks_ExplicitBorderBuildsDirectoryMetricInk(t *testing.T) {
 	result := donuttree.BuildInks(
 		root,
 		requested,
-		"file-lines.sum",
-		palette.Neutral,
-		"file-freshness.sum",
-		palette.GoodBad,
+		viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
+		viz.ColourEncoding{Metric: "file-freshness.sum", Palette: palette.GoodBad},
 	)
 
 	g.Expect(result.HasBorderMetric).To(BeTrue())
@@ -64,7 +68,12 @@ func TestBuildDonutInks_CategoricalDirectoryFill(t *testing.T) {
 
 	requested := stages.CollectRequestedMetrics(metric.Name("file-type.mode"))
 
-	result := donuttree.BuildInks(root, requested, "file-type.mode", palette.Categorization, "", "")
+	result := donuttree.BuildInks(
+		root,
+		requested,
+		viz.ColourEncoding{Metric: "file-type.mode", Palette: palette.Categorization},
+		viz.NoColourEncoding,
+	)
 
 	g.Expect(result.Fill.Info().Kind).To(Equal(inks.KindCategorical))
 }

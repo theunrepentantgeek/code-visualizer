@@ -15,21 +15,12 @@ import (
 // c.Requested.
 func ResolveMetrics(c *stages.CommonState, t *State, cfg *config.Treemap) error {
 	t.Size = metric.Name(stages.PtrString(cfg.Size))
-	t.FillMetric = resolveFillMetric(cfg)
-	t.FillPalette = stages.ResolveFillPalette(cfg.Fill, t.FillMetric)
-	t.BorderMetric, t.BorderPalette = stages.ResolveBorderMetricAndPalette(cfg.Border)
+	t.Fill = stages.ResolveColourEncoding(cfg.Fill, t.Size)
+	t.Border = stages.ResolveColourEncoding(cfg.Border, "")
 
 	c.Requested = stages.CollectRequestedMetrics(t.Size, cfg.Fill, cfg.Border)
 
 	return nil
-}
-
-func resolveFillMetric(cfg *config.Treemap) metric.Name {
-	if fill := cfg.Fill.MetricName(); fill != "" {
-		return fill
-	}
-
-	return metric.Name(stages.PtrString(cfg.Size))
 }
 
 // BuildInksStage builds the treemap inks. Also emits the "Rendering image"
@@ -37,7 +28,7 @@ func resolveFillMetric(cfg *config.Treemap) metric.Name {
 func BuildInksStage(c *stages.CommonState, t *State) error {
 	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
 
-	t.Inks = BuildInks(c.Root, c.Requested, t.FillMetric, t.FillPalette, t.BorderMetric, t.BorderPalette)
+	t.Inks = BuildInks(c.Root, c.Requested, t.Fill, t.Border)
 	if !t.Flat {
 		t.Inks.Fill = inks.NewRadialGradientInk(t.Inks.Fill)
 	}
@@ -54,8 +45,8 @@ func BuildLegendStage(c *stages.CommonState, t *State, cfg *config.Treemap) erro
 
 	t.LegendConfig = legend.Builder{
 		Position: pos, Orientation: orient,
-		FillInk: t.Inks.Fill, FillMetric: t.FillMetric,
-		BorderInk: t.Inks.Border, BorderMetric: t.BorderMetric,
+		FillInk: t.Inks.Fill, FillMetric: t.Fill.Metric,
+		BorderInk: t.Inks.Border, BorderMetric: t.Border.Metric,
 		SizeMetric: t.Size,
 	}.Build()
 	if t.LegendConfig != nil {
@@ -123,10 +114,10 @@ func LogResult(c *stages.CommonState, t *State) error {
 		"width", c.Width,
 		"height", c.Height,
 		"size_metric", string(t.Size),
-		"fill_metric", string(t.FillMetric),
-		"fill_palette", string(t.FillPalette),
-		"border_metric", string(t.BorderMetric),
-		"border_palette", string(t.BorderPalette),
+		"fill_metric", string(t.Fill.Metric),
+		"fill_palette", string(t.Fill.Palette),
+		"border_metric", string(t.Border.Metric),
+		"border_palette", string(t.Border.Palette),
 	)
 
 	return nil

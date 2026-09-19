@@ -4,10 +4,9 @@ import (
 	"image/color"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
-	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 const (
@@ -44,21 +43,19 @@ type Inks = inks.ShapeInks
 func BuildInks(
 	root *model.Directory,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
+	fill viz.ColourEncoding,
+	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
 		Border: inks.FixedInk(structuralBorder),
 	}
 
-	fillDesc, _ := requested.DescriptorFor(fillMetric)
-	is.Fill = inks.BuildMetricInk(root, fillDesc, fillPaletteName, defaultFill)
+	fillDesc, _ := requested.DescriptorFor(fill.Metric)
+	is.Fill = inks.BuildMetricInk(root, fillDesc, fill.Palette, defaultFill)
 
-	if borderMetric != "" {
-		borderDesc, _ := requested.DescriptorFor(borderMetric)
-		is.Border = inks.BuildMetricInk(root, borderDesc, borderPaletteName, structuralBorder)
+	if border.IsSet() {
+		borderDesc, _ := requested.DescriptorFor(border.Metric)
+		is.Border = inks.BuildMetricInk(root, borderDesc, border.Palette, structuralBorder)
 	}
 
 	return is

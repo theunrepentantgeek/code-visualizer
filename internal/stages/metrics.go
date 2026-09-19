@@ -5,6 +5,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // CollectRequestedMetrics returns the classified set of metrics
@@ -21,6 +22,46 @@ func CollectRequestedMetrics(size metric.Name, specs ...*config.MetricSpec) Requ
 	}
 
 	return ClassifyRequestedMetrics(names, metric.LevelDirectory)
+}
+
+// CollectRequestedMetricNames returns the directory-level requested metrics
+// implied by already-resolved metric names.
+func CollectRequestedMetricNames(names ...metric.Name) RequestedMetrics {
+	seen := make(map[metric.Name]bool, len(names))
+	distinct := make([]metric.Name, 0, len(names))
+
+	for _, name := range names {
+		if name != "" && !seen[name] {
+			seen[name] = true
+			distinct = append(distinct, name)
+		}
+	}
+
+	return ClassifyRequestedMetrics(distinct, metric.LevelDirectory)
+}
+
+// ResolveColourEncoding returns the effective metric and palette for a colour
+// channel. The fallback metric is used when the config does not select one.
+func ResolveColourEncoding(spec *config.MetricSpec, fallback metric.Name) viz.ColourEncoding {
+	name := spec.MetricName()
+	if name == "" {
+		name = fallback
+	}
+
+	return ResolveColourEncodingForMetric(spec, name)
+}
+
+// ResolveColourEncodingForMetric returns the effective palette for a
+// pre-resolved colour metric.
+func ResolveColourEncodingForMetric(spec *config.MetricSpec, name metric.Name) viz.ColourEncoding {
+	if name == "" {
+		return viz.NoColourEncoding
+	}
+
+	return viz.ColourEncoding{
+		Metric:  name,
+		Palette: ResolveFillPalette(spec, name),
+	}
 }
 
 // ResolveFillPalette returns the fill palette to use, consulting (in order)
@@ -45,17 +86,4 @@ func ResolveFillPalette(fill *config.MetricSpec, fillMetric metric.Name) palette
 	}
 
 	return palette.Neutral
-}
-
-// ResolveBorderMetricAndPalette returns the effective border metric and
-// palette name, or ("", "") when no border is configured. For expression
-// metrics (e.g. "commit-count.mean"), the base metric's default palette is
-// used so aggregations inherit meaningful colour schemes.
-func ResolveBorderMetricAndPalette(border *config.MetricSpec) (metric.Name, palette.PaletteName) {
-	borderMetric := border.MetricName()
-	if borderMetric == "" {
-		return "", ""
-	}
-
-	return borderMetric, ResolveFillPalette(border, borderMetric)
 }

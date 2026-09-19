@@ -14,6 +14,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // uniqueCategories
@@ -105,7 +106,12 @@ func TestBuildInks_DirectoryPointsUseDirectoryMetrics(t *testing.T) {
 		}},
 	}
 
-	result := BuildInks(dataset, requested, sizeMetric, palette.Temperature, "", "")
+	result := BuildInks(
+		dataset,
+		requested,
+		viz.ColourEncoding{Metric: sizeMetric, Palette: palette.Temperature},
+		viz.NoColourEncoding,
+	)
 
 	g.Expect(result.Fill.Info().Kind).To(Equal(inks.KindNumeric))
 	g.Expect(result.Fill.Info().MetricName).To(Equal(sizeMetric))

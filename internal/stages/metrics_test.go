@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestMain(m *testing.M) {
@@ -78,6 +79,65 @@ func TestCollectRequestedMetrics_AllThreeDistinct(t *testing.T) {
 	))
 }
 
+func TestCollectRequestedMetricNames_DuplicatesAndEmptyNames_ReturnsDistinctMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	// Arrange
+	names := []metric.Name{"file-size", "", "file-size", "file-type"}
+
+	// Act
+	got := stages.CollectRequestedMetricNames(names...)
+
+	// Assert
+	g.Expect(got.BaseMetrics).To(ConsistOf(metric.Name("file-size"), metric.Name("file-type")))
+}
+
+// ---------------------------------------------------------------------------
+// ResolveColourEncoding
+// ---------------------------------------------------------------------------
+
+func TestResolveColourEncoding_VariousInputs_ReturnsEffectiveEncoding(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	cases := map[string]struct {
+		spec     *config.MetricSpec
+		fallback metric.Name
+		expected viz.ColourEncoding
+	}{
+		"empty": {},
+		"fallback metric": {
+			fallback: "file-type",
+			expected: viz.ColourEncoding{
+				Metric:  metric.Name("file-type"),
+				Palette: palette.Categorization,
+			},
+		},
+		"explicit metric and palette": {
+			spec:     &config.MetricSpec{Metric: "file-size", Palette: "terrain"},
+			fallback: "file-type",
+			expected: viz.ColourEncoding{
+				Metric:  metric.Name("file-size"),
+				Palette: palette.PaletteName("terrain"),
+			},
+		},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			// Act
+			actual := stages.ResolveColourEncoding(c.spec, c.fallback)
+
+			// Assert
+			g.Expect(actual).To(Equal(c.expected))
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // ResolveFillPalette
 // ---------------------------------------------------------------------------
@@ -113,64 +173,6 @@ func TestResolveFillPalette_UnknownMetricReturnsNeutral(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// ResolveBorderMetricAndPalette
-// ---------------------------------------------------------------------------
-
-func TestResolveBorderMetricAndPalette_NilSpecReturnsEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	m, p := stages.ResolveBorderMetricAndPalette(nil)
-
-	g.Expect(m).To(BeEmpty())
-	g.Expect(p).To(BeEmpty())
-}
-
-func TestResolveBorderMetricAndPalette_EmptyMetricReturnsEmpty(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	border := &config.MetricSpec{}
-	m, p := stages.ResolveBorderMetricAndPalette(border)
-
-	g.Expect(m).To(BeEmpty())
-	g.Expect(p).To(BeEmpty())
-}
-
-func TestResolveBorderMetricAndPalette_KnownMetricUsesProviderDefault(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	border := &config.MetricSpec{Metric: "file-size"}
-	m, p := stages.ResolveBorderMetricAndPalette(border)
-
-	g.Expect(m).To(Equal(metric.Name("file-size")))
-	g.Expect(p).To(Equal(palette.Neutral))
-}
-
-func TestResolveBorderMetricAndPalette_ExplicitPaletteOverridesDefault(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	border := &config.MetricSpec{Metric: "file-size", Palette: "terrain"}
-	m, p := stages.ResolveBorderMetricAndPalette(border)
-
-	g.Expect(m).To(Equal(metric.Name("file-size")))
-	g.Expect(p).To(Equal(palette.PaletteName("terrain")))
-}
-
-func TestResolveBorderMetricAndPalette_UnknownMetricFallsBackToNeutral(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	border := &config.MetricSpec{Metric: "not-registered"}
-	m, p := stages.ResolveBorderMetricAndPalette(border)
-
-	g.Expect(m).To(Equal(metric.Name("not-registered")))
-	g.Expect(p).To(Equal(palette.Neutral))
-}
-
-// ---------------------------------------------------------------------------
 // Expression metric palette inheritance
 // ---------------------------------------------------------------------------
 
@@ -184,16 +186,4 @@ func TestResolveFillPalette_ExpressionMetricInheritsBasePalette(t *testing.T) {
 
 	g.Expect(got).NotTo(Equal(palette.Neutral))
 	g.Expect(got).To(Equal(palette.Temperature))
-}
-
-func TestResolveBorderMetricAndPalette_ExpressionMetricInheritsBasePalette(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	// commit-count.mean should inherit the Temperature palette from commit-count.
-	border := &config.MetricSpec{Metric: "commit-count.mean"}
-	m, p := stages.ResolveBorderMetricAndPalette(border)
-
-	g.Expect(m).To(Equal(metric.Name("commit-count.mean")))
-	g.Expect(p).To(Equal(palette.Temperature))
 }

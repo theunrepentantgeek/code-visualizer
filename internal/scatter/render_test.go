@@ -51,7 +51,12 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 	)
-	pointInks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	pointInks := BuildInks(
+		dataset,
+		stages.RequestedMetrics{},
+		viz.ColourEncoding{Metric: filesystem.FileSize, Palette: palette.Temperature},
+		viz.NoColourEncoding,
+	)
 	cv := RenderToCanvas(layout, 800, 600, pointInks)
 
 	out := filepath.Join(t.TempDir(), "scatter.png")
@@ -89,7 +94,12 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 		AxisSpec{Metric: filesystem.FileType, Kind: metric.Classification},
 		AxisSpec{Metric: filesystem.FileLines, Kind: metric.Quantity},
 	)
-	pointInks := BuildInks(dataset, stages.RequestedMetrics{}, filesystem.FileSize, palette.Temperature, "", "")
+	pointInks := BuildInks(
+		dataset,
+		stages.RequestedMetrics{},
+		viz.ColourEncoding{Metric: filesystem.FileSize, Palette: palette.Temperature},
+		viz.NoColourEncoding,
+	)
 	cv := RenderToCanvas(layout, 800, 600, pointInks)
 
 	out := filepath.Join(t.TempDir(), "scatter.svg")

@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 var (
@@ -22,28 +23,26 @@ type Inks = inks.ShapeInks
 func BuildInks(
 	buckets []TimeBucket,
 	requested stages.RequestedMetrics,
-	fillMetric metric.Name,
-	fillPaletteName palette.PaletteName,
-	borderMetric metric.Name,
-	borderPaletteName palette.PaletteName,
+	fill viz.ColourEncoding,
+	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
 		Fill:   inks.FixedInk(defaultFill),
 		Border: inks.FixedInk(defaultBorder),
 	}
 
-	if fillMetric != "" {
+	if fill.IsSet() {
 		is.Fill = buildBucketInk(
-			buckets, requested, fillMetric, fillPaletteName,
+			buckets, requested, fill,
 			func(b *TimeBucket) float64 { return b.FillValue },
 			func(b *TimeBucket) string { return b.FillLabel },
 			defaultFill,
 		)
 	}
 
-	if borderMetric != "" {
+	if border.IsSet() {
 		is.Border = buildBucketInk(
-			buckets, requested, borderMetric, borderPaletteName,
+			buckets, requested, border,
 			func(b *TimeBucket) float64 { return b.BorderValue },
 			func(b *TimeBucket) string { return b.BorderLabel },
 			defaultBorder,
@@ -59,18 +58,17 @@ func BuildInks(
 func buildBucketInk(
 	buckets []TimeBucket,
 	requested stages.RequestedMetrics,
-	m metric.Name,
-	palName palette.PaletteName,
+	encoding viz.ColourEncoding,
 	numericFn func(*TimeBucket) float64,
 	categoryFn func(*TimeBucket) string,
 	fallback color.RGBA,
 ) inks.Ink {
-	d, ok := requested.DescriptorFor(m)
+	d, ok := requested.DescriptorFor(encoding.Metric)
 	if !ok {
 		return inks.FixedInk(fallback)
 	}
 
-	pal := palette.GetPalette(palName)
+	pal := palette.GetPalette(encoding.Palette)
 
 	if d.Kind == metric.Quantity || d.Kind == metric.Measure {
 		values := make([]float64, len(buckets))
@@ -78,7 +76,7 @@ func buildBucketInk(
 			values[i] = numericFn(&buckets[i])
 		}
 
-		return inks.NumericInk(m, values, pal)
+		return inks.NumericInk(encoding.Metric, values, pal)
 	}
 
 	seen := map[string]bool{}
@@ -93,5 +91,5 @@ func buildBucketInk(
 		}
 	}
 
-	return inks.CategoricalInk(m, categories, pal)
+	return inks.CategoricalInk(encoding.Metric, categories, pal)
 }
