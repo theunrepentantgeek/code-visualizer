@@ -17,3 +17,7 @@ A user-facing metric selection that identifies a base metric and may apply a fil
 ## Colour Encoding
 
 The selection of a metric and palette that maps a metric value to the colour channel of a visualization.
+
+## Alluvial Diagram
+
+A static visualization that aligns directory-level metric values across ordered revision references and connects each directory's values between adjacent references.
