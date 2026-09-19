@@ -36,6 +36,55 @@ func AcquireData(s *pipeline.State) {
 	pipeline.ApplyFuncXY(s, BuildDataStage)
 }
 
+// RenderPipeline lays out the acquired snapshot data and writes the shared
+// canvas output.
+func RenderPipeline(s *pipeline.State) {
+	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
+	pipeline.ApplyFuncX(s, stages.InitDrawingBounds)
+	pipeline.ApplyFuncX(s, stages.ReserveTitleBounds)
+	pipeline.ApplyFuncX(s, stages.ReserveFooterBounds)
+	pipeline.ApplyFuncXY(s, LayoutStage)
+	pipeline.ApplyFuncXY(s, RenderStage)
+	pipeline.ApplyFuncX(s, stages.ApplyTitle)
+	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+	pipeline.ApplyFuncX(s, stages.WriteCanvas)
+}
+
+// LayoutStage assigns metric-proportional vertical bands inside the drawable
+// area and offsets them below any title reservation.
+func LayoutStage(common *stages.CommonState, state *State) error {
+	bounds := common.DrawingBounds
+	layout := LayoutData(state.Data, common.Width, int(bounds.Height()))
+	offsetLayout(&layout, bounds.Min.Y)
+	state.Layout = layout
+
+	return nil
+}
+
+// RenderStage creates the shared-canvas shapes from the positioned layout.
+func RenderStage(common *stages.CommonState, state *State) error {
+	common.Canvas = RenderToCanvas(state.Layout, common.Width, common.Height)
+
+	return nil
+}
+
+func offsetLayout(layout *Layout, offset float64) {
+	layout.Top += offset
+	layout.Bottom += offset
+	for columnIndex := range layout.Columns {
+		for bandIndex := range layout.Columns[columnIndex].Bands {
+			layout.Columns[columnIndex].Bands[bandIndex].Top += offset
+			layout.Columns[columnIndex].Bands[bandIndex].Bottom += offset
+		}
+	}
+	for flowIndex := range layout.Flows {
+		layout.Flows[flowIndex].FromTop += offset
+		layout.Flows[flowIndex].FromBottom += offset
+		layout.Flows[flowIndex].ToTop += offset
+		layout.Flows[flowIndex].ToBottom += offset
+	}
+}
+
 func acquireSnapshots(common *stages.CommonState, state *State, cfg *config.Alluvial) error {
 	snapshots := make([]Snapshot, 0, len(cfg.References))
 	for _, reference := range cfg.References {

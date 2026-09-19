@@ -82,8 +82,8 @@ func (c *AlluvialCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Alluvial)
 }
 
-// Run acquires per-reference snapshot data. Layout and output writing are
-// introduced by the alluvial rendering unit.
+// Run resolves each reference snapshot, lays out aligned flows, and writes the
+// requested shared-canvas image.
 func (c *AlluvialCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -108,6 +108,7 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
 	alluvial.AcquireData(s)
+	alluvial.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "alluvial pipeline failed")
 }

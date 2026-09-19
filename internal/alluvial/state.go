@@ -10,6 +10,7 @@ type State struct {
 	WidthMetric metric.Name
 	Snapshots   []Snapshot
 	Data        Data
+	Layout      Layout
 }
 
 // Snapshot is the scanned directory tree at one caller-ordered reference.
