@@ -70,6 +70,7 @@ func RenderStage(common *stages.CommonState, state *State) error {
 
 func offsetLayout(layout *Layout, offset float64) {
 	layout.Top += offset
+
 	layout.Bottom += offset
 	for columnIndex := range layout.Columns {
 		for bandIndex := range layout.Columns[columnIndex].Bands {
@@ -77,6 +78,7 @@ func offsetLayout(layout *Layout, offset float64) {
 			layout.Columns[columnIndex].Bands[bandIndex].Bottom += offset
 		}
 	}
+
 	for flowIndex := range layout.Flows {
 		layout.Flows[flowIndex].FromTop += offset
 		layout.Flows[flowIndex].FromBottom += offset

@@ -24,31 +24,3 @@ type Options struct {
 	Metric metric.Name
 	Expand []string
 }
-
-// Data is the deterministic, renderer-independent alluvial input model.
-type Data struct {
-	Columns     []Column
-	Transitions []Transition
-}
-
-// Column contains metric widths for a single reference snapshot.
-type Column struct {
-	Reference string
-	Values    []Value
-}
-
-// Value identifies a directory and its metric width in one snapshot.
-type Value struct {
-	Path  string
-	Width float64
-}
-
-// Transition joins one path in adjacent reference columns. A missing endpoint
-// has zero width, allowing a renderer to taper introduced and removed paths.
-type Transition struct {
-	FromReference string
-	ToReference   string
-	Path          string
-	FromWidth     float64
-	ToWidth       float64
-}

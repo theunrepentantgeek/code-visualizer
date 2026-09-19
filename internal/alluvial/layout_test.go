@@ -39,8 +39,14 @@ func TestLayoutData_TapersIntroducedAndRemovedPaths(t *testing.T) {
 
 	layout := alluvial.LayoutData(alluvial.Data{
 		Columns: []alluvial.Column{
-			{Reference: "before", Values: []alluvial.Value{{Path: "continuing", Width: 10}, {Path: "removed", Width: 5}}},
-			{Reference: "after", Values: []alluvial.Value{{Path: "continuing", Width: 20}, {Path: "introduced", Width: 5}}},
+			{
+				Reference: "before",
+				Values:    []alluvial.Value{{Path: "continuing", Width: 10}, {Path: "removed", Width: 5}},
+			},
+			{
+				Reference: "after",
+				Values:    []alluvial.Value{{Path: "continuing", Width: 20}, {Path: "introduced", Width: 5}},
+			},
 		},
 		Transitions: []alluvial.Transition{
 			{FromReference: "before", ToReference: "after", Path: "continuing", FromWidth: 10, ToWidth: 20},

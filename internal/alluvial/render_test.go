@@ -26,6 +26,7 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
 	filledPaths := make([]mock.Call, 0)
+
 	for _, call := range backend.Calls {
 		if call.Method == "DrawFilledPath" {
 			filledPaths = append(filledPaths, call)

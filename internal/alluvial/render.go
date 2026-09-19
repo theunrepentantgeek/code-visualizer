@@ -64,6 +64,7 @@ func addAlluvialBackground(cv *canvas.Canvas, width, height int) {
 func addAlluvialColumns(cv *canvas.Canvas, layout Layout) {
 	lineSpec := &canvas.LineSpec{Stroke: inks.FixedInk(alluvialGuide), StrokeWidth: 1}
 	textSpec := &canvas.TextSpec{Ink: inks.FixedInk(alluvialLabel), FontSize: 13, Anchor: canvas.AnchorMiddle}
+
 	for _, column := range layout.Columns {
 		cv.AddLine(canvas.LayerStructure, canvas.Line{
 			Spec: lineSpec,
@@ -82,9 +83,11 @@ func validFlow(flow Flow) bool {
 	if flow.FromX >= flow.ToX {
 		return false
 	}
+
 	if flow.FromBottom < flow.FromTop || flow.ToBottom < flow.ToTop {
 		return false
 	}
+
 	if flow.FromBottom == flow.FromTop && flow.ToBottom == flow.ToTop {
 		return false
 	}

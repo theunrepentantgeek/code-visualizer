@@ -1,14 +1,43 @@
 package alluvial
 
 import (
+	"cmp"
 	"path"
-	"sort"
+	"slices"
 
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
+
+// Data is the deterministic, renderer-independent alluvial input model.
+type Data struct {
+	Columns     []Column
+	Transitions []Transition
+}
+
+// Column contains metric widths for a single reference snapshot.
+type Column struct {
+	Reference string
+	Values    []Value
+}
+
+// Value identifies a directory and its metric width in one snapshot.
+type Value struct {
+	Path  string
+	Width float64
+}
+
+// Transition joins one path in adjacent reference columns. A missing endpoint
+// has zero width, allowing a renderer to taper introduced and removed paths.
+type Transition struct {
+	FromReference string
+	ToReference   string
+	Path          string
+	FromWidth     float64
+	ToWidth       float64
+}
 
 // BuildData creates ordered snapshot columns and deterministic transitions.
 // Widths always come from the reference snapshot itself, never from a delta.
@@ -68,8 +97,8 @@ func selectedValues(root *model.Directory, options Options) []Value {
 		})
 	}
 
-	sort.Slice(values, func(i, j int) bool {
-		return values[i].Path < values[j].Path
+	slices.SortFunc(values, func(left, right Value) int {
+		return cmp.Compare(left.Path, right.Path)
 	})
 
 	return values
@@ -89,6 +118,7 @@ func directoryWidth(directory *model.Directory, metricName metric.Name) float64 
 
 func buildTransitions(columns []Column) []Transition {
 	transitions := make([]Transition, 0)
+
 	for i := 0; i+1 < len(columns); i++ {
 		from, to := columns[i], columns[i+1]
 		fromValues := valuesByPath(from.Values)
@@ -120,6 +150,7 @@ func valuesByPath(values []Value) map[string]float64 {
 
 func unionPaths(left, right map[string]float64) []string {
 	paths := make([]string, 0, len(left)+len(right))
+
 	seen := make(map[string]struct{}, len(left)+len(right))
 	for directoryPath := range left {
 		seen[directoryPath] = struct{}{}
@@ -132,7 +163,7 @@ func unionPaths(left, right map[string]float64) []string {
 		}
 	}
 
-	sort.Strings(paths)
+	slices.Sort(paths)
 
 	return paths
 }

@@ -1,8 +1,9 @@
 package alluvial
 
 import (
+	"cmp"
 	"math"
-	"sort"
+	"slices"
 )
 
 const (
@@ -69,42 +70,50 @@ func LayoutData(data Data, width, height int) Layout {
 	}
 
 	for _, transition := range data.Transitions {
-		from, fromOK := bandsByReference[transition.FromReference][transition.Path]
-		to, toOK := bandsByReference[transition.ToReference][transition.Path]
-
-		switch {
-		case fromOK && toOK:
-			layout.Flows = append(layout.Flows, flowBetween(
-				transition.Path,
-				columnXForReference(layout.Columns, transition.FromReference),
-				columnXForReference(layout.Columns, transition.ToReference),
-				from,
-				to,
-			))
-		case !fromOK && toOK && positiveFinite(transition.ToWidth):
-			center := (to.Top + to.Bottom) / 2
-			layout.Flows = append(layout.Flows, Flow{
-				Path: transition.Path, FromX: columnXForReference(layout.Columns, transition.FromReference),
-				ToX:     columnXForReference(layout.Columns, transition.ToReference),
-				FromTop: center, FromBottom: center, ToTop: to.Top, ToBottom: to.Bottom,
-			})
-		case fromOK && !toOK && positiveFinite(transition.FromWidth):
-			center := (from.Top + from.Bottom) / 2
-			layout.Flows = append(layout.Flows, Flow{
-				Path: transition.Path, FromX: columnXForReference(layout.Columns, transition.FromReference),
-				ToX:     columnXForReference(layout.Columns, transition.ToReference),
-				FromTop: from.Top, FromBottom: from.Bottom, ToTop: center, ToBottom: center,
-			})
+		if flow, ok := transitionFlow(transition, bandsByReference, layout.Columns); ok {
+			layout.Flows = append(layout.Flows, flow)
 		}
 	}
 
 	return layout
 }
 
-func layoutBounds(height int) (float64, float64) {
+func layoutBounds(height int) (top, bottom float64) {
 	margin := min(layoutVerticalMargin, float64(height)/10)
 
 	return margin, float64(height) - margin
+}
+
+func transitionFlow(
+	transition Transition,
+	bandsByReference map[string]map[string]Band,
+	columns []ColumnLayout,
+) (Flow, bool) {
+	from, fromOK := bandsByReference[transition.FromReference][transition.Path]
+	to, toOK := bandsByReference[transition.ToReference][transition.Path]
+	fromX := columnXForReference(columns, transition.FromReference)
+	toX := columnXForReference(columns, transition.ToReference)
+
+	switch {
+	case fromOK && toOK:
+		return flowBetween(transition.Path, fromX, toX, from, to), true
+	case !fromOK && toOK && positiveFinite(transition.ToWidth):
+		center := (to.Top + to.Bottom) / 2
+
+		return Flow{
+			Path: transition.Path, FromX: fromX, ToX: toX,
+			FromTop: center, FromBottom: center, ToTop: to.Top, ToBottom: to.Bottom,
+		}, true
+	case fromOK && !toOK && positiveFinite(transition.FromWidth):
+		center := (from.Top + from.Bottom) / 2
+
+		return Flow{
+			Path: transition.Path, FromX: fromX, ToX: toX,
+			FromTop: from.Top, FromBottom: from.Bottom, ToTop: center, ToBottom: center,
+		}, true
+	default:
+		return Flow{}, false
+	}
 }
 
 func columnX(index, count, width int) float64 {
@@ -118,11 +127,12 @@ func columnX(index, count, width int) float64 {
 
 func layoutBands(values []Value, top, bottom float64) []Band {
 	values = append([]Value(nil), values...)
-	sort.Slice(values, func(i, j int) bool {
-		return values[i].Path < values[j].Path
+	slices.SortFunc(values, func(left, right Value) int {
+		return cmp.Compare(left.Path, right.Path)
 	})
 
 	total := 0.0
+
 	filtered := values[:0]
 	for _, value := range values {
 		if !positiveFinite(value.Width) {
@@ -132,6 +142,7 @@ func layoutBands(values []Value, top, bottom float64) []Band {
 		total += value.Width
 		filtered = append(filtered, value)
 	}
+
 	if total == 0 || bottom <= top {
 		return nil
 	}
@@ -140,6 +151,7 @@ func layoutBands(values []Value, top, bottom float64) []Band {
 	available := bottom - top - gap*float64(len(filtered)-1)
 	bands := make([]Band, 0, len(filtered))
 	y := top
+
 	for _, value := range filtered {
 		bandHeight := available * value.Width / total
 		bands = append(bands, Band{Path: value.Path, Top: y, Bottom: y + bandHeight})

@@ -8,8 +8,9 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/alecthomas/kong"
 	gogit "github.com/go-git/go-git/v5"
+
+	"github.com/alecthomas/kong"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
@@ -100,7 +101,7 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 		{
 			name:    "rejects unknown metric",
 			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v2.0"}, Metric: new("not-a-metric")},
-			wantErr: "unknown metric metric",
+			wantErr: "unknown metric",
 		},
 		{
 			name:    "rejects parent expansion",
@@ -126,6 +127,7 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 
 			if tc.wantErr == "" {
 				g.Expect(err).NotTo(HaveOccurred())
+
 				return
 			}
 
@@ -168,16 +170,19 @@ func createAlluvialTagFixture(t *testing.T) string {
 
 	writeFixtureFile := func(name, content string) {
 		t.Helper()
+
 		filename := filepath.Join(root, name)
 		g.Expect(os.MkdirAll(filepath.Dir(filename), 0o750)).To(Succeed())
 		g.Expect(os.WriteFile(filename, []byte(content), 0o600)).To(Succeed())
 	}
 	commit := func(message string, when time.Time) plumbing.Hash {
 		t.Helper()
+
 		worktree, worktreeErr := repository.Worktree()
 		g.Expect(worktreeErr).NotTo(HaveOccurred())
 		_, worktreeErr = worktree.Add(".")
 		g.Expect(worktreeErr).NotTo(HaveOccurred())
+
 		hash, commitErr := worktree.Commit(message, &gogit.CommitOptions{
 			Author: &object.Signature{Name: "Fixture", Email: "fixture@example.com", When: when},
 		})
@@ -187,11 +192,13 @@ func createAlluvialTagFixture(t *testing.T) string {
 	}
 
 	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\n")
+
 	first := commit("first release", time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v1.0", first, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	writeFixtureFile("docs/guide.md", "# Guide\n")
+
 	second := commit("second release", time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v2.0", second, nil)
 	g.Expect(err).NotTo(HaveOccurred())

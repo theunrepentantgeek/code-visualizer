@@ -1,7 +1,6 @@
 package alluvial_test
 
 import (
-	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -19,7 +18,7 @@ const widthMetric = metric.Name("test-width.sum")
 func TestMain(m *testing.M) {
 	filesystem.Register()
 
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func TestBuildData_PreservesReferenceOrderAndAlignsSnapshotWidths(t *testing.T) {
