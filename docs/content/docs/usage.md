@@ -35,7 +35,7 @@ Each visualisation has its own reference page describing the flags it accepts:
 - [bubble-tree]({{< relref "bubble-tree" >}}) — files as circles packed into enclosing bubbles.
 - [spiral]({{< relref "spiral" >}}) — commit activity plotted along a spiral of time.
 - [scatter]({{< relref "scatter" >}}) — files positioned by two metrics, one on each axis.
-- `alluvial` — directory metric values across two or more release snapshots.
+- [alluvial]({{< relref "alluvial" >}}) — directory metric values across two or more release snapshots.
 - [render]({{< relref "render" >}}) — named presets that combine a visualisation, metrics, and a palette.
 
 See [Shared concepts]({{< relref "/docs/shared-concepts" >}}) for the metric names, palettes, and

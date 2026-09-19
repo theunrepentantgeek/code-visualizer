@@ -51,3 +51,11 @@ Two metrics plotted against one another, with an optional logarithmic axis —
 the view to reach for when you are hunting correlations.
 
 ![Scatter visualisation](scatter.png)
+
+## Alluvial
+
+Directory metrics flowing across release snapshots. Use it to see which
+subsystems appeared, disappeared, or changed in relative scale between tagged
+milestones.
+
+![Alluvial visualisation](alluvial.png)
