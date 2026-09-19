@@ -12,6 +12,9 @@ type ColourEncoding struct {
 	Palette palette.PaletteName
 }
 
+// NoColourEncoding represents a colour channel with no selected metric.
+var NoColourEncoding = ColourEncoding{}
+
 // IsSet reports whether the encoding selects a metric.
 func (e ColourEncoding) IsSet() bool {
 	return e.Metric != ""

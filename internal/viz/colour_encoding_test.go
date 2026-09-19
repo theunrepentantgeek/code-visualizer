@@ -21,7 +21,10 @@ func TestColourEncoding_IsSet_ReflectsMetricSelection(t *testing.T) {
 		encoding ColourEncoding
 		expected bool
 	}{
-		"empty encoding": {},
+		"no colour encoding": {
+			encoding: NoColourEncoding,
+			expected: false,
+		},
 		"selected metric": {
 			encoding: ColourEncoding{
 				Metric:  metric.Name("file-type"),
