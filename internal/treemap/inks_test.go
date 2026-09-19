@@ -28,7 +28,7 @@ func TestBuildTreemapInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeTestFile("a.go", "go", 100)},
 	}
 
-	is := treemap.BuildInks(root, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
+	is := treemap.BuildInks(root, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindFixed))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -50,7 +50,7 @@ func TestBuildTreemapInks_NumericFill(t *testing.T) {
 		root,
 		stages.RequestedMetrics{},
 		colourEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
@@ -73,7 +73,7 @@ func TestBuildTreemapInks_CategoricalFill(t *testing.T) {
 		root,
 		stages.RequestedMetrics{},
 		colourEncoding(filesystem.FileType, palette.Categorization),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))

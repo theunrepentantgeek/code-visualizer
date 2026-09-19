@@ -28,7 +28,7 @@ func TestBuildDonutInks_OmittedBorderUsesFixedFallback(t *testing.T) {
 		root,
 		requested,
 		viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(result.HasBorderMetric).To(BeFalse())
@@ -72,7 +72,7 @@ func TestBuildDonutInks_CategoricalDirectoryFill(t *testing.T) {
 		root,
 		requested,
 		viz.ColourEncoding{Metric: "file-type.mode", Palette: palette.Categorization},
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(result.Fill.Info().Kind).To(Equal(inks.KindCategorical))

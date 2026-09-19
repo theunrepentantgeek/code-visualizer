@@ -110,7 +110,7 @@ func TestBuildInks_DirectoryPointsUseDirectoryMetrics(t *testing.T) {
 		dataset,
 		requested,
 		viz.ColourEncoding{Metric: sizeMetric, Palette: palette.Temperature},
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(result.Fill.Info().Kind).To(Equal(inks.KindNumeric))

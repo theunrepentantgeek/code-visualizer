@@ -41,7 +41,7 @@ func TestBuildInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeFile("a.go", "go", 100)},
 	}
 
-	is := bubbletree.BuildInks(root, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
+	is := bubbletree.BuildInks(root, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindFixed))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -62,7 +62,7 @@ func TestBuildInks_NumericFill(t *testing.T) {
 	is := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))

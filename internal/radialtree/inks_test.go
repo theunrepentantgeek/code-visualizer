@@ -36,7 +36,7 @@ func TestBuildRadialInks_DefaultColours(t *testing.T) {
 		Files: []*model.File{makeRadialFile("a.go", "go", 100)},
 	}
 
-	is := radialtree.BuildInks(root, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
+	is := radialtree.BuildInks(root, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindFixed))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))
@@ -57,7 +57,7 @@ func TestBuildRadialInks_NumericFill(t *testing.T) {
 	is := radialtree.BuildInks(
 		root, stages.RequestedMetrics{},
 		radialEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
@@ -79,7 +79,7 @@ func TestBuildRadialInks_CategoricalFill(t *testing.T) {
 	is := radialtree.BuildInks(
 		root, stages.RequestedMetrics{},
 		radialEncoding(filesystem.FileType, palette.Categorization),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))

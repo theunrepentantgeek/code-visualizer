@@ -59,7 +59,7 @@ func TestBuildTreemapInks_Numeric(t *testing.T) {
 	is := treemap.BuildInks(
 		root, stages.RequestedMetrics{},
 		colourEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
@@ -81,7 +81,7 @@ func TestBuildTreemapInks_Categorical(t *testing.T) {
 	is := treemap.BuildInks(
 		root, stages.RequestedMetrics{},
 		colourEncoding(filesystem.FileType, palette.Categorization),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
@@ -104,7 +104,7 @@ func TestRenderTreemapToCanvas_PNG(t *testing.T) {
 	is := treemap.BuildInks(
 		root, stages.RequestedMetrics{},
 		colourEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := treemap.RenderToCanvas(rects, root, 800, 600, is, "")
 
@@ -138,7 +138,7 @@ func TestRenderTreemapToCanvas_SVG(t *testing.T) {
 	is := treemap.BuildInks(
 		root, stages.RequestedMetrics{},
 		colourEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := treemap.RenderToCanvas(rects, root, 400, 300, is, "")
 
@@ -184,7 +184,7 @@ func TestRenderTreemapToCanvas_JPG(t *testing.T) {
 	is := treemap.BuildInks(
 		root, stages.RequestedMetrics{},
 		colourEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := treemap.RenderToCanvas(rects, root, 400, 300, is, "")
 

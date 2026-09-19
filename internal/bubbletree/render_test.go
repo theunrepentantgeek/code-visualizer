@@ -143,7 +143,7 @@ func TestRenderBubbleToCanvas_PNG(t *testing.T) { //nolint:dupl // similar to SV
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
@@ -169,7 +169,7 @@ func TestRenderBubbleToCanvas_SVG(t *testing.T) {
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
 
@@ -208,7 +208,7 @@ func TestRenderBubbleToCanvas_JPG(t *testing.T) { //nolint:dupl // similar to PN
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 400, 300, inks)
 
@@ -231,7 +231,7 @@ func TestRenderBubbleToCanvas_EmptyDirectory(t *testing.T) {
 
 	root := &model.Directory{Path: "empty"}
 	nodes := bubbletree.Layout(root, 800, 800, filesystem.FileSize, bubbletree.LabelFoldersOnly)
-	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 800, inks)
 
@@ -255,7 +255,7 @@ func TestRenderBubbleToCanvas_LabelsAll(t *testing.T) {
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
@@ -279,7 +279,7 @@ func TestRenderBubbleToCanvas_LabelsNone(t *testing.T) {
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
@@ -329,7 +329,7 @@ func TestRenderBubbleToCanvas_DirectoryLabelsUseReservedBandOutsideBubble(t *tes
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 1000, 800, inks)
 
@@ -398,7 +398,7 @@ func TestRenderBubbleToCanvas_EmptyLabelledDirectoryKeepsVisibleBubble(t *testin
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
@@ -447,7 +447,7 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)
@@ -498,7 +498,7 @@ func TestRenderBubbleToCanvas_SVGOmitsRootLabel(t *testing.T) {
 	inks := bubbletree.BuildInks(
 		root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature),
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	cv := bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks)

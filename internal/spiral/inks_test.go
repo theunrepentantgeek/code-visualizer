@@ -64,7 +64,7 @@ func TestBuildInks_Numeric(t *testing.T) {
 		buckets,
 		stages.RequestedMetrics{},
 		viz.ColourEncoding{Metric: filesystem.FileSize, Palette: palette.Temperature},
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindNumeric))
@@ -80,7 +80,7 @@ func TestBuildInks_Categorical(t *testing.T) {
 		buckets,
 		stages.RequestedMetrics{},
 		viz.ColourEncoding{Metric: filesystem.FileType, Palette: palette.Categorization},
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindCategorical))
@@ -91,7 +91,7 @@ func TestBuildInks_NoMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	buckets := sampleTimeBuckets()
-	is := spiral.BuildInks(buckets, stages.RequestedMetrics{}, viz.ColourEncoding{}, viz.ColourEncoding{})
+	is := spiral.BuildInks(buckets, stages.RequestedMetrics{}, viz.NoColourEncoding, viz.NoColourEncoding)
 
 	g.Expect(is.Fill.Info().Kind).To(Equal(inks.KindFixed))
 	g.Expect(is.Border.Info().Kind).To(Equal(inks.KindFixed))

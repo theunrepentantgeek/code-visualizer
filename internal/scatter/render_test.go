@@ -55,7 +55,7 @@ func TestRenderToCanvas_PNG(t *testing.T) {
 		dataset,
 		stages.RequestedMetrics{},
 		viz.ColourEncoding{Metric: filesystem.FileSize, Palette: palette.Temperature},
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := RenderToCanvas(layout, 800, 600, pointInks)
 
@@ -98,7 +98,7 @@ func TestRenderToCanvas_SVGIncludesAxisTitlesAndLabels(t *testing.T) {
 		dataset,
 		stages.RequestedMetrics{},
 		viz.ColourEncoding{Metric: filesystem.FileSize, Palette: palette.Temperature},
-		viz.ColourEncoding{},
+		viz.NoColourEncoding,
 	)
 	cv := RenderToCanvas(layout, 800, 600, pointInks)
 
