@@ -25,6 +25,8 @@ internal/
   treemap/
 ```
 
+`docs/solutions/` contains categorized, YAML-frontmatter-indexed learnings from past fixes and workflows; it is relevant when implementing or debugging documented areas.
+
 ## Commands
 
 - `task build` — Build the codeviz binary
