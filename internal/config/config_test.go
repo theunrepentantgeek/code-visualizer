@@ -54,6 +54,15 @@ func TestNew_TreemapDefaultsSet(t *testing.T) {
 	g.Expect(cfg.Treemap).NotTo(BeNil())
 }
 
+func TestNew_AlluvialDefaultsSet(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	g.Expect(cfg.Alluvial).NotTo(BeNil())
+}
+
 func TestNew_OptionalFieldsNil(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -166,6 +175,31 @@ func TestLoad_YAMLDonutTree_ParsesMetrics(t *testing.T) {
 	g.Expect(*cfg.DonutTree.Size).To(Equal("file-lines"))
 	g.Expect(*cfg.DonutTree.Fill).To(Equal(MetricSpec{Metric: "file-type", Palette: "categorization"}))
 	g.Expect(*cfg.DonutTree.Border).To(Equal(MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
+}
+
+func TestLoad_YAMLAlluvial_ParsesOrderedReferencesAndExpansions(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "alluvial:\n" +
+		"  references:\n" +
+		"    - tag:v1.0\n" +
+		"    - sha:abc1234\n" +
+		"    - 2026-01-01\n" +
+		"  metric: file-size\n" +
+		"  expand:\n" +
+		"    - cmd\n" +
+		"    - internal/config\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	g.Expect(cfg.Load(path)).To(Succeed())
+	g.Expect(cfg.Alluvial.References).To(Equal([]string{"tag:v1.0", "sha:abc1234", "2026-01-01"}))
+	g.Expect(*cfg.Alluvial.Metric).To(Equal("file-size"))
+	g.Expect(cfg.Alluvial.Expand).To(Equal([]string{"cmd", "internal/config"}))
 }
 
 func TestLoad_YAMLLegacyWidth_ParsesIntoImageSize(t *testing.T) {
@@ -563,6 +597,22 @@ func TestForExport_Spiral_OnlyIncludesSpiralSection(t *testing.T) {
 	g.Expect(exported.Treemap).To(BeNil())
 	g.Expect(exported.Radial).To(BeNil())
 	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Scatter).To(BeNil())
+}
+
+func TestForExport_Alluvial_OnlyIncludesAlluvialSection(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New()
+
+	exported := cfg.ForExport("alluvial")
+
+	g.Expect(exported.Alluvial).To(BeIdenticalTo(cfg.Alluvial))
+	g.Expect(exported.Treemap).To(BeNil())
+	g.Expect(exported.Radial).To(BeNil())
+	g.Expect(exported.Bubbletree).To(BeNil())
+	g.Expect(exported.Spiral).To(BeNil())
 	g.Expect(exported.Scatter).To(BeNil())
 }
 

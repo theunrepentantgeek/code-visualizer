@@ -46,6 +46,7 @@ type Config struct {
 	Bubbletree  *Bubbletree   `yaml:"bubble-tree,omitempty" json:"bubble-tree,omitempty"`
 	Spiral      *Spiral       `yaml:"spiral,omitempty"      json:"spiral,omitempty"`
 	Scatter     *Scatter      `yaml:"scatter,omitempty"     json:"scatter,omitempty"`
+	Alluvial    *Alluvial     `yaml:"alluvial,omitempty"    json:"alluvial,omitempty"`
 	Title       *Title        `yaml:"title,omitempty"       json:"title,omitempty"`
 	Footer      *Footer       `yaml:"footer,omitempty"      json:"footer,omitempty"`
 	FileFilter  []filter.Rule `yaml:"fileFilter,omitempty"  json:"fileFilter,omitempty"`
@@ -95,7 +96,8 @@ func New() *Config {
 		Spiral: &Spiral{
 			Resolution: new("daily"),
 		},
-		Scatter: &Scatter{},
+		Scatter:  &Scatter{},
+		Alluvial: &Alluvial{},
 		FileFilter: []filter.Rule{
 			{Pattern: ".*", Mode: filter.Exclude},
 		},
@@ -194,6 +196,8 @@ func (c *Config) ForExport(vizName string) *Config {
 		exported.Spiral = c.Spiral
 	case "scatter":
 		exported.Scatter = c.Scatter
+	case "alluvial":
+		exported.Alluvial = c.Alluvial
 	default:
 	}
 
