@@ -1,11 +1,17 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/alecthomas/kong"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
@@ -126,4 +132,71 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 			g.Expect(err).To(MatchError(ContainSubstring(tc.wantErr)))
 		})
 	}
+}
+
+func TestAlluvialCmd_Run_ResolvesTaggedSnapshots(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialTagFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: repository,
+		Output:     output,
+		References: []string{"tag:v1.0", "tag:v2.0"},
+		Metric:     "file-lines",
+		Width:      320,
+		Height:     240,
+		Footer:     "fixture footer",
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(image)).To(ContainSubstring("tag:v1.0"))
+	g.Expect(string(image)).To(ContainSubstring("tag:v2.0"))
+}
+
+func createAlluvialTagFixture(t *testing.T) string {
+	t.Helper()
+	g := NewGomegaWithT(t)
+	root := t.TempDir()
+
+	repository, err := gogit.PlainInit(root, false)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	writeFixtureFile := func(name, content string) {
+		t.Helper()
+		filename := filepath.Join(root, name)
+		g.Expect(os.MkdirAll(filepath.Dir(filename), 0o750)).To(Succeed())
+		g.Expect(os.WriteFile(filename, []byte(content), 0o600)).To(Succeed())
+	}
+	commit := func(message string, when time.Time) plumbing.Hash {
+		t.Helper()
+		worktree, worktreeErr := repository.Worktree()
+		g.Expect(worktreeErr).NotTo(HaveOccurred())
+		_, worktreeErr = worktree.Add(".")
+		g.Expect(worktreeErr).NotTo(HaveOccurred())
+		hash, commitErr := worktree.Commit(message, &gogit.CommitOptions{
+			Author: &object.Signature{Name: "Fixture", Email: "fixture@example.com", When: when},
+		})
+		g.Expect(commitErr).NotTo(HaveOccurred())
+
+		return hash
+	}
+
+	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\n")
+	first := commit("first release", time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
+	_, err = repository.CreateTag("v1.0", first, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	writeFixtureFile("docs/guide.md", "# Guide\n")
+	second := commit("second release", time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC))
+	_, err = repository.CreateTag("v2.0", second, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	writeFixtureFile("uncommitted/ignored.go", "package ignored\n")
+
+	return root
 }
