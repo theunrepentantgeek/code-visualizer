@@ -278,7 +278,9 @@ func renderAlluvial(common *stages.CommonState) error {
 	state := &alluvial.State{Data: alluvial.Data{
 		Columns: []alluvial.Column{
 			{Reference: "tag:v1.0", Values: []alluvial.Value{{Path: "api", Width: 12}, {Path: "docs", Width: 4}}},
-			{Reference: "tag:v2.0", Values: []alluvial.Value{{Path: "api", Width: 18}, {Path: "docs", Width: 5}, {Path: "web", Width: 8}}},
+			{Reference: "tag:v2.0", Values: []alluvial.Value{
+				{Path: "api", Width: 18}, {Path: "docs", Width: 5}, {Path: "web", Width: 8},
+			}},
 			{Reference: "tag:v3.0", Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "web", Width: 14}}},
 		},
 		Transitions: []alluvial.Transition{

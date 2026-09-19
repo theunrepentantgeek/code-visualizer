@@ -104,8 +104,12 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 			wantErr: "unknown metric",
 		},
 		{
-			name:    "rejects parent expansion",
-			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v2.0"}, Metric: new("file-size"), Expand: []string{"../outside"}},
+			name: "rejects parent expansion",
+			cfg: &config.Alluvial{
+				References: []string{"tag:v1.0", "tag:v2.0"},
+				Metric:     new("file-size"),
+				Expand:     []string{"../outside"},
+			},
 			wantErr: "invalid expansion path",
 		},
 		{
