@@ -99,6 +99,11 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 			wantErr: "metric is required",
 		},
 		{
+			name:    "rejects duplicate references",
+			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v1.0"}, Metric: new("file-size")},
+			wantErr: "references must be unique",
+		},
+		{
 			name:    "rejects unknown metric",
 			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v2.0"}, Metric: new("not-a-metric")},
 			wantErr: "unknown metric",

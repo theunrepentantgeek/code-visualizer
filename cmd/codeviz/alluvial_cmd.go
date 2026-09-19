@@ -44,6 +44,15 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 		return eris.New("alluvial requires at least two references")
 	}
 
+	references := make(map[string]struct{}, len(cfg.References))
+	for _, reference := range cfg.References {
+		if _, exists := references[reference]; exists {
+			return eris.Errorf("alluvial references must be unique: duplicate reference %q", reference)
+		}
+
+		references[reference] = struct{}{}
+	}
+
 	metricName := metric.Name(ptrString(cfg.Metric))
 	if metricName == "" {
 		return eris.New("metric is required")
