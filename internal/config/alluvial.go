@@ -1,5 +1,7 @@
 package config
 
+import "slices"
+
 // Alluvial holds persistent configuration for alluvial visualizations.
 type Alluvial struct {
 	References []string `yaml:"references,omitempty" json:"references,omitempty"`
@@ -25,5 +27,5 @@ func overrideStrings(target *[]string, values []string) {
 		return
 	}
 
-	*target = append([]string(nil), values...)
+	*target = slices.Clone(values)
 }

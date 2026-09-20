@@ -36,10 +36,11 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	}
 
 	g.Expect(filledPaths).To(HaveLen(2))
-	g.Expect(filledPaths[0].Loops).To(HaveLen(1))
-	g.Expect(len(filledPaths[0].Loops[0])).To(BeNumerically(">", 4))
-	g.Expect(filledPaths[0].Loops[0][0]).To(Equal(geometry.Point{X: 20, Y: 10}))
-	g.Expect(filledPaths[0].Loops[0][len(filledPaths[0].Loops[0])-1]).To(Equal(geometry.Point{X: 20, Y: 40}))
+	firstPath := filledPaths[0]
+	g.Expect(firstPath.Loops).To(HaveLen(1))
+	g.Expect(len(firstPath.Loops[0])).To(BeNumerically(">", 4))
+	g.Expect(firstPath.Loops[0][0]).To(Equal(geometry.Point{X: 20, Y: 10}))
+	g.Expect(firstPath.Loops[0][len(firstPath.Loops[0])-1]).To(Equal(geometry.Point{X: 20, Y: 40}))
 	g.Expect(filledPaths[1].Loops[0][0]).To(Equal(filledPaths[1].Loops[0][len(filledPaths[1].Loops[0])-1]))
 }
 
