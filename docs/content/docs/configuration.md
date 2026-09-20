@@ -30,7 +30,8 @@ alluvial:
 ```
 
 CLI `--reference` values replace the configured `references` list while
-preserving their order. Repeat `--expand` to show only a selected directory's
-direct children. `--include` and `--exclude` remain normal file filters: they
-bound which directories can be represented, do not imply hierarchy expansion,
-and do not create an `Other` aggregate.
+preserving their order. An empty reference selects the repository's `HEAD`
+commit. Repeat `--expand` to show only a selected directory's direct children.
+`--include` and `--exclude` remain normal file filters: they bound which
+directories can be represented, do not imply hierarchy expansion, and do not
+create an `Other` aggregate.

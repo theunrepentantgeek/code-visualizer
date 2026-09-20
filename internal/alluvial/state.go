@@ -1,6 +1,7 @@
 package alluvial
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -11,6 +12,7 @@ type State struct {
 	Snapshots   []Snapshot
 	Data        Data
 	Layout      Layout
+	Legend      *legend.Config
 }
 
 // Snapshot is the scanned directory tree at one caller-ordered reference.

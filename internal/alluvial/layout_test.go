@@ -33,6 +33,25 @@ func TestLayoutData_ScalesBandsInProportionToTheirMetricValues(t *testing.T) {
 	g.Expect(layout.Flows).To(HaveLen(2))
 }
 
+func TestLayoutData_UsesSharedScaleAcrossColumns(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout := alluvial.LayoutData(alluvial.Data{
+		Columns: []alluvial.Column{
+			{Reference: "smaller", Values: []alluvial.Value{{Path: "api", Width: 10}}},
+			{Reference: "larger", Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "docs", Width: 30}}},
+		},
+	}, 200, 100)
+
+	smaller := layout.Columns[0].Bands[0]
+	larger := layout.Columns[1].Bands[0]
+
+	g.Expect(smaller.Bottom - smaller.Top).To(
+		BeNumerically("~", larger.Bottom-larger.Top, 0.001),
+	)
+}
+
 func TestLayoutData_TapersIntroducedAndRemovedPaths(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

@@ -32,6 +32,7 @@ type Band struct {
 	Path   string
 	Top    float64
 	Bottom float64
+	Width  float64
 }
 
 // Flow is a filled quadrilateral joining one directory between adjacent columns.
@@ -43,8 +44,8 @@ type Flow struct {
 	ToTop, ToBottom     float64
 }
 
-// LayoutData positions each release column independently, preserving metric
-// proportions within that snapshot and aligning paths across transitions.
+// LayoutData positions release columns on a shared metric scale and aligns
+// paths across transitions.
 func LayoutData(data Data, width, height int) Layout {
 	if width <= 0 || height <= 0 {
 		return Layout{}
@@ -57,20 +58,26 @@ func LayoutData(data Data, width, height int) Layout {
 		Bottom:  bottom,
 	}
 	bandsByReference := make(map[string]map[string]Band, len(data.Columns))
+	xByReference := make(map[string]float64, len(data.Columns))
+	scale := maxColumnTotal(data.Columns)
+	maximumBandCount := maxBandCount(data.Columns)
+	gap := min(layoutBandGap, (bottom-top)/float64(2*maximumBandCount))
+	available := bottom - top - gap*float64(maximumBandCount-1)
 
 	for index, column := range data.Columns {
 		x := columnX(index, len(data.Columns), width)
-		bands := layoutBands(column.Values, top, bottom)
+		bands := layoutBands(column.Values, top, scale, available, gap)
 		layout.Columns[index] = ColumnLayout{
 			Reference: column.Reference,
 			X:         x,
 			Bands:     bands,
 		}
 		bandsByReference[column.Reference] = bandsByPath(bands)
+		xByReference[column.Reference] = x
 	}
 
 	for _, transition := range data.Transitions {
-		if flow, ok := transitionFlow(transition, bandsByReference, layout.Columns); ok {
+		if flow, ok := transitionFlow(transition, bandsByReference, xByReference); ok {
 			layout.Flows = append(layout.Flows, flow)
 		}
 	}
@@ -87,12 +94,12 @@ func layoutBounds(height int) (top, bottom float64) {
 func transitionFlow(
 	transition Transition,
 	bandsByReference map[string]map[string]Band,
-	columns []ColumnLayout,
+	xByReference map[string]float64,
 ) (Flow, bool) {
 	from, fromOK := bandsByReference[transition.FromReference][transition.Path]
 	to, toOK := bandsByReference[transition.ToReference][transition.Path]
-	fromX := columnXForReference(columns, transition.FromReference)
-	toX := columnXForReference(columns, transition.ToReference)
+	fromX := xByReference[transition.FromReference]
+	toX := xByReference[transition.ToReference]
 
 	switch {
 	case fromOK && toOK:
@@ -125,13 +132,47 @@ func columnX(index, count, width int) float64 {
 	return margin + float64(index)*(float64(width)-2*margin)/float64(count-1)
 }
 
-func layoutBands(values []Value, top, bottom float64) []Band {
+func maxColumnTotal(columns []Column) float64 {
+	maximum := 0.0
+
+	for _, column := range columns {
+		total := 0.0
+
+		for _, value := range column.Values {
+			if positiveFinite(value.Width) {
+				total += value.Width
+			}
+		}
+
+		maximum = max(maximum, total)
+	}
+
+	return maximum
+}
+
+func maxBandCount(columns []Column) int {
+	count := 0
+
+	for _, column := range columns {
+		positiveValues := 0
+
+		for _, value := range column.Values {
+			if positiveFinite(value.Width) {
+				positiveValues++
+			}
+		}
+
+		count = max(count, positiveValues)
+	}
+
+	return count
+}
+
+func layoutBands(values []Value, top, scale, available, gap float64) []Band {
 	values = append([]Value(nil), values...)
 	slices.SortFunc(values, func(left, right Value) int {
 		return cmp.Compare(left.Path, right.Path)
 	})
-
-	total := 0.0
 
 	filtered := values[:0]
 	for _, value := range values {
@@ -139,22 +180,19 @@ func layoutBands(values []Value, top, bottom float64) []Band {
 			continue
 		}
 
-		total += value.Width
 		filtered = append(filtered, value)
 	}
 
-	if total == 0 || bottom <= top {
+	if scale == 0 || len(filtered) == 0 || available <= 0 {
 		return nil
 	}
 
-	gap := min(layoutBandGap, (bottom-top)/float64(2*len(filtered)))
-	available := bottom - top - gap*float64(len(filtered)-1)
 	bands := make([]Band, 0, len(filtered))
 	y := top
 
 	for _, value := range filtered {
-		bandHeight := available * value.Width / total
-		bands = append(bands, Band{Path: value.Path, Top: y, Bottom: y + bandHeight})
+		bandHeight := available * value.Width / scale
+		bands = append(bands, Band{Path: value.Path, Top: y, Bottom: y + bandHeight, Width: value.Width})
 		y += bandHeight + gap
 	}
 
@@ -176,16 +214,6 @@ func flowBetween(path string, fromX, toX float64, from, to Band) Flow {
 		FromTop: from.Top, FromBottom: from.Bottom,
 		ToTop: to.Top, ToBottom: to.Bottom,
 	}
-}
-
-func columnXForReference(columns []ColumnLayout, reference string) float64 {
-	for _, column := range columns {
-		if column.Reference == reference {
-			return column.X
-		}
-	}
-
-	return 0
 }
 
 func positiveFinite(value float64) bool {

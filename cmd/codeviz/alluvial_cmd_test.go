@@ -83,33 +83,27 @@ func TestAlluvialCmd_MergeConfig_ReplacesConfiguredReferences(t *testing.T) {
 func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		name    string
+	cases := map[string]struct {
 		cfg     *config.Alluvial
 		wantErr string
 	}{
-		{
-			name:    "requires two references",
+		"requires two references": {
 			cfg:     &config.Alluvial{References: []string{"tag:v1.0"}, Metric: new("file-size")},
 			wantErr: "at least two references",
 		},
-		{
-			name:    "requires a metric",
+		"requires a metric": {
 			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v2.0"}},
 			wantErr: "metric is required",
 		},
-		{
-			name:    "rejects duplicate references",
+		"rejects duplicate references": {
 			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v1.0"}, Metric: new("file-size")},
 			wantErr: "references must be unique",
 		},
-		{
-			name:    "rejects unknown metric",
+		"rejects unknown metric": {
 			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v2.0"}, Metric: new("not-a-metric")},
 			wantErr: "unknown metric",
 		},
-		{
-			name: "rejects parent expansion",
+		"rejects parent expansion": {
 			cfg: &config.Alluvial{
 				References: []string{"tag:v1.0", "tag:v2.0"},
 				Metric:     new("file-size"),
@@ -117,8 +111,7 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 			},
 			wantErr: "invalid expansion path",
 		},
-		{
-			name: "accepts tags and supported references",
+		"accepts tags and supported references": {
 			cfg: &config.Alluvial{
 				References: []string{"tag:v1.0", "sha:abc1234", "date:2026-01-01"},
 				Metric:     new("file-size"),
@@ -127,20 +120,20 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 
-			err := (&AlluvialCmd{}).validateConfig(tc.cfg)
+			err := (&AlluvialCmd{}).validateConfig(c.cfg)
 
-			if tc.wantErr == "" {
+			if c.wantErr == "" {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				return
 			}
 
-			g.Expect(err).To(MatchError(ContainSubstring(tc.wantErr)))
+			g.Expect(err).To(MatchError(ContainSubstring(c.wantErr)))
 		})
 	}
 }
@@ -167,6 +160,105 @@ func TestAlluvialCmd_Run_ResolvesTaggedSnapshots(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(string(image)).To(ContainSubstring("tag:v1.0"))
 	g.Expect(string(image)).To(ContainSubstring("tag:v2.0"))
+}
+
+func TestAlluvialCmd_Run_UsesHEADForEmptyReference(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialTagFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: repository,
+		Output:     output,
+		References: []string{"tag:v1.0", ""},
+		Metric:     "file-lines",
+		Width:      320,
+		Height:     240,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(image)).To(ContainSubstring(">HEAD<"))
+	g.Expect(string(image)).NotTo(ContainSubstring("uncommitted"))
+}
+
+func TestAlluvialCmd_Run_ExportsFirstSnapshotAndIgnoresChangedOnly(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialTagFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.png")
+	exportPath := filepath.Join(t.TempDir(), "metrics.json")
+	changedOnly := true
+	cmd := &AlluvialCmd{
+		TargetPath: repository,
+		Output:     output,
+		References: []string{"tag:v1.0", "tag:v2.0"},
+		Metric:     "file-lines",
+		Width:      320,
+		Height:     240,
+	}
+	cfg := config.New()
+	cfg.ChangedOnly = &changedOnly
+
+	g.Expect(cmd.Run(&Flags{Config: cfg, ExportData: exportPath})).To(Succeed())
+	g.Expect(output).To(BeARegularFile())
+	g.Expect(exportPath).To(BeARegularFile())
+}
+
+func TestAlluvialCmd_Run_RendersFilteredExpandedSnapshotsInEachFormat(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		extension string
+		check     func(Gomega, []byte)
+	}{
+		"SVG": {
+			extension: ".svg",
+			check: func(g Gomega, image []byte) {
+				g.Expect(string(image)).To(ContainSubstring("tag:v1.0"))
+				g.Expect(string(image)).To(ContainSubstring("tag:v2.0"))
+				g.Expect(string(image)).To(ContainSubstring("tag:v3.0"))
+				g.Expect(string(image)).To(ContainSubstring("internal/config"))
+				g.Expect(string(image)).NotTo(ContainSubstring(">docs<"))
+			},
+		},
+		"PNG": {
+			extension: ".png",
+			check: func(g Gomega, image []byte) {
+				g.Expect(string(image)).To(HavePrefix("\x89PNG\r\n\x1a\n"))
+			},
+		},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			repository := createAlluvialTagFixture(t)
+			output := filepath.Join(t.TempDir(), "alluvial"+c.extension)
+			cmd := &AlluvialCmd{
+				TargetPath: repository,
+				Output:     output,
+				References: []string{"tag:v1.0", "tag:v2.0", "tag:v3.0"},
+				Metric:     "file-lines",
+				Expand:     []string{"internal"},
+				Include:    []filter.Rule{{Pattern: "**/*.go", Mode: filter.Include}},
+				Exclude:    []filter.Rule{{Pattern: "docs/**", Mode: filter.Exclude}},
+				Width:      320,
+				Height:     240,
+			}
+
+			g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+			image, err := os.ReadFile(output)
+			g.Expect(err).NotTo(HaveOccurred())
+			c.check(g, image)
+		})
+	}
 }
 
 func createAlluvialTagFixture(t *testing.T) string {
@@ -210,6 +302,12 @@ func createAlluvialTagFixture(t *testing.T) string {
 
 	second := commit("second release", time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v2.0", second, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	writeFixtureFile("internal/config/settings.go", "package config\n\nconst Name = \"fixture\"\n")
+
+	third := commit("third release", time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC))
+	_, err = repository.CreateTag("v3.0", third, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	writeFixtureFile("uncommitted/ignored.go", "package ignored\n")

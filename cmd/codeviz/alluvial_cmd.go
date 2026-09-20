@@ -46,6 +46,7 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 
 	references := make(map[string]struct{}, len(cfg.References))
 	for _, reference := range cfg.References {
+		reference = alluvial.SnapshotReference(reference)
 		if _, exists := references[reference]; exists {
 			return eris.Errorf("alluvial references must be unique: duplicate reference %q", reference)
 		}

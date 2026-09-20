@@ -1,6 +1,7 @@
 package alluvial
 
 import (
+	"fmt"
 	"hash/fnv"
 	"image/color"
 	"math"
@@ -30,17 +31,90 @@ func RenderToCanvas(layout Layout, width, height int) *canvas.Canvas {
 		}
 
 		cv.AddFilledPath(canvas.LayerContent, canvas.FilledPath{
-			Loops: [][]geometry.Point{{
-				{X: flow.FromX, Y: flow.FromTop},
-				{X: flow.ToX, Y: flow.ToTop},
-				{X: flow.ToX, Y: flow.ToBottom},
-				{X: flow.FromX, Y: flow.FromBottom},
-			}},
-			Fill: flowColour(flow.Path),
+			Loops: [][]geometry.Point{sweptFlowPoints(flow)},
+			Fill:  flowColour(flow.Path),
 		})
 	}
 
+	addAlluvialBandLabels(cv, layout)
+
 	return cv
+}
+
+func sweptFlowPoints(flow Flow) []geometry.Point {
+	const segments = 12
+
+	points := make([]geometry.Point, 0, 2*segments+2)
+
+	for index := range segments + 1 {
+		points = append(points, cubicPoint(
+			geometry.Point{X: flow.FromX, Y: flow.FromTop},
+			geometry.Point{X: flow.FromX + (flow.ToX-flow.FromX)/3, Y: flow.FromTop},
+			geometry.Point{X: flow.ToX - (flow.ToX-flow.FromX)/3, Y: flow.ToTop},
+			geometry.Point{X: flow.ToX, Y: flow.ToTop},
+			float64(index)/segments,
+		))
+	}
+
+	for index := segments; index >= 0; index-- {
+		points = append(points, cubicPoint(
+			geometry.Point{X: flow.FromX, Y: flow.FromBottom},
+			geometry.Point{X: flow.FromX + (flow.ToX-flow.FromX)/3, Y: flow.FromBottom},
+			geometry.Point{X: flow.ToX - (flow.ToX-flow.FromX)/3, Y: flow.ToBottom},
+			geometry.Point{X: flow.ToX, Y: flow.ToBottom},
+			float64(index)/segments,
+		))
+	}
+
+	return points
+}
+
+func cubicPoint(start, controlOne, controlTwo, end geometry.Point, t float64) geometry.Point {
+	inverse := 1 - t
+
+	return geometry.Point{
+		X: inverse*inverse*inverse*start.X + 3*inverse*inverse*t*controlOne.X +
+			3*inverse*t*t*controlTwo.X + t*t*t*end.X,
+		Y: inverse*inverse*inverse*start.Y + 3*inverse*inverse*t*controlOne.Y +
+			3*inverse*t*t*controlTwo.Y + t*t*t*end.Y,
+	}
+}
+
+func addAlluvialBandLabels(cv *canvas.Canvas, layout Layout) {
+	for _, column := range layout.Columns {
+		for _, band := range column.Bands {
+			fontSize, ok := alluvialBandLabelFontSize(band)
+			if !ok {
+				continue
+			}
+
+			center := (band.Top + band.Bottom) / 2
+			spec := &canvas.TextSpec{
+				Ink:      inks.FixedInk(alluvialLabel),
+				FontSize: fontSize,
+				Anchor:   canvas.AnchorMiddle,
+			}
+			cv.AddText(canvas.LayerOverlay, canvas.Text{
+				Spec:     spec,
+				Position: geometry.Point{X: column.X, Y: center - fontSize/2},
+				Content:  band.Path,
+			})
+			cv.AddText(canvas.LayerOverlay, canvas.Text{
+				Spec:     spec,
+				Position: geometry.Point{X: column.X, Y: center + fontSize/2},
+				Content:  fmt.Sprintf("%g", band.Width),
+			})
+		}
+	}
+}
+
+func alluvialBandLabelFontSize(band Band) (float64, bool) {
+	fontSize := min(13, (band.Bottom-band.Top)/3)
+	if fontSize < 8 {
+		return 0, false
+	}
+
+	return fontSize, true
 }
 
 func addAlluvialBackground(cv *canvas.Canvas, width, height int) {

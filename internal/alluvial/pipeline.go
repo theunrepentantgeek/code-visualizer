@@ -1,11 +1,16 @@
 package alluvial
 
 import (
+	"cmp"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
@@ -34,6 +39,7 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 func AcquireData(s *pipeline.State) {
 	pipeline.ApplyFuncXYZ(s, acquireSnapshots)
 	pipeline.ApplyFuncXY(s, BuildDataStage)
+	pipeline.ApplyFuncXY(s, BuildLegendStage)
 }
 
 // RenderPipeline lays out the acquired snapshot data and writes the shared
@@ -64,6 +70,7 @@ func LayoutStage(common *stages.CommonState, state *State) error {
 // RenderStage creates the shared-canvas shapes from the positioned layout.
 func RenderStage(common *stages.CommonState, state *State) error {
 	common.Canvas = RenderToCanvas(state.Layout, common.Width, common.Height)
+	legend.RenderInto(common.Canvas, state.Legend)
 
 	return nil
 }
@@ -89,16 +96,22 @@ func offsetLayout(layout *Layout, offset float64) {
 
 func acquireSnapshots(common *stages.CommonState, state *State, cfg *config.Alluvial) error {
 	snapshots := make([]Snapshot, 0, len(cfg.References))
-	for _, reference := range cfg.References {
+	for index, reference := range cfg.References {
 		snapshotCommon, err := acquireSnapshot(common, reference)
 		if err != nil {
 			return eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
 		}
 
 		snapshots = append(snapshots, Snapshot{
-			Reference: reference,
+			Reference: SnapshotReference(reference),
 			Root:      snapshotCommon.Root,
 		})
+
+		if index == 0 {
+			if err := stages.ExportData(snapshotCommon); err != nil {
+				return eris.Wrap(err, "export alluvial snapshot data")
+			}
+		}
 	}
 
 	state.Snapshots = snapshots
@@ -113,8 +126,9 @@ func acquireSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 
 	snapshotCommon := *common
 	snapshotFlags := *common.Flags
-	snapshotFlags.HistoryRange.Until = reference
+	snapshotFlags.HistoryRange.Until = SnapshotReference(reference)
 	snapshotFlags.HistoryRange.From = ""
+	snapshotFlags.ChangedOnly = false
 	snapshotCommon.Flags = &snapshotFlags
 	snapshotCommon.Root = nil
 	snapshotCommon.Source = source.Tree{}
@@ -135,6 +149,16 @@ func acquireSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 	}
 
 	return &snapshotCommon, nil
+}
+
+// SnapshotReference normalizes an empty alluvial reference to the current Git
+// commit while preserving explicit tag, SHA, and date references.
+func SnapshotReference(reference string) string {
+	if strings.TrimSpace(reference) == "" {
+		return "HEAD"
+	}
+
+	return reference
 }
 
 // BuildDataStage converts acquired snapshots into the renderer-independent
@@ -158,6 +182,52 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 	}
 
 	state.Data = data
+
+	return nil
+}
+
+// BuildLegendStage creates a colour key for paths whose bands are too narrow
+// to carry their own labels.
+func BuildLegendStage(common *stages.CommonState, state *State) error {
+	paths := make(map[string]struct{})
+
+	for _, column := range state.Data.Columns {
+		for _, value := range column.Values {
+			if positiveFinite(value.Width) {
+				paths[value.Path] = struct{}{}
+			}
+		}
+	}
+
+	entries := make([]legend.Entry, 0, len(paths))
+
+	for directoryPath := range paths {
+		entries = append(entries, legend.Entry{
+			Role:       legend.RoleFill,
+			MetricName: directoryPath,
+			Ink:        inks.FixedInk(flowColour(directoryPath)),
+		})
+	}
+
+	slices.SortFunc(entries, func(left, right legend.Entry) int {
+		return cmp.Compare(left.MetricName, right.MetricName)
+	})
+
+	rootConfig := common.RootConfig
+	if rootConfig == nil {
+		rootConfig = config.New()
+	}
+
+	position, orientation := legend.ResolveOptions(rootConfig.LegendPositionStr(), rootConfig.LegendOrientationStr())
+	state.Legend = &legend.Config{
+		Position:    position,
+		Orientation: orientation,
+		LabelSample: legend.LabelSample{
+			Shape: legend.LabelSampleCircle,
+			Lines: []string{"Directory"},
+		},
+		Entries: entries,
+	}
 
 	return nil
 }

@@ -7,7 +7,9 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/alluvial"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
@@ -34,8 +36,28 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	}
 
 	g.Expect(filledPaths).To(HaveLen(2))
-	g.Expect(filledPaths[0].Loops).To(Equal([][]geometry.Point{{
-		{X: 20, Y: 10}, {X: 180, Y: 20}, {X: 180, Y: 70}, {X: 20, Y: 40},
-	}}))
-	g.Expect(filledPaths[1].Loops[0][0]).To(Equal(filledPaths[1].Loops[0][3]))
+	g.Expect(filledPaths[0].Loops).To(HaveLen(1))
+	g.Expect(len(filledPaths[0].Loops[0])).To(BeNumerically(">", 4))
+	g.Expect(filledPaths[0].Loops[0][0]).To(Equal(geometry.Point{X: 20, Y: 10}))
+	g.Expect(filledPaths[0].Loops[0][len(filledPaths[0].Loops[0])-1]).To(Equal(geometry.Point{X: 20, Y: 40}))
+	g.Expect(filledPaths[1].Loops[0][0]).To(Equal(filledPaths[1].Loops[0][len(filledPaths[1].Loops[0])-1]))
+}
+
+func TestBuildLegendStage_MapsEachPathToItsFlowColour(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := &alluvial.State{
+		Data: alluvial.Data{Columns: []alluvial.Column{
+			{Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "docs", Width: 5}}},
+		}},
+	}
+
+	g.Expect(alluvial.BuildLegendStage(
+		&stages.CommonState{RootConfig: config.New()},
+		state,
+	)).To(Succeed())
+
+	g.Expect(state.Legend.Entries).To(HaveLen(2))
+	g.Expect(state.Legend.Entries[0].MetricName).To(Equal("api"))
+	g.Expect(state.Legend.Entries[1].MetricName).To(Equal("docs"))
 }

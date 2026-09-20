@@ -19,7 +19,8 @@ codeviz alluvial [flags] <target-path>
 ## Required input
 
 `--output` is required. Provide at least two ordered references and a numeric
-metric with flags, the configuration file, or both.
+metric with flags, the configuration file, or both. An empty reference selects
+the repository's `HEAD` commit.
 
 | Flag | Short | Values | Description |
 | ---- | ----- | ------ | ----------- |
@@ -64,8 +65,16 @@ codeviz alluvial . -o milestones.png -m file-lines \
 ```
 
 Flow widths are the selected directory metric at each snapshot, not the
-difference between adjacent snapshots. Directories introduced after one column
-or removed before the next taper to or from zero width.
+difference between adjacent snapshots. A shared scale keeps the same metric
+value the same visual width across every column. Directories introduced after
+one column or removed before the next taper to or from zero width.
+
+Bands curve between columns and show the directory path and metric value when
+there is enough space. The legend maps each path to its band colour when a
+band is too narrow for an in-place label.
+
+`--export-data` writes the computed metrics for the first ordered snapshot,
+matching the single-snapshot export behavior of other visualizations.
 
 See [Shared concepts]({{< relref "/docs/shared-concepts" >}}) for metric names
 and file-filter rules, and [Configuration]({{< relref "/docs/configuration" >}})
