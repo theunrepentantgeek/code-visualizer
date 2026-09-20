@@ -205,7 +205,7 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 		entries = append(entries, legend.Entry{
 			Role:       legend.RoleFill,
 			MetricName: directoryPath,
-			Ink:        inks.FixedInk(flowColour(directoryPath)),
+			Ink:        inks.FixedInk(flowColourForPath(directoryPath)),
 		})
 	}
 

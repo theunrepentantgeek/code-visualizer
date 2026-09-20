@@ -24,15 +24,22 @@ func RenderToCanvas(layout Layout, width, height int) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 	addAlluvialBackground(cv, width, height)
 	addAlluvialColumns(cv, layout)
+	colours := make(map[string]color.RGBA, len(layout.Flows))
 
 	for _, flow := range layout.Flows {
 		if !validFlow(flow) {
 			continue
 		}
 
+		flowColour, ok := colours[flow.Path]
+		if !ok {
+			flowColour = flowColourForPath(flow.Path)
+			colours[flow.Path] = flowColour
+		}
+
 		cv.AddFilledPath(canvas.LayerContent, canvas.FilledPath{
 			Loops: [][]geometry.Point{sweptFlowPoints(flow)},
-			Fill:  flowColour(flow.Path),
+			Fill:  flowColour,
 		})
 	}
 
@@ -177,7 +184,7 @@ func validFlow(flow Flow) bool {
 	return true
 }
 
-func flowColour(path string) color.RGBA {
+func flowColourForPath(path string) color.RGBA {
 	colours := palette.GetPalette(palette.Categorization).Colours
 	hasher := fnv.New32a()
 	_, _ = hasher.Write([]byte(path))

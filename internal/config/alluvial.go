@@ -9,9 +9,7 @@ type Alluvial struct {
 
 // OverrideReferences replaces configured references when CLI references are supplied.
 func (a *Alluvial) OverrideReferences(v []string) {
-	if len(v) > 0 {
-		a.References = append([]string(nil), v...)
-	}
+	overrideStrings(&a.References, v)
 }
 
 // OverrideMetric sets Metric to v if v is non-empty.
@@ -19,7 +17,13 @@ func (a *Alluvial) OverrideMetric(v string) { overrideString(&a.Metric, v) }
 
 // OverrideExpand replaces configured expansions when CLI expansions are supplied.
 func (a *Alluvial) OverrideExpand(v []string) {
-	if len(v) > 0 {
-		a.Expand = append([]string(nil), v...)
+	overrideStrings(&a.Expand, v)
+}
+
+func overrideStrings(target *[]string, values []string) {
+	if len(values) == 0 {
+		return
 	}
+
+	*target = append([]string(nil), values...)
 }
