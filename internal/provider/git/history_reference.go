@@ -70,6 +70,15 @@ func (s *repoService) resolveUnprefixedHistoryReference(
 	value string,
 	bound historyBound,
 ) (resolvedHistoryReference, error) {
+	if value == "HEAD" {
+		head, err := s.repo.Head()
+		if err != nil {
+			return resolvedHistoryReference{}, eris.Wrap(err, "failed to resolve HEAD")
+		}
+
+		return resolvedHistoryReference{revision: head.Hash()}, nil
+	}
+
 	if hash, found, err := s.tryResolveTagCommit(value); found {
 		return resolvedHistoryReference{revision: hash}, err
 	}

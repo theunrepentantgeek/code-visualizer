@@ -9,9 +9,9 @@ weight: 1
 codeviz [global flags] <visualization> [flags] <target-path>
 ```
 
-Visualisations: `tree-map`, `radial-tree`, `bubble-tree`, `spiral`, and
-`scatter`. The `render` command produces the same images from named presets, so
-you do not have to know which metrics and palettes to combine.
+Visualisations: `tree-map`, `radial-tree`, `bubble-tree`, `spiral`, `scatter`,
+and `alluvial`. The `render` command produces the same images from named
+presets, so you do not have to know which metrics and palettes to combine.
 
 ## Global flags
 
@@ -35,6 +35,7 @@ Each visualisation has its own reference page describing the flags it accepts:
 - [bubble-tree]({{< relref "bubble-tree" >}}) — files as circles packed into enclosing bubbles.
 - [spiral]({{< relref "spiral" >}}) — commit activity plotted along a spiral of time.
 - [scatter]({{< relref "scatter" >}}) — files positioned by two metrics, one on each axis.
+- [alluvial]({{< relref "alluvial" >}}) — directory metric values across two or more release snapshots.
 - [render]({{< relref "render" >}}) — named presets that combine a visualisation, metrics, and a palette.
 
 See [Shared concepts]({{< relref "/docs/shared-concepts" >}}) for the metric names, palettes, and
@@ -79,6 +80,28 @@ metrics therefore describe one consistent historical point.
 Omitting `--until` retains the live working tree, including modified and
 untracked files. `--from` alone constrains Git-derived metrics without changing
 that live filesystem view.
+
+## Alluvial release comparisons
+
+`alluvial` compares at least two ordered repository snapshots. Supply
+`--reference` repeatedly; tags are the usual release input, and each value
+also accepts the same tag, commit ID, or date reference syntax described
+above. References stay in the order supplied, so a two-tag comparison is:
+
+```sh
+codeviz alluvial . -o releases.svg -m file-lines \
+  --reference tag:v1.0 --reference tag:v2.0
+```
+
+Flow thickness is the selected metric's directory value in *each referenced
+snapshot*. It is not the line, file, or metric delta between the adjacent
+releases. A directory introduced or removed between snapshots tapers to or from
+zero width.
+
+`--include` and `--exclude` retain their standard file-filter meaning and limit
+which folders are represented. Use repeatable `--expand <directory>` to replace
+that directory with its direct children in the diagram; expansion is explicit,
+does not recurse automatically, and never creates an `Other` folder.
 
 Add `--changed-only` (or set `changedOnly: true` in configuration) to retain
 only snapshot files modified by commits in the effective range:

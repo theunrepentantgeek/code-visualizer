@@ -1,4 +1,5 @@
 .specify/extensions/.cache
+.context/compound-engineering/
 
 # Task runner
 .task/

@@ -12,6 +12,7 @@ shows and which knobs to try.
 | [radial-tree](radial-tree/) | Radial-tree | Discs radiating outward from the repository root. |
 | [spiral](spiral/) | Spiral | Commit history laid out along a time spiral. |
 | [scatter](scatter/) | Scatter | Files plotted as points on a pair of metric axes. |
+| [alluvial](alluvial/) | Alluvial | Directory metrics flowing across visualization milestone tags. |
 
 ## Regenerating the samples
 

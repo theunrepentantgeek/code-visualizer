@@ -10,6 +10,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/sebdah/goldie/v2"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/alluvial"
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/donuttree"
@@ -272,6 +273,34 @@ func TestGolden_SpiralSurfaceShared(t *testing.T) {
 func TestGolden_SpiralSurfaceDistinct(t *testing.T) {
 	runVizGolden(t, "spiral-surface-distinct", renderSpiralSurfaceDistinct)
 }
+
+func renderAlluvial(common *stages.CommonState) error {
+	state := &alluvial.State{Data: alluvial.Data{
+		Columns: []alluvial.Column{
+			{Reference: "tag:v1.0", Values: []alluvial.Value{{Path: "api", Width: 12}, {Path: "docs", Width: 4}}},
+			{Reference: "tag:v2.0", Values: []alluvial.Value{
+				{Path: "api", Width: 18}, {Path: "docs", Width: 5}, {Path: "web", Width: 8},
+			}},
+			{Reference: "tag:v3.0", Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "web", Width: 14}}},
+		},
+		Transitions: []alluvial.Transition{
+			{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "api", FromWidth: 12, ToWidth: 18},
+			{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "docs", FromWidth: 4},
+			{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "web", ToWidth: 8},
+			{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "api", FromWidth: 18, ToWidth: 10},
+			{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "docs", FromWidth: 5},
+			{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "web", FromWidth: 8, ToWidth: 14},
+		},
+	}}
+	s := pipeline.NewState(common, common.RootConfig.Alluvial, state)
+
+	alluvial.RenderPipeline(s)
+
+	return eris.Wrap(s.Err(), "alluvial render failed")
+}
+
+//nolint:paralleltest // mutates the global metric registry
+func TestGolden_Alluvial(t *testing.T) { runVizGolden(t, "alluvial", renderAlluvial) }
 
 // runVizGolden renders the named viz to PNG and SVG and golden-compares both.
 func runVizGolden(t *testing.T, name string, render func(*stages.CommonState) error) {

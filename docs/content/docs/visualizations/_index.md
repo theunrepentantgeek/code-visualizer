@@ -12,4 +12,5 @@ sidebar:
   {{< card link="bubble-tree" image="bubble-tree-thumb.png" title="Bubble Tree" >}}
   {{< card link="spiral" image="spiral-thumb.png" title="Spiral" >}}
   {{< card link="scatter" image="scatter-thumb.png" title="Scatter" >}}
+  {{< card link="alluvial" image="alluvial-thumb.png" title="Alluvial" >}}
 {{< /cards >}}
