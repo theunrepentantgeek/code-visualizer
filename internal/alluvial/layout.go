@@ -66,7 +66,7 @@ func LayoutData(data Data, width, height int) Layout {
 
 	for index, column := range data.Columns {
 		x := columnX(index, len(data.Columns), width)
-		bands := layoutBands(column.Values, top, scale, available, gap)
+		bands := layoutBands(column.Values, top, bottom-top, scale, available, gap)
 		layout.Columns[index] = ColumnLayout{
 			Reference: column.Reference,
 			X:         x,
@@ -168,19 +168,22 @@ func maxBandCount(columns []Column) int {
 	return count
 }
 
-func layoutBands(values []Value, top, scale, available, gap float64) []Band {
+func layoutBands(values []Value, top, verticalSpace, scale, available, gap float64) []Band {
 	values = append([]Value(nil), values...)
 	slices.SortFunc(values, func(left, right Value) int {
 		return cmp.Compare(left.Path, right.Path)
 	})
 
 	filtered := values[:0]
+	total := 0.0
+
 	for _, value := range values {
 		if !positiveFinite(value.Width) {
 			continue
 		}
 
 		filtered = append(filtered, value)
+		total += value.Width
 	}
 
 	if scale == 0 || len(filtered) == 0 || available <= 0 {
@@ -188,7 +191,8 @@ func layoutBands(values []Value, top, scale, available, gap float64) []Band {
 	}
 
 	bands := make([]Band, 0, len(filtered))
-	y := top
+	stackHeight := available*total/scale + gap*float64(len(filtered)-1)
+	y := top + (verticalSpace-stackHeight)/2
 
 	for _, value := range filtered {
 		bandHeight := available * value.Width / scale

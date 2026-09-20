@@ -50,6 +50,9 @@ func TestLayoutData_UsesSharedScaleAcrossColumns(t *testing.T) {
 	g.Expect(smaller.Bottom - smaller.Top).To(
 		BeNumerically("~", larger.Bottom-larger.Top, 0.001),
 	)
+	g.Expect(smaller.Top).To(
+		BeNumerically("~", (layout.Top+layout.Bottom-(smaller.Bottom-smaller.Top))/2, 0.001),
+	)
 }
 
 func TestLayoutData_TapersIntroducedAndRemovedPaths(t *testing.T) {

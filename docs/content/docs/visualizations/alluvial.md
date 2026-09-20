@@ -66,8 +66,9 @@ codeviz alluvial . -o milestones.png -m file-lines \
 
 Flow widths are the selected directory metric at each snapshot, not the
 difference between adjacent snapshots. A shared scale keeps the same metric
-value the same visual width across every column. Directories introduced after
-one column or removed before the next taper to or from zero width.
+value the same visual width across every column, and centers each column
+vertically so growth can expand in both directions. Directories introduced
+after one column or removed before the next taper to or from zero width.
 
 Bands curve between columns and show the directory path and metric value when
 there is enough space. The legend maps each path to its band colour when a
