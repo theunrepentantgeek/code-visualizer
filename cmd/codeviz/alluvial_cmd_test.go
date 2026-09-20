@@ -46,6 +46,7 @@ func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {
 		"--reference", "2026-01-01",
 		"--expand", "cmd",
 		"--expand", "internal/config",
+		"--fill", "file-lines.delta,temperature",
 		"--include", "**/*.go",
 		"--exclude", "**/*_test.go",
 	})
@@ -53,6 +54,7 @@ func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cli.Alluvial.References).To(Equal([]string{"tag:v1.0", "sha:abc1234", "2026-01-01"}))
 	g.Expect(cli.Alluvial.Expand).To(Equal([]string{"cmd", "internal/config"}))
+	g.Expect(cli.Alluvial.Fill).To(Equal(config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"}))
 	rules := cli.Alluvial.Filters()
 	g.Expect(rules).To(HaveLen(2))
 	g.Expect(rules[0].Pattern).To(Equal("**/*.go"))
@@ -71,12 +73,14 @@ func TestAlluvialCmd_MergeConfig_ReplacesConfiguredReferences(t *testing.T) {
 	cmd := &AlluvialCmd{
 		Output:     "out.png",
 		References: []string{"tag:v2.0", "date:2026-01-01"},
+		Fill:       config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"},
 		Expand:     []string{"cmd", "internal/config"},
 	}
 
 	cmd.applyOverrides(cfg)
 
 	g.Expect(cfg.Alluvial.References).To(Equal([]string{"tag:v2.0", "date:2026-01-01"}))
+	g.Expect(*cfg.Alluvial.Fill).To(Equal(config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"}))
 	g.Expect(cfg.Alluvial.Expand).To(Equal([]string{"cmd", "internal/config"}))
 }
 
@@ -102,6 +106,21 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 		"rejects unknown metric": {
 			cfg:     &config.Alluvial{References: []string{"tag:v1.0", "tag:v2.0"}, Metric: new("not-a-metric")},
 			wantErr: "unknown metric",
+		},
+		"accepts delta fill metric": {
+			cfg: &config.Alluvial{
+				References: []string{"tag:v1.0", "tag:v2.0"},
+				Metric:     new("file-size"),
+				Fill:       &config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"},
+			},
+		},
+		"rejects unknown delta fill metric": {
+			cfg: &config.Alluvial{
+				References: []string{"tag:v1.0", "tag:v2.0"},
+				Metric:     new("file-size"),
+				Fill:       &config.MetricSpec{Metric: "not-a-metric.delta"},
+			},
+			wantErr: "unknown fill metric",
 		},
 		"rejects parent expansion": {
 			cfg: &config.Alluvial{

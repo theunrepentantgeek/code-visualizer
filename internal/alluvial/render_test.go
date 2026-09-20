@@ -13,7 +13,9 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
@@ -22,11 +24,17 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 
 	cv := alluvial.RenderToCanvas(alluvial.Layout{
 		Flows: []alluvial.Flow{
-			{Path: "continuing", FromX: 20, ToX: 180, FromTop: 10, FromBottom: 40, ToTop: 20, ToBottom: 70},
-			{Path: "introduced", FromX: 20, ToX: 180, FromTop: 60, FromBottom: 60, ToTop: 50, ToBottom: 80},
+			{
+				Path: "continuing", FillValue: -1,
+				FromX: 20, ToX: 180, FromTop: 10, FromBottom: 40, ToTop: 20, ToBottom: 70,
+			},
+			{
+				Path: "introduced", FillValue: 1,
+				FromX: 20, ToX: 180, FromTop: 60, FromBottom: 60, ToTop: 50, ToBottom: 80,
+			},
 			{Path: "empty", FromX: 20, ToX: 180, FromTop: 90, FromBottom: 90, ToTop: 90, ToBottom: 90},
 		},
-	}, 200, 100)
+	}, 200, 100, inks.NumericInk("fill", []float64{-1, 1}, palette.GetPalette(palette.Neutral)))
 	backend := mock.NewBackend()
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
@@ -46,15 +54,20 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	g.Expect(firstPath.Loops[0][0]).To(Equal(geometry.Point{X: 20, Y: 10}))
 	g.Expect(firstPath.Loops[0][len(firstPath.Loops[0])-1]).To(Equal(geometry.Point{X: 20, Y: 40}))
 	g.Expect(filledPaths[1].Loops[0][0]).To(Equal(filledPaths[1].Loops[0][len(filledPaths[1].Loops[0])-1]))
+	g.Expect(filledPaths[0].Fill).NotTo(Equal(filledPaths[1].Fill))
 }
 
-func TestBuildLegendStage_MapsEachPathToItsFlowColour(t *testing.T) {
+func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	state := &alluvial.State{
+		WidthMetric: "file-lines.sum",
+		Fill:        viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
+		FillLabel:   "file-lines.delta",
+		FillDelta:   true,
 		Data: alluvial.Data{Columns: []alluvial.Column{
 			{Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "docs", Width: 5}}},
-		}},
+		}, FillValues: map[string]float64{"api": 5, "docs": -2}},
 	}
 
 	g.Expect(alluvial.BuildLegendStage(
@@ -63,8 +76,10 @@ func TestBuildLegendStage_MapsEachPathToItsFlowColour(t *testing.T) {
 	)).To(Succeed())
 
 	g.Expect(state.Legend.Entries).To(HaveLen(2))
-	g.Expect(state.Legend.Entries[0].MetricName).To(Equal("api"))
-	g.Expect(state.Legend.Entries[1].MetricName).To(Equal("docs"))
+	g.Expect(state.Legend.Entries[0].MetricName).To(Equal("file-lines.delta"))
+	g.Expect(state.Legend.Entries[1].MetricName).To(Equal("file-lines.sum"))
+	middle := state.FillInk.Dip(inks.MeasureValue(0))
+	g.Expect(middle).To(Equal(palette.GetPalette(palette.Neutral).Colours[4]))
 }
 
 func TestLayoutStage_ReservesSpaceForRightLegend(t *testing.T) {

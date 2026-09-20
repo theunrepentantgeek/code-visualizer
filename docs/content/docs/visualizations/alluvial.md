@@ -27,6 +27,7 @@ the repository's `HEAD` commit.
 | `--output` | `-o` | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path |
 | `--reference` | | tag, commit ID, or date (repeatable) | Ordered snapshots; replaces configured references |
 | `--metric` | `-m` | numeric metric | Directory metric that determines each flow width |
+| `--fill` | `-f` | `metric[,palette]` | Numeric metric and optional palette that determine band colour |
 
 ## Optional flags
 
@@ -71,8 +72,12 @@ vertically so growth can expand in both directions. Directories introduced
 after one column or removed before the next taper to or from zero width.
 
 Bands curve between columns and show the directory path and metric value when
-there is enough space. The legend maps each path to its band colour when a
-band is too narrow for an in-place label.
+there is enough space. By default, their colour uses the width metric value at
+the final reference. Select another metric and palette with `--fill`, for
+example `--fill commit-count,temperature`. Append `.delta` to the metric to
+colour by its change from the first reference to the last, for example
+`--fill file-lines.delta,temperature`; zero change uses the palette midpoint.
+The legend names the selected fill metric and shows its split values.
 
 `--export-data` writes the computed metrics for the first ordered snapshot,
 matching the single-snapshot export behavior of other visualizations.

@@ -2,7 +2,6 @@ package alluvial
 
 import (
 	"fmt"
-	"hash/fnv"
 	"image/color"
 	"math"
 
@@ -10,7 +9,6 @@ import (
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
 var (
@@ -20,26 +18,19 @@ var (
 )
 
 // RenderToCanvas draws readable release columns and the filled alluvial paths.
-func RenderToCanvas(layout Layout, width, height int) *canvas.Canvas {
+func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 	addAlluvialBackground(cv, width, height)
 	addAlluvialColumns(cv, layout)
-	colours := make(map[string]color.RGBA, len(layout.Flows))
 
 	for _, flow := range layout.Flows {
 		if !validFlow(flow) {
 			continue
 		}
 
-		flowColour, ok := colours[flow.Path]
-		if !ok {
-			flowColour = flowColourForPath(flow.Path)
-			colours[flow.Path] = flowColour
-		}
-
 		cv.AddFilledPath(canvas.LayerContent, canvas.FilledPath{
 			Loops: [][]geometry.Point{sweptFlowPoints(flow)},
-			Fill:  flowColour,
+			Fill:  fillInk.Dip(inks.MeasureValue(flow.FillValue)),
 		})
 	}
 
@@ -182,12 +173,4 @@ func validFlow(flow Flow) bool {
 	}
 
 	return true
-}
-
-func flowColourForPath(path string) color.RGBA {
-	colours := palette.GetPalette(palette.Categorization).Colours
-	hasher := fnv.New32a()
-	_, _ = hasher.Write([]byte(path))
-
-	return colours[int(hasher.Sum32())%len(colours)]
 }

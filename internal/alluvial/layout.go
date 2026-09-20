@@ -39,6 +39,7 @@ type Band struct {
 // A zero-height endpoint represents an introduced or removed directory.
 type Flow struct {
 	Path                string
+	FillValue           float64
 	FromX, ToX          float64
 	FromTop, FromBottom float64
 	ToTop, ToBottom     float64
@@ -78,6 +79,7 @@ func LayoutData(data Data, width, height int) Layout {
 
 	for _, transition := range data.Transitions {
 		if flow, ok := transitionFlow(transition, bandsByReference, xByReference); ok {
+			flow.FillValue = data.FillValues[flow.Path]
 			layout.Flows = append(layout.Flows, flow)
 		}
 	}

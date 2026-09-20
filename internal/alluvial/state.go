@@ -1,14 +1,20 @@
 package alluvial
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // State holds data prepared for a later alluvial layout and render pipeline.
 type State struct {
 	WidthMetric metric.Name
+	Fill        viz.ColourEncoding
+	FillLabel   metric.Name
+	FillDelta   bool
+	FillInk     inks.Ink
 	Snapshots   []Snapshot
 	Data        Data
 	Layout      Layout
@@ -23,6 +29,8 @@ type Snapshot struct {
 
 // Options controls the metric and directory detail represented in Data.
 type Options struct {
-	Metric metric.Name
-	Expand []string
+	Metric     metric.Name
+	FillMetric metric.Name
+	FillDelta  bool
+	Expand     []string
 }

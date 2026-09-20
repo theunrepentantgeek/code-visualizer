@@ -14,12 +14,15 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/bubbletree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/donuttree"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
+	vizmodel "github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // vizFixtureWidth/Height keep golden images small and fast while still
@@ -275,25 +278,34 @@ func TestGolden_SpiralSurfaceDistinct(t *testing.T) {
 }
 
 func renderAlluvial(common *stages.CommonState) error {
-	state := &alluvial.State{Data: alluvial.Data{
-		Columns: []alluvial.Column{
-			{Reference: "tag:v1.0", Values: []alluvial.Value{{Path: "api", Width: 12}, {Path: "docs", Width: 4}}},
-			{Reference: "tag:v2.0", Values: []alluvial.Value{
-				{Path: "api", Width: 18}, {Path: "docs", Width: 5}, {Path: "web", Width: 8},
-			}},
-			{Reference: "tag:v3.0", Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "web", Width: 14}}},
+	const fillMetric = metric.Name("file-lines.sum")
+
+	state := &alluvial.State{
+		WidthMetric: fillMetric,
+		Fill:        vizmodel.ColourEncoding{Metric: fillMetric, Palette: palette.Neutral},
+		FillLabel:   fillMetric,
+		Data: alluvial.Data{
+			Columns: []alluvial.Column{
+				{Reference: "tag:v1.0", Values: []alluvial.Value{{Path: "api", Width: 12}, {Path: "docs", Width: 4}}},
+				{Reference: "tag:v2.0", Values: []alluvial.Value{
+					{Path: "api", Width: 18}, {Path: "docs", Width: 5}, {Path: "web", Width: 8},
+				}},
+				{Reference: "tag:v3.0", Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "web", Width: 14}}},
+			},
+			Transitions: []alluvial.Transition{
+				{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "api", FromWidth: 12, ToWidth: 18},
+				{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "docs", FromWidth: 4},
+				{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "web", ToWidth: 8},
+				{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "api", FromWidth: 18, ToWidth: 10},
+				{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "docs", FromWidth: 5},
+				{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "web", FromWidth: 8, ToWidth: 14},
+			},
+			FillValues: map[string]float64{"api": 10, "docs": 0, "web": 14},
 		},
-		Transitions: []alluvial.Transition{
-			{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "api", FromWidth: 12, ToWidth: 18},
-			{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "docs", FromWidth: 4},
-			{FromReference: "tag:v1.0", ToReference: "tag:v2.0", Path: "web", ToWidth: 8},
-			{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "api", FromWidth: 18, ToWidth: 10},
-			{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "docs", FromWidth: 5},
-			{FromReference: "tag:v2.0", ToReference: "tag:v3.0", Path: "web", FromWidth: 8, ToWidth: 14},
-		},
-	}}
+	}
 	s := pipeline.NewState(common, common.RootConfig.Alluvial, state)
 
+	pipeline.ApplyFuncXY(s, alluvial.BuildLegendStage)
 	alluvial.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "alluvial render failed")

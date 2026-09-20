@@ -15,6 +15,7 @@ import (
 type Data struct {
 	Columns     []Column
 	Transitions []Transition
+	FillValues  map[string]float64
 }
 
 // Column contains metric widths for a single reference snapshot.
@@ -39,6 +40,13 @@ type Transition struct {
 	ToWidth       float64
 }
 
+type fillValueMode int
+
+const (
+	fillFromLast fillValueMode = iota
+	fillFromDelta
+)
+
 // BuildData creates ordered snapshot columns and deterministic transitions.
 // Widths always come from the reference snapshot itself, never from a delta.
 func BuildData(snapshots []Snapshot, options Options) (Data, error) {
@@ -47,12 +55,20 @@ func BuildData(snapshots []Snapshot, options Options) (Data, error) {
 	}
 
 	data := Data{Columns: make([]Column, 0, len(snapshots))}
+
+	fillMetric := options.FillMetric
+	if fillMetric == "" {
+		fillMetric = options.Metric
+	}
+
+	fillSnapshots := make([]map[string]float64, 0, len(snapshots))
 	for _, snapshot := range snapshots {
 		if snapshot.Root == nil {
 			return Data{}, eris.Errorf("alluvial reference %q has no source tree", snapshot.Reference)
 		}
 
 		values := selectedValues(snapshot.Root, options)
+		fillSnapshots = append(fillSnapshots, selectedMetricValues(snapshot.Root, options.Expand, fillMetric))
 		data.Columns = append(data.Columns, Column{
 			Reference: snapshot.Reference,
 			Values:    values,
@@ -61,12 +77,37 @@ func BuildData(snapshots []Snapshot, options Options) (Data, error) {
 
 	data.Transitions = buildTransitions(data.Columns)
 
+	mode := fillFromLast
+	if options.FillDelta {
+		mode = fillFromDelta
+	}
+
+	data.FillValues = buildFillValues(data.Columns, fillSnapshots, mode)
+
 	return data, nil
 }
 
 func selectedValues(root *model.Directory, options Options) []Value {
-	expanded := make(map[string]struct{}, len(options.Expand))
-	for _, directory := range options.Expand {
+	selected := selectedDirectories(root, options.Expand)
+
+	values := make([]Value, 0, len(selected))
+	for _, directory := range selected {
+		values = append(values, Value{
+			Path:  directory.RepoPath,
+			Width: directoryWidth(directory, options.Metric),
+		})
+	}
+
+	slices.SortFunc(values, func(left, right Value) int {
+		return cmp.Compare(left.Path, right.Path)
+	})
+
+	return values
+}
+
+func selectedDirectories(root *model.Directory, expansions []string) []*model.Directory {
+	expanded := make(map[string]struct{}, len(expansions))
+	for _, directory := range expansions {
 		expanded[path.Clean(directory)] = struct{}{}
 	}
 
@@ -85,23 +126,16 @@ func selectedValues(root *model.Directory, options Options) []Value {
 		i--
 	}
 
-	values := make([]Value, 0, len(selected))
+	result := make([]*model.Directory, 0, len(selected))
 	for _, directory := range selected {
 		if directory == nil || directory.RepoPath == "" {
 			continue
 		}
 
-		values = append(values, Value{
-			Path:  directory.RepoPath,
-			Width: directoryWidth(directory, options.Metric),
-		})
+		result = append(result, directory)
 	}
 
-	slices.SortFunc(values, func(left, right Value) int {
-		return cmp.Compare(left.Path, right.Path)
-	})
-
-	return values
+	return result
 }
 
 func directoryWidth(directory *model.Directory, metricName metric.Name) float64 {
@@ -114,6 +148,39 @@ func directoryWidth(directory *model.Directory, metricName metric.Name) float64 
 	}
 
 	return 0
+}
+
+func selectedMetricValues(root *model.Directory, expansions []string, metricName metric.Name) map[string]float64 {
+	directories := selectedDirectories(root, expansions)
+
+	values := make(map[string]float64, len(directories))
+	for _, directory := range directories {
+		values[directory.RepoPath] = directoryWidth(directory, metricName)
+	}
+
+	return values
+}
+
+func buildFillValues(
+	columns []Column,
+	snapshots []map[string]float64,
+	mode fillValueMode,
+) map[string]float64 {
+	values := make(map[string]float64)
+	if len(snapshots) == 0 {
+		return values
+	}
+
+	for _, column := range columns {
+		for _, value := range column.Values {
+			values[value.Path] = snapshots[len(snapshots)-1][value.Path]
+			if mode == fillFromDelta {
+				values[value.Path] -= snapshots[0][value.Path]
+			}
+		}
+	}
+
+	return values
 }
 
 func buildTransitions(columns []Column) []Transition {

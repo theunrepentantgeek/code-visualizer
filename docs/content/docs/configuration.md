@@ -24,6 +24,9 @@ alluvial:
     - tag:v1.0
     - tag:v2.0
   metric: file-lines
+  fill:
+    metric: file-lines.delta
+    palette: temperature
   expand:
     - cmd
     - internal

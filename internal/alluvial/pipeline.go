@@ -1,8 +1,6 @@
 package alluvial
 
 import (
-	"cmp"
-	"slices"
 	"strings"
 	"time"
 
@@ -13,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
@@ -31,7 +30,24 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 	}
 
 	state.WidthMetric = widthMetric
-	common.Requested = stages.CollectRequestedMetricNames(widthMetric)
+	fillMetric := widthMetric
+	fillLabel := widthMetric
+	fillDelta := false
+
+	if cfg.Fill != nil && cfg.Fill.Metric != "" {
+		fillLabel = cfg.Fill.Metric
+		fillMetric, fillDelta = ParseFillMetric(cfg.Fill.Metric)
+
+		fillMetric, err = resolveDirectoryMetric(fillMetric)
+		if err != nil {
+			return eris.Wrap(err, "invalid alluvial fill metric")
+		}
+	}
+
+	state.Fill = stages.ResolveColourEncodingForMetric(cfg.Fill, fillMetric)
+	state.FillLabel = fillLabel
+	state.FillDelta = fillDelta
+	common.Requested = stages.CollectRequestedMetricNames(widthMetric, fillMetric)
 
 	return nil
 }
@@ -72,7 +88,7 @@ func LayoutStage(common *stages.CommonState, state *State) error {
 
 // RenderStage creates the shared-canvas shapes from the positioned layout.
 func RenderStage(common *stages.CommonState, state *State) error {
-	common.Canvas = RenderToCanvas(state.Layout, common.Width, common.Height)
+	common.Canvas = RenderToCanvas(state.Layout, common.Width, common.Height, state.FillInk)
 	legend.RenderInto(common.Canvas, state.Legend)
 
 	return nil
@@ -180,8 +196,10 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 	}
 
 	data, err := BuildData(state.Snapshots, Options{
-		Metric: metricName,
-		Expand: cfg.Expand,
+		Metric:     metricName,
+		FillMetric: state.Fill.Metric,
+		FillDelta:  state.FillDelta,
+		Expand:     cfg.Expand,
 	})
 	if err != nil {
 		return err
@@ -192,32 +210,21 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 	return nil
 }
 
-// BuildLegendStage creates a colour key for paths whose bands are too narrow
-// to carry their own labels.
+// BuildLegendStage creates the metric-driven band ink and its colour key.
 func BuildLegendStage(common *stages.CommonState, state *State) error {
-	paths := make(map[string]struct{})
-
-	for _, column := range state.Data.Columns {
-		for _, value := range column.Values {
-			if positiveFinite(value.Width) {
-				paths[value.Path] = struct{}{}
-			}
+	values := make([]float64, 0, len(state.Data.FillValues))
+	for _, value := range state.Data.FillValues {
+		values = append(values, value)
+		if state.FillDelta {
+			values = append(values, -value)
 		}
 	}
 
-	entries := make([]legend.Entry, 0, len(paths))
-
-	for directoryPath := range paths {
-		entries = append(entries, legend.Entry{
-			Role:       legend.RoleFill,
-			MetricName: directoryPath,
-			Ink:        inks.FixedInk(flowColourForPath(directoryPath)),
-		})
+	if state.FillDelta {
+		values = append(values, 0)
 	}
 
-	slices.SortFunc(entries, func(left, right legend.Entry) int {
-		return cmp.Compare(left.MetricName, right.MetricName)
-	})
+	state.FillInk = inks.NumericInk(state.FillLabel, values, palette.GetPalette(state.Fill.Palette))
 
 	rootConfig := common.RootConfig
 	if rootConfig == nil {
@@ -225,17 +232,27 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 	}
 
 	position, orientation := legend.ResolveOptions(rootConfig.LegendPositionStr(), rootConfig.LegendOrientationStr())
-	state.Legend = &legend.Config{
+	state.Legend = legend.Builder{
 		Position:    position,
 		Orientation: orientation,
-		LabelSample: legend.LabelSample{
-			Shape: legend.LabelSampleCircle,
-			Lines: []string{"Directory"},
-		},
-		Entries: entries,
-	}
+		FillInk:     state.FillInk,
+		FillMetric:  state.FillLabel,
+		SizeMetric:  state.WidthMetric,
+	}.Build()
 
 	return nil
+}
+
+// ParseFillMetric separates the alluvial-only delta modifier from its metric.
+func ParseFillMetric(name metric.Name) (metric.Name, bool) {
+	const suffix = ".delta"
+
+	raw := string(name)
+	if !strings.HasSuffix(raw, suffix) {
+		return name, false
+	}
+
+	return metric.Name(strings.TrimSuffix(raw, suffix)), true
 }
 
 func resolveDirectoryMetric(name metric.Name) (metric.Name, error) {
