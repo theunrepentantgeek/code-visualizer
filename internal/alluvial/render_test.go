@@ -1,14 +1,18 @@
 package alluvial_test
 
 import (
+	"image/color"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/alluvial"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
+	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
+	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -61,4 +65,33 @@ func TestBuildLegendStage_MapsEachPathToItsFlowColour(t *testing.T) {
 	g.Expect(state.Legend.Entries).To(HaveLen(2))
 	g.Expect(state.Legend.Entries[0].MetricName).To(Equal("api"))
 	g.Expect(state.Legend.Entries[1].MetricName).To(Equal("docs"))
+}
+
+func TestLayoutStage_ReservesSpaceForRightLegend(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	legendConfig := &legend.Config{
+		Position:    canvasmodel.LegendPositionCenterRight,
+		Orientation: canvasmodel.LegendOrientationVertical,
+		Entries: []legend.Entry{{
+			Role:       legend.RoleFill,
+			MetricName: "api",
+			Ink:        inks.FixedInk(color.RGBA{R: 0x44, G: 0x88, B: 0xcc, A: 0xff}),
+		}},
+	}
+	common := &stages.CommonState{Width: 1200, Height: 800}
+	stages.InitDrawingBounds(common) //nolint:errcheck // always succeeds
+
+	state := &alluvial.State{
+		Data: alluvial.Data{Columns: []alluvial.Column{
+			{Reference: "before", Values: []alluvial.Value{{Path: "api", Width: 10}}},
+			{Reference: "after", Values: []alluvial.Value{{Path: "api", Width: 20}}},
+		}},
+		Legend: legendConfig,
+	}
+
+	g.Expect(alluvial.LayoutStage(common, state)).To(Succeed())
+
+	reservation := legend.ReserveLayout(legendConfig, common.Width, common.Height)
+	g.Expect(state.Layout.Columns[1].X).To(BeNumerically("<=", reservation.Offset.X+float64(reservation.Width)))
 }

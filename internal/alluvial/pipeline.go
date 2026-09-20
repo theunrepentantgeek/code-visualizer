@@ -9,6 +9,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -56,12 +57,14 @@ func RenderPipeline(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 }
 
-// LayoutStage assigns metric-proportional vertical bands inside the drawable
-// area and offsets them below any title reservation.
+// LayoutStage reserves legend space, assigns metric-proportional vertical
+// bands inside the drawable area, and applies the resulting offset.
 func LayoutStage(common *stages.CommonState, state *State) error {
 	bounds := common.DrawingBounds
-	layout := LayoutData(state.Data, common.Width, int(bounds.Height()))
-	offsetLayout(&layout, bounds.Min.Y)
+	reservation := legend.ReserveLayout(state.Legend, common.Width, int(bounds.Height()))
+	layout := LayoutData(state.Data, reservation.Width, reservation.Height)
+	offset := reservation.Offset.Add(geometry.NewVector(0, bounds.Min.Y))
+	offsetLayout(&layout, offset)
 	state.Layout = layout
 
 	return nil
@@ -75,22 +78,25 @@ func RenderStage(common *stages.CommonState, state *State) error {
 	return nil
 }
 
-func offsetLayout(layout *Layout, offset float64) {
-	layout.Top += offset
+func offsetLayout(layout *Layout, offset geometry.Vector) {
+	layout.Top += offset.Y
 
-	layout.Bottom += offset
+	layout.Bottom += offset.Y
 	for columnIndex := range layout.Columns {
+		layout.Columns[columnIndex].X += offset.X
 		for bandIndex := range layout.Columns[columnIndex].Bands {
-			layout.Columns[columnIndex].Bands[bandIndex].Top += offset
-			layout.Columns[columnIndex].Bands[bandIndex].Bottom += offset
+			layout.Columns[columnIndex].Bands[bandIndex].Top += offset.Y
+			layout.Columns[columnIndex].Bands[bandIndex].Bottom += offset.Y
 		}
 	}
 
 	for flowIndex := range layout.Flows {
-		layout.Flows[flowIndex].FromTop += offset
-		layout.Flows[flowIndex].FromBottom += offset
-		layout.Flows[flowIndex].ToTop += offset
-		layout.Flows[flowIndex].ToBottom += offset
+		layout.Flows[flowIndex].FromX += offset.X
+		layout.Flows[flowIndex].ToX += offset.X
+		layout.Flows[flowIndex].FromTop += offset.Y
+		layout.Flows[flowIndex].FromBottom += offset.Y
+		layout.Flows[flowIndex].ToTop += offset.Y
+		layout.Flows[flowIndex].ToBottom += offset.Y
 	}
 }
 
