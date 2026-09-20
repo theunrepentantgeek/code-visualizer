@@ -17,3 +17,5 @@ alluvial:
 fileFilter:
     - pattern: .*
       mode: exclude
+    - pattern: docs
+      mode: exclude
