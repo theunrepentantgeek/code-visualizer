@@ -81,7 +81,10 @@ func TestLayoutData_TapersIntroducedAndRemovedPaths(t *testing.T) {
 
 	introduced := flowByPath(layout.Flows, "introduced")
 	removed := flowByPath(layout.Flows, "removed")
+	introducedOrigin := bandByPath(layout.Columns[0].Bands, "introduced")
 
+	g.Expect(introducedOrigin.Top).To(Equal(introducedOrigin.Bottom))
+	g.Expect(introduced.FromTop).To(Equal(introducedOrigin.Top))
 	g.Expect(introduced.FromTop).To(BeNumerically("==", introduced.FromBottom))
 	g.Expect(introduced.ToBottom).To(BeNumerically(">", introduced.ToTop))
 	g.Expect(removed.FromBottom).To(BeNumerically(">", removed.FromTop))
@@ -115,4 +118,14 @@ func flowByPath(flows []alluvial.Flow, path string) alluvial.Flow {
 	}
 
 	return alluvial.Flow{}
+}
+
+func bandByPath(bands []alluvial.Band, path string) alluvial.Band {
+	for _, band := range bands {
+		if band.Path == path {
+			return band
+		}
+	}
+
+	return alluvial.Band{}
 }

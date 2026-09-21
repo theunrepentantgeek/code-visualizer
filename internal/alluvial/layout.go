@@ -53,21 +53,22 @@ func LayoutData(data Data, width, height int) Layout {
 		return Layout{}
 	}
 
+	columns := columnsWithZeroPlaceholders(data.Columns)
 	top, bottom := layoutBounds(height)
 	layout := Layout{
-		Columns: make([]ColumnLayout, len(data.Columns)),
+		Columns: make([]ColumnLayout, len(columns)),
 		Top:     top,
 		Bottom:  bottom,
 	}
-	bandsByReference := make(map[string]map[string]Band, len(data.Columns))
-	xByReference := make(map[string]float64, len(data.Columns))
-	scale := maxColumnTotal(data.Columns)
-	maximumBandCount := maxBandCount(data.Columns)
+	bandsByReference := make(map[string]map[string]Band, len(columns))
+	xByReference := make(map[string]float64, len(columns))
+	scale := maxColumnTotal(columns)
+	maximumBandCount := maxBandCount(columns)
 	gap := min(layoutBandGap, (bottom-top)/float64(2*maximumBandCount))
 	available := bottom - top - gap*float64(maximumBandCount-1)
 
-	for index, column := range data.Columns {
-		x := columnX(index, len(data.Columns), width)
+	for index, column := range columns {
+		x := columnX(index, len(columns), width)
 
 		bands := layoutBands(column.Values, top, bottom-top, scale, available, gap)
 		for bandIndex := range bands {
@@ -91,6 +92,39 @@ func LayoutData(data Data, width, height int) Layout {
 	}
 
 	return layout
+}
+
+func columnsWithZeroPlaceholders(columns []Column) []Column {
+	activePaths := make(map[string]struct{})
+
+	for _, column := range columns {
+		for _, value := range column.Values {
+			if positiveFinite(value.Width) {
+				activePaths[value.Path] = struct{}{}
+			}
+		}
+	}
+
+	paths := make([]string, 0, len(activePaths))
+	for path := range activePaths {
+		paths = append(paths, path)
+	}
+
+	slices.Sort(paths)
+
+	result := make([]Column, len(columns))
+	for index, column := range columns {
+		widths := valuesByPath(column.Values)
+
+		values := make([]Value, 0, len(paths))
+		for _, path := range paths {
+			values = append(values, Value{Path: path, Width: widths[path]})
+		}
+
+		result[index] = Column{Reference: column.Reference, Values: values}
+	}
+
+	return result
 }
 
 func layoutBounds(height int) (top, bottom float64) {
@@ -182,30 +216,34 @@ func layoutBands(values []Value, top, verticalSpace, scale, available, gap float
 		return cmp.Compare(left.Path, right.Path)
 	})
 
-	filtered := values[:0]
 	total := 0.0
+	positiveCount := 0
 
 	for _, value := range values {
-		if !positiveFinite(value.Width) {
-			continue
+		if positiveFinite(value.Width) {
+			total += value.Width
+			positiveCount++
 		}
-
-		filtered = append(filtered, value)
-		total += value.Width
 	}
 
-	if scale == 0 || len(filtered) == 0 || available <= 0 {
+	if scale == 0 || len(values) == 0 || available <= 0 {
 		return nil
 	}
 
-	bands := make([]Band, 0, len(filtered))
-	stackHeight := available*total/scale + gap*float64(len(filtered)-1)
+	bands := make([]Band, 0, len(values))
+	stackHeight := available*total/scale + gap*float64(positiveCount-1)
 	y := top + (verticalSpace-stackHeight)/2
+	seenPositive := false
 
-	for _, value := range filtered {
+	for _, value := range values {
 		bandHeight := available * value.Width / scale
+		if bandHeight > 0 && seenPositive {
+			y += gap
+		}
+
 		bands = append(bands, Band{Path: value.Path, Top: y, Bottom: y + bandHeight, Width: value.Width})
-		y += bandHeight + gap
+		y += bandHeight
+		seenPositive = seenPositive || bandHeight > 0
 	}
 
 	return bands

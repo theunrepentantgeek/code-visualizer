@@ -35,7 +35,7 @@ func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink, labelFil
 		})
 	}
 
-	addAlluvialBandLabels(cv, layout, labelFillMetric)
+	addAlluvialBandLabels(cv, layout, labelFillMetric, fillInk)
 
 	return cv
 }
@@ -79,15 +79,26 @@ func cubicPoint(start, controlOne, controlTwo, end geometry.Point, t float64) ge
 	}
 }
 
-func addAlluvialBandLabels(cv *canvas.Canvas, layout Layout, labelFillMetric metric.Name) {
+func addAlluvialBandLabels(
+	cv *canvas.Canvas,
+	layout Layout,
+	labelFillMetric metric.Name,
+	fillInk inks.Ink,
+) {
 	for _, column := range layout.Columns {
 		for _, band := range column.Bands {
-			addAlluvialBandLabel(cv, column.X, band, labelFillMetric)
+			addAlluvialBandLabel(cv, column.X, band, labelFillMetric, fillInk)
 		}
 	}
 }
 
-func addAlluvialBandLabel(cv *canvas.Canvas, x float64, band Band, labelFillMetric metric.Name) {
+func addAlluvialBandLabel(
+	cv *canvas.Canvas,
+	x float64,
+	band Band,
+	labelFillMetric metric.Name,
+	fillInk inks.Ink,
+) {
 	lines := []string{band.Path, fmt.Sprintf("%g", band.Width)}
 	if labelFillMetric != "" {
 		lines = append(lines, fmt.Sprintf("%g", band.FillValue))
@@ -99,8 +110,9 @@ func addAlluvialBandLabel(cv *canvas.Canvas, x float64, band Band, labelFillMetr
 	}
 
 	center := (band.Top + band.Bottom) / 2
+	labelColour := canvas.TextColourFor(fillInk.Dip(inks.MeasureValue(band.FillValue)))
 	spec := &canvas.TextSpec{
-		Ink:      inks.FixedInk(alluvialLabel),
+		Ink:      inks.FixedInk(labelColour),
 		FontSize: fontSize,
 		Anchor:   canvas.AnchorMiddle,
 	}

@@ -84,6 +84,33 @@ func TestRenderToCanvas_AddsExplicitFillValueToBandLabel(t *testing.T) {
 	g.Expect(labels).To(ContainElements("api", "12", "-3"))
 }
 
+func TestRenderToCanvas_UsesContrastingInkForBandLabels(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fillInk := inks.NumericInk("fill", []float64{0, 100}, palette.GetPalette(palette.Neutral))
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{{
+			X: 100,
+			Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: 0,
+			}},
+		}},
+	}, 200, 100, fillInk, "")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	for _, call := range backend.Calls {
+		if call.Method == "DrawText" && call.Text == "api" {
+			g.Expect(call.Fill).To(Equal(palette.White))
+
+			return
+		}
+	}
+
+	t.Fatal("expected api band label")
+}
+
 func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
