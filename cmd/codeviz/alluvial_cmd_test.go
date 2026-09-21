@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"testing"
 	"time"
 
@@ -181,6 +183,34 @@ func TestAlluvialCmd_Run_ResolvesTaggedSnapshots(t *testing.T) {
 	g.Expect(string(image)).To(ContainSubstring("tag:v2.0"))
 }
 
+func TestAlluvialCmd_Run_ComputesGitFillMetricForTaggedSnapshots(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialTagFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: repository,
+		Output:     output,
+		References: []string{"tag:v1.0", "tag:v2.0"},
+		Metric:     "file-lines",
+		Fill:       config.MetricSpec{Metric: "lines-changed.sum", Palette: "temperature"},
+		Width:      640,
+		Height:     480,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	labels := svgTextLabels(string(image))
+	apiIndex := slices.Index(labels, "api")
+	g.Expect(apiIndex).To(BeNumerically(">=", 0))
+	g.Expect(len(labels)).To(BeNumerically(">", apiIndex+2))
+	g.Expect(labels[apiIndex+2]).NotTo(Equal("0"))
+}
+
 func TestAlluvialCmd_Run_UsesHEADForEmptyReference(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -318,6 +348,7 @@ func createAlluvialTagFixture(t *testing.T) string {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	writeFixtureFile("docs/guide.md", "# Guide\n")
+	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\nfunc Second() {}\n")
 
 	second := commit("second release", time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v2.0", second, nil)
@@ -332,4 +363,15 @@ func createAlluvialTagFixture(t *testing.T) string {
 	writeFixtureFile("uncommitted/ignored.go", "package ignored\n")
 
 	return root
+}
+
+func svgTextLabels(image string) []string {
+	matches := regexp.MustCompile(`>([^<>]*)</text>`).FindAllStringSubmatch(image, -1)
+
+	labels := make([]string, 0, len(matches))
+	for _, match := range matches {
+		labels = append(labels, match[1])
+	}
+
+	return labels
 }

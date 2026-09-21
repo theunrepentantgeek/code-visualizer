@@ -172,6 +172,7 @@ func acquireSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 	for _, stage := range []func(*stages.CommonState) error{
 		stages.ScanFilesystem,
 		stages.CheckGitRequirement,
+		stages.LoadCommitMetrics,
 		stages.RunProviders,
 		stages.PopulateDeclarations,
 		stages.RunAggregations,

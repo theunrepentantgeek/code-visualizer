@@ -33,6 +33,14 @@ type Commit struct {
 	Message      string
 	ParentHashes []string
 	ChangedPaths []string // slash-separated, repo-relative
+	Changes      []FileChange
+}
+
+// FileChange records line statistics for one tracked path in a commit.
+type FileChange struct {
+	Path         string
+	LinesAdded   int64
+	LinesRemoved int64
 }
 
 // CommitTotal returns the number of commits reachable from HEAD.
@@ -106,7 +114,7 @@ func BulkCommitHistoryInHistoryRange(
 
 	err = s.walkTrackedHistoryInHistoryRange(tracked, historyRange, onCommitProcessed,
 		func(c *object.Commit, changed []trackedChange) {
-			appendTrackedCommit(&commits, c, changed)
+			appendTrackedCommit(&commits, c, changed, metricRequirements{})
 		})
 	if err != nil {
 		return nil, err
@@ -181,7 +189,7 @@ func (s *repoService) bulkCommitHistoryAndPrewarmInHistoryRange(
 	err := s.walkTrackedHistoryInHistoryRange(tracked, historyRange, onCommitProcessed,
 		func(c *object.Commit, changed []trackedChange) {
 			prewarmTrackedChanges(cache, c, changed, requirements)
-			appendTrackedCommit(&commits, c, changed)
+			appendTrackedCommit(&commits, c, changed, requirements)
 		})
 	if err != nil {
 		return nil, err
@@ -246,14 +254,31 @@ func prewarmTrackedChanges(
 	}
 }
 
-func appendTrackedCommit(commits *[]Commit, c *object.Commit, changed []trackedChange) {
+func appendTrackedCommit(
+	commits *[]Commit,
+	c *object.Commit,
+	changed []trackedChange,
+	requirements metricRequirements,
+) {
 	if len(changed) == 0 {
 		return
 	}
 
 	changedPaths := make([]string, 0, len(changed))
+
+	changes := make([]FileChange, 0, len(changed))
 	for _, entry := range changed {
 		changedPaths = append(changedPaths, entry.path)
+		change := FileChange{Path: entry.path}
+
+		if requirements.needsCommitStats {
+			data := &commitData{}
+			data.updateChangeStats(entry.change)
+			change.LinesAdded = data.linesAdded
+			change.LinesRemoved = data.linesRemoved
+		}
+
+		changes = append(changes, change)
 	}
 
 	*commits = append(*commits, Commit{
@@ -263,6 +288,7 @@ func appendTrackedCommit(commits *[]Commit, c *object.Commit, changed []trackedC
 		Message:      c.Message,
 		ParentHashes: parentHashes(c),
 		ChangedPaths: changedPaths,
+		Changes:      changes,
 	})
 }
 

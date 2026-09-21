@@ -33,8 +33,9 @@ func loadAllFileMetrics(root *model.Directory) error {
 }
 
 type metricRequirements struct {
-	processors     []selectedProvider
-	needsLineStats bool
+	processors       []selectedProvider
+	needsLineStats   bool
+	needsCommitStats bool
 }
 
 type selectedProvider struct {
@@ -53,6 +54,10 @@ func newMetricRequirements(requested []metric.Name) metricRequirements {
 	}
 
 	for _, name := range requested {
+		if name == LinesAdded || name == LinesRemoved || name == LinesChanged {
+			requirements.needsCommitStats = true
+		}
+
 		def, ok := providerDefs[name]
 		if !ok {
 			continue
