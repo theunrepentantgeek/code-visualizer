@@ -10,15 +10,16 @@ import (
 
 // State holds data prepared for a later alluvial layout and render pipeline.
 type State struct {
-	WidthMetric metric.Name
-	Fill        viz.ColourEncoding
-	FillLabel   metric.Name
-	FillDelta   bool
-	FillInk     inks.Ink
-	Snapshots   []Snapshot
-	Data        Data
-	Layout      Layout
-	Legend      *legend.Config
+	WidthMetric   metric.Name
+	Fill          viz.ColourEncoding
+	FillLabel     metric.Name
+	FillSpecified bool
+	FillDelta     bool
+	FillInk       inks.Ink
+	Snapshots     []Snapshot
+	Data          Data
+	Layout        Layout
+	Legend        *legend.Config
 }
 
 // Snapshot is the scanned directory tree at one caller-ordered reference.

@@ -205,6 +205,7 @@ func TestResolveMetrics_ResolvesDeltaFillWithoutRequestingModifier(t *testing.T)
 	})).To(Succeed())
 	g.Expect(state.Fill.Metric).To(Equal(metric.Name("file-lines.sum")))
 	g.Expect(state.FillLabel).To(Equal(metric.Name("file-lines.delta")))
+	g.Expect(state.FillSpecified).To(BeTrue())
 	g.Expect(state.FillDelta).To(BeTrue())
 	g.Expect(common.Requested.Expressions).To(HaveLen(2))
 }

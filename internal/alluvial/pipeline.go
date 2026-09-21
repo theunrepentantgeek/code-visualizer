@@ -35,6 +35,7 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 	fillDelta := false
 
 	if cfg.Fill != nil && cfg.Fill.Metric != "" {
+		state.FillSpecified = true
 		fillLabel = cfg.Fill.Metric
 		fillMetric, fillDelta = ParseFillMetric(cfg.Fill.Metric)
 
@@ -88,7 +89,18 @@ func LayoutStage(common *stages.CommonState, state *State) error {
 
 // RenderStage creates the shared-canvas shapes from the positioned layout.
 func RenderStage(common *stages.CommonState, state *State) error {
-	common.Canvas = RenderToCanvas(state.Layout, common.Width, common.Height, state.FillInk)
+	labelFillMetric := metric.Name("")
+	if state.FillSpecified {
+		labelFillMetric = state.FillLabel
+	}
+
+	common.Canvas = RenderToCanvas(
+		state.Layout,
+		common.Width,
+		common.Height,
+		state.FillInk,
+		labelFillMetric,
+	)
 	legend.RenderInto(common.Canvas, state.Legend)
 
 	return nil
@@ -232,6 +244,7 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 	}
 
 	position, orientation := legend.ResolveOptions(rootConfig.LegendPositionStr(), rootConfig.LegendOrientationStr())
+
 	state.Legend = legend.Builder{
 		Position:    position,
 		Orientation: orientation,
@@ -239,6 +252,17 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 		FillMetric:  state.FillLabel,
 		SizeMetric:  state.WidthMetric,
 	}.Build()
+	if state.Legend != nil {
+		lines := []string{"Directory", string(state.WidthMetric)}
+		if state.FillSpecified {
+			lines = append(lines, string(state.FillLabel))
+		}
+
+		state.Legend.LabelSample = legend.LabelSample{
+			Shape: legend.LabelSampleSquare,
+			Lines: lines,
+		}
+	}
 
 	return nil
 }

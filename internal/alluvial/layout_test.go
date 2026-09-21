@@ -21,12 +21,14 @@ func TestLayoutData_ScalesBandsInProportionToTheirMetricValues(t *testing.T) {
 			{FromReference: "before", ToReference: "after", Path: "api", FromWidth: 10, ToWidth: 20},
 			{FromReference: "before", ToReference: "after", Path: "docs", FromWidth: 30, ToWidth: 20},
 		},
+		FillValues: map[string]float64{"api": 7, "docs": 9},
 	}, 200, 100)
 
 	g.Expect(layout.Columns).To(HaveLen(2))
 	g.Expect(layout.Columns[0].Bands).To(HaveLen(2))
 	g.Expect(layout.Columns[0].Bands[0].Path).To(Equal("api"))
 	g.Expect(layout.Columns[0].Bands[1].Path).To(Equal("docs"))
+	g.Expect(layout.Columns[0].Bands[0].FillValue).To(Equal(float64(7)))
 	g.Expect(layout.Columns[0].Bands[1].Bottom - layout.Columns[0].Bands[1].Top).To(
 		BeNumerically("~", 3*(layout.Columns[0].Bands[0].Bottom-layout.Columns[0].Bands[0].Top), 0.001),
 	)

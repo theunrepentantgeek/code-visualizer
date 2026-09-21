@@ -9,6 +9,7 @@ import (
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 )
 
 // RenderToCanvas draws readable release columns and the filled alluvial paths.
-func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink) *canvas.Canvas {
+func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink, labelFillMetric metric.Name) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 	addAlluvialBackground(cv, width, height)
 	addAlluvialColumns(cv, layout)
@@ -34,7 +35,7 @@ func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink) *canvas.
 		})
 	}
 
-	addAlluvialBandLabels(cv, layout)
+	addAlluvialBandLabels(cv, layout, labelFillMetric)
 
 	return cv
 }
@@ -78,36 +79,44 @@ func cubicPoint(start, controlOne, controlTwo, end geometry.Point, t float64) ge
 	}
 }
 
-func addAlluvialBandLabels(cv *canvas.Canvas, layout Layout) {
+func addAlluvialBandLabels(cv *canvas.Canvas, layout Layout, labelFillMetric metric.Name) {
 	for _, column := range layout.Columns {
 		for _, band := range column.Bands {
-			fontSize, ok := alluvialBandLabelFontSize(band)
-			if !ok {
-				continue
-			}
-
-			center := (band.Top + band.Bottom) / 2
-			spec := &canvas.TextSpec{
-				Ink:      inks.FixedInk(alluvialLabel),
-				FontSize: fontSize,
-				Anchor:   canvas.AnchorMiddle,
-			}
-			cv.AddText(canvas.LayerOverlay, canvas.Text{
-				Spec:     spec,
-				Position: geometry.Point{X: column.X, Y: center - fontSize/2},
-				Content:  band.Path,
-			})
-			cv.AddText(canvas.LayerOverlay, canvas.Text{
-				Spec:     spec,
-				Position: geometry.Point{X: column.X, Y: center + fontSize/2},
-				Content:  fmt.Sprintf("%g", band.Width),
-			})
+			addAlluvialBandLabel(cv, column.X, band, labelFillMetric)
 		}
 	}
 }
 
-func alluvialBandLabelFontSize(band Band) (float64, bool) {
-	fontSize := min(13, (band.Bottom-band.Top)/3)
+func addAlluvialBandLabel(cv *canvas.Canvas, x float64, band Band, labelFillMetric metric.Name) {
+	lines := []string{band.Path, fmt.Sprintf("%g", band.Width)}
+	if labelFillMetric != "" {
+		lines = append(lines, fmt.Sprintf("%g", band.FillValue))
+	}
+
+	fontSize, ok := alluvialBandLabelFontSize(band, len(lines))
+	if !ok {
+		return
+	}
+
+	center := (band.Top + band.Bottom) / 2
+	spec := &canvas.TextSpec{
+		Ink:      inks.FixedInk(alluvialLabel),
+		FontSize: fontSize,
+		Anchor:   canvas.AnchorMiddle,
+	}
+
+	start := center - float64(len(lines)-1)*fontSize/2
+	for index, line := range lines {
+		cv.AddText(canvas.LayerOverlay, canvas.Text{
+			Spec:     spec,
+			Position: geometry.Point{X: x, Y: start + float64(index)*fontSize},
+			Content:  line,
+		})
+	}
+}
+
+func alluvialBandLabelFontSize(band Band, lineCount int) (float64, bool) {
+	fontSize := min(13, (band.Bottom-band.Top)/float64(lineCount+1))
 	if fontSize < 8 {
 		return 0, false
 	}

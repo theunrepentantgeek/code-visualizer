@@ -29,10 +29,11 @@ type ColumnLayout struct {
 
 // Band is the vertical extent allocated to one directory in a release column.
 type Band struct {
-	Path   string
-	Top    float64
-	Bottom float64
-	Width  float64
+	Path      string
+	Top       float64
+	Bottom    float64
+	Width     float64
+	FillValue float64
 }
 
 // Flow is a filled quadrilateral joining one directory between adjacent columns.
@@ -67,7 +68,12 @@ func LayoutData(data Data, width, height int) Layout {
 
 	for index, column := range data.Columns {
 		x := columnX(index, len(data.Columns), width)
+
 		bands := layoutBands(column.Values, top, bottom-top, scale, available, gap)
+		for bandIndex := range bands {
+			bands[bandIndex].FillValue = data.FillValues[bands[bandIndex].Path]
+		}
+
 		layout.Columns[index] = ColumnLayout{
 			Reference: column.Reference,
 			X:         x,

@@ -71,8 +71,9 @@ value the same visual width across every column, and centers each column
 vertically so growth can expand in both directions. Directories introduced
 after one column or removed before the next taper to or from zero width.
 
-Bands curve between columns and show the directory path and metric value when
-there is enough space. By default, their colour uses the width metric value at
+Bands curve between columns and show the directory path and width metric value
+when there is enough space. When `--fill` is specified, labels also show the
+fill value used for the colour. By default, their colour uses the width metric value at
 the final reference. Select another metric and palette with `--fill`, for
 example `--fill commit-count,temperature`. Append `.delta` to the metric to
 colour by its change from the first reference to the last, for example

@@ -34,7 +34,7 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 			},
 			{Path: "empty", FromX: 20, ToX: 180, FromTop: 90, FromBottom: 90, ToTop: 90, ToBottom: 90},
 		},
-	}, 200, 100, inks.NumericInk("fill", []float64{-1, 1}, palette.GetPalette(palette.Neutral)))
+	}, 200, 100, inks.NumericInk("fill", []float64{-1, 1}, palette.GetPalette(palette.Neutral)), "")
 	backend := mock.NewBackend()
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
@@ -57,14 +57,42 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	g.Expect(filledPaths[0].Fill).NotTo(Equal(filledPaths[1].Fill))
 }
 
+func TestRenderToCanvas_AddsExplicitFillValueToBandLabel(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{{
+			X: 100,
+			Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: -3,
+			}},
+		}},
+	}, 200, 100, inks.NumericInk("fill", []float64{-3}, palette.GetPalette(palette.Neutral)), "fill.delta")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	var labels []string
+
+	for _, call := range backend.Calls {
+		if call.Method == "DrawText" {
+			labels = append(labels, call.Text)
+		}
+	}
+
+	g.Expect(labels).To(ContainElements("api", "12", "-3"))
+}
+
 func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	state := &alluvial.State{
-		WidthMetric: "file-lines.sum",
-		Fill:        viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
-		FillLabel:   "file-lines.delta",
-		FillDelta:   true,
+		WidthMetric:   "file-lines.sum",
+		Fill:          viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
+		FillLabel:     "file-lines.delta",
+		FillSpecified: true,
+		FillDelta:     true,
 		Data: alluvial.Data{Columns: []alluvial.Column{
 			{Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "docs", Width: 5}}},
 		}, FillValues: map[string]float64{"api": 5, "docs": -2}},
@@ -78,6 +106,10 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	g.Expect(state.Legend.Entries).To(HaveLen(2))
 	g.Expect(state.Legend.Entries[0].MetricName).To(Equal("file-lines.delta"))
 	g.Expect(state.Legend.Entries[1].MetricName).To(Equal("file-lines.sum"))
+	g.Expect(state.Legend.LabelSample).To(Equal(legend.LabelSample{
+		Shape: legend.LabelSampleSquare,
+		Lines: []string{"Directory", "file-lines.sum", "file-lines.delta"},
+	}))
 	middle := state.FillInk.Dip(inks.MeasureValue(0))
 	g.Expect(middle).To(Equal(palette.GetPalette(palette.Neutral).Colours[4]))
 }
