@@ -319,7 +319,12 @@ func (lb *legendBuilder) addNumericSwatches(
 		scale:      lb.scale,
 	}
 
-	for _, sw := range entry.Swatches {
+	swatches := entry.Swatches
+	if !cur.horizontal {
+		swatches = verticalNumericSwatches(entry.Swatches)
+	}
+
+	for _, sw := range swatches {
 		position := cur.swatchPos()
 		if entry.IsBorder {
 			lb.addOutlineSwatch(position.X, position.Y, sw.Colour)
@@ -339,6 +344,23 @@ func (lb *legendBuilder) addNumericSwatches(
 	}
 
 	return cur.endY(y)
+}
+
+func verticalNumericSwatches(swatches []model.LegendSwatch) []model.LegendSwatch {
+	vertical := make([]model.LegendSwatch, len(swatches))
+	for index := range swatches {
+		sourceIndex := len(swatches) - 1 - index
+		swatch := swatches[sourceIndex]
+
+		swatch.Label = ""
+		if sourceIndex > 0 {
+			swatch.Label = swatches[sourceIndex-1].Label
+		}
+
+		vertical[index] = swatch
+	}
+
+	return vertical
 }
 
 func (lb *legendBuilder) addCategorySwatches(
