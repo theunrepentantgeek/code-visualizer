@@ -316,6 +316,7 @@ func TestRenderInto_ArcLabelSample_RendersCurvedAnnularSwatchBeforeEntryHeading(
 	g.Expect(arcIndex).To(BeNumerically("<", entryHeadingIndex))
 
 	points := mb.Calls[arcIndex].Points
+
 	const arcPointCount = 9
 
 	g.Expect(points).To(HaveLen(2*arcPointCount + 1))
