@@ -25,6 +25,9 @@ func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink, labelFil
 	addAlluvialBackground(cv, width, height)
 	addAlluvialColumns(cv, layout)
 
+	leftExtension, rightExtension := alluvialEdgeBandExtensions(layout.Columns, labelFillMetric)
+	addAlluvialEdgeBands(cv, layout.Columns, leftExtension, rightExtension, fillInk)
+
 	for _, flow := range layout.Flows {
 		if !validFlow(flow) {
 			continue
@@ -86,24 +89,29 @@ func addAlluvialBandLabels(
 	labelFillMetric metric.Name,
 	fillInk inks.Ink,
 ) {
-	for index, column := range layout.Columns {
-		x := alluvialColumnLabelX(layout.Columns, index, labelFillMetric)
+	for _, column := range layout.Columns {
 		for _, band := range column.Bands {
-			addAlluvialBandLabel(cv, x, band, labelFillMetric, fillInk)
+			addAlluvialBandLabel(cv, column.X, band, labelFillMetric, fillInk)
 		}
 	}
 }
 
-func alluvialColumnLabelX(
+func alluvialEdgeBandExtensions(
 	columns []ColumnLayout,
-	index int,
 	labelFillMetric metric.Name,
-) float64 {
-	column := columns[index]
+) (left, right float64) {
 	if len(columns) < 2 {
-		return column.X
+		return 0, 0
 	}
 
+	return alluvialColumnLabelExtension(columns[0], labelFillMetric),
+		alluvialColumnLabelExtension(columns[len(columns)-1], labelFillMetric)
+}
+
+func alluvialColumnLabelExtension(
+	column ColumnLayout,
+	labelFillMetric metric.Name,
+) float64 {
 	maximumWidth := 0.0
 
 	for _, band := range column.Bands {
@@ -122,13 +130,45 @@ func alluvialColumnLabelX(
 
 	const edgeInset = 2.0
 
-	switch index {
-	case 0:
-		return column.X + maximumWidth/2 + edgeInset
-	case len(columns) - 1:
-		return column.X - maximumWidth/2 - edgeInset
-	default:
-		return column.X
+	return maximumWidth/2 + edgeInset
+}
+
+func addAlluvialEdgeBands(
+	cv *canvas.Canvas,
+	columns []ColumnLayout,
+	leftExtension, rightExtension float64,
+	fillInk inks.Ink,
+) {
+	if len(columns) < 2 {
+		return
+	}
+
+	addAlluvialEdgeColumnBands(cv, columns[0], columns[0].X-leftExtension, columns[0].X, fillInk)
+
+	last := columns[len(columns)-1]
+	addAlluvialEdgeColumnBands(cv, last, last.X, last.X+rightExtension, fillInk)
+}
+
+func addAlluvialEdgeColumnBands(
+	cv *canvas.Canvas,
+	column ColumnLayout,
+	left, right float64,
+	fillInk inks.Ink,
+) {
+	for _, band := range column.Bands {
+		if band.Bottom <= band.Top {
+			continue
+		}
+
+		cv.AddFilledPath(canvas.LayerContent, canvas.FilledPath{
+			Loops: [][]geometry.Point{{
+				{X: left, Y: band.Top},
+				{X: right, Y: band.Top},
+				{X: right, Y: band.Bottom},
+				{X: left, Y: band.Bottom},
+			}},
+			Fill: fillInk.Dip(inks.MeasureValue(band.FillValue)),
+		})
 	}
 }
 

@@ -112,7 +112,7 @@ func TestRenderToCanvas_UsesContrastingInkForBandLabels(t *testing.T) {
 	t.Fatal("expected api band label")
 }
 
-func TestRenderToCanvas_KeepsEdgeColumnLabelsInsideBands(t *testing.T) {
+func TestRenderToCanvas_ExtendsEdgeBandsBehindCenteredLabels(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -144,12 +144,22 @@ func TestRenderToCanvas_KeepsEdgeColumnLabelsInsideBands(t *testing.T) {
 				},
 			},
 		},
+		Flows: []alluvial.Flow{
+			{
+				Path: "long-left-label", FromX: leftX, ToX: 100,
+				FromTop: 10, FromBottom: 70, ToTop: 10, ToBottom: 70,
+			},
+			{
+				Path: "long-right-label", FromX: 100, ToX: rightX,
+				FromTop: 80, FromBottom: 140, ToTop: 80, ToBottom: 140,
+			},
+		},
 	}, 200, 150, inks.NumericInk("fill", []float64{0}, palette.GetPalette(palette.Neutral)), "")
 	backend := mock.NewBackend()
 
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
-	var leftPositions, rightPositions []float64
+	var leftLabelWidth, rightLabelWidth float64
 
 	for _, call := range backend.Calls {
 		if call.Method != "DrawText" {
@@ -159,27 +169,54 @@ func TestRenderToCanvas_KeepsEdgeColumnLabelsInsideBands(t *testing.T) {
 		width, _ := textlayout.MeasureString(call.Text, call.FontSize)
 		switch call.Text {
 		case "long-left-label", "x", "12", "8":
-			g.Expect(call.Pos.X - width/2).To(BeNumerically(">", leftX))
-			leftPositions = append(leftPositions, call.Pos.X)
+			g.Expect(call.Pos.X).To(BeNumerically("==", leftX))
+
+			leftLabelWidth = max(leftLabelWidth, width)
 		case "middle", "10":
 			g.Expect(call.Pos.X).To(BeNumerically("==", 100))
 		case "long-right-label", "y", "14", "9":
-			g.Expect(call.Pos.X + width/2).To(BeNumerically("<", rightX))
-			rightPositions = append(rightPositions, call.Pos.X)
+			g.Expect(call.Pos.X).To(BeNumerically("==", rightX))
+
+			rightLabelWidth = max(rightLabelWidth, width)
 		default:
 			continue
 		}
 	}
 
-	g.Expect(leftPositions).To(HaveLen(4))
-	g.Expect(rightPositions).To(HaveLen(4))
+	var paths []mock.Call
 
-	if len(leftPositions) == 0 || len(rightPositions) == 0 {
-		t.Fatal("expected labels in both edge columns")
+	for _, call := range backend.Calls {
+		if call.Method == "DrawFilledPath" {
+			paths = append(paths, call)
+		}
 	}
 
-	g.Expect(leftPositions).To(HaveEach(Equal(leftPositions[0])))
-	g.Expect(rightPositions).To(HaveEach(Equal(rightPositions[0])))
+	g.Expect(paths).To(HaveLen(6))
+
+	if len(paths) != 6 {
+		t.Fatalf("expected 6 filled paths, got %d", len(paths))
+	}
+
+	minimumX, maximumX := pathXBounds(paths)
+	g.Expect(minimumX).To(BeNumerically("<", leftX-leftLabelWidth/2))
+	g.Expect(maximumX).To(BeNumerically(">", rightX+rightLabelWidth/2))
+
+	g.Expect(paths[4].Loops[0][0].X).To(BeNumerically("==", leftX))
+	g.Expect(paths[5].Loops[0][0].X).To(BeNumerically("==", 100))
+}
+
+func pathXBounds(paths []mock.Call) (minimum, maximum float64) {
+	minimum = paths[0].Loops[0][0].X
+	maximum = minimum
+
+	for _, path := range paths {
+		for _, point := range path.Loops[0] {
+			minimum = min(minimum, point.X)
+			maximum = max(maximum, point.X)
+		}
+	}
+
+	return minimum, maximum
 }
 
 func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
