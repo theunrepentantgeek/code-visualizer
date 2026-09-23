@@ -7,6 +7,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -85,10 +86,49 @@ func addAlluvialBandLabels(
 	labelFillMetric metric.Name,
 	fillInk inks.Ink,
 ) {
-	for _, column := range layout.Columns {
+	for index, column := range layout.Columns {
+		x := alluvialColumnLabelX(layout.Columns, index, labelFillMetric)
 		for _, band := range column.Bands {
-			addAlluvialBandLabel(cv, column.X, band, labelFillMetric, fillInk)
+			addAlluvialBandLabel(cv, x, band, labelFillMetric, fillInk)
 		}
+	}
+}
+
+func alluvialColumnLabelX(
+	columns []ColumnLayout,
+	index int,
+	labelFillMetric metric.Name,
+) float64 {
+	column := columns[index]
+	if len(columns) < 2 {
+		return column.X
+	}
+
+	maximumWidth := 0.0
+
+	for _, band := range column.Bands {
+		lines := alluvialBandLabelLines(band, labelFillMetric)
+
+		fontSize, ok := alluvialBandLabelFontSize(band, len(lines))
+		if !ok {
+			continue
+		}
+
+		widths, _ := textlayout.MeasureStrings(lines, fontSize)
+		for _, width := range widths {
+			maximumWidth = max(maximumWidth, width)
+		}
+	}
+
+	const edgeInset = 2.0
+
+	switch index {
+	case 0:
+		return column.X + maximumWidth/2 + edgeInset
+	case len(columns) - 1:
+		return column.X - maximumWidth/2 - edgeInset
+	default:
+		return column.X
 	}
 }
 
@@ -99,10 +139,7 @@ func addAlluvialBandLabel(
 	labelFillMetric metric.Name,
 	fillInk inks.Ink,
 ) {
-	lines := []string{band.Path, fmt.Sprintf("%g", band.Width)}
-	if labelFillMetric != "" {
-		lines = append(lines, fmt.Sprintf("%g", band.FillValue))
-	}
+	lines := alluvialBandLabelLines(band, labelFillMetric)
 
 	fontSize, ok := alluvialBandLabelFontSize(band, len(lines))
 	if !ok {
@@ -125,6 +162,15 @@ func addAlluvialBandLabel(
 			Content:  line,
 		})
 	}
+}
+
+func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
+	lines := []string{band.Path, fmt.Sprintf("%g", band.Width)}
+	if labelFillMetric != "" {
+		lines = append(lines, fmt.Sprintf("%g", band.FillValue))
+	}
+
+	return lines
 }
 
 func alluvialBandLabelFontSize(band Band, lineCount int) (float64, bool) {

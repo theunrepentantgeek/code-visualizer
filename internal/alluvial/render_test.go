@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/alluvial"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
@@ -109,6 +110,76 @@ func TestRenderToCanvas_UsesContrastingInkForBandLabels(t *testing.T) {
 	}
 
 	t.Fatal("expected api band label")
+}
+
+func TestRenderToCanvas_KeepsEdgeColumnLabelsInsideBands(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const (
+		leftX  = 20.0
+		rightX = 180.0
+	)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{
+			{
+				X: leftX,
+				Bands: []alluvial.Band{
+					{Path: "long-left-label", Top: 10, Bottom: 70, Width: 12},
+					{Path: "x", Top: 80, Bottom: 140, Width: 8},
+				},
+			},
+			{
+				X: 100,
+				Bands: []alluvial.Band{
+					{Path: "middle", Top: 10, Bottom: 70, Width: 10},
+				},
+			},
+			{
+				X: rightX,
+				Bands: []alluvial.Band{
+					{Path: "long-right-label", Top: 10, Bottom: 70, Width: 14},
+					{Path: "y", Top: 80, Bottom: 140, Width: 9},
+				},
+			},
+		},
+	}, 200, 150, inks.NumericInk("fill", []float64{0}, palette.GetPalette(palette.Neutral)), "")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	var leftPositions, rightPositions []float64
+
+	for _, call := range backend.Calls {
+		if call.Method != "DrawText" {
+			continue
+		}
+
+		width, _ := textlayout.MeasureString(call.Text, call.FontSize)
+		switch call.Text {
+		case "long-left-label", "x", "12", "8":
+			g.Expect(call.Pos.X - width/2).To(BeNumerically(">", leftX))
+			leftPositions = append(leftPositions, call.Pos.X)
+		case "middle", "10":
+			g.Expect(call.Pos.X).To(BeNumerically("==", 100))
+		case "long-right-label", "y", "14", "9":
+			g.Expect(call.Pos.X + width/2).To(BeNumerically("<", rightX))
+			rightPositions = append(rightPositions, call.Pos.X)
+		default:
+			continue
+		}
+	}
+
+	g.Expect(leftPositions).To(HaveLen(4))
+	g.Expect(rightPositions).To(HaveLen(4))
+
+	if len(leftPositions) == 0 || len(rightPositions) == 0 {
+		t.Fatal("expected labels in both edge columns")
+	}
+
+	g.Expect(leftPositions).To(HaveEach(Equal(leftPositions[0])))
+	g.Expect(rightPositions).To(HaveEach(Equal(rightPositions[0])))
 }
 
 func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
