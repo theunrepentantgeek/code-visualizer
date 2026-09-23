@@ -2,7 +2,6 @@ package legend
 
 import (
 	"image/color"
-	"slices"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
@@ -349,13 +348,16 @@ func (lb *legendBuilder) addNumericSwatches(
 
 func verticalNumericSwatches(swatches []model.LegendSwatch) []model.LegendSwatch {
 	vertical := make([]model.LegendSwatch, len(swatches))
-	for sourceIndex, swatch := range slices.Backward(swatches) {
+	for index := range swatches {
+		sourceIndex := len(swatches) - 1 - index
+		swatch := swatches[sourceIndex]
+
 		swatch.Label = ""
 		if sourceIndex > 0 {
 			swatch.Label = swatches[sourceIndex-1].Label
 		}
 
-		vertical[len(swatches)-1-sourceIndex] = swatch
+		vertical[index] = swatch
 	}
 
 	return vertical
