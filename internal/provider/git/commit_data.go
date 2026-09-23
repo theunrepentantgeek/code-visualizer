@@ -50,3 +50,8 @@ func (data *commitData) updateChangeStats(change *object.Change) {
 		data.linesRemoved += int64(stat.Deletion)
 	}
 }
+
+func (data *commitData) addChangeStats(change trackedChange) {
+	data.linesAdded += change.linesAdded
+	data.linesRemoved += change.linesRemoved
+}

@@ -8,10 +8,8 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
-	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
@@ -33,9 +31,10 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 	fillMetric := widthMetric
 	fillLabel := widthMetric
 	fillDelta := false
+	fillExplicit := false
 
 	if cfg.Fill != nil && cfg.Fill.Metric != "" {
-		state.FillSpecified = true
+		fillExplicit = true
 		fillLabel = cfg.Fill.Metric
 		fillMetric, fillDelta = ParseFillMetric(cfg.Fill.Metric)
 
@@ -45,9 +44,12 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 		}
 	}
 
-	state.Fill = stages.ResolveColourEncodingForMetric(cfg.Fill, fillMetric)
-	state.FillLabel = fillLabel
-	state.FillDelta = fillDelta
+	state.Fill = BandFill{
+		Encoding: stages.ResolveColourEncodingForMetric(cfg.Fill, fillMetric),
+		Label:    fillLabel,
+		Explicit: fillExplicit,
+		Delta:    fillDelta,
+	}
 	common.Requested = stages.CollectRequestedMetricNames(widthMetric, fillMetric)
 
 	return nil
@@ -89,17 +91,12 @@ func LayoutStage(common *stages.CommonState, state *State) error {
 
 // RenderStage creates the shared-canvas shapes from the positioned layout.
 func RenderStage(common *stages.CommonState, state *State) error {
-	labelFillMetric := metric.Name("")
-	if state.FillSpecified {
-		labelFillMetric = state.FillLabel
-	}
-
 	common.Canvas = RenderToCanvas(
 		state.Layout,
 		common.Width,
 		common.Height,
-		state.FillInk,
-		labelFillMetric,
+		state.Fill.Ink,
+		state.Fill.LabelMetric(),
 	)
 	legend.RenderInto(common.Canvas, state.Legend)
 
@@ -129,23 +126,19 @@ func offsetLayout(layout *Layout, offset geometry.Vector) {
 }
 
 func acquireSnapshots(common *stages.CommonState, state *State, cfg *config.Alluvial) error {
-	snapshots := make([]Snapshot, 0, len(cfg.References))
-	for index, reference := range cfg.References {
-		snapshotCommon, err := acquireSnapshot(common, reference)
-		if err != nil {
-			return eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
-		}
+	snapshotStates, err := prepareSnapshots(common, cfg.References)
+	if err != nil {
+		return err
+	}
 
-		snapshots = append(snapshots, Snapshot{
-			Reference: SnapshotReference(reference),
-			Root:      snapshotCommon.Root,
-		})
+	err = shareCommitHistoryPaths(common, snapshotStates)
+	if err != nil {
+		return err
+	}
 
-		if index == 0 {
-			if err := stages.ExportData(snapshotCommon); err != nil {
-				return eris.Wrap(err, "export alluvial snapshot data")
-			}
-		}
+	snapshots, err := finishSnapshots(snapshotStates, cfg.References)
+	if err != nil {
+		return err
 	}
 
 	state.Snapshots = snapshots
@@ -153,7 +146,65 @@ func acquireSnapshots(common *stages.CommonState, state *State, cfg *config.Allu
 	return nil
 }
 
-func acquireSnapshot(common *stages.CommonState, reference string) (*stages.CommonState, error) {
+func prepareSnapshots(
+	common *stages.CommonState,
+	references []string,
+) ([]*stages.CommonState, error) {
+	snapshotStates := make([]*stages.CommonState, 0, len(references))
+	for _, reference := range references {
+		snapshotCommon, err := prepareSnapshot(common, reference)
+		if err != nil {
+			return nil, eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
+		}
+
+		snapshotStates = append(snapshotStates, snapshotCommon)
+	}
+
+	return snapshotStates, nil
+}
+
+func shareCommitHistoryPaths(
+	common *stages.CommonState,
+	snapshotStates []*stages.CommonState,
+) error {
+	if !common.Requested.HasCommitExpressions() {
+		return nil
+	}
+
+	if err := stages.ShareGitHistoryPaths(snapshotStates); err != nil {
+		return eris.Wrap(err, "prepare shared alluvial history")
+	}
+
+	return nil
+}
+
+func finishSnapshots(
+	snapshotStates []*stages.CommonState,
+	references []string,
+) ([]Snapshot, error) {
+	snapshots := make([]Snapshot, 0, len(references))
+
+	for index, snapshotCommon := range snapshotStates {
+		if err := finishSnapshot(snapshotCommon); err != nil {
+			return nil, eris.Wrapf(err, "failed to acquire alluvial reference %q", references[index])
+		}
+
+		snapshots = append(snapshots, Snapshot{
+			Reference: SnapshotReference(references[index]),
+			Root:      snapshotCommon.Root,
+		})
+
+		if index == 0 {
+			if err := stages.ExportData(snapshotCommon); err != nil {
+				return nil, eris.Wrap(err, "export alluvial snapshot data")
+			}
+		}
+	}
+
+	return snapshots, nil
+}
+
+func prepareSnapshot(common *stages.CommonState, reference string) (*stages.CommonState, error) {
 	if common.Flags == nil {
 		return nil, eris.New("alluvial snapshot acquisition requires pipeline flags")
 	}
@@ -172,11 +223,6 @@ func acquireSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 	for _, stage := range []func(*stages.CommonState) error{
 		stages.ScanFilesystem,
 		stages.CheckGitRequirement,
-		stages.LoadCommitMetrics,
-		stages.RunProviders,
-		stages.PopulateDeclarations,
-		stages.RunAggregations,
-		stages.FilterBinaryFiles,
 	} {
 		if err := stage(&snapshotCommon); err != nil {
 			return nil, err
@@ -184,6 +230,22 @@ func acquireSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 	}
 
 	return &snapshotCommon, nil
+}
+
+func finishSnapshot(snapshotCommon *stages.CommonState) error {
+	for _, stage := range []func(*stages.CommonState) error{
+		stages.LoadCommitMetrics,
+		stages.RunProviders,
+		stages.PopulateDeclarations,
+		stages.RunAggregations,
+		stages.FilterBinaryFiles,
+	} {
+		if err := stage(snapshotCommon); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // SnapshotReference normalizes an empty alluvial reference to the current Git
@@ -210,8 +272,8 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 
 	data, err := BuildData(state.Snapshots, Options{
 		Metric:     metricName,
-		FillMetric: state.Fill.Metric,
-		FillDelta:  state.FillDelta,
+		FillMetric: state.Fill.Encoding.Metric,
+		FillDelta:  state.Fill.Delta,
 		Expand:     cfg.Expand,
 	})
 	if err != nil {
@@ -225,19 +287,7 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 
 // BuildLegendStage creates the metric-driven band ink and its colour key.
 func BuildLegendStage(common *stages.CommonState, state *State) error {
-	values := make([]float64, 0, len(state.Data.FillValues))
-	for _, value := range state.Data.FillValues {
-		values = append(values, value)
-		if state.FillDelta {
-			values = append(values, -value)
-		}
-	}
-
-	if state.FillDelta {
-		values = append(values, 0)
-	}
-
-	state.FillInk = inks.NumericInk(state.FillLabel, values, palette.GetPalette(state.Fill.Palette))
+	state.Fill.ResolveInk(state.Data.FillValues)
 
 	rootConfig := common.RootConfig
 	if rootConfig == nil {
@@ -249,14 +299,14 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 	state.Legend = legend.Builder{
 		Position:    position,
 		Orientation: orientation,
-		FillInk:     state.FillInk,
-		FillMetric:  state.FillLabel,
+		FillInk:     state.Fill.Ink,
+		FillMetric:  state.Fill.Label,
 		SizeMetric:  state.WidthMetric,
 	}.Build()
 	if state.Legend != nil {
 		lines := []string{"Directory", string(state.WidthMetric)}
-		if state.FillSpecified {
-			lines = append(lines, string(state.FillLabel))
+		if state.Fill.Explicit {
+			lines = append(lines, string(state.Fill.Label))
 		}
 
 		state.Legend.LabelSample = legend.LabelSample{

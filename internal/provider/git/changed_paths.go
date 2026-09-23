@@ -54,6 +54,7 @@ func (s *repoService) changedPathsForTrackedPaths(
 	err := s.walkTrackedHistoryInHistoryRange(
 		trackedPaths,
 		historyRange,
+		loadTrackedChanges,
 		nil,
 		visit,
 	)

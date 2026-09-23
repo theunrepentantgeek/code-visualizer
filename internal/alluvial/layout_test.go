@@ -52,9 +52,9 @@ func TestLayoutData_UsesSharedScaleAcrossColumns(t *testing.T) {
 	g.Expect(smaller.Bottom - smaller.Top).To(
 		BeNumerically("~", larger.Bottom-larger.Top, 0.001),
 	)
-	g.Expect(smaller.Top).To(
-		BeNumerically("~", (layout.Top+layout.Bottom-(smaller.Bottom-smaller.Top))/2, 0.001),
-	)
+
+	placeholder := layout.Columns[0].Bands[1]
+	g.Expect(placeholder.Top - smaller.Bottom).To(BeNumerically("==", 6))
 }
 
 func TestLayoutData_TapersIntroducedAndRemovedPaths(t *testing.T) {
@@ -89,6 +89,38 @@ func TestLayoutData_TapersIntroducedAndRemovedPaths(t *testing.T) {
 	g.Expect(introduced.ToBottom).To(BeNumerically(">", introduced.ToTop))
 	g.Expect(removed.FromBottom).To(BeNumerically(">", removed.FromTop))
 	g.Expect(removed.ToTop).To(BeNumerically("==", removed.ToBottom))
+}
+
+func TestLayoutData_SpacesZeroWidthPlaceholderFromAdjacentBands(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout := alluvial.LayoutData(alluvial.Data{
+		Columns: []alluvial.Column{
+			{
+				Reference: "before",
+				Values: []alluvial.Value{
+					{Path: "alpha", Width: 10},
+					{Path: "gamma", Width: 10},
+				},
+			},
+			{
+				Reference: "after",
+				Values: []alluvial.Value{
+					{Path: "alpha", Width: 10},
+					{Path: "beta", Width: 10},
+					{Path: "gamma", Width: 10},
+				},
+			},
+		},
+	}, 400, 300)
+
+	alpha := bandByPath(layout.Columns[0].Bands, "alpha")
+	beta := bandByPath(layout.Columns[0].Bands, "beta")
+	gamma := bandByPath(layout.Columns[0].Bands, "gamma")
+
+	g.Expect(beta.Top - alpha.Bottom).To(BeNumerically("==", 6))
+	g.Expect(gamma.Top - beta.Bottom).To(BeNumerically("==", 6))
 }
 
 func TestLayoutData_SkipsZeroWidthValuesAndTransitions(t *testing.T) {

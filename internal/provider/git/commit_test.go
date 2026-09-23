@@ -28,7 +28,7 @@ func TestBulkCommitHistory_ReturnsCommitsForTrackedFiles(t *testing.T) {
 		g.Expect(c.Hash).NotTo(BeEmpty())
 		g.Expect(c.Author.Name).NotTo(BeEmpty())
 		g.Expect(c.Author.When.IsZero()).To(BeFalse())
-		g.Expect(c.ChangedPaths).NotTo(BeEmpty())
+		g.Expect(c.Changes).NotTo(BeEmpty())
 	}
 }
 
@@ -62,7 +62,7 @@ func TestBulkCommitHistory_SkipsCommitsNotTouchingTracked(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	for _, c := range commits {
-		g.Expect(c.ChangedPaths).To(ContainElement("old.go"))
+		g.Expect(c.Changes).To(ContainElement(FileChange{Path: "old.go"}))
 	}
 }
 
@@ -78,6 +78,40 @@ func TestBulkCommitHistory_InvokesProgressCallback(t *testing.T) {
 	_, err := BulkCommitHistory(dir, tracked, func() { count++ })
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(count).To(BeNumerically(">=", 1))
+}
+
+//nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
+func TestCommitChangeStatsAreCachedByTrackedPathSet(t *testing.T) {
+	g := NewGomegaWithT(t)
+	dir := setupTestGitRepo(t)
+
+	resetService()
+
+	s, err := getService(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if s == nil {
+		t.Fatal("expected git repository service")
+	}
+
+	head, err := s.repo.Head()
+	g.Expect(err).NotTo(HaveOccurred())
+
+	commit, err := s.repo.CommitObject(head.Hash())
+	g.Expect(err).NotTo(HaveOccurred())
+
+	tracked := map[string]bool{"shared.go": true, "new.go": true}
+	key := trackedPathsCacheKey(tracked)
+	first := s.cachedTrackedChanges(commit, tracked, key)
+	second := s.cachedTrackedChanges(commit, tracked, key)
+
+	g.Expect(second).To(Equal(first))
+	g.Expect(s.historyChangeCache).To(HaveLen(1))
+
+	for _, change := range second {
+		g.Expect(change.change).To(BeNil())
+		g.Expect(change.statsLoaded).To(BeTrue())
+	}
 }
 
 func TestCommitTotal_ReturnsReachableCommitCount(t *testing.T) {

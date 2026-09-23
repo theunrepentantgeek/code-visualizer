@@ -9,6 +9,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -203,11 +204,30 @@ func TestResolveMetrics_ResolvesDeltaFillWithoutRequestingModifier(t *testing.T)
 		Metric: &metricName,
 		Fill:   &config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"},
 	})).To(Succeed())
-	g.Expect(state.Fill.Metric).To(Equal(metric.Name("file-lines.sum")))
-	g.Expect(state.FillLabel).To(Equal(metric.Name("file-lines.delta")))
-	g.Expect(state.FillSpecified).To(BeTrue())
-	g.Expect(state.FillDelta).To(BeTrue())
+	g.Expect(state.Fill.Encoding.Metric).To(Equal(metric.Name("file-lines.sum")))
+	g.Expect(state.Fill.Label).To(Equal(metric.Name("file-lines.delta")))
+	g.Expect(state.Fill.Explicit).To(BeTrue())
+	g.Expect(state.Fill.Delta).To(BeTrue())
 	g.Expect(common.Requested.Expressions).To(HaveLen(2))
+}
+
+func TestResolveMetrics_PaletteOnlyFillUsesWidthMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	metricName := "file-size"
+	state := &alluvial.State{}
+	common := &stages.CommonState{}
+
+	g.Expect(alluvial.ResolveMetrics(common, state, &config.Alluvial{
+		Metric: &metricName,
+		Fill:   &config.MetricSpec{Palette: "temperature"},
+	})).To(Succeed())
+	g.Expect(state.Fill.Encoding.Metric).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(state.Fill.Encoding.Palette).To(Equal(palette.Temperature))
+	g.Expect(state.Fill.Label).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(state.Fill.Explicit).To(BeFalse())
+	g.Expect(state.Fill.LabelMetric()).To(BeEmpty())
 }
 
 func testRoot(dirs ...*model.Directory) *model.Directory {

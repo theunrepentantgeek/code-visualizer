@@ -59,9 +59,10 @@ type CommonState struct {
 	// Git history (populated by LoadGitHistory / GroupGitHistoryByFile / ExtractFileHistory).
 	// GitHistory is written once and not mutated afterward; consumers may hold
 	// *Commit references for the lifetime of CommonState.
-	GitHistory    []git.Commit
-	FileHistory   map[*model.File][]CommitRef
-	FileTimeRange map[*model.File]TimeRange
+	GitHistory      []git.Commit
+	GitHistoryPaths map[string]bool
+	FileHistory     map[*model.File][]CommitRef
+	FileTimeRange   map[*model.File]TimeRange
 
 	// Authorship history (populated by LoadAuthorHistory).
 	// AuthorHistory holds per-file per-author contribution records, the

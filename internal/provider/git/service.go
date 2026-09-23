@@ -17,14 +17,15 @@ import (
 )
 
 type repoService struct {
-	repo              *gogit.Repository
-	rootPath          string // git worktree root (absolute path)
-	repoMu            sync.Mutex
-	commitGroup       singleflight.Group
-	commitMu          sync.RWMutex
-	commitCache       map[string]*commitData
-	fetchCommitDataFn commitDataFetcher
-	bulkGroup         singleflight.Group
+	repo               *gogit.Repository
+	rootPath           string // git worktree root (absolute path)
+	repoMu             sync.Mutex
+	commitGroup        singleflight.Group
+	commitMu           sync.RWMutex
+	commitCache        map[string]*commitData
+	historyChangeCache map[historyChangeCacheKey][]trackedChange
+	fetchCommitDataFn  commitDataFetcher
+	bulkGroup          singleflight.Group
 }
 
 // RepoRoot returns the absolute path to the git worktree root.
@@ -80,9 +81,10 @@ func getService(repoPath string) (*repoService, error) {
 	}
 
 	svc := &repoService{
-		repo:        repo,
-		rootPath:    rootPath,
-		commitCache: make(map[string]*commitData),
+		repo:               repo,
+		rootPath:           rootPath,
+		commitCache:        make(map[string]*commitData),
+		historyChangeCache: make(map[historyChangeCacheKey][]trackedChange),
 	}
 	result := &serviceResult{svc, nil}
 	services[repoPath] = result
@@ -586,7 +588,13 @@ func (s *repoService) doBulkPrewarm(
 	visit := func(c *object.Commit, changed []trackedChange) {
 		prewarmTrackedChanges(cache, c, changed, requirements)
 	}
-	if err := s.walkTrackedHistoryInHistoryRange(paths, HistoryRange{}, onCommitProcessed, visit); err != nil {
+	if err := s.walkTrackedHistoryInHistoryRange(
+		paths,
+		HistoryRange{},
+		loadTrackedChanges,
+		onCommitProcessed,
+		visit,
+	); err != nil {
 		return eris.Wrap(err, "bulk prewarm")
 	}
 

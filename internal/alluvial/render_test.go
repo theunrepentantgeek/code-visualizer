@@ -115,11 +115,13 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	state := &alluvial.State{
-		WidthMetric:   "file-lines.sum",
-		Fill:          viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
-		FillLabel:     "file-lines.delta",
-		FillSpecified: true,
-		FillDelta:     true,
+		WidthMetric: "file-lines.sum",
+		Fill: alluvial.BandFill{
+			Encoding: viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
+			Label:    "file-lines.delta",
+			Explicit: true,
+			Delta:    true,
+		},
 		Data: alluvial.Data{Columns: []alluvial.Column{
 			{Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "docs", Width: 5}}},
 		}, FillValues: map[string]float64{"api": 5, "docs": -2}},
@@ -137,7 +139,7 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 		Shape: legend.LabelSampleSquare,
 		Lines: []string{"Directory", "file-lines.sum", "file-lines.delta"},
 	}))
-	middle := state.FillInk.Dip(inks.MeasureValue(0))
+	middle := state.Fill.Ink.Dip(inks.MeasureValue(0))
 	g.Expect(middle).To(Equal(palette.GetPalette(palette.Neutral).Colours[4]))
 }
 

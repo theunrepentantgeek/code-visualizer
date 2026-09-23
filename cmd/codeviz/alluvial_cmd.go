@@ -64,7 +64,7 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 		return err
 	}
 
-	if err := validateAlluvialFill(cfg.Fill); err != nil {
+	if err := validateAlluvialFill(cfg.Fill, metricName); err != nil {
 		return err
 	}
 
@@ -77,12 +77,17 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 	return nil
 }
 
-func validateAlluvialFill(fillSpec *config.MetricSpec) error {
+func validateAlluvialFill(fillSpec *config.MetricSpec, defaultMetric metric.Name) error {
 	if fillSpec == nil {
 		return nil
 	}
 
-	fillMetric, _ := alluvial.ParseFillMetric(fillSpec.Metric)
+	fillMetric := fillSpec.Metric
+	if fillMetric == "" {
+		fillMetric = defaultMetric
+	}
+
+	fillMetric, _ = alluvial.ParseFillMetric(fillMetric)
 	if err := validateNumericMetric("fill", fillMetric); err != nil {
 		return err
 	}

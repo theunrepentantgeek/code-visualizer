@@ -196,15 +196,7 @@ func maxBandCount(columns []Column) int {
 	count := 0
 
 	for _, column := range columns {
-		positiveValues := 0
-
-		for _, value := range column.Values {
-			if positiveFinite(value.Width) {
-				positiveValues++
-			}
-		}
-
-		count = max(count, positiveValues)
+		count = max(count, len(column.Values))
 	}
 
 	return count
@@ -217,12 +209,10 @@ func layoutBands(values []Value, top, verticalSpace, scale, available, gap float
 	})
 
 	total := 0.0
-	positiveCount := 0
 
 	for _, value := range values {
 		if positiveFinite(value.Width) {
 			total += value.Width
-			positiveCount++
 		}
 	}
 
@@ -231,19 +221,18 @@ func layoutBands(values []Value, top, verticalSpace, scale, available, gap float
 	}
 
 	bands := make([]Band, 0, len(values))
-	stackHeight := available*total/scale + gap*float64(positiveCount-1)
+	stackHeight := available*total/scale + gap*float64(len(values)-1)
 	y := top + (verticalSpace-stackHeight)/2
-	seenPositive := false
 
-	for _, value := range values {
+	for index, value := range values {
 		bandHeight := available * value.Width / scale
-		if bandHeight > 0 && seenPositive {
+
+		if index > 0 {
 			y += gap
 		}
 
 		bands = append(bands, Band{Path: value.Path, Top: y, Bottom: y + bandHeight, Width: value.Width})
 		y += bandHeight
-		seenPositive = seenPositive || bandHeight > 0
 	}
 
 	return bands

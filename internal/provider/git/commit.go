@@ -2,6 +2,8 @@ package git
 
 import (
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -20,7 +22,7 @@ type Signature struct {
 
 // Commit is a single commit in the project history, carrying enough metadata
 // for any downstream consumer (timeline, churn, authorship, message-mining).
-// ChangedPaths is restricted to the tracked path set passed to BulkCommitHistory
+// Changes is restricted to the tracked path set passed to BulkCommitHistory
 // so the slice size stays bounded.
 //
 // Invariant: once BulkCommitHistory returns, no field of any returned Commit
@@ -32,7 +34,6 @@ type Commit struct {
 	Committer    Signature
 	Message      string
 	ParentHashes []string
-	ChangedPaths []string // slash-separated, repo-relative
 	Changes      []FileChange
 }
 
@@ -42,6 +43,18 @@ type FileChange struct {
 	LinesAdded   int64
 	LinesRemoved int64
 }
+
+type historyChangeCacheKey struct {
+	commit string
+	paths  string
+}
+
+type historyChangeMode int
+
+const (
+	loadTrackedChanges historyChangeMode = iota
+	loadCachedChangeStats
+)
 
 // CommitTotal returns the number of commits reachable from HEAD.
 func CommitTotal(repoPath string) (int64, error) {
@@ -112,7 +125,7 @@ func BulkCommitHistoryInHistoryRange(
 
 	var commits []Commit
 
-	err = s.walkTrackedHistoryInHistoryRange(tracked, historyRange, onCommitProcessed,
+	err = s.walkTrackedHistoryInHistoryRange(tracked, historyRange, loadTrackedChanges, onCommitProcessed,
 		func(c *object.Commit, changed []trackedChange) {
 			appendTrackedCommit(&commits, c, changed, metricRequirements{})
 		})
@@ -186,7 +199,12 @@ func (s *repoService) bulkCommitHistoryAndPrewarmInHistoryRange(
 
 	var commits []Commit
 
-	err := s.walkTrackedHistoryInHistoryRange(tracked, historyRange, onCommitProcessed,
+	changeMode := loadTrackedChanges
+	if requirements.needsCommitStats || requirements.needsLineStats {
+		changeMode = loadCachedChangeStats
+	}
+
+	err := s.walkTrackedHistoryInHistoryRange(tracked, historyRange, changeMode, onCommitProcessed,
 		func(c *object.Commit, changed []trackedChange) {
 			prewarmTrackedChanges(cache, c, changed, requirements)
 			appendTrackedCommit(&commits, c, changed, requirements)
@@ -249,7 +267,11 @@ func prewarmTrackedChanges(
 		data.updateMetadata(c)
 
 		if requirements.needsLineStats {
-			data.updateChangeStats(entry.change)
+			if entry.statsLoaded {
+				data.addChangeStats(entry)
+			} else {
+				data.updateChangeStats(entry.change)
+			}
 		}
 	}
 }
@@ -264,18 +286,20 @@ func appendTrackedCommit(
 		return
 	}
 
-	changedPaths := make([]string, 0, len(changed))
-
 	changes := make([]FileChange, 0, len(changed))
 	for _, entry := range changed {
-		changedPaths = append(changedPaths, entry.path)
 		change := FileChange{Path: entry.path}
 
 		if requirements.needsCommitStats {
-			data := &commitData{}
-			data.updateChangeStats(entry.change)
-			change.LinesAdded = data.linesAdded
-			change.LinesRemoved = data.linesRemoved
+			if entry.statsLoaded {
+				change.LinesAdded = entry.linesAdded
+				change.LinesRemoved = entry.linesRemoved
+			} else {
+				data := &commitData{}
+				data.updateChangeStats(entry.change)
+				change.LinesAdded = data.linesAdded
+				change.LinesRemoved = data.linesRemoved
+			}
 		}
 
 		changes = append(changes, change)
@@ -287,7 +311,6 @@ func appendTrackedCommit(
 		Committer:    toSignature(c.Committer),
 		Message:      c.Message,
 		ParentHashes: parentHashes(c),
-		ChangedPaths: changedPaths,
 		Changes:      changes,
 	})
 }
@@ -295,6 +318,7 @@ func appendTrackedCommit(
 func (s *repoService) walkTrackedHistoryInHistoryRange(
 	tracked map[string]bool,
 	historyRange HistoryRange,
+	changeMode historyChangeMode,
 	onCommitProcessed func(),
 	visit func(*object.Commit, []trackedChange),
 ) error {
@@ -306,12 +330,19 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 		return err
 	}
 
+	cacheKey := trackedPathsCacheKey(tracked)
+
 	for c, iterationErr := range commits {
 		if iterationErr != nil {
 			return eris.Wrap(iterationErr, "failed to iterate commits")
 		}
 
-		changed := trackedChangesInCommit(c, tracked)
+		var changed []trackedChange
+		if changeMode == loadCachedChangeStats {
+			changed = s.cachedTrackedChanges(c, tracked, cacheKey)
+		} else {
+			changed = trackedChangesInCommit(c, tracked)
+		}
 
 		if onCommitProcessed != nil {
 			onCommitProcessed()
@@ -321,6 +352,55 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 	}
 
 	return nil
+}
+
+func (s *repoService) cachedTrackedChanges(
+	commit *object.Commit,
+	tracked map[string]bool,
+	pathsKey string,
+) []trackedChange {
+	if s == nil || commit == nil {
+		return nil
+	}
+
+	if s.historyChangeCache == nil {
+		s.historyChangeCache = make(map[historyChangeCacheKey][]trackedChange)
+	}
+
+	key := historyChangeCacheKey{commit: commit.Hash.String(), paths: pathsKey}
+
+	changes, ok := s.historyChangeCache[key]
+	if ok {
+		return changes
+	}
+
+	changes = trackedChangesInCommit(commit, tracked)
+	for index := range changes {
+		change := &changes[index]
+		data := &commitData{}
+		data.updateChangeStats(change.change)
+		change.change = nil
+		change.linesAdded = data.linesAdded
+		change.linesRemoved = data.linesRemoved
+		change.statsLoaded = true
+	}
+
+	s.historyChangeCache[key] = changes
+
+	return changes
+}
+
+func trackedPathsCacheKey(tracked map[string]bool) string {
+	paths := make([]string, 0, len(tracked))
+	for path, included := range tracked {
+		if included {
+			paths = append(paths, path)
+		}
+	}
+
+	slices.Sort(paths)
+
+	return strings.Join(paths, "\x00")
 }
 
 func toSignature(s object.Signature) Signature {

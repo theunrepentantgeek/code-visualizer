@@ -86,7 +86,10 @@ func LoadGitHistory(c *CommonState) error {
 		return eris.Wrap(err, "failed to resolve git root")
 	}
 
-	tracked := buildTrackedPathSet(c.Root, repoRoot)
+	tracked := c.GitHistoryPaths
+	if tracked == nil {
+		tracked = buildTrackedPathSet(c.Root, repoRoot)
+	}
 
 	historyRange := c.Flags.HistoryRange
 
@@ -120,6 +123,29 @@ func LoadGitHistory(c *CommonState) error {
 	return nil
 }
 
+// ShareGitHistoryPaths gives each state the same union of tracked paths so
+// repeated history cutoffs can reuse canonical per-commit change data.
+func ShareGitHistoryPaths(states []*CommonState) error {
+	tracked := make(map[string]bool)
+
+	for _, state := range states {
+		repoRoot, err := repoRootForState(state, "Git history")
+		if err != nil {
+			return eris.Wrap(err, "failed to resolve git root")
+		}
+
+		for path := range buildTrackedPathSet(state.Root, repoRoot) {
+			tracked[path] = true
+		}
+	}
+
+	for _, state := range states {
+		state.GitHistoryPaths = tracked
+	}
+
+	return nil
+}
+
 // PrewarmGitMetrics loads history only when the requested metrics need the
 // file-level Git cache populated before provider execution.
 func PrewarmGitMetrics(c *CommonState) error {
@@ -145,8 +171,8 @@ func GroupGitHistoryByFile(c *CommonState) error {
 	for i := range c.GitHistory {
 		commit := &c.GitHistory[i]
 
-		for _, path := range commit.ChangedPaths {
-			file, ok := byPath[path]
+		for _, change := range commit.Changes {
+			file, ok := byPath[change.Path]
 			if !ok {
 				continue
 			}

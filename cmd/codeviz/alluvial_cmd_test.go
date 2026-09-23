@@ -116,6 +116,13 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 				Fill:       &config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"},
 			},
 		},
+		"accepts palette with default fill metric": {
+			cfg: &config.Alluvial{
+				References: []string{"tag:v1.0", "tag:v2.0"},
+				Metric:     new("file-size"),
+				Fill:       &config.MetricSpec{Palette: "temperature"},
+			},
+		},
 		"rejects unknown delta fill metric": {
 			cfg: &config.Alluvial{
 				References: []string{"tag:v1.0", "tag:v2.0"},

@@ -282,8 +282,10 @@ func renderAlluvial(common *stages.CommonState) error {
 
 	state := &alluvial.State{
 		WidthMetric: fillMetric,
-		Fill:        vizmodel.ColourEncoding{Metric: fillMetric, Palette: palette.Neutral},
-		FillLabel:   fillMetric,
+		Fill: alluvial.BandFill{
+			Encoding: vizmodel.ColourEncoding{Metric: fillMetric, Palette: palette.Neutral},
+			Label:    fillMetric,
+		},
 		Data: alluvial.Data{
 			Columns: []alluvial.Column{
 				{Reference: "tag:v1.0", Values: []alluvial.Value{{Path: "api", Width: 12}, {Path: "docs", Width: 4}}},
