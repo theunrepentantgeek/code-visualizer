@@ -314,6 +314,25 @@ func TestRenderInto_ArcLabelSample_RendersCurvedAnnularSwatchBeforeEntryHeading(
 
 	g.Expect(arcIndex).To(BeNumerically(">=", 0))
 	g.Expect(arcIndex).To(BeNumerically("<", entryHeadingIndex))
+
+	points := mb.Calls[arcIndex].Points
+
+	const arcPointCount = 9
+
+	g.Expect(points).To(HaveLen(2*arcPointCount + 1))
+	g.Expect(points[len(points)-1]).To(Equal(points[0]))
+
+	outerLeft, outerTop, outerRight := points[0], points[arcPointCount/2], points[arcPointCount-1]
+	innerRight := points[arcPointCount]
+	innerBottom := points[arcPointCount+arcPointCount/2]
+	innerLeft := points[2*arcPointCount-1]
+
+	g.Expect(outerTop.Y).To(BeNumerically("<", outerLeft.Y))
+	g.Expect(outerTop.Y).To(BeNumerically("<", outerRight.Y))
+	g.Expect(innerBottom.Y).To(BeNumerically("<", innerLeft.Y))
+	g.Expect(innerBottom.Y).To(BeNumerically("<", innerRight.Y))
+	g.Expect(outerLeft.X).To(BeNumerically("<", innerLeft.X))
+	g.Expect(outerRight.X).To(BeNumerically(">", innerRight.X))
 }
 
 func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.T) {
