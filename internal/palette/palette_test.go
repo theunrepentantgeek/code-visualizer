@@ -52,6 +52,9 @@ func TestPaletteName_IsValid(t *testing.T) {
 	g.Expect(GoodBad.IsValid()).To(BeTrue())
 	g.Expect(Foliage.IsValid()).To(BeTrue())
 	g.Expect(Terrain.IsValid()).To(BeTrue())
+	g.Expect(Flame.IsValid()).To(BeTrue())
+	g.Expect(Ocean.IsValid()).To(BeTrue())
+	g.Expect(Leaf.IsValid()).To(BeTrue())
 	g.Expect(PaletteName("invalid").IsValid()).To(BeFalse())
 }
 
@@ -140,11 +143,59 @@ func TestTerrainPalette(t *testing.T) {
 	g.Expect(last.B).To(BeNumerically(">=", 230))
 }
 
+func TestFlamePalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := GetPalette(Flame)
+	g.Expect(p.Colours).To(HaveLen(7))
+	g.Expect(p.Ordered).To(BeTrue())
+	g.Expect(p.Name).To(Equal(Flame))
+	g.Expect(p.Colours[0].R).To(BeNumerically(">", p.Colours[0].G))
+
+	last := p.Colours[6]
+	g.Expect(last.R).To(BeNumerically(">=", 240))
+	g.Expect(last.G).To(BeNumerically(">=", 240))
+	g.Expect(last.B).To(BeNumerically("<", last.G))
+}
+
+func TestOceanPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := GetPalette(Ocean)
+	g.Expect(p.Colours).To(HaveLen(7))
+	g.Expect(p.Ordered).To(BeTrue())
+	g.Expect(p.Name).To(Equal(Ocean))
+	g.Expect(p.Colours[0].B).To(BeNumerically(">", p.Colours[0].R))
+	g.Expect(p.Colours[0].B).To(BeNumerically(">", p.Colours[0].G))
+
+	last := p.Colours[6]
+	g.Expect(last.G).To(BeNumerically(">", last.R))
+	g.Expect(last.B).To(BeNumerically(">", last.R))
+}
+
+func TestLeafPalette(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := GetPalette(Leaf)
+	g.Expect(p.Colours).To(HaveLen(7))
+	g.Expect(p.Ordered).To(BeTrue())
+	g.Expect(p.Name).To(Equal(Leaf))
+
+	for i := 1; i < len(p.Colours); i++ {
+		g.Expect(p.Colours[i].G).To(BeNumerically(">=", p.Colours[i-1].G))
+	}
+}
+
 func TestWCAGContrastRatio(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	for _, name := range []PaletteName{Neutral, Temperature, GoodBad, Categorization, Foliage, Terrain} {
+	for _, name := range []PaletteName{
+		Neutral, Temperature, GoodBad, Categorization, Foliage, Terrain, Flame, Ocean, Leaf,
+	} {
 		p := GetPalette(name)
 		if !p.Ordered {
 			continue // skip unordered palettes for adjacent contrast check
@@ -166,8 +217,10 @@ func TestNames_ReturnsAllPaletteNames(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	names := Names()
-	g.Expect(names).To(HaveLen(6))
-	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage, Terrain))
+	g.Expect(names).To(HaveLen(9))
+	g.Expect(names).To(ConsistOf(
+		Neutral, Categorization, Temperature, GoodBad, Foliage, Terrain, Flame, Ocean, Leaf,
+	))
 }
 
 func TestNames_ReturnsSortedSlice(t *testing.T) {
@@ -187,14 +240,16 @@ func TestInfos_ReturnsAllPalettes(t *testing.T) {
 
 	infos := Infos()
 
-	g.Expect(infos).To(HaveLen(6))
+	g.Expect(infos).To(HaveLen(9))
 
 	names := make([]PaletteName, 0, len(infos))
 	for _, info := range infos {
 		names = append(names, info.Name)
 	}
 
-	g.Expect(names).To(ConsistOf(Neutral, Categorization, Temperature, GoodBad, Foliage, Terrain))
+	g.Expect(names).To(ConsistOf(
+		Neutral, Categorization, Temperature, GoodBad, Foliage, Terrain, Flame, Ocean, Leaf,
+	))
 }
 
 func TestInfos_EachEntryHasNonEmptyDescription(t *testing.T) {

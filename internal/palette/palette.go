@@ -22,6 +22,9 @@ const (
 	Neutral        PaletteName = "neutral"
 	Foliage        PaletteName = "foliage"
 	Terrain        PaletteName = "terrain"
+	Flame          PaletteName = "flame"
+	Ocean          PaletteName = "ocean"
+	Leaf           PaletteName = "leaf"
 )
 
 var validPalettes = map[PaletteName]struct{}{
@@ -31,6 +34,9 @@ var validPalettes = map[PaletteName]struct{}{
 	Neutral:        {},
 	Foliage:        {},
 	Terrain:        {},
+	Flame:          {},
+	Ocean:          {},
+	Leaf:           {},
 }
 
 func (p PaletteName) IsValid() bool {
@@ -72,6 +78,9 @@ var palettes = map[PaletteName]ColourPalette{
 	GoodBad:        goodBadPalette,
 	Foliage:        foliagePalette,
 	Terrain:        terrainPalette,
+	Flame:          flamePalette,
+	Ocean:          oceanPalette,
+	Leaf:           leafPalette,
 }
 
 // Categorization palette: 12 visually distinct unordered colours (ColorBrewer Paired).
@@ -175,6 +184,54 @@ var terrainPalette = ColourPalette{
 		{R: 30, G: 132, B: 73, A: 255},   // forest
 		{R: 110, G: 44, B: 0, A: 255},    // rocks
 		{R: 240, G: 243, B: 244, A: 255}, // snow
+	},
+}
+
+// Flame palette: 7 steps, dark red → orange → pale yellow.
+var flamePalette = ColourPalette{
+	Name:        Flame,
+	Description: "Sequential dark red → orange → pale yellow. Evokes heat or intensity.",
+	Ordered:     true,
+	Colours: []color.RGBA{
+		{R: 177, G: 0, B: 38, A: 255},
+		{R: 227, G: 26, B: 28, A: 255},
+		{R: 252, G: 78, B: 42, A: 255},
+		{R: 253, G: 141, B: 60, A: 255},
+		{R: 254, G: 178, B: 76, A: 255},
+		{R: 254, G: 217, B: 118, A: 255},
+		{R: 255, G: 255, B: 178, A: 255},
+	},
+}
+
+// Ocean palette: 7 steps, navy blue → mid blue → cyan.
+var oceanPalette = ColourPalette{
+	Name:        Ocean,
+	Description: "Sequential navy blue → mid blue → cyan. Evokes water or depth.",
+	Ordered:     true,
+	Colours: []color.RGBA{
+		{R: 8, G: 29, B: 88, A: 255},
+		{R: 18, G: 52, B: 120, A: 255},
+		{R: 25, G: 85, B: 160, A: 255},
+		{R: 29, G: 145, B: 192, A: 255},
+		{R: 34, G: 180, B: 210, A: 255},
+		{R: 52, G: 211, B: 225, A: 255},
+		{R: 103, G: 232, B: 249, A: 255},
+	},
+}
+
+// Leaf palette: 7 steps, dark green → green → pale green.
+var leafPalette = ColourPalette{
+	Name:        Leaf,
+	Description: "Sequential dark green → green → pale green. Evokes growth or freshness.",
+	Ordered:     true,
+	Colours: []color.RGBA{
+		{R: 0, G: 90, B: 50, A: 255},
+		{R: 35, G: 139, B: 69, A: 255},
+		{R: 65, G: 171, B: 93, A: 255},
+		{R: 116, G: 196, B: 118, A: 255},
+		{R: 161, G: 217, B: 155, A: 255},
+		{R: 199, G: 233, B: 192, A: 255},
+		{R: 237, G: 248, B: 233, A: 255},
 	},
 }
 
