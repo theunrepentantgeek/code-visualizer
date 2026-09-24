@@ -13,8 +13,11 @@ import (
 type FileTimestamps map[string][]time.Time
 
 type trackedChange struct {
-	path   string
-	change *object.Change
+	path         string
+	change       *object.Change
+	linesAdded   int64
+	linesRemoved int64
+	statsLoaded  bool
 }
 
 // BulkFileHistory walks the entire commit history once and returns the commit

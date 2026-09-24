@@ -178,7 +178,7 @@ func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
 	for _, c := range state.GitHistory {
 		g.Expect(c.Hash).NotTo(BeEmpty())
 		g.Expect(c.Author.When.IsZero()).To(BeFalse())
-		g.Expect(c.ChangedPaths).NotTo(BeEmpty())
+		g.Expect(c.Changes).NotTo(BeEmpty())
 	}
 }
 

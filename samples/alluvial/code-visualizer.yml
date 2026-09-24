@@ -3,14 +3,13 @@ imageSize:
     height: 1080
 alluvial:
     references:
-        - tag:v0.1.0
-        - tag:v0.2.0
-        - tag:v0.3.0
-        - tag:v0.4.0
         - tag:v0.5.0
         - tag:v0.6.0
         - tag:v0.7.0
     metric: file-lines
+    fill:
+      metric: lines-changed.sum.delta
+      palette: good-bad
     expand:
         - cmd
         - internal

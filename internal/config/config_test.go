@@ -189,6 +189,9 @@ func TestLoad_YAMLAlluvial_ParsesOrderedReferencesAndExpansions(t *testing.T) {
 		"    - sha:abc1234\n" +
 		"    - 2026-01-01\n" +
 		"  metric: file-size\n" +
+		"  fill:\n" +
+		"    metric: file-lines.delta\n" +
+		"    palette: temperature\n" +
 		"  expand:\n" +
 		"    - cmd\n" +
 		"    - internal/config\n"
@@ -199,6 +202,7 @@ func TestLoad_YAMLAlluvial_ParsesOrderedReferencesAndExpansions(t *testing.T) {
 	g.Expect(cfg.Load(path)).To(Succeed())
 	g.Expect(cfg.Alluvial.References).To(Equal([]string{"tag:v1.0", "sha:abc1234", "2026-01-01"}))
 	g.Expect(*cfg.Alluvial.Metric).To(Equal("file-size"))
+	g.Expect(*cfg.Alluvial.Fill).To(Equal(MetricSpec{Metric: "file-lines.delta", Palette: "temperature"}))
 	g.Expect(cfg.Alluvial.Expand).To(Equal([]string{"cmd", "internal/config"}))
 }
 

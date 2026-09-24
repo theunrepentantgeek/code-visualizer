@@ -18,8 +18,9 @@ type AlluvialCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
-	References []string    `help:"Ordered revision reference (tag, commit ID, or date; repeatable)." name:"reference"`
-	Metric     metric.Name `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"` //nolint:revive,nolintlint // kong struct tags require long lines
+	References []string          `help:"Ordered revision reference (repeatable)." name:"reference"`
+	Metric     metric.Name       `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"`              //nolint:revive,nolintlint // kong struct tags require long lines
+	Fill       config.MetricSpec `help:"Band colour: metric[,palette]; append .delta to colour by change from first to last reference." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Expand []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
 
@@ -63,10 +64,39 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 		return err
 	}
 
+	if err := validateAlluvialFill(cfg.Fill, metricName); err != nil {
+		return err
+	}
+
 	for _, expansion := range cfg.Expand {
 		if err := validateExpansionPath(expansion); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func validateAlluvialFill(fillSpec *config.MetricSpec, defaultMetric metric.Name) error {
+	if fillSpec == nil {
+		return nil
+	}
+
+	fillMetric := fillSpec.Metric
+	if fillMetric == "" {
+		fillMetric = defaultMetric
+	}
+
+	fillMetric, _ = alluvial.ParseFillMetric(fillMetric)
+	if err := validateNumericMetric("fill", fillMetric); err != nil {
+		return err
+	}
+
+	fill := *fillSpec
+
+	fill.Metric = fillMetric
+	if err := fill.Validate("fill"); err != nil {
+		return eris.Wrap(err, "invalid fill spec")
 	}
 
 	return nil
@@ -136,5 +166,6 @@ func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {
 
 	cfg.Alluvial.OverrideReferences(c.References)
 	cfg.Alluvial.OverrideMetric(string(c.Metric))
+	cfg.Alluvial.OverrideFill(c.Fill)
 	cfg.Alluvial.OverrideExpand(c.Expand)
 }

@@ -3,13 +3,61 @@ package stages
 import (
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
+
+// LoadCommitMetrics loads and attaches per-file commit values needed by
+// directory-level expressions such as lines-changed.sum.
+func LoadCommitMetrics(c *CommonState) error {
+	if !c.Requested.HasCommitExpressions() {
+		return nil
+	}
+
+	if err := LoadGitHistory(c); err != nil {
+		return err
+	}
+
+	files := indexFilesByRepoRelativePath(c.Root, c.Root.RepoRoot)
+	for _, commit := range c.GitHistory {
+		for _, change := range commit.Changes {
+			file, ok := files[change.Path]
+			if !ok {
+				continue
+			}
+
+			entry := &model.Commit{
+				Hash:   commit.Hash,
+				Author: commit.Author.Name,
+				Date:   commit.Author.When,
+			}
+			entry.SetQuantity(git.LinesAdded, change.LinesAdded)
+			entry.SetQuantity(git.LinesRemoved, change.LinesRemoved)
+			entry.SetQuantity(git.LinesChanged, change.LinesAdded+change.LinesRemoved)
+			file.Commits = append(file.Commits, entry)
+		}
+	}
+
+	return nil
+}
+
+func commitExpressionBaseMetrics(requested RequestedMetrics) []metric.Name {
+	names := make([]metric.Name, 0)
+
+	for _, expression := range requested.Expressions {
+		if expression.SourceLevel == metric.LevelCommit {
+			names = append(names, expression.Expression.Base)
+		}
+	}
+
+	return names
+}
 
 // CommitRef points back into CommonState.GitHistory with the per-file
 // when-touched timestamp. Storing a pointer avoids duplicating Author /
@@ -38,7 +86,10 @@ func LoadGitHistory(c *CommonState) error {
 		return eris.Wrap(err, "failed to resolve git root")
 	}
 
-	tracked := buildTrackedPathSet(c.Root, repoRoot)
+	tracked := c.GitHistoryPaths
+	if tracked == nil {
+		tracked = buildTrackedPathSet(c.Root, repoRoot)
+	}
 
 	historyRange := c.Flags.HistoryRange
 
@@ -49,8 +100,9 @@ func LoadGitHistory(c *CommonState) error {
 
 	onCommit, stop := BuildHistoryProgress(c.Flags, total)
 
+	requested := append(slices.Clone(c.Requested.BaseMetrics), commitExpressionBaseMetrics(c.Requested)...)
 	commits, err := git.BulkCommitHistoryAndPrewarmInHistoryRange(
-		repoRoot, tracked, c.Requested.BaseMetrics, historyRange, onCommit,
+		repoRoot, tracked, requested, historyRange, onCommit,
 	)
 
 	stop()
@@ -66,6 +118,29 @@ func LoadGitHistory(c *CommonState) error {
 	c.GitHistory = commits
 	if !c.Flags.Quiet {
 		slog.Info("History loaded", "commits", total)
+	}
+
+	return nil
+}
+
+// ShareGitHistoryPaths gives each state the same union of tracked paths so
+// repeated history cutoffs can reuse canonical per-commit change data.
+func ShareGitHistoryPaths(states []*CommonState) error {
+	tracked := make(map[string]bool)
+
+	for _, state := range states {
+		repoRoot, err := repoRootForState(state, "Git history")
+		if err != nil {
+			return eris.Wrap(err, "failed to resolve git root")
+		}
+
+		for path := range buildTrackedPathSet(state.Root, repoRoot) {
+			tracked[path] = true
+		}
+	}
+
+	for _, state := range states {
+		state.GitHistoryPaths = tracked
 	}
 
 	return nil
@@ -96,8 +171,8 @@ func GroupGitHistoryByFile(c *CommonState) error {
 	for i := range c.GitHistory {
 		commit := &c.GitHistory[i]
 
-		for _, path := range commit.ChangedPaths {
-			file, ok := byPath[path]
+		for _, change := range commit.Changes {
+			file, ok := byPath[change.Path]
 			if !ok {
 				continue
 			}

@@ -9,11 +9,15 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
-const widthMetric = metric.Name("test-width.sum")
+const (
+	widthMetric = metric.Name("test-width.sum")
+	fillMetric  = metric.Name("test-fill.sum")
+)
 
 func TestMain(m *testing.M) {
 	filesystem.Register()
@@ -112,6 +116,47 @@ func TestBuildData_ExpandsOnlySelectedDirectoryDirectChildren(t *testing.T) {
 	}))
 }
 
+func TestBuildData_UsesLastSnapshotFillMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(testDirectoryWithFill("api", 10, 2))},
+		{Reference: "after", Root: testRoot(
+			testDirectoryWithFill("api", 12, 7),
+			testDirectoryWithFill("docs", 5, 3),
+		)},
+	}, alluvial.Options{Metric: widthMetric, FillMetric: fillMetric})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.FillValues).To(Equal(map[string]float64{"api": 7, "docs": 3}))
+}
+
+func TestBuildData_DeltaFillUsesChangeFromFirstToLastSnapshot(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(
+			testDirectoryWithFill("api", 10, 8),
+			testDirectoryWithFill("legacy", 4, 4),
+		)},
+		{Reference: "middle", Root: testRoot(testDirectoryWithFill("temporary", 6, 100))},
+		{Reference: "after", Root: testRoot(
+			testDirectoryWithFill("api", 12, 11),
+			testDirectoryWithFill("docs", 5, 5),
+		)},
+	}, alluvial.Options{Metric: widthMetric, FillMetric: fillMetric, FillDelta: true})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.FillValues).To(Equal(map[string]float64{
+		"api":       3,
+		"docs":      5,
+		"legacy":    -4,
+		"temporary": 0,
+	}))
+}
+
 func TestBuildDataStage_UsesConfiguredMetricAndExpansion(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -147,6 +192,44 @@ func TestResolveMetrics_AggregatesBareMetricForDirectoryWidths(t *testing.T) {
 	g.Expect(common.Requested.Expressions[0].ResultName).To(Equal(metric.Name("file-lines.sum")))
 }
 
+func TestResolveMetrics_ResolvesDeltaFillWithoutRequestingModifier(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	metricName := "file-size"
+	state := &alluvial.State{}
+	common := &stages.CommonState{}
+
+	g.Expect(alluvial.ResolveMetrics(common, state, &config.Alluvial{
+		Metric: &metricName,
+		Fill:   &config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"},
+	})).To(Succeed())
+	g.Expect(state.Fill.Encoding.Metric).To(Equal(metric.Name("file-lines.sum")))
+	g.Expect(state.Fill.Label).To(Equal(metric.Name("file-lines.delta")))
+	g.Expect(state.Fill.Explicit).To(BeTrue())
+	g.Expect(state.Fill.Delta).To(BeTrue())
+	g.Expect(common.Requested.Expressions).To(HaveLen(2))
+}
+
+func TestResolveMetrics_PaletteOnlyFillUsesWidthMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	metricName := "file-size"
+	state := &alluvial.State{}
+	common := &stages.CommonState{}
+
+	g.Expect(alluvial.ResolveMetrics(common, state, &config.Alluvial{
+		Metric: &metricName,
+		Fill:   &config.MetricSpec{Palette: "temperature"},
+	})).To(Succeed())
+	g.Expect(state.Fill.Encoding.Metric).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(state.Fill.Encoding.Palette).To(Equal(palette.Temperature))
+	g.Expect(state.Fill.Label).To(Equal(metric.Name("file-size.sum")))
+	g.Expect(state.Fill.Explicit).To(BeFalse())
+	g.Expect(state.Fill.LabelMetric()).To(BeEmpty())
+}
+
 func testRoot(dirs ...*model.Directory) *model.Directory {
 	return &model.Directory{Dirs: dirs}
 }
@@ -154,6 +237,13 @@ func testRoot(dirs ...*model.Directory) *model.Directory {
 func testDirectory(repoPath string, width int64, children ...*model.Directory) *model.Directory {
 	directory := &model.Directory{RepoPath: repoPath, Dirs: children}
 	directory.SetQuantity(widthMetric, width)
+
+	return directory
+}
+
+func testDirectoryWithFill(repoPath string, width, fill int64) *model.Directory {
+	directory := testDirectory(repoPath, width)
+	directory.SetQuantity(fillMetric, fill)
 
 	return directory
 }

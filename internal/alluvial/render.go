@@ -2,15 +2,15 @@ package alluvial
 
 import (
 	"fmt"
-	"hash/fnv"
 	"image/color"
 	"math"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
-	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 )
 
 var (
@@ -20,30 +20,26 @@ var (
 )
 
 // RenderToCanvas draws readable release columns and the filled alluvial paths.
-func RenderToCanvas(layout Layout, width, height int) *canvas.Canvas {
+func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink, labelFillMetric metric.Name) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
 	addAlluvialBackground(cv, width, height)
 	addAlluvialColumns(cv, layout)
-	colours := make(map[string]color.RGBA, len(layout.Flows))
+
+	leftExtension, rightExtension := alluvialEdgeBandExtensions(layout.Columns, labelFillMetric)
+	addAlluvialEdgeBands(cv, layout.Columns, leftExtension, rightExtension, fillInk)
 
 	for _, flow := range layout.Flows {
 		if !validFlow(flow) {
 			continue
 		}
 
-		flowColour, ok := colours[flow.Path]
-		if !ok {
-			flowColour = flowColourForPath(flow.Path)
-			colours[flow.Path] = flowColour
-		}
-
 		cv.AddFilledPath(canvas.LayerContent, canvas.FilledPath{
 			Loops: [][]geometry.Point{sweptFlowPoints(flow)},
-			Fill:  flowColour,
+			Fill:  fillInk.Dip(inks.MeasureValue(flow.FillValue)),
 		})
 	}
 
-	addAlluvialBandLabels(cv, layout)
+	addAlluvialBandLabels(cv, layout, labelFillMetric, fillInk)
 
 	return cv
 }
@@ -87,36 +83,138 @@ func cubicPoint(start, controlOne, controlTwo, end geometry.Point, t float64) ge
 	}
 }
 
-func addAlluvialBandLabels(cv *canvas.Canvas, layout Layout) {
+func addAlluvialBandLabels(
+	cv *canvas.Canvas,
+	layout Layout,
+	labelFillMetric metric.Name,
+	fillInk inks.Ink,
+) {
 	for _, column := range layout.Columns {
 		for _, band := range column.Bands {
-			fontSize, ok := alluvialBandLabelFontSize(band)
-			if !ok {
-				continue
-			}
-
-			center := (band.Top + band.Bottom) / 2
-			spec := &canvas.TextSpec{
-				Ink:      inks.FixedInk(alluvialLabel),
-				FontSize: fontSize,
-				Anchor:   canvas.AnchorMiddle,
-			}
-			cv.AddText(canvas.LayerOverlay, canvas.Text{
-				Spec:     spec,
-				Position: geometry.Point{X: column.X, Y: center - fontSize/2},
-				Content:  band.Path,
-			})
-			cv.AddText(canvas.LayerOverlay, canvas.Text{
-				Spec:     spec,
-				Position: geometry.Point{X: column.X, Y: center + fontSize/2},
-				Content:  fmt.Sprintf("%g", band.Width),
-			})
+			addAlluvialBandLabel(cv, column.X, band, labelFillMetric, fillInk)
 		}
 	}
 }
 
-func alluvialBandLabelFontSize(band Band) (float64, bool) {
-	fontSize := min(13, (band.Bottom-band.Top)/3)
+func alluvialEdgeBandExtensions(
+	columns []ColumnLayout,
+	labelFillMetric metric.Name,
+) (left, right float64) {
+	if len(columns) < 2 {
+		return 0, 0
+	}
+
+	return alluvialColumnLabelExtension(columns[0], labelFillMetric),
+		alluvialColumnLabelExtension(columns[len(columns)-1], labelFillMetric)
+}
+
+func alluvialColumnLabelExtension(
+	column ColumnLayout,
+	labelFillMetric metric.Name,
+) float64 {
+	maximumWidth := 0.0
+
+	for _, band := range column.Bands {
+		lines := alluvialBandLabelLines(band, labelFillMetric)
+
+		fontSize, ok := alluvialBandLabelFontSize(band, len(lines))
+		if !ok {
+			continue
+		}
+
+		widths, _ := textlayout.MeasureStrings(lines, fontSize)
+		for _, width := range widths {
+			maximumWidth = max(maximumWidth, width)
+		}
+	}
+
+	const edgeInset = 2.0
+
+	return maximumWidth/2 + edgeInset
+}
+
+func addAlluvialEdgeBands(
+	cv *canvas.Canvas,
+	columns []ColumnLayout,
+	leftExtension, rightExtension float64,
+	fillInk inks.Ink,
+) {
+	if len(columns) < 2 {
+		return
+	}
+
+	addAlluvialEdgeColumnBands(cv, columns[0], columns[0].X-leftExtension, columns[0].X, fillInk)
+
+	last := columns[len(columns)-1]
+	addAlluvialEdgeColumnBands(cv, last, last.X, last.X+rightExtension, fillInk)
+}
+
+func addAlluvialEdgeColumnBands(
+	cv *canvas.Canvas,
+	column ColumnLayout,
+	left, right float64,
+	fillInk inks.Ink,
+) {
+	for _, band := range column.Bands {
+		if band.Bottom <= band.Top {
+			continue
+		}
+
+		cv.AddFilledPath(canvas.LayerContent, canvas.FilledPath{
+			Loops: [][]geometry.Point{{
+				{X: left, Y: band.Top},
+				{X: right, Y: band.Top},
+				{X: right, Y: band.Bottom},
+				{X: left, Y: band.Bottom},
+			}},
+			Fill: fillInk.Dip(inks.MeasureValue(band.FillValue)),
+		})
+	}
+}
+
+func addAlluvialBandLabel(
+	cv *canvas.Canvas,
+	x float64,
+	band Band,
+	labelFillMetric metric.Name,
+	fillInk inks.Ink,
+) {
+	lines := alluvialBandLabelLines(band, labelFillMetric)
+
+	fontSize, ok := alluvialBandLabelFontSize(band, len(lines))
+	if !ok {
+		return
+	}
+
+	center := (band.Top + band.Bottom) / 2
+	labelColour := canvas.TextColourFor(fillInk.Dip(inks.MeasureValue(band.FillValue)))
+	spec := &canvas.TextSpec{
+		Ink:      inks.FixedInk(labelColour),
+		FontSize: fontSize,
+		Anchor:   canvas.AnchorMiddle,
+	}
+
+	start := center - float64(len(lines)-1)*fontSize/2
+	for index, line := range lines {
+		cv.AddText(canvas.LayerOverlay, canvas.Text{
+			Spec:     spec,
+			Position: geometry.Point{X: x, Y: start + float64(index)*fontSize},
+			Content:  line,
+		})
+	}
+}
+
+func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
+	lines := []string{band.Path, fmt.Sprintf("%g", band.Width)}
+	if labelFillMetric != "" {
+		lines = append(lines, fmt.Sprintf("%g", band.FillValue))
+	}
+
+	return lines
+}
+
+func alluvialBandLabelFontSize(band Band, lineCount int) (float64, bool) {
+	fontSize := min(13, (band.Bottom-band.Top)/float64(lineCount+1))
 	if fontSize < 8 {
 		return 0, false
 	}
@@ -182,12 +280,4 @@ func validFlow(flow Flow) bool {
 	}
 
 	return true
-}
-
-func flowColourForPath(path string) color.RGBA {
-	colours := palette.GetPalette(palette.Categorization).Colours
-	hasher := fnv.New32a()
-	_, _ = hasher.Write([]byte(path))
-
-	return colours[int(hasher.Sum32())%len(colours)]
 }
