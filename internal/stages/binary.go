@@ -6,15 +6,7 @@ import (
 
 // CountAll returns the cumulative file and directory counts under root.
 func CountAll(node *model.Directory) (files int, dirs int) {
-	files = len(node.Files)
-	for _, d := range node.Dirs {
-		dirs++
-		f, d2 := CountAll(d)
-		files += f
-		dirs += d2
-	}
-
-	return files, dirs
+	return model.CountFiles(node), model.CountDirs(node)
 }
 
 // FilterBinaryFiles verifies that some files remain after the scan-time binary
@@ -28,8 +20,7 @@ func FilterBinaryFiles(c *CommonState) error {
 		return nil
 	}
 
-	count, _ := CountAll(c.Root)
-	if count == 0 {
+	if model.CountFiles(c.Root) == 0 {
 		return &NoFilesAfterFilterError{Msg: NoFilesAfterFilterMsg}
 	}
 

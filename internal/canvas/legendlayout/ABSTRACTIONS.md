@@ -28,3 +28,36 @@
 **Source locations.**
 
 - [measurer.go#L10](measurer.go#L10) — `StringMeasurer`, `NewBasicMeasurer`.
+- [measurer_test.go#L9](measurer_test.go#L9) — construction and measurement behavior.
+
+## Legend layout geometry
+
+**Purpose.**
+
+- The legend layout functions are the shared geometry contract between reservation and drawing: they measure a resolved `model.LegendData`, place its box, and expose the same entry/sample dimensions used while decomposing it into canvas primitives ([layout.go#L22](layout.go#L22), [layout.go#L36](layout.go#L36), [../../legend/render.go#L52](../../legend/render.go#L52)).
+
+**Boundary and invariants.**
+
+- Nil data or data without entries measures as zero; reservation additionally treats position `none` as zero ([layout.go#L24](layout.go#L24), [layout.go#L67](layout.go#L67)).
+- Orientation determines the layout axis: horizontal legends accumulate entry widths, while vertical legends accumulate entry heights ([layout.go#L29](layout.go#L29), [layout.go#L89](layout.go#L89), [layout.go#L120](layout.go#L120)).
+- Positioning applies the shared model margin, and label samples are always measured as square regions sized by their text or twice the swatch size ([layout.go#L42](layout.go#L42), [layout.go#L348](layout.go#L348)).
+- Numeric breakpoint labels use integer formatting for exact integral values and one decimal place otherwise ([layout.go#L13](layout.go#L13), [layout_test.go#L13](layout_test.go#L13)).
+
+**Related operations.**
+
+- `MeasureLegend`, `LegendOrigin`, and `ReserveSpace` operate on the complete legend; `MeasureEntryHWidth`, `MeasureEntryVContentWidth`, `ContentOffsetV`, and `MeasureLabelSample` expose matching sub-layout geometry to the renderer ([layout.go#L24](layout.go#L24), [layout.go#L37](layout.go#L37), [layout.go#L67](layout.go#L67), [layout.go#L270](layout.go#L270), [layout.go#L307](layout.go#L307), [layout.go#L344](layout.go#L344)).
+
+**Proper-use patterns.**
+
+- Convert configuration to `LegendData` once, reserve with these functions before visualization layout, then use the same data and geometry helpers to draw the overlay ([../../legend/config.go#L70](../../legend/config.go#L70), [../../legend/render.go#L21](../../legend/render.go#L21)).
+- Keep metric-to-display formatting here so legend construction and rendering share the same labels ([../../inks/legend_data.go#L42](../../inks/legend_data.go#L42)).
+
+**Anti-patterns.**
+
+- Do not duplicate swatch gaps, title heights, sample dimensions, or position offsets in a visualization package; those values are coupled to `model` constants and legend rendering ([layout.go#L191](layout.go#L191), [../model/legend.go#L88](../model/legend.go#L88)).
+
+**Source locations.**
+
+- [layout.go#L13](layout.go#L13) — breakpoint formatting and public legend geometry operations.
+- [layout_test.go#L13](layout_test.go#L13) — breakpoint, placement, measurement, reservation, and centering tests.
+- [helpers_test.go#L43](helpers_test.go#L43) — label-sample sizing tests.

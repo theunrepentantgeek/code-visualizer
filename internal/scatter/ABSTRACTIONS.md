@@ -77,7 +77,7 @@
 **Proper-use patterns.**
 
 - Build inks and layout from the dataset, not from the model root, so colour scales cover exactly the plotted nodes ([stages.go#L194](stages.go#L194), [stages.go#L200](stages.go#L200)).
-- Report `Skipped` to the user rather than silently losing nodes ([stages.go#L290](stages.go#L290), [stages.go#L296](stages.go#L296)).
+- Report `Skipped` to the user rather than silently losing nodes ([stages.go#L277](stages.go#L277), [stages.go#L280](stages.go#L280)).
 
 **Anti-patterns.**
 

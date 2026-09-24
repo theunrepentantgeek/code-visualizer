@@ -81,12 +81,8 @@ func TestFileLinesProviderSkipsBinaryFiles(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	dir := t.TempDir()
-	// Write a single line longer than bufio.MaxScanTokenSize (65536) to trigger binary detection
-	_ = os.WriteFile(filepath.Join(dir, "bin.dat"), append([]byte("hello\x00world"), make([]byte, 66000)...), 0o600)
-
-	f := &model.File{Path: filepath.Join(dir, "bin.dat"), Name: "bin.dat"}
-	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
+	f := &model.File{Path: "bin.dat", Name: "bin.dat", IsBinary: true}
+	root := &model.Directory{Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}
 	err := p.Load(root)
@@ -137,25 +133,25 @@ func TestFileLinesProviderMetadata(t *testing.T) {
 	g.Expect(desc.Description).NotTo(BeEmpty())
 }
 
-func TestFileLinesProviderDetectsBinaryByNullByte(t *testing.T) {
+func TestFileLinesProviderCountsLongTextLine(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()
+	path := filepath.Join(dir, "long.txt")
+	_ = os.WriteFile(path, make([]byte, 66000), 0o600)
 
-	// A short file with null bytes (like a small PNG) — no line exceeds 64KB
-	_ = os.WriteFile(filepath.Join(dir, "icon.png"), []byte("PNG\x00\x00data\nmore\nlines\n"), 0o600)
-
-	f := &model.File{Path: filepath.Join(dir, "icon.png"), Name: "icon.png"}
+	f := &model.File{Path: path, Name: "long.txt"}
 	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}
 	err := p.Load(root)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	_, ok := f.Quantity(FileLines)
-	g.Expect(ok).To(BeFalse())
-	g.Expect(f.IsBinary).To(BeTrue())
+	lines, ok := f.Quantity(FileLines)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(lines).To(Equal(int64(1)))
+	g.Expect(f.IsBinary).To(BeFalse())
 }
 
 func TestFileLinesProviderCountsUTF16Lines(t *testing.T) {

@@ -67,6 +67,7 @@
 
 - It is resolved data, not configuration: entries carry colours and labels, never metrics or inks ([legend.go#L72](legend.go#L72), [legend.go#L84](legend.go#L84)).
 - The numeric/categorical distinction is explicit, and for numeric entries the swatch label is the breakpoint at the divider, with the last swatch label empty ([legend.go#L32](legend.go#L32), [legend.go#L80](legend.go#L80)).
+- A label sample is optional and identifies its backing shape separately from its compacted text lines; square is the zero-value shape for compatibility ([legend.go#L47](legend.go#L47), [legend.go#L51](legend.go#L51), [legend.go#L63](legend.go#L63)).
 - The shared sizing constants live alongside the data so measurement and rendering cannot disagree ([legend.go#L89](legend.go#L89), [../legendlayout/layout.go#L24](../legendlayout/layout.go#L24)).
 
 **Related operations.**
@@ -76,6 +77,7 @@
 **Proper-use patterns.**
 
 - Produce swatches from the ink that actually coloured the visualization, so the legend and the drawing cannot drift ([../../inks/legend_data.go#L27](../../inks/legend_data.go#L27)).
+- Use `LegendLabelSampleShape` to preserve the visualization’s native label context — square, circle, or arc — without exposing visualization types to layout or rendering ([legend.go#L51](legend.go#L51), [../../legend/config.go#L109](../../legend/config.go#L109)).
 
 **Anti-patterns.**
 
@@ -84,3 +86,4 @@
 **Source locations.**
 
 - [legend.go#L44](legend.go#L44) — `LegendData`, `LegendEntryData`, `LegendSwatch`, and the layout constants.
+- [../legendlayout/helpers_test.go#L43](../legendlayout/helpers_test.go#L43) — shared sample-measurement behavior.

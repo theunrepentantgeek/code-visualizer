@@ -67,12 +67,6 @@ func (p *FileLinesProvider) Load(root *model.Directory) error {
 
 		count, err := countLinesFile(f)
 		if err != nil {
-			if errors.Is(err, errBinaryFile) {
-				f.IsBinary = true
-
-				return
-			}
-
 			slog.Warn("could not count lines", "path", f.Path, "error", err)
 
 			return
@@ -97,12 +91,6 @@ func countLinesFile(file *model.File) (int64, error) {
 	return countLinesReader(bytes.NewReader(data))
 }
 
-var errBinaryFile = errors.New("file appears to be binary")
-
-// binaryProbeSize is the number of bytes read from the start of a file to
-// detect binary content. This matches the heuristic used by Git.
-const binaryProbeSize = 8000
-
 // utf16Encoding indicates the UTF-16 byte-order of a file, if any.
 type utf16Encoding int
 
@@ -123,11 +111,9 @@ func countLines(path string) (int64, error) {
 }
 
 func countLinesReader(file io.ReadSeeker) (int64, error) {
-	isBinary, enc, err := probeBinary(file)
+	enc, err := detectFileEncoding(file)
 	if err != nil {
 		return 0, err
-	} else if isBinary {
-		return 0, errBinaryFile
 	}
 
 	var r io.Reader = file
@@ -137,55 +123,40 @@ func countLinesReader(file io.ReadSeeker) (int64, error) {
 		r = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewDecoder().Reader(file)
 	}
 
-	scanner := bufio.NewScanner(r)
+	reader := bufio.NewReader(r)
 
 	var count int64
-	for scanner.Scan() {
-		count++
-	}
 
-	if err := scanner.Err(); err != nil {
-		if errors.Is(err, bufio.ErrTooLong) {
-			return 0, errBinaryFile
+	for {
+		line, readErr := reader.ReadString('\n')
+		if len(line) > 0 {
+			count++
 		}
 
-		return 0, eris.Wrap(err, "reading file lines")
-	}
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				return count, nil
+			}
 
-	return count, nil
+			return 0, eris.Wrap(readErr, "reading file lines")
+		}
+	}
 }
 
-// probeBinary reads the first binaryProbeSize bytes of f and reports whether
-// the content looks like a binary file, and the UTF-16 encoding if any.
-// It uses a null-byte heuristic (same approach as Git) but skips the check
-// for files that start with a UTF-16 BOM, since UTF-16 text legitimately
-// contains null bytes.
-//
-// On return the file is seeked back to the start, ready for line counting.
-func probeBinary(f io.ReadSeeker) (isBinary bool, enc utf16Encoding, err error) {
-	header := make([]byte, binaryProbeSize)
+// detectFileEncoding checks the byte-order mark and seeks back to the start.
+func detectFileEncoding(f io.ReadSeeker) (utf16Encoding, error) {
+	header := make([]byte, 4)
 
 	n, readErr := f.Read(header)
 	if readErr != nil && !errors.Is(readErr, io.EOF) {
-		return false, notUTF16, eris.Wrap(readErr, "reading file header for binary probe")
+		return notUTF16, eris.Wrap(readErr, "reading file header")
 	}
 
 	if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
-		return false, notUTF16, eris.Wrap(seekErr, "seeking back to start after binary probe")
+		return notUTF16, eris.Wrap(seekErr, "seeking back to start after encoding detection")
 	}
 
-	if n == 0 {
-		return false, notUTF16, nil
-	}
-
-	buf := header[:n]
-
-	enc = detectUTF16Encoding(buf)
-	if enc != notUTF16 {
-		return false, enc, nil
-	}
-
-	return bytes.IndexByte(buf, 0) >= 0, notUTF16, nil
+	return detectUTF16Encoding(header[:n]), nil
 }
 
 // detectUTF16Encoding reports the UTF-16 byte-order of buf based on its BOM,
