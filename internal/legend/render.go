@@ -2,6 +2,7 @@ package legend
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
@@ -319,7 +320,12 @@ func (lb *legendBuilder) addNumericSwatches(
 		scale:      lb.scale,
 	}
 
-	for _, sw := range entry.Swatches {
+	swatches := entry.Swatches
+	if !cur.horizontal {
+		swatches = verticalNumericSwatches(entry.Swatches)
+	}
+
+	for _, sw := range swatches {
 		position := cur.swatchPos()
 		if entry.IsBorder {
 			lb.addOutlineSwatch(position.X, position.Y, sw.Colour)
@@ -339,6 +345,23 @@ func (lb *legendBuilder) addNumericSwatches(
 	}
 
 	return cur.endY(y)
+}
+
+func verticalNumericSwatches(swatches []model.LegendSwatch) []model.LegendSwatch {
+	vertical := make([]model.LegendSwatch, len(swatches))
+	for index := range swatches {
+		sourceIndex := len(swatches) - 1 - index
+		swatch := swatches[sourceIndex]
+
+		swatch.Label = ""
+		if sourceIndex > 0 {
+			swatch.Label = swatches[sourceIndex-1].Label
+		}
+
+		vertical[index] = swatch
+	}
+
+	return vertical
 }
 
 func (lb *legendBuilder) addCategorySwatches(
@@ -449,25 +472,31 @@ func (lb *legendBuilder) addArcLabelSample(x, y, w, h float64) {
 	})
 }
 
-// arcLabelSamplePoints approximates a curved annular segment whose top edge is
-// narrower than its base, matching a small slice of the donut visualization.
+// arcLabelSamplePoints returns a narrow annular sector centred at 12 o'clock.
 func arcLabelSamplePoints(x, y, w, h float64) []geometry.Point {
-	return []geometry.Point{
-		geometry.NewPoint(x+0.26*w, y+0.12*h),
-		geometry.NewPoint(x+0.40*w, y+0.03*h),
-		geometry.NewPoint(x+0.60*w, y+0.03*h),
-		geometry.NewPoint(x+0.74*w, y+0.12*h),
-		geometry.NewPoint(x+0.89*w, y+0.33*h),
-		geometry.NewPoint(x+0.97*w, y+0.58*h),
-		geometry.NewPoint(x+0.95*w, y+0.82*h),
-		geometry.NewPoint(x+0.84*w, y+0.96*h),
-		geometry.NewPoint(x+0.50*w, y+h),
-		geometry.NewPoint(x+0.16*w, y+0.96*h),
-		geometry.NewPoint(x+0.05*w, y+0.82*h),
-		geometry.NewPoint(x+0.03*w, y+0.58*h),
-		geometry.NewPoint(x+0.11*w, y+0.33*h),
-		geometry.NewPoint(x+0.26*w, y+0.12*h),
+	const (
+		halfSweep        = 0.12
+		innerRadiusRatio = 0.78
+		arcSteps         = 8
+	)
+
+	outerRadius := w / (2 * math.Sin(halfSweep))
+	innerRadius := outerRadius * innerRadiusRatio
+	sectorHeight := outerRadius - innerRadius*math.Cos(halfSweep)
+	center := geometry.NewPoint(x+w/2, y+(h-sectorHeight)/2+outerRadius)
+	points := make([]geometry.Point, 0, 2*(arcSteps+1)+1)
+
+	for step := range arcSteps + 1 {
+		angle := -math.Pi/2 - halfSweep + 2*halfSweep*float64(step)/arcSteps
+		points = append(points, center.Translate(geometry.NewRadialVector(angle, outerRadius)))
 	}
+
+	for step := range arcSteps + 1 {
+		angle := -math.Pi/2 + halfSweep - 2*halfSweep*float64(step)/arcSteps
+		points = append(points, center.Translate(geometry.NewRadialVector(angle, innerRadius)))
+	}
+
+	return append(points, points[0])
 }
 
 func (lb *legendBuilder) addSwatch(x, y float64, fill color.RGBA) {

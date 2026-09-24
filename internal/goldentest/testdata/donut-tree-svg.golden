@@ -15,7 +15,7 @@
 <text x="140.478" y="58.870" fill="rgb(255,255,255)" font-size="8.760" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" transform="rotate(337.713 140.478 58.870)">88</text>
 <text x="143.512" y="66.273" fill="rgb(255,255,255)" font-size="8.760" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" transform="rotate(337.713 143.512 66.273)">Markdown</text>
 <rect x="209.490" y="11.000" width="94.510" height="213.000" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.000"/>
-<polygon points="238.125,28.774 248.987,21.791 264.503,21.791 275.365,28.774 287.002,45.066 293.209,64.462 291.657,83.081 283.123,93.943 256.745,97.046 230.367,93.943 221.833,83.081 220.281,64.462 226.488,45.066 238.125,28.774" fill="rgb(255,255,255)" stroke="rgb(102,102,102)" stroke-width="0.353"/>
+<polygon points="217.954,24.032 227.621,23.013 237.314,22.285 247.025,21.848 256.745,21.702 266.465,21.848 276.176,22.285 285.869,23.013 295.536,24.032 287.002,94.808 279.462,94.013 271.901,93.445 264.326,93.104 256.745,92.990 249.164,93.104 241.589,93.445 234.028,94.013 226.488,94.808 217.954,24.032" fill="rgb(255,255,255)" stroke="rgb(102,102,102)" stroke-width="0.353"/>
 <text x="256.745" y="46.970" fill="rgb(51,51,51)" font-size="8.464" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">directory-name</text>
 <text x="256.745" y="58.255" fill="rgb(51,51,51)" font-size="8.464" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines.sum</text>
 <text x="256.745" y="69.540" fill="rgb(51,51,51)" font-size="8.464" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type.mode</text>

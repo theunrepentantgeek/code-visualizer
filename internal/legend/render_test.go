@@ -1,6 +1,7 @@
 package legend_test
 
 import (
+	"image/color"
 	"slices"
 	"testing"
 
@@ -54,6 +55,124 @@ func TestRenderInto_DecomposesToPrimitives(t *testing.T) {
 
 	g.Expect(hasLabel).To(BeTrue(), "expected label text 'Fill'")
 	g.Expect(hasMetric).To(BeTrue(), "expected metric text 'file-size'")
+}
+
+func TestRenderInto_VerticalNumericRangeRunsFromHighToLow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ink := inks.NumericInk(
+		"file-size",
+		[]float64{10, 50, 100},
+		palette.GetPalette(palette.Temperature),
+	)
+
+	_, swatches := inks.LegendData(ink)
+	if len(swatches) < 2 {
+		t.Fatal("expected at least two numeric swatches")
+	}
+
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomRight,
+		Orientation: model.LegendOrientationVertical,
+		Entries: []legend.Entry{
+			{Role: legend.RoleFill, MetricName: "file-size", Ink: ink},
+		},
+	}
+
+	cv := canvas.NewCanvas(800, 600)
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	rendered := numericSwatchCalls(mb.Calls, swatches)
+	g.Expect(rendered).To(HaveLen(len(swatches)))
+	g.Expect(rendered[0].Fill).To(Equal(swatches[len(swatches)-1].Colour))
+	g.Expect(rendered[len(rendered)-1].Fill).To(Equal(swatches[0].Colour))
+
+	labels := numericLabelCalls(mb.Calls, swatches)
+	g.Expect(labels).To(HaveLen(len(swatches) - 1))
+	g.Expect(labels[swatches[len(swatches)-2].Label].Pos.Y).
+		To(BeNumerically("<", labels[swatches[0].Label].Pos.Y))
+}
+
+func TestRenderInto_HorizontalNumericRangeRemainsLowToHigh(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	ink := inks.NumericInk(
+		"file-size",
+		[]float64{10, 50, 100},
+		palette.GetPalette(palette.Temperature),
+	)
+
+	_, swatches := inks.LegendData(ink)
+	if len(swatches) < 2 {
+		t.Fatal("expected at least two numeric swatches")
+	}
+
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomCenter,
+		Orientation: model.LegendOrientationHorizontal,
+		Entries: []legend.Entry{
+			{Role: legend.RoleFill, MetricName: "file-size", Ink: ink},
+		},
+	}
+
+	cv := canvas.NewCanvas(800, 600)
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	rendered := numericSwatchCalls(mb.Calls, swatches)
+	g.Expect(rendered).To(HaveLen(len(swatches)))
+	g.Expect(rendered[0].Fill).To(Equal(swatches[0].Colour))
+	g.Expect(rendered[len(rendered)-1].Fill).To(Equal(swatches[len(swatches)-1].Colour))
+
+	labels := numericLabelCalls(mb.Calls, swatches)
+	g.Expect(labels).To(HaveLen(len(swatches) - 1))
+	g.Expect(labels[swatches[0].Label].Pos.X).
+		To(BeNumerically("<", labels[swatches[len(swatches)-2].Label].Pos.X))
+}
+
+func numericSwatchCalls(calls []mock.Call, swatches []model.LegendSwatch) []mock.Call {
+	colours := make(map[color.RGBA]struct{}, len(swatches))
+	for _, swatch := range swatches {
+		colours[swatch.Colour] = struct{}{}
+	}
+
+	rendered := make([]mock.Call, 0, len(swatches))
+
+	for _, call := range calls {
+		if call.Method != "DrawRectangle" {
+			continue
+		}
+
+		if _, ok := colours[call.Fill]; ok {
+			rendered = append(rendered, call)
+		}
+	}
+
+	return rendered
+}
+
+func numericLabelCalls(calls []mock.Call, swatches []model.LegendSwatch) map[string]mock.Call {
+	labels := make(map[string]mock.Call, len(swatches)-1)
+	for _, swatch := range swatches {
+		if swatch.Label == "" {
+			continue
+		}
+
+		for _, call := range calls {
+			if call.Method == "DrawText" && call.Text == swatch.Label {
+				labels[swatch.Label] = call
+			}
+		}
+	}
+
+	return labels
 }
 
 func TestRenderInto_DefaultSquareLabelSample_RendersSampleBeforeEntries(t *testing.T) {
@@ -195,6 +314,25 @@ func TestRenderInto_ArcLabelSample_RendersCurvedAnnularSwatchBeforeEntryHeading(
 
 	g.Expect(arcIndex).To(BeNumerically(">=", 0))
 	g.Expect(arcIndex).To(BeNumerically("<", entryHeadingIndex))
+
+	points := mb.Calls[arcIndex].Points
+
+	const arcPointCount = 9
+
+	g.Expect(points).To(HaveLen(2*arcPointCount + 1))
+	g.Expect(points[len(points)-1]).To(Equal(points[0]))
+
+	outerLeft, outerTop, outerRight := points[0], points[arcPointCount/2], points[arcPointCount-1]
+	innerRight := points[arcPointCount]
+	innerBottom := points[arcPointCount+arcPointCount/2]
+	innerLeft := points[2*arcPointCount-1]
+
+	g.Expect(outerTop.Y).To(BeNumerically("<", outerLeft.Y))
+	g.Expect(outerTop.Y).To(BeNumerically("<", outerRight.Y))
+	g.Expect(innerBottom.Y).To(BeNumerically("<", innerLeft.Y))
+	g.Expect(innerBottom.Y).To(BeNumerically("<", innerRight.Y))
+	g.Expect(outerLeft.X).To(BeNumerically("<", innerLeft.X))
+	g.Expect(outerRight.X).To(BeNumerically(">", innerRight.X))
 }
 
 func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.T) {

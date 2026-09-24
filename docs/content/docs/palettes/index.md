@@ -146,3 +146,60 @@ Evokes elevation or layered depth. Ideal for visualizing spatial or hierarchical
 | 6 | `#1E8449` | 30, 132, 73 | Forest |
 | 7 | `#6E2C00` | 110, 44, 0 | Rocks |
 | 8 | `#F0F3F4` | 240, 243, 244 | Snow |
+
+## Flame
+
+**Name:** `flame` · **Steps:** 7 · **Ordered:** Yes
+
+A sequential palette from dark red through orange to pale yellow.
+Useful for visualising heat, intensity, or activity.
+
+![Flame palette swatch](palette-flame.png)
+
+| Step | Hex | RGB |
+|------|-----|-----|
+| 1 | `#B10026` | 177, 0, 38 |
+| 2 | `#E31A1C` | 227, 26, 28 |
+| 3 | `#FC4E2A` | 252, 78, 42 |
+| 4 | `#FD8D3C` | 253, 141, 60 |
+| 5 | `#FEB24C` | 254, 178, 76 |
+| 6 | `#FED976` | 254, 217, 118 |
+| 7 | `#FFFFB2` | 255, 255, 178 |
+
+## Ocean
+
+**Name:** `ocean` · **Steps:** 7 · **Ordered:** Yes
+
+A sequential palette from navy blue through mid blue to cyan.
+Useful for visualising depth, flow, or volume.
+
+![Ocean palette swatch](palette-ocean.png)
+
+| Step | Hex | RGB |
+|------|-----|-----|
+| 1 | `#081D58` | 8, 29, 88 |
+| 2 | `#123478` | 18, 52, 120 |
+| 3 | `#1955A0` | 25, 85, 160 |
+| 4 | `#1D91C0` | 29, 145, 192 |
+| 5 | `#22B4D2` | 34, 180, 210 |
+| 6 | `#34D3E1` | 52, 211, 225 |
+| 7 | `#67E8F9` | 103, 232, 249 |
+
+## Leaf
+
+**Name:** `leaf` · **Steps:** 7 · **Ordered:** Yes
+
+A sequential palette from dark green through green to pale green.
+Useful for visualising growth, freshness, or natural abundance.
+
+![Leaf palette swatch](palette-leaf.png)
+
+| Step | Hex | RGB |
+|------|-----|-----|
+| 1 | `#005A32` | 0, 90, 50 |
+| 2 | `#238B45` | 35, 139, 69 |
+| 3 | `#41AB5D` | 65, 171, 93 |
+| 4 | `#74C476` | 116, 196, 118 |
+| 5 | `#A1D99B` | 161, 217, 155 |
+| 6 | `#C7E9C0` | 199, 233, 192 |
+| 7 | `#EDF8E9` | 237, 248, 233 |
