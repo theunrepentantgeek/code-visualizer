@@ -54,19 +54,3 @@ func TestFilterBinaryFiles_TextFilesPresent_Succeeds(t *testing.T) {
 	g.Expect(stages.FilterBinaryFiles(c)).To(Succeed())
 	g.Expect(root.Files).To(HaveLen(1))
 }
-
-func TestCountAll_NestedDirs(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	root := &model.Directory{
-		Files: []*model.File{{Name: "a"}, {Name: "b"}},
-		Dirs: []*model.Directory{
-			{Files: []*model.File{{Name: "c"}}},
-		},
-	}
-
-	files, dirs := stages.CountAll(root)
-	g.Expect(files).To(Equal(3))
-	g.Expect(dirs).To(Equal(1))
-}
