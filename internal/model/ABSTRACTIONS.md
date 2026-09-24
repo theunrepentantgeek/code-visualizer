@@ -41,9 +41,10 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 
 **Boundary and invariants.**
 
-- Content is reached through the attached `fs.FS`, never through the OS path: `Open`/`ReadAll` fail explicitly when no source is attached ([file.go#L27](file.go#L27), [file.go#L46](file.go#L46)).
+- `Open`/`ReadAll` define source-backed access through the attached `fs.FS` and fail explicitly when no source is attached; the modern `ScanTree` path always supplies that source ([file.go#L27](file.go#L27), [file.go#L46](file.go#L46), [../scan/fs_walker.go#L139](../scan/fs_walker.go#L139)).
 - `Source` and `RepoSource` are separate on purpose — one is the tree being visualized, the other the repository content it came from ([file.go#L20](file.go#L20), [file.go#L21](file.go#L21)).
 - `IsBinary` is decided once during the scan and is the flag downstream filtering keys off ([../scan/node_builder.go#L52](../scan/node_builder.go#L52), [../provider/filesystem/metrics.go#L64](../provider/filesystem/metrics.go#L64)).
+- The exported legacy `scan.Scan` path and hand-built files may still be source-less; filesystem and Go providers retain OS-path fallbacks for that current compatibility contract, tracked for unification in [issue #755](https://github.com/theunrepentantgeek/code-visualizer/issues/755) ([../scan/node_builder.go#L41](../scan/node_builder.go#L41), [../provider/filesystem/metrics.go#L81](../provider/filesystem/metrics.go#L81), [../provider/golang/file_loader.go#L70](../provider/golang/file_loader.go#L70)).
 
 **Related operations.**
 
@@ -52,10 +53,12 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 **Proper-use patterns.**
 
 - Read file content with `ReadAll()` so the same code works against a working tree and against a git snapshot ([file.go#L46](file.go#L46), [../source/gitfs.go#L39](../source/gitfs.go#L39)).
+- When adapting current source-less compatibility callers, test `Source` before choosing the OS-path fallback; do not silently bypass an attached source ([../provider/filesystem/metrics.go#L81](../provider/filesystem/metrics.go#L81), [../provider/golang/declarations.go#L59](../provider/golang/declarations.go#L59)).
 
 **Anti-patterns.**
 
 - Do not re-detect binary content per provider; the scan already recorded it on the file ([../scan/node_builder.go#L78](../scan/node_builder.go#L78)).
+- Do not assume every `File.Path` names a host file: source-backed files may belong to an in-memory or historical Git filesystem ([../source/gitfs.go#L39](../source/gitfs.go#L39), [file.go#L27](file.go#L27)).
 
 **Source locations.**
 

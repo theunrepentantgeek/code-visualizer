@@ -61,3 +61,32 @@
 - [config.go#L49](config.go#L49) — `Config`, `DefaultOrientation`, `ReserveSpace`, `toLegendData`.
 - [reserve.go#L14](reserve.go#L14) — `Reservation` and `ReserveLayout`.
 - [legend.go#L28](legend.go#L28) — `Builder` and `Build`.
+
+## LabelSample
+
+**Purpose.**
+
+- `LabelSample` is the legend preview of inline shape labels: it carries the metric-name lines and the square, circle, or arc context in which those labels appear ([config.go#L30](config.go#L30), [config.go#L42](config.go#L42)).
+
+**Boundary and invariants.**
+
+- The zero-value shape is square; circle and arc are explicit alternatives used by matching visualization families ([config.go#L33](config.go#L33), [../treemap/stages.go#L53](../treemap/stages.go#L53), [../spiral/stages.go#L155](../spiral/stages.go#L155), [../donuttree/stages.go#L119](../donuttree/stages.go#L119)).
+- Empty lines are discarded during conversion, and an empty result becomes no sample rather than an empty rendered shape ([config.go#L109](config.go#L109), [config_test.go#L132](config_test.go#L132)).
+- A sample explains label encoding and is separate from metric `Entry` values and swatches ([config.go#L49](config.go#L49), [render.go#L160](render.go#L160)).
+
+**Related operations.**
+
+- Visualization stages attach the sample after `Builder.Build`; conversion produces `model.LegendLabelSample`, shared layout measures it, and `RenderInto` draws it before entries ([../alluvial/pipeline.go#L299](../alluvial/pipeline.go#L299), [config.go#L101](config.go#L101), [../canvas/legendlayout/layout.go#L342](../canvas/legendlayout/layout.go#L342), [render.go#L160](render.go#L160)).
+
+**Proper-use patterns.**
+
+- Include only label lines that the visualization actually renders and choose the matching shape vocabulary ([../donuttree/stages.go#L119](../donuttree/stages.go#L119), [../spiral/stages.go#L155](../spiral/stages.go#L155), [../alluvial/pipeline.go#L312](../alluvial/pipeline.go#L312)).
+
+**Anti-patterns.**
+
+- Do not add label metrics as colour swatches solely to explain inline text; use `LabelSample`, leaving `Entry` for visual metric roles ([config.go#L23](config.go#L23), [config.go#L42](config.go#L42)).
+
+**Source locations.**
+
+- [config.go#L30](config.go#L30) — `LabelSampleShape`, `LabelSample`, and conversion.
+- [render_test.go#L178](render_test.go#L178) — square, circle, and arc rendering behavior.

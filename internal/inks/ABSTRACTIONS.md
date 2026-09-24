@@ -16,12 +16,14 @@
 **Related operations.**
 
 - `FixedInk`, `NumericInk`, `CategoricalInk` construct; `BuildMetricInk` picks the right constructor from a metric descriptor ([ink.go#L57](ink.go#L57), [inks.go#L17](inks.go#L17)).
+- `BuildDirectoryMetricInk` performs the same construction from directory values; `NumericBreakpoints` exposes a defensive copy for rendering that must align with an ink’s numeric buckets ([inks.go#L108](inks.go#L108), [introspection.go#L30](introspection.go#L30)).
 - `ShapeInks` pairs a fill ink with a border ink for visualization packages to embed ([ink.go#L163](ink.go#L163), [../treemap/inks.go#L41](../treemap/inks.go#L41)).
 
 **Proper-use patterns.**
 
 - Build inks once per run from the model tree and the resolved descriptor, then hand them to canvas shape specs ([inks.go#L17](inks.go#L17), [../canvas/spec.go#L9](../canvas/spec.go#L9)).
 - Derive each shape's `MetricValue` through `MetricValueForFile`/`MetricValueForDirectory`, which consult the ink's own metric ([inks.go#L46](inks.go#L46)).
+- Use `BuildDirectoryMetricInk` for directory shapes so the buckets and categories come from the same population that will be rendered ([inks.go#L108](inks.go#L108), [../donuttree/inks.go#L35](../donuttree/inks.go#L35)).
 
 **Anti-patterns.**
 
@@ -31,7 +33,8 @@
 **Source locations.**
 
 - [ink.go#L27](ink.go#L27) — `Ink`, `Kind`, and the three constructors.
-- [inks.go#L17](inks.go#L17) — `BuildMetricInk` and the metric-value helpers.
+- [inks.go#L17](inks.go#L17) — file/directory ink builders and metric-value helpers.
+- [introspection.go#L10](introspection.go#L10) — stable kind/metric introspection and numeric breakpoints.
 
 ## MetricValue
 
@@ -88,3 +91,31 @@
 **Source locations.**
 
 - [radial_gradient.go#L14](radial_gradient.go#L14) — `RadialGradientInk`, `NewRadialGradientInk`.
+
+## ShapeInks
+
+**Purpose.**
+
+- `ShapeInks` is the shared fill-and-border pair embedded or aliased by visualization-specific ink state, avoiding incompatible copies of the same styling vocabulary ([ink.go#L163](ink.go#L163), [../treemap/inks.go#L39](../treemap/inks.go#L39), [../radialtree/inks.go#L22](../radialtree/inks.go#L22)).
+
+**Boundary and invariants.**
+
+- It groups roles only; each member remains a complete `Ink` with its own metric, palette, opacity, fill behavior, and legend data ([ink.go#L165](ink.go#L165)).
+- Visualization packages may embed it and add role-specific state, but `ShapeInks` itself does not say whether either role is metric-driven ([../bubbletree/inks.go#L21](../bubbletree/inks.go#L21), [../scatter/inks.go#L25](../scatter/inks.go#L25)).
+
+**Related operations.**
+
+- Visualization ink builders populate the pair, canvas `ShapeStyle` consumes it, and legend builders reuse the same two inks ([../donuttree/inks.go#L31](../donuttree/inks.go#L31), [../canvas/spec.go#L7](../canvas/spec.go#L7), [../legend/legend.go#L28](../legend/legend.go#L28)).
+
+**Proper-use patterns.**
+
+- Alias `ShapeInks` when fill and border are the complete visualization state; embed it when the visualization needs additional inks or flags ([../spiral/inks.go#L19](../spiral/inks.go#L19), [../radialtree/inks.go#L22](../radialtree/inks.go#L22)).
+
+**Anti-patterns.**
+
+- Do not duplicate fill/border records per visualization or infer metric semantics from whether a field is non-nil; inspect each ink through `Info()` ([ink.go#L163](ink.go#L163), [introspection.go#L15](introspection.go#L15)).
+
+**Source locations.**
+
+- [ink.go#L163](ink.go#L163) — `ShapeInks`.
+- [../donuttree/render_test.go#L160](../donuttree/render_test.go#L160) — embedded pair used in rendering tests.

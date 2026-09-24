@@ -81,10 +81,12 @@
 
 - Register the descriptor and the loader together for a metric family so a metric can never be resolvable but unloadable ([classification/provider.go#L33](classification/provider.go#L33)).
 - Declare `Dependencies` instead of ordering loaders by registration order or sequencing them by hand ([loader.go#L13](loader.go#L13), [run.go#L184](run.go#L184)).
+- Load file content through an attached `model.File` source when present; filesystem and Go loaders keep explicit OS-path fallbacks only for the current source-less `scan.Scan` compatibility boundary documented in [issue #755](https://github.com/theunrepentantgeek/code-visualizer/issues/755) ([../model/file.go#L27](../model/file.go#L27), [filesystem/metrics.go#L81](filesystem/metrics.go#L81), [golang/file_loader.go#L70](golang/file_loader.go#L70)).
 
 **Anti-patterns.**
 
 - Do not load every metric the loader knows about; honour the `requested` slice so unrequested work is not performed ([loader.go#L21](loader.go#L21)).
+- Do not add a new unconditional `os.Open(File.Path)` path to a provider; it cannot read historical or virtual sources ([../source/gitfs.go#L39](../source/gitfs.go#L39), [../model/file.go#L27](../model/file.go#L27)).
 
 **Source locations.**
 
