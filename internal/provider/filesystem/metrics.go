@@ -126,6 +126,7 @@ func countLinesReader(file io.ReadSeeker) (int64, error) {
 	reader := bufio.NewReader(r)
 
 	var count int64
+
 	for {
 		line, readErr := reader.ReadString('\n')
 		if len(line) > 0 {
