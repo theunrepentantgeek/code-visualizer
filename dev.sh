@@ -12,6 +12,11 @@ $GIT_ROOT/.devcontainer/install-dependencies.sh --skip-installed
 
 export PATH="$TOOL_DEST:$PATH"
 
+if [[ ${1:-} == "-c" ]]; then
+    "$SHELL" "$@"
+    exit
+fi
+
 echo "Entering $SHELL with expanded PATH (use 'exit' to quit)."
 echo "Try running 'task -l' to see possible commands."
 $SHELL
