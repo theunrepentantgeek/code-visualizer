@@ -4,6 +4,11 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
+// CountAll returns the cumulative file and directory counts under root.
+func CountAll(node *model.Directory) (files int, dirs int) {
+	return model.CountFiles(node), model.CountDirs(node)
+}
+
 // FilterBinaryFiles verifies that some files remain after the scan-time binary
 // filter. Binary files are excluded during the filesystem scan when
 // c.IncludeBinaryFiles is false; this stage exists only to surface a clear error
