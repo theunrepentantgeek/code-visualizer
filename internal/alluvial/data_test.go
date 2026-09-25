@@ -175,6 +175,22 @@ func TestBuildData_StepDeltaFillUsesDestinationSnapshot(t *testing.T) {
 	g.Expect(data.FillValuesByReference["after"]).To(Equal(map[string]float64{"api": -3}))
 }
 
+func TestData_FillValuesForInkIncludesEveryStepDelta(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(testDirectoryWithFill("api", 10, 0))},
+		{Reference: "middle", Root: testRoot(testDirectoryWithFill("api", 10, 100))},
+		{Reference: "after", Root: testRoot(testDirectoryWithFill("api", 10, 101))},
+	}, alluvial.Options{
+		Metric: widthMetric, FillMetric: fillMetric, FillTemporal: metric.TemporalStepDelta,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.FillValuesForInk()).To(ConsistOf(float64(100), float64(1)))
+}
+
 func TestBuildDataStage_UsesConfiguredMetricAndExpansion(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

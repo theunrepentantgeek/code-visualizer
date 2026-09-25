@@ -19,6 +19,33 @@ type Data struct {
 	FillValuesByReference map[string]map[string]float64
 }
 
+// FillValuesForInk returns every displayed numeric fill value, including
+// values for the same path at different destination snapshots.
+func (d Data) FillValuesForInk() []float64 {
+	if d.FillValuesByReference == nil {
+		values := make([]float64, 0, len(d.FillValues))
+
+		for _, value := range d.FillValues {
+			values = append(values, value)
+		}
+
+		return values
+	}
+
+	values := make([]float64, 0)
+
+	for _, column := range d.Columns {
+		for _, value := range column.Values {
+			fillValue, ok := d.FillValuesByReference[column.Reference][value.Path]
+			if ok {
+				values = append(values, fillValue)
+			}
+		}
+	}
+
+	return values
+}
+
 // Column contains metric widths for a single reference snapshot.
 type Column struct {
 	Reference string

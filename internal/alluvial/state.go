@@ -39,16 +39,12 @@ func (f *BandFill) LabelMetric() metric.Name {
 }
 
 // ResolveInk builds the numeric ink, centering delta values around zero.
-func (f *BandFill) ResolveInk(fillValues map[string]float64) {
-	values := make([]float64, 0, len(fillValues))
-	for _, value := range fillValues {
-		values = append(values, value)
-		if f.Temporal == metric.TemporalDelta || f.Temporal == metric.TemporalStepDelta {
+func (f *BandFill) ResolveInk(values []float64) {
+	if f.Temporal == metric.TemporalDelta || f.Temporal == metric.TemporalStepDelta {
+		for _, value := range values {
 			values = append(values, -value)
 		}
-	}
 
-	if f.Temporal == metric.TemporalDelta || f.Temporal == metric.TemporalStepDelta {
 		values = append(values, 0)
 	}
 

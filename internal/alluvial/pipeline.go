@@ -299,7 +299,7 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 
 // BuildLegendStage creates the metric-driven band ink and its colour key.
 func BuildLegendStage(common *stages.CommonState, state *State) error {
-	state.Fill.ResolveInk(state.Data.FillValues)
+	state.Fill.ResolveInk(state.Data.FillValuesForInk())
 
 	rootConfig := common.RootConfig
 	if rootConfig == nil {
