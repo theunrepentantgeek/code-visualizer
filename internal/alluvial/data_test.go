@@ -155,6 +155,7 @@ func TestBuildData_DeltaFillUsesChangeFromFirstToLastSnapshot(t *testing.T) {
 		"legacy":    -4,
 		"temporary": 0,
 	}))
+	g.Expect(data.FillValuesByReference).To(BeNil())
 }
 
 func TestBuildData_StepDeltaFillUsesDestinationSnapshot(t *testing.T) {

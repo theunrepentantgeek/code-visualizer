@@ -185,26 +185,46 @@ func buildFillValues(
 	temporal metric.TemporalName,
 ) (map[string]float64, map[string]map[string]float64) {
 	values := make(map[string]float64)
-	byReference := make(map[string]map[string]float64, len(columns))
 
 	if len(snapshots) == 0 {
-		return values, byReference
+		return values, nil
 	}
 
 	last := snapshots[len(snapshots)-1]
 
+	if temporal == metric.TemporalStepDelta {
+		return buildStepDeltaFillValues(columns, snapshots)
+	}
+
+	for _, column := range columns {
+		for _, value := range column.Values {
+			fillValue := temporalFillValue(temporal, last, snapshots, value.Path)
+
+			values[value.Path] = fillValue
+		}
+	}
+
+	return values, nil
+}
+
+func buildStepDeltaFillValues(
+	columns []Column,
+	snapshots []map[string]float64,
+) (map[string]float64, map[string]map[string]float64) {
+	values := make(map[string]float64)
+	byReference := make(map[string]map[string]float64, len(columns))
+
 	for index, column := range columns {
 		byPath := make(map[string]float64)
 
-		if temporal == metric.TemporalStepDelta && index == 0 {
+		if index == 0 {
 			byReference[column.Reference] = byPath
 
 			continue
 		}
 
 		for _, value := range column.Values {
-			fillValue := temporalFillValue(temporal, last, snapshots, index, value.Path)
-
+			fillValue := snapshots[index][value.Path] - snapshots[index-1][value.Path]
 			values[value.Path] = fillValue
 			byPath[value.Path] = fillValue
 		}
@@ -219,14 +239,11 @@ func temporalFillValue(
 	temporal metric.TemporalName,
 	last map[string]float64,
 	snapshots []map[string]float64,
-	index int,
 	directoryPath string,
 ) float64 {
 	switch temporal {
 	case metric.TemporalDelta:
 		return last[directoryPath] - snapshots[0][directoryPath]
-	case metric.TemporalStepDelta:
-		return snapshots[index][directoryPath] - snapshots[index-1][directoryPath]
 	default:
 		return last[directoryPath]
 	}
