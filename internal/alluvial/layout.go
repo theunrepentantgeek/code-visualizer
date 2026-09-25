@@ -74,7 +74,8 @@ func LayoutData(data Data, width, height int) Layout {
 
 		bands := layoutBands(column.Values, top, bottom-top, scale, available, gap)
 		for bandIndex := range bands {
-			bands[bandIndex].FillValue, bands[bandIndex].HasFillValue = fillValueFor(data, column.Reference, bands[bandIndex].Path)
+			band := &bands[bandIndex]
+			band.FillValue, band.HasFillValue = fillValueFor(data, column.Reference, band.Path)
 		}
 
 		layout.Columns[index] = ColumnLayout{

@@ -28,20 +28,28 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 	}
 
 	state.WidthMetric = widthMetric
-	fillMetric := widthMetric
-	fillLabel := widthMetric
-	var fillTemporal metric.TemporalName
-	fillExplicit := false
+
+	var (
+		fillMetric   metric.Name
+		fillLabel    metric.Name
+		fillTemporal metric.TemporalName
+		fillExplicit bool
+	)
+
+	fillMetric = widthMetric
+	fillLabel = widthMetric
 
 	if cfg.Fill != nil && cfg.Fill.Metric != "" {
 		fillExplicit = true
 		fillLabel = cfg.Fill.Metric
+
 		fillExpression, parseErr := metric.ParseExpression(string(cfg.Fill.Metric))
 		if parseErr != nil {
 			return eris.Wrap(parseErr, "parse alluvial fill metric")
 		}
 
 		fillTemporal = fillExpression.Temporal
+
 		fillMetric, err = resolveDirectoryExpression(fillExpression)
 		if err != nil {
 			return eris.Wrap(err, "invalid alluvial fill metric")

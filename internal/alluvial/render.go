@@ -35,7 +35,7 @@ func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink, labelFil
 
 		cv.AddFilledPath(canvas.LayerContent, canvas.FilledPath{
 			Loops: [][]geometry.Point{sweptFlowPoints(flow)},
-			Fill:  alluvialFillInk(fillInk, flow.HasFillValue).Dip(inks.MeasureValue(flow.FillValue)),
+			Fill:  alluvialFlowInk(fillInk, flow).Dip(inks.MeasureValue(flow.FillValue)),
 		})
 	}
 
@@ -167,7 +167,7 @@ func addAlluvialEdgeColumnBands(
 				{X: right, Y: band.Bottom},
 				{X: left, Y: band.Bottom},
 			}},
-			Fill: alluvialFillInk(fillInk, band.HasFillValue).Dip(inks.MeasureValue(band.FillValue)),
+			Fill: alluvialBandInk(fillInk, band).Dip(inks.MeasureValue(band.FillValue)),
 		})
 	}
 }
@@ -188,7 +188,7 @@ func addAlluvialBandLabel(
 
 	center := (band.Top + band.Bottom) / 2
 	labelColour := canvas.TextColourFor(
-		alluvialFillInk(fillInk, band.HasFillValue).Dip(inks.MeasureValue(band.FillValue)),
+		alluvialBandInk(fillInk, band).Dip(inks.MeasureValue(band.FillValue)),
 	)
 	spec := &canvas.TextSpec{
 		Ink:      inks.FixedInk(labelColour),
@@ -219,8 +219,16 @@ func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
 	return lines
 }
 
-func alluvialFillInk(fillInk inks.Ink, hasFillValue bool) inks.Ink {
-	if !hasFillValue {
+func alluvialBandInk(fillInk inks.Ink, band Band) inks.Ink {
+	if !band.HasFillValue {
+		return inks.FixedInk(alluvialGuide)
+	}
+
+	return fillInk
+}
+
+func alluvialFlowInk(fillInk inks.Ink, flow Flow) inks.Ink {
+	if !flow.HasFillValue {
 		return inks.FixedInk(alluvialGuide)
 	}
 
