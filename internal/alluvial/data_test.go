@@ -146,7 +146,7 @@ func TestBuildData_DeltaFillUsesChangeFromFirstToLastSnapshot(t *testing.T) {
 			testDirectoryWithFill("api", 12, 11),
 			testDirectoryWithFill("docs", 5, 5),
 		)},
-	}, alluvial.Options{Metric: widthMetric, FillMetric: fillMetric, FillDelta: true})
+	}, alluvial.Options{Metric: widthMetric, FillMetric: fillMetric, FillTemporal: metric.TemporalDelta})
 
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(data.FillValues).To(Equal(map[string]float64{
@@ -155,6 +155,24 @@ func TestBuildData_DeltaFillUsesChangeFromFirstToLastSnapshot(t *testing.T) {
 		"legacy":    -4,
 		"temporary": 0,
 	}))
+}
+
+func TestBuildData_StepDeltaFillUsesDestinationSnapshot(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(testDirectoryWithFill("api", 10, 8))},
+		{Reference: "middle", Root: testRoot(testDirectoryWithFill("api", 10, 10))},
+		{Reference: "after", Root: testRoot(testDirectoryWithFill("api", 10, 7))},
+	}, alluvial.Options{
+		Metric: widthMetric, FillMetric: fillMetric, FillTemporal: metric.TemporalStepDelta,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.FillValuesByReference["before"]).To(BeEmpty())
+	g.Expect(data.FillValuesByReference["middle"]).To(Equal(map[string]float64{"api": 2}))
+	g.Expect(data.FillValuesByReference["after"]).To(Equal(map[string]float64{"api": -3}))
 }
 
 func TestBuildDataStage_UsesConfiguredMetricAndExpansion(t *testing.T) {
@@ -207,7 +225,7 @@ func TestResolveMetrics_ResolvesDeltaFillWithoutRequestingModifier(t *testing.T)
 	g.Expect(state.Fill.Encoding.Metric).To(Equal(metric.Name("file-lines.sum")))
 	g.Expect(state.Fill.Label).To(Equal(metric.Name("file-lines.delta")))
 	g.Expect(state.Fill.Explicit).To(BeTrue())
-	g.Expect(state.Fill.Delta).To(BeTrue())
+	g.Expect(state.Fill.Temporal).To(Equal(metric.TemporalDelta))
 	g.Expect(common.Requested.Expressions).To(HaveLen(2))
 }
 

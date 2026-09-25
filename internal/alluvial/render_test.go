@@ -14,6 +14,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
@@ -26,11 +27,11 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	cv := alluvial.RenderToCanvas(alluvial.Layout{
 		Flows: []alluvial.Flow{
 			{
-				Path: "continuing", FillValue: -1,
+				Path: "continuing", FillValue: -1, HasFillValue: true,
 				FromX: 20, ToX: 180, FromTop: 10, FromBottom: 40, ToTop: 20, ToBottom: 70,
 			},
 			{
-				Path: "introduced", FillValue: 1,
+				Path: "introduced", FillValue: 1, HasFillValue: true,
 				FromX: 20, ToX: 180, FromTop: 60, FromBottom: 60, ToTop: 50, ToBottom: 80,
 			},
 			{Path: "empty", FromX: 20, ToX: 180, FromTop: 90, FromBottom: 90, ToTop: 90, ToBottom: 90},
@@ -66,7 +67,7 @@ func TestRenderToCanvas_AddsExplicitFillValueToBandLabel(t *testing.T) {
 		Columns: []alluvial.ColumnLayout{{
 			X: 100,
 			Bands: []alluvial.Band{{
-				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: -3,
+				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: -3, HasFillValue: true,
 			}},
 		}},
 	}, 200, 100, inks.NumericInk("fill", []float64{-3}, palette.GetPalette(palette.Neutral)), "fill.delta")
@@ -93,7 +94,7 @@ func TestRenderToCanvas_UsesContrastingInkForBandLabels(t *testing.T) {
 		Columns: []alluvial.ColumnLayout{{
 			X: 100,
 			Bands: []alluvial.Band{{
-				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: 0,
+				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: 0, HasFillValue: true,
 			}},
 		}},
 	}, 200, 100, fillInk, "")
@@ -228,7 +229,7 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 			Encoding: viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
 			Label:    "file-lines.delta",
 			Explicit: true,
-			Delta:    true,
+			Temporal: metric.TemporalDelta,
 		},
 		Data: alluvial.Data{Columns: []alluvial.Column{
 			{Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "docs", Width: 5}}},

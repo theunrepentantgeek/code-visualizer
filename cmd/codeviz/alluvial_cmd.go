@@ -87,7 +87,12 @@ func validateAlluvialFill(fillSpec *config.MetricSpec, defaultMetric metric.Name
 		fillMetric = defaultMetric
 	}
 
-	fillMetric, _ = alluvial.ParseFillMetric(fillMetric)
+	expression, err := metric.ParseExpression(string(fillMetric))
+	if err != nil {
+		return eris.Wrap(err, "invalid fill metric")
+	}
+
+	fillMetric = expression.WithoutTemporal().ResultName()
 	if err := validateNumericMetric("fill", fillMetric); err != nil {
 		return err
 	}

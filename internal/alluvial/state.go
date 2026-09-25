@@ -24,7 +24,7 @@ type BandFill struct {
 	Encoding viz.ColourEncoding
 	Label    metric.Name
 	Explicit bool
-	Delta    bool
+	Temporal metric.TemporalName
 	Ink      inks.Ink
 }
 
@@ -43,12 +43,12 @@ func (f *BandFill) ResolveInk(fillValues map[string]float64) {
 	values := make([]float64, 0, len(fillValues))
 	for _, value := range fillValues {
 		values = append(values, value)
-		if f.Delta {
+		if f.Temporal == metric.TemporalDelta || f.Temporal == metric.TemporalStepDelta {
 			values = append(values, -value)
 		}
 	}
 
-	if f.Delta {
+	if f.Temporal == metric.TemporalDelta || f.Temporal == metric.TemporalStepDelta {
 		values = append(values, 0)
 	}
 
@@ -63,8 +63,8 @@ type Snapshot struct {
 
 // Options controls the metric and directory detail represented in Data.
 type Options struct {
-	Metric     metric.Name
-	FillMetric metric.Name
-	FillDelta  bool
-	Expand     []string
+	Metric       metric.Name
+	FillMetric   metric.Name
+	FillTemporal metric.TemporalName
+	Expand       []string
 }

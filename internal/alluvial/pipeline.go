@@ -30,15 +30,19 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 	state.WidthMetric = widthMetric
 	fillMetric := widthMetric
 	fillLabel := widthMetric
-	fillDelta := false
+	var fillTemporal metric.TemporalName
 	fillExplicit := false
 
 	if cfg.Fill != nil && cfg.Fill.Metric != "" {
 		fillExplicit = true
 		fillLabel = cfg.Fill.Metric
-		fillMetric, fillDelta = ParseFillMetric(cfg.Fill.Metric)
+		fillExpression, parseErr := metric.ParseExpression(string(cfg.Fill.Metric))
+		if parseErr != nil {
+			return eris.Wrap(parseErr, "parse alluvial fill metric")
+		}
 
-		fillMetric, err = resolveDirectoryMetric(fillMetric)
+		fillTemporal = fillExpression.Temporal
+		fillMetric, err = resolveDirectoryExpression(fillExpression)
 		if err != nil {
 			return eris.Wrap(err, "invalid alluvial fill metric")
 		}
@@ -48,7 +52,7 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 		Encoding: stages.ResolveColourEncodingForMetric(cfg.Fill, fillMetric),
 		Label:    fillLabel,
 		Explicit: fillExplicit,
-		Delta:    fillDelta,
+		Temporal: fillTemporal,
 	}
 	common.Requested = stages.CollectRequestedMetricNames(widthMetric, fillMetric)
 
@@ -271,10 +275,10 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 	}
 
 	data, err := BuildData(state.Snapshots, Options{
-		Metric:     metricName,
-		FillMetric: state.Fill.Encoding.Metric,
-		FillDelta:  state.Fill.Delta,
-		Expand:     cfg.Expand,
+		Metric:       metricName,
+		FillMetric:   state.Fill.Encoding.Metric,
+		FillTemporal: state.Fill.Temporal,
+		Expand:       cfg.Expand,
 	})
 	if err != nil {
 		return err
@@ -318,24 +322,20 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 	return nil
 }
 
-// ParseFillMetric separates the alluvial-only delta modifier from its metric.
-func ParseFillMetric(name metric.Name) (metric.Name, bool) {
-	const suffix = ".delta"
-
-	raw := string(name)
-	if !strings.HasSuffix(raw, suffix) {
-		return name, false
-	}
-
-	return metric.Name(strings.TrimSuffix(raw, suffix)), true
-}
-
 func resolveDirectoryMetric(name metric.Name) (metric.Name, error) {
 	expression, err := metric.ParseExpression(string(name))
 	if err != nil {
 		return "", eris.Wrap(err, "parse metric expression")
 	}
 
+	if !expression.Temporal.IsZero() {
+		return "", eris.Errorf("temporal modifier %q is not supported for alluvial width", expression.Temporal)
+	}
+
+	return resolveDirectoryExpression(expression)
+}
+
+func resolveDirectoryExpression(expression metric.MetricExpression) (metric.Name, error) {
 	descriptor, ok := provider.GetBase(expression.Base)
 	if !ok {
 		return "", eris.Errorf("unknown base metric %q", expression.Base)
@@ -350,9 +350,10 @@ func resolveDirectoryMetric(name metric.Name) (metric.Name, error) {
 		expression.Aggregation = aggregation
 	}
 
-	if _, err := provider.ResolveExpression(expression, metric.LevelDirectory); err != nil {
+	resolved, err := provider.ResolveExpression(expression, metric.LevelDirectory)
+	if err != nil {
 		return "", eris.Wrap(err, "resolve metric expression")
 	}
 
-	return expression.ResultName(), nil
+	return resolved.ResultName, nil
 }

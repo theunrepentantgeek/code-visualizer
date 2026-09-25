@@ -35,6 +35,31 @@ func TestLayoutData_ScalesBandsInProportionToTheirMetricValues(t *testing.T) {
 	g.Expect(layout.Flows).To(HaveLen(2))
 }
 
+func TestLayoutData_UsesDestinationSnapshotFillValue(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout := alluvial.LayoutData(alluvial.Data{
+		Columns: []alluvial.Column{
+			{Reference: "before", Values: []alluvial.Value{{Path: "api", Width: 10}}},
+			{Reference: "after", Values: []alluvial.Value{{Path: "api", Width: 10}}},
+		},
+		Transitions: []alluvial.Transition{
+			{FromReference: "before", ToReference: "after", Path: "api", FromWidth: 10, ToWidth: 10},
+		},
+		FillValuesByReference: map[string]map[string]float64{
+			"before": {},
+			"after":  {"api": 2},
+		},
+	}, 200, 100)
+
+	g.Expect(layout.Columns[0].Bands[0].HasFillValue).To(BeFalse())
+	g.Expect(layout.Columns[1].Bands[0].FillValue).To(Equal(float64(2)))
+	g.Expect(layout.Columns[1].Bands[0].HasFillValue).To(BeTrue())
+	g.Expect(layout.Flows[0].FillValue).To(Equal(float64(2)))
+	g.Expect(layout.Flows[0].HasFillValue).To(BeTrue())
+}
+
 func TestLayoutData_UsesSharedScaleAcrossColumns(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
