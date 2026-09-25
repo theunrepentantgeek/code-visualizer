@@ -167,7 +167,7 @@ func addAlluvialEdgeColumnBands(
 				{X: right, Y: band.Bottom},
 				{X: left, Y: band.Bottom},
 			}},
-			Fill: alluvialBandInk(fillInk, band).Dip(inks.MeasureValue(band.FillValue)),
+			Fill: fillInk.Dip(inks.MeasureValue(band.FillValue)),
 		})
 	}
 }

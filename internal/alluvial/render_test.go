@@ -206,6 +206,48 @@ func TestRenderToCanvas_ExtendsEdgeBandsBehindCenteredLabels(t *testing.T) {
 	g.Expect(paths[5].Loops[0][0].X).To(BeNumerically("==", 100))
 }
 
+func TestRenderToCanvas_ExtendsMissingInitialFillWithPaletteMidpoint(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const leftX = 20.0
+
+	fillInk := inks.NumericInk("fill", []float64{-1, 1}, palette.GetPalette(palette.GoodBad))
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{
+			{
+				X: leftX,
+				Bands: []alluvial.Band{
+					{Path: "api", Top: 10, Bottom: 70, Width: 12, FillValue: 1},
+				},
+			},
+			{
+				X: 180,
+				Bands: []alluvial.Band{
+					{Path: "api", Top: 10, Bottom: 70, Width: 12, FillValue: 1, HasFillValue: true},
+				},
+			},
+		},
+	}, 200, 100, fillInk, "fill.stepdelta")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	for _, call := range backend.Calls {
+		if call.Method != "DrawFilledPath" || len(call.Loops) != 1 || len(call.Loops[0]) != 4 {
+			continue
+		}
+
+		if call.Loops[0][0].X < leftX {
+			g.Expect(call.Fill).To(Equal(fillInk.Dip(inks.MeasureValue(1))))
+
+			return
+		}
+	}
+
+	t.Fatal("expected a left edge band extension")
+}
+
 func pathXBounds(paths []mock.Call) (minimum, maximum float64) {
 	minimum = paths[0].Loops[0][0].X
 	maximum = minimum

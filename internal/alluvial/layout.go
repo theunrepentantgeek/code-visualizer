@@ -94,7 +94,26 @@ func LayoutData(data Data, width, height int) Layout {
 		}
 	}
 
+	applyInitialBandFillValues(&layout, data)
+
 	return layout
+}
+
+func applyInitialBandFillValues(layout *Layout, data Data) {
+	if len(layout.Columns) < 2 || len(data.Columns) < 2 {
+		return
+	}
+
+	for bandIndex := range layout.Columns[0].Bands {
+		band := &layout.Columns[0].Bands[bandIndex]
+		if band.HasFillValue {
+			continue
+		}
+
+		if fillValue, ok := fillValueFor(data, data.Columns[1].Reference, band.Path); ok {
+			band.FillValue = fillValue
+		}
+	}
 }
 
 func fillValueFor(data Data, reference, directoryPath string) (float64, bool) {

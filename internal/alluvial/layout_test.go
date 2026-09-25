@@ -54,6 +54,7 @@ func TestLayoutData_UsesDestinationSnapshotFillValue(t *testing.T) {
 	}, 200, 100)
 
 	g.Expect(layout.Columns[0].Bands[0].HasFillValue).To(BeFalse())
+	g.Expect(layout.Columns[0].Bands[0].FillValue).To(Equal(float64(2)))
 	g.Expect(layout.Columns[1].Bands[0].FillValue).To(Equal(float64(2)))
 	g.Expect(layout.Columns[1].Bands[0].HasFillValue).To(BeTrue())
 	g.Expect(layout.Flows[0].FillValue).To(Equal(float64(2)))
