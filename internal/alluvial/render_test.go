@@ -14,6 +14,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
@@ -26,11 +27,11 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	cv := alluvial.RenderToCanvas(alluvial.Layout{
 		Flows: []alluvial.Flow{
 			{
-				Path: "continuing", FillValue: -1,
+				Path: "continuing", FillValue: -1, HasFillValue: true,
 				FromX: 20, ToX: 180, FromTop: 10, FromBottom: 40, ToTop: 20, ToBottom: 70,
 			},
 			{
-				Path: "introduced", FillValue: 1,
+				Path: "introduced", FillValue: 1, HasFillValue: true,
 				FromX: 20, ToX: 180, FromTop: 60, FromBottom: 60, ToTop: 50, ToBottom: 80,
 			},
 			{Path: "empty", FromX: 20, ToX: 180, FromTop: 90, FromBottom: 90, ToTop: 90, ToBottom: 90},
@@ -66,7 +67,7 @@ func TestRenderToCanvas_AddsExplicitFillValueToBandLabel(t *testing.T) {
 		Columns: []alluvial.ColumnLayout{{
 			X: 100,
 			Bands: []alluvial.Band{{
-				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: -3,
+				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: -3, HasFillValue: true,
 			}},
 		}},
 	}, 200, 100, inks.NumericInk("fill", []float64{-3}, palette.GetPalette(palette.Neutral)), "fill.delta")
@@ -93,7 +94,7 @@ func TestRenderToCanvas_UsesContrastingInkForBandLabels(t *testing.T) {
 		Columns: []alluvial.ColumnLayout{{
 			X: 100,
 			Bands: []alluvial.Band{{
-				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: 0,
+				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: 0, HasFillValue: true,
 			}},
 		}},
 	}, 200, 100, fillInk, "")
@@ -205,6 +206,48 @@ func TestRenderToCanvas_ExtendsEdgeBandsBehindCenteredLabels(t *testing.T) {
 	g.Expect(paths[5].Loops[0][0].X).To(BeNumerically("==", 100))
 }
 
+func TestRenderToCanvas_ExtendsMissingInitialFillWithPaletteMidpoint(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const leftX = 20.0
+
+	fillInk := inks.NumericInk("fill", []float64{-1, 1}, palette.GetPalette(palette.GoodBad))
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{
+			{
+				X: leftX,
+				Bands: []alluvial.Band{
+					{Path: "api", Top: 10, Bottom: 70, Width: 12, FillValue: 1},
+				},
+			},
+			{
+				X: 180,
+				Bands: []alluvial.Band{
+					{Path: "api", Top: 10, Bottom: 70, Width: 12, FillValue: 1, HasFillValue: true},
+				},
+			},
+		},
+	}, 200, 100, fillInk, "fill.stepdelta")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	for _, call := range backend.Calls {
+		if call.Method != "DrawFilledPath" || len(call.Loops) != 1 || len(call.Loops[0]) != 4 {
+			continue
+		}
+
+		if call.Loops[0][0].X < leftX {
+			g.Expect(call.Fill).To(Equal(fillInk.Dip(inks.MeasureValue(1))))
+
+			return
+		}
+	}
+
+	t.Fatal("expected a left edge band extension")
+}
+
 func pathXBounds(paths []mock.Call) (minimum, maximum float64) {
 	minimum = paths[0].Loops[0][0].X
 	maximum = minimum
@@ -228,7 +271,7 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 			Encoding: viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
 			Label:    "file-lines.delta",
 			Explicit: true,
-			Delta:    true,
+			Temporal: metric.TemporalDelta,
 		},
 		Data: alluvial.Data{Columns: []alluvial.Column{
 			{Values: []alluvial.Value{{Path: "api", Width: 10}, {Path: "docs", Width: 5}}},

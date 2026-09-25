@@ -54,6 +54,13 @@ func ResolveForValidation(name metric.Name) (ResolvedMetric, error) {
 		return ResolvedMetric{}, eris.Wrapf(err, "invalid metric name %q", name)
 	}
 
+	if !expr.Temporal.IsZero() {
+		return ResolvedMetric{}, eris.Errorf(
+			"temporal metric modifier %q is only supported by ordered snapshot visualizations",
+			expr.Temporal,
+		)
+	}
+
 	targetLevel := metric.LevelFile
 	if !expr.Aggregation.IsZero() {
 		targetLevel = metric.LevelDirectory
@@ -89,7 +96,7 @@ func resolveExpressionWith(
 		SourceLevel:      desc.Level,
 		TargetLevel:      targetLevel,
 		ResultKind:       resultKind,
-		ResultName:       expr.ResultName(),
+		ResultName:       expr.WithoutTemporal().ResultName(),
 		NeedsAggregation: needsAgg,
 	}, nil
 }

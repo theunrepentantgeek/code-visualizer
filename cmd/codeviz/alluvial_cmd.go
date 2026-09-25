@@ -19,8 +19,8 @@ type AlluvialCmd struct {
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
 	References []string          `help:"Ordered revision reference (repeatable)." name:"reference"`
-	Metric     metric.Name       `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"`              //nolint:revive,nolintlint // kong struct tags require long lines
-	Fill       config.MetricSpec `help:"Band colour: metric[,palette]; append .delta to colour by change from first to last reference." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Metric     metric.Name       `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"`             //nolint:revive,nolintlint // kong struct tags require long lines
+	Fill       config.MetricSpec `help:"Band colour: metric[,palette]; append .delta (first-to-last) or .stepdelta (adjacent change)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Expand []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
 
@@ -87,7 +87,12 @@ func validateAlluvialFill(fillSpec *config.MetricSpec, defaultMetric metric.Name
 		fillMetric = defaultMetric
 	}
 
-	fillMetric, _ = alluvial.ParseFillMetric(fillMetric)
+	expression, err := metric.ParseExpression(string(fillMetric))
+	if err != nil {
+		return eris.Wrap(err, "invalid fill metric")
+	}
+
+	fillMetric = expression.WithoutTemporal().ResultName()
 	if err := validateNumericMetric("fill", fillMetric); err != nil {
 		return err
 	}

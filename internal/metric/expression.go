@@ -8,18 +8,19 @@ import (
 )
 
 // MetricExpression is the parsed form of a user-provided metric string.
-// Format: [filter.]base-metric[.aggregation].
+// Format: [filter.]base-metric[.aggregation][.temporal].
 type MetricExpression struct {
 	Filter      FilterName
 	Base        Name
 	Aggregation AggregationName
+	Temporal    TemporalName
 }
 
 // validSegment matches a kebab-case identifier: lowercase letters, digits, and hyphens.
 var validSegment = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 // ParseExpression parses a metric expression string into its components.
-// The grammar is: [filter.]base-name[.aggregation]
+// The grammar is: [filter.]base-name[.aggregation][.temporal]
 // where each component is a kebab-case word separated by dots.
 func ParseExpression(input string) (MetricExpression, error) {
 	if input == "" {
@@ -27,12 +28,6 @@ func ParseExpression(input string) (MetricExpression, error) {
 	}
 
 	segments := strings.Split(input, ".")
-
-	if len(segments) > 3 {
-		return MetricExpression{}, eris.Errorf(
-			"metric expression %q has too many segments (max 3: filter.base.aggregation)", input,
-		)
-	}
 
 	for _, seg := range segments {
 		if !validSegment.MatchString(seg) {
@@ -42,6 +37,32 @@ func ParseExpression(input string) (MetricExpression, error) {
 		}
 	}
 
+	for i, seg := range segments[:len(segments)-1] {
+		if TemporalName(seg).IsKnown() {
+			return MetricExpression{}, eris.Errorf(
+				"metric expression %q has temporal modifier %q outside its terminal position",
+				input, segments[i],
+			)
+		}
+	}
+
+	var temporal TemporalName
+	if last := TemporalName(segments[len(segments)-1]); last.IsKnown() {
+		temporal = last
+		segments = segments[:len(segments)-1]
+	}
+
+	expr, err := parseCoreExpression(input, segments)
+	if err != nil {
+		return MetricExpression{}, err
+	}
+
+	expr.Temporal = temporal
+
+	return expr, nil
+}
+
+func parseCoreExpression(input string, segments []string) (MetricExpression, error) {
 	switch len(segments) {
 	case 1:
 		return MetricExpression{Base: Name(segments[0])}, nil
@@ -50,7 +71,10 @@ func ParseExpression(input string) (MetricExpression, error) {
 	case 3:
 		return parseThreeSegments(segments)
 	default:
-		return MetricExpression{}, eris.Errorf("metric expression %q is invalid", input)
+		return MetricExpression{}, eris.Errorf(
+			"metric expression %q has too many segments (max 4: filter.base.aggregation.temporal)",
+			input,
+		)
 	}
 }
 
@@ -100,10 +124,23 @@ func (e MetricExpression) String() string {
 		b.WriteString(string(e.Aggregation))
 	}
 
+	if !e.Temporal.IsZero() {
+		b.WriteByte('.')
+		b.WriteString(string(e.Temporal))
+	}
+
 	return b.String()
 }
 
 // ResultName returns the metric.Name used as the storage key in MetricContainer.
 func (e MetricExpression) ResultName() Name {
 	return Name(e.String())
+}
+
+// WithoutTemporal returns the expression used to compute each snapshot before
+// any comparison across snapshots is applied.
+func (e MetricExpression) WithoutTemporal() MetricExpression {
+	e.Temporal = ""
+
+	return e
 }

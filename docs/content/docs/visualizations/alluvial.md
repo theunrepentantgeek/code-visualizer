@@ -78,6 +78,9 @@ the final reference. Select another metric and palette with `--fill`, for
 example `--fill commit-count,temperature`. Append `.delta` to the metric to
 colour by its change from the first reference to the last, for example
 `--fill file-lines.delta,temperature`; zero change uses the palette midpoint.
+Append `.stepdelta` to colour each later snapshot by its change from the
+immediately preceding snapshot. The first snapshot has no preceding value, so
+its fill label is `-` and it is excluded from the numeric palette range.
 The legend names the selected fill metric and shows its split values.
 
 `--export-data` writes the computed metrics for the first ordered snapshot,
