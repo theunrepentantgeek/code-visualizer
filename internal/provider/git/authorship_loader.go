@@ -20,6 +20,7 @@ type authorshipLoader struct {
 	params       AuthorshipParams
 	historyRange HistoryRange
 	referenceNow time.Time
+	onCommit     func()
 }
 
 // LoadAuthorshipMetrics applies authorship metrics using params. It is used by
@@ -30,16 +31,19 @@ func LoadAuthorshipMetrics(root *model.Directory, params AuthorshipParams) error
 
 // LoadAuthorshipMetricsInHistoryRange applies authorship metrics from historyRange.
 func LoadAuthorshipMetricsInHistoryRange(
+	ctx context.Context,
 	root *model.Directory,
 	params AuthorshipParams,
 	historyRange HistoryRange,
 	referenceNow time.Time,
+	onCommit func(),
 ) error {
 	return (&authorshipLoader{
 		params:       params,
 		historyRange: historyRange,
 		referenceNow: referenceNow,
-	}).Load(context.Background(), root, authorshipMetricNames)
+		onCommit:     onCommit,
+	}).Load(ctx, root, authorshipMetricNames)
 }
 
 // Load computes and stores all nine authorship metrics on every file and directory node.
@@ -67,7 +71,7 @@ func (al *authorshipLoader) Load(
 		pathSet,
 		al.params.HonorMailmap,
 		al.historyRange,
-		nil,
+		al.onCommit,
 	)
 	if err != nil {
 		return eris.Wrap(err, "authorship loader failed to walk git history")

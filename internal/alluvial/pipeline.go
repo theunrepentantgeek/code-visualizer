@@ -1,6 +1,7 @@
 package alluvial
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -221,7 +223,9 @@ func prepareSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 	snapshotCommon.ReferenceNow = time.Time{}
 
 	for _, stage := range []func(*stages.CommonState) error{
-		stages.ScanFilesystem,
+		func(state *stages.CommonState) error {
+			return stages.ScanFilesystem(state, context.Background(), snapshotProgressSink{})
+		},
 		stages.CheckGitRequirement,
 	} {
 		if err := stage(&snapshotCommon); err != nil {
@@ -234,8 +238,12 @@ func prepareSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 
 func finishSnapshot(snapshotCommon *stages.CommonState) error {
 	for _, stage := range []func(*stages.CommonState) error{
-		stages.LoadCommitMetrics,
-		stages.RunProviders,
+		func(state *stages.CommonState) error {
+			return stages.LoadCommitMetrics(state, context.Background(), snapshotProgressSink{})
+		},
+		func(state *stages.CommonState) error {
+			return stages.RunProviders(state, context.Background(), snapshotProgressSink{})
+		},
 		stages.PopulateDeclarations,
 		stages.RunAggregations,
 		stages.FilterBinaryFiles,
@@ -247,6 +255,13 @@ func finishSnapshot(snapshotCommon *stages.CommonState) error {
 
 	return nil
 }
+
+type snapshotProgressSink struct{}
+
+func (snapshotProgressSink) WorkKind() progress.WorkKind { return progress.WorkNone }
+func (snapshotProgressSink) SetTotal(int64) error        { return nil }
+func (snapshotProgressSink) SetProgress(int64) error     { return nil }
+func (snapshotProgressSink) SetStatus(string) error      { return nil }
 
 // SnapshotReference normalizes an empty alluvial reference to the current Git
 // commit while preserving explicit tag, SHA, and date references.

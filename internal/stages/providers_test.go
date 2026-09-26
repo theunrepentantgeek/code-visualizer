@@ -1,11 +1,8 @@
 package stages_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"log/slog"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -15,6 +12,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
@@ -85,28 +83,18 @@ func progressState() *stages.CommonState {
 	}
 }
 
-//nolint:paralleltest // mutates the global provider registry and slog logger
+//nolint:paralleltest // mutates the global provider registry
 func TestRunProvidersReportsCompletedMetricProgress(t *testing.T) {
 	g := NewGomegaWithT(t)
 	registerProgressLoader(t, nil)
+	sink := newTestSink(progress.WorkObservations)
 
-	var buf bytes.Buffer
-
-	oldDefault := slog.Default()
-
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
-	defer slog.SetDefault(oldDefault)
-
-	g.Expect(stages.RunProviders(progressState())).To(Succeed())
-
-	output := buf.String()
-	g.Expect(output).To(ContainSubstring(`msg="Loading metrics." loaded=0/2 percentage=0.0`))
-	g.Expect(output).To(ContainSubstring(`msg="Loaded metrics" loaded=2/2 percentage=100.0`))
-	g.Expect(strings.LastIndex(output, `msg="Loaded metrics"`)).
-		To(BeNumerically(">", strings.LastIndex(output, `msg="Loading metrics."`)))
+	g.Expect(stages.RunProviders(progressState(), context.Background(), sink)).To(Succeed())
+	g.Expect(sink.totals).To(Equal([]int64{2}))
+	g.Expect(sink.current).To(Equal([]int64{1, 2}))
 }
 
-//nolint:paralleltest // mutates the global provider registry and slog logger
+//nolint:paralleltest // mutates the global provider registry
 func TestRunProvidersReportsOnlyWorkRemainingAfterGitPrewarm(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -117,7 +105,7 @@ func TestRunProvidersReportsOnlyWorkRemainingAfterGitPrewarm(t *testing.T) {
 		git.Register()
 	})
 
-	remaining := &progressLoader{pauseBeforeLast: 1100 * time.Millisecond}
+	remaining := &progressLoader{}
 	prewarmedGitRan := &atomic.Bool{}
 	prewarmedGit := &progressLoader{ran: prewarmedGitRan}
 
@@ -147,39 +135,34 @@ func TestRunProvidersReportsOnlyWorkRemainingAfterGitPrewarm(t *testing.T) {
 		},
 	}
 
-	var buf bytes.Buffer
-
-	oldDefault := slog.Default()
-
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
-	defer slog.SetDefault(oldDefault)
-
-	g.Expect(stages.RunProviders(state)).To(Succeed())
-
-	output := buf.String()
+	sink := newTestSink(progress.WorkObservations)
+	g.Expect(stages.RunProviders(state, context.Background(), sink)).To(Succeed())
 
 	g.Expect(prewarmedGitRan.Load()).To(BeTrue())
-	g.Expect(output).To(ContainSubstring(`msg="Loading metrics." loaded=0/10 percentage=0.0`))
-	g.Expect(output).To(ContainSubstring(`msg="Loading metrics." loaded=9/10 percentage=90.0`))
-	g.Expect(output).To(ContainSubstring(`msg="Loaded metrics" loaded=10/10 percentage=100.0`))
-	g.Expect(strings.LastIndex(output, `msg="Loading metrics." loaded=9/10`)).
-		To(BeNumerically("<", strings.LastIndex(output, `msg="Loaded metrics"`)))
+	g.Expect(sink.totals).To(Equal([]int64{10}))
+	g.Expect(sink.current).To(HaveLen(10))
 }
 
-//nolint:paralleltest // mutates the global provider registry and slog logger
+//nolint:paralleltest // mutates the global provider registry
 func TestRunProvidersOmitsCompletionWhenLoadingFailsAtTotal(t *testing.T) {
 	g := NewGomegaWithT(t)
 	registerProgressLoader(t, errors.New("load failed after reporting progress"))
+	sink := newTestSink(progress.WorkObservations)
 
-	var buf bytes.Buffer
-
-	oldDefault := slog.Default()
-
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
-	defer slog.SetDefault(oldDefault)
-
-	err := stages.RunProviders(progressState())
+	err := stages.RunProviders(progressState(), context.Background(), sink)
 
 	g.Expect(err).To(MatchError(ContainSubstring("load failed after reporting progress")))
-	g.Expect(buf.String()).NotTo(ContainSubstring(`msg="Loaded metrics"`))
+	g.Expect(sink.current).To(Equal([]int64{1, 2}))
+}
+
+//nolint:paralleltest // mutates the global provider registry
+func TestRunProvidersPropagatesCancellation(t *testing.T) {
+	g := NewGomegaWithT(t)
+	registerProgressLoader(t, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := stages.RunProviders(progressState(), ctx, newTestSink(progress.WorkObservations))
+
+	g.Expect(err).To(MatchError(context.Canceled))
 }

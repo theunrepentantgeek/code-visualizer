@@ -10,11 +10,11 @@ import (
 // FileTimeRange, which the render pipeline's time-bucket stages consume. Tests
 // that supply synthetic history set those fields directly and skip AcquireData.
 func AcquireData(s *pipeline.State) {
-	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncXYZ(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncX(s, stages.FilterChangedOnly)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
-	pipeline.ApplyFuncX(s, stages.LoadGitHistory)
-	pipeline.ApplyFuncX(s, stages.RunProviders)
+	pipeline.ApplyFuncXYZ(s, stages.LoadGitHistory)
+	pipeline.ApplyFuncXYZ(s, stages.RunProviders)
 	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
 	pipeline.ApplyFuncX(s, stages.GroupGitHistoryByFile)
 	pipeline.ApplyFuncX(s, stages.ExtractFileHistory)

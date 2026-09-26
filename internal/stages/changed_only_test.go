@@ -1,6 +1,7 @@
 package stages_test
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -151,7 +153,7 @@ func TestFilterChangedOnly_IntersectsWithScanTimePathFilters(t *testing.T) {
 		},
 	}
 
-	g.Expect(stages.ScanFilesystem(state)).To(Succeed())
+	g.Expect(stages.ScanFilesystem(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 	g.Expect(stages.FilterChangedOnly(state)).To(
 		MatchError(stages.NoFilesAfterChangedOnlyMsg),
 	)
@@ -169,7 +171,7 @@ func TestFilterChangedOnly_IntersectsWithScanTimeBinaryFiltering(t *testing.T) {
 		},
 	}
 
-	g.Expect(stages.ScanFilesystem(state)).To(Succeed())
+	g.Expect(stages.ScanFilesystem(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 	g.Expect(stages.FilterChangedOnly(state)).To(
 		MatchError(stages.NoFilesAfterChangedOnlyMsg),
 	)

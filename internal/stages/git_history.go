@@ -2,7 +2,7 @@ package stages
 
 import (
 	"context"
-	"log/slog"
+	"errors"
 	"path/filepath"
 	"slices"
 	"time"
@@ -11,17 +11,18 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
 // LoadCommitMetrics loads and attaches per-file commit values needed by
 // directory-level expressions such as lines-changed.sum.
-func LoadCommitMetrics(c *CommonState) error {
+func LoadCommitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	if !c.Requested.HasCommitExpressions() {
 		return nil
 	}
 
-	if err := LoadGitHistory(c); err != nil {
+	if err := LoadGitHistory(c, ctx, sink); err != nil {
 		return err
 	}
 
@@ -77,11 +78,7 @@ type TimeRange struct {
 // LoadGitHistory walks the commit graph once and populates c.GitHistory.
 // It returns an error when no commits touch any tracked file — visualizations
 // that depend on git history cannot proceed in that case.
-func LoadGitHistory(c *CommonState) error {
-	if !c.Flags.Quiet {
-		slog.Info("Loading git history")
-	}
-
+func LoadGitHistory(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
@@ -94,23 +91,32 @@ func LoadGitHistory(c *CommonState) error {
 
 	historyRange := c.Flags.HistoryRange
 
-	total, err := git.CommitTotalInHistoryRange(context.Background(), repoRoot, historyRange)
+	total, err := git.CommitTotalInHistoryRange(ctx, repoRoot, historyRange)
 	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return ctx.Err()
+		}
+
 		return eris.Wrap(err, "failed to count git commits")
 	}
 
-	onCommit, stop := BuildHistoryProgress(c.Flags, total)
+	historyProg := newHistoryProgress(sink, total)
 
 	requested := append(slices.Clone(c.Requested.BaseMetrics), commitExpressionBaseMetrics(c.Requested)...)
 	commits, err := git.BulkCommitHistoryAndPrewarmInHistoryRange(
-		context.Background(),
-		repoRoot, tracked, requested, historyRange, onCommit,
+		ctx,
+		repoRoot, tracked, requested, historyRange, historyProg.OnCommit,
 	)
 
-	stop()
-
 	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return ctx.Err()
+		}
+
 		return eris.Wrap(err, "failed to load commit history")
+	}
+	if err := historyProg.Err(); err != nil {
+		return eris.Wrap(err, "report commit progress")
 	}
 
 	if len(commits) == 0 {
@@ -118,9 +124,6 @@ func LoadGitHistory(c *CommonState) error {
 	}
 
 	c.GitHistory = commits
-	if !c.Flags.Quiet {
-		slog.Info("History loaded", "commits", total)
-	}
 
 	return nil
 }
@@ -150,12 +153,12 @@ func ShareGitHistoryPaths(states []*CommonState) error {
 
 // PrewarmGitMetrics loads history only when the requested metrics need the
 // file-level Git cache populated before provider execution.
-func PrewarmGitMetrics(c *CommonState) error {
+func PrewarmGitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	if len(c.GitHistory) > 0 || len(onlyFileGitMetrics(c.Requested.BaseMetrics)) == 0 {
 		return nil
 	}
 
-	return LoadGitHistory(c)
+	return LoadGitHistory(c, ctx, sink)
 }
 
 // GroupGitHistoryByFile joins c.GitHistory against c.Root and writes

@@ -2,6 +2,7 @@ package stages
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
@@ -32,7 +34,7 @@ func TestResolveSourceUsesHistoricalTreeForUntil(t *testing.T) {
 		Flags:      &Flags{HistoryRange: git.HistoryRange{Until: "sha:" + oldCommit}},
 	}
 	g.Expect(ResolveSource(state)).To(Succeed())
-	g.Expect(ScanFilesystem(state)).To(Succeed())
+	g.Expect(ScanFilesystem(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 	g.Expect(state.Root.Files).To(HaveLen(1))
 	g.Expect(state.Root.Files[0].Name).To(Equal("old.txt"))
 	data, err := state.Root.Files[0].ReadAll()
@@ -67,11 +69,11 @@ func TestResolveSourceUsesHistoricalSubtreeDeletedFromWorkingTree(t *testing.T) 
 	}
 	g.Expect(ValidatePaths(state)).To(Succeed())
 	g.Expect(ResolveSource(state)).To(Succeed())
-	g.Expect(ScanFilesystem(state)).To(Succeed())
+	g.Expect(ScanFilesystem(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 	g.Expect(FilterChangedOnly(state)).To(Succeed())
 	g.Expect(CheckGitRequirement(state)).To(Succeed())
-	g.Expect(LoadGitHistory(state)).To(Succeed())
-	g.Expect(RunProviders(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 	g.Expect(state.Root.Files).To(HaveLen(1))
 	g.Expect(state.Root.Files[0].Name).To(Equal("file.txt"))
 	count, ok := state.Root.Files[0].Quantity(git.CommitCount)
