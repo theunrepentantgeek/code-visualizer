@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/alecthomas/kong v1.16.1
-	github.com/bmatcuk/doublestar/v4 v4.10.0
+	github.com/bmatcuk/doublestar/v4 v4.10.2
 	github.com/dave/dst v0.28.0
 	github.com/fogleman/delaunay v0.0.0-20180910191513-63f09b4c883d
 	github.com/fogleman/gg v1.3.0
@@ -12,7 +12,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/lmittmann/tint v1.2.0
 	github.com/nikolaydubina/treemap v1.2.5
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/gomega v1.43.1
 	github.com/rotisserie/eris v0.5.4
 	github.com/sebdah/goldie/v2 v2.8.0
 	go.yaml.in/yaml/v3 v3.0.5
