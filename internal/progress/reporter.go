@@ -81,8 +81,26 @@ func New(config Config) (Reporter, error) {
 	if config.Writer == nil {
 		return nil, errors.New("progress writer is required")
 	}
+	if config.Now == nil {
+		config.Now = time.Now
+	}
 
-	return newReporter(config, &discardRenderer{writer: config.Writer}), nil
+	resolved, err := resolveConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	var selected renderer
+	switch {
+	case config.Quiet:
+		selected = &discardRenderer{writer: config.Writer}
+	case resolved.mode == ModePlain:
+		selected = newPlainRenderer(resolved)
+	default:
+		selected = &discardRenderer{writer: config.Writer}
+	}
+
+	return newReporter(config, selected), nil
 }
 
 func newReporter(config Config, renderer renderer) *reporter {
