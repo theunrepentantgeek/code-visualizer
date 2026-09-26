@@ -17,6 +17,11 @@ func AcquireData(s *pipeline.State) {
 
 // RenderPipeline runs the donut tree pipeline after metrics and data are available.
 func RenderPipeline(s *pipeline.State) {
+	RenderVisualization(s)
+	WriteOutput(s)
+}
+
+func RenderVisualization(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.RunAggregations)
 	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
 	pipeline.ApplyFuncX(s, stages.ExportData)
@@ -30,6 +35,9 @@ func RenderPipeline(s *pipeline.State) {
 	pipeline.ApplyFuncXY(s, RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyTitle)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+}
+
+func WriteOutput(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 	pipeline.ApplyFuncXY(s, LogResult)
 }

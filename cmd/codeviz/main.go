@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"os"
+	"os/signal"
 
 	"github.com/alecthomas/kong"
 	"github.com/lmittmann/tint"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/golang"
@@ -16,10 +20,12 @@ import (
 )
 
 type CLI struct {
-	Quiet   bool   `help:"Suppress all non-essential output; only warnings and errors are shown." short:"q" xor:"verbosity"` //nolint:revive,nolintlint // kong struct tags require long lines
-	Verbose bool   `help:"Show detailed progress during scanning and metric calculation." short:"v" xor:"verbosity"`
-	Debug   bool   `help:"Show per-directory scan progress (implies verbose output)." xor:"verbosity"`
-	Config  string `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
+	Quiet    bool          `help:"Suppress all non-essential output; only warnings and errors are shown." short:"q" xor:"verbosity"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Verbose  bool          `help:"Show detailed progress during scanning and metric calculation." short:"v" xor:"verbosity"`
+	Debug    bool          `help:"Show per-directory scan progress (implies verbose output)." xor:"verbosity"`
+	Config   string        `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
+	Progress progress.Mode `help:"Progress output mode." default:"auto" enum:"auto,tty,plain"`
+	NoColor  bool          `help:"Disable coloured output." name:"no-color"`
 
 	//nolint:revive,nolintlint // Long help text is more important than minimizing line length, and annotations can't be wrapped
 	ExportConfig string `help:"Write effective configuration to file (.yaml, .yml, or .json)." name:"export-config" optional:""`
@@ -44,6 +50,8 @@ type Flags struct {
 	ExportConfig string
 	ExportData   string
 	Config       *config.Config
+	Context      context.Context
+	Reporter     progress.Reporter
 	configPath   string // path passed to --config, empty if not explicitly provided
 }
 
@@ -75,18 +83,13 @@ func stagesFlagsForCommand(flags *Flags, fromValue, untilValue string) *stages.F
 	return parsedFlags
 }
 
-func setupLogger(quiet, verbose, debug bool) { //nolint:revive,nolintlint // flag-parameter: boolean toggles are idiomatic for log verbosity
-	level := slog.LevelInfo
-
-	if quiet {
-		level = slog.LevelWarn
-	} else if verbose || debug {
+func setupLogger(writer io.Writer, debug, noColor bool) {
+	level := slog.LevelWarn
+	if debug {
 		level = slog.LevelDebug
 	}
 
-	noColor := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
-
-	slog.SetDefault(slog.New(tint.NewTextHandler(os.Stderr, &tint.Options{
+	slog.SetDefault(slog.New(tint.NewTextHandler(writer, &tint.Options{
 		Level:   level,
 		NoColor: noColor,
 	})))
@@ -98,7 +101,7 @@ func main() {
 	golang.Register()
 
 	// Install tint early so bootstrap errors are formatted consistently.
-	setupLogger(false, false, false)
+	setupLogger(os.Stderr, false, false)
 
 	cli := CLI{}
 
@@ -124,9 +127,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLogger(cli.Quiet, cli.Verbose, cli.Debug)
+	reporter, err := progress.New(progress.Config{
+		Mode:    cli.Progress,
+		Writer:  os.Stderr,
+		NoColor: cli.NoColor,
+		Quiet:   cli.Quiet,
+		Verbose: cli.Verbose || cli.Debug,
+	})
+	if err != nil {
+		slog.Error("failed to initialize progress output", "error", err)
+		os.Exit(5)
+	}
 
-	slog.Info("codeviz", "version", "dev")
+	noColor := cli.NoColor || os.Getenv("NO_COLOR") != "" ||
+		os.Getenv("TERM") == "dumb" || os.Getenv("FORCE_COLOR") == "0"
+	setupLogger(reporter.DiagnosticWriter(), cli.Debug, noColor)
+	runContext, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
 	cfg := config.New()
 
@@ -144,6 +161,8 @@ func main() {
 		ExportConfig: cli.ExportConfig,
 		ExportData:   cli.ExportData,
 		Config:       cfg,
+		Context:      runContext,
+		Reporter:     reporter,
 		configPath:   cli.Config,
 	}
 
@@ -164,6 +183,8 @@ func classifyError(err error) int {
 	)
 
 	switch {
+	case errors.Is(err, context.Canceled):
+		return 130
 	case errors.As(err, &targetErr):
 		return 2
 	case errors.As(err, &gitErr):

@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/radialtree"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -124,16 +125,23 @@ func (c *RadialCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+	var phases []workflowPhase
+	phases = []workflowPhase{
+		{Name: "Preparing", Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+			pipeline.ApplyFuncX(s, stages.ValidatePaths)
+			pipeline.ApplyFuncX(s, stages.ExportConfig)
+			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+			pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+			phases[1].Work = stages.AcquisitionWork(common)
+		}},
+		{Name: "Acquiring data", Kind: progress.StageLive, Run: radialtree.AcquireData},
+		{Name: "Rendering", Kind: progress.StageSummary, Run: radialtree.RenderVisualization},
+		{Name: "Writing output", Kind: progress.StageSummary, Run: radialtree.WriteOutput},
+	}
+	err := runCommandWorkflow(flags, s, "Radial tree", phases)
 
-	radialtree.AcquireData(s)
-	radialtree.RenderPipeline(s)
-
-	return eris.Wrap(s.Err(), "radialtree pipeline failed")
+	return eris.Wrap(err, "radialtree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

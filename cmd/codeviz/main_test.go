@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,6 +15,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/golang"
@@ -67,6 +69,42 @@ func TestCLI_MutuallyExclusiveFlags(t *testing.T) {
 				"expected no error for args %v", tc.args)
 		}
 	}
+}
+
+func TestCLI_ParsesProgressAndNoColorFlags(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	for _, mode := range []progress.Mode{progress.ModeAuto, progress.ModeTTY, progress.ModePlain} {
+		cli := CLI{}
+		parser, err := kong.New(&cli, kong.Exit(func(int) {}))
+		g.Expect(err).NotTo(HaveOccurred())
+
+		_, err = parser.Parse([]string{
+			"--progress", string(mode),
+			"--no-color",
+			"tree-map", ".", "-o", "out.png",
+		})
+
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(cli.Progress).To(Equal(mode))
+		g.Expect(cli.NoColor).To(BeTrue())
+	}
+}
+
+func TestCLI_RejectsUnknownProgressMode(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	cli := CLI{}
+	parser, err := kong.New(&cli, kong.Exit(func(int) {}))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"--progress", "animated",
+		"tree-map", ".", "-o", "out.png",
+	})
+
+	g.Expect(err).To(HaveOccurred())
 }
 
 func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
@@ -328,6 +366,13 @@ func TestClassifyErrorPreservesExistingCodes(t *testing.T) {
 	g.Expect(classifyError(&stages.GitRequiredError{})).To(Equal(3))
 	g.Expect(classifyError(&stages.OutputPathError{Msg: "bad output"})).To(Equal(4))
 	g.Expect(classifyError(&stages.NoFilesAfterFilterError{Msg: "no files"})).To(Equal(6))
+}
+
+func TestClassifyErrorCancellationUsesShellInterruptCode(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	g.Expect(classifyError(context.Canceled)).To(Equal(130))
 }
 
 func TestFilterNotCalledForFileSizeMetric(t *testing.T) {

@@ -19,6 +19,11 @@ func AcquireData(s *pipeline.State) {
 // CommonState.Root and the resolved metrics are populated. Shared by the CLI
 // command and the golden-test harness so both exercise identical wiring.
 func RenderPipeline(s *pipeline.State) {
+	RenderVisualization(s)
+	WriteOutput(s)
+}
+
+func RenderVisualization(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.RunAggregations)
 	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
 	pipeline.ApplyFuncX(s, stages.ExportData)
@@ -32,6 +37,9 @@ func RenderPipeline(s *pipeline.State) {
 	pipeline.ApplyFuncXY(s, RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyTitle)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+}
+
+func WriteOutput(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 	pipeline.ApplyFuncXY(s, LogResult)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	scatterviz "github.com/theunrepentantgeek/code-visualizer/internal/scatter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -186,16 +187,23 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
+	var phases []workflowPhase
+	phases = []workflowPhase{
+		{Name: "Preparing", Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+			pipeline.ApplyFuncX(s, stages.ValidatePaths)
+			pipeline.ApplyFuncX(s, stages.ExportConfig)
+			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+			pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
+			phases[1].Work = stages.AcquisitionWork(common)
+		}},
+		{Name: "Acquiring data", Kind: progress.StageLive, Run: scatterviz.AcquireData},
+		{Name: "Rendering", Kind: progress.StageSummary, Run: scatterviz.RenderVisualization},
+		{Name: "Writing output", Kind: progress.StageSummary, Run: scatterviz.WriteOutput},
+	}
+	err := runCommandWorkflow(flags, s, "Scatter plot", phases)
 
-	scatterviz.AcquireData(s)
-	scatterviz.RenderPipeline(s)
-
-	return eris.Wrap(s.Err(), "scatter pipeline failed")
+	return eris.Wrap(err, "scatter pipeline failed")
 }
 
 func (c *ScatterCmd) applyOverrides(cfg *config.Config) {
