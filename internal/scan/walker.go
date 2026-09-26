@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"log/slog"
@@ -14,14 +15,22 @@ import (
 )
 
 type walker struct {
+	ctx           context.Context
 	policy        filterPolicy
 	builder       nodeBuilder
 	progress      Progress
 	includeBinary bool
 }
 
-func newWalker(rootPath string, rules []filter.Rule, progress Progress, includeBinary bool) walker {
+func newWalker(
+	ctx context.Context,
+	rootPath string,
+	rules []filter.Rule,
+	progress Progress,
+	includeBinary bool,
+) walker {
 	return walker{
+		ctx:           ctx,
 		policy:        newFilterPolicy(rootPath, rules),
 		builder:       newNodeBuilder(IsBinaryFile, includeBinary),
 		progress:      progress,
@@ -30,6 +39,10 @@ func newWalker(rootPath string, rules []filter.Rule, progress Progress, includeB
 }
 
 func (w walker) scanDir(dirPath string) (*model.Directory, error) {
+	if err := w.ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, eris.Wrapf(err, "failed to read directory %s", dirPath)
@@ -43,6 +56,10 @@ func (w walker) scanDir(dirPath string) (*model.Directory, error) {
 	}
 
 	for _, entry := range entries {
+		if err := w.ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		entryPath := filepath.Join(dirPath, entry.Name())
 
 		if err := w.processEntry(node, entry, entryPath); err != nil {
@@ -91,6 +108,10 @@ func (w walker) processEntry(node *model.Directory, entry os.DirEntry, entryPath
 	}
 
 	if entry.Type().IsRegular() {
+		if err := w.ctx.Err(); err != nil {
+			return err
+		}
+
 		info, err := entry.Info()
 		if err != nil {
 			if errors.Is(err, fs.ErrPermission) {
@@ -111,6 +132,10 @@ func (w walker) processEntry(node *model.Directory, entry os.DirEntry, entryPath
 }
 
 func (w walker) processSymlink(node *model.Directory, entry os.DirEntry, entryPath string) error {
+	if err := w.ctx.Err(); err != nil {
+		return err
+	}
+
 	info, err := os.Stat(entryPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {

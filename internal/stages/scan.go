@@ -1,6 +1,7 @@
 package stages
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/rotisserie/eris"
@@ -21,7 +22,7 @@ func ScanFilesystem(c *CommonState) error {
 
 	scanProg, stopScanTicker := BuildScanProgress(c.Flags)
 
-	root, err := scan.ScanTree(c.Source, c.FilterRules, scanProg, c.IncludeBinaryFiles)
+	root, err := scan.ScanTree(context.Background(), c.Source, c.FilterRules, scanProg, c.IncludeBinaryFiles)
 
 	stopScanTicker()
 

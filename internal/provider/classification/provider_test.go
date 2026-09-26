@@ -1,6 +1,7 @@
 package classification
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -48,7 +49,7 @@ func TestLoad_MatchesFirstRule(t *testing.T) {
 	srcFile := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{testFile, srcFile}
 
-	err := l.Load(root)
+	err := l.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	testCat, ok := testFile.Classification(metric.Name("code-purpose"))
@@ -76,7 +77,7 @@ func TestLoad_UnmatchedFileGetsNoValue(t *testing.T) {
 	file := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{file}
 
-	err := l.Load(root)
+	err := l.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, ok := file.Classification(metric.Name("code-purpose"))
@@ -103,7 +104,7 @@ func TestLoad_GeneratedFilePattern(t *testing.T) {
 	authoredFile := &model.File{Path: "/root/service.go"}
 	root.Files = []*model.File{genFile, genTestFile, authoredFile}
 
-	err := l.Load(root)
+	err := l.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	cat, _ := genFile.Classification(metric.Name("code-source"))
@@ -154,7 +155,7 @@ func TestLoad_MatchesRelativePath(t *testing.T) {
 		},
 	}
 
-	err := l.Load(root)
+	err := l.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	cat, ok := root.Dirs[0].Files[0].Classification(metric.Name("file-role"))
@@ -181,6 +182,24 @@ func TestLoad_EmptyRules(t *testing.T) {
 	file := &model.File{Path: "/root/bar.go"}
 	root.Files = []*model.File{file}
 
-	err := l.Load(root)
+	err := l.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestLoad_CancelledContextStopsBeforeFiles(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	l := &loader{
+		name:  "kind",
+		rules: []config.SelectionMetricRule{{Filename: "*.go", Category: "source"}},
+	}
+	file := &model.File{Path: "main.go"}
+
+	err := l.Load(ctx, &model.Directory{Files: []*model.File{file}})
+
+	g.Expect(err).To(MatchError(context.Canceled))
+	_, exists := file.Classification("kind")
+	g.Expect(exists).To(BeFalse())
 }

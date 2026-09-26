@@ -1,6 +1,8 @@
 package stages
 
 import (
+	"context"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
@@ -22,14 +24,21 @@ func LoadAuthorHistory(c *CommonState) error {
 
 	historyRange := c.Flags.HistoryRange
 
-	total, err := git.CommitTotalInHistoryRange(repoRoot, historyRange)
+	total, err := git.CommitTotalInHistoryRange(context.Background(), repoRoot, historyRange)
 	if err != nil {
 		return eris.Wrap(err, "failed to count git commits")
 	}
 
 	onCommit, stop := BuildHistoryProgress(c.Flags, total)
 
-	result, err := git.BulkAuthorHistoryInHistoryRange(repoRoot, tracked, false, historyRange, onCommit)
+	result, err := git.BulkAuthorHistoryInHistoryRange(
+		context.Background(),
+		repoRoot,
+		tracked,
+		false,
+		historyRange,
+		onCommit,
+	)
 
 	stop()
 

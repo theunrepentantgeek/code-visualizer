@@ -1,6 +1,7 @@
 package stages
 
 import (
+	"context"
 	"log/slog"
 	"path/filepath"
 	"slices"
@@ -93,7 +94,7 @@ func LoadGitHistory(c *CommonState) error {
 
 	historyRange := c.Flags.HistoryRange
 
-	total, err := git.CommitTotalInHistoryRange(repoRoot, historyRange)
+	total, err := git.CommitTotalInHistoryRange(context.Background(), repoRoot, historyRange)
 	if err != nil {
 		return eris.Wrap(err, "failed to count git commits")
 	}
@@ -102,6 +103,7 @@ func LoadGitHistory(c *CommonState) error {
 
 	requested := append(slices.Clone(c.Requested.BaseMetrics), commitExpressionBaseMetrics(c.Requested)...)
 	commits, err := git.BulkCommitHistoryAndPrewarmInHistoryRange(
+		context.Background(),
 		repoRoot, tracked, requested, historyRange, onCommit,
 	)
 

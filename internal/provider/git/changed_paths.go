@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
 )
@@ -52,6 +53,7 @@ func (s *repoService) changedPathsForTrackedPaths(
 	}
 
 	err := s.walkTrackedHistoryInHistoryRange(
+		context.Background(),
 		trackedPaths,
 		historyRange,
 		loadTrackedChanges,

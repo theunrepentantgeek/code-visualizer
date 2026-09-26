@@ -1,6 +1,7 @@
 package golang_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -69,12 +70,13 @@ func setupE2E(
 		filter.Rule{Pattern: "**/testdata/**", Mode: filter.Exclude},
 	)
 
-	root, err := scan.Scan(repoRoot(t), rules, nil, true)
+	root, err := scan.Scan(context.Background(), repoRoot(t), rules, nil, true)
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
 
 	err = provider.RunLoaders(
+		context.Background(),
 		root,
 		[]metric.Name{golang.Imports, golang.CommentRatio},
 		nil,

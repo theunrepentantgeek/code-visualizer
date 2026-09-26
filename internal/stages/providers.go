@@ -1,6 +1,7 @@
 package stages
 
 import (
+	"context"
 	"log/slog"
 	"slices"
 
@@ -109,7 +110,7 @@ func loadRequestedMetrics(c *CommonState, metricProg provider.MetricProgress) er
 	}
 
 	return eris.Wrap(
-		provider.RunLoaders(c.Root, requested, metricProg),
+		provider.RunLoaders(context.Background(), c.Root, requested, metricProg),
 		"failed to load metrics",
 	)
 }
@@ -131,6 +132,7 @@ func loadFileGitMetrics(
 	}
 
 	if err := git.LoadFileMetricsInHistoryRange(
+		context.Background(),
 		c.Root,
 		fileGitMetrics,
 		c.Flags.HistoryRange,

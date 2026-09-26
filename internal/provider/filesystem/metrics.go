@@ -4,6 +4,7 @@ package filesystem
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"log/slog"
@@ -37,12 +38,12 @@ func IsFilesystemMetric(name metric.Name) bool {
 // FileSizeProvider reports file size in bytes. Value is set during scan; Load is a no-op.
 type FileSizeProvider struct{}
 
-func (FileSizeProvider) Load(_ *model.Directory) error { return nil }
+func (FileSizeProvider) Load(ctx context.Context, _ *model.Directory) error { return ctx.Err() }
 
 // FileTypeProvider reports the file type classification. Value is set during scan; Load is a no-op.
 type FileTypeProvider struct{}
 
-func (FileTypeProvider) Load(_ *model.Directory) error { return nil }
+func (FileTypeProvider) Load(ctx context.Context, _ *model.Directory) error { return ctx.Err() }
 
 // FileLinesProvider counts lines in each text file.
 type FileLinesProvider struct {
@@ -55,8 +56,19 @@ func (p *FileLinesProvider) FileProgressMutex() *sync.Mutex {
 	return &p.mu
 }
 
-func (p *FileLinesProvider) Load(root *model.Directory) error {
+func (p *FileLinesProvider) Load(ctx context.Context, root *model.Directory) error {
+	var cancelled error
+
 	model.WalkFiles(root, func(f *model.File) {
+		if cancelled != nil {
+			return
+		}
+		if err := ctx.Err(); err != nil {
+			cancelled = err
+
+			return
+		}
+
 		if p.onFile != nil {
 			defer p.onFile()
 		}
@@ -81,7 +93,7 @@ func (p *FileLinesProvider) Load(root *model.Directory) error {
 		f.SetQuantity(FileLines, count)
 	})
 
-	return nil
+	return cancelled
 }
 
 func countLinesFile(file *model.File) (int64, error) {

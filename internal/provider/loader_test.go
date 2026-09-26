@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -19,7 +20,7 @@ func TestLoadersFor_ReturnsMatchingLoader(t *testing.T) {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"test-metric"},
-		Load: func(_ *model.Directory, _ []metric.Name) error {
+		Load: func(_ context.Context, _ *model.Directory, _ []metric.Name) error {
 			return nil
 		},
 	})
@@ -38,7 +39,7 @@ func TestLoadersFor_SkipsUnrelatedLoader(t *testing.T) {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"other-metric"},
-		Load:    func(_ *model.Directory, _ []metric.Name) error { return nil },
+		Load:    func(_ context.Context, _ *model.Directory, _ []metric.Name) error { return nil },
 	})
 
 	loaders := provider.LoadersFor([]metric.Name{"unrelated"})

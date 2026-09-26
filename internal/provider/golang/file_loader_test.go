@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,7 +30,7 @@ func TestLoadFileMetricsReadsAttachedSource(t *testing.T) {
 	}
 	root := &model.Directory{Files: []*model.File{file}}
 
-	g.Expect(loadFileMetrics(root)).To(Succeed())
+	g.Expect(loadFileMetrics(context.Background(), root)).To(Succeed())
 
 	imports, ok := file.Quantity(Imports)
 	g.Expect(ok).To(BeTrue())
@@ -56,7 +57,7 @@ func TestLoadFileMetricsFindsModuleAboveScopedSource(t *testing.T) {
 		Extension:  "go",
 	}
 
-	g.Expect(loadFileMetrics(&model.Directory{Files: []*model.File{file}})).To(Succeed())
+	g.Expect(loadFileMetrics(context.Background(), &model.Directory{Files: []*model.File{file}})).To(Succeed())
 
 	internal, ok := file.Quantity(internalImportsMetric)
 	g.Expect(ok).To(BeTrue())
@@ -85,7 +86,7 @@ func TestLoadFileMetricsFindsParentModuleForLiveNonGitSource(t *testing.T) {
 		Extension:  "go",
 	}
 
-	g.Expect(loadFileMetrics(&model.Directory{Files: []*model.File{file}})).To(Succeed())
+	g.Expect(loadFileMetrics(context.Background(), &model.Directory{Files: []*model.File{file}})).To(Succeed())
 
 	internal, ok := file.Quantity(internalImportsMetric)
 	g.Expect(ok).To(BeTrue())
@@ -142,7 +143,7 @@ func Hello() string {
 
 	ResetCacheForTesting()
 
-	err := loadFileMetrics(root)
+	err := loadFileMetrics(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	imports, ok := goFile.Quantity(Imports)
@@ -193,7 +194,7 @@ func Hello() string {
 
 	ResetCacheForTesting()
 
-	err := loadFileMetrics(root)
+	err := loadFileMetrics(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	commentRatio, ok := goFile.Measure(CommentRatio)
@@ -220,4 +221,16 @@ func TestRegister_RegistersGoFileMetricsLoader(t *testing.T) {
 		internalImportsMetric,
 	))
 	g.Expect(loaders[0].Load).ToNot(BeNil())
+}
+
+func TestLoadFileMetrics_CancelledContextStopsBeforeFiles(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	root := &model.Directory{Files: []*model.File{{Extension: "go"}}}
+
+	err := loadFileMetrics(ctx, root)
+
+	g.Expect(err).To(MatchError(context.Canceled))
 }

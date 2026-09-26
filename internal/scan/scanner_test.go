@@ -2,6 +2,7 @@ package scan
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -17,6 +18,50 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 )
+
+type countingProgress struct {
+	directories int
+}
+
+func (p *countingProgress) OnDirectoryScanned(string, int) {
+	p.directories++
+}
+
+func TestScanTree_CancelledContextStopsBeforeProgress(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	progress := &countingProgress{}
+	tree := source.Tree{
+		FS: fstest.MapFS{
+			"one.txt": {Data: []byte("one")},
+			"two.txt": {Data: []byte("two")},
+		},
+		RootName: "project",
+		RootPath: "/project",
+	}
+
+	_, err := ScanTree(ctx, tree, nil, progress, true)
+
+	g.Expect(err).To(MatchError(context.Canceled))
+	g.Expect(progress.directories).To(Equal(0))
+}
+
+func TestScan_CancelledContextStopsBeforeProgress(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	progress := &countingProgress{}
+	dir := t.TempDir()
+	g.Expect(os.WriteFile(filepath.Join(dir, "one.txt"), []byte("one"), 0o600)).To(Succeed())
+
+	_, err := Scan(ctx, dir, nil, progress, true)
+
+	g.Expect(err).To(MatchError(context.Canceled))
+	g.Expect(progress.directories).To(Equal(0))
+}
 
 type permissionFS struct {
 	fstest.MapFS
@@ -62,7 +107,7 @@ func TestScanTreeReadsVirtualSource(t *testing.T) {
 		RepoBase: "packages/project",
 	}
 
-	root, err := ScanTree(tree, nil, nil, true)
+	root, err := ScanTree(context.Background(), tree, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -89,7 +134,7 @@ func TestScanTreeKeepsSymlinkIdentityWhileReadingTarget(t *testing.T) {
 
 	tree.RepoBase = "project"
 
-	root, err := ScanTree(tree, nil, nil, true)
+	root, err := ScanTree(context.Background(), tree, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -126,7 +171,7 @@ func TestScanTreeDoesNotRewritePreviousFileWhenSymlinkTargetIsExcluded(t *testin
 	tree, err := source.WorkingTree(dir)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	root, err := ScanTree(tree, nil, nil, false)
+	root, err := ScanTree(context.Background(), tree, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -154,7 +199,7 @@ func TestScanTreeSkipsSymlinkChainEscapingSource(t *testing.T) {
 	tree, err := source.WorkingTree(dir)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	root, err := ScanTree(tree, nil, nil, true)
+	root, err := ScanTree(context.Background(), tree, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -176,7 +221,7 @@ func TestScanTreeFollowsAbsoluteSymlinkInsideSource(t *testing.T) {
 	tree, err := source.WorkingTree(dir)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	root, err := ScanTree(tree, nil, nil, true)
+	root, err := ScanTree(context.Background(), tree, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -206,7 +251,7 @@ func TestScanTreeSkipsCyclicAndDeepSymlinks(t *testing.T) {
 		fsys[name] = &fstest.MapFile{Data: []byte(target), Mode: fs.ModeSymlink}
 	}
 
-	root, err := ScanTree(source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	root, err := ScanTree(context.Background(), source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -231,7 +276,7 @@ func TestScanTreeSkipsInaccessibleDirectories(t *testing.T) {
 		"blocked/file.txt": {Data: []byte("hidden\n")},
 	}}
 
-	root, err := ScanTree(source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	root, err := ScanTree(context.Background(), source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -250,7 +295,7 @@ func TestScanTreeSkipsFilesRemovedAfterDirectoryRead(t *testing.T) {
 		"gone.txt": {Data: []byte("gone\n")},
 	}}
 
-	root, err := ScanTree(source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	root, err := ScanTree(context.Background(), source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -266,7 +311,7 @@ func TestScanFlat(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -297,7 +342,7 @@ func TestScanNested(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "nested")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -329,7 +374,7 @@ func TestScanEmptyDir(t *testing.T) {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
 
-	_, err := Scan(dir, nil, nil, true)
+	_, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).To(MatchError(ContainSubstring("no files")))
 }
 
@@ -338,7 +383,7 @@ func TestScanFollowsFileSymlinks(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -360,7 +405,7 @@ func TestScanSkipsDirSymlinks(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-symlinks")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -382,7 +427,7 @@ func TestScanFileExtension(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -405,7 +450,7 @@ func TestScanSetsFileType(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -501,7 +546,7 @@ func TestScanWithRules_ExcludesDotfiles(t *testing.T) {
 		{Pattern: ".*", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules, nil, true)
+	root, err := Scan(context.Background(), dir, rules, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -527,7 +572,7 @@ func TestScanWithRules_ExcludedDirNotDescended(t *testing.T) {
 		{Pattern: ".*", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules, nil, true)
+	root, err := Scan(context.Background(), dir, rules, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -545,7 +590,7 @@ func TestScanWithRules_NoRules_IncludesAll(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "with-dotfiles")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -571,7 +616,7 @@ func TestScanWithRules_IncludeOverridesExclude(t *testing.T) {
 		{Pattern: ".*", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules, nil, true)
+	root, err := Scan(context.Background(), dir, rules, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -597,7 +642,7 @@ func TestScanWithRules_PrunesEmptyDirs(t *testing.T) {
 		{Pattern: "**/*.json", Mode: filter.Exclude},
 	}
 
-	root, err := Scan(dir, rules, nil, true)
+	root, err := Scan(context.Background(), dir, rules, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -687,7 +732,7 @@ func TestScanExcludesBinaryFiles_WhenIncludeBinaryFalse(t *testing.T) {
 	g.Expect(os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o600)).To(Succeed())
 	g.Expect(os.WriteFile(filepath.Join(dir, "image.bin"), []byte("data\x00bytes"), 0o600)).To(Succeed())
 
-	root, err := Scan(dir, nil, nil, false)
+	root, err := Scan(context.Background(), dir, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -709,7 +754,7 @@ func TestScanIncludesBinaryFiles_WhenIncludeBinaryTrue(t *testing.T) {
 	g.Expect(os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o600)).To(Succeed())
 	g.Expect(os.WriteFile(filepath.Join(dir, "image.bin"), []byte("data\x00bytes"), 0o600)).To(Succeed())
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).NotTo(BeNil())
 
@@ -735,7 +780,7 @@ func TestScanFlat_FileCountsPopulated(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "flat")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 
@@ -753,7 +798,7 @@ func TestScanNested_FileCountsPopulated(t *testing.T) {
 	g := NewGomegaWithT(t)
 	dir := filepath.Join("testdata", "nested")
 
-	root, err := Scan(dir, nil, nil, true)
+	root, err := Scan(context.Background(), dir, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 

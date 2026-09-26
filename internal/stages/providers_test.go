@@ -2,6 +2,7 @@ package stages_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"log/slog"
 	"strings"
@@ -38,7 +39,7 @@ func (l *progressLoader) FileProgressMutex() *sync.Mutex {
 	return &l.mu
 }
 
-func (l *progressLoader) Load(root *model.Directory, _ []metric.Name) error {
+func (l *progressLoader) Load(_ context.Context, root *model.Directory, _ []metric.Name) error {
 	if l.ran != nil {
 		l.ran.Store(true)
 	}

@@ -2,6 +2,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"strings"
@@ -499,25 +500,36 @@ func (s *repoService) fetchCommitTimestamps(relPath string) ([]time.Time, error)
 // needs line stats the cache does not contain. The function is safe for
 // concurrent use; concurrent calls are coalesced via a singleflight group.
 func (s *repoService) bulkPrewarm(
+	ctx context.Context,
 	paths map[string]bool,
 	requirements metricRequirements,
 	onCommitProcessed func(),
 ) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	missing, groupKey := s.bulkPrewarmWork(paths, requirements)
 	if len(missing) == 0 {
 		return nil
 	}
 
-	_, err, _ := s.bulkGroup.Do(groupKey, func() (any, error) {
+	result := s.bulkGroup.DoChan(groupKey, func() (any, error) {
 		missing, _ = s.bulkPrewarmWork(paths, requirements)
 		if len(missing) == 0 {
 			return struct{}{}, nil
 		}
 
-		return nil, s.doBulkPrewarm(missing, requirements, onCommitProcessed)
+		return nil, s.doBulkPrewarm(ctx, missing, requirements, onCommitProcessed)
 	})
-	if err != nil {
-		return eris.Wrap(err, "bulk prewarm")
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case outcome := <-result:
+		if outcome.Err != nil {
+			return eris.Wrap(outcome.Err, "bulk prewarm")
+		}
 	}
 
 	return nil
@@ -579,6 +591,7 @@ func bulkPrewarmGroupKey(paths map[string]bool, requirement string) string {
 // It walks the entire commit history once, using tree diffs to determine
 // which tracked files were modified in each commit.
 func (s *repoService) doBulkPrewarm(
+	ctx context.Context,
 	paths map[string]bool,
 	requirements metricRequirements,
 	onCommitProcessed func(),
@@ -589,6 +602,7 @@ func (s *repoService) doBulkPrewarm(
 		prewarmTrackedChanges(cache, c, changed, requirements)
 	}
 	if err := s.walkTrackedHistoryInHistoryRange(
+		ctx,
 		paths,
 		HistoryRange{},
 		loadTrackedChanges,
