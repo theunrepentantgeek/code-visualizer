@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -25,6 +26,7 @@ func ParseMode(value string) (Mode, error) {
 	}
 }
 
+//nolint:cyclop,revive // Mode, terminal, CI, and colour resolution are one cohesive decision.
 func resolveConfig(config Config) (resolvedConfig, error) {
 	mode, err := ParseMode(string(config.Mode))
 	if err != nil {
@@ -49,15 +51,18 @@ func resolveConfig(config Config) (resolvedConfig, error) {
 		}
 	case ModeTTY:
 		if !capable {
-			return resolvedConfig{}, fmt.Errorf("configured stderr does not support terminal progress")
+			return resolvedConfig{}, errors.New("configured stderr does not support terminal progress")
 		}
 	case ModePlain:
+	default:
+		return resolvedConfig{}, errors.New("unreachable progress mode")
 	}
 
 	noColor := config.NoColor || term == "dumb"
 	if value, ok := lookupEnv("NO_COLOR"); ok && value != "" {
 		noColor = true
 	}
+
 	if value, ok := lookupEnv("FORCE_COLOR"); ok && value == "0" {
 		noColor = true
 	}

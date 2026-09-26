@@ -50,7 +50,7 @@ func RunLoaders(
 	progress MetricProgress,
 ) error {
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "metric loading cancelled")
 	}
 
 	loaders := LoadersFor(requested)
@@ -84,7 +84,7 @@ func runLoaderLevel(
 	for _, loader := range level {
 		g.Go(func() error {
 			if err := groupCtx.Err(); err != nil {
-				return err
+				return eris.Wrap(err, "loader cancelled")
 			}
 
 			return runSingleLoader(groupCtx, root, loader, requested, progress)
@@ -106,7 +106,7 @@ func runSingleLoader(
 	progress MetricProgress,
 ) error {
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "loader cancelled")
 	}
 
 	// LoadersFor supplies only loaders owning a requested metric, so selected is nonempty.

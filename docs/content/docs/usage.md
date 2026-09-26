@@ -22,9 +22,28 @@ These flags apply to every subcommand.
 | `--quiet`         | `-q`  | Suppress all non-essential output (warnings and errors only)        |
 | `--verbose`       | `-v`  | Show detailed progress during scanning and metrics                  |
 | `--debug`         |       | Show per-directory scan progress (implies `--verbose`)              |
+| `--progress`      |       | Progress mode: `auto` (default), `tty`, or `plain`                   |
+| `--no-color`      |       | Disable coloured progress and diagnostic output                     |
 | `--config`        |       | Path to configuration file (`.yaml`, `.yml`, or `.json`)            |
 | `--export-config` |       | Write effective configuration to file (`.yaml`, `.yml`, or `.json`) |
 | `--export-data`   |       | Write computed metrics to file (`.json` or `.yaml`/`.yml`)          |
+
+## Progress and diagnostics
+
+Progress is written to standard error, leaving standard output available for
+help text and other command data. In `auto` mode, CodeViz uses animated terminal
+output only when standard error is an interactive terminal. Redirected output,
+CI environments, and `TERM=dumb` use stable, append-only plain text instead.
+Use `--progress=tty` or `--progress=plain` to select a mode explicitly.
+
+`--quiet` suppresses progress, `--verbose` adds detail to the active phase, and
+`--debug` enables diagnostic logging as well as verbose progress. These three
+flags remain mutually exclusive. `--no-color`, `NO_COLOR`, `FORCE_COLOR=0`, and
+`TERM=dumb` disable styling.
+
+Ordinary visualizations have one live data-acquisition phase. Alluvial
+visualizations show a separate `Loading <reference>` phase for every reference,
+in the order supplied.
 
 ## Commands
 
@@ -154,3 +173,4 @@ codeviz --export-data metrics.yaml tree-map ./src -o treemap.png -s file-lines
 | 4    | Output path error (parent missing, permission)       |
 | 5    | Internal error during scan or render                 |
 | 6    | No files available after filtering (e.g. all binary) |
+| 130  | Operation cancelled by Ctrl-C                        |

@@ -40,8 +40,8 @@ type event struct {
 }
 
 type renderer interface {
-	render(event) error
-	writeDiagnostic(string) error
+	render(event event) error
+	writeDiagnostic(line string) error
 	close() error
 }
 
@@ -50,14 +50,14 @@ type discardRenderer struct {
 }
 
 func (*discardRenderer) render(event) error { return nil }
-func (r *discardRenderer) diagnosticWriter() io.Writer {
-	return r.writer
-}
 
 func (r *discardRenderer) writeDiagnostic(line string) error {
 	_, err := fmt.Fprintln(r.writer, line)
+	if err != nil {
+		return fmt.Errorf("write discarded progress diagnostic: %w", err)
+	}
 
-	return err
+	return nil
 }
 func (*discardRenderer) close() error { return nil }
 
@@ -93,16 +93,20 @@ func New(config Config) (Reporter, error) {
 
 type ttyRendererFactory func(resolvedConfig) (renderer, error)
 
+//nolint:cyclop,revive // Renderer selection is clearer as one guarded composition function.
 func newConfiguredReporter(config Config, ttyFactory ttyRendererFactory) (Reporter, error) {
 	if config.Writer == nil {
 		return nil, errors.New("progress writer is required")
 	}
+
 	if config.Now == nil {
 		config.Now = time.Now
 	}
+
 	if config.LookupEnv == nil {
 		config.LookupEnv = os.LookupEnv
 	}
+
 	if config.IsTerminal == nil {
 		config.IsTerminal = func(writer io.Writer) bool {
 			file, ok := writer.(interface{ Fd() uintptr })
@@ -117,6 +121,7 @@ func newConfiguredReporter(config Config, ttyFactory ttyRendererFactory) (Report
 	}
 
 	var selected renderer
+
 	switch {
 	case config.Quiet:
 		selected = &discardRenderer{writer: config.Writer}
@@ -129,6 +134,7 @@ func newConfiguredReporter(config Config, ttyFactory ttyRendererFactory) (Report
 			if parseErr != nil {
 				return nil, parseErr
 			}
+
 			if requested == ModeTTY {
 				return nil, err
 			}
@@ -163,9 +169,11 @@ func (r *reporter) Begin(title string, stageCount int) error {
 	if r.closed {
 		return errors.New("progress reporter is closed")
 	}
+
 	if r.begun {
 		return errors.New("progress reporter already begun")
 	}
+
 	if stageCount < 0 {
 		return errors.New("progress stage count cannot be negative")
 	}
@@ -189,15 +197,19 @@ func (r *reporter) StartStage(name string, kind StageKind, work WorkKind) (Stage
 	if !r.begun {
 		return nil, errors.New("progress reporter must begin before starting a stage")
 	}
+
 	if r.finished {
 		return nil, errors.New("progress reporter already finished")
 	}
+
 	if r.active != nil {
 		return nil, fmt.Errorf("progress stage %q is already active", r.active.name)
 	}
+
 	if r.completed >= r.stageCount {
 		return nil, fmt.Errorf("all %d progress stages are already complete", r.stageCount)
 	}
+
 	if kind == StageSummary && work != WorkNone {
 		return nil, errors.New("summary progress stage cannot have a work kind")
 	}
@@ -226,15 +238,19 @@ func (r *reporter) Finish() error {
 	if !r.begun {
 		return errors.New("progress reporter has not begun")
 	}
+
 	if r.finished {
 		return errors.New("progress reporter already finished")
 	}
+
 	if r.active != nil {
 		return fmt.Errorf("progress stage %q is still active", r.active.name)
 	}
+
 	if r.completed != r.stageCount {
 		return fmt.Errorf("only %d of %d progress stages completed", r.completed, r.stageCount)
 	}
+
 	if err := r.renderer.render(event{
 		kind:       eventFinished,
 		title:      r.title,
@@ -283,17 +299,21 @@ func (s *stage) SetTotal(total int64) error {
 	if err := s.validateActive(); err != nil {
 		return err
 	}
+
 	if s.kind != StageLive {
 		return errors.New("summary progress stage cannot have a total")
 	}
+
 	if total <= 0 {
 		return errors.New("progress total must be positive")
 	}
+
 	if s.total != 0 {
 		return errors.New("progress total is already set")
 	}
 
 	e := s.snapshot(eventProgress)
+
 	e.total = total
 	if err := s.reporter.renderer.render(e); err != nil {
 		return err
@@ -311,20 +331,25 @@ func (s *stage) SetProgress(current int64) error {
 	if err := s.validateActive(); err != nil {
 		return err
 	}
+
 	if s.kind != StageLive {
 		return errors.New("summary progress stage cannot report progress")
 	}
+
 	if current < 0 {
 		return errors.New("progress current value cannot be negative")
 	}
+
 	if current < s.current {
 		return errors.New("progress current value cannot decrease")
 	}
+
 	if s.total > 0 && current > s.total {
 		return errors.New("progress current value cannot exceed total")
 	}
 
 	e := s.snapshot(eventProgress)
+
 	e.current = current
 	if err := s.reporter.renderer.render(e); err != nil {
 		return err
@@ -342,6 +367,7 @@ func (s *stage) SetStatus(message string) error {
 	if err := s.validateActive(); err != nil {
 		return err
 	}
+
 	if !s.reporter.config.Verbose {
 		return nil
 	}
@@ -382,6 +408,7 @@ func (s *stage) finish(kind eventKind, stageErr error) error {
 
 	if kind == eventStageSucceeded && s.total > 0 && s.current < s.total {
 		progressEvent := s.snapshot(eventProgress)
+
 		progressEvent.current = s.total
 		if err := s.reporter.renderer.render(progressEvent); err != nil {
 			return err
@@ -392,6 +419,7 @@ func (s *stage) finish(kind eventKind, stageErr error) error {
 
 	e := s.snapshot(kind)
 	e.err = stageErr
+
 	e.elapsed = s.reporter.config.Now().Sub(s.started)
 	if err := s.reporter.renderer.render(e); err != nil {
 		return err
@@ -408,6 +436,7 @@ func (s *stage) validateActive() error {
 	if s.finished {
 		return fmt.Errorf("progress stage %q is already finished", s.name)
 	}
+
 	if s.reporter.active != s {
 		return fmt.Errorf("progress stage %q is not active", s.name)
 	}

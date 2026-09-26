@@ -4,7 +4,6 @@ package scan
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"path/filepath"
 
 	"github.com/rotisserie/eris"
@@ -30,7 +29,7 @@ func ScanTree(
 	includeBinary bool,
 ) (*model.Directory, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "source scan cancelled")
 	}
 
 	root, err := newFSWalker(ctx, tree, rules, progress, includeBinary).scanDir(".")
@@ -41,8 +40,6 @@ func ScanTree(
 	if !hasFiles(root) {
 		return nil, errors.New("no files found in directory")
 	}
-
-	slog.Info("Scan complete", "files", root.AllFileCount, "directories", root.AllDirCount)
 
 	return root, nil
 }
@@ -61,7 +58,7 @@ func Scan(
 	includeBinary bool,
 ) (*model.Directory, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "directory scan cancelled")
 	}
 
 	absPath, err := filepath.Abs(path)
@@ -77,8 +74,6 @@ func Scan(
 	if !hasFiles(root) {
 		return nil, errors.New("no files found in directory")
 	}
-
-	slog.Info("Scan complete", "files", root.AllFileCount, "directories", root.AllDirCount)
 
 	return root, nil
 }

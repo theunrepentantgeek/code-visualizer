@@ -102,18 +102,20 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	s := pipeline.NewState(common, cfg, viz)
 
 	var phases []workflowPhase
+
 	phases = []workflowPhase{
-		{Name: "Preparing", Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
 			pipeline.ApplyFuncX(s, stages.ValidatePaths)
 			pipeline.ApplyFuncX(s, stages.ExportConfig)
 			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
 			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 			pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
+
 			phases[1].Work = stages.AcquisitionWork(common)
 		}},
-		{Name: "Acquiring data", Kind: progress.StageLive, Run: bubbletree.AcquireData},
-		{Name: "Rendering", Kind: progress.StageSummary, Run: bubbletree.RenderVisualization},
-		{Name: "Writing output", Kind: progress.StageSummary, Run: bubbletree.WriteOutput},
+		{Name: phaseAcquiring, Kind: progress.StageLive, Run: bubbletree.AcquireData},
+		{Name: phaseRendering, Kind: progress.StageSummary, Run: bubbletree.RenderVisualization},
+		{Name: phaseWriting, Kind: progress.StageSummary, Run: bubbletree.WriteOutput},
 	}
 	err := runCommandWorkflow(flags, s, "Bubble tree", phases)
 

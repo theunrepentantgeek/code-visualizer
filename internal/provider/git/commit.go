@@ -69,7 +69,7 @@ func CommitTotalInHistoryRange(
 	historyRange HistoryRange,
 ) (int64, error) {
 	if err := ctx.Err(); err != nil {
-		return 0, err
+		return 0, eris.Wrap(err, "commit counting cancelled")
 	}
 
 	s, err := getService(repoPath)
@@ -78,10 +78,6 @@ func CommitTotalInHistoryRange(
 	}
 
 	return s.commitTotalInHistoryRange(ctx, historyRange)
-}
-
-func (s *repoService) commitTotal() (int64, error) {
-	return s.commitTotalInHistoryRange(context.Background(), HistoryRange{})
 }
 
 func (s *repoService) commitTotalInHistoryRange(
@@ -100,7 +96,7 @@ func (s *repoService) commitTotalInHistoryRange(
 
 	for _, iterationErr := range commits {
 		if err := ctx.Err(); err != nil {
-			return 0, err
+			return 0, eris.Wrap(err, "commit counting cancelled")
 		}
 
 		if iterationErr != nil {
@@ -142,7 +138,7 @@ func BulkCommitHistoryInHistoryRange(
 	onCommitProcessed func(),
 ) ([]Commit, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "commit history loading cancelled")
 	}
 
 	s, err := getService(repoPath)
@@ -191,7 +187,7 @@ func BulkCommitHistoryAndPrewarmInHistoryRange(
 	onCommitProcessed func(),
 ) ([]Commit, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "commit history prewarming cancelled")
 	}
 
 	s, err := getService(repoPath)
@@ -350,6 +346,7 @@ func appendTrackedCommit(
 	})
 }
 
+//nolint:revive // The history walk keeps lock, cache, filtering, and visitation in one transaction.
 func (s *repoService) walkTrackedHistoryInHistoryRange(
 	ctx context.Context,
 	tracked map[string]bool,
@@ -370,7 +367,7 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 
 	for c, iterationErr := range commits {
 		if err := ctx.Err(); err != nil {
-			return err
+			return eris.Wrap(err, "tracked history loading cancelled")
 		}
 
 		if iterationErr != nil {
@@ -389,7 +386,7 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 		}
 
 		if err := ctx.Err(); err != nil {
-			return err
+			return eris.Wrap(err, "tracked history loading cancelled")
 		}
 
 		visit(c, changed)

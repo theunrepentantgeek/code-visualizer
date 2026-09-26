@@ -16,6 +16,8 @@ import (
 )
 
 // RunProviders calculates c.Requested metrics against c.Root.
+//
+//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func RunProviders(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	progressMetrics := metricsRemainingAfterPrewarm(c)
 	total := provider.FileProgressTotal(progressMetrics, model.CountFiles(c.Root))
@@ -24,11 +26,12 @@ func RunProviders(c *CommonState, ctx context.Context, sink progress.Sink) error
 	err := loadRequestedMetrics(c, ctx, sink, filterMetricProgress(metricProg, progressMetrics))
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return ctx.Err()
+			return eris.Wrap(ctx.Err(), "metric loading cancelled")
 		}
 
 		return err
 	}
+
 	if err := metricProg.Err(); err != nil {
 		return eris.Wrap(err, "report metric progress")
 	}
@@ -50,10 +53,10 @@ type metricProgressFilter struct {
 }
 
 func filterMetricProgress(
-	progress provider.MetricProgress,
+	metricProgress provider.MetricProgress,
 	selected []metric.Name,
 ) provider.MetricProgress {
-	if progress == nil {
+	if metricProgress == nil {
 		return nil
 	}
 
@@ -63,7 +66,7 @@ func filterMetricProgress(
 	}
 
 	return &metricProgressFilter{
-		progress: progress,
+		progress: metricProgress,
 		selected: metrics,
 	}
 }
@@ -86,6 +89,7 @@ func (f *metricProgressFilter) OnFileProcessed(name metric.Name) {
 	}
 }
 
+//nolint:revive // Common state is the primary pipeline input.
 func loadRequestedMetrics(
 	c *CommonState,
 	ctx context.Context,
@@ -117,6 +121,7 @@ func loadRequestedMetrics(
 		); err != nil {
 			return eris.Wrap(err, "failed to load authorship metrics")
 		}
+
 		if err := historyProg.Err(); err != nil {
 			return eris.Wrap(err, "report authorship progress")
 		}
@@ -135,6 +140,7 @@ func loadRequestedMetrics(
 	)
 }
 
+//nolint:revive // Common state is the primary pipeline input.
 func loadFileGitMetrics(
 	c *CommonState,
 	ctx context.Context,

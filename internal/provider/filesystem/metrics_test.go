@@ -205,11 +205,13 @@ func TestFileLinesProvider_CancelledContextStopsBeforeFiles(t *testing.T) {
 	g := NewWithT(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	var processed int
-	provider := &FileLinesProvider{}
-	provider.SetOnFileProcessed(func() { processed++ })
 
-	err := provider.Load(ctx, &model.Directory{Files: []*model.File{{Path: "one.go"}, {Path: "two.go"}}})
+	var processed int
+
+	lineProvider := &FileLinesProvider{}
+	lineProvider.SetOnFileProcessed(func() { processed++ })
+
+	err := lineProvider.Load(ctx, &model.Directory{Files: []*model.File{{Path: "one.go"}, {Path: "two.go"}}})
 
 	g.Expect(err).To(MatchError(context.Canceled))
 	g.Expect(processed).To(Equal(0))

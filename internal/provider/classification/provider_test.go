@@ -191,6 +191,7 @@ func TestLoad_CancelledContextStopsBeforeFiles(t *testing.T) {
 	g := NewWithT(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	l := &loader{
 		name:  "kind",
 		rules: []config.SelectionMetricRule{{Filename: "*.go", Category: "source"}},
@@ -200,6 +201,7 @@ func TestLoad_CancelledContextStopsBeforeFiles(t *testing.T) {
 	err := l.Load(ctx, &model.Directory{Files: []*model.File{file}})
 
 	g.Expect(err).To(MatchError(context.Canceled))
+
 	_, exists := file.Classification("kind")
 	g.Expect(exists).To(BeFalse())
 }

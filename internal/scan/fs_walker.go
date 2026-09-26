@@ -43,7 +43,7 @@ func newFSWalker(
 
 func (w fsWalker) scanDir(name string) (*model.Directory, error) {
 	if err := w.ctx.Err(); err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "filesystem scan cancelled")
 	}
 
 	entries, err := fs.ReadDir(w.tree.FS, name)
@@ -64,7 +64,7 @@ func (w fsWalker) scanDir(name string) (*model.Directory, error) {
 
 	for _, entry := range entries {
 		if err := w.ctx.Err(); err != nil {
-			return nil, err
+			return nil, eris.Wrap(err, "filesystem scan cancelled")
 		}
 
 		if err := w.processEntry(node, name, entry); err != nil {
@@ -132,7 +132,7 @@ func (w fsWalker) processDir(node *model.Directory, name string) error {
 
 func (w fsWalker) processFile(node *model.Directory, sourcePath, fileName string) (*model.File, error) {
 	if err := w.ctx.Err(); err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "filesystem scan cancelled")
 	}
 
 	info, err := fs.Stat(w.tree.FS, sourcePath)

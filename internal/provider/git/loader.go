@@ -92,7 +92,7 @@ func loadGitMetrics(
 	referenceTimes ...time.Time,
 ) error {
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "git metric loading cancelled")
 	}
 
 	s, err := getService(repositoryPath(root))
@@ -113,7 +113,7 @@ func LoadFileMetricsInHistoryRange(
 	referenceTimes ...time.Time,
 ) error {
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "git metric loading cancelled")
 	}
 
 	s, err := getService(repositoryPath(root))
@@ -249,6 +249,7 @@ func newFileProgressCallbacks(onFile func(), fileTotal int64, commitTotal int64)
 	}
 }
 
+//nolint:revive // Metric dispatch stays local to preserve per-file cancellation boundaries.
 func (s *repoService) applySelectedFileMetrics(
 	ctx context.Context,
 	root *model.Directory,
@@ -294,7 +295,7 @@ func (s *repoService) applySelectedFileMetrics(
 		}
 	})
 
-	return ctx.Err()
+	return eris.Wrap(ctx.Err(), "git metric loading cancelled")
 }
 
 func selectedReferenceTime(values []time.Time) time.Time {

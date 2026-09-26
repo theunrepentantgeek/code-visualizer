@@ -63,6 +63,7 @@ func (b *fakeTTYBackend) println(text string) error {
 
 func ttyTestReporter(t *testing.T, unicode, noColor bool) (Reporter, *fakeTTYBackend) {
 	t.Helper()
+
 	backend := &fakeTTYBackend{}
 	config := Config{
 		Mode:            ModeTTY,
@@ -76,10 +77,10 @@ func ttyTestReporter(t *testing.T, unicode, noColor bool) (Reporter, *fakeTTYBac
 	resolved, err := resolveConfig(config)
 	NewWithT(t).Expect(err).NotTo(HaveOccurred())
 
-	renderer, err := newTTYRenderer(resolved, backend)
+	ttyOutput, err := newTTYRenderer(resolved, backend)
 	NewWithT(t).Expect(err).NotTo(HaveOccurred())
 
-	return newReporter(config, renderer), backend
+	return newReporter(config, ttyOutput), backend
 }
 
 func TestTTY_AnimatesOnlyLiveStagesAndTransitionsToProgress(t *testing.T) {
@@ -90,11 +91,21 @@ func TestTTY_AnimatesOnlyLiveStagesAndTransitionsToProgress(t *testing.T) {
 	g.Expect(reporter.Begin("Processing", 2)).To(Succeed())
 	summary, err := reporter.StartStage("Preparing", StageSummary, WorkNone)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if summary == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(backend.started).To(BeEmpty())
 	g.Expect(summary.Complete()).To(Succeed())
 
 	live, err := reporter.StartStage("Acquiring", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if live == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(backend.started).To(HaveLen(1))
 	g.Expect(backend.started[0].kind).To(Equal("spinner"))
 
@@ -118,6 +129,11 @@ func TestTTY_UsesASCIISafeSymbolsWhenUnicodeUnavailable(t *testing.T) {
 	g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
 	stage, err := reporter.StartStage("Preparing", StageSummary, WorkNone)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(stage.Complete()).To(Succeed())
 
 	lines := strings.Join(backend.lines, "\n")
@@ -148,9 +164,11 @@ func TestTTY_OutcomesAndCloseStopActiveDisplay(t *testing.T) {
 			if tc.outcome != nil {
 				g.Expect(tc.outcome(stage)).To(Succeed())
 			}
+
 			g.Expect(reporter.Close()).To(Succeed())
 
 			g.Expect(backend.started[0].stops).To(Equal(1))
+
 			if tc.want != "" {
 				g.Expect(strings.Join(backend.lines, "\n")).To(ContainSubstring(tc.want))
 			}
@@ -165,6 +183,7 @@ func TestTTY_AutoFallsBackOnceButForcedTTYReturnsInitializationError(t *testing.
 	factory := func(resolvedConfig) (renderer, error) { return nil, initErr }
 
 	var autoOutput bytes.Buffer
+
 	auto, err := newConfiguredReporter(Config{
 		Mode:       ModeAuto,
 		Writer:     &autoOutput,
@@ -172,6 +191,11 @@ func TestTTY_AutoFallsBackOnceButForcedTTYReturnsInitializationError(t *testing.
 		LookupEnv:  env(nil),
 	}, factory)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if auto == nil {
+		panic("newConfiguredReporter returned nil without an error")
+	}
+
 	g.Expect(auto.Begin("Processing", 0)).To(Succeed())
 	g.Expect(auto.Finish()).To(Succeed())
 	g.Expect(strings.Count(autoOutput.String(), "falling back to plain progress")).To(Equal(1))

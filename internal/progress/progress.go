@@ -1,6 +1,6 @@
 // Package progress reports command workflow progress independently of the
 // processing operations that produce it.
-package progress
+package progress //nolint:revive // The package intentionally exposes its small configuration and event model.
 
 import (
 	"io"
@@ -52,8 +52,8 @@ type Sink interface {
 type Stage interface {
 	Sink
 	Complete() error
-	Fail(error) error
-	Cancel(error) error
+	Fail(err error) error
+	Cancel(err error) error
 }
 
 type Reporter interface {

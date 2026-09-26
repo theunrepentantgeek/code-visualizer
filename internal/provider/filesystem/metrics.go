@@ -38,12 +38,16 @@ func IsFilesystemMetric(name metric.Name) bool {
 // FileSizeProvider reports file size in bytes. Value is set during scan; Load is a no-op.
 type FileSizeProvider struct{}
 
-func (FileSizeProvider) Load(ctx context.Context, _ *model.Directory) error { return ctx.Err() }
+func (FileSizeProvider) Load(ctx context.Context, _ *model.Directory) error {
+	return eris.Wrap(ctx.Err(), "file-size loading cancelled")
+}
 
 // FileTypeProvider reports the file type classification. Value is set during scan; Load is a no-op.
 type FileTypeProvider struct{}
 
-func (FileTypeProvider) Load(ctx context.Context, _ *model.Directory) error { return ctx.Err() }
+func (FileTypeProvider) Load(ctx context.Context, _ *model.Directory) error {
+	return eris.Wrap(ctx.Err(), "file-type loading cancelled")
+}
 
 // FileLinesProvider counts lines in each text file.
 type FileLinesProvider struct {
@@ -56,6 +60,7 @@ func (p *FileLinesProvider) FileProgressMutex() *sync.Mutex {
 	return &p.mu
 }
 
+//nolint:revive // Traversal, cancellation, and callback coordination form one operation.
 func (p *FileLinesProvider) Load(ctx context.Context, root *model.Directory) error {
 	var cancelled error
 
@@ -63,6 +68,7 @@ func (p *FileLinesProvider) Load(ctx context.Context, root *model.Directory) err
 		if cancelled != nil {
 			return
 		}
+
 		if err := ctx.Err(); err != nil {
 			cancelled = err
 

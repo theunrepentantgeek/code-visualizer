@@ -17,6 +17,8 @@ import (
 
 // LoadCommitMetrics loads and attaches per-file commit values needed by
 // directory-level expressions such as lines-changed.sum.
+//
+//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func LoadCommitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	if !c.Requested.HasCommitExpressions() {
 		return nil
@@ -78,6 +80,8 @@ type TimeRange struct {
 // LoadGitHistory walks the commit graph once and populates c.GitHistory.
 // It returns an error when no commits touch any tracked file — visualizations
 // that depend on git history cannot proceed in that case.
+//
+//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func LoadGitHistory(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
@@ -94,7 +98,7 @@ func LoadGitHistory(c *CommonState, ctx context.Context, sink progress.Sink) err
 	total, err := git.CommitTotalInHistoryRange(ctx, repoRoot, historyRange)
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return ctx.Err()
+			return eris.Wrap(ctx.Err(), "git history counting cancelled")
 		}
 
 		return eris.Wrap(err, "failed to count git commits")
@@ -103,18 +107,19 @@ func LoadGitHistory(c *CommonState, ctx context.Context, sink progress.Sink) err
 	historyProg := newHistoryProgress(sink, total)
 
 	requested := append(slices.Clone(c.Requested.BaseMetrics), commitExpressionBaseMetrics(c.Requested)...)
+
 	commits, err := git.BulkCommitHistoryAndPrewarmInHistoryRange(
 		ctx,
 		repoRoot, tracked, requested, historyRange, historyProg.OnCommit,
 	)
-
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return ctx.Err()
+			return eris.Wrap(ctx.Err(), "git history loading cancelled")
 		}
 
 		return eris.Wrap(err, "failed to load commit history")
 	}
+
 	if err := historyProg.Err(); err != nil {
 		return eris.Wrap(err, "report commit progress")
 	}
@@ -153,6 +158,8 @@ func ShareGitHistoryPaths(states []*CommonState) error {
 
 // PrewarmGitMetrics loads history only when the requested metrics need the
 // file-level Git cache populated before provider execution.
+//
+//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func PrewarmGitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	if len(c.GitHistory) > 0 || len(onlyFileGitMetrics(c.Requested.BaseMetrics)) == 0 {
 		return nil

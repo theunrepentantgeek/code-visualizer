@@ -39,5 +39,4 @@ func RenderVisualization(s *pipeline.State) {
 
 func WriteOutput(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
-	pipeline.ApplyFuncXY(s, LogResult)
 }

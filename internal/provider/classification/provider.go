@@ -54,6 +54,8 @@ func Register(cfg config.SelectionMetric) {
 
 // Load walks every file in root and sets the classification metric for files
 // that match at least one rule.
+//
+//nolint:revive,nolintlint // The traversal keeps classification precedence and cancellation local.
 func (l *loader) Load(ctx context.Context, root *model.Directory) error {
 	var cancelled error
 
@@ -61,6 +63,7 @@ func (l *loader) Load(ctx context.Context, root *model.Directory) error {
 		if cancelled != nil {
 			return
 		}
+
 		if err := ctx.Err(); err != nil {
 			cancelled = err
 

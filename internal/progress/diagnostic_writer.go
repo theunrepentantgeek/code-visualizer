@@ -15,6 +15,7 @@ func (w *diagnosticWriter) Write(p []byte) (int, error) {
 	defer w.reporter.mu.Unlock()
 
 	w.buffer.Write(p)
+
 	for {
 		line, err := w.buffer.ReadString('\n')
 		if err != nil {

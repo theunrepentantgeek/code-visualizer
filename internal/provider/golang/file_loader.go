@@ -36,12 +36,12 @@ func loadFileMetrics(ctx context.Context, root *model.Directory) error {
 
 	for _, f := range files {
 		if err := groupCtx.Err(); err != nil {
-			return err
+			return eris.Wrap(err, "Go file loading cancelled")
 		}
 
 		g.Go(func() error {
 			if err := groupCtx.Err(); err != nil {
-				return err
+				return eris.Wrap(err, "Go file loading cancelled")
 			}
 
 			populateFileMetrics(f)

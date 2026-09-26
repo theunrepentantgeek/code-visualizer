@@ -9,6 +9,7 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
+
 	"github.com/sebdah/goldie/v2"
 )
 
@@ -16,6 +17,7 @@ func plainTestReporter(t *testing.T, verbose bool) (Reporter, *bytes.Buffer, *ti
 	t.Helper()
 
 	var output bytes.Buffer
+
 	now := time.Date(2026, 9, 26, 10, 0, 0, 0, time.UTC)
 	reporter, err := New(Config{
 		Mode:       ModePlain,
@@ -26,6 +28,10 @@ func plainTestReporter(t *testing.T, verbose bool) (Reporter, *bytes.Buffer, *ti
 		Now:        func() time.Time { return now },
 	})
 	NewWithT(t).Expect(err).NotTo(HaveOccurred())
+
+	if reporter == nil {
+		panic("progress.New returned a nil reporter without an error")
+	}
 
 	return reporter, &output, &now
 }
@@ -38,16 +44,31 @@ func TestPlain_SuccessOutputMatchesGolden(t *testing.T) {
 	g.Expect(reporter.Begin("Processing project", 2)).To(Succeed())
 	preparing, err := reporter.StartStage("Preparing inputs", StageSummary, WorkNone)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if preparing == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	*now = now.Add(time.Second)
+
 	g.Expect(preparing.Complete()).To(Succeed())
 
 	acquiring, err := reporter.StartStage("Acquiring data", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if acquiring == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(acquiring.SetTotal(100)).To(Succeed())
 	g.Expect(acquiring.SetProgress(5)).To(Succeed())
+
 	*now = now.Add(10 * time.Second)
+
 	g.Expect(acquiring.SetProgress(6)).To(Succeed())
+
 	*now = now.Add(time.Second)
+
 	g.Expect(acquiring.Complete()).To(Succeed())
 	g.Expect(reporter.Finish()).To(Succeed())
 	g.Expect(reporter.Close()).To(Succeed())
@@ -64,7 +85,13 @@ func TestPlain_FailureOutputMatchesGoldenAndIsLineSafe(t *testing.T) {
 	g.Expect(reporter.Begin("Processing project", 1)).To(Succeed())
 	stage, err := reporter.StartStage("Acquiring data", StageLive, WorkCommits)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	*now = now.Add(2 * time.Second)
+
 	g.Expect(stage.Fail(errors.New("boom\ndetails"))).To(Succeed())
 	g.Expect(reporter.Close()).To(Succeed())
 
@@ -79,11 +106,18 @@ func TestPlain_ThrottlesProgressByPercentageAndTime(t *testing.T) {
 	g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
 	stage, err := reporter.StartStage("Work", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(stage.SetTotal(100)).To(Succeed())
 	g.Expect(stage.SetProgress(4)).To(Succeed())
 	g.Expect(stage.SetProgress(5)).To(Succeed())
 	g.Expect(stage.SetProgress(5)).To(Succeed())
+
 	*now = now.Add(10 * time.Second)
+
 	g.Expect(stage.SetProgress(6)).To(Succeed())
 	g.Expect(stage.SetProgress(100)).To(Succeed())
 
@@ -112,6 +146,11 @@ func TestPlain_StatusRequiresVerboseMode(t *testing.T) {
 			g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
 			stage, err := reporter.StartStage("Work", StageLive, WorkObservations)
 			g.Expect(err).NotTo(HaveOccurred())
+
+			if stage == nil {
+				panic("StartStage returned a nil stage without an error")
+			}
+
 			g.Expect(stage.SetStatus("reading src/main.go")).To(Succeed())
 			g.Expect(strings.Contains(output.String(), "reading src/main.go")).To(Equal(tc.want))
 		})
@@ -126,6 +165,11 @@ func TestPlain_ZeroTotalStageStaysIndeterminate(t *testing.T) {
 	g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
 	stage, err := reporter.StartStage("Work", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(stage.Complete()).To(Succeed())
 	g.Expect(reporter.Finish()).To(Succeed())
 
@@ -141,6 +185,11 @@ func TestPlain_CancellationIsDistinctFromFailure(t *testing.T) {
 	g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
 	stage, err := reporter.StartStage("Work", StageLive, WorkCommits)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(stage.Cancel(errors.New("interrupted"))).To(Succeed())
 
 	g.Expect(output.String()).To(ContainSubstring("[1/1] Work: cancelled"))

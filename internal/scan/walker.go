@@ -40,7 +40,7 @@ func newWalker(
 
 func (w walker) scanDir(dirPath string) (*model.Directory, error) {
 	if err := w.ctx.Err(); err != nil {
-		return nil, err
+		return nil, eris.Wrap(err, "directory scan cancelled")
 	}
 
 	entries, err := os.ReadDir(dirPath)
@@ -57,7 +57,7 @@ func (w walker) scanDir(dirPath string) (*model.Directory, error) {
 
 	for _, entry := range entries {
 		if err := w.ctx.Err(); err != nil {
-			return nil, err
+			return nil, eris.Wrap(err, "directory scan cancelled")
 		}
 
 		entryPath := filepath.Join(dirPath, entry.Name())
@@ -87,6 +87,7 @@ func (w walker) scanDir(dirPath string) (*model.Directory, error) {
 	return node, nil
 }
 
+//nolint:revive,nolintlint // Entry filtering and filesystem edge cases form one traversal decision.
 func (w walker) processEntry(node *model.Directory, entry os.DirEntry, entryPath string) error {
 	included, relPath, err := w.policy.includes(entryPath)
 	if err != nil {
@@ -109,7 +110,7 @@ func (w walker) processEntry(node *model.Directory, entry os.DirEntry, entryPath
 
 	if entry.Type().IsRegular() {
 		if err := w.ctx.Err(); err != nil {
-			return err
+			return eris.Wrap(err, "directory scan cancelled")
 		}
 
 		info, err := entry.Info()
@@ -133,7 +134,7 @@ func (w walker) processEntry(node *model.Directory, entry os.DirEntry, entryPath
 
 func (w walker) processSymlink(node *model.Directory, entry os.DirEntry, entryPath string) error {
 	if err := w.ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "directory scan cancelled")
 	}
 
 	info, err := os.Stat(entryPath)

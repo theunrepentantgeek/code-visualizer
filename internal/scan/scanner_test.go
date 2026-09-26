@@ -32,6 +32,7 @@ func TestScanTree_CancelledContextStopsBeforeProgress(t *testing.T) {
 	g := NewWithT(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	progress := &countingProgress{}
 	tree := source.Tree{
 		FS: fstest.MapFS{
@@ -53,6 +54,7 @@ func TestScan_CancelledContextStopsBeforeProgress(t *testing.T) {
 	g := NewWithT(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	progress := &countingProgress{}
 	dir := t.TempDir()
 	g.Expect(os.WriteFile(filepath.Join(dir, "one.txt"), []byte("one"), 0o600)).To(Succeed())
@@ -251,7 +253,11 @@ func TestScanTreeSkipsCyclicAndDeepSymlinks(t *testing.T) {
 		fsys[name] = &fstest.MapFile{Data: []byte(target), Mode: fs.ModeSymlink}
 	}
 
-	root, err := ScanTree(context.Background(), source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	root, err := ScanTree(
+		context.Background(),
+		source.Tree{FS: fsys, RootName: "root", RootPath: "/root"},
+		nil, nil, true,
+	)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -276,7 +282,11 @@ func TestScanTreeSkipsInaccessibleDirectories(t *testing.T) {
 		"blocked/file.txt": {Data: []byte("hidden\n")},
 	}}
 
-	root, err := ScanTree(context.Background(), source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	root, err := ScanTree(
+		context.Background(),
+		source.Tree{FS: fsys, RootName: "root", RootPath: "/root"},
+		nil, nil, true,
+	)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {
@@ -295,7 +305,11 @@ func TestScanTreeSkipsFilesRemovedAfterDirectoryRead(t *testing.T) {
 		"gone.txt": {Data: []byte("gone\n")},
 	}}
 
-	root, err := ScanTree(context.Background(), source.Tree{FS: fsys, RootName: "root", RootPath: "/root"}, nil, nil, true)
+	root, err := ScanTree(
+		context.Background(),
+		source.Tree{FS: fsys, RootName: "root", RootPath: "/root"},
+		nil, nil, true,
+	)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if root == nil {

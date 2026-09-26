@@ -20,8 +20,8 @@ import (
 )
 
 type CLI struct {
-	Quiet    bool          `help:"Suppress all non-essential output; only warnings and errors are shown." short:"q" xor:"verbosity"` //nolint:revive,nolintlint // kong struct tags require long lines
-	Verbose  bool          `help:"Show detailed progress during scanning and metric calculation." short:"v" xor:"verbosity"`
+	Quiet    bool          `help:"Suppress progress; show only warnings and errors." short:"q" xor:"verbosity"`
+	Verbose  bool          `help:"Show detailed scanning and metric progress." short:"v" xor:"verbosity"`
 	Debug    bool          `help:"Show per-directory scan progress (implies verbose output)." xor:"verbosity"`
 	Config   string        `help:"Path to configuration file (.yaml, .yml, or .json)." name:"config" optional:""`
 	Progress progress.Mode `help:"Progress output mode." default:"auto" enum:"auto,tty,plain"`
@@ -52,12 +52,30 @@ type Flags struct {
 	Config       *config.Config
 	Context      context.Context
 	Reporter     progress.Reporter
+	Stdout       io.Writer
 	configPath   string // path passed to --config, empty if not explicitly provided
+}
+
+type application struct {
+	args       []string
+	stdout     io.Writer
+	stderr     io.Writer
+	context    context.Context
+	isTerminal func(io.Writer) bool
+	lookupEnv  func(string) (string, bool)
 }
 
 // HasExplicitConfig reports whether --config was explicitly provided on the command line.
 func (f *Flags) HasExplicitConfig() bool {
 	return f.configPath != ""
+}
+
+func (f *Flags) stdoutWriter() io.Writer {
+	if f.Stdout != nil {
+		return f.Stdout
+	}
+
+	return os.Stdout
 }
 
 // toStagesFlags converts the cmd-local Flags struct into the stages-package form.
@@ -83,6 +101,7 @@ func stagesFlagsForCommand(flags *Flags, fromValue, untilValue string) *stages.F
 	return parsedFlags
 }
 
+//nolint:revive // Boolean values map directly from independent CLI flags.
 func setupLogger(writer io.Writer, debug, noColor bool) {
 	level := slog.LevelWarn
 	if debug {
@@ -100,8 +119,25 @@ func main() {
 	git.Register()
 	golang.Register()
 
+	runContext, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	code := runApplication(application{
+		args:       os.Args[1:],
+		stdout:     os.Stdout,
+		stderr:     os.Stderr,
+		context:    runContext,
+		isTerminal: nil,
+		lookupEnv:  os.LookupEnv,
+	})
+
+	stop()
+
+	os.Exit(code)
+}
+
+//nolint:cyclop,funlen,revive // Bootstrap failures map directly to documented process exit codes.
+func runApplication(app application) int {
 	// Install tint early so bootstrap errors are formatted consistently.
-	setupLogger(os.Stderr, false, false)
+	setupLogger(app.stderr, false, false)
 
 	cli := CLI{}
 
@@ -110,13 +146,15 @@ func main() {
 		kong.Name("codeviz"),
 		kong.Description("Generate visualizations of file trees."),
 		filterMapperOption(),
+		kong.Writers(app.stdout, app.stderr),
 	)
 	if err != nil {
 		slog.Error("failed to initialize CLI", "error", err)
-		os.Exit(5)
+
+		return 5
 	}
 
-	ctx, err := parser.Parse(os.Args[1:])
+	ctx, err := parser.Parse(app.args)
 	if err != nil {
 		var parseErr *kong.ParseError
 		if errors.As(err, &parseErr) && parseErr.Context != nil {
@@ -124,33 +162,35 @@ func main() {
 		}
 
 		slog.Error("failed to parse arguments", "err", err)
-		os.Exit(1)
+
+		return 1
 	}
 
 	reporter, err := progress.New(progress.Config{
-		Mode:    cli.Progress,
-		Writer:  os.Stderr,
-		NoColor: cli.NoColor,
-		Quiet:   cli.Quiet,
-		Verbose: cli.Verbose || cli.Debug,
+		Mode:       cli.Progress,
+		Writer:     app.stderr,
+		IsTerminal: app.isTerminal,
+		LookupEnv:  app.lookupEnv,
+		NoColor:    cli.NoColor,
+		Quiet:      cli.Quiet,
+		Verbose:    cli.Verbose || cli.Debug,
 	})
 	if err != nil {
 		slog.Error("failed to initialize progress output", "error", err)
-		os.Exit(5)
+
+		return 5
 	}
 
-	noColor := cli.NoColor || os.Getenv("NO_COLOR") != "" ||
-		os.Getenv("TERM") == "dumb" || os.Getenv("FORCE_COLOR") == "0"
+	noColor := cli.NoColor || environmentDisablesColor(app.lookupEnv)
 	setupLogger(reporter.DiagnosticWriter(), cli.Debug, noColor)
-	runContext, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
 
 	cfg := config.New()
 
 	if cli.Config != "" {
 		if loadErr := cfg.Load(cli.Config); loadErr != nil {
 			slog.Error(loadErr.Error())
-			os.Exit(5)
+
+			return 5
 		}
 	}
 
@@ -161,8 +201,9 @@ func main() {
 		ExportConfig: cli.ExportConfig,
 		ExportData:   cli.ExportData,
 		Config:       cfg,
-		Context:      runContext,
+		Context:      app.context,
 		Reporter:     reporter,
+		Stdout:       app.stdout,
 		configPath:   cli.Config,
 	}
 
@@ -170,8 +211,26 @@ func main() {
 	if err != nil {
 		code := classifyError(err)
 		slog.Error("command failed", "err", err)
-		os.Exit(code)
+
+		return code
 	}
+
+	return 0
+}
+
+func environmentDisablesColor(lookupEnv func(string) (string, bool)) bool {
+	for name, disabledValue := range map[string]string{
+		"NO_COLOR":    "",
+		"TERM":        "dumb",
+		"FORCE_COLOR": "0",
+	} {
+		value, exists := lookupEnv(name)
+		if exists && (disabledValue == "" || value == disabledValue) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func classifyError(err error) int {

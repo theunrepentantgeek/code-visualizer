@@ -16,6 +16,8 @@ import (
 //
 // This is the data foundation for all authorship metrics (#550).
 // It must be called after ScanFilesystem (c.Root must be populated).
+//
+//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func LoadAuthorHistory(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	repoRoot, err := repoRootForState(c, "author history")
 	if err != nil {
@@ -29,7 +31,7 @@ func LoadAuthorHistory(c *CommonState, ctx context.Context, sink progress.Sink) 
 	total, err := git.CommitTotalInHistoryRange(ctx, repoRoot, historyRange)
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return ctx.Err()
+			return eris.Wrap(ctx.Err(), "author history counting cancelled")
 		}
 
 		return eris.Wrap(err, "failed to count git commits")
@@ -45,14 +47,14 @@ func LoadAuthorHistory(c *CommonState, ctx context.Context, sink progress.Sink) 
 		historyRange,
 		historyProg.OnCommit,
 	)
-
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
-			return ctx.Err()
+			return eris.Wrap(ctx.Err(), "author history loading cancelled")
 		}
 
 		return eris.Wrap(err, "failed to load author history")
 	}
+
 	if err := historyProg.Err(); err != nil {
 		return eris.Wrap(err, "report author progress")
 	}

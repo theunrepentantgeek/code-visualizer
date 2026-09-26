@@ -96,6 +96,7 @@ func TestBulkCommitHistoryAndPrewarm_CancellationStopsIteration(t *testing.T) {
 		HistoryRange{},
 		func() {
 			processed++
+
 			cancel()
 		},
 	)
@@ -134,6 +135,7 @@ func TestBulkAuthorHistoryInHistoryRange_CancellationStopsIterationAndReleasesRe
 		HistoryRange{},
 		func() {
 			processed++
+
 			cancel()
 		},
 	)

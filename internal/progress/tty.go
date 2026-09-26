@@ -11,8 +11,8 @@ import (
 )
 
 type liveDisplay interface {
-	updateText(string) error
-	setCurrent(int64) error
+	updateText(text string) error
+	setCurrent(current int64) error
 	stop() error
 }
 
@@ -46,6 +46,7 @@ func newDefaultTTYRenderer(config resolvedConfig) (renderer, error) {
 	})
 }
 
+//nolint:cyclop,revive // Event rendering is intentionally an exhaustive lifecycle switch.
 func (r *ttyRenderer) render(e event) error {
 	switch e.kind {
 	case eventBegun:
@@ -53,6 +54,7 @@ func (r *ttyRenderer) render(e event) error {
 	case eventStageStarted:
 		if e.stageKind == StageLive {
 			r.activeLabel = cleanLine(e.name)
+
 			display, err := r.backend.startSpinner(r.activeLabel, !r.supportsUnicode())
 			if err != nil {
 				return err
@@ -83,6 +85,8 @@ func (r *ttyRenderer) render(e event) error {
 		return err
 	case eventFinished:
 		return r.backend.println(r.decorate(r.successSymbol(), cleanLine(e.title)+": done"))
+	default:
+		return nil
 	}
 
 	return nil
@@ -182,9 +186,11 @@ func (r *ttyRenderer) writeDiagnostic(line string) error {
 	if err := r.stopActive(); err != nil {
 		return err
 	}
+
 	if err := r.backend.println(strings.TrimSuffix(line, "\r")); err != nil {
 		return err
 	}
+
 	if !wasActive {
 		return nil
 	}
@@ -217,23 +223,26 @@ type ptermBackend struct {
 	noColor bool
 }
 
+//nolint:revive // ASCII selects terminal-safe PTerm glyphs.
 func (b *ptermBackend) startSpinner(text string, ascii bool) (liveDisplay, error) {
 	printer := pterm.DefaultSpinner.WithWriter(b.writer).WithRemoveWhenDone(true).WithShowTimer(false)
 	if ascii {
 		printer = printer.WithSequence("-", "\\", "|", "/")
 	}
+
 	if b.noColor {
 		printer = printer.WithStyle(pterm.NewStyle()).WithMessageStyle(pterm.NewStyle())
 	}
 
 	started, err := printer.Start(text)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("start terminal spinner: %w", err)
 	}
 
 	return &ptermSpinner{printer: started}, nil
 }
 
+//nolint:revive // ASCII selects terminal-safe PTerm glyphs.
 func (b *ptermBackend) startProgress(text string, total int64, ascii bool) (liveDisplay, error) {
 	if total > int64(math.MaxInt) {
 		return nil, fmt.Errorf("progress total %d exceeds terminal renderer capacity", total)
@@ -249,13 +258,14 @@ func (b *ptermBackend) startProgress(text string, total int64, ascii bool) (live
 	if ascii {
 		printer = printer.WithBarCharacter("=").WithBarFiller(" ").WithLastCharacter(">")
 	}
+
 	if b.noColor {
 		printer = printer.WithBarStyle(pterm.NewStyle()).WithTitleStyle(pterm.NewStyle())
 	}
 
 	started, err := printer.Start()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("start terminal progress: %w", err)
 	}
 
 	return &ptermProgress{printer: started}, nil
@@ -263,8 +273,11 @@ func (b *ptermBackend) startProgress(text string, total int64, ascii bool) (live
 
 func (b *ptermBackend) println(text string) error {
 	_, err := fmt.Fprintln(b.writer, text)
+	if err != nil {
+		return fmt.Errorf("write terminal progress: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 type ptermSpinner struct {
@@ -278,7 +291,13 @@ func (d *ptermSpinner) updateText(text string) error {
 }
 
 func (*ptermSpinner) setCurrent(int64) error { return nil }
-func (d *ptermSpinner) stop() error          { return d.printer.Stop() }
+func (d *ptermSpinner) stop() error {
+	if err := d.printer.Stop(); err != nil {
+		return fmt.Errorf("stop terminal spinner: %w", err)
+	}
+
+	return nil
+}
 
 type ptermProgress struct {
 	printer *pterm.ProgressbarPrinter
@@ -298,6 +317,9 @@ func (d *ptermProgress) setCurrent(current int64) error {
 
 func (d *ptermProgress) stop() error {
 	_, err := d.printer.Stop()
+	if err != nil {
+		return fmt.Errorf("stop terminal progress: %w", err)
+	}
 
-	return err
+	return nil
 }

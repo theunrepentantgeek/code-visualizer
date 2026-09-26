@@ -126,18 +126,20 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	s := pipeline.NewState(common, cfg, viz)
 
 	var phases []workflowPhase
+
 	phases = []workflowPhase{
-		{Name: "Preparing", Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
 			pipeline.ApplyFuncX(s, stages.ValidatePaths)
 			pipeline.ApplyFuncX(s, stages.ExportConfig)
 			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
 			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 			pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+
 			phases[1].Work = stages.AcquisitionWork(common)
 		}},
-		{Name: "Acquiring data", Kind: progress.StageLive, Run: radialtree.AcquireData},
-		{Name: "Rendering", Kind: progress.StageSummary, Run: radialtree.RenderVisualization},
-		{Name: "Writing output", Kind: progress.StageSummary, Run: radialtree.WriteOutput},
+		{Name: phaseAcquiring, Kind: progress.StageLive, Run: radialtree.AcquireData},
+		{Name: phaseRendering, Kind: progress.StageSummary, Run: radialtree.RenderVisualization},
+		{Name: phaseWriting, Kind: progress.StageSummary, Run: radialtree.WriteOutput},
 	}
 	err := runCommandWorkflow(flags, s, "Radial tree", phases)
 

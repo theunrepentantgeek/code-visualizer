@@ -506,7 +506,7 @@ func (s *repoService) bulkPrewarm(
 	onCommitProcessed func(),
 ) error {
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "bulk prewarm cancelled")
 	}
 
 	missing, groupKey := s.bulkPrewarmWork(paths, requirements)
@@ -525,7 +525,7 @@ func (s *repoService) bulkPrewarm(
 
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return eris.Wrap(ctx.Err(), "bulk prewarm cancelled")
 	case outcome := <-result:
 		if outcome.Err != nil {
 			return eris.Wrap(outcome.Err, "bulk prewarm")

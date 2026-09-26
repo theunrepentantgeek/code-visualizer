@@ -155,8 +155,9 @@ func buildAlluvialPhases(
 	cfg *config.Alluvial,
 ) []workflowPhase {
 	phases := make([]workflowPhase, 0, len(cfg.References)+3)
+
 	phases = append(phases, workflowPhase{
-		Name: "Preparing",
+		Name: phasePreparing,
 		Kind: progress.StageSummary,
 		Run: func(s *pipeline.State) {
 			pipeline.ApplyFuncX(s, stages.ValidatePaths)
@@ -179,8 +180,6 @@ func buildAlluvialPhases(
 		},
 	})
 	for index, reference := range cfg.References {
-		index := index
-		reference := reference
 		phases = append(phases, workflowPhase{
 			Name: "Loading " + alluvial.SnapshotReference(reference),
 			Kind: progress.StageLive,
@@ -191,12 +190,14 @@ func buildAlluvialPhases(
 			},
 		})
 	}
-	phases = append(phases,
-		workflowPhase{Name: "Rendering", Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+
+	phases = append(
+		phases,
+		workflowPhase{Name: phaseRendering, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
 			alluvial.FinalizeData(s)
 			alluvial.RenderVisualization(s)
 		}},
-		workflowPhase{Name: "Writing output", Kind: progress.StageSummary, Run: alluvial.WriteOutput},
+		workflowPhase{Name: phaseWriting, Kind: progress.StageSummary, Run: alluvial.WriteOutput},
 	)
 
 	return phases

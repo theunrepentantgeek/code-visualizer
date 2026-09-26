@@ -48,13 +48,15 @@ func LoadAuthorshipMetricsInHistoryRange(
 
 // Load computes and stores all nine authorship metrics on every file and directory node.
 // The requested slice is ignored because the metrics share a single source history walk.
+//
+//nolint:cyclop,funlen,revive,nolintlint // Authorship calculation deliberately performs one shared history walk.
 func (al *authorshipLoader) Load(
 	ctx context.Context,
 	root *model.Directory,
 	_ []metric.Name,
 ) error {
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "authorship loading cancelled")
 	}
 
 	s, err := getService(repositoryPath(root))
@@ -102,8 +104,9 @@ func (al *authorshipLoader) Load(
 
 		applyAuthorshipToNode(records, result, al.params, f)
 	})
+
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "authorship loading cancelled")
 	}
 
 	// Apply to every directory: recompute from the flat union of subtree source
@@ -120,8 +123,9 @@ func (al *authorshipLoader) Load(
 
 		applyAuthorshipToNode(records, result, al.params, d)
 	})
+
 	if err := ctx.Err(); err != nil {
-		return err
+		return eris.Wrap(err, "authorship loading cancelled")
 	}
 
 	// Bucket identity metrics: replace contributors ranked beyond IdentityTopK

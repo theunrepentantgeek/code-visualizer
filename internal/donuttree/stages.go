@@ -82,8 +82,6 @@ func resolveDirectoryMetric(name metric.Name) (metric.Name, error) {
 
 // BuildInksStage builds the donut tree's directory inks.
 func BuildInksStage(c *stages.CommonState, d *State) error {
-	slog.Info("Rendering image", "output", c.Output, "canvas_size", donutCanvasSize(c))
-
 	d.Inks = BuildInks(
 		c.Root,
 		c.Requested,

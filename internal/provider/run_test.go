@@ -20,8 +20,10 @@ import (
 func TestRunLoaders_CancelledContextStartsNoLoaders(t *testing.T) {
 	g := NewWithT(t)
 	resetBaseRegistry(t)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	var called atomic.Bool
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
@@ -43,13 +45,18 @@ func TestRunLoaders_CancelledContextStartsNoLoaders(t *testing.T) {
 func TestRunLoaders_CancellationReachesParallelSibling(t *testing.T) {
 	g := NewWithT(t)
 	resetBaseRegistry(t)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	var siblingStarted atomic.Bool
+
+	siblingReady := make(chan struct{})
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{"canceller"},
 		Load: func(ctx context.Context, _ *model.Directory, _ []metric.Name) error {
+			<-siblingReady
 			cancel()
 
 			return ctx.Err()
@@ -59,6 +66,7 @@ func TestRunLoaders_CancellationReachesParallelSibling(t *testing.T) {
 		Metrics: []metric.Name{"sibling"},
 		Load: func(ctx context.Context, _ *model.Directory, _ []metric.Name) error {
 			siblingStarted.Store(true)
+			close(siblingReady)
 			<-ctx.Done()
 
 			return ctx.Err()

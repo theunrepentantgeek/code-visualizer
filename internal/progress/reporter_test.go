@@ -23,8 +23,7 @@ func (r *recordingRenderer) render(e event) error {
 	return nil
 }
 
-func (r *recordingRenderer) diagnosticWriter() io.Writer  { return r.writer }
-func (r *recordingRenderer) writeDiagnostic(string) error { return nil }
+func (*recordingRenderer) writeDiagnostic(string) error { return nil }
 
 func (r *recordingRenderer) close() error {
 	r.closed++
@@ -57,6 +56,11 @@ func TestReporter_CompletesNormalLifecycleAndFinalProgress(t *testing.T) {
 	g.Expect(reporter.Begin("Processing project", 1)).To(Succeed())
 	stage, err := reporter.StartStage("Acquiring data", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(stage.WorkKind()).To(Equal(WorkObservations))
 	g.Expect(stage.SetTotal(4)).To(Succeed())
 	g.Expect(stage.SetProgress(3)).To(Succeed())
@@ -87,6 +91,11 @@ func TestReporter_RejectsInvalidLifecycleTransitions(t *testing.T) {
 
 	first, err := reporter.StartStage("first", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if first == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	_, err = reporter.StartStage("overlap", StageSummary, WorkNone)
 	g.Expect(err).To(MatchError(ContainSubstring("active")))
 	g.Expect(reporter.Finish()).To(MatchError(ContainSubstring("active")))
@@ -104,6 +113,11 @@ func TestReporter_RejectsInvalidLifecycleTransitions(t *testing.T) {
 
 	second, err := reporter.StartStage("second", StageSummary, WorkNone)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if second == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(second.SetTotal(1)).To(MatchError(ContainSubstring("summary")))
 	g.Expect(second.Fail(errors.New("boom"))).To(Succeed())
 	g.Expect(second.Cancel(context.Canceled)).To(MatchError(ContainSubstring("finished")))
@@ -119,6 +133,11 @@ func TestReporter_RequiresEveryPlannedStageBeforeFinish(t *testing.T) {
 	g.Expect(reporter.Begin("Processing", 2)).To(Succeed())
 	stage, err := reporter.StartStage("first", StageSummary, WorkNone)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(stage.Complete()).To(Succeed())
 	g.Expect(reporter.Finish()).To(MatchError(ContainSubstring("1 of 2")))
 }
@@ -132,28 +151,51 @@ func TestReporter_RendersFailureAndCancellation(t *testing.T) {
 	g.Expect(reporter.Begin("Processing", 2)).To(Succeed())
 	failed, err := reporter.StartStage("first", StageSummary, WorkNone)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if failed == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(failed.Fail(errors.New("boom"))).To(Succeed())
+
 	cancelled, err := reporter.StartStage("second", StageSummary, WorkNone)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if cancelled == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(cancelled.Cancel(context.Canceled)).To(Succeed())
 
 	kinds := make([]eventKind, 0, len(renderer.events))
 	for _, e := range renderer.events {
 		kinds = append(kinds, e.kind)
 	}
+
 	g.Expect(kinds).To(ContainElements(eventStageFailed, eventStageCancelled))
 }
 
 func TestReporter_QuietModeValidatesWithoutWriting(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
+
 	var output bytes.Buffer
 
 	reporter, err := New(Config{Writer: &output, Quiet: true})
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if reporter == nil {
+		panic("progress.New returned a nil reporter without an error")
+	}
+
 	g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
 	stage, err := reporter.StartStage("work", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	g.Expect(stage.SetTotal(1)).To(Succeed())
 	g.Expect(stage.SetProgress(1)).To(Succeed())
 	g.Expect(stage.Complete()).To(Succeed())

@@ -23,14 +23,19 @@ func newTestSink(work progress.WorkKind) *recordingSink {
 func (s *recordingSink) WorkKind() progress.WorkKind { return s.work }
 func (s *recordingSink) SetTotal(total int64) error {
 	s.totals = append(s.totals, total)
+
 	return nil
 }
+
 func (s *recordingSink) SetProgress(current int64) error {
 	s.current = append(s.current, current)
+
 	return nil
 }
+
 func (s *recordingSink) SetStatus(status string) error {
 	s.statuses = append(s.statuses, status)
+
 	return nil
 }
 

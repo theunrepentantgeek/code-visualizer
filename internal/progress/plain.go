@@ -59,6 +59,7 @@ func (r *plainRenderer) renderProgress(e event) error {
 	now := r.now()
 	percentageAdvanced := percentage-r.lastPercentage >= 5
 	timeElapsed := now.Sub(r.lastProgressAt) >= 10*time.Second
+
 	finished := e.current == e.total
 	if !percentageAdvanced && !timeElapsed && !finished {
 		return nil
@@ -81,17 +82,19 @@ func (r *plainRenderer) renderProgress(e event) error {
 	return nil
 }
 
-func (r *plainRenderer) prefix(e event) string {
+func (*plainRenderer) prefix(e event) string {
 	return fmt.Sprintf("[%d/%d] %s", e.stageIndex, e.stageCount, cleanLine(e.name))
 }
 
 func (r *plainRenderer) writeLine(format string, args ...any) error {
 	_, err := fmt.Fprintf(r.writer, format+"\n", args...)
+	if err != nil {
+		return fmt.Errorf("write plain progress: %w", err)
+	}
 
-	return err
+	return nil
 }
 
-func (r *plainRenderer) diagnosticWriter() io.Writer { return r.writer }
 func (r *plainRenderer) writeDiagnostic(line string) error {
 	return r.writeLine("%s", strings.TrimSuffix(line, "\r"))
 }

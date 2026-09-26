@@ -12,7 +12,9 @@ import (
 func TestDiagnosticWriter_BuffersPartialAndSplitsMultipleLines(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
+
 	var output bytes.Buffer
+
 	reporter, err := New(Config{
 		Mode:       ModePlain,
 		Writer:     &output,
@@ -20,6 +22,11 @@ func TestDiagnosticWriter_BuffersPartialAndSplitsMultipleLines(t *testing.T) {
 		LookupEnv:  env(nil),
 	})
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if reporter == nil {
+		panic("progress.New returned a nil reporter without an error")
+	}
+
 	writer := reporter.DiagnosticWriter()
 
 	n, err := writer.Write([]byte("first"))
@@ -58,7 +65,9 @@ func TestDiagnosticWriter_PausesWritesAndRedrawsActiveTTY(t *testing.T) {
 func TestDiagnosticWriter_PlainModeRemainsAppendOnly(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
+
 	var output bytes.Buffer
+
 	reporter, err := New(Config{
 		Mode:       ModePlain,
 		Writer:     &output,
@@ -67,9 +76,18 @@ func TestDiagnosticWriter_PlainModeRemainsAppendOnly(t *testing.T) {
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 
+	if reporter == nil {
+		panic("progress.New returned a nil reporter without an error")
+	}
+
 	g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
 	stage, err := reporter.StartStage("Work", StageLive, WorkObservations)
 	g.Expect(err).NotTo(HaveOccurred())
+
+	if stage == nil {
+		panic("StartStage returned a nil stage without an error")
+	}
+
 	_, err = reporter.DiagnosticWriter().Write([]byte("warning\n"))
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(stage.Complete()).To(Succeed())

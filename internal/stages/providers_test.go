@@ -12,7 +12,6 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
@@ -87,7 +86,8 @@ func progressState() *stages.CommonState {
 func TestRunProvidersReportsCompletedMetricProgress(t *testing.T) {
 	g := NewGomegaWithT(t)
 	registerProgressLoader(t, nil)
-	sink := newTestSink(progress.WorkObservations)
+
+	sink := newTestSink()
 
 	g.Expect(stages.RunProviders(progressState(), context.Background(), sink)).To(Succeed())
 	g.Expect(sink.totals).To(Equal([]int64{2}))
@@ -135,7 +135,7 @@ func TestRunProvidersReportsOnlyWorkRemainingAfterGitPrewarm(t *testing.T) {
 		},
 	}
 
-	sink := newTestSink(progress.WorkObservations)
+	sink := newTestSink()
 	g.Expect(stages.RunProviders(state, context.Background(), sink)).To(Succeed())
 
 	g.Expect(prewarmedGitRan.Load()).To(BeTrue())
@@ -147,7 +147,8 @@ func TestRunProvidersReportsOnlyWorkRemainingAfterGitPrewarm(t *testing.T) {
 func TestRunProvidersOmitsCompletionWhenLoadingFailsAtTotal(t *testing.T) {
 	g := NewGomegaWithT(t)
 	registerProgressLoader(t, errors.New("load failed after reporting progress"))
-	sink := newTestSink(progress.WorkObservations)
+
+	sink := newTestSink()
 
 	err := stages.RunProviders(progressState(), context.Background(), sink)
 
@@ -159,10 +160,11 @@ func TestRunProvidersOmitsCompletionWhenLoadingFailsAtTotal(t *testing.T) {
 func TestRunProvidersPropagatesCancellation(t *testing.T) {
 	g := NewGomegaWithT(t)
 	registerProgressLoader(t, nil)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	err := stages.RunProviders(progressState(), ctx, newTestSink(progress.WorkObservations))
+	err := stages.RunProviders(progressState(), ctx, newTestSink())
 
 	g.Expect(err).To(MatchError(context.Canceled))
 }

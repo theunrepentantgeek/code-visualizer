@@ -23,7 +23,6 @@ func buildTrackedSet(t *testing.T, repoRootPath string, dir *model.Directory) ma
 		if err == nil {
 			tracked[filepath.ToSlash(rel)] = true
 		}
-
 	})
 
 	return tracked

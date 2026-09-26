@@ -5,8 +5,17 @@ import (
 	"errors"
 	"io"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
+)
+
+const (
+	phasePreparing = "Preparing"
+	phaseAcquiring = "Acquiring data"
+	phaseRendering = "Rendering"
+	phaseWriting   = "Writing output"
 )
 
 func runCommandWorkflow(
@@ -23,13 +32,14 @@ func runCommandWorkflow(
 	reporter := flags.Reporter
 	if reporter == nil {
 		var err error
+
 		reporter, err = progress.New(progress.Config{
 			Mode:   progress.ModePlain,
 			Writer: io.Discard,
 			Quiet:  true,
 		})
 		if err != nil {
-			return err
+			return eris.Wrap(err, "initialize quiet progress reporter")
 		}
 	}
 
@@ -43,6 +53,7 @@ type workflowPhase struct {
 	Run  func(*pipeline.State)
 }
 
+//nolint:revive // Lifecycle ordering and error precedence are intentionally centralized.
 func runWorkflow(
 	ctx context.Context,
 	reporter progress.Reporter,
@@ -57,17 +68,17 @@ func runWorkflow(
 	pipeline.Set[context.Context](state, ctx)
 
 	if err := reporter.Begin(title, len(phases)); err != nil {
-		return err
+		return eris.Wrap(err, "begin workflow progress")
 	}
 
 	for _, phase := range phases {
 		if err := ctx.Err(); err != nil {
-			return err
+			return eris.Wrap(err, "workflow cancelled before phase")
 		}
 
 		stage, err := reporter.StartStage(phase.Name, phase.Kind, phase.Work)
 		if err != nil {
-			return err
+			return eris.Wrapf(err, "start progress phase %q", phase.Name)
 		}
 
 		pipeline.Set[progress.Sink](state, stage)
@@ -77,6 +88,7 @@ func runWorkflow(
 		if processingErr == nil {
 			processingErr = ctx.Err()
 		}
+
 		if processingErr != nil {
 			var outcomeErr error
 			if errors.Is(processingErr, context.Canceled) ||
@@ -90,9 +102,9 @@ func runWorkflow(
 		}
 
 		if err := stage.Complete(); err != nil {
-			return err
+			return eris.Wrapf(err, "complete progress phase %q", phase.Name)
 		}
 	}
 
-	return reporter.Finish()
+	return eris.Wrap(reporter.Finish(), "finish workflow progress")
 }

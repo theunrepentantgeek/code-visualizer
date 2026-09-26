@@ -228,6 +228,7 @@ func TestLoadFileMetrics_CancelledContextStopsBeforeFiles(t *testing.T) {
 	g := NewWithT(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	root := &model.Directory{Files: []*model.File{{Extension: "go"}}}
 
 	err := loadFileMetrics(ctx, root)

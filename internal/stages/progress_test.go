@@ -19,8 +19,8 @@ type recordingSink struct {
 	statuses []string
 }
 
-func newTestSink(work progress.WorkKind) *recordingSink {
-	return &recordingSink{work: work}
+func newTestSink() *recordingSink {
+	return &recordingSink{work: progress.WorkObservations}
 }
 
 func (s *recordingSink) WorkKind() progress.WorkKind { return s.work }
@@ -29,11 +29,13 @@ func (s *recordingSink) SetTotal(total int64) error {
 
 	return nil
 }
+
 func (s *recordingSink) SetProgress(current int64) error {
 	s.current = append(s.current, current)
 
 	return nil
 }
+
 func (s *recordingSink) SetStatus(status string) error {
 	s.statuses = append(s.statuses, status)
 

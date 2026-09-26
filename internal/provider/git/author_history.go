@@ -95,7 +95,7 @@ func BulkAuthorHistoryInHistoryRange(
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
 	if err := ctx.Err(); err != nil {
-		return AuthorHistoryResult{}, err
+		return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
 	}
 
 	s, err := getService(repoPath)
@@ -132,7 +132,7 @@ func BulkAuthorHistoryInHistoryRange(
 
 	for c, iterationErr := range commits {
 		if err := ctx.Err(); err != nil {
-			return AuthorHistoryResult{}, err
+			return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
 		}
 
 		if iterationErr != nil {
@@ -159,7 +159,7 @@ func BulkAuthorHistoryInHistoryRange(
 		}
 
 		if err := ctx.Err(); err != nil {
-			return AuthorHistoryResult{}, err
+			return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
 		}
 
 		if len(changed) == 0 {
@@ -174,7 +174,7 @@ func BulkAuthorHistoryInHistoryRange(
 
 		for _, path := range changed {
 			if err := ctx.Err(); err != nil {
-				return AuthorHistoryResult{}, err
+				return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
 			}
 
 			// Get or create per-file accumulator for this author.
