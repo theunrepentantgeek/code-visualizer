@@ -54,6 +54,12 @@ func store[S any](s *State, value S) {
 	s.content[key] = value
 }
 
+// Set stores value under its static type, replacing any existing value of
+// that type without changing the pipeline error state.
+func Set[S any](s *State, value S) {
+	store(s, value)
+}
+
 // keyOf returns a key to use for the specified type.
 func keyOf[T any]() reflect.Type {
 	return reflect.TypeFor[T]()
