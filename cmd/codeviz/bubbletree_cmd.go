@@ -8,6 +8,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -100,16 +101,25 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
+	var phases []workflowPhase
 
-	bubbletree.AcquireData(s)
-	bubbletree.RenderPipeline(s)
+	phases = []workflowPhase{
+		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+			pipeline.ApplyFuncX(s, stages.ValidatePaths)
+			pipeline.ApplyFuncX(s, stages.ExportConfig)
+			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+			pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
 
-	return eris.Wrap(s.Err(), "bubble-tree pipeline failed")
+			phases[1].Work = stages.AcquisitionWork(common)
+		}},
+		{Name: phaseAcquiring, Kind: progress.StageLive, Run: bubbletree.AcquireData},
+		{Name: phaseRendering, Kind: progress.StageSummary, Run: bubbletree.RenderVisualization},
+		{Name: phaseWriting, Kind: progress.StageSummary, Run: bubbletree.WriteOutput},
+	}
+	err := runCommandWorkflow(flags, s, "Bubble tree", phases)
+
+	return eris.Wrap(err, "bubble-tree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

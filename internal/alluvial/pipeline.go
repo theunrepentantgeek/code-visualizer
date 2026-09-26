@@ -1,6 +1,7 @@
 package alluvial
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -55,9 +57,7 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 	return nil
 }
 
-// AcquireData resolves and scans every caller-ordered reference independently.
-func AcquireData(s *pipeline.State) {
-	pipeline.ApplyFuncXYZ(s, acquireSnapshots)
+func FinalizeData(s *pipeline.State) {
 	pipeline.ApplyFuncXY(s, BuildDataStage)
 	pipeline.ApplyFuncXY(s, BuildLegendStage)
 }
@@ -65,6 +65,11 @@ func AcquireData(s *pipeline.State) {
 // RenderPipeline lays out the acquired snapshot data and writes the shared
 // canvas output.
 func RenderPipeline(s *pipeline.State) {
+	RenderVisualization(s)
+	WriteOutput(s)
+}
+
+func RenderVisualization(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
 	pipeline.ApplyFuncX(s, stages.InitDrawingBounds)
 	pipeline.ApplyFuncX(s, stages.ReserveTitleBounds)
@@ -73,6 +78,9 @@ func RenderPipeline(s *pipeline.State) {
 	pipeline.ApplyFuncXY(s, RenderStage)
 	pipeline.ApplyFuncX(s, stages.ApplyTitle)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+}
+
+func WriteOutput(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
 }
 
@@ -125,8 +133,14 @@ func offsetLayout(layout *Layout, offset geometry.Vector) {
 	}
 }
 
-func acquireSnapshots(common *stages.CommonState, state *State, cfg *config.Alluvial) error {
-	snapshotStates, err := prepareSnapshots(common, cfg.References)
+func PrepareReferences(
+	ctx context.Context,
+	sink progress.Sink,
+	common *stages.CommonState,
+	state *State,
+	cfg *config.Alluvial,
+) error {
+	snapshotStates, err := prepareSnapshots(ctx, sink, common, cfg.References)
 	if err != nil {
 		return err
 	}
@@ -136,23 +150,21 @@ func acquireSnapshots(common *stages.CommonState, state *State, cfg *config.Allu
 		return err
 	}
 
-	snapshots, err := finishSnapshots(snapshotStates, cfg.References)
-	if err != nil {
-		return err
-	}
-
-	state.Snapshots = snapshots
+	state.snapshotStates = snapshotStates
+	state.Snapshots = nil
 
 	return nil
 }
 
 func prepareSnapshots(
+	ctx context.Context,
+	sink progress.Sink,
 	common *stages.CommonState,
 	references []string,
 ) ([]*stages.CommonState, error) {
 	snapshotStates := make([]*stages.CommonState, 0, len(references))
 	for _, reference := range references {
-		snapshotCommon, err := prepareSnapshot(common, reference)
+		snapshotCommon, err := prepareSnapshot(ctx, sink, common, reference)
 		if err != nil {
 			return nil, eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
 		}
@@ -178,33 +190,42 @@ func shareCommitHistoryPaths(
 	return nil
 }
 
-func finishSnapshots(
-	snapshotStates []*stages.CommonState,
-	references []string,
-) ([]Snapshot, error) {
-	snapshots := make([]Snapshot, 0, len(references))
+func AcquireReference(
+	ctx context.Context,
+	sink progress.Sink,
+	state *State,
+	reference string,
+	index int,
+) error {
+	if index < 0 || index >= len(state.snapshotStates) {
+		return eris.Errorf("alluvial reference index %d is out of range", index)
+	}
 
-	for index, snapshotCommon := range snapshotStates {
-		if err := finishSnapshot(snapshotCommon); err != nil {
-			return nil, eris.Wrapf(err, "failed to acquire alluvial reference %q", references[index])
-		}
+	snapshotCommon := state.snapshotStates[index]
+	if err := finishSnapshot(ctx, sink, snapshotCommon); err != nil {
+		return eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
+	}
 
-		snapshots = append(snapshots, Snapshot{
-			Reference: SnapshotReference(references[index]),
-			Root:      snapshotCommon.Root,
-		})
+	state.Snapshots = append(state.Snapshots, Snapshot{
+		Reference: SnapshotReference(reference),
+		Root:      snapshotCommon.Root,
+	})
 
-		if index == 0 {
-			if err := stages.ExportData(snapshotCommon); err != nil {
-				return nil, eris.Wrap(err, "export alluvial snapshot data")
-			}
+	if index == 0 {
+		if err := stages.ExportData(snapshotCommon); err != nil {
+			return eris.Wrap(err, "export alluvial snapshot data")
 		}
 	}
 
-	return snapshots, nil
+	return nil
 }
 
-func prepareSnapshot(common *stages.CommonState, reference string) (*stages.CommonState, error) {
+func prepareSnapshot(
+	ctx context.Context,
+	sink progress.Sink,
+	common *stages.CommonState,
+	reference string,
+) (*stages.CommonState, error) {
 	if common.Flags == nil {
 		return nil, eris.New("alluvial snapshot acquisition requires pipeline flags")
 	}
@@ -221,7 +242,9 @@ func prepareSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 	snapshotCommon.ReferenceNow = time.Time{}
 
 	for _, stage := range []func(*stages.CommonState) error{
-		stages.ScanFilesystem,
+		func(state *stages.CommonState) error {
+			return stages.ScanFilesystem(state, ctx, sink)
+		},
 		stages.CheckGitRequirement,
 	} {
 		if err := stage(&snapshotCommon); err != nil {
@@ -232,10 +255,18 @@ func prepareSnapshot(common *stages.CommonState, reference string) (*stages.Comm
 	return &snapshotCommon, nil
 }
 
-func finishSnapshot(snapshotCommon *stages.CommonState) error {
+func finishSnapshot(
+	ctx context.Context,
+	sink progress.Sink,
+	snapshotCommon *stages.CommonState,
+) error {
 	for _, stage := range []func(*stages.CommonState) error{
-		stages.LoadCommitMetrics,
-		stages.RunProviders,
+		func(state *stages.CommonState) error {
+			return stages.LoadCommitMetrics(state, ctx, sink)
+		},
+		func(state *stages.CommonState) error {
+			return stages.RunProviders(state, ctx, sink)
+		},
 		stages.PopulateDeclarations,
 		stages.RunAggregations,
 		stages.FilterBinaryFiles,

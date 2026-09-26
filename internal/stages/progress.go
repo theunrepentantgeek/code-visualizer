@@ -2,189 +2,136 @@ package stages
 
 import (
 	"fmt"
-	"log/slog"
-	"sync/atomic"
-	"time"
+	"sync"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
-	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 )
 
-// BuildScanProgress creates a scan.Progress adapter and (if applicable) starts a
-// ticker goroutine that logs cumulative progress every second.
-// The caller must invoke the returned stop function when scanning completes.
-func BuildScanProgress(flags *Flags) (scan.Progress, func()) {
-	if !flags.Verbose && !flags.Debug {
-		return nil, func() {}
+// AcquisitionWork identifies the determinate work represented by a live
+// acquisition stage.
+func AcquisitionWork(c *CommonState) progress.WorkKind {
+	if c.Requested.HasCommitExpressions() || hasAuthorshipMetric(c.Requested.BaseMetrics) {
+		return progress.WorkCommits
 	}
 
-	counter := &scanCounter{debug: flags.Debug}
-	stop := startScanTicker(counter)
-
-	return counter, stop
+	return progress.WorkObservations
 }
 
-// BuildMetricProgress creates a provider.MetricProgress adapter that logs periodic
-// progress during metric calculation.
-// The caller must invoke the returned stop function when metric calculation completes.
-func BuildMetricProgress(flags *Flags, total int64) (provider.MetricProgress, func()) {
-	if flags.Quiet || total <= 0 {
-		return nil, func() {}
+type progressAdapter struct {
+	mu      sync.Mutex
+	sink    progress.Sink
+	current int64
+	err     error
+}
+
+func (a *progressAdapter) Err() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return a.err
+}
+
+func (a *progressAdapter) setTotal(total int64) {
+	if total <= 0 {
+		return
 	}
 
-	tracker := &metricProgressTracker{total: total}
-	stop := startMetricTicker(tracker)
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
-	return tracker, stop
-}
-
-// scanCounter implements scan.Progress and tracks cumulative scan totals.
-// In debug mode it also logs a line per directory.
-type scanCounter struct {
-	files atomic.Int64
-	dirs  atomic.Int64
-	debug bool
-}
-
-func (s *scanCounter) OnDirectoryScanned(path string, fileCount int) {
-	s.files.Add(int64(fileCount))
-	s.dirs.Add(1)
-
-	if s.debug {
-		slog.Debug(
-			"Scanned directory",
-			"path", path,
-			"newfiles", fileCount,
-			"totalfiles", s.files.Load(),
-			"totaldirs", s.dirs.Load(),
-		)
+	if a.err == nil {
+		a.err = a.sink.SetTotal(total)
 	}
 }
 
-// startProgressTicker starts a goroutine that calls logFn every second.
-// Call the returned stop function when the operation completes.
-func startProgressTicker(logFn func()) (stop func()) {
-	done := make(chan struct{})
-	stopped := make(chan struct{})
+func (a *progressAdapter) advance() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
-	go func() {
-		defer close(stopped)
+	if a.err != nil {
+		return
+	}
 
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
+	a.current++
+	a.err = a.sink.SetProgress(a.current)
+}
 
-		for {
-			select {
-			case <-ticker.C:
-				logFn()
+func (a *progressAdapter) status(message string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
-			case <-done:
-				return
-			}
-		}
-	}()
-
-	return func() {
-		close(done)
-		<-stopped
+	if a.err == nil {
+		a.err = a.sink.SetStatus(message)
 	}
 }
 
-// startScanTicker starts a goroutine that logs cumulative scan progress every second.
-// Call the returned stop function when scanning is done.
-func startScanTicker(counter *scanCounter) (stop func()) {
-	return startProgressTicker(func() {
-		slog.Debug("Scanning...", "files", counter.files.Load(), "dirs", counter.dirs.Load())
-	})
+type scanProgressAdapter struct {
+	progressAdapter
+	files int64
+	dirs  int64
 }
 
-// metricProgressTracker implements provider.MetricProgress for verbose mode.
-// It tracks the number of metric observations loaded by file-based loaders.
-type metricProgressTracker struct {
-	loaded atomic.Int64
-	total  int64
+func newScanProgress(sink progress.Sink) *scanProgressAdapter {
+	return &scanProgressAdapter{progressAdapter: progressAdapter{sink: sink}}
 }
 
-func (*metricProgressTracker) OnMetricStarted(name metric.Name) {
-	slog.Debug("Metric started", "metric", string(name))
+func (a *scanProgressAdapter) OnDirectoryScanned(_ string, fileCount int) {
+	a.files += int64(fileCount)
+	a.dirs++
+	a.status(fmt.Sprintf("Discovered %d files in %d directories", a.files, a.dirs))
 }
 
-func (*metricProgressTracker) OnMetricFinished(name metric.Name) {
-	slog.Debug("Metric finished", "metric", string(name))
+type metricProgressAdapter struct {
+	progressAdapter
+	selected bool
 }
 
-func (t *metricProgressTracker) OnFileProcessed(metric.Name) { t.loaded.Add(1) }
-
-// startMetricTicker starts a goroutine that logs metric calculation progress every second.
-// Call the returned stop function when metric calculation is done.
-func startMetricTicker(tracker *metricProgressTracker) (stop func()) {
-	logMetricProgress(tracker)
-
-	return startProgressTicker(func() {
-		logMetricProgress(tracker)
-	})
-}
-
-func logMetricProgress(tracker *metricProgressTracker) {
-	loaded := tracker.loaded.Load()
-	percentage := float64(0)
-
-	if tracker.total > 0 {
-		percentage = min(float64(loaded)*100.0/float64(tracker.total), 100.0)
+func newMetricProgress(sink progress.Sink, total int64) *metricProgressAdapter {
+	a := &metricProgressAdapter{
+		progressAdapter: progressAdapter{sink: sink},
+		selected:        sink.WorkKind() == progress.WorkObservations,
+	}
+	if a.selected {
+		a.setTotal(total)
 	}
 
-	slog.Info(
-		"Loading metrics.",
-		"loaded", fmt.Sprintf("%d/%d", loaded, tracker.total),
-		"percentage", fmt.Sprintf("%.1f", percentage),
-	)
+	return a
 }
 
-func logMetricCompletion(total int64) {
-	slog.Info(
-		"Loaded metrics",
-		"loaded", fmt.Sprintf("%d/%d", total, total),
-		"percentage", "100.0",
-	)
+func (a *metricProgressAdapter) OnMetricStarted(name metric.Name) {
+	a.status("Loading metric " + string(name))
 }
 
-// BuildHistoryProgress creates a per-commit callback and (if applicable) starts a
-// ticker goroutine that logs commit history loading progress every second.
-// The caller must invoke the returned stop function when loading completes.
-func BuildHistoryProgress(flags *Flags, total int64) (onCommit func(), stop func()) {
-	if flags.Quiet {
-		return nil, func() {}
+func (a *metricProgressAdapter) OnMetricFinished(name metric.Name) {
+	a.status("Loaded metric " + string(name))
+}
+
+func (a *metricProgressAdapter) OnFileProcessed(metric.Name) {
+	if a.selected {
+		a.advance()
+	}
+}
+
+type historyProgressAdapter struct {
+	progressAdapter
+	selected bool
+}
+
+func newHistoryProgress(sink progress.Sink, total int64) *historyProgressAdapter {
+	a := &historyProgressAdapter{
+		progressAdapter: progressAdapter{sink: sink},
+		selected:        sink.WorkKind() == progress.WorkCommits,
+	}
+	if a.selected {
+		a.setTotal(total)
 	}
 
-	tracker := &historyProgressTracker{total: total}
-	stop = startHistoryTicker(tracker)
-
-	return func() { tracker.loaded.Add(1) }, stop
+	return a
 }
 
-type historyProgressTracker struct {
-	loaded atomic.Int64
-	total  int64
-}
-
-func startHistoryTicker(tracker *historyProgressTracker) (stop func()) {
-	return startProgressTicker(func() {
-		logHistoryProgress(tracker)
-	})
-}
-
-func logHistoryProgress(tracker *historyProgressTracker) {
-	loaded := tracker.loaded.Load()
-	percentage := float64(0)
-
-	if tracker.total > 0 {
-		percentage = min(float64(loaded)*100.0/float64(tracker.total), 100.0)
+func (a *historyProgressAdapter) OnCommit() {
+	if a.selected {
+		a.advance()
 	}
-
-	slog.Info(
-		"Loading history.",
-		"commits", fmt.Sprintf("%d/%d", loaded, tracker.total),
-		"percentage", fmt.Sprintf("%.1f", percentage),
-	)
 }

@@ -95,10 +95,6 @@ func radialCanvasSize(c *stages.CommonState) int {
 
 // BuildInksStage builds the radial inks and emits the Rendering image log line.
 func BuildInksStage(c *stages.CommonState, r *State) error {
-	canvasSize := radialCanvasSize(c)
-
-	slog.Info("Rendering image", "output", c.Output, "canvas_size", canvasSize)
-
 	r.Inks = BuildInks(c.Root, c.Requested, r.Fill, r.Border)
 	r.Inks.DirectoryFill, r.Inks.DirectoryBorder = buildDirectoryInks(
 		c.Root,

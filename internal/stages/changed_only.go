@@ -1,6 +1,7 @@
 package stages
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 
@@ -12,7 +13,9 @@ import (
 
 // FilterChangedOnly limits the scanned tree to current files modified in the
 // selected Git history range.
-func FilterChangedOnly(c *CommonState) error {
+//
+//nolint:revive,nolintlint // Pipeline ApplyFuncXY fixes dependency order as state, context.
+func FilterChangedOnly(c *CommonState, ctx context.Context) error {
 	if c.Flags == nil || !c.Flags.ChangedOnly {
 		return nil
 	}
@@ -31,9 +34,9 @@ func FilterChangedOnly(c *CommonState) error {
 
 	var changedPaths map[string]bool
 	if c.Snapshot != nil {
-		changedPaths, err = git.SnapshotChangedPathsInHistoryRange(repoRoot, currentPaths, historyRange)
+		changedPaths, err = git.SnapshotChangedPathsInHistoryRange(ctx, repoRoot, currentPaths, historyRange)
 	} else {
-		changedPaths, err = git.ChangedPathsInHistoryRange(repoRoot, currentPaths, historyRange)
+		changedPaths, err = git.ChangedPathsInHistoryRange(ctx, repoRoot, currentPaths, historyRange)
 	}
 
 	if err != nil {

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
 )
 
@@ -11,8 +13,7 @@ type HelpPalettesCmd struct{}
 
 const palettesDocURL = "https://github.com/theunrepentantgeek/code-visualizer/blob/main/docs/palettes.md"
 
-//nolint:unparam // nil error required to satisfy the interface for Kong
-func (HelpPalettesCmd) Run(_ *Flags) error {
+func (HelpPalettesCmd) Run(flags *Flags) error {
 	infos := palette.Infos()
 
 	entries := make([]nameDescription, 0, len(infos))
@@ -23,9 +24,12 @@ func (HelpPalettesCmd) Run(_ *Flags) error {
 		})
 	}
 
-	fmt.Print(renderNameDescriptionList("Palettes", entries, consoleWidth()))
+	content := renderNameDescriptionList("Palettes", entries, consoleWidth())
+	if _, err := fmt.Fprint(flags.stdoutWriter(), content); err != nil {
+		return eris.Wrap(err, "write palette help")
+	}
 
-	fmt.Printf("For colour swatches, see: %s\n", palettesDocURL)
+	_, err := fmt.Fprintf(flags.stdoutWriter(), "For colour swatches, see: %s\n", palettesDocURL)
 
-	return nil
+	return eris.Wrap(err, "write palette documentation link")
 }

@@ -1,8 +1,12 @@
 package stages
 
 import (
+	"context"
+	"errors"
+
 	"github.com/rotisserie/eris"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
@@ -12,7 +16,9 @@ import (
 //
 // This is the data foundation for all authorship metrics (#550).
 // It must be called after ScanFilesystem (c.Root must be populated).
-func LoadAuthorHistory(c *CommonState) error {
+//
+//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+func LoadAuthorHistory(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	repoRoot, err := repoRootForState(c, "author history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
@@ -22,19 +28,35 @@ func LoadAuthorHistory(c *CommonState) error {
 
 	historyRange := c.Flags.HistoryRange
 
-	total, err := git.CommitTotalInHistoryRange(repoRoot, historyRange)
+	total, err := git.CommitTotalInHistoryRange(ctx, repoRoot, historyRange)
 	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return eris.Wrap(ctx.Err(), "author history counting cancelled")
+		}
+
 		return eris.Wrap(err, "failed to count git commits")
 	}
 
-	onCommit, stop := BuildHistoryProgress(c.Flags, total)
+	historyProg := newHistoryProgress(sink, total)
 
-	result, err := git.BulkAuthorHistoryInHistoryRange(repoRoot, tracked, false, historyRange, onCommit)
-
-	stop()
-
+	result, err := git.BulkAuthorHistoryInHistoryRange(
+		ctx,
+		repoRoot,
+		tracked,
+		false,
+		historyRange,
+		historyProg.OnCommit,
+	)
 	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return eris.Wrap(ctx.Err(), "author history loading cancelled")
+		}
+
 		return eris.Wrap(err, "failed to load author history")
+	}
+
+	if err := historyProg.Err(); err != nil {
+		return eris.Wrap(err, "report author progress")
 	}
 
 	c.AuthorHistory = result

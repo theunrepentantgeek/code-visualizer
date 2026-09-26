@@ -1,6 +1,7 @@
 package git_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -27,6 +28,17 @@ func buildTrackedSet(t *testing.T, repoRootPath string, dir *model.Directory) ma
 	return tracked
 }
 
+func TestBulkAuthorHistoryInHistoryRange_CancelledContextWinsBeforeRepositoryOpen(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := git.BulkAuthorHistoryInHistoryRange(ctx, "missing", nil, false, git.HistoryRange{}, nil)
+
+	g.Expect(err).To(MatchError(context.Canceled))
+}
+
 // TestBulkAuthorHistory_ReturnsNonEmptyResult verifies that BulkAuthorHistory
 // returns a result with at least one file, a non-zero HEAD date, and a
 // non-empty last-active map when run against the code-visualizer repo itself.
@@ -37,7 +49,7 @@ func TestBulkAuthorHistory_ReturnsNonEmptyResult(t *testing.T) {
 
 	root := repoRoot(t)
 
-	scanned, err := scan.Scan(root, nil, nil, false)
+	scanned, err := scan.Scan(context.Background(), root, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(scanned).NotTo(BeNil())
 
@@ -60,7 +72,7 @@ func TestBulkAuthorHistory_EachFileHasAtLeastOneAuthor(t *testing.T) {
 
 	root := repoRoot(t)
 
-	scanned, err := scan.Scan(root, nil, nil, false)
+	scanned, err := scan.Scan(context.Background(), root, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	tracked := buildTrackedSet(t, root, scanned)
@@ -82,7 +94,7 @@ func TestBulkAuthorHistory_AuthorRecordsHaveNonEmptyEmail(t *testing.T) {
 
 	root := repoRoot(t)
 
-	scanned, err := scan.Scan(root, nil, nil, false)
+	scanned, err := scan.Scan(context.Background(), root, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	tracked := buildTrackedSet(t, root, scanned)
@@ -106,7 +118,7 @@ func TestBulkAuthorHistory_TimeWindowsAreConsistent(t *testing.T) {
 
 	root := repoRoot(t)
 
-	scanned, err := scan.Scan(root, nil, nil, false)
+	scanned, err := scan.Scan(context.Background(), root, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	tracked := buildTrackedSet(t, root, scanned)
@@ -131,7 +143,7 @@ func TestBulkAuthorHistory_LastActiveContainsKnownAuthor(t *testing.T) {
 
 	root := repoRoot(t)
 
-	scanned, err := scan.Scan(root, nil, nil, false)
+	scanned, err := scan.Scan(context.Background(), root, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	tracked := buildTrackedSet(t, root, scanned)
@@ -176,7 +188,7 @@ func TestBulkAuthorHistory_ContributionWeightNonNegative(t *testing.T) {
 
 	root := repoRoot(t)
 
-	scanned, err := scan.Scan(root, nil, nil, false)
+	scanned, err := scan.Scan(context.Background(), root, nil, nil, false)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	tracked := buildTrackedSet(t, root, scanned)

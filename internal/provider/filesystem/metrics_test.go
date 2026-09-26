@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +24,7 @@ func TestFileLinesProviderReadsAttachedSource(t *testing.T) {
 	}
 	root := &model.Directory{Files: []*model.File{f}}
 
-	g.Expect((&FileLinesProvider{}).Load(root)).To(Succeed())
+	g.Expect((&FileLinesProvider{}).Load(context.Background(), root)).To(Succeed())
 
 	lines, ok := f.Quantity(FileLines)
 	g.Expect(ok).To(BeTrue())
@@ -36,7 +37,7 @@ func TestFileSizeProvider(t *testing.T) {
 
 	p := FileSizeProvider{}
 	root := &model.Directory{Path: "/root", Name: "root"}
-	g.Expect(p.Load(root)).NotTo(HaveOccurred()) // no-op
+	g.Expect(p.Load(context.Background(), root)).NotTo(HaveOccurred()) // no-op
 }
 
 func TestFileTypeProvider(t *testing.T) {
@@ -45,7 +46,7 @@ func TestFileTypeProvider(t *testing.T) {
 
 	p := FileTypeProvider{}
 	root := &model.Directory{Path: "/root", Name: "root"}
-	g.Expect(p.Load(root)).NotTo(HaveOccurred()) // no-op
+	g.Expect(p.Load(context.Background(), root)).NotTo(HaveOccurred()) // no-op
 }
 
 func TestFileLinesProvider(t *testing.T) {
@@ -65,7 +66,7 @@ func TestFileLinesProvider(t *testing.T) {
 	}
 
 	p := FileLinesProvider{}
-	err := p.Load(root)
+	err := p.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	v1, ok := f1.Quantity(FileLines)
@@ -89,7 +90,7 @@ func TestFileLinesProviderSkipsBinaryFiles(t *testing.T) {
 	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}
-	err := p.Load(root)
+	err := p.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, ok := f.Quantity(FileLines)
@@ -116,7 +117,7 @@ func TestFileLinesProviderNestedDirs(t *testing.T) {
 	}
 
 	p := FileLinesProvider{}
-	err := p.Load(root)
+	err := p.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	v, ok := f.Quantity(FileLines)
@@ -150,7 +151,7 @@ func TestFileLinesProviderDetectsBinaryByNullByte(t *testing.T) {
 	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}
-	err := p.Load(root)
+	err := p.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	_, ok := f.Quantity(FileLines)
@@ -187,7 +188,7 @@ func TestFileLinesProviderCountsUTF16Lines(t *testing.T) {
 			root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 			p := FileLinesProvider{}
-			err := p.Load(root)
+			err := p.Load(context.Background(), root)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			g.Expect(f.IsBinary).To(BeFalse())
@@ -197,6 +198,23 @@ func TestFileLinesProviderCountsUTF16Lines(t *testing.T) {
 			g.Expect(v).To(Equal(int64(2)))
 		})
 	}
+}
+
+func TestFileLinesProvider_CancelledContextStopsBeforeFiles(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	var processed int
+
+	lineProvider := &FileLinesProvider{}
+	lineProvider.SetOnFileProcessed(func() { processed++ })
+
+	err := lineProvider.Load(ctx, &model.Directory{Files: []*model.File{{Path: "one.go"}, {Path: "two.go"}}})
+
+	g.Expect(err).To(MatchError(context.Canceled))
+	g.Expect(processed).To(Equal(0))
 }
 
 func TestFileLinesProviderHandlesEmptyFile(t *testing.T) {
@@ -210,7 +228,7 @@ func TestFileLinesProviderHandlesEmptyFile(t *testing.T) {
 	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}
-	err := p.Load(root)
+	err := p.Load(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	g.Expect(f.IsBinary).To(BeFalse())

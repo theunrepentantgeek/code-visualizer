@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -97,16 +98,25 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
+	var phases []workflowPhase
 
-	treemap.AcquireData(s)
-	treemap.RenderPipeline(s)
+	phases = []workflowPhase{
+		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+			pipeline.ApplyFuncX(s, stages.ValidatePaths)
+			pipeline.ApplyFuncX(s, stages.ExportConfig)
+			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+			pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
 
-	return eris.Wrap(s.Err(), "tree-map pipeline failed")
+			phases[1].Work = stages.AcquisitionWork(common)
+		}},
+		{Name: phaseAcquiring, Kind: progress.StageLive, Run: treemap.AcquireData},
+		{Name: phaseRendering, Kind: progress.StageSummary, Run: treemap.RenderVisualization},
+		{Name: phaseWriting, Kind: progress.StageSummary, Run: treemap.WriteOutput},
+	}
+	err := runCommandWorkflow(flags, s, "Tree map", phases)
+
+	return eris.Wrap(err, "tree-map pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

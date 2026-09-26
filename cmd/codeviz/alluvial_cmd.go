@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"path"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -142,15 +144,63 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	cfg := flags.Config.Alluvial
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
-	alluvial.AcquireData(s)
-	alluvial.RenderPipeline(s)
+	phases := buildAlluvialPhases(common, viz, cfg)
 
-	return eris.Wrap(s.Err(), "alluvial pipeline failed")
+	return eris.Wrap(runCommandWorkflow(flags, s, "Alluvial", phases), "alluvial pipeline failed")
+}
+
+func buildAlluvialPhases(
+	common *stages.CommonState,
+	viz *alluvial.State,
+	cfg *config.Alluvial,
+) []workflowPhase {
+	phases := make([]workflowPhase, 0, len(cfg.References)+3)
+
+	phases = append(phases, workflowPhase{
+		Name: phasePreparing,
+		Kind: progress.StageSummary,
+		Run: func(s *pipeline.State) {
+			pipeline.ApplyFuncX(s, stages.ValidatePaths)
+			pipeline.ApplyFuncX(s, stages.ExportConfig)
+			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+			pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
+			pipeline.ApplyFuncXYZ(s, func(
+				ctx context.Context,
+				sink progress.Sink,
+				common *stages.CommonState,
+			) error {
+				return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
+			})
+
+			work := stages.AcquisitionWork(common)
+			for index := range cfg.References {
+				phases[index+1].Work = work
+			}
+		},
+	})
+	for index, reference := range cfg.References {
+		phases = append(phases, workflowPhase{
+			Name: "Loading " + alluvial.SnapshotReference(reference),
+			Kind: progress.StageLive,
+			Run: func(s *pipeline.State) {
+				pipeline.ApplyFuncXY(s, func(ctx context.Context, sink progress.Sink) error {
+					return alluvial.AcquireReference(ctx, sink, viz, reference, index)
+				})
+			},
+		})
+	}
+
+	phases = append(
+		phases,
+		workflowPhase{Name: phaseRendering, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+			alluvial.FinalizeData(s)
+			alluvial.RenderVisualization(s)
+		}},
+		workflowPhase{Name: phaseWriting, Kind: progress.StageSummary, Run: alluvial.WriteOutput},
+	)
+
+	return phases
 }
 
 func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {

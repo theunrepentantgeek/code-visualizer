@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"time"
@@ -21,15 +22,19 @@ func (l *metricsLoader) FileProgressMutex() *sync.Mutex {
 	return &l.mu
 }
 
-func (l *metricsLoader) Load(root *model.Directory, requested []metric.Name) error {
-	return loadGitMetrics(root, requested, l.onFile, root.ReferenceTime)
+func (l *metricsLoader) Load(
+	ctx context.Context,
+	root *model.Directory,
+	requested []metric.Name,
+) error {
+	return loadGitMetrics(ctx, root, requested, l.onFile, root.ReferenceTime)
 }
 
 // loadAllFileMetrics runs the git analysis once and populates all 7 file-level
 // git metrics in a single pass. This replaces 7 separate legacy providers that
 // each independently walked git history.
-func loadAllFileMetrics(root *model.Directory) error {
-	return loadGitMetrics(root, fileMetricNames, nil)
+func loadAllFileMetrics(ctx context.Context, root *model.Directory) error {
+	return loadGitMetrics(ctx, root, fileMetricNames, nil)
 }
 
 type metricRequirements struct {
@@ -80,27 +85,37 @@ func newMetricRequirements(requested []metric.Name) metricRequirements {
 // an error rather than producing an empty result that would cascade into
 // confusing downstream failures.
 func loadGitMetrics(
+	ctx context.Context,
 	root *model.Directory,
 	requested []metric.Name,
 	onFile func(),
 	referenceTimes ...time.Time,
 ) error {
+	if err := ctx.Err(); err != nil {
+		return eris.Wrap(err, "git metric loading cancelled")
+	}
+
 	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
 	}
 
-	return s.loadGitMetrics(root, requested, onFile, referenceTimes...)
+	return s.loadGitMetrics(ctx, root, requested, onFile, referenceTimes...)
 }
 
 // LoadFileMetricsInHistoryRange applies file-level Git metrics from historyRange.
 func LoadFileMetricsInHistoryRange(
+	ctx context.Context,
 	root *model.Directory,
 	requested []metric.Name,
 	historyRange HistoryRange,
 	onFile func(),
 	referenceTimes ...time.Time,
 ) error {
+	if err := ctx.Err(); err != nil {
+		return eris.Wrap(err, "git metric loading cancelled")
+	}
+
 	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrapf(err, "git loader requires a git repository")
@@ -112,7 +127,7 @@ func LoadFileMetricsInHistoryRange(
 	commitTotal := int64(0)
 
 	if onFile != nil {
-		total, err := s.commitTotalInHistoryRange(historyRange)
+		total, err := s.commitTotalInHistoryRange(ctx, historyRange)
 		if err != nil {
 			return eris.Wrap(err, "failed to count git commits")
 		}
@@ -123,6 +138,7 @@ func LoadFileMetricsInHistoryRange(
 	progressCallbacks := newFileProgressCallbacks(onFile, int64(model.CountFiles(root)), commitTotal)
 
 	if _, err := s.bulkCommitHistoryAndPrewarmInHistoryRange(
+		ctx,
 		pathSet,
 		requirements,
 		historyRange,
@@ -131,7 +147,14 @@ func LoadFileMetricsInHistoryRange(
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
-	s.applySelectedFileMetrics(root, requirements, selectedReferenceTime(referenceTimes))
+	if err := s.applySelectedFileMetrics(
+		ctx,
+		root,
+		requirements,
+		selectedReferenceTime(referenceTimes),
+	); err != nil {
+		return err
+	}
 
 	if err := s.requireGitHistory(pathSet); err != nil {
 		return err
@@ -145,6 +168,7 @@ func LoadFileMetricsInHistoryRange(
 }
 
 func (s *repoService) loadGitMetrics(
+	ctx context.Context,
 	root *model.Directory,
 	requested []metric.Name,
 	onFile func(),
@@ -158,7 +182,7 @@ func (s *repoService) loadGitMetrics(
 	if onFile != nil {
 		missing, _ := s.bulkPrewarmWork(pathSet, requirements)
 		if len(missing) > 0 {
-			total, err := s.commitTotal()
+			total, err := s.commitTotalInHistoryRange(ctx, HistoryRange{})
 			if err != nil {
 				return eris.Wrap(err, "failed to count git commits")
 			}
@@ -169,11 +193,18 @@ func (s *repoService) loadGitMetrics(
 
 	progressCallbacks := newFileProgressCallbacks(onFile, int64(model.CountFiles(root)), commitTotal)
 
-	if err := s.bulkPrewarm(pathSet, requirements, progressCallbacks.onPrewarm); err != nil {
+	if err := s.bulkPrewarm(ctx, pathSet, requirements, progressCallbacks.onPrewarm); err != nil {
 		return eris.Wrapf(err, "git loader requires readable git history at %s", s.RepoRoot())
 	}
 
-	s.applySelectedFileMetrics(root, requirements, selectedReferenceTime(referenceTimes))
+	if err := s.applySelectedFileMetrics(
+		ctx,
+		root,
+		requirements,
+		selectedReferenceTime(referenceTimes),
+	); err != nil {
+		return err
+	}
 
 	if err := s.requireGitHistory(pathSet); err != nil {
 		return err
@@ -218,12 +249,18 @@ func newFileProgressCallbacks(onFile func(), fileTotal int64, commitTotal int64)
 	}
 }
 
+//nolint:revive // Metric dispatch stays local to preserve per-file cancellation boundaries.
 func (s *repoService) applySelectedFileMetrics(
+	ctx context.Context,
 	root *model.Directory,
 	requirements metricRequirements,
 	referenceTime time.Time,
-) {
+) error {
 	model.WalkFiles(root, func(f *model.File) {
+		if ctx.Err() != nil {
+			return
+		}
+
 		relPath := f.RepoPath
 
 		var relErr error
@@ -238,6 +275,10 @@ func (s *repoService) applySelectedFileMetrics(
 		}
 
 		for _, selected := range requirements.processors {
+			if ctx.Err() != nil {
+				return
+			}
+
 			switch selected.name {
 			case FileAge:
 				value, valueErr := s.fileAgeAt(relPath, referenceTime)
@@ -253,6 +294,8 @@ func (s *repoService) applySelectedFileMetrics(
 			}
 		}
 	})
+
+	return eris.Wrap(ctx.Err(), "git metric loading cancelled")
 }
 
 func selectedReferenceTime(values []time.Time) time.Time {

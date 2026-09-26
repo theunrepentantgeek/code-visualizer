@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -146,16 +147,25 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
+	var phases []workflowPhase
 
-	spiral.AcquireData(s)
-	spiral.RenderPipeline(s)
+	phases = []workflowPhase{
+		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
+			pipeline.ApplyFuncX(s, stages.ValidatePaths)
+			pipeline.ApplyFuncX(s, stages.ExportConfig)
+			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+			pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
 
-	return eris.Wrap(s.Err(), "spiral pipeline failed")
+			phases[1].Work = stages.AcquisitionWork(common)
+		}},
+		{Name: phaseAcquiring, Kind: progress.StageLive, Run: spiral.AcquireData},
+		{Name: phaseRendering, Kind: progress.StageSummary, Run: spiral.RenderVisualization},
+		{Name: phaseWriting, Kind: progress.StageSummary, Run: spiral.WriteOutput},
+	}
+	err := runCommandWorkflow(flags, s, "Spiral", phases)
+
+	return eris.Wrap(err, "spiral pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

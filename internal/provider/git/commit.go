@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -58,28 +59,35 @@ const (
 
 // CommitTotal returns the number of commits reachable from HEAD.
 func CommitTotal(repoPath string) (int64, error) {
-	return CommitTotalInHistoryRange(repoPath, HistoryRange{})
+	return CommitTotalInHistoryRange(context.Background(), repoPath, HistoryRange{})
 }
 
 // CommitTotalInHistoryRange returns the number of commits selected by historyRange.
-func CommitTotalInHistoryRange(repoPath string, historyRange HistoryRange) (int64, error) {
+func CommitTotalInHistoryRange(
+	ctx context.Context,
+	repoPath string,
+	historyRange HistoryRange,
+) (int64, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, eris.Wrap(err, "commit counting cancelled")
+	}
+
 	s, err := getService(repoPath)
 	if err != nil {
 		return 0, eris.Wrap(err, "failed to open git repository")
 	}
 
-	return s.commitTotalInHistoryRange(historyRange)
+	return s.commitTotalInHistoryRange(ctx, historyRange)
 }
 
-func (s *repoService) commitTotal() (int64, error) {
-	return s.commitTotalInHistoryRange(HistoryRange{})
-}
-
-func (s *repoService) commitTotalInHistoryRange(historyRange HistoryRange) (int64, error) {
+func (s *repoService) commitTotalInHistoryRange(
+	ctx context.Context,
+	historyRange HistoryRange,
+) (int64, error) {
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(ctx, historyRange)
 	if err != nil {
 		return 0, err
 	}
@@ -87,6 +95,10 @@ func (s *repoService) commitTotalInHistoryRange(historyRange HistoryRange) (int6
 	var total int64
 
 	for _, iterationErr := range commits {
+		if err := ctx.Err(); err != nil {
+			return 0, eris.Wrap(err, "commit counting cancelled")
+		}
+
 		if iterationErr != nil {
 			return 0, eris.Wrap(iterationErr, "failed to iterate commits")
 		}
@@ -108,16 +120,27 @@ func BulkCommitHistory(
 	tracked map[string]bool,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
-	return BulkCommitHistoryInHistoryRange(repoPath, tracked, HistoryRange{}, onCommitProcessed)
+	return BulkCommitHistoryInHistoryRange(
+		context.Background(),
+		repoPath,
+		tracked,
+		HistoryRange{},
+		onCommitProcessed,
+	)
 }
 
 // BulkCommitHistoryInHistoryRange filters traversed commits to historyRange.
 func BulkCommitHistoryInHistoryRange(
+	ctx context.Context,
 	repoPath string,
 	tracked map[string]bool,
 	historyRange HistoryRange,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, eris.Wrap(err, "commit history loading cancelled")
+	}
+
 	s, err := getService(repoPath)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to open git repository")
@@ -125,7 +148,7 @@ func BulkCommitHistoryInHistoryRange(
 
 	var commits []Commit
 
-	err = s.walkTrackedHistoryInHistoryRange(tracked, historyRange, loadTrackedChanges, onCommitProcessed,
+	err = s.walkTrackedHistoryInHistoryRange(ctx, tracked, historyRange, loadTrackedChanges, onCommitProcessed,
 		func(c *object.Commit, changed []trackedChange) {
 			appendTrackedCommit(&commits, c, changed, metricRequirements{})
 		})
@@ -145,6 +168,7 @@ func BulkCommitHistoryAndPrewarm(
 	onCommitProcessed func(),
 ) ([]Commit, error) {
 	return BulkCommitHistoryAndPrewarmInHistoryRange(
+		context.Background(),
 		repoPath,
 		tracked,
 		requested,
@@ -155,18 +179,24 @@ func BulkCommitHistoryAndPrewarm(
 
 // BulkCommitHistoryAndPrewarmInHistoryRange filters commits to historyRange.
 func BulkCommitHistoryAndPrewarmInHistoryRange(
+	ctx context.Context,
 	repoPath string,
 	tracked map[string]bool,
 	requested []metric.Name,
 	historyRange HistoryRange,
 	onCommitProcessed func(),
 ) ([]Commit, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, eris.Wrap(err, "commit history prewarming cancelled")
+	}
+
 	s, err := getService(repoPath)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to open git repository")
 	}
 
 	return s.bulkCommitHistoryAndPrewarmInHistoryRange(
+		ctx,
 		normalizeTrackedPaths(tracked),
 		newMetricRequirements(requested),
 		historyRange,
@@ -190,6 +220,7 @@ func normalizeTrackedPaths(tracked map[string]bool) map[string]bool {
 }
 
 func (s *repoService) bulkCommitHistoryAndPrewarmInHistoryRange(
+	ctx context.Context,
 	tracked map[string]bool,
 	requirements metricRequirements,
 	historyRange HistoryRange,
@@ -204,7 +235,7 @@ func (s *repoService) bulkCommitHistoryAndPrewarmInHistoryRange(
 		changeMode = loadCachedChangeStats
 	}
 
-	err := s.walkTrackedHistoryInHistoryRange(tracked, historyRange, changeMode, onCommitProcessed,
+	err := s.walkTrackedHistoryInHistoryRange(ctx, tracked, historyRange, changeMode, onCommitProcessed,
 		func(c *object.Commit, changed []trackedChange) {
 			prewarmTrackedChanges(cache, c, changed, requirements)
 			appendTrackedCommit(&commits, c, changed, requirements)
@@ -315,7 +346,9 @@ func appendTrackedCommit(
 	})
 }
 
+//nolint:revive // The history walk keeps lock, cache, filtering, and visitation in one transaction.
 func (s *repoService) walkTrackedHistoryInHistoryRange(
+	ctx context.Context,
 	tracked map[string]bool,
 	historyRange HistoryRange,
 	changeMode historyChangeMode,
@@ -325,7 +358,7 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(ctx, historyRange)
 	if err != nil {
 		return err
 	}
@@ -333,6 +366,10 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 	cacheKey := trackedPathsCacheKey(tracked)
 
 	for c, iterationErr := range commits {
+		if err := ctx.Err(); err != nil {
+			return eris.Wrap(err, "tracked history loading cancelled")
+		}
+
 		if iterationErr != nil {
 			return eris.Wrap(iterationErr, "failed to iterate commits")
 		}
@@ -346,6 +383,10 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 
 		if onCommitProcessed != nil {
 			onCommitProcessed()
+		}
+
+		if err := ctx.Err(); err != nil {
+			return eris.Wrap(err, "tracked history loading cancelled")
 		}
 
 		visit(c, changed)

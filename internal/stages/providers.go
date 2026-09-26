@@ -1,7 +1,8 @@
 package stages
 
 import (
-	"log/slog"
+	"context"
+	"errors"
 	"slices"
 
 	"github.com/rotisserie/eris"
@@ -9,28 +10,30 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
 // RunProviders calculates c.Requested metrics against c.Root.
-func RunProviders(c *CommonState) error {
-	slog.Info("Calculating metrics")
-
+//
+//nolint:revive,nolintlint // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+func RunProviders(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	progressMetrics := metricsRemainingAfterPrewarm(c)
 	total := provider.FileProgressTotal(progressMetrics, model.CountFiles(c.Root))
-	metricProg, stopMetricTicker := BuildMetricProgress(c.Flags, total)
+	metricProg := newMetricProgress(sink, total)
 
-	err := loadRequestedMetrics(c, filterMetricProgress(metricProg, progressMetrics))
-
-	stopMetricTicker()
-
+	err := loadRequestedMetrics(c, ctx, sink, filterMetricProgress(metricProg, progressMetrics))
 	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return eris.Wrap(ctx.Err(), "metric loading cancelled")
+		}
+
 		return err
 	}
 
-	if metricProg != nil {
-		logMetricCompletion(total)
+	if err := metricProg.Err(); err != nil {
+		return eris.Wrap(err, "report metric progress")
 	}
 
 	return nil
@@ -50,10 +53,10 @@ type metricProgressFilter struct {
 }
 
 func filterMetricProgress(
-	progress provider.MetricProgress,
+	metricProgress provider.MetricProgress,
 	selected []metric.Name,
 ) provider.MetricProgress {
-	if progress == nil {
+	if metricProgress == nil {
 		return nil
 	}
 
@@ -63,7 +66,7 @@ func filterMetricProgress(
 	}
 
 	return &metricProgressFilter{
-		progress: progress,
+		progress: metricProgress,
 		selected: metrics,
 	}
 }
@@ -86,36 +89,61 @@ func (f *metricProgressFilter) OnFileProcessed(name metric.Name) {
 	}
 }
 
-func loadRequestedMetrics(c *CommonState, metricProg provider.MetricProgress) error {
+//nolint:revive,nolintlint // Callers consistently pass shared state before scoped dependencies.
+func loadRequestedMetrics(
+	c *CommonState,
+	ctx context.Context,
+	sink progress.Sink,
+	metricProg provider.MetricProgress,
+) error {
 	c.Root.ReferenceTime = c.ReferenceNow
 
 	requested := c.Requested.BaseMetrics
 	if hasAuthorshipMetric(requested) {
+		repoRoot, err := repoRootForState(c, "authorship metrics")
+		if err != nil {
+			return eris.Wrap(err, "failed to resolve git root")
+		}
+
+		total, err := git.CommitTotalInHistoryRange(ctx, repoRoot, c.Flags.HistoryRange)
+		if err != nil {
+			return eris.Wrap(err, "failed to count git commits")
+		}
+
+		historyProg := newHistoryProgress(sink, total)
 		if err := git.LoadAuthorshipMetricsInHistoryRange(
+			ctx,
 			c.Root,
 			authorshipParams(c.RootConfig),
 			c.Flags.HistoryRange,
 			c.ReferenceNow,
+			historyProg.OnCommit,
 		); err != nil {
 			return eris.Wrap(err, "failed to load authorship metrics")
+		}
+
+		if err := historyProg.Err(); err != nil {
+			return eris.Wrap(err, "report authorship progress")
 		}
 
 		requested = withoutAuthorshipMetrics(requested)
 	}
 
-	requested, err := loadFileGitMetrics(c, requested, metricProg)
+	requested, err := loadFileGitMetrics(c, ctx, requested, metricProg)
 	if err != nil {
 		return err
 	}
 
 	return eris.Wrap(
-		provider.RunLoaders(c.Root, requested, metricProg),
+		provider.RunLoaders(ctx, c.Root, requested, metricProg),
 		"failed to load metrics",
 	)
 }
 
+//nolint:revive,nolintlint // Callers consistently pass shared state before scoped dependencies.
 func loadFileGitMetrics(
 	c *CommonState,
+	ctx context.Context,
 	requested []metric.Name,
 	metricProg provider.MetricProgress,
 ) ([]metric.Name, error) {
@@ -131,6 +159,7 @@ func loadFileGitMetrics(
 	}
 
 	if err := git.LoadFileMetricsInHistoryRange(
+		ctx,
 		c.Root,
 		fileGitMetrics,
 		c.Flags.HistoryRange,

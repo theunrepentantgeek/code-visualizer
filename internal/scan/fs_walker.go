@@ -2,6 +2,7 @@ package scan
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"io/fs"
@@ -19,6 +20,7 @@ import (
 )
 
 type fsWalker struct {
+	ctx           context.Context
 	tree          source.Tree
 	rules         []filter.Rule
 	progress      Progress
@@ -29,11 +31,21 @@ const maxSymlinkDepth = 40
 
 var errFileSkipped = errors.New("file skipped during scan")
 
-func newFSWalker(tree source.Tree, rules []filter.Rule, progress Progress, includeBinary bool) fsWalker {
-	return fsWalker{tree: tree, rules: rules, progress: progress, includeBinary: includeBinary}
+func newFSWalker(
+	ctx context.Context,
+	tree source.Tree,
+	rules []filter.Rule,
+	progress Progress,
+	includeBinary bool,
+) fsWalker {
+	return fsWalker{ctx: ctx, tree: tree, rules: rules, progress: progress, includeBinary: includeBinary}
 }
 
 func (w fsWalker) scanDir(name string) (*model.Directory, error) {
+	if err := w.ctx.Err(); err != nil {
+		return nil, eris.Wrap(err, "filesystem scan cancelled")
+	}
+
 	entries, err := fs.ReadDir(w.tree.FS, name)
 	if err != nil {
 		return nil, eris.Wrapf(err, "failed to read directory %s", w.displayPath(name))
@@ -51,6 +63,10 @@ func (w fsWalker) scanDir(name string) (*model.Directory, error) {
 	}
 
 	for _, entry := range entries {
+		if err := w.ctx.Err(); err != nil {
+			return nil, eris.Wrap(err, "filesystem scan cancelled")
+		}
+
 		if err := w.processEntry(node, name, entry); err != nil {
 			return nil, err
 		}
@@ -115,6 +131,10 @@ func (w fsWalker) processDir(node *model.Directory, name string) error {
 }
 
 func (w fsWalker) processFile(node *model.Directory, sourcePath, fileName string) (*model.File, error) {
+	if err := w.ctx.Err(); err != nil {
+		return nil, eris.Wrap(err, "filesystem scan cancelled")
+	}
+
 	info, err := fs.Stat(w.tree.FS, sourcePath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

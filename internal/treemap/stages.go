@@ -26,8 +26,6 @@ func ResolveMetrics(c *stages.CommonState, t *State, cfg *config.Treemap) error 
 // BuildInksStage builds the treemap inks. Also emits the "Rendering image"
 // log line preserved from the legacy renderAndLog helper.
 func BuildInksStage(c *stages.CommonState, t *State) error {
-	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
-
 	t.Inks = BuildInks(c.Root, c.Requested, t.Fill, t.Border)
 	if !t.Flat {
 		t.Inks.Fill = inks.NewRadialGradientInk(t.Inks.Fill)
@@ -79,8 +77,6 @@ func LayoutStage(c *stages.CommonState, t *State) error {
 func RenderStage(c *stages.CommonState, t *State) error {
 	cv := RenderToCanvas(t.Root, c.Root, c.Width, c.Height, t.Inks, t.Size)
 	legend.RenderInto(cv, t.LegendConfig)
-
-	slog.Debug("rendering", "width", c.Width, "height", c.Height, "output", c.Output)
 
 	c.Canvas = cv
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rotisserie/eris"
@@ -122,7 +123,7 @@ func (r *RenderCmd) Validate() error {
 // executes the named preset.
 func (r *RenderCmd) Run(flags *Flags) error {
 	if r.Preset == "" {
-		return r.listPresets()
+		return r.listPresets(flags.stdoutWriter())
 	}
 
 	preset := findPreset(r.Preset)
@@ -134,7 +135,7 @@ func (r *RenderCmd) Run(flags *Flags) error {
 	return r.runPreset(preset, flags)
 }
 
-func (*RenderCmd) listPresets() error {
+func (*RenderCmd) listPresets(writer io.Writer) error {
 	entries := make([]nameDescription, 0, len(presets))
 	for _, p := range presets {
 		entries = append(entries, nameDescription{
@@ -143,9 +144,9 @@ func (*RenderCmd) listPresets() error {
 		})
 	}
 
-	fmt.Print(renderNameDescriptionList("Presets", entries, consoleWidth()))
+	_, err := fmt.Fprint(writer, renderNameDescriptionList("Presets", entries, consoleWidth()))
 
-	return nil
+	return eris.Wrap(err, "write preset list")
 }
 
 // effectiveTitle returns the user-supplied title if set, otherwise the preset's default.

@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -73,6 +74,7 @@ func BulkAuthorHistory(
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
 	return BulkAuthorHistoryInHistoryRange(
+		context.Background(),
 		repoPath,
 		filePaths,
 		honorMailmap,
@@ -85,12 +87,17 @@ func BulkAuthorHistory(
 //
 //nolint:cyclop,funlen,maintidx,revive,nolintlint // A single-pass history walk keeps the accumulators local and coherent.
 func BulkAuthorHistoryInHistoryRange(
+	ctx context.Context,
 	repoPath string,
 	filePaths map[string]bool,
 	honorMailmap bool,
 	historyRange HistoryRange,
 	onCommitProcessed func(),
 ) (AuthorHistoryResult, error) {
+	if err := ctx.Err(); err != nil {
+		return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
+	}
+
 	s, err := getService(repoPath)
 	if err != nil {
 		return AuthorHistoryResult{}, eris.Wrap(err, "failed to open git repository")
@@ -99,7 +106,7 @@ func BulkAuthorHistoryInHistoryRange(
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(ctx, historyRange)
 	if err != nil {
 		return AuthorHistoryResult{}, err
 	}
@@ -124,6 +131,10 @@ func BulkAuthorHistoryInHistoryRange(
 	headDate := time.Time{}
 
 	for c, iterationErr := range commits {
+		if err := ctx.Err(); err != nil {
+			return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
+		}
+
 		if iterationErr != nil {
 			return AuthorHistoryResult{}, eris.Wrap(iterationErr, "failed to iterate commits")
 		}
@@ -147,6 +158,10 @@ func BulkAuthorHistoryInHistoryRange(
 			onCommitProcessed()
 		}
 
+		if err := ctx.Err(); err != nil {
+			return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
+		}
+
 		if len(changed) == 0 {
 			continue
 		}
@@ -158,6 +173,10 @@ func BulkAuthorHistoryInHistoryRange(
 		}
 
 		for _, path := range changed {
+			if err := ctx.Err(); err != nil {
+				return AuthorHistoryResult{}, eris.Wrap(err, "author history cancelled")
+			}
+
 			// Get or create per-file accumulator for this author.
 			if fileAccum[path] == nil {
 				fileAccum[path] = make(map[string]*authorAccum)

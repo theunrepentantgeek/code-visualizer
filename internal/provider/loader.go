@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"context"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -20,4 +22,4 @@ type BaseMetricLoader struct {
 
 // LoadFunc loads requested metrics into root. requested contains only metrics
 // declared by the loader, in the order they appear in its Metrics field.
-type LoadFunc func(root *model.Directory, requested []metric.Name) error
+type LoadFunc func(ctx context.Context, root *model.Directory, requested []metric.Name) error

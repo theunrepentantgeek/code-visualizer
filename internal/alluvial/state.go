@@ -6,17 +6,19 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
 // State holds data prepared for a later alluvial layout and render pipeline.
 type State struct {
-	WidthMetric metric.Name
-	Fill        BandFill
-	Snapshots   []Snapshot
-	Data        Data
-	Layout      Layout
-	Legend      *legend.Config
+	WidthMetric    metric.Name
+	Fill           BandFill
+	Snapshots      []Snapshot
+	Data           Data
+	Layout         Layout
+	Legend         *legend.Config
+	snapshotStates []*stages.CommonState
 }
 
 // BandFill is the resolved colour encoding used by all alluvial stages.

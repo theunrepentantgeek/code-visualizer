@@ -125,8 +125,6 @@ func BuildInksStage(c *stages.CommonState, p *State) error {
 		}
 	}
 
-	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
-
 	return nil
 }
 

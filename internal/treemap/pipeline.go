@@ -9,11 +9,11 @@ import (
 // providers, and populate declarations. Tests that supply a pre-built model
 // tree skip this function and inject CommonState.Root directly.
 func AcquireData(s *pipeline.State) {
-	pipeline.ApplyFuncX(s, stages.ScanFilesystem)
-	pipeline.ApplyFuncX(s, stages.FilterChangedOnly)
+	pipeline.ApplyFuncXYZ(s, stages.ScanFilesystem)
+	pipeline.ApplyFuncXY(s, stages.FilterChangedOnly)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
-	pipeline.ApplyFuncX(s, stages.PrewarmGitMetrics)
-	pipeline.ApplyFuncX(s, stages.RunProviders)
+	pipeline.ApplyFuncXYZ(s, stages.PrewarmGitMetrics)
+	pipeline.ApplyFuncXYZ(s, stages.RunProviders)
 	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
 }
 
@@ -23,6 +23,11 @@ func AcquireData(s *pipeline.State) {
 // Shared by the CLI command and the golden-test harness so both exercise
 // identical wiring.
 func RenderPipeline(s *pipeline.State) {
+	RenderVisualization(s)
+	WriteOutput(s)
+}
+
+func RenderVisualization(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.RunAggregations)
 	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
 	pipeline.ApplyFuncX(s, stages.ExportData)
@@ -38,6 +43,8 @@ func RenderPipeline(s *pipeline.State) {
 	pipeline.ApplyFuncXY(s, ApplyCanvasBlockLabels)
 	pipeline.ApplyFuncX(s, stages.ApplyTitle)
 	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+}
+
+func WriteOutput(s *pipeline.State) {
 	pipeline.ApplyFuncX(s, stages.WriteCanvas)
-	pipeline.ApplyFuncXY(s, LogResult)
 }
