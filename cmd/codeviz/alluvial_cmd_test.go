@@ -16,8 +16,11 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"github.com/theunrepentantgeek/code-visualizer/internal/alluvial"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
 func TestAlluvialCmd_Run_EntersDataPipeline(t *testing.T) {
@@ -31,6 +34,32 @@ func TestAlluvialCmd_Run_EntersDataPipeline(t *testing.T) {
 	}).Run(&Flags{Config: config.New()})
 
 	g.Expect(err).To(MatchError(ContainSubstring("alluvial pipeline failed")))
+}
+
+func TestBuildAlluvialPhasesOrdersOneLiveStagePerReference(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	cfg := &config.Alluvial{References: []string{"v1", "v2", ""}}
+
+	phases := buildAlluvialPhases(&stages.CommonState{}, &alluvial.State{}, cfg)
+
+	g.Expect(phases).To(HaveLen(6))
+	g.Expect([]string{
+		phases[0].Name,
+		phases[1].Name,
+		phases[2].Name,
+		phases[3].Name,
+		phases[4].Name,
+		phases[5].Name,
+	}).To(Equal([]string{
+		"Preparing", "Loading v1", "Loading v2", "Loading HEAD", "Rendering", "Writing output",
+	}))
+	g.Expect(phases[0].Kind).To(Equal(progress.StageSummary))
+	g.Expect(phases[1].Kind).To(Equal(progress.StageLive))
+	g.Expect(phases[2].Kind).To(Equal(progress.StageLive))
+	g.Expect(phases[3].Kind).To(Equal(progress.StageLive))
+	g.Expect(phases[4].Kind).To(Equal(progress.StageSummary))
+	g.Expect(phases[5].Kind).To(Equal(progress.StageSummary))
 }
 
 func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {
