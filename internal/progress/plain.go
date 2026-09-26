@@ -92,7 +92,10 @@ func (r *plainRenderer) writeLine(format string, args ...any) error {
 }
 
 func (r *plainRenderer) diagnosticWriter() io.Writer { return r.writer }
-func (*plainRenderer) close() error                  { return nil }
+func (r *plainRenderer) writeDiagnostic(line string) error {
+	return r.writeLine("%s", strings.TrimSuffix(line, "\r"))
+}
+func (*plainRenderer) close() error { return nil }
 
 func cleanError(err error) string {
 	if err == nil {

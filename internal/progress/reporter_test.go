@@ -23,7 +23,8 @@ func (r *recordingRenderer) render(e event) error {
 	return nil
 }
 
-func (r *recordingRenderer) diagnosticWriter() io.Writer { return r.writer }
+func (r *recordingRenderer) diagnosticWriter() io.Writer  { return r.writer }
+func (r *recordingRenderer) writeDiagnostic(string) error { return nil }
 
 func (r *recordingRenderer) close() error {
 	r.closed++

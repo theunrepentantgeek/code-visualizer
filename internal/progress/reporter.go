@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"time"
+
+	"golang.org/x/term"
 )
 
 type eventKind uint8
@@ -38,7 +41,7 @@ type event struct {
 
 type renderer interface {
 	render(event) error
-	diagnosticWriter() io.Writer
+	writeDiagnostic(string) error
 	close() error
 }
 
@@ -49,6 +52,12 @@ type discardRenderer struct {
 func (*discardRenderer) render(event) error { return nil }
 func (r *discardRenderer) diagnosticWriter() io.Writer {
 	return r.writer
+}
+
+func (r *discardRenderer) writeDiagnostic(line string) error {
+	_, err := fmt.Fprintln(r.writer, line)
+
+	return err
 }
 func (*discardRenderer) close() error { return nil }
 
@@ -63,6 +72,7 @@ type reporter struct {
 	stageCount int
 	completed  int
 	active     *stage
+	diagnostic *diagnosticWriter
 }
 
 type stage struct {
@@ -78,11 +88,27 @@ type stage struct {
 }
 
 func New(config Config) (Reporter, error) {
+	return newConfiguredReporter(config, newDefaultTTYRenderer)
+}
+
+type ttyRendererFactory func(resolvedConfig) (renderer, error)
+
+func newConfiguredReporter(config Config, ttyFactory ttyRendererFactory) (Reporter, error) {
 	if config.Writer == nil {
 		return nil, errors.New("progress writer is required")
 	}
 	if config.Now == nil {
 		config.Now = time.Now
+	}
+	if config.LookupEnv == nil {
+		config.LookupEnv = os.LookupEnv
+	}
+	if config.IsTerminal == nil {
+		config.IsTerminal = func(writer io.Writer) bool {
+			file, ok := writer.(interface{ Fd() uintptr })
+
+			return ok && term.IsTerminal(int(file.Fd()))
+		}
 	}
 
 	resolved, err := resolveConfig(config)
@@ -97,7 +123,26 @@ func New(config Config) (Reporter, error) {
 	case resolved.mode == ModePlain:
 		selected = newPlainRenderer(resolved)
 	default:
-		selected = &discardRenderer{writer: config.Writer}
+		selected, err = ttyFactory(resolved)
+		if err != nil {
+			requested, parseErr := ParseMode(string(config.Mode))
+			if parseErr != nil {
+				return nil, parseErr
+			}
+			if requested == ModeTTY {
+				return nil, err
+			}
+
+			if _, writeErr := fmt.Fprintf(
+				config.Writer,
+				"terminal progress unavailable; falling back to plain progress: %s\n",
+				cleanError(err),
+			); writeErr != nil {
+				return nil, errors.Join(err, writeErr)
+			}
+
+			selected = newPlainRenderer(resolved)
+		}
 	}
 
 	return newReporter(config, selected), nil
@@ -207,7 +252,11 @@ func (r *reporter) DiagnosticWriter() io.Writer {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	return r.renderer.diagnosticWriter()
+	if r.diagnostic == nil {
+		r.diagnostic = &diagnosticWriter{reporter: r}
+	}
+
+	return r.diagnostic
 }
 
 func (r *reporter) Close() error {
@@ -218,7 +267,8 @@ func (r *reporter) Close() error {
 		return nil
 	}
 
-	err := r.renderer.close()
+	err := r.diagnostic.flushLocked()
+	err = errors.Join(err, r.renderer.close())
 	r.closed = true
 
 	return err
