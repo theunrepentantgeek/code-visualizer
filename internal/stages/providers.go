@@ -17,7 +17,7 @@ import (
 
 // RunProviders calculates c.Requested metrics against c.Root.
 //
-//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+//nolint:revive,nolintlint // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func RunProviders(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	progressMetrics := metricsRemainingAfterPrewarm(c)
 	total := provider.FileProgressTotal(progressMetrics, model.CountFiles(c.Root))
@@ -89,7 +89,7 @@ func (f *metricProgressFilter) OnFileProcessed(name metric.Name) {
 	}
 }
 
-//nolint:revive // Common state is the primary pipeline input.
+//nolint:revive,nolintlint // Callers consistently pass shared state before scoped dependencies.
 func loadRequestedMetrics(
 	c *CommonState,
 	ctx context.Context,
@@ -140,7 +140,7 @@ func loadRequestedMetrics(
 	)
 }
 
-//nolint:revive // Common state is the primary pipeline input.
+//nolint:revive,nolintlint // Callers consistently pass shared state before scoped dependencies.
 func loadFileGitMetrics(
 	c *CommonState,
 	ctx context.Context,

@@ -135,6 +135,22 @@ func TestResolveMode_ForcedTTYRejectsUnsupportedWriter(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("does not support terminal progress")))
 }
 
+func TestResolveMode_ForcedTTYAllowsDumbTerminalWithoutColor(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	resolved, err := resolveConfig(Config{
+		Mode:       ModeTTY,
+		Writer:     &bytes.Buffer{},
+		IsTerminal: func(io.Writer) bool { return true },
+		LookupEnv:  env(map[string]string{"TERM": "dumb"}),
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.mode).To(Equal(ModeTTY))
+	g.Expect(resolved.noColor).To(BeTrue())
+}
+
 func TestResolveColor_HonorsEveryDisableInput(t *testing.T) {
 	t.Parallel()
 
@@ -158,4 +174,18 @@ func TestResolveColor_HonorsEveryDisableInput(t *testing.T) {
 			g.Expect(resolved.noColor).To(BeTrue())
 		})
 	}
+}
+
+func TestResolveColor_EmptyNoColorDoesNotDisableColor(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	resolved, err := resolveConfig(Config{
+		Mode:      ModePlain,
+		Writer:    &bytes.Buffer{},
+		LookupEnv: env(map[string]string{"NO_COLOR": ""}),
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.noColor).To(BeFalse())
 }

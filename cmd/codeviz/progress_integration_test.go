@@ -208,3 +208,22 @@ func TestRunApplication_ProcessingFailureLeavesDurableFailedStage(t *testing.T) 
 	g.Expect(code).To(Equal(5), stderr.String())
 	g.Expect(stderr.String()).To(ContainSubstring("Writing output: failed"))
 }
+
+func TestEnvironmentSupportsUnicode_UsesLocale(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	for _, locale := range []string{"en_US.UTF-8", "C.utf8"} {
+		g.Expect(environmentSupportsUnicode(func(key string) (string, bool) {
+			if key == "LANG" {
+				return locale, true
+			}
+
+			return "", false
+		})).To(BeTrue(), locale)
+	}
+
+	g.Expect(environmentSupportsUnicode(func(string) (string, bool) {
+		return "", false
+	})).To(BeFalse())
+}

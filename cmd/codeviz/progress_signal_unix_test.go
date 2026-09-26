@@ -68,11 +68,19 @@ func TestCLI_SIGINTCancelsActiveProgressAndExits130(t *testing.T) {
 	g.Expect(command.Start()).To(Succeed())
 
 	stageStarted := make(chan struct{})
+	scanDone := make(chan struct{})
+
+	var lines []string
 
 	go func() {
+		defer close(scanDone)
+
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
-			if strings.Contains(scanner.Text(), "Acquiring data: started") {
+			line := scanner.Text()
+			lines = append(lines, line)
+
+			if strings.Contains(line, "Acquiring data: started") {
 				select {
 				case <-stageStarted:
 				default:
@@ -97,5 +105,17 @@ func TestCLI_SIGINTCancelsActiveProgressAndExits130(t *testing.T) {
 
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(errors.As(err, &exitErr)).To(BeTrue())
+
+	if exitErr == nil {
+		panic("signal helper returned a non-exit error")
+	}
+
 	g.Expect(exitErr.ExitCode()).To(Equal(130))
+
+	<-scanDone
+
+	output := strings.Join(lines, "\n")
+	g.Expect(output).To(ContainSubstring("Acquiring data: cancelled"))
+	g.Expect(output).NotTo(ContainSubstring("Rendering"))
+	g.Expect(output).NotTo(ContainSubstring("Writing output"))
 }

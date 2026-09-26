@@ -106,7 +106,7 @@ func BulkAuthorHistoryInHistoryRange(
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(ctx, historyRange)
 	if err != nil {
 		return AuthorHistoryResult{}, err
 	}

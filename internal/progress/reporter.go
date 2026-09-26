@@ -93,7 +93,7 @@ func New(config Config) (Reporter, error) {
 
 type ttyRendererFactory func(resolvedConfig) (renderer, error)
 
-//nolint:cyclop,revive // Renderer selection is clearer as one guarded composition function.
+//nolint:cyclop,revive,nolintlint // Renderer selection is clearer as one guarded composition function.
 func newConfiguredReporter(config Config, ttyFactory ttyRendererFactory) (Reporter, error) {
 	if config.Writer == nil {
 		return nil, errors.New("progress writer is required")

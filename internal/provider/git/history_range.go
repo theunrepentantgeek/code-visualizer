@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"io"
 	"iter"
@@ -27,7 +28,11 @@ type resolvedHistoryRange struct {
 	until    time.Time
 }
 
-func (s *repoService) resolveHistoryRange(r HistoryRange) (resolvedHistoryRange, error) {
+func (s *repoService) resolveHistoryRange(ctx context.Context, r HistoryRange) (resolvedHistoryRange, error) {
+	if err := ctx.Err(); err != nil {
+		return resolvedHistoryRange{}, eris.Wrap(err, "history range resolution cancelled")
+	}
+
 	from, err := s.resolveHistoryReference(r.From, lowerBound)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "invalid --from")
@@ -57,16 +62,17 @@ func (s *repoService) resolveHistoryRange(r HistoryRange) (resolvedHistoryRange,
 		return resolved, nil
 	}
 
-	return s.excludeLowerRevision(resolved, from.revision, r.From, tipLabel)
+	return s.excludeLowerRevision(ctx, resolved, from.revision, r.From, tipLabel)
 }
 
 func (s *repoService) excludeLowerRevision(
+	ctx context.Context,
 	resolved resolvedHistoryRange,
 	from plumbing.Hash,
 	fromLabel string,
 	tipLabel string,
 ) (resolvedHistoryRange, error) {
-	reachableFromTip, err := s.reachableHashes(resolved.tip)
+	reachableFromTip, err := s.reachableHashes(ctx, resolved.tip)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "failed to inspect effective tip history")
 	}
@@ -79,7 +85,7 @@ func (s *repoService) excludeLowerRevision(
 		)
 	}
 
-	excluded, err := s.reachableHashes(from)
+	excluded, err := s.reachableHashes(ctx, from)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrapf(
 			err,
@@ -147,7 +153,10 @@ func peelTagCommit(repo *gogit.Repository, name string, hash plumbing.Hash) (plu
 	}
 }
 
-func (s *repoService) reachableHashes(from plumbing.Hash) (map[plumbing.Hash]struct{}, error) {
+func (s *repoService) reachableHashes(
+	ctx context.Context,
+	from plumbing.Hash,
+) (map[plumbing.Hash]struct{}, error) {
 	commitIter, err := s.repo.Log(&gogit.LogOptions{From: from})
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to start reachable-history iteration")
@@ -158,6 +167,10 @@ func (s *repoService) reachableHashes(from plumbing.Hash) (map[plumbing.Hash]str
 	result := make(map[plumbing.Hash]struct{})
 
 	err = commitIter.ForEach(func(commit *object.Commit) error {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return eris.Wrap(ctxErr, "reachable-history iteration cancelled")
+		}
+
 		result[commit.Hash] = struct{}{}
 
 		return nil
@@ -166,8 +179,11 @@ func (s *repoService) reachableHashes(from plumbing.Hash) (map[plumbing.Hash]str
 	return result, eris.Wrap(err, "failed to iterate reachable history")
 }
 
-func (s *repoService) commitIterator(r HistoryRange) (iter.Seq2[*object.Commit, error], error) {
-	resolved, err := s.resolveHistoryRange(r)
+func (s *repoService) commitIterator(
+	ctx context.Context,
+	r HistoryRange,
+) (iter.Seq2[*object.Commit, error], error) {
+	resolved, err := s.resolveHistoryRange(ctx, r)
 	if err != nil {
 		return nil, err
 	}

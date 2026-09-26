@@ -50,7 +50,7 @@ func resolveConfig(config Config) (resolvedConfig, error) {
 			mode = ModeTTY
 		}
 	case ModeTTY:
-		if !capable {
+		if !terminal {
 			return resolvedConfig{}, errors.New("configured stderr does not support terminal progress")
 		}
 	case ModePlain:

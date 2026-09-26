@@ -301,7 +301,7 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 		Until: "date:2024-01-02T00:00:00Z",
 	}
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(context.Background(), historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var count int

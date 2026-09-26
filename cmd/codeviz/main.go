@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/lmittmann/tint"
@@ -170,10 +171,13 @@ func runApplication(app application) int {
 		Mode:       cli.Progress,
 		Writer:     app.stderr,
 		IsTerminal: app.isTerminal,
-		LookupEnv:  app.lookupEnv,
-		NoColor:    cli.NoColor,
-		Quiet:      cli.Quiet,
-		Verbose:    cli.Verbose || cli.Debug,
+		SupportsUnicode: func() bool {
+			return environmentSupportsUnicode(app.lookupEnv)
+		},
+		LookupEnv: app.lookupEnv,
+		NoColor:   cli.NoColor,
+		Quiet:     cli.Quiet,
+		Verbose:   cli.Verbose || cli.Debug,
 	})
 	if err != nil {
 		slog.Error("failed to initialize progress output", "error", err)
@@ -225,9 +229,24 @@ func environmentDisablesColor(lookupEnv func(string) (string, bool)) bool {
 		"FORCE_COLOR": "0",
 	} {
 		value, exists := lookupEnv(name)
-		if exists && (disabledValue == "" || value == disabledValue) {
+		if exists && value != "" && (disabledValue == "" || value == disabledValue) {
 			return true
 		}
+	}
+
+	return false
+}
+
+func environmentSupportsUnicode(lookupEnv func(string) (string, bool)) bool {
+	for _, name := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		value, exists := lookupEnv(name)
+		if !exists || value == "" {
+			continue
+		}
+
+		normalized := strings.ToLower(value)
+
+		return strings.Contains(normalized, "utf-8") || strings.Contains(normalized, "utf8")
 	}
 
 	return false

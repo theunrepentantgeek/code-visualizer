@@ -87,7 +87,7 @@ func (s *repoService) commitTotalInHistoryRange(
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(ctx, historyRange)
 	if err != nil {
 		return 0, err
 	}
@@ -358,7 +358,7 @@ func (s *repoService) walkTrackedHistoryInHistoryRange(
 	s.repoMu.Lock()
 	defer s.repoMu.Unlock()
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(ctx, historyRange)
 	if err != nil {
 		return err
 	}

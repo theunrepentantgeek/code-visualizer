@@ -27,7 +27,7 @@ func TestFilterChangedOnly_DisabledIsNoOpWithoutGit(t *testing.T) {
 		Flags: &stages.Flags{},
 	}
 
-	g.Expect(stages.FilterChangedOnly(state)).To(Succeed())
+	g.Expect(stages.FilterChangedOnly(state, context.Background())).To(Succeed())
 	g.Expect(root.Files).To(HaveLen(2))
 }
 
@@ -39,7 +39,7 @@ func TestFilterChangedOnly_RequiresConstrainedRange(t *testing.T) {
 		Flags: &stages.Flags{ChangedOnly: true},
 	}
 
-	g.Expect(stages.FilterChangedOnly(state)).To(
+	g.Expect(stages.FilterChangedOnly(state, context.Background())).To(
 		MatchError("--changed-only requires --from or --until"),
 	)
 }
@@ -57,7 +57,7 @@ func TestFilterChangedOnly_RequiresGitRepository(t *testing.T) {
 		},
 	}
 
-	err := stages.FilterChangedOnly(state)
+	err := stages.FilterChangedOnly(state, context.Background())
 
 	var gitRequired *stages.GitRequiredError
 	g.Expect(errors.As(err, &gitRequired)).To(BeTrue())
@@ -100,7 +100,7 @@ func TestFilterChangedOnly_PrunesUnchangedFilesAndEmptyDirectories(t *testing.T)
 		},
 	}
 
-	g.Expect(stages.FilterChangedOnly(state)).To(Succeed())
+	g.Expect(stages.FilterChangedOnly(state, context.Background())).To(Succeed())
 	g.Expect(root.Files).To(ConsistOf(HaveField("Name", "changed.go")))
 	g.Expect(root.Dirs).To(BeEmpty())
 	g.Expect(root.DirectFileCount).To(Equal(1))
@@ -127,7 +127,7 @@ func TestFilterChangedOnly_EmptyIntersectionReturnsTypedError(t *testing.T) {
 		},
 	}
 
-	err := stages.FilterChangedOnly(state)
+	err := stages.FilterChangedOnly(state, context.Background())
 
 	var noFiles *stages.NoFilesAfterFilterError
 	g.Expect(errors.As(err, &noFiles)).To(BeTrue())
@@ -153,7 +153,7 @@ func TestFilterChangedOnly_IntersectsWithScanTimePathFilters(t *testing.T) {
 	}
 
 	g.Expect(stages.ScanFilesystem(state, context.Background(), newTestSink())).To(Succeed())
-	g.Expect(stages.FilterChangedOnly(state)).To(
+	g.Expect(stages.FilterChangedOnly(state, context.Background())).To(
 		MatchError(stages.NoFilesAfterChangedOnlyMsg),
 	)
 }
@@ -171,7 +171,7 @@ func TestFilterChangedOnly_IntersectsWithScanTimeBinaryFiltering(t *testing.T) {
 	}
 
 	g.Expect(stages.ScanFilesystem(state, context.Background(), newTestSink())).To(Succeed())
-	g.Expect(stages.FilterChangedOnly(state)).To(
+	g.Expect(stages.FilterChangedOnly(state, context.Background())).To(
 		MatchError(stages.NoFilesAfterChangedOnlyMsg),
 	)
 }

@@ -10,7 +10,7 @@ import (
 // tree skip this function and inject CommonState.Root directly.
 func AcquireData(s *pipeline.State) {
 	pipeline.ApplyFuncXYZ(s, stages.ScanFilesystem)
-	pipeline.ApplyFuncX(s, stages.FilterChangedOnly)
+	pipeline.ApplyFuncXY(s, stages.FilterChangedOnly)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
 	pipeline.ApplyFuncXYZ(s, stages.PrewarmGitMetrics)
 	pipeline.ApplyFuncXYZ(s, stages.RunProviders)
