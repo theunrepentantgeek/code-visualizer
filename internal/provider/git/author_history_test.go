@@ -40,33 +40,6 @@ func TestBulkAuthorHistoryInHistoryRange_CancelledContextWinsBeforeRepositoryOpe
 	g.Expect(err).To(MatchError(context.Canceled))
 }
 
-func TestBulkAuthorHistoryInHistoryRange_CancellationStopsIterationAndReleasesRepository(t *testing.T) {
-	t.Parallel()
-	g := NewWithT(t)
-	dir := repoRoot(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	processed := 0
-
-	_, err := git.BulkAuthorHistoryInHistoryRange(
-		ctx,
-		dir,
-		map[string]bool{"old.go": true, "shared.go": true, "new.go": true},
-		false,
-		git.HistoryRange{},
-		func() {
-			processed++
-			cancel()
-		},
-	)
-
-	g.Expect(err).To(MatchError(context.Canceled))
-	g.Expect(processed).To(Equal(1))
-
-	total, err := git.CommitTotal(dir)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(total).To(BeNumerically(">", 0))
-}
-
 // TestBulkAuthorHistory_ReturnsNonEmptyResult verifies that BulkAuthorHistory
 // returns a result with at least one file, a non-zero HEAD date, and a
 // non-empty last-active map when run against the code-visualizer repo itself.

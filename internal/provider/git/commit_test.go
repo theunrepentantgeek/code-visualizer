@@ -119,6 +119,33 @@ func TestCommitTotalInHistoryRange_CancelledContextWinsBeforeRepositoryOpen(t *t
 	g.Expect(err).To(MatchError(context.Canceled))
 }
 
+func TestBulkAuthorHistoryInHistoryRange_CancellationStopsIterationAndReleasesRepository(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := setupTestGitRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	processed := 0
+
+	_, err := BulkAuthorHistoryInHistoryRange(
+		ctx,
+		dir,
+		map[string]bool{"old.go": true, "shared.go": true, "new.go": true},
+		false,
+		HistoryRange{},
+		func() {
+			processed++
+			cancel()
+		},
+	)
+
+	g.Expect(err).To(MatchError(context.Canceled))
+	g.Expect(processed).To(Equal(1))
+
+	total, err := CommitTotal(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(total).To(Equal(int64(3)))
+}
+
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestCommitChangeStatsAreCachedByTrackedPathSet(t *testing.T) {
 	g := NewGomegaWithT(t)
