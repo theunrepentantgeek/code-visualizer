@@ -30,6 +30,7 @@ func runCommandWorkflow(
 	}
 
 	reporter := flags.Reporter
+	ownsReporter := false
 	if reporter == nil {
 		var err error
 
@@ -41,9 +42,16 @@ func runCommandWorkflow(
 		if err != nil {
 			return eris.Wrap(err, "initialize quiet progress reporter")
 		}
+
+		ownsReporter = true
 	}
 
-	return runWorkflow(ctx, reporter, state, title, phases)
+	resultErr := runWorkflow(ctx, reporter, state, title, phases)
+	if ownsReporter {
+		resultErr = errors.Join(resultErr, reporter.Close())
+	}
+
+	return resultErr
 }
 
 type workflowPhase struct {
@@ -60,11 +68,7 @@ func runWorkflow(
 	state *pipeline.State,
 	title string,
 	phases []workflowPhase,
-) (resultErr error) {
-	defer func() {
-		resultErr = errors.Join(resultErr, reporter.Close())
-	}()
-
+) error {
 	pipeline.Set[context.Context](state, ctx)
 
 	if err := reporter.Begin(title, len(phases)); err != nil {

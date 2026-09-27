@@ -101,7 +101,7 @@ func TestRunWorkflowOrdersPhasesAndReplacesTypedSink(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(seen).To(Equal([]progress.WorkKind{progress.WorkNone, progress.WorkObservations}))
 	g.Expect(reporter.events).To(Equal([]string{
-		"Build", "Prepare", "complete", "Acquire", "complete", "finish", "close",
+		"Build", "Prepare", "complete", "Acquire", "complete", "finish",
 	}))
 }
 
@@ -121,7 +121,7 @@ func TestRunWorkflowCancelsActivePhase(t *testing.T) {
 	}})
 
 	g.Expect(err).To(MatchError(context.Canceled))
-	g.Expect(reporter.events).To(Equal([]string{"Build", "Acquire", "cancel", "close"}))
+	g.Expect(reporter.events).To(Equal([]string{"Build", "Acquire", "cancel"}))
 }
 
 func TestRunWorkflowJoinsProcessingAndReporterErrors(t *testing.T) {
@@ -129,8 +129,7 @@ func TestRunWorkflowJoinsProcessingAndReporterErrors(t *testing.T) {
 	g := NewWithT(t)
 	processingErr := errors.New("processing failed")
 	reporterErr := errors.New("reporter failed")
-	closeErr := errors.New("close failed")
-	reporter := &workflowReporter{failError: reporterErr, closeErr: closeErr}
+	reporter := &workflowReporter{failError: reporterErr}
 	state := pipeline.NewState()
 
 	err := runWorkflow(context.Background(), reporter, state, "Build", []workflowPhase{{
@@ -143,7 +142,6 @@ func TestRunWorkflowJoinsProcessingAndReporterErrors(t *testing.T) {
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("processing failed"),
 		ContainSubstring("reporter failed"),
-		ContainSubstring("close failed"),
 	)))
 	g.Expect(errors.Is(err, processingErr)).To(BeTrue())
 }

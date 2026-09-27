@@ -78,9 +78,15 @@ func (applicationStage) Cancel(error) error          { return nil }
 func TestRunApplication_ClosesReporterAfterSuccessfulCommand(t *testing.T) {
 	g := NewWithT(t)
 	reporter := &applicationReporter{}
+	target := t.TempDir()
+	g.Expect(os.WriteFile(filepath.Join(target, "main.go"), []byte("package main\n"), 0o600)).To(Succeed())
 
 	code := runApplication(application{
-		args:      []string{"help", "metrics"},
+		args: []string{
+			"--progress=plain", "tree-map", target,
+			"-o", filepath.Join(target, "out.png"),
+			"-s", "file-size",
+		},
 		stdout:    &bytes.Buffer{},
 		stderr:    &bytes.Buffer{},
 		context:   context.Background(),
