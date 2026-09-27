@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -28,6 +31,128 @@ func TestMain(m *testing.M) {
 	git.Register()
 	golang.Register()
 	m.Run()
+}
+
+type applicationReporter struct {
+	diagnostic io.Writer
+	closeErr   error
+	closeCalls int
+}
+
+func (*applicationReporter) Begin(string, int) error { return nil }
+func (*applicationReporter) Finish() error           { return nil }
+
+func (*applicationReporter) StartStage(
+	string,
+	progress.StageKind,
+	progress.WorkKind,
+) (progress.Stage, error) {
+	return applicationStage{}, nil
+}
+
+func (r *applicationReporter) DiagnosticWriter() io.Writer {
+	if r.diagnostic != nil {
+		return r.diagnostic
+	}
+
+	return io.Discard
+}
+
+func (r *applicationReporter) Close() error {
+	r.closeCalls++
+
+	return r.closeErr
+}
+
+type applicationStage struct{}
+
+func (applicationStage) WorkKind() progress.WorkKind { return progress.WorkNone }
+func (applicationStage) SetTotal(int64) error        { return nil }
+func (applicationStage) SetProgress(int64) error     { return nil }
+func (applicationStage) SetStatus(string) error      { return nil }
+func (applicationStage) Complete() error             { return nil }
+func (applicationStage) Fail(error) error            { return nil }
+func (applicationStage) Cancel(error) error          { return nil }
+
+//nolint:paralleltest // runApplication replaces the process-wide default logger.
+func TestRunApplication_ClosesReporterAfterSuccessfulCommand(t *testing.T) {
+	g := NewWithT(t)
+	reporter := &applicationReporter{}
+
+	code := runApplication(application{
+		args:      []string{"help", "metrics"},
+		stdout:    &bytes.Buffer{},
+		stderr:    &bytes.Buffer{},
+		context:   context.Background(),
+		lookupEnv: func(string) (string, bool) { return "", false },
+		newReporter: func(progress.Config) (progress.Reporter, error) {
+			return reporter, nil
+		},
+	})
+
+	g.Expect(code).To(Equal(0))
+	g.Expect(reporter.closeCalls).To(Equal(1))
+}
+
+//nolint:paralleltest // runApplication replaces the process-wide default logger.
+func TestRunApplication_ClosesReporterAfterPreBoundaryCommandFailure(t *testing.T) {
+	g := NewWithT(t)
+	reporter := &applicationReporter{}
+	target := t.TempDir()
+	cfgPath := filepath.Join(target, "config.yaml")
+	g.Expect(os.WriteFile(
+		cfgPath,
+		[]byte("tree-map:\n  size: file-size\n  fill: not-a-real-metric\n"),
+		0o600,
+	)).To(Succeed())
+
+	var stderr bytes.Buffer
+
+	code := runApplication(application{
+		args: []string{
+			"--config", cfgPath,
+			"tree-map", target,
+			"-o", filepath.Join(target, "out.png"),
+		},
+		stdout:    &bytes.Buffer{},
+		stderr:    &stderr,
+		context:   context.Background(),
+		lookupEnv: func(string) (string, bool) { return "", false },
+		newReporter: func(progress.Config) (progress.Reporter, error) {
+			reporter.diagnostic = &stderr
+
+			return reporter, nil
+		},
+	})
+
+	g.Expect(code).To(Equal(5), stderr.String())
+	g.Expect(stderr.String()).To(ContainSubstring("invalid fill metric"))
+	g.Expect(reporter.closeCalls).To(Equal(1))
+}
+
+//nolint:paralleltest // runApplication replaces the process-wide default logger.
+func TestRunApplication_ReturnsCloseFailure(t *testing.T) {
+	g := NewWithT(t)
+	reporter := &applicationReporter{closeErr: errors.New("close failed")}
+	var stdout, stderr bytes.Buffer
+
+	code := runApplication(application{
+		args:      []string{"help", "metrics"},
+		stdout:    &stdout,
+		stderr:    &stderr,
+		context:   context.Background(),
+		lookupEnv: func(string) (string, bool) { return "", false },
+		newReporter: func(progress.Config) (progress.Reporter, error) {
+			reporter.diagnostic = &stderr
+
+			return reporter, nil
+		},
+	})
+
+	g.Expect(code).To(Equal(5), stderr.String())
+	g.Expect(stdout.String()).To(ContainSubstring("file-size"))
+	g.Expect(stderr.String()).To(ContainSubstring("close failed"))
+	g.Expect(reporter.closeCalls).To(Equal(1))
 }
 
 func TestCLI_MutuallyExclusiveFlags(t *testing.T) {

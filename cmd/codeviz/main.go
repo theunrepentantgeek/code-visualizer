@@ -64,6 +64,15 @@ type application struct {
 	context    context.Context
 	isTerminal func(io.Writer) bool
 	lookupEnv  func(string) (string, bool)
+	newReporter func(progress.Config) (progress.Reporter, error)
+}
+
+func (app application) makeReporter(config progress.Config) (progress.Reporter, error) {
+	if app.newReporter != nil {
+		return app.newReporter(config)
+	}
+
+	return progress.New(config)
 }
 
 // HasExplicitConfig reports whether --config was explicitly provided on the command line.
@@ -167,7 +176,7 @@ func runApplication(app application) int {
 		return 1
 	}
 
-	reporter, err := progress.New(progress.Config{
+	reporter, err := app.makeReporter(progress.Config{
 		Mode:       cli.Progress,
 		Writer:     app.stderr,
 		IsTerminal: app.isTerminal,
@@ -192,9 +201,10 @@ func runApplication(app application) int {
 
 	if cli.Config != "" {
 		if loadErr := cfg.Load(cli.Config); loadErr != nil {
-			slog.Error(loadErr.Error())
+			err = errors.Join(loadErr, reporter.Close())
+			slog.Error(err.Error())
 
-			return 5
+			return classifyError(err)
 		}
 	}
 
@@ -211,7 +221,7 @@ func runApplication(app application) int {
 		configPath:   cli.Config,
 	}
 
-	err = ctx.Run(flags)
+	err = errors.Join(ctx.Run(flags), reporter.Close())
 	if err != nil {
 		code := classifyError(err)
 		slog.Error("command failed", "err", err)
