@@ -18,8 +18,10 @@ const (
 	phaseWriting   = "Writing output"
 )
 
-var errInactiveProgressStage = errors.New("inactive progress stage")
-var errProgressBoundariesNil = errors.New("progress boundaries are not initialized")
+var (
+	errInactiveProgressStage = errors.New("inactive progress stage")
+	errProgressBoundariesNil = errors.New("progress boundaries are not initialized")
+)
 
 type progressBoundaries struct {
 	ctx      context.Context
