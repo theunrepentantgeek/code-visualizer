@@ -187,25 +187,40 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	var phases []workflowPhase
-
-	phases = []workflowPhase{
-		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
-			pipeline.ApplyFuncX(s, stages.ValidatePaths)
-			pipeline.ApplyFuncX(s, stages.ExportConfig)
-			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-			pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
-
-			phases[1].Work = stages.AcquisitionWork(common)
-		}},
-		{Name: phaseAcquiring, Kind: progress.StageLive, Run: scatterviz.AcquireData},
-		{Name: phaseRendering, Kind: progress.StageSummary, Run: scatterviz.RenderVisualization},
-		{Name: phaseWriting, Kind: progress.StageSummary, Run: scatterviz.WriteOutput},
+	boundaries, err := newProgressBoundaries(flags, s, "Scatter plot", 4)
+	if err != nil {
+		return eris.Wrap(err, "scatter pipeline failed")
 	}
-	err := runCommandWorkflow(flags, s, "Scatter plot", phases)
 
-	return eris.Wrap(err, "scatter pipeline failed")
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+		pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
+	}); err != nil {
+		return eris.Wrap(err, "scatter pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common), func() {
+		scatterviz.AcquireData(s)
+	}); err != nil {
+		return eris.Wrap(err, "scatter pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		scatterviz.RenderVisualization(s)
+	}); err != nil {
+		return eris.Wrap(err, "scatter pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		scatterviz.WriteOutput(s)
+	}); err != nil {
+		return eris.Wrap(err, "scatter pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "scatter pipeline failed")
 }
 
 func (c *ScatterCmd) applyOverrides(cfg *config.Config) {

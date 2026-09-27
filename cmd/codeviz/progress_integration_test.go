@@ -209,6 +209,34 @@ func TestRunApplication_ProcessingFailureLeavesDurableFailedStage(t *testing.T) 
 	g.Expect(stderr.String()).To(ContainSubstring("Writing output: failed"))
 }
 
+//nolint:paralleltest // runApplication replaces the process-wide default logger.
+func TestRunApplication_PresetUsesSingleProgressOperation(t *testing.T) {
+	g := NewWithT(t)
+	target := t.TempDir()
+	g.Expect(os.WriteFile(filepath.Join(target, "main.go"), []byte("package main\n"), 0o600)).To(Succeed())
+
+	var stderr bytes.Buffer
+
+	code := runApplication(application{
+		args: []string{
+			"--progress=plain", "render", "structure-tree-map", target,
+			"-o", filepath.Join(target, "out.png"),
+		},
+		stdout:     &bytes.Buffer{},
+		stderr:     &stderr,
+		context:    context.Background(),
+		isTerminal: func(io.Writer) bool { return false },
+		lookupEnv:  func(string) (string, bool) { return "", false },
+	})
+
+	g.Expect(code).To(Equal(0), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "Tree map\n")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[1/4] Preparing: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[2/4] Acquiring data: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[3/4] Rendering: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[4/4] Writing output: started")).To(Equal(1), stderr.String())
+}
+
 func TestEnvironmentSupportsUnicode_UsesLocale(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/lmittmann/tint"
+	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
@@ -58,12 +59,26 @@ type Flags struct {
 }
 
 type application struct {
-	args       []string
-	stdout     io.Writer
-	stderr     io.Writer
-	context    context.Context
-	isTerminal func(io.Writer) bool
-	lookupEnv  func(string) (string, bool)
+	args        []string
+	stdout      io.Writer
+	stderr      io.Writer
+	context     context.Context
+	isTerminal  func(io.Writer) bool
+	lookupEnv   func(string) (string, bool)
+	newReporter func(progress.Config) (progress.Reporter, error)
+}
+
+func (app application) makeReporter(cfg progress.Config) (progress.Reporter, error) {
+	if app.newReporter != nil {
+		return app.newReporter(cfg)
+	}
+
+	reporter, err := progress.New(cfg)
+	if err != nil {
+		return nil, eris.Wrap(err, "initialize progress reporter")
+	}
+
+	return reporter, nil
 }
 
 // HasExplicitConfig reports whether --config was explicitly provided on the command line.
@@ -81,15 +96,23 @@ func (f *Flags) stdoutWriter() io.Writer {
 
 // toStagesFlags converts the cmd-local Flags struct into the stages-package form.
 func toStagesFlags(f *Flags) *stages.Flags {
-	return &stages.Flags{
+	if f == nil {
+		return &stages.Flags{}
+	}
+
+	parsed := &stages.Flags{
 		Quiet:        f.Quiet,
 		Verbose:      f.Verbose,
 		Debug:        f.Debug,
 		ExportConfig: f.ExportConfig,
 		ExportData:   f.ExportData,
 		Config:       f.Config,
-		ChangedOnly:  f.Config.ChangedOnlyEnabled(),
 	}
+	if f.Config != nil {
+		parsed.ChangedOnly = f.Config.ChangedOnlyEnabled()
+	}
+
+	return parsed
 }
 
 func stagesFlagsForCommand(flags *Flags, fromValue, untilValue string) *stages.Flags {
@@ -167,14 +190,19 @@ func runApplication(app application) int {
 		return 1
 	}
 
-	reporter, err := progress.New(progress.Config{
+	lookupEnv := app.lookupEnv
+	if lookupEnv == nil {
+		lookupEnv = os.LookupEnv
+	}
+
+	reporter, err := app.makeReporter(progress.Config{
 		Mode:       cli.Progress,
 		Writer:     app.stderr,
 		IsTerminal: app.isTerminal,
 		SupportsUnicode: func() bool {
-			return environmentSupportsUnicode(app.lookupEnv)
+			return environmentSupportsUnicode(lookupEnv)
 		},
-		LookupEnv: app.lookupEnv,
+		LookupEnv: lookupEnv,
 		NoColor:   cli.NoColor,
 		Quiet:     cli.Quiet,
 		Verbose:   cli.Verbose || cli.Debug,
@@ -185,16 +213,17 @@ func runApplication(app application) int {
 		return 5
 	}
 
-	noColor := cli.NoColor || environmentDisablesColor(app.lookupEnv)
+	noColor := cli.NoColor || environmentDisablesColor(lookupEnv)
 	setupLogger(reporter.DiagnosticWriter(), cli.Debug, noColor)
 
 	cfg := config.New()
 
 	if cli.Config != "" {
 		if loadErr := cfg.Load(cli.Config); loadErr != nil {
-			slog.Error(loadErr.Error())
+			err = errors.Join(loadErr, reporter.Close())
+			slog.Error(err.Error())
 
-			return 5
+			return classifyError(err)
 		}
 	}
 
@@ -211,7 +240,7 @@ func runApplication(app application) int {
 		configPath:   cli.Config,
 	}
 
-	err = ctx.Run(flags)
+	err = errors.Join(ctx.Run(flags), reporter.Close())
 	if err != nil {
 		code := classifyError(err)
 		slog.Error("command failed", "err", err)
