@@ -11,6 +11,13 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 )
 
+const (
+	phasePreparing = "Preparing"
+	phaseAcquiring = "Acquiring data"
+	phaseRendering = "Rendering"
+	phaseWriting   = "Writing output"
+)
+
 var errInactiveProgressStage = errors.New("inactive progress stage")
 
 type progressBoundaries struct {

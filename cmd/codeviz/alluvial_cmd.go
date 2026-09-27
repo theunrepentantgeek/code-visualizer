@@ -143,64 +143,73 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	viz := &alluvial.State{}
 	cfg := flags.Config.Alluvial
 	s := pipeline.NewState(common, cfg, viz)
-
-	phases := buildAlluvialPhases(common, viz, cfg)
-
-	return eris.Wrap(runCommandWorkflow(flags, s, "Alluvial", phases), "alluvial pipeline failed")
-}
-
-func buildAlluvialPhases(
-	common *stages.CommonState,
-	viz *alluvial.State,
-	cfg *config.Alluvial,
-) []workflowPhase {
-	phases := make([]workflowPhase, 0, len(cfg.References)+3)
-
-	phases = append(phases, workflowPhase{
-		Name: phasePreparing,
-		Kind: progress.StageSummary,
-		Run: func(s *pipeline.State) {
-			pipeline.ApplyFuncX(s, stages.ValidatePaths)
-			pipeline.ApplyFuncX(s, stages.ExportConfig)
-			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-			pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
-			pipeline.ApplyFuncXYZ(s, func(
-				ctx context.Context,
-				sink progress.Sink,
-				common *stages.CommonState,
-			) error {
-				return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
-			})
-
-			work := stages.AcquisitionWork(common)
-			for index := range cfg.References {
-				phases[index+1].Work = work
-			}
-		},
-	})
-	for index, reference := range cfg.References {
-		phases = append(phases, workflowPhase{
-			Name: "Loading " + alluvial.SnapshotReference(reference),
-			Kind: progress.StageLive,
-			Run: func(s *pipeline.State) {
-				pipeline.ApplyFuncXY(s, func(ctx context.Context, sink progress.Sink) error {
-					return alluvial.AcquireReference(ctx, sink, viz, reference, index)
-				})
-			},
-		})
+	boundaries, err := newProgressBoundaries(flags, s, "Alluvial", len(cfg.References)+3)
+	if err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
 	}
 
-	phases = append(
-		phases,
-		workflowPhase{Name: phaseRendering, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
-			alluvial.FinalizeData(s)
-			alluvial.RenderVisualization(s)
-		}},
-		workflowPhase{Name: phaseWriting, Kind: progress.StageSummary, Run: alluvial.WriteOutput},
-	)
+	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
 
-	return phases
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
+	pipeline.ApplyFuncXYZ(s, func(
+		ctx context.Context,
+		sink progress.Sink,
+		common *stages.CommonState,
+	) error {
+		return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
+	})
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	work := stages.AcquisitionWork(common)
+	for index, reference := range cfg.References {
+		if err := boundaries.Start(
+			"Loading "+alluvial.SnapshotReference(reference),
+			progress.StageLive,
+			work,
+		); err != nil {
+			return eris.Wrap(err, "alluvial pipeline failed")
+		}
+
+		pipeline.ApplyFuncXY(s, func(ctx context.Context, sink progress.Sink) error {
+			return alluvial.AcquireReference(ctx, sink, viz, reference, index)
+		})
+
+		if err := boundaries.End(); err != nil {
+			return eris.Wrap(err, "alluvial pipeline failed")
+		}
+	}
+
+	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	alluvial.FinalizeData(s)
+	alluvial.RenderVisualization(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	alluvial.WriteOutput(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "alluvial pipeline failed")
 }
 
 func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {
