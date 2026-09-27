@@ -100,26 +100,56 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 	}
 
 	s := pipeline.NewState(common, cfg, viz)
-
-	var phases []workflowPhase
-
-	phases = []workflowPhase{
-		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
-			pipeline.ApplyFuncX(s, stages.ValidatePaths)
-			pipeline.ApplyFuncX(s, stages.ExportConfig)
-			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-			pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
-
-			phases[1].Work = stages.AcquisitionWork(common)
-		}},
-		{Name: phaseAcquiring, Kind: progress.StageLive, Run: bubbletree.AcquireData},
-		{Name: phaseRendering, Kind: progress.StageSummary, Run: bubbletree.RenderVisualization},
-		{Name: phaseWriting, Kind: progress.StageSummary, Run: bubbletree.WriteOutput},
+	boundaries, err := newProgressBoundaries(flags, s, "Bubble tree", 4)
+	if err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
 	}
-	err := runCommandWorkflow(flags, s, "Bubble tree", phases)
 
-	return eris.Wrap(err, "bubble-tree pipeline failed")
+	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	bubbletree.AcquireData(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	bubbletree.RenderVisualization(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	bubbletree.WriteOutput(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "bubble-tree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

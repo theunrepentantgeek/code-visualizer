@@ -95,26 +95,56 @@ func (c *DonutTreeCmd) Run(flags *Flags) error {
 	viz := &donuttree.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
-
-	var phases []workflowPhase
-
-	phases = []workflowPhase{
-		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
-			pipeline.ApplyFuncX(s, stages.ValidatePaths)
-			pipeline.ApplyFuncX(s, stages.ExportConfig)
-			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-			pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
-
-			phases[1].Work = stages.AcquisitionWork(common)
-		}},
-		{Name: phaseAcquiring, Kind: progress.StageLive, Run: donuttree.AcquireData},
-		{Name: phaseRendering, Kind: progress.StageSummary, Run: donuttree.RenderVisualization},
-		{Name: phaseWriting, Kind: progress.StageSummary, Run: donuttree.WriteOutput},
+	boundaries, err := newProgressBoundaries(flags, s, "Donut tree", 4)
+	if err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
-	err := runCommandWorkflow(flags, s, "Donut tree", phases)
 
-	return eris.Wrap(err, "donut-tree pipeline failed")
+	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	donuttree.AcquireData(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	donuttree.RenderVisualization(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	donuttree.WriteOutput(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "donut-tree pipeline failed")
 }
 
 func (c *DonutTreeCmd) applyOverrides(cfg *config.Config) {

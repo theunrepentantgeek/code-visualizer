@@ -97,26 +97,56 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	s := pipeline.NewState(common, cfg, viz)
-
-	var phases []workflowPhase
-
-	phases = []workflowPhase{
-		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
-			pipeline.ApplyFuncX(s, stages.ValidatePaths)
-			pipeline.ApplyFuncX(s, stages.ExportConfig)
-			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-			pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
-
-			phases[1].Work = stages.AcquisitionWork(common)
-		}},
-		{Name: phaseAcquiring, Kind: progress.StageLive, Run: treemap.AcquireData},
-		{Name: phaseRendering, Kind: progress.StageSummary, Run: treemap.RenderVisualization},
-		{Name: phaseWriting, Kind: progress.StageSummary, Run: treemap.WriteOutput},
+	boundaries, err := newProgressBoundaries(flags, s, "Tree map", 4)
+	if err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
 	}
-	err := runCommandWorkflow(flags, s, "Tree map", phases)
 
-	return eris.Wrap(err, "tree-map pipeline failed")
+	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	treemap.AcquireData(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	treemap.RenderVisualization(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	treemap.WriteOutput(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "tree-map pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

@@ -124,26 +124,56 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	viz := &radialtree.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
-
-	var phases []workflowPhase
-
-	phases = []workflowPhase{
-		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
-			pipeline.ApplyFuncX(s, stages.ValidatePaths)
-			pipeline.ApplyFuncX(s, stages.ExportConfig)
-			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-			pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
-
-			phases[1].Work = stages.AcquisitionWork(common)
-		}},
-		{Name: phaseAcquiring, Kind: progress.StageLive, Run: radialtree.AcquireData},
-		{Name: phaseRendering, Kind: progress.StageSummary, Run: radialtree.RenderVisualization},
-		{Name: phaseWriting, Kind: progress.StageSummary, Run: radialtree.WriteOutput},
+	boundaries, err := newProgressBoundaries(flags, s, "Radial tree", 4)
+	if err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
 	}
-	err := runCommandWorkflow(flags, s, "Radial tree", phases)
 
-	return eris.Wrap(err, "radialtree pipeline failed")
+	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	radialtree.AcquireData(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	radialtree.RenderVisualization(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	radialtree.WriteOutput(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "radialtree pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "radialtree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

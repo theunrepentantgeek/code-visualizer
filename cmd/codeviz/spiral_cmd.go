@@ -146,26 +146,56 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 	viz := &spiral.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
-
-	var phases []workflowPhase
-
-	phases = []workflowPhase{
-		{Name: phasePreparing, Kind: progress.StageSummary, Run: func(s *pipeline.State) {
-			pipeline.ApplyFuncX(s, stages.ValidatePaths)
-			pipeline.ApplyFuncX(s, stages.ExportConfig)
-			pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-			pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-			pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
-
-			phases[1].Work = stages.AcquisitionWork(common)
-		}},
-		{Name: phaseAcquiring, Kind: progress.StageLive, Run: spiral.AcquireData},
-		{Name: phaseRendering, Kind: progress.StageSummary, Run: spiral.RenderVisualization},
-		{Name: phaseWriting, Kind: progress.StageSummary, Run: spiral.WriteOutput},
+	boundaries, err := newProgressBoundaries(flags, s, "Spiral", 4)
+	if err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
 	}
-	err := runCommandWorkflow(flags, s, "Spiral", phases)
 
-	return eris.Wrap(err, "spiral pipeline failed")
+	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	spiral.AcquireData(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	spiral.RenderVisualization(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	spiral.WriteOutput(s)
+
+	if err := boundaries.End(); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "spiral pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
