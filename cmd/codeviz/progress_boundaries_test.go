@@ -184,6 +184,31 @@ func TestProgressBoundaries_CancelsWhenContextEndsAtBoundary(t *testing.T) {
 	}))
 }
 
+func TestProgressBoundaries_DoesNotStartNextStageAfterCancellation(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	reporter := &boundaryReporter{}
+	ctx, cancel := context.WithCancel(context.Background())
+	state := pipeline.NewState()
+
+	boundaries, err := newProgressBoundaries(&Flags{Context: ctx, Reporter: reporter}, state, "Build", 2)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(boundaries.Start("Prepare", progress.StageSummary, progress.WorkNone)).To(Succeed())
+	g.Expect(boundaries.End()).To(Succeed())
+
+	cancel()
+
+	err = boundaries.Start("Acquire", progress.StageLive, progress.WorkObservations)
+
+	g.Expect(err).To(MatchError(ContainSubstring("workflow cancelled before phase")))
+	g.Expect(errors.Is(err, context.Canceled)).To(BeTrue())
+	g.Expect(reporter.events).To(Equal([]string{
+		"begin:Build:2",
+		"start:Prepare",
+		"complete:Prepare",
+	}))
+}
+
 func TestProgressBoundaries_ReplacesFinishedSinkWithInactiveSink(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

@@ -71,6 +71,10 @@ func (b *progressBoundaries) Start(
 		return errors.New("progress stage is already active")
 	}
 
+	if err := b.ctx.Err(); err != nil {
+		return eris.Wrap(err, "workflow cancelled before phase")
+	}
+
 	stage, err := b.reporter.StartStage(name, kind, work)
 	if err != nil {
 		return eris.Wrapf(err, "start progress phase %q", name)
