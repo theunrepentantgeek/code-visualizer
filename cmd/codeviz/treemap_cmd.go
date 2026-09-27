@@ -97,6 +97,7 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	s := pipeline.NewState(common, cfg, viz)
+
 	boundaries, err := newProgressBoundaries(flags, s, "Tree map", 4)
 	if err != nil {
 		return eris.Wrap(err, "tree-map pipeline failed")

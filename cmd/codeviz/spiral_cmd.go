@@ -146,6 +146,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 	viz := &spiral.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
+
 	boundaries, err := newProgressBoundaries(flags, s, "Spiral", 4)
 	if err != nil {
 		return eris.Wrap(err, "spiral pipeline failed")

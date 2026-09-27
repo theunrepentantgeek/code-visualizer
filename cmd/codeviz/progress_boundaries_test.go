@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
@@ -268,6 +269,18 @@ func TestProgressBoundaries_JoinsProcessingAndTerminalErrors(t *testing.T) {
 	)))
 	g.Expect(errors.Is(err, processingErr)).To(BeTrue())
 	g.Expect(errors.Is(err, terminalErr)).To(BeTrue())
+}
+
+func TestProgressBoundaries_RejectsNilReceiver(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	var boundaries *progressBoundaries
+
+	g.Expect(boundaries.Start("Acquire", progress.StageLive, progress.WorkObservations)).
+		To(MatchError("progress boundaries are not initialized"))
+	g.Expect(boundaries.End()).To(MatchError("progress boundaries are not initialized"))
+	g.Expect(boundaries.Finish()).To(MatchError("progress boundaries are not initialized"))
 }
 
 func pipelineValue[T any](state *pipeline.State) (T, error) {

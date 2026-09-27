@@ -150,18 +150,7 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	}
 
 	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
-		pipeline.ApplyFuncX(s, stages.ValidatePaths)
-		pipeline.ApplyFuncX(s, stages.ExportConfig)
-		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-		pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
-		pipeline.ApplyFuncXYZ(s, func(
-			ctx context.Context,
-			sink progress.Sink,
-			common *stages.CommonState,
-		) error {
-			return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
-		})
+		prepareAlluvialState(s, viz, cfg)
 	}); err != nil {
 		return eris.Wrap(err, "alluvial pipeline failed")
 	}
@@ -197,6 +186,21 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	}
 
 	return eris.Wrap(boundaries.Finish(), "alluvial pipeline failed")
+}
+
+func prepareAlluvialState(s *pipeline.State, viz *alluvial.State, cfg *config.Alluvial) {
+	pipeline.ApplyFuncX(s, stages.ValidatePaths)
+	pipeline.ApplyFuncX(s, stages.ExportConfig)
+	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
+	pipeline.ApplyFuncXYZ(s, func(
+		ctx context.Context,
+		sink progress.Sink,
+		common *stages.CommonState,
+	) error {
+		return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
+	})
 }
 
 func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {

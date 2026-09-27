@@ -19,6 +19,7 @@ const (
 )
 
 var errInactiveProgressStage = errors.New("inactive progress stage")
+var errProgressBoundariesNil = errors.New("progress boundaries are not initialized")
 
 type progressBoundaries struct {
 	ctx      context.Context
@@ -90,6 +91,10 @@ func (b *progressBoundaries) Start(
 	kind progress.StageKind,
 	work progress.WorkKind,
 ) error {
+	if b == nil {
+		return errProgressBoundariesNil
+	}
+
 	if b.active != nil {
 		return errors.New("progress stage is already active")
 	}
@@ -110,6 +115,10 @@ func (b *progressBoundaries) Start(
 }
 
 func (b *progressBoundaries) End() error {
+	if b == nil {
+		return errProgressBoundariesNil
+	}
+
 	if b.active == nil {
 		return errors.New("progress stage is not active")
 	}
@@ -139,6 +148,10 @@ func (b *progressBoundaries) End() error {
 }
 
 func (b *progressBoundaries) Finish() error {
+	if b == nil {
+		return errProgressBoundariesNil
+	}
+
 	return eris.Wrap(b.reporter.Finish(), "finish workflow progress")
 }
 

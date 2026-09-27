@@ -10,8 +10,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/alecthomas/kong"
 	. "github.com/onsi/gomega"
+
+	"github.com/alecthomas/kong"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
