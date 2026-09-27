@@ -10,9 +10,8 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/onsi/gomega"
-
 	"github.com/alecthomas/kong"
+	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
@@ -140,6 +139,7 @@ func TestRunApplication_ClosesReporterAfterPreBoundaryCommandFailure(t *testing.
 func TestRunApplication_ReturnsCloseFailure(t *testing.T) {
 	g := NewWithT(t)
 	reporter := &applicationReporter{closeErr: errors.New("close failed")}
+
 	var stdout, stderr bytes.Buffer
 
 	code := runApplication(application{
@@ -159,6 +159,19 @@ func TestRunApplication_ReturnsCloseFailure(t *testing.T) {
 	g.Expect(stdout.String()).To(ContainSubstring("file-size"))
 	g.Expect(stderr.String()).To(ContainSubstring("close failed"))
 	g.Expect(reporter.closeCalls).To(Equal(1))
+}
+
+func TestApplicationMakeReporter_WrapsReporterInitializationError(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	reporter, err := (application{}).makeReporter(progress.Config{})
+
+	g.Expect(reporter).To(BeNil())
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("initialize progress reporter"),
+		ContainSubstring("progress writer is required"),
+	)))
 }
 
 func TestCLI_MutuallyExclusiveFlags(t *testing.T) {

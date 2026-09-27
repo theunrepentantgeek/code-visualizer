@@ -27,6 +27,22 @@ type progressBoundaries struct {
 	active   progress.Stage
 }
 
+func runBoundary(
+	boundaries *progressBoundaries,
+	name string,
+	kind progress.StageKind,
+	work progress.WorkKind,
+	run func(),
+) error {
+	if err := boundaries.Start(name, kind, work); err != nil {
+		return err
+	}
+
+	run()
+
+	return boundaries.End()
+}
+
 func newProgressBoundaries(
 	flags *Flags,
 	state *pipeline.State,

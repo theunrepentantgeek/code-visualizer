@@ -49,6 +49,7 @@ func TestAlluvialCmd_ReportsOrderedReferenceBoundaries(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	_, err = repo.CreateTag("v2", v2.Hash(), nil)
 	g.Expect(err).NotTo(HaveOccurred())
+
 	output := filepath.Join(t.TempDir(), "alluvial.svg")
 	cmd := &AlluvialCmd{
 		TargetPath: repository,

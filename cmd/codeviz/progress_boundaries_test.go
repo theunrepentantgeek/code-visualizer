@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
@@ -107,6 +108,7 @@ func TestProgressBoundaries_StartsAndCompletesStages(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	seen := []progress.WorkKind{}
+
 	pipeline.ApplyFuncX(state, func(sink progress.Sink) error {
 		seen = append(seen, sink.WorkKind())
 
@@ -146,6 +148,7 @@ func TestProgressBoundaries_EndsFailedStageAfterPipelineError(t *testing.T) {
 	g.Expect(boundaries.Start("Acquire", progress.StageLive, progress.WorkObservations)).To(Succeed())
 
 	processingErr := errors.New("processing failed")
+
 	pipeline.ApplyFuncX(state, func(progress.Sink) error {
 		return processingErr
 	})
@@ -229,6 +232,7 @@ func TestProgressBoundaries_ReplacesFinishedSinkWithInactiveSink(t *testing.T) {
 		sinkWork progress.WorkKind
 		sinkErr  error
 	)
+
 	pipeline.ApplyFuncX(state, func(sink progress.Sink) error {
 		sinkWork = sink.WorkKind()
 		sinkErr = sink.SetStatus("late")
@@ -279,7 +283,7 @@ func pipelineValue[T any](state *pipeline.State) (T, error) {
 	})
 
 	if state.Err() != nil {
-		err = state.Err()
+		err = eris.Wrap(state.Err(), "read pipeline value")
 	}
 
 	return value, err

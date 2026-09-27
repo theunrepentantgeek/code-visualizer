@@ -186,52 +186,37 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 	viz := &scatterviz.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
+
 	boundaries, err := newProgressBoundaries(flags, s, "Scatter plot", 4)
 	if err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}
 
-	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+		pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
+	}); err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common), func() {
+		scatterviz.AcquireData(s)
+	}); err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}
 
-	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		scatterviz.RenderVisualization(s)
+	}); err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}
 
-	scatterviz.AcquireData(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "scatter pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "scatter pipeline failed")
-	}
-
-	scatterviz.RenderVisualization(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "scatter pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "scatter pipeline failed")
-	}
-
-	scatterviz.WriteOutput(s)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		scatterviz.WriteOutput(s)
+	}); err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}
 

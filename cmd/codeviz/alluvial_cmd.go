@@ -143,69 +143,56 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	viz := &alluvial.State{}
 	cfg := flags.Config.Alluvial
 	s := pipeline.NewState(common, cfg, viz)
+
 	boundaries, err := newProgressBoundaries(flags, s, "Alluvial", len(cfg.References)+3)
 	if err != nil {
 		return eris.Wrap(err, "alluvial pipeline failed")
 	}
 
-	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "alluvial pipeline failed")
-	}
-
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
-	pipeline.ApplyFuncXYZ(s, func(
-		ctx context.Context,
-		sink progress.Sink,
-		common *stages.CommonState,
-	) error {
-		return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
-	})
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+		pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
+		pipeline.ApplyFuncXYZ(s, func(
+			ctx context.Context,
+			sink progress.Sink,
+			common *stages.CommonState,
+		) error {
+			return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
+		})
+	}); err != nil {
 		return eris.Wrap(err, "alluvial pipeline failed")
 	}
 
 	work := stages.AcquisitionWork(common)
 	for index, reference := range cfg.References {
-		if err := boundaries.Start(
+		if err := runBoundary(
+			boundaries,
 			"Loading "+alluvial.SnapshotReference(reference),
 			progress.StageLive,
 			work,
+			func() {
+				pipeline.ApplyFuncXY(s, func(ctx context.Context, sink progress.Sink) error {
+					return alluvial.AcquireReference(ctx, sink, viz, reference, index)
+				})
+			},
 		); err != nil {
 			return eris.Wrap(err, "alluvial pipeline failed")
 		}
-
-		pipeline.ApplyFuncXY(s, func(ctx context.Context, sink progress.Sink) error {
-			return alluvial.AcquireReference(ctx, sink, viz, reference, index)
-		})
-
-		if err := boundaries.End(); err != nil {
-			return eris.Wrap(err, "alluvial pipeline failed")
-		}
 	}
 
-	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		alluvial.FinalizeData(s)
+		alluvial.RenderVisualization(s)
+	}); err != nil {
 		return eris.Wrap(err, "alluvial pipeline failed")
 	}
 
-	alluvial.FinalizeData(s)
-	alluvial.RenderVisualization(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "alluvial pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "alluvial pipeline failed")
-	}
-
-	alluvial.WriteOutput(s)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		alluvial.WriteOutput(s)
+	}); err != nil {
 		return eris.Wrap(err, "alluvial pipeline failed")
 	}
 

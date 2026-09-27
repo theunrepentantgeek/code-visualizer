@@ -151,47 +151,31 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
 
-	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+		pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
+	}); err != nil {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common), func() {
+		spiral.AcquireData(s)
+	}); err != nil {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
 
-	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		spiral.RenderVisualization(s)
+	}); err != nil {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
 
-	spiral.AcquireData(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "spiral pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "spiral pipeline failed")
-	}
-
-	spiral.RenderVisualization(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "spiral pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "spiral pipeline failed")
-	}
-
-	spiral.WriteOutput(s)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		spiral.WriteOutput(s)
+	}); err != nil {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
 

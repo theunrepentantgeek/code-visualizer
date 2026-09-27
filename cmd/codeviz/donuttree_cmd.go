@@ -95,52 +95,37 @@ func (c *DonutTreeCmd) Run(flags *Flags) error {
 	viz := &donuttree.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
+
 	boundaries, err := newProgressBoundaries(flags, s, "Donut tree", 4)
 	if err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
 
-	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+		pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
+	}); err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common), func() {
+		donuttree.AcquireData(s)
+	}); err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
 
-	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		donuttree.RenderVisualization(s)
+	}); err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
 
-	donuttree.AcquireData(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "donut-tree pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "donut-tree pipeline failed")
-	}
-
-	donuttree.RenderVisualization(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "donut-tree pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "donut-tree pipeline failed")
-	}
-
-	donuttree.WriteOutput(s)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		donuttree.WriteOutput(s)
+	}); err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
 

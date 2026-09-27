@@ -124,52 +124,37 @@ func (c *RadialCmd) Run(flags *Flags) error {
 	viz := &radialtree.State{}
 
 	s := pipeline.NewState(common, cfg, viz)
+
 	boundaries, err := newProgressBoundaries(flags, s, "Radial tree", 4)
 	if err != nil {
 		return eris.Wrap(err, "radialtree pipeline failed")
 	}
 
-	if err := boundaries.Start(phasePreparing, progress.StageSummary, progress.WorkNone); err != nil {
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+		pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+	}); err != nil {
 		return eris.Wrap(err, "radialtree pipeline failed")
 	}
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common), func() {
+		radialtree.AcquireData(s)
+	}); err != nil {
 		return eris.Wrap(err, "radialtree pipeline failed")
 	}
 
-	if err := boundaries.Start(phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common)); err != nil {
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		radialtree.RenderVisualization(s)
+	}); err != nil {
 		return eris.Wrap(err, "radialtree pipeline failed")
 	}
 
-	radialtree.AcquireData(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "radialtree pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseRendering, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "radialtree pipeline failed")
-	}
-
-	radialtree.RenderVisualization(s)
-
-	if err := boundaries.End(); err != nil {
-		return eris.Wrap(err, "radialtree pipeline failed")
-	}
-
-	if err := boundaries.Start(phaseWriting, progress.StageSummary, progress.WorkNone); err != nil {
-		return eris.Wrap(err, "radialtree pipeline failed")
-	}
-
-	radialtree.WriteOutput(s)
-
-	if err := boundaries.End(); err != nil {
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		radialtree.WriteOutput(s)
+	}); err != nil {
 		return eris.Wrap(err, "radialtree pipeline failed")
 	}
 
