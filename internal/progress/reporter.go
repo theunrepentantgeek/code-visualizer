@@ -191,6 +191,20 @@ func (r *reporter) Begin(title string, stageCount int) error {
 }
 
 func (r *reporter) StartStage(name string, kind StageKind, work WorkKind) (Stage, error) {
+	return r.beginStage(name, kind, work, 0)
+}
+
+// StartDeterminateStage starts a live stage with its total already known, so
+// terminal renderers can display a progress bar without first showing a spinner.
+func (r *reporter) StartDeterminateStage(name string, work WorkKind, total int64) (Stage, error) {
+	if total <= 0 {
+		return nil, errors.New("progress total must be positive")
+	}
+
+	return r.beginStage(name, StageLive, work, total)
+}
+
+func (r *reporter) beginStage(name string, kind StageKind, work WorkKind, total int64) (Stage, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -221,6 +235,7 @@ func (r *reporter) StartStage(name string, kind StageKind, work WorkKind) (Stage
 		kind:     kind,
 		work:     work,
 		started:  r.config.Now(),
+		total:    total,
 	}
 	if err := r.renderer.render(next.snapshot(eventStageStarted)); err != nil {
 		return nil, err
@@ -309,6 +324,10 @@ func (s *stage) SetTotal(total int64) error {
 	}
 
 	if s.total != 0 {
+		if s.total == total {
+			return nil
+		}
+
 		return errors.New("progress total is already set")
 	}
 

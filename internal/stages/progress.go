@@ -5,13 +5,22 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
-// AcquisitionWork identifies the determinate work represented by a live
-// acquisition stage.
+// NeedsGitMetrics reports whether acquisition includes Git-backed metric work.
+func NeedsGitMetrics(c *CommonState) bool {
+	return c.VizName == spiralVisualization ||
+		c.Requested.HasCommitExpressions() ||
+		slices.ContainsFunc(c.Requested.BaseMetrics, git.IsGitMetric)
+}
+
+// AcquisitionWork identifies the determinate work used by Alluvial reference
+// acquisition.
 func AcquisitionWork(c *CommonState) progress.WorkKind {
 	if c.Requested.HasCommitExpressions() || hasAuthorshipMetric(c.Requested.BaseMetrics) {
 		return progress.WorkCommits
@@ -20,29 +29,35 @@ func AcquisitionWork(c *CommonState) progress.WorkKind {
 	return progress.WorkObservations
 }
 
-// AcquisitionPhaseName identifies the external data sources used by the
-// acquisition pipeline.
-func AcquisitionPhaseName(c *CommonState) string {
-	if c.VizName == "spiral" || c.Requested.HasCommitExpressions() || flagsUseGit(c.Flags) {
-		return "Scanning filesystem and Git history"
-	}
-
-	if slices.ContainsFunc(c.Requested.BaseMetrics, git.IsGitMetric) {
-		return "Scanning filesystem and Git history"
-	}
-
-	return "Scanning filesystem"
-}
-
-func flagsUseGit(flags *Flags) bool {
-	return flags != nil && (flags.ChangedOnly || flags.HistoryRange.Until != "")
-}
-
 type progressAdapter struct {
 	mu      sync.Mutex
 	sink    progress.Sink
 	current int64
 	err     error
+}
+
+type progressSegment struct {
+	sink   progress.Sink
+	total  int64
+	offset int64
+}
+
+func (s progressSegment) WorkKind() progress.WorkKind { return s.sink.WorkKind() }
+
+func (s progressSegment) SetTotal(total int64) error {
+	if total != s.total {
+		return fmt.Errorf("progress segment total %d does not match expected total %d", total, s.total)
+	}
+
+	return nil
+}
+
+func (s progressSegment) SetProgress(current int64) error {
+	return eris.Wrap(s.sink.SetProgress(s.offset+current), "report progress segment")
+}
+
+func (s progressSegment) SetStatus(message string) error {
+	return eris.Wrap(s.sink.SetStatus(message), "report progress segment status")
 }
 
 func (a *progressAdapter) Err() error {

@@ -74,7 +74,7 @@ func (c *DonutTreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.DonutTree)
 }
 
-//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
+//nolint:dupl,funlen // Explicit progress boundaries keep each pipeline stage visible.
 func (c *DonutTreeCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -96,7 +96,12 @@ func (c *DonutTreeCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	boundaries, err := newProgressBoundaries(flags, s, "Donut tree", 4)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
+
+	needsGit := stages.NeedsGitMetrics(common)
+
+	boundaries, err := newProgressBoundaries(flags, s, "Donut tree", ordinaryStageCount(needsGit))
 	if err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
@@ -105,19 +110,35 @@ func (c *DonutTreeCmd) Run(flags *Flags) error {
 		pipeline.ApplyFuncX(s, stages.ValidatePaths)
 		pipeline.ApplyFuncX(s, stages.ExportConfig)
 		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-		pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
 	}); err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}
 
-	if err := runBoundary(
+	var gitMetricTotal int64
+
+	if err := runBoundary(boundaries, "Scanning filesystem", progress.StageSummary, progress.WorkNone, func() {
+		donuttree.ScanData(s)
+
+		if needsGit {
+			gitMetricTotal = determineGitMetricTotal(s)
+		}
+	}); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	if err := runGitMetricsBoundary(boundaries, needsGit, gitMetricTotal, func() {
+		donuttree.LoadGitMetrics(s)
+	}); err != nil {
+		return eris.Wrap(err, "donut-tree pipeline failed")
+	}
+
+	if err := runDeterminateBoundary(
 		boundaries,
-		stages.AcquisitionPhaseName(common),
-		progress.StageLive,
-		stages.AcquisitionWork(common),
+		"Loading filesystem metrics",
+		progress.WorkObservations,
+		stages.FilesystemMetricTotal(common),
 		func() {
-			donuttree.AcquireData(s)
+			donuttree.LoadFilesystemMetrics(s)
 		},
 	); err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")

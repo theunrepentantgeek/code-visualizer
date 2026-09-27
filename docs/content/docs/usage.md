@@ -41,11 +41,12 @@ Use `--progress=tty` or `--progress=plain` to select a mode explicitly.
 flags remain mutually exclusive. `--no-color`, `NO_COLOR`, `FORCE_COLOR=0`, and
 `TERM=dumb` disable styling.
 
-Ordinary visualizations have one live acquisition phase named for its data
-sources: `Scanning filesystem` for filesystem-only metrics, or
-`Scanning filesystem and Git history` when Git data is required. Alluvial
-visualizations show a separate `Loading <reference>` phase for every reference,
-in the order supplied.
+Ordinary visualizations discover files first, then show a determinate
+`Loading filesystem metrics` progress bar. When selected metrics require Git,
+they also show a separate determinate `Loading Git metrics` progress bar before
+filesystem metrics are loaded. Spiral always includes the Git metrics stage.
+Alluvial visualizations retain a separate `Loading <reference>` phase for every
+reference, in the order supplied.
 
 ## Commands
 

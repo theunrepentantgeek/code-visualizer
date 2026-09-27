@@ -2,6 +2,7 @@ package stages
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -112,6 +113,24 @@ func buildHistoryState(dir string) *CommonState {
 	}
 }
 
+type cancelingProgressSink struct {
+	*recordingSink
+	cancelAt int64
+	cancel   context.CancelFunc
+}
+
+func (s *cancelingProgressSink) SetProgress(current int64) error {
+	if err := s.recordingSink.SetProgress(current); err != nil {
+		return err
+	}
+
+	if current == s.cancelAt {
+		s.cancel()
+	}
+
+	return nil
+}
+
 func TestLoadGitHistory_ReportsCommitProgress(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -121,6 +140,88 @@ func TestLoadGitHistory_ReportsCommitProgress(t *testing.T) {
 	g.Expect(LoadGitHistory(state, context.Background(), sink)).To(Succeed())
 	g.Expect(sink.totals).To(Equal([]int64{3}))
 	g.Expect(sink.current).To(Equal([]int64{1, 2, 3}))
+}
+
+func TestLoadGitMetrics_ReportsAuthorshipProgress(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CodeOwnerMetric}
+	sink := newTestSink(progress.WorkCommits)
+
+	g.Expect(LoadGitMetrics(state, context.Background(), sink)).To(Succeed())
+	g.Expect(sink.totals).To(Equal([]int64{3}))
+	g.Expect(sink.current).To(Equal([]int64{1, 2, 3}))
+}
+
+func TestLoadGitMetrics_CombinesHistoryAndAuthorshipProgress(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
+	sink := newTestSink(progress.WorkCommits)
+
+	g.Expect(LoadGitMetrics(state, context.Background(), sink)).To(Succeed())
+	g.Expect(sink.totals).To(Equal([]int64{6}))
+	g.Expect(sink.current).To(Equal([]int64{1, 2, 3, 4, 5, 6}))
+}
+
+func TestLoadGitMetrics_UsesNonzeroTotalBeforeEmptyHistoryError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.Flags.HistoryRange = git.HistoryRange{From: "HEAD"}
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
+	sink := newTestSink(progress.WorkCommits)
+
+	err := LoadGitMetrics(state, context.Background(), sink)
+
+	g.Expect(err).To(MatchError(ContainSubstring("no commit history found")))
+	g.Expect(sink.totals).To(Equal([]int64{1}))
+	g.Expect(sink.current).To(BeEmpty())
+}
+
+func TestLoadGitMetrics_PropagatesCancellationDuringHistoryPass(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
+	ctx, cancel := context.WithCancel(context.Background())
+	sink := &cancelingProgressSink{
+		recordingSink: newTestSink(progress.WorkCommits),
+		cancelAt:      1,
+		cancel:        cancel,
+	}
+
+	err := LoadGitMetrics(state, ctx, sink)
+
+	g.Expect(errors.Is(err, context.Canceled)).To(BeTrue())
+}
+
+func TestLoadGitMetrics_PropagatesCancellationDuringAuthorshipPass(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
+	ctx, cancel := context.WithCancel(context.Background())
+	sink := &cancelingProgressSink{
+		recordingSink: newTestSink(progress.WorkCommits),
+		cancelAt:      4,
+		cancel:        cancel,
+	}
+
+	err := LoadGitMetrics(state, ctx, sink)
+
+	g.Expect(errors.Is(err, context.Canceled)).To(BeTrue())
 }
 
 func TestLoadGitHistory_ReportsTotalRepoCommits(t *testing.T) {

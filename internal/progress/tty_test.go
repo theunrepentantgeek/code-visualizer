@@ -121,6 +121,32 @@ func TestTTY_AnimatesOnlyLiveStagesAndTransitionsToProgress(t *testing.T) {
 	g.Expect(strings.Join(backend.lines, "\n")).To(ContainSubstring("✓ Acquiring"))
 }
 
+func TestTTY_StartsDeterminateStageAsProgressBar(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	reporter, backend := ttyTestReporter(t, true, false)
+
+	g.Expect(reporter.Begin("Processing", 1)).To(Succeed())
+
+	determinate, ok := reporter.(interface {
+		StartDeterminateStage(name string, work WorkKind, total int64) (Stage, error)
+	})
+	g.Expect(ok).To(BeTrue())
+
+	stage, err := determinate.StartDeterminateStage("Loading Git metrics", WorkCommits, 20)
+	if err != nil {
+		t.Fatalf("StartDeterminateStage returned an error: %v", err)
+	}
+
+	if stage == nil {
+		t.Fatal("StartDeterminateStage returned a nil stage without an error")
+	}
+
+	g.Expect(backend.started).To(HaveLen(1))
+	g.Expect(backend.started[0].kind).To(Equal("progress"))
+	g.Expect(stage.Complete()).To(Succeed())
+}
+
 func TestTTY_UsesASCIISafeSymbolsWhenUnicodeUnavailable(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

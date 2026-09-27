@@ -9,11 +9,23 @@ import (
 // providers, and populate declarations. Tests that supply a pre-built model
 // tree skip this function and inject CommonState.Root directly.
 func AcquireData(s *pipeline.State) {
+	ScanData(s)
+	LoadGitMetrics(s)
+	LoadFilesystemMetrics(s)
+}
+
+func ScanData(s *pipeline.State) {
 	pipeline.ApplyFuncXYZ(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncXY(s, stages.FilterChangedOnly)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
-	pipeline.ApplyFuncXYZ(s, stages.PrewarmGitMetrics)
-	pipeline.ApplyFuncXYZ(s, stages.RunProviders)
+}
+
+func LoadGitMetrics(s *pipeline.State) {
+	pipeline.ApplyFuncXYZ(s, stages.LoadGitMetrics)
+}
+
+func LoadFilesystemMetrics(s *pipeline.State) {
+	pipeline.ApplyFuncXYZ(s, stages.RunFilesystemProviders)
 	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
 }
 

@@ -55,13 +55,22 @@ func (r *ttyRenderer) render(e event) error {
 		if e.stageKind == StageLive {
 			r.activeLabel = cleanLine(e.name)
 
-			display, err := r.backend.startSpinner(r.activeLabel, !r.supportsUnicode())
+			var (
+				display liveDisplay
+				err     error
+			)
+			if e.total > 0 {
+				display, err = r.backend.startProgress(r.activeLabel, e.total, !r.supportsUnicode())
+			} else {
+				display, err = r.backend.startSpinner(r.activeLabel, !r.supportsUnicode())
+			}
+
 			if err != nil {
 				return err
 			}
 
 			r.active = display
-			r.total = 0
+			r.total = e.total
 			r.current = 0
 		}
 	case eventProgress:

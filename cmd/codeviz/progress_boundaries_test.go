@@ -18,6 +18,7 @@ import (
 type boundaryReporter struct {
 	events        []string
 	stageWorks    []progress.WorkKind
+	stageTotals   []int64
 	terminalErr   error
 	beginErr      error
 	startStageErr error
@@ -58,9 +59,17 @@ type boundaryStage struct {
 }
 
 func (s *boundaryStage) WorkKind() progress.WorkKind { return s.work }
-func (s *boundaryStage) SetTotal(int64) error        { return s.checkActive() }
-func (s *boundaryStage) SetProgress(int64) error     { return s.checkActive() }
-func (s *boundaryStage) SetStatus(string) error      { return s.checkActive() }
+func (s *boundaryStage) SetTotal(total int64) error {
+	if err := s.checkActive(); err != nil {
+		return err
+	}
+
+	s.reporter.stageTotals = append(s.reporter.stageTotals, total)
+
+	return nil
+}
+func (s *boundaryStage) SetProgress(int64) error { return s.checkActive() }
+func (s *boundaryStage) SetStatus(string) error  { return s.checkActive() }
 
 func (s *boundaryStage) Complete() error {
 	return s.finish("complete")
@@ -136,6 +145,30 @@ func TestProgressBoundaries_StartsAndCompletesStages(t *testing.T) {
 		"complete:Acquire",
 		"finish",
 	}))
+}
+
+func TestRunDeterminateBoundarySetsTotalBeforeWork(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	reporter := &boundaryReporter{}
+	state := pipeline.NewState()
+
+	boundaries, err := newProgressBoundaries(&Flags{Reporter: reporter}, state, "Build", 1)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	totalWasSet := false
+	err = runDeterminateBoundary(
+		boundaries,
+		"Loading filesystem metrics",
+		progress.WorkObservations,
+		12,
+		func() {
+			totalWasSet = len(reporter.stageTotals) == 1 && reporter.stageTotals[0] == 12
+		},
+	)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(totalWasSet).To(BeTrue())
 }
 
 func TestProgressBoundaries_EndsFailedStageAfterPipelineError(t *testing.T) {

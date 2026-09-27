@@ -10,14 +10,26 @@ import (
 // FileTimeRange, which the render pipeline's time-bucket stages consume. Tests
 // that supply synthetic history set those fields directly and skip AcquireData.
 func AcquireData(s *pipeline.State) {
+	ScanData(s)
+	LoadGitMetrics(s)
+	LoadFilesystemMetrics(s)
+}
+
+func ScanData(s *pipeline.State) {
 	pipeline.ApplyFuncXYZ(s, stages.ScanFilesystem)
 	pipeline.ApplyFuncXY(s, stages.FilterChangedOnly)
 	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
-	pipeline.ApplyFuncXYZ(s, stages.LoadGitHistory)
-	pipeline.ApplyFuncXYZ(s, stages.RunProviders)
-	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
+}
+
+func LoadGitMetrics(s *pipeline.State) {
+	pipeline.ApplyFuncXYZ(s, stages.LoadGitMetrics)
 	pipeline.ApplyFuncX(s, stages.GroupGitHistoryByFile)
 	pipeline.ApplyFuncX(s, stages.ExtractFileHistory)
+}
+
+func LoadFilesystemMetrics(s *pipeline.State) {
+	pipeline.ApplyFuncXYZ(s, stages.RunFilesystemProviders)
+	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
 }
 
 // RenderPipeline runs aggregation through writing the canvas, assuming

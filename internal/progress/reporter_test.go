@@ -102,7 +102,8 @@ func TestReporter_RejectsInvalidLifecycleTransitions(t *testing.T) {
 
 	g.Expect(first.SetTotal(0)).To(MatchError(ContainSubstring("positive")))
 	g.Expect(first.SetTotal(10)).To(Succeed())
-	g.Expect(first.SetTotal(10)).To(MatchError(ContainSubstring("already set")))
+	g.Expect(first.SetTotal(10)).To(Succeed())
+	g.Expect(first.SetTotal(11)).To(MatchError(ContainSubstring("already set")))
 	g.Expect(first.SetProgress(-1)).To(MatchError(ContainSubstring("negative")))
 	g.Expect(first.SetProgress(5)).To(Succeed())
 	g.Expect(first.SetProgress(4)).To(MatchError(ContainSubstring("decrease")))

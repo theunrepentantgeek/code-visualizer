@@ -37,9 +37,43 @@ func TestRunApplication_PlainAndRedirectedAutoUsePlainProgress(t *testing.T) {
 		g.Expect(code).To(Equal(0), stderr.String())
 		g.Expect(stdout.String()).To(BeEmpty())
 		g.Expect(stderr.String()).To(ContainSubstring("Tree map"))
-		g.Expect(stderr.String()).To(ContainSubstring("[2/4] Scanning filesystem"))
+		g.Expect(stderr.String()).To(ContainSubstring("[2/5] Scanning filesystem"))
+		g.Expect(stderr.String()).To(MatchRegexp(`(?m)^\[3/5\] Loading filesystem metrics: \d+/\d+ \(100%\)$`))
 		g.Expect(stderr.String()).NotTo(ContainSubstring("\x1b"))
 	}
+}
+
+//nolint:paralleltest // runApplication replaces the process-wide default logger.
+func TestRunApplication_SeparatesGitAndFilesystemMetricProgress(t *testing.T) {
+	g := NewWithT(t)
+	target := createAlluvialTagFixture(t)
+
+	var stderr bytes.Buffer
+
+	code := runApplication(application{
+		args: []string{
+			"--progress=plain", "tree-map", target,
+			"-o", filepath.Join(t.TempDir(), "out.png"),
+			"-s", "file-lines",
+			"-b", "file-freshness",
+		},
+		stdout:     &bytes.Buffer{},
+		stderr:     &stderr,
+		context:    context.Background(),
+		isTerminal: func(io.Writer) bool { return false },
+		lookupEnv:  func(string) (string, bool) { return "", false },
+	})
+
+	g.Expect(code).To(Equal(0), stderr.String())
+	g.Expect(stderr.String()).To(ContainSubstring("[2/6] Scanning filesystem: started"))
+	g.Expect(stderr.String()).To(MatchRegexp(
+		`(?m)^\[3/6\] Loading Git metrics: \d+/\d+ \(100%\)$`,
+	))
+	g.Expect(stderr.String()).To(MatchRegexp(
+		`(?m)^\[4/6\] Loading filesystem metrics: \d+/\d+ \(100%\)$`,
+	))
+	g.Expect(strings.Index(stderr.String(), "Loading Git metrics")).
+		To(BeNumerically("<", strings.Index(stderr.String(), "Loading filesystem metrics")))
 }
 
 //nolint:paralleltest // runApplication replaces the process-wide default logger.
@@ -231,10 +265,11 @@ func TestRunApplication_PresetUsesSingleProgressOperation(t *testing.T) {
 
 	g.Expect(code).To(Equal(0), stderr.String())
 	g.Expect(strings.Count(stderr.String(), "Tree map\n")).To(Equal(1), stderr.String())
-	g.Expect(strings.Count(stderr.String(), "[1/4] Preparing: started")).To(Equal(1), stderr.String())
-	g.Expect(strings.Count(stderr.String(), "[2/4] Scanning filesystem: started")).To(Equal(1), stderr.String())
-	g.Expect(strings.Count(stderr.String(), "[3/4] Rendering: started")).To(Equal(1), stderr.String())
-	g.Expect(strings.Count(stderr.String(), "[4/4] Writing output: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[1/5] Preparing: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[2/5] Scanning filesystem: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[3/5] Loading filesystem metrics: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[4/5] Rendering: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[5/5] Writing output: started")).To(Equal(1), stderr.String())
 }
 
 func TestEnvironmentSupportsUnicode_UsesLocale(t *testing.T) {

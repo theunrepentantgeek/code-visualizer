@@ -153,6 +153,8 @@ func TestRunProvidersOmitsCompletionWhenLoadingFailsAtTotal(t *testing.T) {
 	err := stages.RunProviders(progressState(), context.Background(), sink)
 
 	g.Expect(err).To(MatchError(ContainSubstring("load failed after reporting progress")))
+	g.Expect(err).To(MatchError(ContainSubstring("load requested metrics")))
+	g.Expect(err).NotTo(MatchError(ContainSubstring("filesystem metrics")))
 	g.Expect(sink.current).To(Equal([]int64{1, 2}))
 }
 

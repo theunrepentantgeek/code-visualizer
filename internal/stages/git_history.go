@@ -24,10 +24,16 @@ func LoadCommitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) 
 		return nil
 	}
 
-	if err := LoadGitHistory(c, ctx, sink); err != nil {
-		return err
+	if len(c.GitHistory) == 0 {
+		if err := LoadGitHistory(c, ctx, sink); err != nil {
+			return err
+		}
 	}
 
+	return attachCommitMetrics(c)
+}
+
+func attachCommitMetrics(c *CommonState) error {
 	files := indexFilesByRepoRelativePath(c.Root, c.Root.RepoRoot)
 	for _, commit := range c.GitHistory {
 		for _, change := range commit.Changes {

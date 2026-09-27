@@ -165,7 +165,7 @@ func (c *ScatterCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Scatter)
 }
 
-//nolint:dupl // pipeline wiring is structurally similar across commands but not refactorable
+//nolint:dupl,funlen // Explicit progress boundaries keep each pipeline stage visible.
 func (c *ScatterCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -187,7 +187,12 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	boundaries, err := newProgressBoundaries(flags, s, "Scatter plot", 4)
+	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
+	pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
+
+	needsGit := stages.NeedsGitMetrics(common)
+
+	boundaries, err := newProgressBoundaries(flags, s, "Scatter plot", ordinaryStageCount(needsGit))
 	if err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}
@@ -196,19 +201,35 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 		pipeline.ApplyFuncX(s, stages.ValidatePaths)
 		pipeline.ApplyFuncX(s, stages.ExportConfig)
 		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-		pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-		pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
 	}); err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}
 
-	if err := runBoundary(
+	var gitMetricTotal int64
+
+	if err := runBoundary(boundaries, "Scanning filesystem", progress.StageSummary, progress.WorkNone, func() {
+		scatterviz.ScanData(s)
+
+		if needsGit {
+			gitMetricTotal = determineGitMetricTotal(s)
+		}
+	}); err != nil {
+		return eris.Wrap(err, "scatter pipeline failed")
+	}
+
+	if err := runGitMetricsBoundary(boundaries, needsGit, gitMetricTotal, func() {
+		scatterviz.LoadGitMetrics(s)
+	}); err != nil {
+		return eris.Wrap(err, "scatter pipeline failed")
+	}
+
+	if err := runDeterminateBoundary(
 		boundaries,
-		stages.AcquisitionPhaseName(common),
-		progress.StageLive,
-		stages.AcquisitionWork(common),
+		"Loading filesystem metrics",
+		progress.WorkObservations,
+		stages.FilesystemMetricTotal(common),
 		func() {
-			scatterviz.AcquireData(s)
+			scatterviz.LoadFilesystemMetrics(s)
 		},
 	); err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
