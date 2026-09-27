@@ -141,8 +141,9 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
 	viz := &alluvial.State{}
+	acquisition := alluvial.NewAcquisitionPlan()
 	cfg := flags.Config.Alluvial
-	s := pipeline.NewState(common, cfg, viz)
+	s := pipeline.NewState(common, cfg, viz, acquisition)
 
 	boundaries, err := newProgressBoundaries(flags, s, "Alluvial", len(cfg.References)+3)
 	if err != nil {
@@ -150,7 +151,7 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	}
 
 	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
-		prepareAlluvialState(s, viz, cfg)
+		prepareAlluvialState(s, common, viz, cfg)
 	}); err != nil {
 		return eris.Wrap(err, "alluvial pipeline failed")
 	}
@@ -163,8 +164,12 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 			progress.StageLive,
 			work,
 			func() {
-				pipeline.ApplyFuncXY(s, func(ctx context.Context, sink progress.Sink) error {
-					return alluvial.AcquireReference(ctx, sink, viz, reference, index)
+				pipeline.ApplyFuncXYZ(s, func(
+					ctx context.Context,
+					sink progress.Sink,
+					plan *alluvial.AcquisitionPlan,
+				) error {
+					return plan.AcquireReference(ctx, sink, viz, reference, index)
 				})
 			},
 		); err != nil {
@@ -188,7 +193,12 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 	return eris.Wrap(boundaries.Finish(), "alluvial pipeline failed")
 }
 
-func prepareAlluvialState(s *pipeline.State, viz *alluvial.State, cfg *config.Alluvial) {
+func prepareAlluvialState(
+	s *pipeline.State,
+	common *stages.CommonState,
+	viz *alluvial.State,
+	cfg *config.Alluvial,
+) {
 	pipeline.ApplyFuncX(s, stages.ValidatePaths)
 	pipeline.ApplyFuncX(s, stages.ExportConfig)
 	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
@@ -197,9 +207,9 @@ func prepareAlluvialState(s *pipeline.State, viz *alluvial.State, cfg *config.Al
 	pipeline.ApplyFuncXYZ(s, func(
 		ctx context.Context,
 		sink progress.Sink,
-		common *stages.CommonState,
+		plan *alluvial.AcquisitionPlan,
 	) error {
-		return alluvial.PrepareReferences(ctx, sink, common, viz, cfg)
+		return plan.PrepareReferences(ctx, sink, common, viz, cfg)
 	})
 }
 

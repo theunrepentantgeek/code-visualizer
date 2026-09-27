@@ -162,9 +162,15 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
 
-	if err := runBoundary(boundaries, phaseAcquiring, progress.StageLive, stages.AcquisitionWork(common), func() {
-		spiral.AcquireData(s)
-	}); err != nil {
+	if err := runBoundary(
+		boundaries,
+		stages.AcquisitionPhaseName(common),
+		progress.StageLive,
+		stages.AcquisitionWork(common),
+		func() {
+			spiral.AcquireData(s)
+		},
+	); err != nil {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
 

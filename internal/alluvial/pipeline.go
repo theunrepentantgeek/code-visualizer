@@ -133,7 +133,7 @@ func offsetLayout(layout *Layout, offset geometry.Vector) {
 	}
 }
 
-func PrepareReferences(
+func (p *AcquisitionPlan) PrepareReferences(
 	ctx context.Context,
 	sink progress.Sink,
 	common *stages.CommonState,
@@ -150,7 +150,7 @@ func PrepareReferences(
 		return err
 	}
 
-	state.snapshotStates = snapshotStates
+	p.snapshotStates = snapshotStates
 	state.Snapshots = nil
 
 	return nil
@@ -190,18 +190,18 @@ func shareCommitHistoryPaths(
 	return nil
 }
 
-func AcquireReference(
+func (p *AcquisitionPlan) AcquireReference(
 	ctx context.Context,
 	sink progress.Sink,
 	state *State,
 	reference string,
 	index int,
 ) error {
-	if index < 0 || index >= len(state.snapshotStates) {
+	if index < 0 || index >= len(p.snapshotStates) {
 		return eris.Errorf("alluvial reference index %d is out of range", index)
 	}
 
-	snapshotCommon := state.snapshotStates[index]
+	snapshotCommon := p.snapshotStates[index]
 	if err := finishSnapshot(ctx, sink, snapshotCommon); err != nil {
 		return eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
 	}

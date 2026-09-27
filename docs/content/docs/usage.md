@@ -41,7 +41,9 @@ Use `--progress=tty` or `--progress=plain` to select a mode explicitly.
 flags remain mutually exclusive. `--no-color`, `NO_COLOR`, `FORCE_COLOR=0`, and
 `TERM=dumb` disable styling.
 
-Ordinary visualizations have one live data-acquisition phase. Alluvial
+Ordinary visualizations have one live acquisition phase named for its data
+sources: `Scanning filesystem` for filesystem-only metrics, or
+`Scanning filesystem and Git history` when Git data is required. Alluvial
 visualizations show a separate `Loading <reference>` phase for every reference,
 in the order supplied.
 

@@ -13,7 +13,6 @@ import (
 
 const (
 	phasePreparing = "Preparing"
-	phaseAcquiring = "Acquiring data"
 	phaseRendering = "Rendering"
 	phaseWriting   = "Writing output"
 )

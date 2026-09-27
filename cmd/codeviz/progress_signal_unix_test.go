@@ -28,7 +28,7 @@ func TestProgressSignalHelper(_ *testing.T) {
 	runContext, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	code := runApplication(application{
 		args: []string{
-			"--progress=plain", "tree-map", os.Getenv("CODEVIZ_SIGNAL_TARGET"),
+			"--progress=plain", "--verbose", "tree-map", os.Getenv("CODEVIZ_SIGNAL_TARGET"),
 			"-o", os.Getenv("CODEVIZ_SIGNAL_OUTPUT"),
 			"-s", "file-size",
 		},
@@ -48,9 +48,14 @@ func TestCLI_SIGINTCancelsActiveProgressAndExits130(t *testing.T) {
 	g := NewWithT(t)
 
 	target := t.TempDir()
-	for index := range 20_000 {
-		name := filepath.Join(target, "file-"+strconv.Itoa(index)+".go")
-		g.Expect(os.WriteFile(name, []byte("package fixture\n"), 0o600)).To(Succeed())
+	for directoryIndex := range 100 {
+		directory := filepath.Join(target, "dir-"+strconv.Itoa(directoryIndex))
+		g.Expect(os.Mkdir(directory, 0o750)).To(Succeed())
+
+		for fileIndex := range 200 {
+			name := filepath.Join(directory, "file-"+strconv.Itoa(fileIndex)+".go")
+			g.Expect(os.WriteFile(name, []byte("package fixture\n"), 0o600)).To(Succeed())
+		}
 	}
 
 	//nolint:gosec // The executable is this test binary, not user input.
@@ -80,7 +85,7 @@ func TestCLI_SIGINTCancelsActiveProgressAndExits130(t *testing.T) {
 			line := scanner.Text()
 			lines = append(lines, line)
 
-			if strings.Contains(line, "Acquiring data: started") {
+			if strings.Contains(line, "Discovered ") {
 				select {
 				case <-stageStarted:
 				default:
@@ -115,7 +120,7 @@ func TestCLI_SIGINTCancelsActiveProgressAndExits130(t *testing.T) {
 	<-scanDone
 
 	output := strings.Join(lines, "\n")
-	g.Expect(output).To(ContainSubstring("Acquiring data: cancelled"))
+	g.Expect(output).To(ContainSubstring("Scanning filesystem: cancelled"))
 	g.Expect(output).NotTo(ContainSubstring("Rendering"))
 	g.Expect(output).NotTo(ContainSubstring("Writing output"))
 }

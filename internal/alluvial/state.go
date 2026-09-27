@@ -12,13 +12,21 @@ import (
 
 // State holds data prepared for a later alluvial layout and render pipeline.
 type State struct {
-	WidthMetric    metric.Name
-	Fill           BandFill
-	Snapshots      []Snapshot
-	Data           Data
-	Layout         Layout
-	Legend         *legend.Config
+	WidthMetric metric.Name
+	Fill        BandFill
+	Snapshots   []Snapshot
+	Data        Data
+	Layout      Layout
+	Legend      *legend.Config
+}
+
+// AcquisitionPlan owns the pipeline state needed while loading snapshots.
+type AcquisitionPlan struct {
 	snapshotStates []*stages.CommonState
+}
+
+func NewAcquisitionPlan() *AcquisitionPlan {
+	return &AcquisitionPlan{}
 }
 
 // BandFill is the resolved colour encoding used by all alluvial stages.

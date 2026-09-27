@@ -37,7 +37,7 @@ func TestRunApplication_PlainAndRedirectedAutoUsePlainProgress(t *testing.T) {
 		g.Expect(code).To(Equal(0), stderr.String())
 		g.Expect(stdout.String()).To(BeEmpty())
 		g.Expect(stderr.String()).To(ContainSubstring("Tree map"))
-		g.Expect(stderr.String()).To(ContainSubstring("[2/4] Acquiring data"))
+		g.Expect(stderr.String()).To(ContainSubstring("[2/4] Scanning filesystem"))
 		g.Expect(stderr.String()).NotTo(ContainSubstring("\x1b"))
 	}
 }
@@ -232,7 +232,7 @@ func TestRunApplication_PresetUsesSingleProgressOperation(t *testing.T) {
 	g.Expect(code).To(Equal(0), stderr.String())
 	g.Expect(strings.Count(stderr.String(), "Tree map\n")).To(Equal(1), stderr.String())
 	g.Expect(strings.Count(stderr.String(), "[1/4] Preparing: started")).To(Equal(1), stderr.String())
-	g.Expect(strings.Count(stderr.String(), "[2/4] Acquiring data: started")).To(Equal(1), stderr.String())
+	g.Expect(strings.Count(stderr.String(), "[2/4] Scanning filesystem: started")).To(Equal(1), stderr.String())
 	g.Expect(strings.Count(stderr.String(), "[3/4] Rendering: started")).To(Equal(1), stderr.String())
 	g.Expect(strings.Count(stderr.String(), "[4/4] Writing output: started")).To(Equal(1), stderr.String())
 }

@@ -2,10 +2,12 @@ package stages
 
 import (
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
 // AcquisitionWork identifies the determinate work represented by a live
@@ -16,6 +18,24 @@ func AcquisitionWork(c *CommonState) progress.WorkKind {
 	}
 
 	return progress.WorkObservations
+}
+
+// AcquisitionPhaseName identifies the external data sources used by the
+// acquisition pipeline.
+func AcquisitionPhaseName(c *CommonState) string {
+	if c.VizName == "spiral" || c.Requested.HasCommitExpressions() || flagsUseGit(c.Flags) {
+		return "Scanning filesystem and Git history"
+	}
+
+	if slices.ContainsFunc(c.Requested.BaseMetrics, git.IsGitMetric) {
+		return "Scanning filesystem and Git history"
+	}
+
+	return "Scanning filesystem"
+}
+
+func flagsUseGit(flags *Flags) bool {
+	return flags != nil && (flags.ChangedOnly || flags.HistoryRange.Until != "")
 }
 
 type progressAdapter struct {

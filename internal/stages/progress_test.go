@@ -72,3 +72,67 @@ func TestAcquisitionWorkUsesObservationsOtherwise(t *testing.T) {
 
 	g.Expect(stages.AcquisitionWork(&stages.CommonState{})).To(Equal(progress.WorkObservations))
 }
+
+func TestAcquisitionPhaseNameIdentifiesFilesystemWork(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	state := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			BaseMetrics: []metric.Name{"file-size"},
+		},
+	}
+
+	g.Expect(stages.AcquisitionPhaseName(state)).To(Equal("Scanning filesystem"))
+}
+
+func TestAcquisitionPhaseNameIdentifiesGitWork(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	state := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			BaseMetrics: []metric.Name{git.CommitCount},
+		},
+	}
+
+	g.Expect(stages.AcquisitionPhaseName(state)).To(Equal("Scanning filesystem and Git history"))
+}
+
+func TestAcquisitionPhaseNameIdentifiesCommitExpressionWork(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	state := &stages.CommonState{
+		Requested: stages.RequestedMetrics{
+			Expressions: []provider.ResolvedMetric{{SourceLevel: metric.LevelCommit}},
+		},
+	}
+
+	g.Expect(stages.AcquisitionPhaseName(state)).To(Equal("Scanning filesystem and Git history"))
+}
+
+func TestAcquisitionPhaseNameIdentifiesSpiralGitHistory(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	g.Expect(stages.AcquisitionPhaseName(&stages.CommonState{VizName: "spiral"})).
+		To(Equal("Scanning filesystem and Git history"))
+}
+
+func TestAcquisitionPhaseNameIdentifiesChangedOnlyGitHistory(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	g.Expect(stages.AcquisitionPhaseName(&stages.CommonState{
+		Flags: &stages.Flags{ChangedOnly: true},
+	})).
+		To(Equal("Scanning filesystem and Git history"))
+}
+
+func TestAcquisitionPhaseNameIdentifiesHistoricalSnapshot(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	g.Expect(stages.AcquisitionPhaseName(&stages.CommonState{
+		Flags: &stages.Flags{HistoryRange: git.HistoryRange{Until: "HEAD~1"}},
+	})).
+		To(Equal("Scanning filesystem and Git history"))
+}
