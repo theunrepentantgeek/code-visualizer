@@ -1,6 +1,7 @@
 package stages_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,6 +61,22 @@ func TestScanFilesystem_EmptyDir(t *testing.T) {
 		Flags:      &stages.Flags{},
 	}
 
-	g.Expect(stages.ScanFilesystem(s)).To(Succeed())
+	g.Expect(stages.ScanFilesystem(s, context.Background(), newTestSink())).To(Succeed())
 	g.Expect(s.Root).NotTo(BeNil())
+}
+
+func TestScanFilesystem_PropagatesCancellation(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	s := &stages.CommonState{
+		TargetPath: t.TempDir(),
+		Flags:      &stages.Flags{},
+	}
+
+	err := stages.ScanFilesystem(s, ctx, newTestSink())
+
+	g.Expect(err).To(MatchError(context.Canceled))
 }

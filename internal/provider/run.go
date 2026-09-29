@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"sync"
 
 	"github.com/rotisserie/eris"
@@ -42,7 +43,16 @@ func FileProgressTotal(requested []metric.Name, fileCount int) int64 {
 
 // RunLoaders loads the requested base metrics using registered loaders.
 // Loaders run in parallel where dependency ordering allows.
-func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricProgress) error {
+func RunLoaders(
+	ctx context.Context,
+	root *model.Directory,
+	requested []metric.Name,
+	progress MetricProgress,
+) error {
+	if err := ctx.Err(); err != nil {
+		return eris.Wrap(err, "metric loading cancelled")
+	}
+
 	loaders := LoadersFor(requested)
 	if len(loaders) == 0 {
 		return nil
@@ -54,7 +64,7 @@ func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricP
 	}
 
 	for _, level := range levels {
-		if err := runLoaderLevel(root, level, requested, progress); err != nil {
+		if err := runLoaderLevel(ctx, root, level, requested, progress); err != nil {
 			return err
 		}
 	}
@@ -63,16 +73,21 @@ func RunLoaders(root *model.Directory, requested []metric.Name, progress MetricP
 }
 
 func runLoaderLevel(
+	ctx context.Context,
 	root *model.Directory,
 	level []BaseMetricLoader,
 	requested []metric.Name,
 	progress MetricProgress,
 ) error {
-	g := new(errgroup.Group)
+	g, groupCtx := errgroup.WithContext(ctx)
 
 	for _, loader := range level {
 		g.Go(func() error {
-			return runSingleLoader(root, loader, requested, progress)
+			if err := groupCtx.Err(); err != nil {
+				return eris.Wrap(err, "loader cancelled")
+			}
+
+			return runSingleLoader(groupCtx, root, loader, requested, progress)
 		})
 	}
 
@@ -84,11 +99,16 @@ func runLoaderLevel(
 }
 
 func runSingleLoader(
+	ctx context.Context,
 	root *model.Directory,
 	loader BaseMetricLoader,
 	requested []metric.Name,
 	progress MetricProgress,
 ) error {
+	if err := ctx.Err(); err != nil {
+		return eris.Wrap(err, "loader cancelled")
+	}
+
 	// LoadersFor supplies only loaders owning a requested metric, so selected is nonempty.
 	selected := requestedMetricsForLoader(loader, requested)
 	notifyStarted(selected, progress)
@@ -101,7 +121,7 @@ func runSingleLoader(
 
 	wireFileProgress(loader, selected, progress)
 
-	if err := loader.Load(root, selected); err != nil {
+	if err := loader.Load(ctx, root, selected); err != nil {
 		return eris.Wrapf(err, "loader failed for metrics %v", selected)
 	}
 

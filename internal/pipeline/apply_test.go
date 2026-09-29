@@ -7,6 +7,44 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+type testSink interface {
+	Value() string
+}
+
+type sinkValue string
+
+func (s sinkValue) Value() string { return string(s) }
+
+func TestSet_StoresAndReplacesInterfaceByStaticType(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{})
+
+	Set[testSink](state, sinkValue("first"))
+	stored, ok := lookup[testSink](state)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(stored.Value()).To(Equal("first"))
+
+	Set[testSink](state, sinkValue("second"))
+	stored, ok = lookup[testSink](state)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(stored.Value()).To(Equal("second"))
+}
+
+func TestSet_PreservesExistingError(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{})
+	prior := errors.New("prior")
+	state.setErr(prior)
+
+	Set[testSink](state, sinkValue("value"))
+
+	g.Expect(state.Err()).To(MatchError(prior))
+}
+
 /*
  * ApplyFuncX Tests
  */

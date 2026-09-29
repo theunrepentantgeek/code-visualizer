@@ -2,8 +2,8 @@
 package scan
 
 import (
+	"context"
 	"errors"
-	"log/slog"
 	"path/filepath"
 
 	"github.com/rotisserie/eris"
@@ -21,8 +21,18 @@ type Progress interface {
 }
 
 // ScanTree scans a read-only content source.
-func ScanTree(tree source.Tree, rules []filter.Rule, progress Progress, includeBinary bool) (*model.Directory, error) {
-	root, err := newFSWalker(tree, rules, progress, includeBinary).scanDir(".")
+func ScanTree(
+	ctx context.Context,
+	tree source.Tree,
+	rules []filter.Rule,
+	progress Progress,
+	includeBinary bool,
+) (*model.Directory, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, eris.Wrap(err, "source scan cancelled")
+	}
+
+	root, err := newFSWalker(ctx, tree, rules, progress, includeBinary).scanDir(".")
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +40,6 @@ func ScanTree(tree source.Tree, rules []filter.Rule, progress Progress, includeB
 	if !hasFiles(root) {
 		return nil, errors.New("no files found in directory")
 	}
-
-	slog.Info("Scan complete", "files", root.AllFileCount, "directories", root.AllDirCount)
 
 	return root, nil
 }
@@ -42,13 +50,23 @@ func ScanTree(tree source.Tree, rules []filter.Rule, progress Progress, includeB
 // When includeBinary is false, binary files are excluded during the scan rather
 // than being added to the tree and filtered later.
 // Returns an error if the directory contains no files.
-func Scan(path string, rules []filter.Rule, progress Progress, includeBinary bool) (*model.Directory, error) {
+func Scan(
+	ctx context.Context,
+	path string,
+	rules []filter.Rule,
+	progress Progress,
+	includeBinary bool,
+) (*model.Directory, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, eris.Wrap(err, "directory scan cancelled")
+	}
+
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to resolve absolute path")
 	}
 
-	root, err := newWalker(absPath, rules, progress, includeBinary).scanDir(absPath)
+	root, err := newWalker(ctx, absPath, rules, progress, includeBinary).scanDir(absPath)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +74,6 @@ func Scan(path string, rules []filter.Rule, progress Progress, includeBinary boo
 	if !hasFiles(root) {
 		return nil, errors.New("no files found in directory")
 	}
-
-	slog.Info("Scan complete", "files", root.AllFileCount, "directories", root.AllDirCount)
 
 	return root, nil
 }

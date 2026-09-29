@@ -15,6 +15,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 )
 
+const spiralVisualization = "spiral"
+
 // Flags is the cross-cutting flag bundle passed to every viz command's Run.
 // It mirrors cmd/codeviz.Flags but lives here so this package does not
 // depend on package main. The orchestrator constructs one and assigns it

@@ -18,6 +18,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 )
 
 func TestAlluvialCmd_Run_EntersDataPipeline(t *testing.T) {
@@ -31,6 +32,59 @@ func TestAlluvialCmd_Run_EntersDataPipeline(t *testing.T) {
 	}).Run(&Flags{Config: config.New()})
 
 	g.Expect(err).To(MatchError(ContainSubstring("alluvial pipeline failed")))
+}
+
+func TestAlluvialCmd_ReportsOrderedReferenceBoundaries(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	reporter := &boundaryReporter{}
+	repository := createAlluvialTagFixture(t)
+	repo, err := gogit.PlainOpen(repository)
+	g.Expect(err).NotTo(HaveOccurred())
+	v1, err := repo.Tag("v1.0")
+	g.Expect(err).NotTo(HaveOccurred())
+	_, err = repo.CreateTag("v1", v1.Hash(), nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	v2, err := repo.Tag("v2.0")
+	g.Expect(err).NotTo(HaveOccurred())
+	_, err = repo.CreateTag("v2", v2.Hash(), nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: repository,
+		Output:     output,
+		References: []string{"v1", "v2", ""},
+		Metric:     "file-lines",
+		Width:      320,
+		Height:     240,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New(), Reporter: reporter})).To(Succeed())
+	g.Expect(reporter.events).To(Equal([]string{
+		"begin:Alluvial:6",
+		"start:Preparing",
+		"complete:Preparing",
+		"start:Loading v1",
+		"complete:Loading v1",
+		"start:Loading v2",
+		"complete:Loading v2",
+		"start:Loading HEAD",
+		"complete:Loading HEAD",
+		"start:Rendering",
+		"complete:Rendering",
+		"start:Writing output",
+		"complete:Writing output",
+		"finish",
+	}))
+	g.Expect(reporter.stageWorks).To(Equal([]progress.WorkKind{
+		progress.WorkNone,
+		progress.WorkObservations,
+		progress.WorkObservations,
+		progress.WorkObservations,
+		progress.WorkNone,
+		progress.WorkNone,
+	}))
 }
 
 func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {

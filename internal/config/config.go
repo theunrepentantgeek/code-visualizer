@@ -4,7 +4,6 @@ package config
 
 import (
 	"encoding/json"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -161,8 +160,6 @@ func (c *Config) TryAutoLoad(outputPath string) error {
 	}
 
 	if autoPath, ok := FindAutoConfig(outputPath); ok {
-		slog.Info("Auto-loading config", "path", autoPath)
-
 		if err := c.Load(autoPath); err != nil {
 			return eris.Wrap(err, "auto-config load failed")
 		}
@@ -235,8 +232,6 @@ func (c *Config) Save(path string) error {
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return eris.Wrapf(err, "failed to write config file %q", path)
 	}
-
-	slog.Info("Config saved", "path", path)
 
 	return nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"path"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -139,18 +141,76 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 		IncludeBinaryFiles: c.IncludeBinaryFiles,
 	}
 	viz := &alluvial.State{}
+	acquisition := alluvial.NewAcquisitionPlan()
 	cfg := flags.Config.Alluvial
-	s := pipeline.NewState(common, cfg, viz)
+	s := pipeline.NewState(common, cfg, viz, acquisition)
 
+	boundaries, err := newProgressBoundaries(flags, s, "Alluvial", len(cfg.References)+3)
+	if err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		prepareAlluvialState(s, common, viz, cfg)
+	}); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	work := stages.AcquisitionWork(common)
+	for index, reference := range cfg.References {
+		if err := runBoundary(
+			boundaries,
+			"Loading "+alluvial.SnapshotReference(reference),
+			progress.StageLive,
+			work,
+			func() {
+				pipeline.ApplyFuncXYZ(s, func(
+					ctx context.Context,
+					sink progress.Sink,
+					plan *alluvial.AcquisitionPlan,
+				) error {
+					return plan.AcquireReference(ctx, sink, viz, reference, index)
+				})
+			},
+		); err != nil {
+			return eris.Wrap(err, "alluvial pipeline failed")
+		}
+	}
+
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		alluvial.FinalizeData(s)
+		alluvial.RenderVisualization(s)
+	}); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		alluvial.WriteOutput(s)
+	}); err != nil {
+		return eris.Wrap(err, "alluvial pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "alluvial pipeline failed")
+}
+
+func prepareAlluvialState(
+	s *pipeline.State,
+	common *stages.CommonState,
+	viz *alluvial.State,
+	cfg *config.Alluvial,
+) {
 	pipeline.ApplyFuncX(s, stages.ValidatePaths)
 	pipeline.ApplyFuncX(s, stages.ExportConfig)
 	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
 	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
-	alluvial.AcquireData(s)
-	alluvial.RenderPipeline(s)
-
-	return eris.Wrap(s.Err(), "alluvial pipeline failed")
+	pipeline.ApplyFuncXYZ(s, func(
+		ctx context.Context,
+		sink progress.Sink,
+		plan *alluvial.AcquisitionPlan,
+	) error {
+		return plan.PrepareReferences(ctx, sink, common, viz, cfg)
+	})
 }
 
 func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {

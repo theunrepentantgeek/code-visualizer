@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/spiral"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -124,7 +125,7 @@ func (c *SpiralCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Spiral)
 }
 
-//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
+//nolint:funlen // Explicit progress boundaries keep the pipeline sequence visible.
 func (c *SpiralCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -146,16 +147,68 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
 	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
 
-	spiral.AcquireData(s)
-	spiral.RenderPipeline(s)
+	boundaries, err := newProgressBoundaries(flags, s, "Spiral", 6)
+	if err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
 
-	return eris.Wrap(s.Err(), "spiral pipeline failed")
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	}); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	var gitMetricTotal int64
+
+	if err := runBoundary(boundaries, "Scanning filesystem", progress.StageSummary, progress.WorkNone, func() {
+		spiral.ScanData(s)
+		gitMetricTotal = determineGitMetricTotal(s)
+	}); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	if err := runDeterminateBoundary(
+		boundaries,
+		"Loading Git metrics",
+		progress.WorkCommits,
+		gitMetricTotal,
+		func() {
+			spiral.LoadGitMetrics(s)
+		},
+	); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	if err := runDeterminateBoundary(
+		boundaries,
+		"Loading filesystem metrics",
+		progress.WorkObservations,
+		stages.FilesystemMetricTotal(common),
+		func() {
+			spiral.LoadFilesystemMetrics(s)
+		},
+	); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		spiral.RenderVisualization(s)
+	}); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		spiral.WriteOutput(s)
+	}); err != nil {
+		return eris.Wrap(err, "spiral pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "spiral pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.
