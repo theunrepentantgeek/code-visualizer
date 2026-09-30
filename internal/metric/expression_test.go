@@ -50,6 +50,48 @@ func TestParseExpression_FullExpression(t *testing.T) {
 	g.Expect(expr.Aggregation).To(Equal(AggregationName("count")))
 }
 
+func TestParseExpression_WithTemporalModifier(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	tests := []struct {
+		input       string
+		filter      FilterName
+		base        Name
+		aggregation AggregationName
+		temporal    TemporalName
+	}{
+		{"file-size.delta", "", "file-size", "", TemporalDelta},
+		{"public.types.delta", "public", "types", "", TemporalDelta},
+		{"file-size.sum.delta", "", "file-size", AggSum, TemporalDelta},
+		{"public.types.count.stepdelta", "public", "types", AggCount, TemporalStepDelta},
+	}
+
+	for _, tt := range tests {
+		expr, err := ParseExpression(tt.input)
+		g.Expect(err).NotTo(HaveOccurred(), tt.input)
+		g.Expect(expr.Filter).To(Equal(tt.filter), tt.input)
+		g.Expect(expr.Base).To(Equal(tt.base), tt.input)
+		g.Expect(expr.Aggregation).To(Equal(tt.aggregation), tt.input)
+		g.Expect(expr.Temporal).To(Equal(tt.temporal), tt.input)
+		g.Expect(expr.String()).To(Equal(tt.input), tt.input)
+	}
+}
+
+func TestParseExpression_RejectsMisplacedOrUnknownTemporalModifier(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	for _, input := range []string{
+		"file-size.delta.sum",
+		"file-size.sum.stepdelta.count",
+		"file-size.sum.unknown-temporal",
+	} {
+		_, err := ParseExpression(input)
+		g.Expect(err).To(HaveOccurred(), input)
+	}
+}
+
 func TestParseExpression_TwoSegmentsNonAggregation(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

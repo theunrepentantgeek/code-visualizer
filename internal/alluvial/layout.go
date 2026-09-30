@@ -29,11 +29,12 @@ type ColumnLayout struct {
 
 // Band is the vertical extent allocated to one directory in a release column.
 type Band struct {
-	Path      string
-	Top       float64
-	Bottom    float64
-	Width     float64
-	FillValue float64
+	Path         string
+	Top          float64
+	Bottom       float64
+	Width        float64
+	FillValue    float64
+	HasFillValue bool
 }
 
 // Flow is a filled quadrilateral joining one directory between adjacent columns.
@@ -41,6 +42,7 @@ type Band struct {
 type Flow struct {
 	Path                string
 	FillValue           float64
+	HasFillValue        bool
 	FromX, ToX          float64
 	FromTop, FromBottom float64
 	ToTop, ToBottom     float64
@@ -72,7 +74,8 @@ func LayoutData(data Data, width, height int) Layout {
 
 		bands := layoutBands(column.Values, top, bottom-top, scale, available, gap)
 		for bandIndex := range bands {
-			bands[bandIndex].FillValue = data.FillValues[bands[bandIndex].Path]
+			band := &bands[bandIndex]
+			band.FillValue, band.HasFillValue = fillValueFor(data, column.Reference, band.Path)
 		}
 
 		layout.Columns[index] = ColumnLayout{
@@ -86,12 +89,43 @@ func LayoutData(data Data, width, height int) Layout {
 
 	for _, transition := range data.Transitions {
 		if flow, ok := transitionFlow(transition, bandsByReference, xByReference); ok {
-			flow.FillValue = data.FillValues[flow.Path]
+			flow.FillValue, flow.HasFillValue = fillValueFor(data, transition.ToReference, flow.Path)
 			layout.Flows = append(layout.Flows, flow)
 		}
 	}
 
+	applyInitialBandFillValues(&layout, data)
+
 	return layout
+}
+
+func applyInitialBandFillValues(layout *Layout, data Data) {
+	if len(layout.Columns) < 2 || len(data.Columns) < 2 {
+		return
+	}
+
+	for bandIndex := range layout.Columns[0].Bands {
+		band := &layout.Columns[0].Bands[bandIndex]
+		if band.HasFillValue {
+			continue
+		}
+
+		if fillValue, ok := fillValueFor(data, data.Columns[1].Reference, band.Path); ok {
+			band.FillValue = fillValue
+		}
+	}
+}
+
+func fillValueFor(data Data, reference, directoryPath string) (float64, bool) {
+	if data.FillValuesByReference != nil {
+		value, ok := data.FillValuesByReference[reference][directoryPath]
+
+		return value, ok
+	}
+
+	value, ok := data.FillValues[directoryPath]
+
+	return value, ok
 }
 
 func columnsWithZeroPlaceholders(columns []Column) []Column {

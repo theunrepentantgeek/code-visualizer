@@ -35,6 +35,9 @@ alluvial:
 CLI `--reference` values replace the configured `references` list while
 preserving their order. An empty reference selects the repository's `HEAD`
 commit. Repeat `--expand` to show only a selected directory's direct children.
+For an alluvial `fill.metric`, `.delta` compares the final reference with the
+first, while `.stepdelta` compares each later reference with its predecessor;
+the first `.stepdelta` value is unavailable and displays as `-`.
 `--include` and `--exclude` remain normal file filters: they bound which
 directories can be represented, do not imply hierarchy expansion, and do not
 create an `Other` aggregate.

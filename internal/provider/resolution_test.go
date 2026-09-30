@@ -69,6 +69,33 @@ func TestResolveExpression_MetricWithAggregation(t *testing.T) {
 	g.Expect(resolved.ResultKind).To(Equal(metric.Quantity))
 }
 
+func TestResolveExpression_TemporalMetricUsesUnderlyingResultName(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	reg := newBaseRegistry()
+	reg.register(BaseMetricDescriptor{
+		Name:         "file-size",
+		Kind:         metric.Quantity,
+		Level:        metric.LevelFile,
+		Aggregations: []metric.AggregationName{metric.AggSum},
+	})
+
+	resolved, err := resolveExpressionWith(reg, metric.MetricExpression{
+		Base: "file-size", Aggregation: metric.AggSum, Temporal: metric.TemporalDelta,
+	}, metric.LevelDirectory)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.ResultName).To(Equal(metric.Name("file-size.sum")))
+}
+
+func TestResolveForValidation_RejectsTemporalMetric(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	_, err := ResolveForValidation("file-size.delta")
+	g.Expect(err).To(MatchError(ContainSubstring("ordered snapshot visualizations")))
+}
+
 func TestResolveExpression_MeanChangesKindToMeasure(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

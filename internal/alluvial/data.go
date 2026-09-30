@@ -13,9 +13,37 @@ import (
 
 // Data is the deterministic, renderer-independent alluvial input model.
 type Data struct {
-	Columns     []Column
-	Transitions []Transition
-	FillValues  map[string]float64
+	Columns               []Column
+	Transitions           []Transition
+	FillValues            map[string]float64
+	FillValuesByReference map[string]map[string]float64
+}
+
+// FillValuesForInk returns every displayed numeric fill value, including
+// values for the same path at different destination snapshots.
+func (d Data) FillValuesForInk() []float64 {
+	if d.FillValuesByReference == nil {
+		values := make([]float64, 0, len(d.FillValues))
+
+		for _, value := range d.FillValues {
+			values = append(values, value)
+		}
+
+		return values
+	}
+
+	values := make([]float64, 0)
+
+	for _, column := range d.Columns {
+		for _, value := range column.Values {
+			fillValue, ok := d.FillValuesByReference[column.Reference][value.Path]
+			if ok {
+				values = append(values, fillValue)
+			}
+		}
+	}
+
+	return values
 }
 
 // Column contains metric widths for a single reference snapshot.
@@ -39,13 +67,6 @@ type Transition struct {
 	FromWidth     float64
 	ToWidth       float64
 }
-
-type fillValueMode int
-
-const (
-	fillFromLast fillValueMode = iota
-	fillFromDelta
-)
 
 // BuildData creates ordered snapshot columns and deterministic transitions.
 // Widths always come from the reference snapshot itself, never from a delta.
@@ -77,12 +98,9 @@ func BuildData(snapshots []Snapshot, options Options) (Data, error) {
 
 	data.Transitions = buildTransitions(data.Columns)
 
-	mode := fillFromLast
-	if options.FillDelta {
-		mode = fillFromDelta
-	}
-
-	data.FillValues = buildFillValues(data.Columns, fillSnapshots, mode)
+	data.FillValues, data.FillValuesByReference = buildFillValues(
+		data.Columns, fillSnapshots, options.FillTemporal,
+	)
 
 	return data, nil
 }
@@ -164,23 +182,71 @@ func selectedMetricValues(root *model.Directory, expansions []string, metricName
 func buildFillValues(
 	columns []Column,
 	snapshots []map[string]float64,
-	mode fillValueMode,
-) map[string]float64 {
+	temporal metric.TemporalName,
+) (map[string]float64, map[string]map[string]float64) {
 	values := make(map[string]float64)
+
 	if len(snapshots) == 0 {
-		return values
+		return values, nil
+	}
+
+	last := snapshots[len(snapshots)-1]
+
+	if temporal == metric.TemporalStepDelta {
+		return buildStepDeltaFillValues(columns, snapshots)
 	}
 
 	for _, column := range columns {
 		for _, value := range column.Values {
-			values[value.Path] = snapshots[len(snapshots)-1][value.Path]
-			if mode == fillFromDelta {
-				values[value.Path] -= snapshots[0][value.Path]
-			}
+			fillValue := temporalFillValue(temporal, last, snapshots, value.Path)
+
+			values[value.Path] = fillValue
 		}
 	}
 
-	return values
+	return values, nil
+}
+
+func buildStepDeltaFillValues(
+	columns []Column,
+	snapshots []map[string]float64,
+) (map[string]float64, map[string]map[string]float64) {
+	values := make(map[string]float64)
+	byReference := make(map[string]map[string]float64, len(columns))
+
+	for index, column := range columns {
+		byPath := make(map[string]float64)
+
+		if index == 0 {
+			byReference[column.Reference] = byPath
+
+			continue
+		}
+
+		for _, value := range column.Values {
+			fillValue := snapshots[index][value.Path] - snapshots[index-1][value.Path]
+			values[value.Path] = fillValue
+			byPath[value.Path] = fillValue
+		}
+
+		byReference[column.Reference] = byPath
+	}
+
+	return values, byReference
+}
+
+func temporalFillValue(
+	temporal metric.TemporalName,
+	last map[string]float64,
+	snapshots []map[string]float64,
+	directoryPath string,
+) float64 {
+	switch temporal {
+	case metric.TemporalDelta:
+		return last[directoryPath] - snapshots[0][directoryPath]
+	default:
+		return last[directoryPath]
+	}
 }
 
 func buildTransitions(columns []Column) []Transition {
