@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"context"
 	"io/fs"
 	"log/slog"
 	"path"
@@ -23,21 +24,29 @@ var (
 
 // loadFileMetrics populates file-level Go metrics (imports, comment-ratio)
 // and filtered import variants (stdlib.imports, external.imports, internal.imports).
-func loadFileMetrics(root *model.Directory) error {
+func loadFileMetrics(ctx context.Context, root *model.Directory) error {
 	var files []*model.File
 
 	model.WalkFiles(root, func(f *model.File) {
 		files = append(files, f)
 	})
 
-	g := new(errgroup.Group)
+	g, groupCtx := errgroup.WithContext(ctx)
 	g.SetLimit(runtime.NumCPU())
 
 	for _, f := range files {
+		if err := groupCtx.Err(); err != nil {
+			return eris.Wrap(err, "Go file loading cancelled")
+		}
+
 		g.Go(func() error {
+			if err := groupCtx.Err(); err != nil {
+				return eris.Wrap(err, "Go file loading cancelled")
+			}
+
 			populateFileMetrics(f)
 
-			return nil
+			return groupCtx.Err()
 		})
 	}
 

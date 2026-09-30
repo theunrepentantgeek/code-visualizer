@@ -8,6 +8,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
@@ -76,7 +77,7 @@ func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Bubbletree)
 }
 
-//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
+//nolint:dupl,funlen // Explicit progress boundaries keep each pipeline stage visible.
 func (c *BubbletreeCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -100,16 +101,67 @@ func (c *BubbletreeCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
 	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
 
-	bubbletree.AcquireData(s)
-	bubbletree.RenderPipeline(s)
+	needsGit := stages.NeedsGitMetrics(common)
 
-	return eris.Wrap(s.Err(), "bubble-tree pipeline failed")
+	boundaries, err := newProgressBoundaries(flags, s, "Bubble tree", ordinaryStageCount(needsGit))
+	if err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	}); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	var gitMetricTotal int64
+
+	if err := runBoundary(boundaries, "Scanning filesystem", progress.StageSummary, progress.WorkNone, func() {
+		bubbletree.ScanData(s)
+
+		if needsGit {
+			gitMetricTotal = determineGitMetricTotal(s)
+		}
+	}); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := runGitMetricsBoundary(boundaries, needsGit, gitMetricTotal, func() {
+		bubbletree.LoadGitMetrics(s)
+	}); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := runDeterminateBoundary(
+		boundaries,
+		"Loading filesystem metrics",
+		progress.WorkObservations,
+		stages.FilesystemMetricTotal(common),
+		func() {
+			bubbletree.LoadFilesystemMetrics(s)
+		},
+	); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		bubbletree.RenderVisualization(s)
+	}); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		bubbletree.WriteOutput(s)
+	}); err != nil {
+		return eris.Wrap(err, "bubble-tree pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "bubble-tree pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

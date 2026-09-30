@@ -1,6 +1,8 @@
 package golang
 
 import (
+	"context"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
@@ -18,8 +20,8 @@ func Register() {
 			externalImportsMetric,
 			internalImportsMetric,
 		},
-		Load: func(root *model.Directory, _ []metric.Name) error {
-			return loadFileMetrics(root)
+		Load: func(ctx context.Context, root *model.Directory, _ []metric.Name) error {
+			return loadFileMetrics(ctx, root)
 		},
 	})
 }

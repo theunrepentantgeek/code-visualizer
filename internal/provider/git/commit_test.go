@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -80,6 +81,73 @@ func TestBulkCommitHistory_InvokesProgressCallback(t *testing.T) {
 	g.Expect(count).To(BeNumerically(">=", 1))
 }
 
+func TestBulkCommitHistoryAndPrewarm_CancellationStopsIteration(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := setupTestGitRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	processed := 0
+
+	_, err := BulkCommitHistoryAndPrewarmInHistoryRange(
+		ctx,
+		dir,
+		map[string]bool{"old.go": true, "shared.go": true, "new.go": true},
+		[]metric.Name{CommitCount},
+		HistoryRange{},
+		func() {
+			processed++
+
+			cancel()
+		},
+	)
+
+	g.Expect(err).To(MatchError(context.Canceled))
+	g.Expect(processed).To(Equal(1))
+
+	total, err := CommitTotal(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(total).To(Equal(int64(3)))
+}
+
+func TestCommitTotalInHistoryRange_CancelledContextWinsBeforeRepositoryOpen(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := CommitTotalInHistoryRange(ctx, "missing", HistoryRange{})
+
+	g.Expect(err).To(MatchError(context.Canceled))
+}
+
+func TestBulkAuthorHistoryInHistoryRange_CancellationStopsIterationAndReleasesRepository(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := setupTestGitRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	processed := 0
+
+	_, err := BulkAuthorHistoryInHistoryRange(
+		ctx,
+		dir,
+		map[string]bool{"old.go": true, "shared.go": true, "new.go": true},
+		false,
+		HistoryRange{},
+		func() {
+			processed++
+
+			cancel()
+		},
+	)
+
+	g.Expect(err).To(MatchError(context.Canceled))
+	g.Expect(processed).To(Equal(1))
+
+	total, err := CommitTotal(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(total).To(Equal(int64(3)))
+}
+
 //nolint:paralleltest // resetService mutates the global service registry used by cache assertions.
 func TestCommitChangeStatsAreCachedByTrackedPathSet(t *testing.T) {
 	g := NewGomegaWithT(t)
@@ -134,7 +202,7 @@ func TestCommitTotalInHistoryRange_ReturnsOnlyCommitsInWindow(t *testing.T) {
 		Until: "date:2024-01-02T00:00:00Z",
 	}
 
-	total, err := CommitTotalInHistoryRange(dir, historyRange)
+	total, err := CommitTotalInHistoryRange(context.Background(), dir, historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(total).To(Equal(int64(1)))
 }
@@ -146,7 +214,7 @@ func TestHistoryRange_TotalHistoryAndPrewarmUseSameSelection(t *testing.T) {
 	historyRange := HistoryRange{From: "v1.0", Until: "v2.0"}
 	tracked := map[string]bool{"main.go": true, "feature.go": true}
 
-	total, err := CommitTotalInHistoryRange(fixture.dir, historyRange)
+	total, err := CommitTotalInHistoryRange(context.Background(), fixture.dir, historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(total).To(Equal(int64(4)))
 
@@ -154,6 +222,7 @@ func TestHistoryRange_TotalHistoryAndPrewarmUseSameSelection(t *testing.T) {
 
 	processed := 0
 	commits, err := BulkCommitHistoryAndPrewarmInHistoryRange(
+		context.Background(),
 		fixture.dir,
 		tracked,
 		[]metric.Name{CommitCount},
@@ -204,6 +273,7 @@ func TestHistoryRange_PrewarmReplacesStalePaths(t *testing.T) {
 	s.commitCache["stale.go"] = &commitData{count: 99}
 
 	_, err = BulkCommitHistoryAndPrewarmInHistoryRange(
+		context.Background(),
 		fixture.dir,
 		map[string]bool{"main.go": true},
 		[]metric.Name{CommitCount},
@@ -231,7 +301,7 @@ func TestCommitIterator_SupportsRangeIteration(t *testing.T) {
 		Until: "date:2024-01-02T00:00:00Z",
 	}
 
-	commits, err := s.commitIterator(historyRange)
+	commits, err := s.commitIterator(context.Background(), historyRange)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var count int
@@ -396,7 +466,7 @@ func TestLoadGitMetrics_ReusesCombinedPrewarmCache(t *testing.T) {
 	}
 
 	root := buildTree(dir, "shared.go")
-	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
+	g.Expect(loadGitMetrics(context.Background(), root, []metric.Name{CommitCount}, nil)).To(Succeed())
 	g.Expect(s.cachedCommitData("shared.go")).To(BeIdenticalTo(cached))
 
 	count, ok := root.Files[0].Quantity(CommitCount)
@@ -437,7 +507,7 @@ func TestLoadGitMetrics_ReusesCombinedPrewarmCacheForSubdirectoryTarget(t *testi
 	}
 
 	root := buildTree(subdir, "code.go")
-	g.Expect(loadGitMetrics(root, []metric.Name{CommitCount}, nil)).To(Succeed())
+	g.Expect(loadGitMetrics(context.Background(), root, []metric.Name{CommitCount}, nil)).To(Succeed())
 	g.Expect(s.cachedCommitData(trackedPath)).To(BeIdenticalTo(cached))
 
 	count, ok := root.Files[0].Quantity(CommitCount)

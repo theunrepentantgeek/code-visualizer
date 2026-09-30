@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -118,7 +119,7 @@ func TestWalkerScanDirReportsProgressPerDirectory(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	progress := &recordingProgress{}
-	walker := newWalker(root, nil, progress, true)
+	walker := newWalker(context.Background(), root, nil, progress, true)
 
 	_, err = walker.scanDir(root)
 	g.Expect(err).NotTo(HaveOccurred())

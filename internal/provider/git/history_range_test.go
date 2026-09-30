@@ -1,6 +1,8 @@
 package git
 
 import (
+	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +11,25 @@ import (
 
 	. "github.com/onsi/gomega"
 )
+
+func TestResolveHistoryRange_StopsForCancelledContext(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	fixture := setupTagRangeRepo(t)
+	service, err := getService(fixture.dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	if service == nil {
+		panic("getService returned nil without an error")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err = service.resolveHistoryRange(ctx, HistoryRange{From: "tag:v1.0"})
+
+	g.Expect(errors.Is(err, context.Canceled)).To(BeTrue())
+}
 
 type tagRangeFixture struct {
 	dir      string
@@ -107,7 +128,7 @@ func TestHistoryRange_FromRevisionIsExclusiveAndUntilRevisionIsInclusive(t *test
 		t.Fatal("expected git repository service")
 	}
 
-	commits, err := s.commitIterator(HistoryRange{From: "v1.0", Until: "v2.0"})
+	commits, err := s.commitIterator(context.Background(), HistoryRange{From: "v1.0", Until: "v2.0"})
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var hashes []string
@@ -135,7 +156,7 @@ func TestHistoryRange_UntilRevisionCanBeOutsideHeadAncestry(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	commits, err := s.commitIterator(HistoryRange{Until: "detached"})
+	commits, err := s.commitIterator(context.Background(), HistoryRange{Until: "detached"})
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var hashes []string
@@ -162,7 +183,7 @@ func TestHistoryRange_RejectsFromRevisionOutsideTipAncestry(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	_, err = s.commitIterator(HistoryRange{From: "detached", Until: "v2.0"})
+	_, err = s.commitIterator(context.Background(), HistoryRange{From: "detached", Until: "v2.0"})
 	g.Expect(err).To(MatchError(ContainSubstring(`history reference "detached" is not an ancestor of "v2.0"`)))
 }
 
@@ -179,10 +200,10 @@ func TestHistoryRange_ReportsInvalidTags(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	_, err = s.commitIterator(HistoryRange{Until: "tag:missing"})
+	_, err = s.commitIterator(context.Background(), HistoryRange{Until: "tag:missing"})
 	g.Expect(err).To(MatchError(ContainSubstring(`tag "missing" not found`)))
 
-	_, err = s.commitIterator(HistoryRange{Until: "tag:blob-tag"})
+	_, err = s.commitIterator(context.Background(), HistoryRange{Until: "tag:blob-tag"})
 	g.Expect(err).To(MatchError(ContainSubstring(`tag "blob-tag" does not reference a commit`)))
 }
 
@@ -198,7 +219,7 @@ func TestHistoryRange_MixesRevisionAndDateBounds(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	commits, err := s.commitIterator(HistoryRange{
+	commits, err := s.commitIterator(context.Background(), HistoryRange{
 		From:  "tag:v1.0",
 		Until: "date:2025-03-01T23:59:59Z",
 	})
@@ -228,6 +249,6 @@ func TestHistoryRange_RejectsReversedDateRange(t *testing.T) {
 		t.Fatal("expected git repository service")
 	}
 
-	_, err = s.commitIterator(HistoryRange{From: "2025-03-01", Until: "2025-01-01"})
+	_, err = s.commitIterator(context.Background(), HistoryRange{From: "2025-03-01", Until: "2025-01-01"})
 	g.Expect(err).To(MatchError(ContainSubstring("--from must be before or equal to --until")))
 }

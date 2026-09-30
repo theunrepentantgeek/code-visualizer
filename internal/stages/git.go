@@ -24,7 +24,7 @@ func CheckGitRequirementHelper(targetPath string, requested []metric.Name) error
 // CheckGitRepoHelper verifies the target path is inside a git repository.
 // Used by visualizations (such as spiral) that always require git.
 func CheckGitRepoHelper(targetPath string) error {
-	return verifyGitRepo(targetPath, &GitRequiredError{Metric: "spiral"})
+	return verifyGitRepo(targetPath, &GitRequiredError{Metric: spiralVisualization})
 }
 
 func checkGitRepoForFeature(targetPath, feature string) error {

@@ -6,6 +6,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
 
@@ -17,6 +18,15 @@ type State struct {
 	Data        Data
 	Layout      Layout
 	Legend      *legend.Config
+}
+
+// AcquisitionPlan owns the pipeline state needed while loading snapshots.
+type AcquisitionPlan struct {
+	snapshotStates []*stages.CommonState
+}
+
+func NewAcquisitionPlan() *AcquisitionPlan {
+	return &AcquisitionPlan{}
 }
 
 // BandFill is the resolved colour encoding used by all alluvial stages.

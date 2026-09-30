@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/filter"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/treemap"
 )
@@ -73,7 +74,7 @@ func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
 	return c.validateConfig(flags.Config.Treemap)
 }
 
-//nolint:dupl // each viz Run shares the same pipeline-construction boilerplate by design
+//nolint:dupl,funlen // Explicit progress boundaries keep each pipeline stage visible.
 func (c *TreemapCmd) Run(flags *Flags) error {
 	if err := c.mergeConfigAndValidate(flags); err != nil {
 		return err
@@ -97,16 +98,67 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
 	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
 	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
 
-	treemap.AcquireData(s)
-	treemap.RenderPipeline(s)
+	needsGit := stages.NeedsGitMetrics(common)
 
-	return eris.Wrap(s.Err(), "tree-map pipeline failed")
+	boundaries, err := newProgressBoundaries(flags, s, "Tree map", ordinaryStageCount(needsGit))
+	if err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+		pipeline.ApplyFuncX(s, stages.ValidatePaths)
+		pipeline.ApplyFuncX(s, stages.ExportConfig)
+		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+	}); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	var gitMetricTotal int64
+
+	if err := runBoundary(boundaries, "Scanning filesystem", progress.StageSummary, progress.WorkNone, func() {
+		treemap.ScanData(s)
+
+		if needsGit {
+			gitMetricTotal = determineGitMetricTotal(s)
+		}
+	}); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := runGitMetricsBoundary(boundaries, needsGit, gitMetricTotal, func() {
+		treemap.LoadGitMetrics(s)
+	}); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := runDeterminateBoundary(
+		boundaries,
+		"Loading filesystem metrics",
+		progress.WorkObservations,
+		stages.FilesystemMetricTotal(common),
+		func() {
+			treemap.LoadFilesystemMetrics(s)
+		},
+	); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseRendering, progress.StageSummary, progress.WorkNone, func() {
+		treemap.RenderVisualization(s)
+	}); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	if err := runBoundary(boundaries, phaseWriting, progress.StageSummary, progress.WorkNone, func() {
+		treemap.WriteOutput(s)
+	}); err != nil {
+		return eris.Wrap(err, "tree-map pipeline failed")
+	}
+
+	return eris.Wrap(boundaries.Finish(), "tree-map pipeline failed")
 }
 
 // applyOverrides writes non-zero CLI flag values on top of the config layer.

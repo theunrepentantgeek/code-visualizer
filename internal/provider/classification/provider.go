@@ -8,6 +8,7 @@
 package classification
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
@@ -45,16 +46,30 @@ func Register(cfg config.SelectionMetric) {
 
 	provider.RegisterLoader(provider.BaseMetricLoader{
 		Metrics: []metric.Name{name},
-		Load: func(root *model.Directory, _ []metric.Name) error {
-			return l.Load(root)
+		Load: func(ctx context.Context, root *model.Directory, _ []metric.Name) error {
+			return l.Load(ctx, root)
 		},
 	})
 }
 
 // Load walks every file in root and sets the classification metric for files
 // that match at least one rule.
-func (l *loader) Load(root *model.Directory) error {
+//
+//nolint:revive,nolintlint // The traversal keeps classification precedence and cancellation local.
+func (l *loader) Load(ctx context.Context, root *model.Directory) error {
+	var cancelled error
+
 	model.WalkFiles(root, func(f *model.File) {
+		if cancelled != nil {
+			return
+		}
+
+		if err := ctx.Err(); err != nil {
+			cancelled = err
+
+			return
+		}
+
 		relPath, err := filepath.Rel(root.Path, f.Path)
 		if err != nil {
 			relPath = f.Path
@@ -79,5 +94,5 @@ func (l *loader) Load(root *model.Directory) error {
 		}
 	})
 
-	return nil
+	return cancelled
 }

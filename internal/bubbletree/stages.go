@@ -34,8 +34,6 @@ func resolveLabels(cfg *config.Bubbletree) LabelMode {
 
 // BuildInksStage builds the bubble inks and emits the "Rendering image" log line.
 func BuildInksStage(c *stages.CommonState, b *State) error {
-	slog.Info("Rendering image", "output", c.Output, "width", c.Width, "height", c.Height)
-
 	b.Inks = BuildInks(c.Root, c.Requested, b.Fill, b.Border)
 	if !b.Flat {
 		b.Inks.Fill = inks.NewRadialGradientInk(b.Inks.Fill)

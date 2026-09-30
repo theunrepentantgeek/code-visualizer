@@ -1,8 +1,8 @@
 package stages
 
 import (
-	"bytes"
-	"log/slog"
+	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +14,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
 )
 
@@ -112,58 +113,127 @@ func buildHistoryState(dir string) *CommonState {
 	}
 }
 
-//nolint:paralleltest // mutates global slog default logger
-func TestLoadGitHistory_ReportsProgressAndCompletionInDefaultMode(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	var buf bytes.Buffer
-
-	oldDefault := slog.Default()
-
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
-	defer slog.SetDefault(oldDefault)
-
-	state := buildHistoryState(setupHistoryRepo(t))
-
-	g.Expect(LoadGitHistory(state)).To(Succeed())
-	g.Expect(buf.String()).To(ContainSubstring(`msg="Loading git history"`))
-	g.Expect(buf.String()).To(ContainSubstring(`msg="History loaded" commits=3`))
+type cancelingProgressSink struct {
+	*recordingSink
+	cancelAt int64
+	cancel   context.CancelFunc
 }
 
-//nolint:paralleltest // mutates global slog default logger
-func TestLoadGitHistory_QuietModeOmitsCompletion(t *testing.T) {
-	g := NewGomegaWithT(t)
+func (s *cancelingProgressSink) SetProgress(current int64) error {
+	if err := s.recordingSink.SetProgress(current); err != nil {
+		return err
+	}
 
-	var buf bytes.Buffer
+	if current == s.cancelAt {
+		s.cancel()
+	}
 
-	oldDefault := slog.Default()
-
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
-	defer slog.SetDefault(oldDefault)
-
-	state := buildHistoryState(setupHistoryRepo(t))
-	state.Flags.Quiet = true
-
-	g.Expect(LoadGitHistory(state)).To(Succeed())
-	g.Expect(buf.String()).NotTo(ContainSubstring("History loaded"))
+	return nil
 }
 
-//nolint:paralleltest // mutates global slog default logger
+func TestLoadGitHistory_ReportsCommitProgress(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	sink := newTestSink(progress.WorkCommits)
+
+	g.Expect(LoadGitHistory(state, context.Background(), sink)).To(Succeed())
+	g.Expect(sink.totals).To(Equal([]int64{3}))
+	g.Expect(sink.current).To(Equal([]int64{1, 2, 3}))
+}
+
+func TestLoadGitMetrics_ReportsAuthorshipProgress(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CodeOwnerMetric}
+	sink := newTestSink(progress.WorkCommits)
+
+	g.Expect(LoadGitMetrics(state, context.Background(), sink)).To(Succeed())
+	g.Expect(sink.totals).To(Equal([]int64{3}))
+	g.Expect(sink.current).To(Equal([]int64{1, 2, 3}))
+}
+
+func TestLoadGitMetrics_CombinesHistoryAndAuthorshipProgress(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
+	sink := newTestSink(progress.WorkCommits)
+
+	g.Expect(LoadGitMetrics(state, context.Background(), sink)).To(Succeed())
+	g.Expect(sink.totals).To(Equal([]int64{6}))
+	g.Expect(sink.current).To(Equal([]int64{1, 2, 3, 4, 5, 6}))
+}
+
+func TestLoadGitMetrics_UsesNonzeroTotalBeforeEmptyHistoryError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.Flags.HistoryRange = git.HistoryRange{From: "HEAD"}
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
+	sink := newTestSink(progress.WorkCommits)
+
+	err := LoadGitMetrics(state, context.Background(), sink)
+
+	g.Expect(err).To(MatchError(ContainSubstring("no commit history found")))
+	g.Expect(sink.totals).To(Equal([]int64{1}))
+	g.Expect(sink.current).To(BeEmpty())
+}
+
+func TestLoadGitMetrics_PropagatesCancellationDuringHistoryPass(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
+	ctx, cancel := context.WithCancel(context.Background())
+	sink := &cancelingProgressSink{
+		recordingSink: newTestSink(progress.WorkCommits),
+		cancelAt:      1,
+		cancel:        cancel,
+	}
+
+	err := LoadGitMetrics(state, ctx, sink)
+
+	g.Expect(errors.Is(err, context.Canceled)).To(BeTrue())
+}
+
+func TestLoadGitMetrics_PropagatesCancellationDuringAuthorshipPass(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	state := buildHistoryState(setupHistoryRepo(t))
+	state.RepoRoot = state.TargetPath
+	state.RootConfig = config.New()
+	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
+	ctx, cancel := context.WithCancel(context.Background())
+	sink := &cancelingProgressSink{
+		recordingSink: newTestSink(progress.WorkCommits),
+		cancelAt:      4,
+		cancel:        cancel,
+	}
+
+	err := LoadGitMetrics(state, ctx, sink)
+
+	g.Expect(errors.Is(err, context.Canceled)).To(BeTrue())
+}
+
 func TestLoadGitHistory_ReportsTotalRepoCommits(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
-
-	var buf bytes.Buffer
-
-	oldDefault := slog.Default()
-
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{})))
-	defer slog.SetDefault(oldDefault)
-
 	state := buildHistoryState(setupHistoryRepoWithIgnoredCommit(t))
+	sink := newTestSink(progress.WorkCommits)
 
-	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), sink)).To(Succeed())
 	g.Expect(state.GitHistory).To(HaveLen(3))
-	g.Expect(buf.String()).To(ContainSubstring(`msg="History loaded" commits=4`))
+	g.Expect(sink.totals).To(Equal([]int64{4}))
+	g.Expect(sink.current).To(HaveLen(4))
 }
 
 func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
@@ -172,7 +242,7 @@ func TestLoadGitHistory_PopulatesGitHistory(t *testing.T) {
 
 	state := buildHistoryState(setupHistoryRepo(t))
 
-	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(state.GitHistory).NotTo(BeEmpty())
 
 	for _, c := range state.GitHistory {
@@ -189,8 +259,8 @@ func TestLoadGitHistory_PrewarmsRequestedGitMetricsForRunProviders(t *testing.T)
 	state := buildHistoryState(setupHistoryRepo(t))
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
 
-	g.Expect(LoadGitHistory(state)).To(Succeed())
-	g.Expect(RunProviders(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 
 	var bFile *model.File
 
@@ -220,7 +290,7 @@ func TestPrewarmGitMetricsLoadsHistoryForRequestedFileGitMetric(t *testing.T) {
 	state := buildHistoryState(setupHistoryRepo(t))
 	state.Requested.BaseMetrics = []metric.Name{git.FileFreshness}
 
-	g.Expect(PrewarmGitMetrics(state)).To(Succeed())
+	g.Expect(PrewarmGitMetrics(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(state.GitHistory).NotTo(BeEmpty())
 }
 
@@ -232,8 +302,8 @@ func TestPrewarmedGitMetricsUseSnapshotClock(t *testing.T) {
 	state.ReferenceNow = time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
 	state.Requested.BaseMetrics = []metric.Name{git.FileAge}
 
-	g.Expect(PrewarmGitMetrics(state)).To(Succeed())
-	g.Expect(RunProviders(state)).To(Succeed())
+	g.Expect(PrewarmGitMetrics(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 
 	var currentFile *model.File
 
@@ -259,7 +329,7 @@ func TestPrewarmGitMetricsSkipsWhenNoFileGitMetricIsRequested(t *testing.T) {
 	state := buildHistoryState("/path/that/does/not/exist")
 	state.Requested.BaseMetrics = []metric.Name{"file-lines"}
 
-	g.Expect(PrewarmGitMetrics(state)).To(Succeed())
+	g.Expect(PrewarmGitMetrics(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(state.GitHistory).To(BeEmpty())
 }
 
@@ -271,9 +341,9 @@ func TestLoadGitHistory_PropagatesRevisionRangeToHistoryAndMetrics(t *testing.T)
 	state.Flags.HistoryRange = git.HistoryRange{From: "v1.0"}
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
 
-	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(state.GitHistory).To(HaveLen(2))
-	g.Expect(RunProviders(state)).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 
 	var bFile *model.File
 
@@ -302,7 +372,7 @@ func TestRunProviders_AppliesRevisionRangeWithoutTimelineStage(t *testing.T) {
 	state.Flags.HistoryRange = git.HistoryRange{From: "v1.0"}
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount}
 
-	g.Expect(RunProviders(state)).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 
 	var bFile *model.File
 
@@ -332,7 +402,7 @@ func TestRunProviders_AppliesRevisionRangeToAuthorshipMetrics(t *testing.T) {
 	state.Flags.HistoryRange = git.HistoryRange{From: "v1.0"}
 	state.Requested.BaseMetrics = []metric.Name{git.CodeOwnerMetric}
 
-	g.Expect(RunProviders(state)).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 
 	var bFile *model.File
 
@@ -362,7 +432,7 @@ func TestRunProviders_UsesSnapshotClockForAuthorshipWindows(t *testing.T) {
 	state.ReferenceNow = time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
 	state.Requested.BaseMetrics = []metric.Name{git.CurrentMaintainerMetric}
 
-	g.Expect(RunProviders(state)).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 
 	for _, file := range state.Root.Files {
 		maintainer, ok := file.Classification(git.CurrentMaintainerMetric)
@@ -376,7 +446,7 @@ func TestGroupGitHistoryByFile_PointsBackIntoGitHistory(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(GroupGitHistoryByFile(state)).To(Succeed())
 
 	g.Expect(state.FileHistory).NotTo(BeEmpty())
@@ -394,7 +464,7 @@ func TestGroupGitHistoryByFile_BFileTouchedByBothAuthors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(GroupGitHistoryByFile(state)).To(Succeed())
 
 	var bFile *model.File
@@ -424,7 +494,7 @@ func TestExtractFileHistory_ComputesMinMax(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(GroupGitHistoryByFile(state)).To(Succeed())
 	g.Expect(ExtractFileHistory(state)).To(Succeed())
 
@@ -453,7 +523,7 @@ func TestCommitTimeRange_FoldsGlobalMinMax(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	g.Expect(LoadGitHistory(state)).To(Succeed())
+	g.Expect(LoadGitHistory(state, context.Background(), newTestSink(progress.WorkCommits))).To(Succeed())
 	g.Expect(GroupGitHistoryByFile(state)).To(Succeed())
 	g.Expect(ExtractFileHistory(state)).To(Succeed())
 

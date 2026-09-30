@@ -2,6 +2,7 @@ package git
 
 import (
 	"cmp"
+	"context"
 	"log/slog"
 	"slices"
 	"time"
@@ -19,31 +20,45 @@ type authorshipLoader struct {
 	params       AuthorshipParams
 	historyRange HistoryRange
 	referenceNow time.Time
+	onCommit     func()
 }
 
 // LoadAuthorshipMetrics applies authorship metrics using params. It is used by
 // the pipeline so configuration can be passed without mutable global state.
 func LoadAuthorshipMetrics(root *model.Directory, params AuthorshipParams) error {
-	return (&authorshipLoader{params: params}).Load(root, authorshipMetricNames)
+	return (&authorshipLoader{params: params}).Load(context.Background(), root, authorshipMetricNames)
 }
 
 // LoadAuthorshipMetricsInHistoryRange applies authorship metrics from historyRange.
 func LoadAuthorshipMetricsInHistoryRange(
+	ctx context.Context,
 	root *model.Directory,
 	params AuthorshipParams,
 	historyRange HistoryRange,
 	referenceNow time.Time,
+	onCommit func(),
 ) error {
 	return (&authorshipLoader{
 		params:       params,
 		historyRange: historyRange,
 		referenceNow: referenceNow,
-	}).Load(root, authorshipMetricNames)
+		onCommit:     onCommit,
+	}).Load(ctx, root, authorshipMetricNames)
 }
 
 // Load computes and stores all nine authorship metrics on every file and directory node.
 // The requested slice is ignored because the metrics share a single source history walk.
-func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
+//
+//nolint:cyclop,funlen,revive,nolintlint // Authorship calculation deliberately performs one shared history walk.
+func (al *authorshipLoader) Load(
+	ctx context.Context,
+	root *model.Directory,
+	_ []metric.Name,
+) error {
+	if err := ctx.Err(); err != nil {
+		return eris.Wrap(err, "authorship loading cancelled")
+	}
+
 	s, err := getService(repositoryPath(root))
 	if err != nil {
 		return eris.Wrap(err, "authorship loader requires a git repository")
@@ -53,11 +68,12 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 	pathSet := buildRelPathSet(s, root)
 
 	result, err := BulkAuthorHistoryInHistoryRange(
+		ctx,
 		repoRoot,
 		pathSet,
 		al.params.HonorMailmap,
 		al.historyRange,
-		nil,
+		al.onCommit,
 	)
 	if err != nil {
 		return eris.Wrap(err, "authorship loader failed to walk git history")
@@ -69,6 +85,10 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 
 	// Apply to every file.
 	model.WalkFiles(root, func(f *model.File) {
+		if ctx.Err() != nil {
+			return
+		}
+
 		relPath, relErr := repoRelativePath(repoRoot, f.Path)
 		if relErr != nil {
 			slog.Warn("authorship loader: could not compute relative path",
@@ -85,9 +105,17 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 		applyAuthorshipToNode(records, result, al.params, f)
 	})
 
+	if err := ctx.Err(); err != nil {
+		return eris.Wrap(err, "authorship loading cancelled")
+	}
+
 	// Apply to every directory: recompute from the flat union of subtree source
 	// records (not from child metric values), as mandated by the issue spec.
 	model.WalkDirectories(root, func(d *model.Directory) {
+		if ctx.Err() != nil {
+			return
+		}
+
 		records := collectSubtreeRecords(d, result.ByFile, repoRoot)
 		if len(records) == 0 {
 			return
@@ -95,6 +123,10 @@ func (al *authorshipLoader) Load(root *model.Directory, _ []metric.Name) error {
 
 		applyAuthorshipToNode(records, result, al.params, d)
 	})
+
+	if err := ctx.Err(); err != nil {
+		return eris.Wrap(err, "authorship loading cancelled")
+	}
 
 	// Bucket identity metrics: replace contributors ranked beyond IdentityTopK
 	// in the global weight ranking with the OtherContributor sentinel so that

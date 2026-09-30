@@ -9,6 +9,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 )
@@ -41,11 +43,10 @@ var providerSectionOrder = []providerSection{
 	{Name: "go", Title: goMetricsSection},
 }
 
-//nolint:unparam // nil error required to satisfy the interface for Kong
-func (HelpMetricsCmd) Run(_ *Flags) error {
-	fmt.Print(renderHelpMetrics())
+func (HelpMetricsCmd) Run(flags *Flags) error {
+	_, err := fmt.Fprint(flags.stdoutWriter(), renderHelpMetrics())
 
-	return nil
+	return eris.Wrap(err, "write metric help")
 }
 
 func renderHelpMetrics() string {
