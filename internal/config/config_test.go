@@ -194,7 +194,8 @@ func TestLoad_YAMLAlluvial_ParsesOrderedReferencesAndExpansions(t *testing.T) {
 		"    palette: temperature\n" +
 		"  expand:\n" +
 		"    - cmd\n" +
-		"    - internal/config\n"
+		"    - internal/config\n" +
+		"  constantBands: merge\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
@@ -204,6 +205,22 @@ func TestLoad_YAMLAlluvial_ParsesOrderedReferencesAndExpansions(t *testing.T) {
 	g.Expect(*cfg.Alluvial.Metric).To(Equal("file-size"))
 	g.Expect(*cfg.Alluvial.Fill).To(Equal(MetricSpec{Metric: "file-lines.delta", Palette: "temperature"}))
 	g.Expect(cfg.Alluvial.Expand).To(Equal([]string{"cmd", "internal/config"}))
+	g.Expect(cfg.Alluvial.ConstantBandsMode()).To(Equal(ConstantBandsMerge))
+}
+
+func TestSaveLoad_RoundTripsAlluvialConstantBandsAsJSON(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	original := New()
+	original.Alluvial.OverrideConstantBands("merge")
+
+	g.Expect(original.Save(path)).To(Succeed())
+
+	loaded := New()
+	g.Expect(loaded.Load(path)).To(Succeed())
+	g.Expect(loaded.Alluvial.ConstantBandsMode()).To(Equal(ConstantBandsMerge))
 }
 
 func TestLoad_YAMLLegacyWidth_ParsesIntoImageSize(t *testing.T) {

@@ -24,7 +24,8 @@ type AlluvialCmd struct {
 	Metric     metric.Name       `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"`             //nolint:revive,nolintlint // kong struct tags require long lines
 	Fill       config.MetricSpec `help:"Band colour: metric[,palette]; append .delta (first-to-last) or .stepdelta (adjacent change)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 
-	Expand []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
+	Expand        []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
+	ConstantBands string   `default:"" enum:",hide,mute,merge" help:"How to display bands whose width is unchanged: hide, mute, or merge." name:"constant-bands" optional:""`
 
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
@@ -68,6 +69,15 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 
 	if err := validateAlluvialFill(cfg.Fill, metricName); err != nil {
 		return err
+	}
+
+	switch mode := cfg.ConstantBandsMode(); mode {
+	case "", config.ConstantBandsHide, config.ConstantBandsMute, config.ConstantBandsMerge:
+	default:
+		return eris.Errorf(
+			"invalid constant bands mode %q: must be one of hide, mute, merge",
+			mode,
+		)
 	}
 
 	for _, expansion := range cfg.Expand {
@@ -233,4 +243,5 @@ func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Alluvial.OverrideMetric(string(c.Metric))
 	cfg.Alluvial.OverrideFill(c.Fill)
 	cfg.Alluvial.OverrideExpand(c.Expand)
+	cfg.Alluvial.OverrideConstantBands(c.ConstantBands)
 }

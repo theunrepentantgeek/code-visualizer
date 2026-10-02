@@ -119,6 +119,54 @@ func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {
 	g.Expect(rules[1].Mode).To(Equal(filter.Exclude))
 }
 
+func TestCLI_ParsesAlluvialConstantBandModes(t *testing.T) {
+	t.Parallel()
+
+	for _, mode := range []string{"hide", "mute", "merge"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			cli := CLI{}
+			parser, err := kong.New(&cli, kong.Name("codeviz"), filterMapperOption(), kong.Exit(func(int) {}))
+			g.Expect(err).NotTo(HaveOccurred())
+
+			_, err = parser.Parse([]string{
+				"alluvial", ".", "-o", "out.svg", "--constant-bands", mode,
+			})
+
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cli.Alluvial.ConstantBands).To(Equal(mode))
+		})
+	}
+}
+
+func TestCLI_RejectsUnknownAlluvialConstantBandMode(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cli := CLI{}
+	parser, err := kong.New(&cli, kong.Name("codeviz"), filterMapperOption(), kong.Exit(func(int) {}))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"alluvial", ".", "-o", "out.svg", "--constant-bands", "dim",
+	})
+
+	g.Expect(err).To(MatchError(ContainSubstring(`must be one of "","hide","mute","merge"`)))
+}
+
+func TestCLI_OmitsAlluvialConstantBandModeByDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cli := CLI{}
+	parser, err := kong.New(&cli, kong.Name("codeviz"), filterMapperOption(), kong.Exit(func(int) {}))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{"alluvial", ".", "-o", "out.svg"})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.Alluvial.ConstantBands).To(BeEmpty())
+}
+
 func TestAlluvialCmd_MergeConfig_ReplacesConfiguredReferences(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -138,6 +186,31 @@ func TestAlluvialCmd_MergeConfig_ReplacesConfiguredReferences(t *testing.T) {
 	g.Expect(cfg.Alluvial.References).To(Equal([]string{"tag:v2.0", "date:2026-01-01"}))
 	g.Expect(*cfg.Alluvial.Fill).To(Equal(config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"}))
 	g.Expect(cfg.Alluvial.Expand).To(Equal([]string{"cmd", "internal/config"}))
+}
+
+func TestAlluvialCmd_MergeConfig_OverridesConfiguredConstantBands(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Alluvial.OverrideConstantBands("mute")
+	cmd := &AlluvialCmd{ConstantBands: "merge"}
+
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Alluvial.ConstantBandsMode()).To(Equal(config.ConstantBandsMerge))
+}
+
+func TestAlluvialCmd_MergeConfig_OmittedConstantBandsPreservesConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Alluvial.OverrideConstantBands("mute")
+
+	(&AlluvialCmd{}).applyOverrides(cfg)
+
+	g.Expect(cfg.Alluvial.ConstantBandsMode()).To(Equal(config.ConstantBandsMute))
 }
 
 func TestAlluvialCmd_ValidateConfig(t *testing.T) {
@@ -192,6 +265,14 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 				Expand:     []string{"../outside"},
 			},
 			wantErr: "invalid expansion path",
+		},
+		"rejects unknown constant band mode": {
+			cfg: &config.Alluvial{
+				References:    []string{"tag:v1.0", "tag:v2.0"},
+				Metric:        new("file-size"),
+				ConstantBands: new(config.ConstantBandsMode("dim")),
+			},
+			wantErr: `invalid constant bands mode "dim": must be one of hide, mute, merge`,
 		},
 		"accepts tags and supported references": {
 			cfg: &config.Alluvial{
