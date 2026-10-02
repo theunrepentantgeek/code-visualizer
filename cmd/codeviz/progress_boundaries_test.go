@@ -17,6 +17,7 @@ import (
 
 type boundaryReporter struct {
 	events        []string
+	stageKinds    []progress.StageKind
 	stageWorks    []progress.WorkKind
 	stageTotals   []int64
 	terminalErr   error
@@ -33,10 +34,11 @@ func (r *boundaryReporter) Begin(title string, stageCount int) error {
 
 func (r *boundaryReporter) StartStage(
 	name string,
-	_ progress.StageKind,
+	kind progress.StageKind,
 	work progress.WorkKind,
 ) (progress.Stage, error) {
 	r.events = append(r.events, "start:"+name)
+	r.stageKinds = append(r.stageKinds, kind)
 	r.stageWorks = append(r.stageWorks, work)
 
 	return &boundaryStage{reporter: r, work: work, name: name}, r.startStageErr

@@ -165,7 +165,7 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 
 	var gitMetricTotal int64
 
-	if err := runBoundary(boundaries, "Scanning filesystem", progress.StageSummary, progress.WorkNone, func() {
+	if err := runBoundary(boundaries, "Scanning filesystem", progress.StageLive, progress.WorkNone, func() {
 		spiral.ScanData(s)
 		gitMetricTotal = determineGitMetricTotal(s)
 	}); err != nil {

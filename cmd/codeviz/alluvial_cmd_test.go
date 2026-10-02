@@ -85,6 +85,14 @@ func TestAlluvialCmd_ReportsOrderedReferenceBoundaries(t *testing.T) {
 		progress.WorkNone,
 		progress.WorkNone,
 	}))
+	g.Expect(reporter.stageKinds).To(Equal([]progress.StageKind{
+		progress.StageLive,
+		progress.StageLive,
+		progress.StageLive,
+		progress.StageLive,
+		progress.StageSummary,
+		progress.StageSummary,
+	}))
 }
 
 func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {
