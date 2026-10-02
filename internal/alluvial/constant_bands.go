@@ -87,50 +87,61 @@ func mergeConstantPaths(
 	constant map[string]struct{},
 ) ([]Column, map[string]struct{}) {
 	groups := constantBandGroups(columns, constant)
-	muted := make(map[string]struct{})
 	result := make([]Column, len(columns))
 
 	for columnIndex, column := range columns {
-		widths := valuesByPath(column.Values)
-		values := make([]Value, 0, len(groups))
-
-		for _, group := range groups {
-			width := 0.0
-			present := false
-
-			for _, member := range group.members {
-				value, exists := widths[member]
-				if exists {
-					present = true
-					width += value
-				}
-			}
-
-			if !present {
-				continue
-			}
-
-			values = append(values, Value{Path: group.path, Width: width})
-			if group.muted {
-				muted[group.path] = struct{}{}
-			}
+		result[columnIndex] = Column{
+			Reference: column.Reference,
+			Values:    mergedColumnValues(column.Values, groups),
 		}
-
-		result[columnIndex] = Column{Reference: column.Reference, Values: values}
 	}
 
-	return result, muted
+	return result, mutedGroupPaths(groups)
+}
+
+func mergedColumnValues(values []Value, groups []constantBandGroup) []Value {
+	widths := valuesByPath(values)
+	result := make([]Value, 0, len(groups))
+
+	for _, group := range groups {
+		width, present := groupWidth(group, widths)
+		if present {
+			result = append(result, Value{Path: group.path, Width: width})
+		}
+	}
+
+	return result
+}
+
+func groupWidth(group constantBandGroup, widths map[string]float64) (float64, bool) {
+	width := 0.0
+	present := false
+
+	for _, member := range group.members {
+		value, exists := widths[member]
+		if exists {
+			present = true
+			width += value
+		}
+	}
+
+	return width, present
+}
+
+func mutedGroupPaths(groups []constantBandGroup) map[string]struct{} {
+	muted := make(map[string]struct{})
+
+	for _, group := range groups {
+		if group.muted {
+			muted[group.path] = struct{}{}
+		}
+	}
+
+	return muted
 }
 
 func constantBandGroups(columns []Column, constant map[string]struct{}) []constantBandGroup {
-	allPaths := make(map[string]float64)
-	for _, column := range columns {
-		for _, value := range column.Values {
-			allPaths[value.Path] = value.Width
-		}
-	}
-
-	paths := unionPaths(allPaths, nil)
+	paths := selectedPaths(columns)
 	groups := make([]constantBandGroup, 0, len(paths))
 	constantGroup := 0
 
@@ -146,14 +157,7 @@ func constantBandGroups(columns []Column, constant map[string]struct{}) []consta
 			continue
 		}
 
-		end := index + 1
-		for end < len(paths) {
-			if _, isConstant := constant[paths[end]]; !isConstant {
-				break
-			}
-
-			end++
-		}
+		end := constantRunEnd(paths, index+1, constant)
 
 		groups = append(groups, constantBandGroup{
 			path:    mergedConstantPathPrefix + strconv.Itoa(constantGroup),
@@ -165,4 +169,30 @@ func constantBandGroups(columns []Column, constant map[string]struct{}) []consta
 	}
 
 	return groups
+}
+
+func selectedPaths(columns []Column) []string {
+	allPaths := make(map[string]float64)
+
+	for _, column := range columns {
+		for _, value := range column.Values {
+			allPaths[value.Path] = value.Width
+		}
+	}
+
+	return unionPaths(allPaths, nil)
+}
+
+func constantRunEnd(paths []string, start int, constant map[string]struct{}) int {
+	end := start
+
+	for end < len(paths) {
+		if _, isConstant := constant[paths[end]]; !isConstant {
+			break
+		}
+
+		end++
+	}
+
+	return end
 }

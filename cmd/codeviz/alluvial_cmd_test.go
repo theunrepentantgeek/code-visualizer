@@ -194,6 +194,7 @@ func TestAlluvialCmd_MergeConfig_OverridesConfiguredConstantBands(t *testing.T) 
 
 	cfg := config.New()
 	cfg.Alluvial.OverrideConstantBands("mute")
+
 	cmd := &AlluvialCmd{ConstantBands: "merge"}
 
 	cmd.applyOverrides(cfg)
@@ -358,6 +359,7 @@ func TestAlluvialCmd_Run_AppliesConstantBandModes(t *testing.T) {
 
 			image, err := os.ReadFile(output)
 			g.Expect(err).NotTo(HaveOccurred())
+
 			labels := svgTextLabels(string(image))
 			g.Expect(labels).To(ContainElements("api", "docs", "legacy"))
 

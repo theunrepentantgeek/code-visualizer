@@ -210,6 +210,7 @@ func TestBuildData_MergesAdjacentConstantRunsSeparatedByChangedPaths(t *testing.
 	g.Expect(data.Columns[0].Values).To(HaveLen(3))
 	firstRun := data.Columns[0].Values[0]
 	secondRun := data.Columns[0].Values[2]
+
 	g.Expect(firstRun.Path).NotTo(BeEmpty())
 	g.Expect(firstRun.Path).NotTo(Equal(secondRun.Path))
 	g.Expect(firstRun.Width).To(Equal(float64(3)))

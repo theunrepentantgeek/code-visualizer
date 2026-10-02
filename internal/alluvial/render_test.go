@@ -111,6 +111,7 @@ func TestRenderToCanvas_UsesFixedGreyForMutedBandsAndFlows(t *testing.T) {
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
 	var fills []color.Color
+
 	for _, call := range backend.Calls {
 		if call.Method == "DrawFilledPath" {
 			fills = append(fills, call.Fill)
@@ -162,6 +163,8 @@ func TestRenderToCanvas_SuppressesMutedLabelsAndEdgeExtensions(t *testing.T) {
 			labels = append(labels, call.Text)
 		case "DrawFilledPath":
 			paths = append(paths, call)
+		default:
+			continue
 		}
 	}
 
@@ -335,13 +338,20 @@ func TestRenderToCanvas_ExtendsMissingInitialFillWithPaletteMidpoint(t *testing.
 }
 
 func pathXBounds(paths []mock.Call) (minimum, maximum float64) {
-	minimum = paths[0].Loops[0][0].X
-	maximum = minimum
+	initialized := false
 
 	for _, path := range paths {
-		for _, point := range path.Loops[0] {
-			minimum = min(minimum, point.X)
-			maximum = max(maximum, point.X)
+		for _, loop := range path.Loops {
+			for _, point := range loop {
+				if !initialized {
+					minimum = point.X
+					maximum = point.X
+					initialized = true
+				}
+
+				minimum = min(minimum, point.X)
+				maximum = max(maximum, point.X)
+			}
 		}
 	}
 
