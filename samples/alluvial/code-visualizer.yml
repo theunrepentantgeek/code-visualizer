@@ -13,6 +13,7 @@ alluvial:
     expand:
         - cmd
         - internal
+    constantBands: merge
 fileFilter:
     - pattern: .*
       mode: exclude

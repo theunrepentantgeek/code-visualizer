@@ -30,6 +30,7 @@ alluvial:
   expand:
     - cmd
     - internal
+  constantBands: merge
 ```
 
 CLI `--reference` values replace the configured `references` list while
@@ -41,3 +42,9 @@ the first `.stepdelta` value is unavailable and displays as `-`.
 `--include` and `--exclude` remain normal file filters: they bound which
 directories can be represented, do not imply hierarchy expansion, and do not
 create an `Other` aggregate.
+
+`constantBands` is optional and accepts `hide`, `mute`, or `merge`. A constant
+band has the same width-metric value at every configured reference. `hide`
+removes those bands, `mute` keeps them as unlabeled light-grey context, and
+`merge` combines adjacent constant bands in path order before rendering them
+the same way. If omitted, constant bands retain the normal palette and labels.

@@ -325,6 +325,51 @@ func TestAlluvialCmd_Run_ResolvesTaggedSnapshots(t *testing.T) {
 	g.Expect(string(image)).To(ContainSubstring("tag:v2.0"))
 }
 
+func TestAlluvialCmd_Run_AppliesConstantBandModes(t *testing.T) {
+	t.Parallel()
+	repository := createAlluvialTagFixture(t)
+
+	cases := map[string]struct {
+		mode         string
+		wantConstant bool
+	}{
+		"default": {wantConstant: true},
+		"hide":    {mode: "hide"},
+		"mute":    {mode: "mute"},
+		"merge":   {mode: "merge"},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			output := filepath.Join(t.TempDir(), "alluvial.svg")
+			cmd := &AlluvialCmd{
+				TargetPath:    repository,
+				Output:        output,
+				References:    []string{"tag:v1.0", "tag:v2.0"},
+				Metric:        "file-lines",
+				ConstantBands: c.mode,
+				Width:         800,
+				Height:        600,
+			}
+
+			g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+			image, err := os.ReadFile(output)
+			g.Expect(err).NotTo(HaveOccurred())
+			labels := svgTextLabels(string(image))
+			g.Expect(labels).To(ContainElements("api", "docs", "legacy"))
+
+			if c.wantConstant {
+				g.Expect(labels).To(ContainElement("stable"))
+			} else {
+				g.Expect(labels).NotTo(ContainElement("stable"))
+			}
+		})
+	}
+}
+
 func TestAlluvialCmd_Run_ComputesGitFillMetricForTaggedSnapshots(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -472,7 +517,7 @@ func createAlluvialTagFixture(t *testing.T) string {
 
 		worktree, worktreeErr := repository.Worktree()
 		g.Expect(worktreeErr).NotTo(HaveOccurred())
-		_, worktreeErr = worktree.Add(".")
+		worktreeErr = worktree.AddWithOptions(&gogit.AddOptions{All: true})
 		g.Expect(worktreeErr).NotTo(HaveOccurred())
 
 		hash, commitErr := worktree.Commit(message, &gogit.CommitOptions{
@@ -484,6 +529,8 @@ func createAlluvialTagFixture(t *testing.T) string {
 	}
 
 	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\n")
+	writeFixtureFile("stable/main.go", "package stable\n\nconst Value = 1\n")
+	writeFixtureFile("legacy/main.go", "package legacy\n\nfunc Removed() {}\n")
 
 	first := commit("first release", time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v1.0", first, nil)
@@ -491,6 +538,7 @@ func createAlluvialTagFixture(t *testing.T) string {
 
 	writeFixtureFile("docs/guide.md", "# Guide\n")
 	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\nfunc Second() {}\n")
+	g.Expect(os.Remove(filepath.Join(root, "legacy/main.go"))).To(Succeed())
 
 	second := commit("second release", time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v2.0", second, nil)
