@@ -16,6 +16,7 @@ import (
 var (
 	alluvialBackground = color.RGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 	alluvialGuide      = color.RGBA{R: 0xD0, G: 0xD0, B: 0xD0, A: 0xFF}
+	alluvialMuted      = color.RGBA{R: 0xE2, G: 0xE2, B: 0xE2, A: 0xFF}
 	alluvialLabel      = color.RGBA{R: 0x28, G: 0x28, B: 0x28, A: 0xFF}
 )
 
@@ -130,6 +131,10 @@ func alluvialColumnLabelExtension(
 
 	const edgeInset = 2.0
 
+	if maximumWidth == 0 {
+		return 0
+	}
+
 	return maximumWidth/2 + edgeInset
 }
 
@@ -167,9 +172,17 @@ func addAlluvialEdgeColumnBands(
 				{X: right, Y: band.Bottom},
 				{X: left, Y: band.Bottom},
 			}},
-			Fill: fillInk.Dip(inks.MeasureValue(band.FillValue)),
+			Fill: alluvialEdgeBandInk(fillInk, band).Dip(inks.MeasureValue(band.FillValue)),
 		})
 	}
+}
+
+func alluvialEdgeBandInk(fillInk inks.Ink, band Band) inks.Ink {
+	if band.Muted {
+		return inks.FixedInk(alluvialMuted)
+	}
+
+	return fillInk
 }
 
 func addAlluvialBandLabel(
@@ -207,6 +220,10 @@ func addAlluvialBandLabel(
 }
 
 func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
+	if band.Muted {
+		return nil
+	}
+
 	lines := []string{band.Path, fmt.Sprintf("%g", band.Width)}
 	if labelFillMetric != "" {
 		if band.HasFillValue {
@@ -220,6 +237,10 @@ func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
 }
 
 func alluvialBandInk(fillInk inks.Ink, band Band) inks.Ink {
+	if band.Muted {
+		return inks.FixedInk(alluvialMuted)
+	}
+
 	if !band.HasFillValue {
 		return inks.FixedInk(alluvialGuide)
 	}
@@ -228,6 +249,10 @@ func alluvialBandInk(fillInk inks.Ink, band Band) inks.Ink {
 }
 
 func alluvialFlowInk(fillInk inks.Ink, flow Flow) inks.Ink {
+	if flow.Muted {
+		return inks.FixedInk(alluvialMuted)
+	}
+
 	if !flow.HasFillValue {
 		return inks.FixedInk(alluvialGuide)
 	}

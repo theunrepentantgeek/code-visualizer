@@ -61,6 +61,29 @@ func TestLayoutData_UsesDestinationSnapshotFillValue(t *testing.T) {
 	g.Expect(layout.Flows[0].HasFillValue).To(BeTrue())
 }
 
+func TestLayoutData_ProjectsMutedPathsOntoBandsAndFlows(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout := alluvial.LayoutData(alluvial.Data{
+		Columns: []alluvial.Column{
+			{Reference: "before", Values: []alluvial.Value{{Path: "constant", Width: 10}, {Path: "changed", Width: 5}}},
+			{Reference: "after", Values: []alluvial.Value{{Path: "constant", Width: 10}, {Path: "changed", Width: 7}}},
+		},
+		Transitions: []alluvial.Transition{
+			{FromReference: "before", ToReference: "after", Path: "constant", FromWidth: 10, ToWidth: 10},
+			{FromReference: "before", ToReference: "after", Path: "changed", FromWidth: 5, ToWidth: 7},
+		},
+		MutedPaths: map[string]struct{}{"constant": {}},
+	}, 200, 100)
+
+	g.Expect(bandByPath(layout.Columns[0].Bands, "constant").Muted).To(BeTrue())
+	g.Expect(bandByPath(layout.Columns[1].Bands, "constant").Muted).To(BeTrue())
+	g.Expect(bandByPath(layout.Columns[0].Bands, "changed").Muted).To(BeFalse())
+	g.Expect(flowByPath(layout.Flows, "constant").Muted).To(BeTrue())
+	g.Expect(flowByPath(layout.Flows, "changed").Muted).To(BeFalse())
+}
+
 func TestLayoutData_UsesSharedScaleAcrossColumns(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
