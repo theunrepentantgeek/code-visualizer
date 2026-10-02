@@ -314,10 +314,11 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 	}
 
 	data, err := BuildData(state.Snapshots, Options{
-		Metric:       metricName,
-		FillMetric:   state.Fill.Encoding.Metric,
-		FillTemporal: state.Fill.Temporal,
-		Expand:       cfg.Expand,
+		Metric:        metricName,
+		FillMetric:    state.Fill.Encoding.Metric,
+		FillTemporal:  state.Fill.Temporal,
+		Expand:        cfg.Expand,
+		ConstantBands: cfg.ConstantBandsMode(),
 	})
 	if err != nil {
 		return err

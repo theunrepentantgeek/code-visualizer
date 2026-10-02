@@ -1,6 +1,7 @@
 package alluvial_test
 
 import (
+	"math"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -15,8 +16,9 @@ import (
 )
 
 const (
-	widthMetric = metric.Name("test-width.sum")
-	fillMetric  = metric.Name("test-fill.sum")
+	widthMetric        = metric.Name("test-width.sum")
+	measureWidthMetric = metric.Name("test-measure-width.sum")
+	fillMetric         = metric.Name("test-fill.sum")
 )
 
 func TestMain(m *testing.M) {
@@ -76,6 +78,175 @@ func TestBuildData_PreservesReferenceOrderAndAlignsSnapshotWidths(t *testing.T) 
 		{FromReference: "release-1", ToReference: "release-2", Path: "docs", FromWidth: 0, ToWidth: 9},
 		{FromReference: "release-1", ToReference: "release-2", Path: "legacy", FromWidth: 7, ToWidth: 0},
 	}))
+}
+
+func TestBuildData_HidesOnlyPathsConstantAcrossEveryReference(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(
+			testDirectory("alpha", 10),
+			testDirectory("beta", 5),
+			testDirectory("removed", 2),
+		)},
+		{Reference: "middle", Root: testRoot(
+			testDirectory("alpha", 10),
+			testDirectory("beta", 7),
+			testDirectory("introduced", 3),
+		)},
+		{Reference: "after", Root: testRoot(
+			testDirectory("alpha", 10),
+			testDirectory("beta", 5),
+			testDirectory("introduced", 3),
+		)},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		ConstantBands: config.ConstantBandsHide,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns).To(Equal([]alluvial.Column{
+		{Reference: "before", Values: []alluvial.Value{
+			{Path: "beta", Width: 5},
+			{Path: "removed", Width: 2},
+		}},
+		{Reference: "middle", Values: []alluvial.Value{
+			{Path: "beta", Width: 7},
+			{Path: "introduced", Width: 3},
+		}},
+		{Reference: "after", Values: []alluvial.Value{
+			{Path: "beta", Width: 5},
+			{Path: "introduced", Width: 3},
+		}},
+	}))
+	g.Expect(data.FillValues).To(Equal(map[string]float64{
+		"beta": 5, "introduced": 3, "removed": 0,
+	}))
+	g.Expect(data.MutedPaths).To(BeEmpty())
+}
+
+func TestBuildData_UsesExactWidthsWhenClassifyingConstantPaths(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(testDirectoryWithMeasure("api", 10))},
+		{Reference: "after", Root: testRoot(testDirectoryWithMeasure("api", math.Nextafter(10, 11)))},
+	}, alluvial.Options{
+		Metric:        measureWidthMetric,
+		ConstantBands: config.ConstantBandsHide,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns[0].Values).To(HaveLen(1))
+	g.Expect(data.Columns[1].Values).To(HaveLen(1))
+}
+
+func TestBuildData_DoesNotClassifyMissingZeroWidthPathAsConstant(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot()},
+		{Reference: "after", Root: testRoot(testDirectory("empty", 0))},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		ConstantBands: config.ConstantBandsHide,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns[1].Values).To(Equal([]alluvial.Value{{Path: "empty", Width: 0}}))
+}
+
+func TestBuildData_MutesConstantPathsWithoutChangingGeometry(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(testDirectory("api", 10), testDirectory("docs", 4))},
+		{Reference: "after", Root: testRoot(testDirectory("api", 10), testDirectory("docs", 6))},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		ConstantBands: config.ConstantBandsMute,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns[0].Values).To(Equal([]alluvial.Value{
+		{Path: "api", Width: 10},
+		{Path: "docs", Width: 4},
+	}))
+	g.Expect(data.Transitions).To(HaveLen(2))
+	g.Expect(data.MutedPaths).To(Equal(map[string]struct{}{"api": {}}))
+	g.Expect(data.FillValues).To(Equal(map[string]float64{"docs": 6}))
+}
+
+func TestBuildData_MergesAdjacentConstantRunsSeparatedByChangedPaths(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(
+			testDirectory("alpha", 1),
+			testDirectory("bravo", 2),
+			testDirectory("charlie", 3),
+			testDirectory("delta", 5),
+			testDirectory("echo", 6),
+		)},
+		{Reference: "after", Root: testRoot(
+			testDirectory("alpha", 1),
+			testDirectory("bravo", 2),
+			testDirectory("charlie", 4),
+			testDirectory("delta", 5),
+			testDirectory("echo", 6),
+		)},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		ConstantBands: config.ConstantBandsMerge,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns).To(HaveLen(2))
+	g.Expect(data.Columns[0].Values).To(HaveLen(3))
+	firstRun := data.Columns[0].Values[0]
+	secondRun := data.Columns[0].Values[2]
+	g.Expect(firstRun.Path).NotTo(BeEmpty())
+	g.Expect(firstRun.Path).NotTo(Equal(secondRun.Path))
+	g.Expect(firstRun.Width).To(Equal(float64(3)))
+	g.Expect(data.Columns[0].Values[1]).To(Equal(alluvial.Value{Path: "charlie", Width: 3}))
+	g.Expect(secondRun.Width).To(Equal(float64(11)))
+	g.Expect(data.Columns[1].Values).To(Equal([]alluvial.Value{
+		{Path: firstRun.Path, Width: 3},
+		{Path: "charlie", Width: 4},
+		{Path: secondRun.Path, Width: 11},
+	}))
+	g.Expect(data.MutedPaths).To(Equal(map[string]struct{}{
+		firstRun.Path:  {},
+		secondRun.Path: {},
+	}))
+	g.Expect(data.Transitions).To(HaveLen(3))
+	g.Expect(data.FillValues).To(Equal(map[string]float64{"charlie": 4}))
+}
+
+func TestBuildData_HideAllowsEveryBandToBeRemoved(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(testDirectory("api", 10))},
+		{Reference: "after", Root: testRoot(testDirectory("api", 10))},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		ConstantBands: config.ConstantBandsHide,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns).To(Equal([]alluvial.Column{
+		{Reference: "before", Values: []alluvial.Value{}},
+		{Reference: "after", Values: []alluvial.Value{}},
+	}))
+	g.Expect(data.Transitions).To(BeEmpty())
+	g.Expect(data.FillValues).To(BeEmpty())
 }
 
 func TestBuildData_ExpandsOnlySelectedDirectoryDirectChildren(t *testing.T) {
@@ -213,6 +384,31 @@ func TestBuildDataStage_UsesConfiguredMetricAndExpansion(t *testing.T) {
 	}))
 }
 
+func TestBuildDataStage_UsesConfiguredConstantBandMode(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	metricName := string(widthMetric)
+	mode := config.ConstantBandsHide
+	state := &alluvial.State{
+		Snapshots: []alluvial.Snapshot{
+			{Reference: "one", Root: testRoot(testDirectory("api", 12), testDirectory("docs", 4))},
+			{Reference: "two", Root: testRoot(testDirectory("api", 12), testDirectory("docs", 6))},
+		},
+	}
+
+	g.Expect(alluvial.BuildDataStage(state, &config.Alluvial{
+		Metric:        &metricName,
+		ConstantBands: &mode,
+	})).To(Succeed())
+	g.Expect(state.Data.Columns[0].Values).To(Equal([]alluvial.Value{
+		{Path: "docs", Width: 4},
+	}))
+	g.Expect(state.Data.Columns[1].Values).To(Equal([]alluvial.Value{
+		{Path: "docs", Width: 6},
+	}))
+}
+
 func TestResolveMetrics_AggregatesBareMetricForDirectoryWidths(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -279,6 +475,13 @@ func testDirectory(repoPath string, width int64, children ...*model.Directory) *
 func testDirectoryWithFill(repoPath string, width, fill int64) *model.Directory {
 	directory := testDirectory(repoPath, width)
 	directory.SetQuantity(fillMetric, fill)
+
+	return directory
+}
+
+func testDirectoryWithMeasure(repoPath string, width float64) *model.Directory {
+	directory := &model.Directory{RepoPath: repoPath}
+	directory.SetMeasure(measureWidthMetric, width)
 
 	return directory
 }

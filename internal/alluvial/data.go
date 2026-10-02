@@ -17,6 +17,7 @@ type Data struct {
 	Transitions           []Transition
 	FillValues            map[string]float64
 	FillValuesByReference map[string]map[string]float64
+	MutedPaths            map[string]struct{}
 }
 
 // FillValuesForInk returns every displayed numeric fill value, including
@@ -96,13 +97,25 @@ func BuildData(snapshots []Snapshot, options Options) (Data, error) {
 		})
 	}
 
+	data.Columns, data.MutedPaths = applyConstantBands(data.Columns, options.ConstantBands)
 	data.Transitions = buildTransitions(data.Columns)
 
 	data.FillValues, data.FillValuesByReference = buildFillValues(
 		data.Columns, fillSnapshots, options.FillTemporal,
 	)
+	removeMutedFillValues(&data)
 
 	return data, nil
+}
+
+func removeMutedFillValues(data *Data) {
+	for directoryPath := range data.MutedPaths {
+		delete(data.FillValues, directoryPath)
+
+		for _, values := range data.FillValuesByReference {
+			delete(values, directoryPath)
+		}
+	}
 }
 
 func selectedValues(root *model.Directory, options Options) []Value {
