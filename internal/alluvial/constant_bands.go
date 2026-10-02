@@ -1,12 +1,8 @@
 package alluvial
 
-import (
-	"strconv"
+import "github.com/theunrepentantgeek/code-visualizer/internal/config"
 
-	"github.com/theunrepentantgeek/code-visualizer/internal/config"
-)
-
-const mergedConstantPathPrefix = "\x00constant:"
+const mergedConstantPathSuffix = "\x00constant"
 
 func applyConstantBands(
 	columns []Column,
@@ -143,7 +139,6 @@ func mutedGroupPaths(groups []constantBandGroup) map[string]struct{} {
 func constantBandGroups(columns []Column, constant map[string]struct{}) []constantBandGroup {
 	paths := selectedPaths(columns)
 	groups := make([]constantBandGroup, 0, len(paths))
-	constantGroup := 0
 
 	for index := 0; index < len(paths); {
 		directoryPath := paths[index]
@@ -158,13 +153,11 @@ func constantBandGroups(columns []Column, constant map[string]struct{}) []consta
 		}
 
 		end := constantRunEnd(paths, index+1, constant)
-
 		groups = append(groups, constantBandGroup{
-			path:    mergedConstantPathPrefix + strconv.Itoa(constantGroup),
+			path:    paths[index] + mergedConstantPathSuffix,
 			members: paths[index:end],
 			muted:   true,
 		})
-		constantGroup++
 		index = end
 	}
 
