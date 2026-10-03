@@ -95,12 +95,12 @@ type repositorySource struct {
 func resolveRepositorySource(tree source.Tree, repositoryPath string) (repositorySource, error) {
 	repoRoot, err := git.RepoRootFor(repositoryPath)
 	if err != nil {
-		tree, moduleErr := resolveModuleSource(tree)
+		resolvedTree, moduleErr := resolveModuleSource(tree)
 		if moduleErr != nil {
 			return repositorySource{}, moduleErr
 		}
 
-		return repositorySource{tree: tree, discoveryErr: err}, nil //nolint:nilerr // Valid for live sources.
+		return repositorySource{tree: resolvedTree, discoveryErr: err}, nil
 	}
 
 	tree.RepoRoot = repoRoot

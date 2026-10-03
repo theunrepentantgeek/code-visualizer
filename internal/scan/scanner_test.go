@@ -165,6 +165,7 @@ func TestScanReportsProgressPerDirectory(t *testing.T) {
 	g := NewWithT(t)
 	rootPath, err := filepath.Abs(filepath.Join("testdata", "nested"))
 	g.Expect(err).NotTo(HaveOccurred())
+
 	progress := &recordingProgress{}
 
 	_, err = Scan(context.Background(), rootPath, nil, progress, true)

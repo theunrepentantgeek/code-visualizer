@@ -166,6 +166,7 @@ func TestHistoricalGoProviderReadsAttachedGitSource(t *testing.T) {
 	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
 
 	var mainFileFound bool
+
 	for _, file := range state.Root.Files {
 		if file.Name != "main.go" {
 			continue
