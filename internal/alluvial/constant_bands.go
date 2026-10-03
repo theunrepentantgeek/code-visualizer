@@ -40,23 +40,27 @@ func constantPaths(columns []Column) map[string]struct{} {
 	}
 
 	for directoryPath, width := range first {
-		isConstant := true
-
-		for _, widths := range widthsByColumn {
-			value, exists := widths[directoryPath]
-			if !exists || value != width {
-				isConstant = false
-
-				break
-			}
-		}
-
-		if isConstant {
+		if hasConstantWidth(directoryPath, width, widthsByColumn) {
 			constant[directoryPath] = struct{}{}
 		}
 	}
 
 	return constant
+}
+
+func hasConstantWidth(
+	directoryPath string,
+	width float64,
+	widthsByColumn []map[string]float64,
+) bool {
+	for _, widths := range widthsByColumn {
+		value, exists := widths[directoryPath]
+		if !exists || value != width {
+			return false
+		}
+	}
+
+	return true
 }
 
 func hideConstantPaths(columns []Column, constant map[string]struct{}) []Column {
