@@ -67,5 +67,24 @@ func Scan(
 		return nil, eris.Wrap(err, "failed to open working tree source")
 	}
 
-	return ScanTree(ctx, tree, rules, progress, includeBinary)
+	root, err := ScanTree(ctx, tree, rules, progress, includeBinary)
+	if err != nil {
+		return nil, err
+	}
+
+	clearRepoPaths(root)
+
+	return root, nil
+}
+
+func clearRepoPaths(root *model.Directory) {
+	root.RepoPath = ""
+
+	for _, file := range root.Files {
+		file.RepoPath = ""
+	}
+
+	for _, child := range root.Dirs {
+		clearRepoPaths(child)
+	}
 }

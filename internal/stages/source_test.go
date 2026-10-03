@@ -85,6 +85,48 @@ func TestResolveSourceUsesHistoricalSubtreeDeletedFromWorkingTree(t *testing.T) 
 }
 
 //nolint:paralleltest // mutates the global provider registry
+func TestNonGitScopedGoProviderFindsParentModule(t *testing.T) {
+	g := NewWithT(t)
+	dir := t.TempDir()
+	pkgDir := filepath.Join(dir, "pkg")
+	g.Expect(os.Mkdir(pkgDir, 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(
+		filepath.Join(dir, "go.mod"),
+		[]byte("module example.com/project\n\ngo 1.26\n"),
+		0o600,
+	)).To(Succeed())
+	g.Expect(os.WriteFile(
+		filepath.Join(pkgDir, "main.go"),
+		[]byte("package pkg\n\nimport \"example.com/project/internal/value\"\n"),
+		0o600,
+	)).To(Succeed())
+
+	provider.ResetBaseRegistryForTesting()
+	golang.Register()
+	t.Cleanup(func() {
+		provider.ResetBaseRegistryForTesting()
+		filesystem.Register()
+		git.Register()
+	})
+
+	state := &CommonState{
+		TargetPath: pkgDir,
+		Flags:      &Flags{},
+		Requested: RequestedMetrics{
+			BaseMetrics: []metric.Name{metric.Name("internal.imports")},
+		},
+	}
+	g.Expect(ResolveSource(state)).To(Succeed())
+	g.Expect(ScanFilesystem(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
+	g.Expect(RunProviders(state, context.Background(), newTestSink(progress.WorkObservations))).To(Succeed())
+	g.Expect(state.Root.Files).To(HaveLen(1))
+
+	internalImports, ok := state.Root.Files[0].Quantity(metric.Name("internal.imports"))
+	g.Expect(ok).To(BeTrue())
+	g.Expect(internalImports).To(Equal(int64(1)))
+}
+
+//nolint:paralleltest // mutates the global provider registry
 func TestHistoricalGoProviderReadsAttachedGitSource(t *testing.T) {
 	g := NewWithT(t)
 	dir := t.TempDir()

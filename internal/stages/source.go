@@ -95,6 +95,11 @@ type repositorySource struct {
 func resolveRepositorySource(tree source.Tree, repositoryPath string) (repositorySource, error) {
 	repoRoot, err := git.RepoRootFor(repositoryPath)
 	if err != nil {
+		tree, moduleErr := resolveModuleSource(tree)
+		if moduleErr != nil {
+			return repositorySource{}, moduleErr
+		}
+
 		return repositorySource{tree: tree, discoveryErr: err}, nil //nolint:nilerr // Valid for live sources.
 	}
 
@@ -113,6 +118,47 @@ func resolveRepositorySource(tree source.Tree, repositoryPath string) (repositor
 	tree.RepoFS = repositoryTree.FS
 
 	return repositorySource{tree: tree, root: repoRoot}, nil
+}
+
+func resolveModuleSource(tree source.Tree) (source.Tree, error) {
+	moduleRoot, err := nearestModuleRoot(tree.RootPath)
+	if err != nil || moduleRoot == "" {
+		return tree, err
+	}
+
+	moduleTree, err := source.WorkingTree(moduleRoot)
+	if err != nil {
+		return source.Tree{}, eris.Wrap(err, "failed to open module source")
+	}
+
+	tree.RepoBase, err = repoRelativeDirectory(moduleRoot, tree.RootPath)
+	if err != nil {
+		return source.Tree{}, err
+	}
+
+	tree.RepoFS = moduleTree.FS
+
+	return tree, nil
+}
+
+func nearestModuleRoot(name string) (string, error) {
+	for {
+		_, err := os.Stat(filepath.Join(name, "go.mod"))
+		if err == nil {
+			return name, nil
+		}
+
+		if !os.IsNotExist(err) {
+			return "", eris.Wrapf(err, "accessing module file in %s", name)
+		}
+
+		parent := filepath.Dir(name)
+		if parent == name {
+			return "", nil
+		}
+
+		name = parent
+	}
 }
 
 func nearestExistingDirectory(name string) (string, error) {

@@ -126,8 +126,9 @@ targets without weakening the requested content boundary. `Scan` documentation
 will state this behavior and direct callers to select a wider root when those
 files are intended inputs.
 
-`RepoPath`, `Source`, and `SourcePath` become populated for `Scan` results. This
-is additive metadata and enables the canonical content-access contract.
+`Source` and `SourcePath` become populated for `Scan` results. `RepoPath`
+remains empty because `Scan` receives no repository context; callers that need
+repository-relative identities use a `source.Tree` with `RepoFS` and `RepoBase`.
 
 ## Testing
 
