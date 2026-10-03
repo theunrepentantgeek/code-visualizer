@@ -123,7 +123,7 @@ func (s *repoService) resolveRangeTip(
 		return plumbing.ZeroHash, "", eris.Wrap(err, "failed to get HEAD")
 	}
 
-	return head.Hash(), "HEAD", nil
+	return head.Hash(), headReference, nil
 }
 
 func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {

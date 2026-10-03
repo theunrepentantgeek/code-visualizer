@@ -20,7 +20,7 @@ type AlluvialCmd struct {
 	TargetPath string `arg:"" help:"Path to directory to scan."`
 	Output     string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
 
-	References []string          `help:"Ordered Git reference (HEAD, tag, commit ID, date, ^revision, or ago(Nd); repeatable)." name:"reference"`
+	References []string          `help:"Ordered Git reference: HEAD, tag, commit ID, date, ^revision, or ago(Nd) (repeatable)." name:"reference"`             //nolint:revive,nolintlint // kong struct tags require long lines
 	Metric     metric.Name       `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"`             //nolint:revive,nolintlint // kong struct tags require long lines
 	Fill       config.MetricSpec `help:"Band colour: metric[,palette]; append .delta (first-to-last) or .stepdelta (adjacent change)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	//nolint:revive,nolintlint // kong struct tags require long lines

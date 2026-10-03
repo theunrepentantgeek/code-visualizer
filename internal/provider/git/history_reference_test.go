@@ -261,7 +261,7 @@ func TestResolveHistoryReference_ReportsUnknownValue(t *testing.T) {
 func TestParseAgoDate_UsesCapturedTimeNow(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	timeNow := time.Date(2026, 10, 3, 3, 20, 57, 451_000_000, time.FixedZone("NZDT", 13*60*60))
+	timeNow := time.Date(2026, 10, 3, 3, 20, 57, 451000000, time.FixedZone("NZDT", 13*60*60))
 
 	got, claimed, err := parseAgoDate("ago(7d)", timeNow)
 

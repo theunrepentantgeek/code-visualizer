@@ -20,6 +20,13 @@ const (
 	upperBound
 )
 
+const (
+	headReference = "HEAD"
+	tagPrefix     = "tag"
+	shaPrefix     = "sha"
+	datePrefix    = "date"
+)
+
 type resolvedHistoryReference struct {
 	revision  plumbing.Hash
 	timestamp time.Time
@@ -62,15 +69,15 @@ func (s *repoService) resolveHistoryReference(
 	}
 
 	switch prefix {
-	case "tag":
+	case tagPrefix:
 		hash, err := s.resolveTagCommit(payload)
 
 		return resolvedHistoryReference{revision: hash}, err
-	case "sha":
+	case shaPrefix:
 		hash, err := s.requireCommitID(payload)
 
 		return resolvedHistoryReference{revision: hash}, err
-	case "date":
+	case datePrefix:
 		when, err := parseHistoryDate(payload, bound, timeNow)
 
 		return resolvedHistoryReference{timestamp: when}, err
@@ -84,7 +91,7 @@ func (s *repoService) resolveUnprefixedHistoryReference(
 	bound historyBound,
 	timeNow time.Time,
 ) (resolvedHistoryReference, error) {
-	if value == "HEAD" {
+	if value == headReference {
 		head, err := s.repo.Head()
 		if err != nil {
 			return resolvedHistoryReference{}, eris.Wrap(err, "failed to resolve HEAD")
@@ -126,8 +133,19 @@ func (s *repoService) resolvePreviousHistoryReference(
 	}
 
 	prefix, payload, explicit := splitHistoryReference(value)
+	if explicit {
+		return s.resolveExplicitPreviousReference(prefix, payload)
+	}
+
+	return s.resolveUnprefixedPreviousReference(value, timeNow)
+}
+
+func (s *repoService) resolveExplicitPreviousReference(
+	prefix string,
+	payload string,
+) (resolvedHistoryReference, error) {
 	switch prefix {
-	case "tag":
+	case tagPrefix:
 		hash, err := s.resolveTagCommit(payload)
 		if err != nil {
 			return resolvedHistoryReference{}, err
@@ -136,7 +154,7 @@ func (s *repoService) resolvePreviousHistoryReference(
 		previous, err := s.previousTaggedCommit(hash, payload)
 
 		return resolvedHistoryReference{revision: previous}, err
-	case "sha":
+	case shaPrefix:
 		hash, err := s.requireCommitID(payload)
 		if err != nil {
 			return resolvedHistoryReference{}, err
@@ -145,43 +163,27 @@ func (s *repoService) resolvePreviousHistoryReference(
 		previous, err := s.firstParent(hash)
 
 		return resolvedHistoryReference{revision: previous}, err
-	case "date":
+	case datePrefix:
 		return resolvedHistoryReference{}, eris.New("predecessor requires a revision reference")
 	}
 
-	if explicit {
-		return resolvedHistoryReference{}, eris.Errorf("unsupported predecessor reference %q", value)
+	return resolvedHistoryReference{}, eris.Errorf("unsupported predecessor prefix %q", prefix)
+}
+
+func (s *repoService) resolveUnprefixedPreviousReference(
+	value string,
+	timeNow time.Time,
+) (resolvedHistoryReference, error) {
+	if value == headReference {
+		return s.resolveHeadPredecessor()
 	}
 
-	if value == "HEAD" {
-		head, err := s.repo.Head()
-		if err != nil {
-			return resolvedHistoryReference{}, eris.Wrap(err, "failed to resolve HEAD")
-		}
-
-		previous, err := s.firstParent(head.Hash())
-
-		return resolvedHistoryReference{revision: previous}, err
+	if resolved, found, err := s.tryResolveTagPredecessor(value); found {
+		return resolved, err
 	}
 
-	if hash, found, err := s.tryResolveTagCommit(value); found {
-		if err != nil {
-			return resolvedHistoryReference{}, err
-		}
-
-		previous, previousErr := s.previousTaggedCommit(hash, value)
-
-		return resolvedHistoryReference{revision: previous}, previousErr
-	}
-
-	if resolved, found, err := s.tryResolveCommitID(value); found || err != nil {
-		if err != nil {
-			return resolvedHistoryReference{}, err
-		}
-
-		previous, previousErr := s.firstParent(resolved.revision)
-
-		return resolvedHistoryReference{revision: previous}, previousErr
+	if resolved, found, err := s.tryResolveCommitPredecessor(value); found || err != nil {
+		return resolved, err
 	}
 
 	if _, err := parseHistoryDate(value, lowerBound, timeNow); err == nil ||
@@ -193,6 +195,49 @@ func (s *repoService) resolvePreviousHistoryReference(
 		"history reference %q is not a tag, commit ID, or supported date",
 		value,
 	)
+}
+
+func (s *repoService) resolveHeadPredecessor() (resolvedHistoryReference, error) {
+	head, err := s.repo.Head()
+	if err != nil {
+		return resolvedHistoryReference{}, eris.Wrap(err, "failed to resolve HEAD")
+	}
+
+	previous, err := s.firstParent(head.Hash())
+
+	return resolvedHistoryReference{revision: previous}, err
+}
+
+func (s *repoService) tryResolveTagPredecessor(
+	value string,
+) (resolvedHistoryReference, bool, error) {
+	if hash, found, err := s.tryResolveTagCommit(value); found {
+		if err != nil {
+			return resolvedHistoryReference{}, true, err
+		}
+
+		previous, previousErr := s.previousTaggedCommit(hash, value)
+
+		return resolvedHistoryReference{revision: previous}, true, previousErr
+	}
+
+	return resolvedHistoryReference{}, false, nil
+}
+
+func (s *repoService) tryResolveCommitPredecessor(
+	value string,
+) (resolvedHistoryReference, bool, error) {
+	if resolved, found, err := s.tryResolveCommitID(value); found || err != nil {
+		if err != nil {
+			return resolvedHistoryReference{}, found, err
+		}
+
+		previous, previousErr := s.firstParent(resolved.revision)
+
+		return resolvedHistoryReference{revision: previous}, true, previousErr
+	}
+
+	return resolvedHistoryReference{}, false, nil
 }
 
 func (s *repoService) firstParent(hash plumbing.Hash) (plumbing.Hash, error) {
@@ -226,25 +271,9 @@ func (s *repoService) previousTaggedCommit(
 	seen := map[plumbing.Hash]struct{}{start: {}}
 
 	for len(generation) > 0 {
-		next := make([]plumbing.Hash, 0, len(generation))
-		var selected *object.Commit
-
-		for _, hash := range generation {
-			if _, duplicate := seen[hash]; duplicate {
-				continue
-			}
-			seen[hash] = struct{}{}
-
-			commit, commitErr := s.repo.CommitObject(hash)
-			if commitErr != nil {
-				return plumbing.ZeroHash, eris.Wrapf(commitErr, "failed to traverse history from tag %q", tagName)
-			}
-
-			if _, isTagged := tagged[hash]; isTagged && laterTaggedCommit(commit, selected) {
-				selected = commit
-			}
-
-			next = append(next, commit.ParentHashes...)
+		next, selected, generationErr := s.inspectTagGeneration(generation, seen, tagged, tagName)
+		if generationErr != nil {
+			return plumbing.ZeroHash, generationErr
 		}
 
 		if selected != nil {
@@ -255,6 +284,38 @@ func (s *repoService) previousTaggedCommit(
 	}
 
 	return plumbing.ZeroHash, eris.Errorf("tag %q has no previous reachable tag", tagName)
+}
+
+func (s *repoService) inspectTagGeneration(
+	generation []plumbing.Hash,
+	seen map[plumbing.Hash]struct{},
+	tagged map[plumbing.Hash]struct{},
+	tagName string,
+) ([]plumbing.Hash, *object.Commit, error) {
+	next := make([]plumbing.Hash, 0, len(generation))
+
+	var selected *object.Commit
+
+	for _, hash := range generation {
+		if _, duplicate := seen[hash]; duplicate {
+			continue
+		}
+
+		seen[hash] = struct{}{}
+
+		commit, err := s.repo.CommitObject(hash)
+		if err != nil {
+			return nil, nil, eris.Wrapf(err, "failed to traverse history from tag %q", tagName)
+		}
+
+		if _, isTagged := tagged[hash]; isTagged && laterTaggedCommit(commit, selected) {
+			selected = commit
+		}
+
+		next = append(next, commit.ParentHashes...)
+	}
+
+	return next, selected, nil
 }
 
 func (s *repoService) taggedCommits() (map[plumbing.Hash]struct{}, error) {
@@ -268,6 +329,7 @@ func (s *repoService) taggedCommits() (map[plumbing.Hash]struct{}, error) {
 
 	err = iter.ForEach(func(ref *plumbing.Reference) error {
 		name := ref.Name().Short()
+
 		hash, peelErr := peelTagCommit(s.repo, name, ref.Hash())
 		if peelErr == nil {
 			tagged[hash] = struct{}{}
@@ -290,7 +352,7 @@ func laterTaggedCommit(candidate, selected *object.Commit) bool {
 }
 
 func splitHistoryReference(value string) (prefix, payload string, explicit bool) {
-	for _, prefix := range []string{"tag", "sha", "date"} {
+	for _, prefix := range []string{tagPrefix, shaPrefix, datePrefix} {
 		marker := prefix + ":"
 		if after, ok := strings.CutPrefix(value, marker); ok {
 			return prefix, after, true
@@ -556,6 +618,7 @@ func parseAgoDate(value string, timeNow time.Time) (time.Time, bool, error) {
 	}
 
 	daysText := strings.TrimSuffix(strings.TrimPrefix(value, "ago("), "d)")
+
 	days, err := strconv.ParseUint(daysText, 10, 64)
 	if err != nil || days == 0 {
 		return time.Time{}, true, eris.Errorf(
