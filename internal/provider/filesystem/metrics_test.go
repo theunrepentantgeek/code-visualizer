@@ -31,6 +31,18 @@ func TestFileLinesProviderReadsAttachedSource(t *testing.T) {
 	g.Expect(lines).To(Equal(int64(3)))
 }
 
+func TestCountLinesFileRejectsMissingSourceEvenWhenPathExists(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "readable.txt")
+	g.Expect(os.WriteFile(filePath, []byte("one\n"), 0o600)).To(Succeed())
+
+	_, err := countLinesFile(&model.File{Path: filePath})
+
+	g.Expect(err).To(MatchError(ContainSubstring("file has no content source")))
+}
+
 func TestFileSizeProvider(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -57,8 +69,20 @@ func TestFileLinesProvider(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(dir, "three.go"), []byte("a\nb\nc\n"), 0o600)
 	_ = os.WriteFile(filepath.Join(dir, "one.txt"), []byte("single\n"), 0o600)
 
-	f1 := &model.File{Path: filepath.Join(dir, "three.go"), Name: "three.go", Extension: "go"}
-	f2 := &model.File{Path: filepath.Join(dir, "one.txt"), Name: "one.txt", Extension: "txt"}
+	f1 := &model.File{
+		Path:       filepath.Join(dir, "three.go"),
+		SourcePath: "three.go",
+		Name:       "three.go",
+		Extension:  "go",
+		Source:     os.DirFS(dir),
+	}
+	f2 := &model.File{
+		Path:       filepath.Join(dir, "one.txt"),
+		SourcePath: "one.txt",
+		Name:       "one.txt",
+		Extension:  "txt",
+		Source:     os.DirFS(dir),
+	}
 	root := &model.Directory{
 		Path:  dir,
 		Name:  "root",
@@ -86,7 +110,12 @@ func TestFileLinesProviderSkipsBinaryFiles(t *testing.T) {
 	// Write a single line longer than bufio.MaxScanTokenSize (65536) to trigger binary detection
 	_ = os.WriteFile(filepath.Join(dir, "bin.dat"), append([]byte("hello\x00world"), make([]byte, 66000)...), 0o600)
 
-	f := &model.File{Path: filepath.Join(dir, "bin.dat"), Name: "bin.dat"}
+	f := &model.File{
+		Path:       filepath.Join(dir, "bin.dat"),
+		SourcePath: "bin.dat",
+		Name:       "bin.dat",
+		Source:     os.DirFS(dir),
+	}
 	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}
@@ -107,7 +136,13 @@ func TestFileLinesProviderNestedDirs(t *testing.T) {
 	_ = os.MkdirAll(sub, 0o755)
 	_ = os.WriteFile(filepath.Join(sub, "deep.go"), []byte("a\nb\n"), 0o600)
 
-	f := &model.File{Path: filepath.Join(sub, "deep.go"), Name: "deep.go", Extension: "go"}
+	f := &model.File{
+		Path:       filepath.Join(sub, "deep.go"),
+		SourcePath: "sub/deep.go",
+		Name:       "deep.go",
+		Extension:  "go",
+		Source:     os.DirFS(dir),
+	}
 	root := &model.Directory{
 		Path: dir,
 		Name: "root",
@@ -147,7 +182,12 @@ func TestFileLinesProviderDetectsBinaryByNullByte(t *testing.T) {
 	// A short file with null bytes (like a small PNG) — no line exceeds 64KB
 	_ = os.WriteFile(filepath.Join(dir, "icon.png"), []byte("PNG\x00\x00data\nmore\nlines\n"), 0o600)
 
-	f := &model.File{Path: filepath.Join(dir, "icon.png"), Name: "icon.png"}
+	f := &model.File{
+		Path:       filepath.Join(dir, "icon.png"),
+		SourcePath: "icon.png",
+		Name:       "icon.png",
+		Source:     os.DirFS(dir),
+	}
 	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}
@@ -184,7 +224,12 @@ func TestFileLinesProviderCountsUTF16Lines(t *testing.T) {
 			dir := t.TempDir()
 			_ = os.WriteFile(filepath.Join(dir, "code.cs"), tt.content, 0o600)
 
-			f := &model.File{Path: filepath.Join(dir, "code.cs"), Name: "code.cs"}
+			f := &model.File{
+				Path:       filepath.Join(dir, "code.cs"),
+				SourcePath: "code.cs",
+				Name:       "code.cs",
+				Source:     os.DirFS(dir),
+			}
 			root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 			p := FileLinesProvider{}
@@ -224,7 +269,12 @@ func TestFileLinesProviderHandlesEmptyFile(t *testing.T) {
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "empty.txt"), []byte{}, 0o600)
 
-	f := &model.File{Path: filepath.Join(dir, "empty.txt"), Name: "empty.txt"}
+	f := &model.File{
+		Path:       filepath.Join(dir, "empty.txt"),
+		SourcePath: "empty.txt",
+		Name:       "empty.txt",
+		Source:     os.DirFS(dir),
+	}
 	root := &model.Directory{Path: dir, Name: "root", Files: []*model.File{f}}
 
 	p := FileLinesProvider{}

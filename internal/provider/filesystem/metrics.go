@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"os"
 	"sync"
 
 	"github.com/rotisserie/eris"
@@ -103,10 +102,6 @@ func (p *FileLinesProvider) Load(ctx context.Context, root *model.Directory) err
 }
 
 func countLinesFile(file *model.File) (int64, error) {
-	if file.Source == nil {
-		return countLines(file.Path)
-	}
-
 	data, err := file.ReadAll()
 	if err != nil {
 		return 0, eris.Wrap(err, "reading file for line count")
@@ -129,16 +124,6 @@ const (
 	utf16LE
 	utf16BE
 )
-
-func countLines(path string) (int64, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return 0, eris.Wrap(err, "opening file for line count")
-	}
-	defer file.Close()
-
-	return countLinesReader(file)
-}
 
 func countLinesReader(file io.ReadSeeker) (int64, error) {
 	isBinary, enc, err := probeBinary(file)
