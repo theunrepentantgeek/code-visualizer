@@ -65,9 +65,9 @@ func (*DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
 	return validateLabelMetrics(
 		cfg.Labels,
 		resolveDirectoryLabelMetric,
-		resolvedRole("size", metric.Name(ptrString(cfg.Size)), resolveDirectoryLabelMetric),
-		resolvedRole("fill", cfg.Fill.MetricName(), resolveDirectoryLabelMetric),
-		resolvedRole("border", cfg.Border.MetricName(), resolveDirectoryLabelMetric),
+		resolvedRole("size", metric.Name(ptrString(cfg.Size)), resolveDirectoryRoleMetric),
+		resolvedRole("fill", cfg.Fill.MetricName(), resolveDirectoryRoleMetric),
+		resolvedRole("border", cfg.Border.MetricName(), resolveDirectoryRoleMetric),
 	)
 }
 

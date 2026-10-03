@@ -173,3 +173,78 @@ func TestLabelMetricValidation_RejectsSelectedRoleCollisions(t *testing.T) {
 		})
 	}
 }
+
+func TestLabelMetricValidation_RejectsTemporalDirectoryLabels(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		validate func(label metric.Name) error
+		label    metric.Name
+	}{
+		"donut tree delta": {
+			validate: func(label metric.Name) error {
+				return (&DonutTreeCmd{}).validateConfig(&config.DonutTree{
+					Size: new("file-size"), Labels: []metric.Name{label},
+				})
+			},
+			label: "file-lines.delta",
+		},
+		"donut tree stepdelta": {
+			validate: func(label metric.Name) error {
+				return (&DonutTreeCmd{}).validateConfig(&config.DonutTree{
+					Size: new("file-size"), Labels: []metric.Name{label},
+				})
+			},
+			label: "file-lines.stepdelta",
+		},
+		"alluvial delta": {
+			validate: func(label metric.Name) error {
+				return (&AlluvialCmd{}).validateConfig(&config.Alluvial{
+					References: []string{"v1", "v2"}, Metric: new("file-size"),
+					Labels: []metric.Name{label},
+				})
+			},
+			label: "file-lines.delta",
+		},
+		"alluvial stepdelta": {
+			validate: func(label metric.Name) error {
+				return (&AlluvialCmd{}).validateConfig(&config.Alluvial{
+					References: []string{"v1", "v2"}, Metric: new("file-size"),
+					Labels: []metric.Name{label},
+				})
+			},
+			label: "file-lines.stepdelta",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			err := tc.validate(tc.label)
+
+			g.Expect(err).To(MatchError(And(
+				ContainSubstring(`invalid label metric "`+string(tc.label)+`"`),
+				ContainSubstring("temporal modifier"),
+				ContainSubstring("not supported for label metrics"),
+			)))
+		})
+	}
+}
+
+func TestLabelMetricValidation_TemporalAlluvialFillStillCollidesWithLabel(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	err := (&AlluvialCmd{}).validateConfig(&config.Alluvial{
+		References: []string{"v1", "v2"}, Metric: new("file-size"),
+		Fill:   &config.MetricSpec{Metric: "file-lines.delta"},
+		Labels: []metric.Name{"file-lines.sum"},
+	})
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring(`label metric "file-lines.sum"`),
+		ContainSubstring("selected fill role"),
+	)))
+}

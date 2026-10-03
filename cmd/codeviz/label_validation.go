@@ -61,14 +61,38 @@ func resolveFileLabelMetric(name metric.Name) (metric.Name, error) {
 	return resolved.ResultName, nil
 }
 
+// resolveDirectoryLabelMetric resolves a label metric for directory-level
+// visualizations. Temporal modifiers are rejected because label acquisition and
+// rendering only support single-snapshot values.
 func resolveDirectoryLabelMetric(name metric.Name) (metric.Name, error) {
 	expression, err := metric.ParseExpression(string(name))
 	if err != nil {
 		return "", eris.Wrap(err, "parse label metric")
 	}
 
-	expression = expression.WithoutTemporal()
+	if !expression.Temporal.IsZero() {
+		return "", eris.Errorf(
+			"temporal modifier %q is not supported for label metrics",
+			expression.Temporal,
+		)
+	}
 
+	return resolveDirectoryExpression(expression)
+}
+
+// resolveDirectoryRoleMetric resolves a selected role metric (size, fill, border,
+// width) to the per-snapshot metric it is computed from, so temporal roles still
+// collide with labels naming that underlying metric.
+func resolveDirectoryRoleMetric(name metric.Name) (metric.Name, error) {
+	expression, err := metric.ParseExpression(string(name))
+	if err != nil {
+		return "", eris.Wrap(err, "parse role metric")
+	}
+
+	return resolveDirectoryExpression(expression.WithoutTemporal())
+}
+
+func resolveDirectoryExpression(expression metric.MetricExpression) (metric.Name, error) {
 	descriptor, ok := provider.GetBase(expression.Base)
 	if !ok {
 		return "", eris.Errorf("unknown base metric %q", expression.Base)

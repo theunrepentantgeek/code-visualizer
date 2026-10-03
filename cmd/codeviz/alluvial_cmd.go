@@ -76,8 +76,8 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 	return validateLabelMetrics(
 		cfg.Labels,
 		resolveDirectoryLabelMetric,
-		resolvedRole("width", metricName, resolveDirectoryLabelMetric),
-		resolvedRole("fill", cfg.Fill.MetricName(), resolveDirectoryLabelMetric),
+		resolvedRole("width", metricName, resolveDirectoryRoleMetric),
+		resolvedRole("fill", cfg.Fill.MetricName(), resolveDirectoryRoleMetric),
 	)
 }
 
