@@ -106,9 +106,22 @@ func mergeConstantPaths(
 
 func mergedColumnValues(values []Value, groups []constantBandGroup) []Value {
 	widths := valuesByPath(values)
+	originalValues := make(map[string]Value, len(values))
+	for _, value := range values {
+		originalValues[value.Path] = value
+	}
+
 	result := make([]Value, 0, len(groups))
 
 	for _, group := range groups {
+		if !group.muted && len(group.members) == 1 {
+			if value, present := originalValues[group.members[0]]; present {
+				result = append(result, value)
+			}
+
+			continue
+		}
+
 		width, present := groupWidth(group, widths)
 		if present {
 			result = append(result, Value{Path: group.path, Width: width})

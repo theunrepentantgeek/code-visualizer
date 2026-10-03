@@ -257,6 +257,39 @@ func TestBuildData_MergesAdjacentConstantRunsSeparatedByChangedPaths(t *testing.
 	g.Expect(data.FillValues).To(Equal(map[string]float64{"charlie": 4}))
 }
 
+func TestBuildData_MergePreservesPerColumnLabelsForChangedPaths(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	beforeChanged := testDirectory("charlie", 3)
+	beforeChanged.SetQuantity(labelQuantity, 12)
+	afterChanged := testDirectory("charlie", 4)
+	afterChanged.SetQuantity(labelQuantity, 21)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(
+			testDirectory("alpha", 1),
+			beforeChanged,
+		)},
+		{Reference: "after", Root: testRoot(
+			testDirectory("alpha", 1),
+			afterChanged,
+		)},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		LabelMetrics:  []metric.Name{labelQuantity},
+		ConstantBands: config.ConstantBandsMerge,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns[0].Values[1]).To(Equal(alluvial.Value{
+		Path: "charlie", Width: 3, Labels: []string{"12"},
+	}))
+	g.Expect(data.Columns[1].Values[1]).To(Equal(alluvial.Value{
+		Path: "charlie", Width: 4, Labels: []string{"21"},
+	}))
+}
+
 func TestBuildData_HideAllowsEveryBandToBeRemoved(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
