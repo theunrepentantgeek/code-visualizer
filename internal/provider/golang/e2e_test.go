@@ -54,9 +54,7 @@ func setupE2E(
 	t.Helper()
 
 	provider.ResetBaseRegistryForTesting()
-	golang.ResetCacheForTesting()
 	t.Cleanup(provider.ResetBaseRegistryForTesting)
-	t.Cleanup(golang.ResetCacheForTesting)
 
 	golang.Register()
 

@@ -2,8 +2,6 @@ package golang
 
 import (
 	"go/token"
-	"os"
-	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -75,34 +73,4 @@ func TestIsStdlib(t *testing.T) {
 	g.Expect(isStdlib("encoding/json")).To(BeTrue())
 	g.Expect(isStdlib("github.com/foo/bar")).To(BeFalse())
 	g.Expect(isStdlib("golang.org/x/sync")).To(BeFalse())
-}
-
-func TestFindModulePath(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	dir := t.TempDir()
-	sub := filepath.Join(dir, "sub", "deep")
-	_ = os.MkdirAll(sub, 0o755)
-	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/test/mod\n\ngo 1.26\n"), 0o600)
-
-	mc := newModuleCache()
-
-	path := mc.findModulePath(sub)
-	g.Expect(path).To(Equal("github.com/test/mod"))
-
-	// Cached: same result for parent dir
-	path2 := mc.findModulePath(filepath.Join(dir, "sub"))
-	g.Expect(path2).To(Equal("github.com/test/mod"))
-}
-
-func TestFindModulePathNoGoMod(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	dir := t.TempDir()
-	mc := newModuleCache()
-
-	path := mc.findModulePath(dir)
-	g.Expect(path).To(Equal(""))
 }

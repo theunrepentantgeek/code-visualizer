@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -9,19 +10,19 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
-//nolint:paralleltest // ResetDeclCacheForTesting mutates package globals
 func TestPopulateDeclarations(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
-
-	ResetDeclCacheForTesting()
 
 	path, err := filepath.Abs(filepath.Join("testdata", "sample.go"))
 	g.Expect(err).NotTo(HaveOccurred())
 
 	f := &model.File{
-		Path:      path,
-		Name:      "sample.go",
-		Extension: "go",
+		Path:       path,
+		SourcePath: "sample.go",
+		Name:       "sample.go",
+		Extension:  "go",
+		Source:     os.DirFS("testdata"),
 	}
 
 	PopulateDeclarations(f)
@@ -48,11 +49,9 @@ func TestPopulateDeclarations(t *testing.T) {
 	expectFunctionMetrics(t, declarations["privateMethod"], 3)
 }
 
-//nolint:paralleltest // ResetDeclCacheForTesting mutates package globals
 func TestPopulateDeclarationsAppendsToExistingDeclarations(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
-
-	ResetDeclCacheForTesting()
 
 	path, err := filepath.Abs(filepath.Join("testdata", "sample.go"))
 	g.Expect(err).NotTo(HaveOccurred())
@@ -65,8 +64,10 @@ func TestPopulateDeclarationsAppendsToExistingDeclarations(t *testing.T) {
 
 	f := &model.File{
 		Path:         path,
+		SourcePath:   "sample.go",
 		Name:         "sample.go",
 		Extension:    "go",
+		Source:       os.DirFS("testdata"),
 		Declarations: []*model.Declaration{existing},
 	}
 
@@ -90,6 +91,18 @@ func TestPopulateDeclarationsSkipsNonGoFiles(t *testing.T) {
 	PopulateDeclarations(f)
 
 	g.Expect(f.Declarations).To(BeEmpty())
+}
+
+func TestAnalyzeModelDeclarationsRejectsMissingSourceEvenWhenPathExists(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "readable.go")
+	g.Expect(os.WriteFile(filePath, []byte("package readable\n"), 0o600)).To(Succeed())
+
+	_, err := analyzeModelDeclarations(&model.File{Path: filePath, Extension: "go"})
+
+	g.Expect(err).To(MatchError(ContainSubstring("file has no content source")))
 }
 
 func declarationMap(declarations []*model.Declaration) map[string]*model.Declaration {

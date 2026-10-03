@@ -81,8 +81,10 @@ func TestLoadFileMetricsFindsParentModuleForLiveNonGitSource(t *testing.T) {
 	}
 	file := &model.File{
 		Path:       filepath.Join(pkgDir, "main.go"),
+		RepoPath:   "pkg/main.go",
 		SourcePath: "main.go",
 		Source:     sourceFS,
+		RepoSource: os.DirFS(dir),
 		Extension:  "go",
 	}
 
@@ -109,8 +111,20 @@ func TestPopulateDeclarationsReadsAttachedSource(t *testing.T) {
 	g.Expect(file.Declarations[0].Name).To(Equal("main"))
 }
 
-//nolint:paralleltest // mutates package globals via ResetCacheForTesting
+func TestAnalyzeModelFileRejectsMissingSourceEvenWhenPathExists(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "readable.go")
+	g.Expect(os.WriteFile(filePath, []byte("package readable\n"), 0o600)).To(Succeed())
+
+	_, err := analyzeModelFile(&model.File{Path: filePath, Extension: "go"})
+
+	g.Expect(err).To(MatchError(ContainSubstring("file has no content source")))
+}
+
 func TestLoadFileMetrics_PopulatesGoFileMetrics(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()
@@ -133,15 +147,21 @@ func Hello() string {
 	_ = os.WriteFile(filepath.Join(dir, "main.go"), []byte(src), 0o600)
 	_ = os.WriteFile(filepath.Join(dir, "README.md"), []byte("# readme\n"), 0o600)
 
-	goFile := &model.File{Path: filepath.Join(dir, "main.go"), Name: "main.go", Extension: "go"}
+	goFile := &model.File{
+		Path:       filepath.Join(dir, "main.go"),
+		RepoPath:   "main.go",
+		SourcePath: "main.go",
+		Name:       "main.go",
+		Extension:  "go",
+		Source:     os.DirFS(dir),
+		RepoSource: os.DirFS(dir),
+	}
 	otherFile := &model.File{Path: filepath.Join(dir, "README.md"), Name: "README.md", Extension: "md"}
 	root := &model.Directory{
 		Path:  dir,
 		Name:  "root",
 		Files: []*model.File{goFile, otherFile},
 	}
-
-	ResetCacheForTesting()
 
 	err := loadFileMetrics(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -170,8 +190,8 @@ func Hello() string {
 	g.Expect(ok).To(BeFalse())
 }
 
-//nolint:paralleltest // mutates package globals via ResetCacheForTesting
 func TestLoadFileMetrics_SetsZeroCommentRatio(t *testing.T) {
+	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	dir := t.TempDir()
@@ -185,14 +205,18 @@ func Hello() string {
 `
 	_ = os.WriteFile(filepath.Join(dir, "main.go"), []byte(src), 0o600)
 
-	goFile := &model.File{Path: filepath.Join(dir, "main.go"), Name: "main.go", Extension: "go"}
+	goFile := &model.File{
+		Path:       filepath.Join(dir, "main.go"),
+		SourcePath: "main.go",
+		Name:       "main.go",
+		Extension:  "go",
+		Source:     os.DirFS(dir),
+	}
 	root := &model.Directory{
 		Path:  dir,
 		Name:  "root",
 		Files: []*model.File{goFile},
 	}
-
-	ResetCacheForTesting()
 
 	err := loadFileMetrics(context.Background(), root)
 	g.Expect(err).NotTo(HaveOccurred())

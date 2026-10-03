@@ -3,13 +3,10 @@ package golang
 import (
 	"go/token"
 	"log/slog"
-	"os"
-	"sync"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
 	"github.com/rotisserie/eris"
-	"golang.org/x/sync/singleflight"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
@@ -25,18 +22,6 @@ type declarationInfo struct {
 
 type declarationAnalysis struct {
 	declarations []declarationInfo
-}
-
-type declCache struct {
-	mu       sync.Mutex
-	group    singleflight.Group
-	decls    map[string]*declarationAnalysis
-	parseErr map[string]error
-}
-
-var globalDeclCache = &declCache{
-	decls:    make(map[string]*declarationAnalysis),
-	parseErr: make(map[string]error),
 }
 
 // PopulateDeclarations parses a Go file and attaches declaration nodes to it.
@@ -57,68 +42,12 @@ func PopulateDeclarations(f *model.File) {
 }
 
 func analyzeModelDeclarations(f *model.File) (*declarationAnalysis, error) {
-	if f.Source == nil {
-		return getOrAnalyzeDeclarations(f.Path)
-	}
-
 	src, err := f.ReadAll()
 	if err != nil {
 		return nil, eris.Wrap(err, "reading Go declarations")
 	}
 
 	return analyzeDeclarationSource(f.Path, src)
-}
-
-func getOrAnalyzeDeclarations(path string) (*declarationAnalysis, error) {
-	globalDeclCache.mu.Lock()
-	if declarations, ok := globalDeclCache.decls[path]; ok {
-		globalDeclCache.mu.Unlock()
-
-		return declarations, nil
-	}
-
-	if err, ok := globalDeclCache.parseErr[path]; ok {
-		globalDeclCache.mu.Unlock()
-
-		return nil, err
-	}
-	globalDeclCache.mu.Unlock()
-
-	result, err, _ := globalDeclCache.group.Do(path, func() (any, error) {
-		analysis, analyzeErr := analyzeDeclarations(path)
-		if analyzeErr != nil {
-			globalDeclCache.mu.Lock()
-			globalDeclCache.parseErr[path] = analyzeErr
-			globalDeclCache.mu.Unlock()
-
-			return nil, analyzeErr
-		}
-
-		globalDeclCache.mu.Lock()
-		globalDeclCache.decls[path] = analysis
-		globalDeclCache.mu.Unlock()
-
-		return analysis, nil
-	})
-	if err != nil {
-		return nil, eris.Wrap(err, "analyzing Go declarations")
-	}
-
-	analysis, ok := result.(*declarationAnalysis)
-	if !ok {
-		return nil, eris.New("unexpected type from declaration singleflight result")
-	}
-
-	return analysis, nil
-}
-
-func analyzeDeclarations(path string) (*declarationAnalysis, error) {
-	src, err := os.ReadFile(path)
-	if err != nil {
-		return nil, eris.Wrapf(err, "reading Go file %s", path)
-	}
-
-	return analyzeDeclarationSource(path, src)
 }
 
 func analyzeDeclarationSource(name string, src []byte) (*declarationAnalysis, error) {
@@ -276,12 +205,4 @@ func buildDeclarations(declarations []declarationInfo) []*model.Declaration {
 	}
 
 	return result
-}
-
-// ResetDeclCacheForTesting clears the declaration cache. Test use only.
-func ResetDeclCacheForTesting() {
-	globalDeclCache = &declCache{
-		decls:    make(map[string]*declarationAnalysis),
-		parseErr: make(map[string]error),
-	}
 }

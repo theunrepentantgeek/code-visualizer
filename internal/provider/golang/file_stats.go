@@ -3,7 +3,6 @@ package golang
 import (
 	"go/ast"
 	"go/token"
-	"os"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
@@ -124,17 +123,6 @@ func (vc *visibilityCount) add(name string) {
 
 func isPublic(name string) bool {
 	return token.IsExported(name)
-}
-
-// analyzeFile parses a .go file with dst and extracts all metrics in a single
-// pass. The modulePath is used for internal import classification.
-func analyzeFile(path string, modulePath string) (*fileStats, error) {
-	src, err := os.ReadFile(path)
-	if err != nil {
-		return nil, eris.Wrapf(err, "reading Go file %s", path)
-	}
-
-	return analyzeSource(path, src, modulePath)
 }
 
 func analyzeSource(name string, src []byte, modulePath string) (*fileStats, error) {
