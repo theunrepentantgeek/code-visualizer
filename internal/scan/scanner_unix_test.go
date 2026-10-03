@@ -49,5 +49,11 @@ func TestScanSkipsFileSymlinkOutsideRoot(t *testing.T) {
 	root, err := Scan(context.Background(), rootPath, nil, nil, true)
 
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
 	g.Expect(collectFileNames(root)).To(ConsistOf("safe.txt"))
 }

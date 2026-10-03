@@ -75,6 +75,12 @@ func TestScanAttachesReadableSource(t *testing.T) {
 	root, err := Scan(context.Background(), dir, nil, nil, true)
 
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
 	g.Expect(root.Files).To(HaveLen(1))
 
 	file := root.Files[0]
