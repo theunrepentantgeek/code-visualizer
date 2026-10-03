@@ -19,6 +19,9 @@ const (
 	widthMetric        = metric.Name("test-width.sum")
 	measureWidthMetric = metric.Name("test-measure-width.sum")
 	fillMetric         = metric.Name("test-fill.sum")
+	labelQuantity      = metric.Name("test-label-quantity.sum")
+	labelMeasure       = metric.Name("test-label-measure.mean")
+	labelClass         = metric.Name("test-label-class.mode")
 )
 
 func TestMain(m *testing.M) {
@@ -78,6 +81,32 @@ func TestBuildData_PreservesReferenceOrderAndAlignsSnapshotWidths(t *testing.T) 
 		{FromReference: "release-1", ToReference: "release-2", Path: "docs", FromWidth: 0, ToWidth: 9},
 		{FromReference: "release-1", ToReference: "release-2", Path: "legacy", FromWidth: 7, ToWidth: 0},
 	}))
+}
+
+func TestBuildData_PreservesPerSnapshotLabelValuesInConfiguredOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	before := testDirectory("api", 10)
+	before.SetQuantity(labelQuantity, 12)
+	before.SetMeasure(labelMeasure, 3.5)
+	before.SetClassification(labelClass, "stable")
+
+	after := testDirectory("api", 20)
+	after.SetQuantity(labelQuantity, 21)
+	after.SetClassification(labelClass, "changing")
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(before)},
+		{Reference: "after", Root: testRoot(after)},
+	}, alluvial.Options{
+		Metric:       widthMetric,
+		LabelMetrics: []metric.Name{labelQuantity, labelMeasure, labelClass},
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns[0].Values[0].Labels).To(Equal([]string{"12", "3.5", "stable"}))
+	g.Expect(data.Columns[1].Values[0].Labels).To(Equal([]string{"21", "-", "changing"}))
 }
 
 func TestBuildData_HidesOnlyPathsConstantAcrossEveryReference(t *testing.T) {
@@ -227,6 +256,40 @@ func TestBuildData_MergesAdjacentConstantRunsSeparatedByChangedPaths(t *testing.
 	}))
 	g.Expect(data.Transitions).To(HaveLen(3))
 	g.Expect(data.FillValues).To(Equal(map[string]float64{"charlie": 4}))
+}
+
+func TestBuildData_MergePreservesPerColumnLabelsForChangedPaths(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	beforeChanged := testDirectory("charlie", 3)
+	beforeChanged.SetQuantity(labelQuantity, 12)
+
+	afterChanged := testDirectory("charlie", 4)
+	afterChanged.SetQuantity(labelQuantity, 21)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(
+			testDirectory("alpha", 1),
+			beforeChanged,
+		)},
+		{Reference: "after", Root: testRoot(
+			testDirectory("alpha", 1),
+			afterChanged,
+		)},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		LabelMetrics:  []metric.Name{labelQuantity},
+		ConstantBands: config.ConstantBandsMerge,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns[0].Values[1]).To(Equal(alluvial.Value{
+		Path: "charlie", Width: 3, Labels: []string{"12"},
+	}))
+	g.Expect(data.Columns[1].Values[1]).To(Equal(alluvial.Value{
+		Path: "charlie", Width: 4, Labels: []string{"21"},
+	}))
 }
 
 func TestBuildData_HideAllowsEveryBandToBeRemoved(t *testing.T) {

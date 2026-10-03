@@ -41,8 +41,9 @@ func ResolveMetrics(c *stages.CommonState, p *State, cfg *config.Spiral) error {
 	}
 
 	p.Resolution = resolveResolution(cfg)
+	p.LabelMetrics = append([]metric.Name(nil), cfg.Labels...)
 
-	c.Requested = collectRequestedMetrics(p.Size, cfg.Fill, cfg.Border, cfg.SurfaceMetric)
+	c.Requested = collectRequestedMetrics(p.Size, cfg.Fill, cfg.Border, cfg.SurfaceMetric, p.LabelMetrics)
 
 	return nil
 }
@@ -61,9 +62,10 @@ func resolveResolution(cfg *config.Spiral) Resolution {
 func collectRequestedMetrics(
 	size metric.Name,
 	fill, border, surfaceSpec *config.MetricSpec,
+	labelMetrics []metric.Name,
 ) stages.RequestedMetrics {
 	seen := map[metric.Name]bool{}
-	names := make([]metric.Name, 0, 4)
+	names := make([]metric.Name, 0, 4+len(labelMetrics))
 
 	if size != "" {
 		seen[size] = true
@@ -74,6 +76,13 @@ func collectRequestedMetrics(
 		if spec != nil && spec.Metric != "" && !seen[spec.Metric] {
 			seen[spec.Metric] = true
 			names = append(names, spec.Metric)
+		}
+	}
+
+	for _, name := range labelMetrics {
+		if name != "" && !seen[name] {
+			seen[name] = true
+			names = append(names, name)
 		}
 	}
 
@@ -102,7 +111,15 @@ func BuildTimeBucketsStage(c *stages.CommonState, p *State) error {
 
 // AggregateBucketMetricsStage fills in per-bucket aggregated metric values.
 func AggregateBucketMetricsStage(c *stages.CommonState, p *State) error {
-	AggregateBucketMetrics(p.Buckets, c.Requested, p.Size, p.Fill.Metric, p.Border.Metric, p.Surface.Metric)
+	AggregateBucketMetrics(
+		p.Buckets,
+		c.Requested,
+		p.Size,
+		p.Fill.Metric,
+		p.Border.Metric,
+		p.Surface.Metric,
+		p.LabelMetrics,
+	)
 
 	return nil
 }
@@ -153,10 +170,11 @@ func BuildLegendStage(c *stages.CommonState, p *State) error {
 		p.LegendConfig.LabelSample = legend.LabelSample{
 			Shape: legend.LabelSampleCircle,
 			Lines: buildLegendLabelSample(LabelMetrics{
-				Size:    p.Size,
-				Fill:    p.Fill.Metric,
-				Border:  p.Border.Metric,
-				Surface: p.Surface.Metric,
+				Size:       p.Size,
+				Fill:       p.Fill.Metric,
+				Border:     p.Border.Metric,
+				Surface:    p.Surface.Metric,
+				Additional: p.LabelMetrics,
 			}),
 		}
 	}
@@ -186,11 +204,12 @@ func LayoutStage(c *stages.CommonState, p *State) error {
 
 	p.Layout = layout
 	p.DiscLabels = buildDiscLabels(layout.Nodes, p.Buckets, p.Inks.Fill, LabelMetrics{
-		Size:      effectiveSizeMetric(p.Size),
-		Fill:      p.Fill.Metric,
-		Border:    p.Border.Metric,
-		Surface:   p.Surface.Metric,
-		Requested: c.Requested,
+		Size:       effectiveSizeMetric(p.Size),
+		Fill:       p.Fill.Metric,
+		Border:     p.Border.Metric,
+		Surface:    p.Surface.Metric,
+		Additional: p.LabelMetrics,
+		Requested:  c.Requested,
 	})
 
 	return nil

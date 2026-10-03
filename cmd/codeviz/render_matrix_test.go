@@ -321,3 +321,35 @@ func TestAllMetrics_RenderEndToEnd(t *testing.T) {
 		})
 	}
 }
+
+func TestLabelOnlyMetrics_RenderEndToEnd(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	target := t.TempDir()
+	g.Expect(os.WriteFile(
+		filepath.Join(target, "alpha.go"),
+		[]byte("package sample\n\nfunc Alpha() {}\n"),
+		0o600,
+	)).To(Succeed())
+
+	out := filepath.Join(t.TempDir(), "labels.svg")
+	flags := &Flags{Config: config.New()}
+	flags.Config.Treemap.Labels = []metric.Name{filesystem.FileLines, filesystem.FileType}
+	cmd := &TreemapCmd{
+		TargetPath: target,
+		Output:     out,
+		Size:       filesystem.FileSize,
+		Width:      640,
+		Height:     480,
+	}
+
+	g.Expect(cmd.Run(flags)).To(Succeed())
+	g.Expect(flags.Config.Treemap.Labels).
+		To(Equal([]metric.Name{filesystem.FileLines, filesystem.FileType}))
+
+	data, err := os.ReadFile(out)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data).NotTo(BeEmpty())
+	g.Expect(svgTextLabels(string(data))).To(ContainElements("alpha.go", "3", "go"))
+}

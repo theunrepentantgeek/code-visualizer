@@ -44,11 +44,20 @@ func ResolveMetrics(c *stages.CommonState, d *State, cfg *config.DonutTree) erro
 		d.Border = stages.ResolveColourEncodingForMetric(cfg.Border, borderMetric)
 	}
 
-	c.Requested = stages.CollectRequestedMetricNames(
-		d.SizeMetric,
-		d.Fill.Metric,
-		d.Border.Metric,
-	)
+	d.LabelMetrics = make([]metric.Name, 0, len(cfg.Labels))
+	for _, name := range cfg.Labels {
+		resolved, err := resolveDirectoryMetric(name)
+		if err != nil {
+			return eris.Wrap(err, "invalid label metric")
+		}
+
+		d.LabelMetrics = append(d.LabelMetrics, resolved)
+	}
+
+	names := make([]metric.Name, 0, 3+len(d.LabelMetrics))
+	names = append(names, d.SizeMetric, d.Fill.Metric, d.Border.Metric)
+	names = append(names, d.LabelMetrics...)
+	c.Requested = stages.CollectRequestedMetricNames(names...)
 
 	return nil
 }
@@ -175,7 +184,10 @@ func RenderStage(c *stages.CommonState, d *State) error {
 }
 
 func labelMetricsFor(d *State, cfg *config.DonutTree) LabelMetrics {
-	metrics := LabelMetrics{Size: d.SizeMetric}
+	metrics := LabelMetrics{
+		Size:       d.SizeMetric,
+		Additional: d.LabelMetrics,
+	}
 
 	if cfg == nil {
 		return metrics

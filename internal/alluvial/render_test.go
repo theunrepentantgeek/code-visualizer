@@ -86,6 +86,77 @@ func TestRenderToCanvas_AddsExplicitFillValueToBandLabel(t *testing.T) {
 	g.Expect(labels).To(ContainElements("api", "12", "-3"))
 }
 
+func TestRenderToCanvas_AppendsAdditionalBandLabelsAfterExplicitFill(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{{
+			X: 100,
+			Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 110, Width: 12, FillValue: -3, HasFillValue: true,
+				Labels: []string{"42", "stable", "-"},
+			}},
+		}},
+	}, 200, 120, inks.NumericInk("fill", []float64{-3}, palette.GetPalette(palette.Neutral)), "fill.delta")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	var labels []string
+
+	for _, call := range backend.Calls {
+		if call.Method == "DrawText" && call.Text != "" {
+			labels = append(labels, call.Text)
+		}
+	}
+
+	g.Expect(labels).To(Equal([]string{"api", "12", "-3", "42", "stable", "-"}))
+}
+
+func TestRenderToCanvas_AdditionalLineCountSuppressesLabelsAndEdgeExtensions(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{
+			{X: 20, Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 50, Width: 12, Labels: []string{"one", "two", "three"},
+			}}},
+			{X: 180, Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 50, Width: 12, Labels: []string{"one", "two", "three"},
+			}}},
+		},
+	}, 200, 60, inks.NumericInk("fill", []float64{0}, palette.GetPalette(palette.Neutral)), "")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	var (
+		labels []string
+		paths  []mock.Call
+	)
+
+	for _, call := range backend.Calls {
+		switch call.Method {
+		case "DrawText":
+			if call.Text != "" {
+				labels = append(labels, call.Text)
+			}
+		case "DrawFilledPath":
+			paths = append(paths, call)
+		default:
+			continue
+		}
+	}
+
+	g.Expect(labels).To(BeEmpty())
+
+	minimumX, maximumX := pathXBounds(paths)
+	g.Expect(minimumX).To(Equal(float64(20)))
+	g.Expect(maximumX).To(Equal(float64(180)))
+}
+
 func TestRenderToCanvas_UsesFixedGreyForMutedBandsAndFlows(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -362,7 +433,8 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	state := &alluvial.State{
-		WidthMetric: "file-lines.sum",
+		WidthMetric:  "file-lines.sum",
+		LabelMetrics: []metric.Name{"commit-density.mean", "file-type.mode"},
 		Fill: alluvial.BandFill{
 			Encoding: viz.ColourEncoding{Metric: "file-lines.sum", Palette: palette.Neutral},
 			Label:    "file-lines.delta",
@@ -384,8 +456,9 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	g.Expect(state.Legend.Entries[1].MetricName).To(Equal("file-lines.sum"))
 	g.Expect(state.Legend.LabelSample).To(Equal(legend.LabelSample{
 		Shape: legend.LabelSampleSquare,
-		Lines: []string{"Directory", "file-lines.sum", "file-lines.delta"},
+		Lines: []string{"Directory", "file-lines.sum", "file-lines.delta", "commit-density.mean", "file-type.mode"},
 	}))
+	g.Expect(state.Legend.Entries).To(HaveLen(2))
 	middle := state.Fill.Ink.Dip(inks.MeasureValue(0))
 	g.Expect(middle).To(Equal(palette.GetPalette(palette.Neutral).Colours[4]))
 }

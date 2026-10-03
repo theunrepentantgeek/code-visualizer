@@ -75,6 +75,34 @@ func TestNew_OptionalFieldsNil(t *testing.T) {
 	g.Expect(cfg.Treemap.Border).To(BeNil())
 }
 
+func TestLabels_RoundTripPreservesOrder(t *testing.T) {
+	t.Parallel()
+
+	for _, extension := range []string{".yaml", ".json"} {
+		t.Run(extension, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			want := []metric.Name{"file-lines", "file-type"}
+			cfg := New()
+
+			cfg.Treemap.Labels = append([]metric.Name(nil), want...)
+			cfg.Spiral.Labels = append([]metric.Name(nil), want...)
+			cfg.DonutTree.Labels = append([]metric.Name(nil), want...)
+			cfg.Alluvial.Labels = append([]metric.Name(nil), want...)
+			path := filepath.Join(t.TempDir(), "config"+extension)
+
+			g.Expect(cfg.Save(path)).To(Succeed())
+
+			loaded := New()
+			g.Expect(loaded.Load(path)).To(Succeed())
+			g.Expect(loaded.Treemap.Labels).To(Equal(want))
+			g.Expect(loaded.Spiral.Labels).To(Equal(want))
+			g.Expect(loaded.DonutTree.Labels).To(Equal(want))
+			g.Expect(loaded.Alluvial.Labels).To(Equal(want))
+		})
+	}
+}
+
 // Load tests
 
 func TestLoad_UnknownExtension_ReturnsError(t *testing.T) {

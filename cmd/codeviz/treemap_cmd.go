@@ -19,7 +19,8 @@ type TreemapCmd struct {
 	Until       string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	ChangedOnly bool   `help:"Show only files modified in the selected Git range." name:"changed-only" optional:""`
 
-	Size metric.Name `default:"" help:"Metric for rectangle area; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Size   metric.Name   `default:"" help:"Metric for rectangle area; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Labels []metric.Name `help:"Additional metric to include in labels (repeatable)." name:"label" placeholder:"metric"`
 
 	Fill   config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
@@ -59,7 +60,13 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 		return eris.Wrap(err, "invalid border spec")
 	}
 
-	return nil
+	return validateLabelMetrics(
+		cfg.Labels,
+		resolveFileLabelMetric,
+		resolvedRole("size", metric.Name(ptrString(cfg.Size)), resolveFileLabelMetric),
+		resolvedRole("fill", cfg.Fill.MetricName(), resolveFileLabelMetric),
+		resolvedRole("border", cfg.Border.MetricName(), resolveFileLabelMetric),
+	)
 }
 
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
@@ -173,6 +180,7 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 	cfg.Treemap.OverrideSize(string(c.Size))
 	cfg.Treemap.OverrideFill(c.Fill)
 	cfg.Treemap.OverrideBorder(c.Border)
+	cfg.Treemap.OverrideLabels(c.Labels)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

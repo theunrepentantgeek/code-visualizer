@@ -1,15 +1,18 @@
 package config
 
+import "github.com/theunrepentantgeek/code-visualizer/internal/metric"
+
 // Spiral holds persistent configuration for spiral timeline visualizations.
 // All fields are pointers: nil means the field was not configured, non-nil
 // means it was explicitly set (by a config file or by a CLI flag override).
 type Spiral struct {
-	Resolution    *string     `yaml:"resolution,omitempty"        json:"resolution,omitempty"`
-	Size          *string     `yaml:"size,omitempty"              json:"size,omitempty"`
-	Fill          *MetricSpec `yaml:"fill,omitempty"              json:"fill,omitempty"`
-	Border        *MetricSpec `yaml:"border,omitempty"            json:"border,omitempty"`
-	Surface       *bool       `yaml:"surface,omitempty"           json:"surface,omitempty"`
-	SurfaceMetric *MetricSpec `yaml:"surfaceMetric,omitempty"  json:"surfaceMetric,omitempty"`
+	Resolution    *string       `yaml:"resolution,omitempty"        json:"resolution,omitempty"`
+	Size          *string       `yaml:"size,omitempty"              json:"size,omitempty"`
+	Fill          *MetricSpec   `yaml:"fill,omitempty"              json:"fill,omitempty"`
+	Border        *MetricSpec   `yaml:"border,omitempty"            json:"border,omitempty"`
+	Surface       *bool         `yaml:"surface,omitempty"           json:"surface,omitempty"`
+	SurfaceMetric *MetricSpec   `yaml:"surfaceMetric,omitempty"  json:"surfaceMetric,omitempty"`
+	Labels        []metric.Name `yaml:"labels,omitempty" json:"labels,omitempty"`
 }
 
 // OverrideResolution sets Resolution to v if v is non-empty.
@@ -35,6 +38,9 @@ func (s *Spiral) OverrideSurface(value bool) {
 
 // OverrideSurfaceMetric sets SurfaceMetric to v if v is non-zero.
 func (s *Spiral) OverrideSurfaceMetric(v MetricSpec) { overrideMetricSpec(&s.SurfaceMetric, v) }
+
+// OverrideLabels replaces configured labels when CLI labels are supplied.
+func (s *Spiral) OverrideLabels(v []metric.Name) { overrideSlice(&s.Labels, v) }
 
 // SurfaceEnabled reports whether the spiral surface has been configured.
 func (s *Spiral) SurfaceEnabled() bool {

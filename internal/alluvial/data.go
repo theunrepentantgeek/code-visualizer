@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"path"
 	"slices"
+	"strconv"
 
 	"github.com/rotisserie/eris"
 
@@ -55,8 +56,9 @@ type Column struct {
 
 // Value identifies a directory and its metric width in one snapshot.
 type Value struct {
-	Path  string
-	Width float64
+	Path   string
+	Width  float64
+	Labels []string
 }
 
 // Transition joins one path in adjacent reference columns. A missing endpoint
@@ -124,8 +126,9 @@ func selectedValues(root *model.Directory, options Options) []Value {
 	values := make([]Value, 0, len(selected))
 	for _, directory := range selected {
 		values = append(values, Value{
-			Path:  directory.RepoPath,
-			Width: directoryWidth(directory, options.Metric),
+			Path:   directory.RepoPath,
+			Width:  directoryWidth(directory, options.Metric),
+			Labels: directoryLabels(directory, options.LabelMetrics),
 		})
 	}
 
@@ -134,6 +137,37 @@ func selectedValues(root *model.Directory, options Options) []Value {
 	})
 
 	return values
+}
+
+func directoryLabels(directory *model.Directory, names []metric.Name) []string {
+	if len(names) == 0 {
+		return nil
+	}
+
+	labels := make([]string, 0, len(names))
+	for _, name := range names {
+		if value, ok := directory.Quantity(name); ok {
+			labels = append(labels, strconv.FormatInt(value, 10))
+
+			continue
+		}
+
+		if value, ok := directory.Measure(name); ok {
+			labels = append(labels, strconv.FormatFloat(value, 'f', -1, 64))
+
+			continue
+		}
+
+		if value, ok := directory.Classification(name); ok {
+			labels = append(labels, value)
+
+			continue
+		}
+
+		labels = append(labels, "-")
+	}
+
+	return labels
 }
 
 func selectedDirectories(root *model.Directory, expansions []string) []*model.Directory {

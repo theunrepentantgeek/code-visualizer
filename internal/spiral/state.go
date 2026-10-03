@@ -16,6 +16,7 @@ type State struct {
 	Border         viz.ColourEncoding
 	SurfaceEnabled bool
 	Surface        viz.ColourEncoding
+	LabelMetrics   []metric.Name
 	Resolution     Resolution
 	SpotsPerLap    int
 

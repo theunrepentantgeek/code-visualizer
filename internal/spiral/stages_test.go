@@ -37,6 +37,25 @@ func TestResolveMetrics_SizeOnly(t *testing.T) {
 	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(metric.Name("file-size")))
 }
 
+func TestResolveMetrics_IncludesOrderedLabelOnlyMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	size := "file-size"
+	common := &stages.CommonState{}
+	viz := &spiral.State{}
+	cfg := &config.Spiral{
+		Size:   &size,
+		Labels: []metric.Name{"file-lines", "file-type"},
+	}
+
+	g.Expect(spiral.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.LabelMetrics).To(Equal([]metric.Name{"file-lines", "file-type"}))
+	g.Expect(common.Requested.BaseMetrics).To(Equal([]metric.Name{
+		"file-size", "file-lines", "file-type",
+	}))
+}
+
 func TestResolveMetrics_NilSizeExcludesSizeFromRequested(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -296,6 +315,29 @@ func TestBuildLegendStage_AddsDistinctSurfaceMetric(t *testing.T) {
 	g.Expect(viz.LegendConfig.Entries).To(HaveLen(3))
 	g.Expect(viz.LegendConfig.Entries[2].Role).To(Equal(legend.RoleSurface))
 	g.Expect(viz.LegendConfig.Entries[2].MetricName).To(Equal("file-size"))
+}
+
+func TestBuildLegendStage_AppendsLabelNamesOnlyToCircleSample(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{RootConfig: config.New()}
+	viz := &spiral.State{
+		Size:         "file-size",
+		LabelMetrics: []metric.Name{"file-lines", "file-type"},
+		Inks:         spiral.Inks{Fill: inks.FixedInk(palette.White)},
+	}
+
+	g.Expect(spiral.BuildLegendStage(common, viz)).To(Succeed())
+	g.Expect(viz.LegendConfig.LabelSample).To(Equal(legend.LabelSample{
+		Shape: legend.LabelSampleCircle,
+		Lines: []string{
+			"Day", "Month", "file-size", "file-lines", "file-type",
+		},
+	}))
+	g.Expect(viz.LegendConfig.Entries).NotTo(ContainElement(
+		HaveField("MetricName", Or(Equal("file-lines"), Equal("file-type"))),
+	))
 }
 
 func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {

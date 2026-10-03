@@ -8,6 +8,7 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
@@ -32,9 +33,10 @@ func TestBuildBlockLabels_IncludesOnlyConfiguredMetricLines(t *testing.T) {
 	}
 
 	labels := buildBlockLabels(rects, root, inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}), LabelMetrics{
-		Size:   filesystem.FileSize,
-		Fill:   filesystem.FileType,
-		Border: filesystem.FileLines,
+		Size:       filesystem.FileSize,
+		Fill:       filesystem.FileType,
+		Border:     filesystem.FileLines,
+		Additional: []metric.Name{filesystem.FileLines, filesystem.FileType},
 	})
 	g.Expect(labels).To(HaveLen(1))
 
@@ -42,7 +44,7 @@ func TestBuildBlockLabels_IncludesOnlyConfiguredMetricLines(t *testing.T) {
 		return
 	}
 
-	g.Expect(labels[0].Lines).To(Equal([]string{"alpha.go", "128", "go", "12"}))
+	g.Expect(labels[0].Lines).To(Equal([]string{"alpha.go", "128", "go", "12", "12", "go"}))
 }
 
 func TestBuildBlockLabels_OmitsUnconfiguredMetrics(t *testing.T) {
@@ -76,4 +78,40 @@ func TestBuildBlockLabels_OmitsUnconfiguredMetrics(t *testing.T) {
 	}
 
 	g.Expect(labels[0].Lines).To(Equal([]string{"beta.go", "64"}))
+}
+
+func TestBuildBlockLabels_OmitsUnavailableAdditionalMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	file := &model.File{Name: "gamma.go", Extension: "go"}
+	file.SetQuantity(filesystem.FileSize, 32)
+	file.SetClassification(filesystem.FileType, "go")
+
+	root := &model.Directory{Name: "root", Files: []*model.File{file}}
+	rects := TreemapRectangle{
+		Label:       "root",
+		IsDirectory: true,
+		Children: []TreemapRectangle{{
+			Bounds: geometry.Rect{Min: geometry.NewPoint(0, 0), Max: geometry.NewPoint(100, 40)},
+			Label:  "gamma.go",
+		}},
+	}
+
+	labels := buildBlockLabels(
+		rects,
+		root,
+		inks.FixedInk(color.RGBA{A: 255}),
+		LabelMetrics{
+			Size:       filesystem.FileSize,
+			Additional: []metric.Name{"unavailable", filesystem.FileType},
+		},
+	)
+	g.Expect(labels).To(HaveLen(1))
+
+	if len(labels) == 0 {
+		return
+	}
+
+	g.Expect(labels[0].Lines).To(Equal([]string{"gamma.go", "32", "go"}))
 }

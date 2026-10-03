@@ -233,7 +233,7 @@ func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
 		}
 	}
 
-	return lines
+	return append(lines, band.Labels...)
 }
 
 func alluvialBandInk(fillInk inks.Ink, band Band) inks.Ink {

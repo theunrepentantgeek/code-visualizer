@@ -22,7 +22,8 @@ type SpiralCmd struct {
 
 	Resolution string `short:"r" help:"Time resolution (hourly or daily)." enum:",hourly,daily" default:""`
 
-	Size metric.Name `default:"" help:"Metric for disc size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Size   metric.Name   `default:"" help:"Metric for disc size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Labels []metric.Name `help:"Additional metric to include in labels (repeatable)." name:"label" placeholder:"metric"`
 
 	Fill          config.MetricSpec `help:"Fill colour: metric[,palette] (e.g. file-type,categorization)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 	Border        config.MetricSpec `help:"Border colour: metric[,palette] (e.g. file-lines,foliage)." optional:"" short:"b"`     //nolint:revive,nolintlint // kong struct tags require long lines
@@ -56,10 +57,31 @@ func (*SpiralCmd) validateConfig(cfg *config.Spiral) error {
 	}
 
 	if !cfg.SurfaceEnabled() {
-		return validateSpiralColours(cfg)
+		if err := validateSpiralColours(cfg); err != nil {
+			return err
+		}
+	} else if err := validateSurfaceConfig(cfg); err != nil {
+		return err
 	}
 
-	return validateSurfaceConfig(cfg)
+	size := metric.Name(ptrString(cfg.Size))
+	if size == "" {
+		size = "commit-count"
+	}
+
+	surface := cfg.SurfaceMetric.MetricName()
+	if surface == "" && cfg.SurfaceEnabled() {
+		surface = cfg.Fill.MetricName()
+	}
+
+	return validateLabelMetrics(
+		cfg.Labels,
+		resolveFileLabelMetric,
+		resolvedRole("size", size, resolveFileLabelMetric),
+		resolvedRole("fill", cfg.Fill.MetricName(), resolveFileLabelMetric),
+		resolvedRole("border", cfg.Border.MetricName(), resolveFileLabelMetric),
+		resolvedRole("surface", surface, resolveFileLabelMetric),
+	)
 }
 
 func validateSpiralSize(cfg *config.Spiral) error {
@@ -231,6 +253,7 @@ func (c *SpiralCmd) applyOverrides(cfg *config.Config) {
 	cfg.Spiral.OverrideBorder(c.Border)
 	cfg.Spiral.OverrideSurface(c.Surface)
 	cfg.Spiral.OverrideSurfaceMetric(c.SurfaceMetric)
+	cfg.Spiral.OverrideLabels(c.Labels)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }
