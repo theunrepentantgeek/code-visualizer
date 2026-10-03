@@ -339,6 +339,7 @@ func TestStagesFlagsForCommand_CapturesSharedTimeNow(t *testing.T) {
 	flags := stagesFlagsForCommand(&Flags{}, "ago(14d)", "HEAD")
 
 	after := time.Now()
+
 	g.Expect(flags.HistoryRange.TimeNow).To(BeTemporally(">=", before))
 	g.Expect(flags.HistoryRange.TimeNow).To(BeTemporally("<=", after))
 

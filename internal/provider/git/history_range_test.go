@@ -35,6 +35,7 @@ func TestHistoryRangeWithTimeNow_CapturesCurrentTimeOnce(t *testing.T) {
 	historyRange := (HistoryRange{From: "ago(14d)", Until: "HEAD"}).withTimeNow()
 
 	after := time.Now()
+
 	g.Expect(historyRange.TimeNow).To(BeTemporally(">=", before))
 	g.Expect(historyRange.TimeNow).To(BeTemporally("<=", after))
 }
@@ -188,8 +189,10 @@ func TestHistoryRange_AcceptsPredecessorBounds(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	var hashes []string
+
 	for commit, iterationErr := range commits {
 		g.Expect(iterationErr).NotTo(HaveOccurred())
+
 		hashes = append(hashes, commit.Hash.String())
 	}
 
