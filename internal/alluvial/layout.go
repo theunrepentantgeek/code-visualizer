@@ -30,6 +30,7 @@ type ColumnLayout struct {
 // Band is the vertical extent allocated to one directory in a release column.
 type Band struct {
 	Path         string
+	Labels       []string
 	Top          float64
 	Bottom       float64
 	Width        float64
@@ -152,11 +153,16 @@ func columnsWithZeroPlaceholders(columns []Column) []Column {
 
 	result := make([]Column, len(columns))
 	for index, column := range columns {
-		widths := valuesByPath(column.Values)
+		valuesByPath := make(map[string]Value, len(column.Values))
+		for _, value := range column.Values {
+			valuesByPath[value.Path] = value
+		}
 
 		values := make([]Value, 0, len(paths))
 		for _, path := range paths {
-			values = append(values, Value{Path: path, Width: widths[path]})
+			value := valuesByPath[path]
+			value.Path = path
+			values = append(values, value)
 		}
 
 		result[index] = Column{Reference: column.Reference, Values: values}
@@ -269,7 +275,10 @@ func layoutBands(values []Value, top, verticalSpace, scale, available, gap float
 			y += gap
 		}
 
-		bands = append(bands, Band{Path: value.Path, Top: y, Bottom: y + bandHeight, Width: value.Width})
+		bands = append(bands, Band{
+			Path: value.Path, Labels: append([]string(nil), value.Labels...),
+			Top: y, Bottom: y + bandHeight, Width: value.Width,
+		})
 		y += bandHeight
 	}
 

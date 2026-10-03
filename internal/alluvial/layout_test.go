@@ -85,6 +85,21 @@ func TestLayoutData_ProjectsMutedPathsOntoBandsAndFlows(t *testing.T) {
 	g.Expect(flowByPath(layout.Flows, "changed").Muted).To(BeFalse())
 }
 
+func TestLayoutData_CopiesSnapshotLabelsToMatchingBands(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout := alluvial.LayoutData(alluvial.Data{
+		Columns: []alluvial.Column{
+			{Reference: "before", Values: []alluvial.Value{{Path: "api", Width: 10, Labels: []string{"12", "go"}}}},
+			{Reference: "after", Values: []alluvial.Value{{Path: "api", Width: 20, Labels: []string{"20", "rust"}}}},
+		},
+	}, 200, 100)
+
+	g.Expect(layout.Columns[0].Bands[0].Labels).To(Equal([]string{"12", "go"}))
+	g.Expect(layout.Columns[1].Bands[0].Labels).To(Equal([]string{"20", "rust"}))
+}
+
 func TestLayoutData_KeepsChangedPathsBetweenMergedConstantRuns(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

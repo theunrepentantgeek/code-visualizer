@@ -19,6 +19,9 @@ const (
 	widthMetric        = metric.Name("test-width.sum")
 	measureWidthMetric = metric.Name("test-measure-width.sum")
 	fillMetric         = metric.Name("test-fill.sum")
+	labelQuantity      = metric.Name("test-label-quantity.sum")
+	labelMeasure       = metric.Name("test-label-measure.mean")
+	labelClass         = metric.Name("test-label-class.mode")
 )
 
 func TestMain(m *testing.M) {
@@ -78,6 +81,31 @@ func TestBuildData_PreservesReferenceOrderAndAlignsSnapshotWidths(t *testing.T) 
 		{FromReference: "release-1", ToReference: "release-2", Path: "docs", FromWidth: 0, ToWidth: 9},
 		{FromReference: "release-1", ToReference: "release-2", Path: "legacy", FromWidth: 7, ToWidth: 0},
 	}))
+}
+
+func TestBuildData_PreservesPerSnapshotLabelValuesInConfiguredOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	before := testDirectory("api", 10)
+	before.SetQuantity(labelQuantity, 12)
+	before.SetMeasure(labelMeasure, 3.5)
+	before.SetClassification(labelClass, "stable")
+	after := testDirectory("api", 20)
+	after.SetQuantity(labelQuantity, 21)
+	after.SetClassification(labelClass, "changing")
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(before)},
+		{Reference: "after", Root: testRoot(after)},
+	}, alluvial.Options{
+		Metric:       widthMetric,
+		LabelMetrics: []metric.Name{labelQuantity, labelMeasure, labelClass},
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns[0].Values[0].Labels).To(Equal([]string{"12", "3.5", "stable"}))
+	g.Expect(data.Columns[1].Values[0].Labels).To(Equal([]string{"21", "-", "changing"}))
 }
 
 func TestBuildData_HidesOnlyPathsConstantAcrossEveryReference(t *testing.T) {

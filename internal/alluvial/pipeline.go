@@ -31,6 +31,17 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 
 	state.WidthMetric = widthMetric
 
+	labelMetrics := make([]metric.Name, 0, len(cfg.Labels))
+	for _, name := range cfg.Labels {
+		resolved, resolveErr := resolveDirectoryMetric(name)
+		if resolveErr != nil {
+			return eris.Wrap(resolveErr, "invalid alluvial label metric")
+		}
+
+		labelMetrics = append(labelMetrics, resolved)
+	}
+	state.LabelMetrics = labelMetrics
+
 	var (
 		fillMetric   metric.Name
 		fillLabel    metric.Name
@@ -64,7 +75,9 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 		Explicit: fillExplicit,
 		Temporal: fillTemporal,
 	}
-	common.Requested = stages.CollectRequestedMetricNames(widthMetric, fillMetric)
+	requested := []metric.Name{widthMetric, fillMetric}
+	requested = append(requested, labelMetrics...)
+	common.Requested = stages.CollectRequestedMetricNames(requested...)
 
 	return nil
 }
@@ -315,6 +328,7 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 
 	data, err := BuildData(state.Snapshots, Options{
 		Metric:        metricName,
+		LabelMetrics:  state.LabelMetrics,
 		FillMetric:    state.Fill.Encoding.Metric,
 		FillTemporal:  state.Fill.Temporal,
 		Expand:        cfg.Expand,
@@ -351,6 +365,9 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 		lines := []string{"Directory", string(state.WidthMetric)}
 		if state.Fill.Explicit {
 			lines = append(lines, string(state.Fill.Label))
+		}
+		for _, name := range state.LabelMetrics {
+			lines = append(lines, string(name))
 		}
 
 		state.Legend.LabelSample = legend.LabelSample{
