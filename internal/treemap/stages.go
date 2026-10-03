@@ -18,7 +18,8 @@ func ResolveMetrics(c *stages.CommonState, t *State, cfg *config.Treemap) error 
 	t.Fill = stages.ResolveColourEncoding(cfg.Fill, t.Size)
 	t.Border = stages.ResolveColourEncoding(cfg.Border, "")
 
-	names := []metric.Name{t.Size, cfg.Fill.MetricName(), cfg.Border.MetricName()}
+	names := make([]metric.Name, 0, 3+len(cfg.Labels))
+	names = append(names, t.Size, cfg.Fill.MetricName(), cfg.Border.MetricName())
 	names = append(names, cfg.Labels...)
 	c.Requested = stages.CollectRequestedMetricNames(names...)
 

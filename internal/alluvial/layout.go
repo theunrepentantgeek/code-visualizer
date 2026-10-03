@@ -134,6 +134,17 @@ func fillValueFor(data Data, reference, directoryPath string) (float64, bool) {
 }
 
 func columnsWithZeroPlaceholders(columns []Column) []Column {
+	paths := activeColumnPaths(columns)
+	result := make([]Column, len(columns))
+
+	for index, column := range columns {
+		result[index] = columnWithPaths(column, paths)
+	}
+
+	return result
+}
+
+func activeColumnPaths(columns []Column) []string {
 	activePaths := make(map[string]struct{})
 
 	for _, column := range columns {
@@ -151,24 +162,23 @@ func columnsWithZeroPlaceholders(columns []Column) []Column {
 
 	slices.Sort(paths)
 
-	result := make([]Column, len(columns))
-	for index, column := range columns {
-		valuesByPath := make(map[string]Value, len(column.Values))
-		for _, value := range column.Values {
-			valuesByPath[value.Path] = value
-		}
+	return paths
+}
 
-		values := make([]Value, 0, len(paths))
-		for _, path := range paths {
-			value := valuesByPath[path]
-			value.Path = path
-			values = append(values, value)
-		}
-
-		result[index] = Column{Reference: column.Reference, Values: values}
+func columnWithPaths(column Column, paths []string) Column {
+	valuesByPath := make(map[string]Value, len(column.Values))
+	for _, value := range column.Values {
+		valuesByPath[value.Path] = value
 	}
 
-	return result
+	values := make([]Value, 0, len(paths))
+	for _, path := range paths {
+		value := valuesByPath[path]
+		value.Path = path
+		values = append(values, value)
+	}
+
+	return Column{Reference: column.Reference, Values: values}
 }
 
 func layoutBounds(height int) (top, bottom float64) {

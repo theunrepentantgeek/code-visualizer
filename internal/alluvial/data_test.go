@@ -91,6 +91,7 @@ func TestBuildData_PreservesPerSnapshotLabelValuesInConfiguredOrder(t *testing.T
 	before.SetQuantity(labelQuantity, 12)
 	before.SetMeasure(labelMeasure, 3.5)
 	before.SetClassification(labelClass, "stable")
+
 	after := testDirectory("api", 20)
 	after.SetQuantity(labelQuantity, 21)
 	after.SetClassification(labelClass, "changing")
@@ -263,6 +264,7 @@ func TestBuildData_MergePreservesPerColumnLabelsForChangedPaths(t *testing.T) {
 
 	beforeChanged := testDirectory("charlie", 3)
 	beforeChanged.SetQuantity(labelQuantity, 12)
+
 	afterChanged := testDirectory("charlie", 4)
 	afterChanged.SetQuantity(labelQuantity, 21)
 

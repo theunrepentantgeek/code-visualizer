@@ -31,55 +31,66 @@ func ResolveMetrics(common *stages.CommonState, state *State, cfg *config.Alluvi
 
 	state.WidthMetric = widthMetric
 
-	labelMetrics := make([]metric.Name, 0, len(cfg.Labels))
-	for _, name := range cfg.Labels {
-		resolved, resolveErr := resolveDirectoryMetric(name)
-		if resolveErr != nil {
-			return eris.Wrap(resolveErr, "invalid alluvial label metric")
-		}
-
-		labelMetrics = append(labelMetrics, resolved)
+	labelMetrics, err := resolveLabelMetrics(cfg.Labels)
+	if err != nil {
+		return err
 	}
+
 	state.LabelMetrics = labelMetrics
 
-	var (
-		fillMetric   metric.Name
-		fillLabel    metric.Name
-		fillTemporal metric.TemporalName
-		fillExplicit bool
-	)
-
-	fillMetric = widthMetric
-	fillLabel = widthMetric
-
-	if cfg.Fill != nil && cfg.Fill.Metric != "" {
-		fillExplicit = true
-		fillLabel = cfg.Fill.Metric
-
-		fillExpression, parseErr := metric.ParseExpression(string(cfg.Fill.Metric))
-		if parseErr != nil {
-			return eris.Wrap(parseErr, "parse alluvial fill metric")
-		}
-
-		fillTemporal = fillExpression.Temporal
-
-		fillMetric, err = resolveDirectoryExpression(fillExpression)
-		if err != nil {
-			return eris.Wrap(err, "invalid alluvial fill metric")
-		}
+	fill, err := resolveBandFill(cfg.Fill, widthMetric)
+	if err != nil {
+		return err
 	}
 
-	state.Fill = BandFill{
-		Encoding: stages.ResolveColourEncodingForMetric(cfg.Fill, fillMetric),
-		Label:    fillLabel,
-		Explicit: fillExplicit,
-		Temporal: fillTemporal,
-	}
-	requested := []metric.Name{widthMetric, fillMetric}
+	state.Fill = fill
+
+	requested := make([]metric.Name, 0, 2+len(labelMetrics))
+	requested = append(requested, widthMetric, fill.Encoding.Metric)
 	requested = append(requested, labelMetrics...)
 	common.Requested = stages.CollectRequestedMetricNames(requested...)
 
 	return nil
+}
+
+func resolveLabelMetrics(names []metric.Name) ([]metric.Name, error) {
+	resolved := make([]metric.Name, 0, len(names))
+	for _, name := range names {
+		resolvedName, err := resolveDirectoryMetric(name)
+		if err != nil {
+			return nil, eris.Wrap(err, "invalid alluvial label metric")
+		}
+
+		resolved = append(resolved, resolvedName)
+	}
+
+	return resolved, nil
+}
+
+func resolveBandFill(fill *config.MetricSpec, widthMetric metric.Name) (BandFill, error) {
+	if fill == nil || fill.Metric == "" {
+		return BandFill{
+			Encoding: stages.ResolveColourEncodingForMetric(fill, widthMetric),
+			Label:    widthMetric,
+		}, nil
+	}
+
+	expression, err := metric.ParseExpression(string(fill.Metric))
+	if err != nil {
+		return BandFill{}, eris.Wrap(err, "parse alluvial fill metric")
+	}
+
+	fillMetric, err := resolveDirectoryExpression(expression)
+	if err != nil {
+		return BandFill{}, eris.Wrap(err, "invalid alluvial fill metric")
+	}
+
+	return BandFill{
+		Encoding: stages.ResolveColourEncodingForMetric(fill, fillMetric),
+		Label:    fill.Metric,
+		Explicit: true,
+		Temporal: expression.Temporal,
+	}, nil
 }
 
 func FinalizeData(s *pipeline.State) {
@@ -366,6 +377,7 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 		if state.Fill.Explicit {
 			lines = append(lines, string(state.Fill.Label))
 		}
+
 		for _, name := range state.LabelMetrics {
 			lines = append(lines, string(name))
 		}

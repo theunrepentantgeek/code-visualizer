@@ -56,26 +56,26 @@ func buildDirectoryLabel(dir *model.Directory, metrics LabelMetrics) []string {
 	}
 
 	lines := []string{dir.Name}
-	if component, ok := directoryMetricLabel(metrics.Size, dir); ok {
-		lines = append(lines, component)
-	}
+	lines = appendDirectoryMetricLabel(lines, metrics.Size, dir)
 
 	if metrics.IncludeFill {
-		if component, ok := directoryMetricLabel(metrics.Fill, dir); ok {
-			lines = append(lines, component)
-		}
+		lines = appendDirectoryMetricLabel(lines, metrics.Fill, dir)
 	}
 
 	if metrics.IncludeBorder {
-		if component, ok := directoryMetricLabel(metrics.Border, dir); ok {
-			lines = append(lines, component)
-		}
+		lines = appendDirectoryMetricLabel(lines, metrics.Border, dir)
 	}
 
 	for _, name := range metrics.Additional {
-		if component, ok := directoryMetricLabel(name, dir); ok {
-			lines = append(lines, component)
-		}
+		lines = appendDirectoryMetricLabel(lines, name, dir)
+	}
+
+	return lines
+}
+
+func appendDirectoryMetricLabel(lines []string, name metric.Name, dir *model.Directory) []string {
+	if component, ok := directoryMetricLabel(name, dir); ok {
+		return append(lines, component)
 	}
 
 	return lines

@@ -54,11 +54,8 @@ func ResolveMetrics(c *stages.CommonState, d *State, cfg *config.DonutTree) erro
 		d.LabelMetrics = append(d.LabelMetrics, resolved)
 	}
 
-	names := []metric.Name{
-		d.SizeMetric,
-		d.Fill.Metric,
-		d.Border.Metric,
-	}
+	names := make([]metric.Name, 0, 3+len(d.LabelMetrics))
+	names = append(names, d.SizeMetric, d.Fill.Metric, d.Border.Metric)
 	names = append(names, d.LabelMetrics...)
 	c.Requested = stages.CollectRequestedMetricNames(names...)
 

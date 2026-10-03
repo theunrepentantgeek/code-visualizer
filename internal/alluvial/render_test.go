@@ -104,6 +104,7 @@ func TestRenderToCanvas_AppendsAdditionalBandLabelsAfterExplicitFill(t *testing.
 	g.Expect(cv.RenderTo(backend)).To(Succeed())
 
 	var labels []string
+
 	for _, call := range backend.Calls {
 		if call.Method == "DrawText" && call.Text != "" {
 			labels = append(labels, call.Text)
@@ -135,6 +136,7 @@ func TestRenderToCanvas_AdditionalLineCountSuppressesLabelsAndEdgeExtensions(t *
 		labels []string
 		paths  []mock.Call
 	)
+
 	for _, call := range backend.Calls {
 		switch call.Method {
 		case "DrawText":
@@ -143,10 +145,13 @@ func TestRenderToCanvas_AdditionalLineCountSuppressesLabelsAndEdgeExtensions(t *
 			}
 		case "DrawFilledPath":
 			paths = append(paths, call)
+		default:
+			continue
 		}
 	}
 
 	g.Expect(labels).To(BeEmpty())
+
 	minimumX, maximumX := pathXBounds(paths)
 	g.Expect(minimumX).To(Equal(float64(20)))
 	g.Expect(maximumX).To(Equal(float64(180)))

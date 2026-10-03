@@ -103,6 +103,7 @@ func buildFileLabel(
 	lines := []string{rect.Label}
 	lines = appendMetricLine(lines, file, metrics.Size)
 	lines = appendMetricLine(lines, file, metrics.Fill)
+
 	lines = appendMetricLine(lines, file, metrics.Border)
 	for _, name := range metrics.Additional {
 		lines = appendMetricLine(lines, file, name)
@@ -142,6 +143,7 @@ func labelSampleLines(metrics LabelMetrics) []string {
 	lines := []string{"file-name"}
 	lines = appendMetricName(lines, metrics.Size)
 	lines = appendMetricName(lines, metrics.Fill)
+
 	lines = appendMetricName(lines, metrics.Border)
 	for _, name := range metrics.Additional {
 		lines = appendMetricName(lines, name)
