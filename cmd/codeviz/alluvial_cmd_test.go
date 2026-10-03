@@ -334,6 +334,72 @@ func TestAlluvialCmd_Run_ResolvesTaggedSnapshots(t *testing.T) {
 	g.Expect(string(image)).To(ContainSubstring("tag:v2.0"))
 }
 
+func TestAlluvialCmd_Run_RendersLeafTargetDirectFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialTagFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: filepath.Join(repository, "api"),
+		Output:     output,
+		References: []string{"tag:v1.0", "tag:v2.0"},
+		Metric:     "file-lines",
+		Width:      640,
+		Height:     480,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(svgTextLabels(string(image))).To(ContainElement("api"))
+}
+
+func TestAlluvialCmd_Run_RendersTargetIntroducedAfterFirstReference(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialSubdirectoryFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: filepath.Join(repository, "module"),
+		Output:     output,
+		References: []string{"tag:v1.0", "tag:v2.0"},
+		Metric:     "file-lines",
+		Width:      640,
+		Height:     480,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(svgTextLabels(string(image))).To(ContainElements("module", "module/child"))
+}
+
+func TestAlluvialCmd_Run_RendersDirectFilesBesideTargetChildren(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialSubdirectoryFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: filepath.Join(repository, "module"),
+		Output:     output,
+		References: []string{"tag:v2.0", "tag:v3.0"},
+		Metric:     "file-lines",
+		Width:      640,
+		Height:     480,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(svgTextLabels(string(image))).To(ContainElements("module", "module/child"))
+}
+
 func TestAlluvialCmd_Run_AppliesConstantBandModes(t *testing.T) {
 	t.Parallel()
 	repository := createAlluvialTagFixture(t)
@@ -561,6 +627,50 @@ func createAlluvialTagFixture(t *testing.T) string {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	writeFixtureFile("uncommitted/ignored.go", "package ignored\n")
+
+	return root
+}
+
+func createAlluvialSubdirectoryFixture(t *testing.T) string {
+	t.Helper()
+	g := NewGomegaWithT(t)
+	root := t.TempDir()
+
+	repository, err := gogit.PlainInit(root, false)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	writeFixtureFile := func(name, content string) {
+		t.Helper()
+
+		filename := filepath.Join(root, name)
+		g.Expect(os.MkdirAll(filepath.Dir(filename), 0o750)).To(Succeed())
+		g.Expect(os.WriteFile(filename, []byte(content), 0o600)).To(Succeed())
+	}
+	commitAndTag := func(tag, message string, when time.Time) {
+		t.Helper()
+
+		worktree, worktreeErr := repository.Worktree()
+		g.Expect(worktreeErr).NotTo(HaveOccurred())
+		g.Expect(worktree.AddWithOptions(&gogit.AddOptions{All: true})).To(Succeed())
+
+		hash, commitErr := worktree.Commit(message, &gogit.CommitOptions{
+			Author: &object.Signature{Name: "Fixture", Email: "fixture@example.com", When: when},
+		})
+		g.Expect(commitErr).NotTo(HaveOccurred())
+
+		_, tagErr := repository.CreateTag(tag, hash, nil)
+		g.Expect(tagErr).NotTo(HaveOccurred())
+	}
+
+	writeFixtureFile("outside/main.go", "package outside\n")
+	commitAndTag("v1.0", "before module", time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
+
+	writeFixtureFile("module/root.go", "package module\n\nfunc Root() {}\n")
+	writeFixtureFile("module/child/main.go", "package child\n\nfunc Child() {}\n")
+	commitAndTag("v2.0", "add module", time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC))
+
+	writeFixtureFile("module/root.go", "package module\n\nfunc Root() {}\nfunc Added() {}\n")
+	commitAndTag("v3.0", "change module", time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC))
 
 	return root
 }

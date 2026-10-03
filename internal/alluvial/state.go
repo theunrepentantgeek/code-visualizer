@@ -64,8 +64,9 @@ func (f *BandFill) ResolveInk(values []float64) {
 
 // Snapshot is the scanned directory tree at one caller-ordered reference.
 type Snapshot struct {
-	Reference string
-	Root      *model.Directory
+	Reference   string
+	Root        *model.Directory
+	DirectFiles *model.Directory
 }
 
 // Options controls the metric and directory detail represented in Data.

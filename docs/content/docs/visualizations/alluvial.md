@@ -49,6 +49,13 @@ directories. They do not control hierarchy detail. Use `--expand` to replace a
 directory with its direct children; it never expands recursively or adds an
 `Other` aggregate.
 
+Each snapshot includes a band for files directly in the target directory,
+labelled with the target's repository-relative path (`.` for the repository
+root), plus bands for the target's child directories. This means a leaf target
+still produces one band when it contains files. A target may be absent or empty
+at an individual reference, in which case its bands taper to or from zero; the
+command fails only when the target contains no files at every reference.
+
 By default, unchanged bands are displayed normally. A band is constant when
 its width metric has exactly the same value at every displayed reference; a
 directory introduced or removed during the range is therefore not constant.
