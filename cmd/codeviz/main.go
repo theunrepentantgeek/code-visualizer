@@ -135,9 +135,9 @@ func toStagesFlags(f *Flags) *stages.Flags {
 func stagesFlagsForCommand(flags *Flags, fromValue, untilValue string) *stages.Flags {
 	parsedFlags := toStagesFlags(flags)
 	parsedFlags.HistoryRange = git.HistoryRange{
-		From:          fromValue,
-		Until:         untilValue,
-		ReferenceTime: time.Now(),
+		From:    fromValue,
+		Until:   untilValue,
+		TimeNow: time.Now(),
 	}
 
 	return parsedFlags

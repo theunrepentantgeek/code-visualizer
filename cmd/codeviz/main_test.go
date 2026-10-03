@@ -306,7 +306,7 @@ func TestCLI_ParsesUnifiedHistoryReferences(t *testing.T) {
 	g.Expect(cli.TreeMap.Until).To(Equal("tag:v2.0"))
 }
 
-func TestStagesFlagsForCommand_CapturesSharedHistoryReferenceTime(t *testing.T) {
+func TestStagesFlagsForCommand_CapturesSharedTimeNow(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	before := time.Now()
@@ -314,11 +314,11 @@ func TestStagesFlagsForCommand_CapturesSharedHistoryReferenceTime(t *testing.T) 
 	flags := stagesFlagsForCommand(&Flags{}, "ago(14d)", "HEAD")
 
 	after := time.Now()
-	g.Expect(flags.HistoryRange.ReferenceTime).To(BeTemporally(">=", before))
-	g.Expect(flags.HistoryRange.ReferenceTime).To(BeTemporally("<=", after))
+	g.Expect(flags.HistoryRange.TimeNow).To(BeTemporally(">=", before))
+	g.Expect(flags.HistoryRange.TimeNow).To(BeTemporally("<=", after))
 
 	copied := flags.HistoryRange
-	g.Expect(copied.ReferenceTime).To(Equal(flags.HistoryRange.ReferenceTime))
+	g.Expect(copied.TimeNow).To(Equal(flags.HistoryRange.TimeNow))
 }
 
 func TestCLI_RejectsRemovedTagRangeFlags(t *testing.T) {

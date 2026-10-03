@@ -26,7 +26,7 @@ func ResolveSnapshot(repoPath string, historyRange HistoryRange) (Snapshot, erro
 		return Snapshot{}, eris.Wrap(err, "failed to open snapshot repository")
 	}
 
-	historyRange = historyRange.withReferenceTime()
+	historyRange = historyRange.withTimeNow()
 
 	resolved, err := s.resolveHistoryReference(strings.TrimSpace(historyRange.Until), upperBound)
 	if err != nil {

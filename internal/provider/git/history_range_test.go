@@ -13,30 +13,30 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHistoryRangeWithReferenceTime_PreservesExistingTime(t *testing.T) {
+func TestHistoryRangeWithTimeNow_PreservesExistingTime(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 	referenceTime := time.Date(2026, 10, 3, 3, 20, 0, 0, time.UTC)
 
 	historyRange := (HistoryRange{
-		From:          "ago(14d)",
-		Until:         "HEAD",
-		ReferenceTime: referenceTime,
-	}).withReferenceTime()
+		From:    "ago(14d)",
+		Until:   "HEAD",
+		TimeNow: referenceTime,
+	}).withTimeNow()
 
-	g.Expect(historyRange.ReferenceTime).To(Equal(referenceTime))
+	g.Expect(historyRange.TimeNow).To(Equal(referenceTime))
 }
 
-func TestHistoryRangeWithReferenceTime_CapturesCurrentTimeOnce(t *testing.T) {
+func TestHistoryRangeWithTimeNow_CapturesCurrentTimeOnce(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 	before := time.Now()
 
-	historyRange := (HistoryRange{From: "ago(14d)", Until: "HEAD"}).withReferenceTime()
+	historyRange := (HistoryRange{From: "ago(14d)", Until: "HEAD"}).withTimeNow()
 
 	after := time.Now()
-	g.Expect(historyRange.ReferenceTime).To(BeTemporally(">=", before))
-	g.Expect(historyRange.ReferenceTime).To(BeTemporally("<=", after))
+	g.Expect(historyRange.TimeNow).To(BeTemporally(">=", before))
+	g.Expect(historyRange.TimeNow).To(BeTemporally("<=", after))
 }
 
 func TestResolveHistoryRange_StopsForCancelledContext(t *testing.T) {
