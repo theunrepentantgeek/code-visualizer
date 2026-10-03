@@ -35,3 +35,19 @@ func TestScanPermissionDenied(t *testing.T) {
 
 	g.Expect(len(root.Files)).To(BeNumerically(">=", 1))
 }
+
+func TestScanSkipsFileSymlinkOutsideRoot(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	parent := t.TempDir()
+	rootPath := filepath.Join(parent, "root")
+	g.Expect(os.Mkdir(rootPath, 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(rootPath, "safe.txt"), []byte("safe\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(parent, "outside.txt"), []byte("outside\n"), 0o600)).To(Succeed())
+	g.Expect(os.Symlink("../outside.txt", filepath.Join(rootPath, "outside-link.txt"))).To(Succeed())
+
+	root, err := Scan(context.Background(), rootPath, nil, nil, true)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(collectFileNames(root)).To(ConsistOf("safe.txt"))
+}

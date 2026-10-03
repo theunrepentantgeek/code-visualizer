@@ -65,6 +65,48 @@ func TestScan_CancelledContextStopsBeforeProgress(t *testing.T) {
 	g.Expect(progress.directories).To(Equal(0))
 }
 
+func TestScanAttachesReadableSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	content := []byte("attached source\n")
+	g.Expect(os.WriteFile(filepath.Join(dir, "source.txt"), content, 0o600)).To(Succeed())
+
+	root, err := Scan(context.Background(), dir, nil, nil, true)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root.Files).To(HaveLen(1))
+
+	file := root.Files[0]
+	g.Expect(file.Source).NotTo(BeNil())
+	g.Expect(file.SourcePath).To(Equal("source.txt"))
+	g.Expect(file.Path).To(Equal(filepath.Join(dir, "source.txt")))
+
+	data, err := file.ReadAll()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data).To(Equal(content))
+}
+
+func TestScanMatchesWorkingTreeScan(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	g.Expect(os.Mkdir(filepath.Join(dir, "nested"), 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(dir, "root.txt"), []byte("root\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(dir, "nested", "child.go"), []byte("package child\n"), 0o600)).To(Succeed())
+
+	fromScan, err := Scan(context.Background(), dir, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	tree, err := source.WorkingTree(dir)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	fromTree, err := ScanTree(context.Background(), tree, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	g.Expect(fromScan).To(Equal(fromTree))
+}
+
 type permissionFS struct {
 	fstest.MapFS
 }

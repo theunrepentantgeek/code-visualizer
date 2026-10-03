@@ -3,9 +3,36 @@ package model
 import (
 	"sync"
 	"testing"
+	"testing/fstest"
 
 	. "github.com/onsi/gomega"
 )
+
+func TestFileReadAllReadsAttachedSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	file := &File{
+		Path:       "/display/project/main.go",
+		SourcePath: "src/main.go",
+		Source: fstest.MapFS{
+			"src/main.go": {Data: []byte("package main\n")},
+		},
+	}
+
+	data, err := file.ReadAll()
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data).To(Equal([]byte("package main\n")))
+}
+
+func TestFileOpenRejectsMissingSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	_, err := (&File{Path: "/display/project/main.go"}).Open()
+
+	g.Expect(err).To(MatchError(ContainSubstring("file has no content source")))
+}
 
 func TestFileSetAndGetQuantity(t *testing.T) {
 	t.Parallel()

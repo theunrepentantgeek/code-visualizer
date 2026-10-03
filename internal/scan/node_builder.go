@@ -2,61 +2,10 @@ package scan
 
 import (
 	"log/slog"
-	"os"
-	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
-	"github.com/theunrepentantgeek/code-visualizer/internal/provider/filesystem"
 )
-
-type binaryProbe func(path string) (bool, error)
-
-type nodeBuilder struct {
-	probe         binaryProbe
-	includeBinary bool
-}
-
-func newNodeBuilder(probe binaryProbe, includeBinary bool) nodeBuilder {
-	if probe == nil {
-		probe = IsBinaryFile
-	}
-
-	return nodeBuilder{probe: probe, includeBinary: includeBinary}
-}
-
-func (b nodeBuilder) processFile(node *model.Directory, entry os.DirEntry, info os.FileInfo, entryPath string) {
-	ext := strings.TrimPrefix(filepath.Ext(entry.Name()), ".")
-
-	fileType := ext
-	if fileType == "" {
-		fileType = "no-extension"
-	}
-
-	binary, err := b.probe(entryPath)
-	if err != nil {
-		slog.Warn("binary probe failed, assuming text", "path", entryPath, "error", err)
-	}
-
-	if binary && !b.includeBinary {
-		slog.Debug("excluding binary file", "path", entryPath)
-
-		return
-	}
-
-	file := &model.File{
-		Path:      entryPath,
-		Name:      entry.Name(),
-		Extension: ext,
-		IsBinary:  binary,
-	}
-
-	file.SetQuantity(filesystem.FileSize, info.Size())
-	file.SetClassification(filesystem.FileType, fileType)
-
-	node.Files = append(node.Files, file)
-}
 
 func hasFiles(node *model.Directory) bool {
 	if len(node.Files) > 0 {
