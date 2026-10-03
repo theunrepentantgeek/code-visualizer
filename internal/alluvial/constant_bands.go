@@ -33,12 +33,17 @@ func constantPaths(columns []Column) map[string]struct{} {
 
 	first := valuesByPath(columns[0].Values)
 	constant := make(map[string]struct{}, len(first))
+	widthsByColumn := make([]map[string]float64, len(columns)-1)
+
+	for index, column := range columns[1:] {
+		widthsByColumn[index] = valuesByPath(column.Values)
+	}
 
 	for directoryPath, width := range first {
 		isConstant := true
 
-		for _, column := range columns[1:] {
-			value, exists := valuesByPath(column.Values)[directoryPath]
+		for _, widths := range widthsByColumn {
+			value, exists := widths[directoryPath]
 			if !exists || value != width {
 				isConstant = false
 
