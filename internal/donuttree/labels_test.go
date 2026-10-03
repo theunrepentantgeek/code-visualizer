@@ -11,6 +11,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
+	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 )
 
@@ -19,6 +20,7 @@ func labelDirectory() *model.Directory {
 	dir.SetQuantity("file-lines.sum", 120)
 	dir.SetClassification("file-type.mode", "go")
 	dir.SetQuantity("file-freshness.sum", 5)
+	dir.SetMeasure("commit-density.mean", 1.5)
 
 	return dir
 }
@@ -37,15 +39,24 @@ func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 				Size:          "file-lines.sum",
 				Fill:          "file-type.mode",
 				Border:        "file-freshness.sum",
+				Additional:    []metric.Name{"commit-density.mean"},
 				IncludeFill:   true,
 				IncludeBorder: true,
 			},
-			expected: []string{"src", "120", "go", "5"},
+			expected: []string{"src", "120", "go", "5", "1.5"},
 		},
 		{
 			name:     "default size metric",
 			metrics:  LabelMetrics{Size: "file-lines.sum"},
 			expected: []string{"src", "120"},
+		},
+		{
+			name: "additional metrics preserve order and omit unavailable values",
+			metrics: LabelMetrics{
+				Size:       "file-lines.sum",
+				Additional: []metric.Name{"file-freshness.sum", "unavailable", "file-type.mode"},
+			},
+			expected: []string{"src", "120", "5", "go"},
 		},
 	}
 
@@ -56,6 +67,21 @@ func TestBuildDirectoryLabel_ReturnsValueOnlyLines(t *testing.T) {
 			g.Expect(buildDirectoryLabel(labelDirectory(), testCase.metrics)).To(Equal(testCase.expected))
 		})
 	}
+}
+
+func TestLabelSampleLines_AppendsAdditionalMetricNamesInOrder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	g.Expect(labelSampleLines(LabelMetrics{
+		Size:       "file-lines.sum",
+		Additional: []metric.Name{"file-freshness.sum", "file-type.mode"},
+	})).To(Equal([]string{
+		"directory-name",
+		"file-lines.sum",
+		"file-freshness.sum",
+		"file-type.mode",
+	}))
 }
 
 func TestAddSectorLabel_RendersCompactLinesAlongSectorRadius(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 // State is the viz-specific pipeline state for the donut tree visualization.
 type State struct {
 	SizeMetric   metric.Name
+	LabelMetrics []metric.Name
 	Fill         viz.ColourEncoding
 	Border       viz.ColourEncoding
 	DisplayRoot  *model.Directory

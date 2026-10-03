@@ -153,10 +153,15 @@ func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
 	cfg.Legend = &config.Legend{Position: new("bottom-right")}
 	cfg.DonutTree.Fill = &config.MetricSpec{Metric: "file-type"}
 	cfg.DonutTree.Border = &config.MetricSpec{Metric: "file-size"}
+	cfg.DonutTree.Labels = []metric.Name{"commit-density", "file-freshness"}
 	state := &State{
 		SizeMetric: "file-lines.sum",
 		Fill:       viz.ColourEncoding{Metric: "file-type.mode"},
 		Border:     viz.ColourEncoding{Metric: "file-size.sum"},
+		LabelMetrics: []metric.Name{
+			"commit-density.mean",
+			"file-freshness.sum",
+		},
 		Inks: Inks{ShapeInks: inks.ShapeInks{
 			Fill:   inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
 			Border: inks.FixedInk(color.RGBA{A: 255}),
@@ -172,8 +177,42 @@ func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
 
 	g.Expect(state.LegendConfig.LabelSample).To(Equal(legend.LabelSample{
 		Shape: legend.LabelSampleArc,
-		Lines: []string{"directory-name", "file-lines.sum", "file-type.mode", "file-size.sum"},
+		Lines: []string{
+			"directory-name",
+			"file-lines.sum",
+			"file-type.mode",
+			"file-size.sum",
+			"commit-density.mean",
+			"file-freshness.sum",
+		},
 	}))
+	g.Expect(state.LegendConfig.Entries).NotTo(ContainElement(
+		HaveField("MetricName", Or(Equal("commit-density.mean"), Equal("file-freshness.sum"))),
+	))
+}
+
+func TestResolveMetrics_ResolvesAndRequestsAdditionalLabelMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	size := "file-lines"
+	cfg := &config.DonutTree{
+		Size:   &size,
+		Labels: []metric.Name{"file-type", "commit-density"},
+	}
+	common := &stages.CommonState{}
+	state := &State{}
+
+	g.Expect(ResolveMetrics(common, state, cfg)).To(Succeed())
+	g.Expect(state.LabelMetrics).To(Equal([]metric.Name{
+		"file-type.mode",
+		"commit-density.mean",
+	}))
+	g.Expect(common.Requested.Expressions).To(ConsistOf(
+		HaveField("ResultName", metric.Name("file-lines.sum")),
+		HaveField("ResultName", metric.Name("file-type.mode")),
+		HaveField("ResultName", metric.Name("commit-density.mean")),
+	))
 }
 
 func TestBuildLegendStage_OmitsDerivedMetricsFromLabelSample(t *testing.T) {
