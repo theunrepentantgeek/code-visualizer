@@ -50,6 +50,26 @@ func TestResolveMetrics_FillOverridesSizeAsFillMetric(t *testing.T) {
 	g.Expect(common.Requested.BaseMetrics).To(ContainElements(metric.Name("file-size"), metric.Name("file-type")))
 }
 
+func TestResolveMetrics_IncludesLabelOnlyMetrics(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	sizeStr := "file-size"
+	common := &stages.CommonState{}
+	viz := &treemap.State{}
+	cfg := &config.Treemap{
+		Size:   &sizeStr,
+		Labels: []metric.Name{"file-lines", "file-type"},
+	}
+
+	g.Expect(treemap.ResolveMetrics(common, viz, cfg)).To(Succeed())
+	g.Expect(common.Requested.BaseMetrics).To(ConsistOf(
+		metric.Name("file-size"),
+		metric.Name("file-lines"),
+		metric.Name("file-type"),
+	))
+}
+
 func TestBuildInksStage_WrapsFillInkUnlessFlat(t *testing.T) {
 	t.Parallel()
 
@@ -101,6 +121,7 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 	cfg := &config.Treemap{
 		Fill:   &config.MetricSpec{Metric: "file-type"},
 		Border: &config.MetricSpec{Metric: "file-lines"},
+		Labels: []metric.Name{"file-lines", "file-type"},
 	}
 
 	g.Expect(treemap.BuildLegendStage(common, viz, cfg)).To(Succeed())
@@ -117,8 +138,38 @@ func TestBuildLegendStage_AddsLabelSampleLines(t *testing.T) {
 			"file-size",
 			"file-type",
 			"file-lines",
+			"file-lines",
+			"file-type",
 		},
 	}))
+}
+
+func TestBuildLegendStage_LabelOnlyMetricsDoNotAddEntries(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	common := &stages.CommonState{}
+	viz := &treemap.State{
+		Fill: colourEncoding(metric.Name("file-size"), ""),
+		Size: metric.Name("file-size"),
+		Inks: treemap.Inks{
+			Fill: inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
+		},
+	}
+	cfg := &config.Treemap{
+		Fill:   &config.MetricSpec{Metric: "file-size"},
+		Labels: []metric.Name{"file-lines", "file-type"},
+	}
+
+	g.Expect(treemap.BuildLegendStage(common, viz, cfg)).To(Succeed())
+	g.Expect(viz.LegendConfig).NotTo(BeNil())
+
+	if viz.LegendConfig == nil {
+		return
+	}
+
+	g.Expect(viz.LegendConfig.Entries).To(HaveLen(1))
+	g.Expect(viz.LegendConfig.Entries[0].MetricName).To(Equal("file-size"))
 }
 
 func TestLayoutStage_FooterEnabled_ReducesAvailableHeight(t *testing.T) {

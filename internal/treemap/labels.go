@@ -14,9 +14,10 @@ const blockLabelPadding = 4.0
 
 // LabelMetrics identifies which metric values should appear in each file label.
 type LabelMetrics struct {
-	Size   metric.Name
-	Fill   metric.Name
-	Border metric.Name
+	Size       metric.Name
+	Fill       metric.Name
+	Border     metric.Name
+	Additional []metric.Name
 }
 
 func buildBlockLabels(
@@ -103,6 +104,9 @@ func buildFileLabel(
 	lines = appendMetricLine(lines, file, metrics.Size)
 	lines = appendMetricLine(lines, file, metrics.Fill)
 	lines = appendMetricLine(lines, file, metrics.Border)
+	for _, name := range metrics.Additional {
+		lines = appendMetricLine(lines, file, name)
+	}
 
 	fillColour := fillInk.Dip(inks.MetricValueForFile(file, fillInk))
 	size := rect.size()
@@ -139,6 +143,9 @@ func labelSampleLines(metrics LabelMetrics) []string {
 	lines = appendMetricName(lines, metrics.Size)
 	lines = appendMetricName(lines, metrics.Fill)
 	lines = appendMetricName(lines, metrics.Border)
+	for _, name := range metrics.Additional {
+		lines = appendMetricName(lines, name)
+	}
 
 	return lines
 }
