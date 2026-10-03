@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -303,6 +304,21 @@ func TestCLI_ParsesUnifiedHistoryReferences(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cli.TreeMap.From).To(Equal("sha:abc1234"))
 	g.Expect(cli.TreeMap.Until).To(Equal("tag:v2.0"))
+}
+
+func TestStagesFlagsForCommand_CapturesSharedHistoryReferenceTime(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	before := time.Now()
+
+	flags := stagesFlagsForCommand(&Flags{}, "ago(14d)", "HEAD")
+
+	after := time.Now()
+	g.Expect(flags.HistoryRange.ReferenceTime).To(BeTemporally(">=", before))
+	g.Expect(flags.HistoryRange.ReferenceTime).To(BeTemporally("<=", after))
+
+	copied := flags.HistoryRange
+	g.Expect(copied.ReferenceTime).To(Equal(flags.HistoryRange.ReferenceTime))
 }
 
 func TestCLI_RejectsRemovedTagRangeFlags(t *testing.T) {
