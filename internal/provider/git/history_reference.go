@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
 )
 
@@ -51,6 +52,10 @@ func (s *repoService) resolveHistoryReference(
 		timeNow = timeNowValues[0]
 	}
 
+	if after, ok := strings.CutPrefix(value, "^"); ok {
+		return s.resolvePreviousHistoryReference(after, timeNow)
+	}
+
 	prefix, payload, explicit := splitHistoryReference(value)
 	if explicit && payload == "" {
 		return resolvedHistoryReference{}, eris.Errorf("%s reference cannot be empty", prefix)
@@ -79,11 +84,6 @@ func (s *repoService) resolveUnprefixedHistoryReference(
 	bound historyBound,
 	timeNow time.Time,
 ) (resolvedHistoryReference, error) {
-	if after, ok := strings.CutPrefix(value, "^"); ok &&
-		(strings.HasPrefix(after, "ago(") || strings.HasPrefix(after, "date:")) {
-		return resolvedHistoryReference{}, eris.New("predecessor requires a revision reference")
-	}
-
 	if value == "HEAD" {
 		head, err := s.repo.Head()
 		if err != nil {
@@ -111,6 +111,182 @@ func (s *repoService) resolveUnprefixedHistoryReference(
 		"history reference %q is not a tag, commit ID, or supported date",
 		value,
 	)
+}
+
+func (s *repoService) resolvePreviousHistoryReference(
+	value string,
+	timeNow time.Time,
+) (resolvedHistoryReference, error) {
+	if value == "" {
+		return resolvedHistoryReference{}, eris.New("predecessor reference cannot be empty")
+	}
+
+	if strings.HasPrefix(value, "^") {
+		return resolvedHistoryReference{}, eris.New("nested predecessor references are not supported")
+	}
+
+	prefix, payload, explicit := splitHistoryReference(value)
+	switch prefix {
+	case "tag":
+		hash, err := s.resolveTagCommit(payload)
+		if err != nil {
+			return resolvedHistoryReference{}, err
+		}
+
+		previous, err := s.previousTaggedCommit(hash, payload)
+
+		return resolvedHistoryReference{revision: previous}, err
+	case "sha":
+		hash, err := s.requireCommitID(payload)
+		if err != nil {
+			return resolvedHistoryReference{}, err
+		}
+
+		previous, err := s.firstParent(hash)
+
+		return resolvedHistoryReference{revision: previous}, err
+	case "date":
+		return resolvedHistoryReference{}, eris.New("predecessor requires a revision reference")
+	}
+
+	if explicit {
+		return resolvedHistoryReference{}, eris.Errorf("unsupported predecessor reference %q", value)
+	}
+
+	if value == "HEAD" {
+		head, err := s.repo.Head()
+		if err != nil {
+			return resolvedHistoryReference{}, eris.Wrap(err, "failed to resolve HEAD")
+		}
+
+		previous, err := s.firstParent(head.Hash())
+
+		return resolvedHistoryReference{revision: previous}, err
+	}
+
+	if hash, found, err := s.tryResolveTagCommit(value); found {
+		if err != nil {
+			return resolvedHistoryReference{}, err
+		}
+
+		previous, previousErr := s.previousTaggedCommit(hash, value)
+
+		return resolvedHistoryReference{revision: previous}, previousErr
+	}
+
+	if resolved, found, err := s.tryResolveCommitID(value); found || err != nil {
+		if err != nil {
+			return resolvedHistoryReference{}, err
+		}
+
+		previous, previousErr := s.firstParent(resolved.revision)
+
+		return resolvedHistoryReference{revision: previous}, previousErr
+	}
+
+	if _, err := parseHistoryDate(value, lowerBound, timeNow); err == nil ||
+		strings.HasPrefix(value, "ago(") {
+		return resolvedHistoryReference{}, eris.New("predecessor requires a revision reference")
+	}
+
+	return resolvedHistoryReference{}, eris.Errorf(
+		"history reference %q is not a tag, commit ID, or supported date",
+		value,
+	)
+}
+
+func (s *repoService) firstParent(hash plumbing.Hash) (plumbing.Hash, error) {
+	commit, err := s.repo.CommitObject(hash)
+	if err != nil {
+		return plumbing.ZeroHash, eris.Wrapf(err, "failed to load commit %s", hash)
+	}
+
+	if len(commit.ParentHashes) == 0 {
+		return plumbing.ZeroHash, eris.Errorf("commit %s has no first parent", hash)
+	}
+
+	return commit.ParentHashes[0], nil
+}
+
+func (s *repoService) previousTaggedCommit(
+	start plumbing.Hash,
+	tagName string,
+) (plumbing.Hash, error) {
+	tagged, err := s.taggedCommits()
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+
+	startCommit, err := s.repo.CommitObject(start)
+	if err != nil {
+		return plumbing.ZeroHash, eris.Wrapf(err, "failed to load tag %q commit", tagName)
+	}
+
+	generation := append([]plumbing.Hash(nil), startCommit.ParentHashes...)
+	seen := map[plumbing.Hash]struct{}{start: {}}
+
+	for len(generation) > 0 {
+		next := make([]plumbing.Hash, 0, len(generation))
+		var selected *object.Commit
+
+		for _, hash := range generation {
+			if _, duplicate := seen[hash]; duplicate {
+				continue
+			}
+			seen[hash] = struct{}{}
+
+			commit, commitErr := s.repo.CommitObject(hash)
+			if commitErr != nil {
+				return plumbing.ZeroHash, eris.Wrapf(commitErr, "failed to traverse history from tag %q", tagName)
+			}
+
+			if _, isTagged := tagged[hash]; isTagged && laterTaggedCommit(commit, selected) {
+				selected = commit
+			}
+
+			next = append(next, commit.ParentHashes...)
+		}
+
+		if selected != nil {
+			return selected.Hash, nil
+		}
+
+		generation = next
+	}
+
+	return plumbing.ZeroHash, eris.Errorf("tag %q has no previous reachable tag", tagName)
+}
+
+func (s *repoService) taggedCommits() (map[plumbing.Hash]struct{}, error) {
+	iter, err := s.repo.Tags()
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to list tags")
+	}
+	defer iter.Close()
+
+	tagged := make(map[plumbing.Hash]struct{})
+
+	err = iter.ForEach(func(ref *plumbing.Reference) error {
+		name := ref.Name().Short()
+		hash, peelErr := peelTagCommit(s.repo, name, ref.Hash())
+		if peelErr == nil {
+			tagged[hash] = struct{}{}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to iterate tags")
+	}
+
+	return tagged, nil
+}
+
+func laterTaggedCommit(candidate, selected *object.Commit) bool {
+	return selected == nil ||
+		candidate.Author.When.After(selected.Author.When) ||
+		(candidate.Author.When.Equal(selected.Author.When) &&
+			candidate.Hash.String() < selected.Hash.String())
 }
 
 func splitHistoryReference(value string) (prefix, payload string, explicit bool) {

@@ -44,3 +44,14 @@ func TestResolveSnapshotSelectsCommitBeforeRelativeDate(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(snapshot.Commit.Hash.String()).To(Equal(fixture.feature))
 }
+
+func TestResolveSnapshotSelectsRevisionPredecessor(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+
+	snapshot, err := ResolveSnapshot(fixture.dir, HistoryRange{Until: "^HEAD"})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(snapshot.Commit.Hash.String()).To(Equal(fixture.main))
+}

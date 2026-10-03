@@ -54,6 +54,78 @@ func TestResolveHistoryReference_AcceptsFullCommitID(t *testing.T) {
 	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)))
 }
 
+func TestResolveHistoryReference_CommitPredecessorsUseFirstParent(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	for _, value := range []string{
+		"^HEAD",
+		"^" + fixture.merged[:8],
+		"^sha:" + fixture.merged[:8],
+	} {
+		resolved, err := s.resolveHistoryReference(value, lowerBound)
+		g.Expect(err).NotTo(HaveOccurred(), value)
+		g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)), value)
+	}
+}
+
+func TestResolveHistoryReference_TagPredecessorUsesNearestTaggedGeneration(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	for _, value := range []string{"^v2.0", "^tag:v2.0", "^latest-lightweight"} {
+		resolved, err := s.resolveHistoryReference(value, lowerBound)
+		g.Expect(err).NotTo(HaveOccurred(), value)
+		g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.featureTip)), value)
+	}
+}
+
+func TestResolveHistoryReference_TagPredecessorStopsAtFirstTaggedGeneration(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	runHistoryGit(t, fixture.dir, "tag", "deeper-but-later", fixture.feature)
+	s := requireRepoService(t, fixture.dir)
+
+	resolved, err := s.resolveHistoryReference("^v2.0", lowerBound)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.featureTip)))
+}
+
+func TestResolveHistoryReference_RejectsInvalidPredecessors(t *testing.T) {
+	t.Parallel()
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	tests := []struct {
+		value   string
+		message string
+	}{
+		{"^", "predecessor reference cannot be empty"},
+		{"^^HEAD", "nested predecessor references are not supported"},
+		{"^" + fixture.initial, "has no first parent"},
+		{"^v1.0", `tag "v1.0" has no previous reachable tag`},
+		{"^date:2025-01-01", "predecessor requires a revision reference"},
+		{"^ago(7d)", "predecessor requires a revision reference"},
+		{"^sha:deadbeef", `unknown commit ID "deadbeef"`},
+		{"^tag:blob-tag", `tag "blob-tag" does not reference a commit`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			_, err := s.resolveHistoryReference(tt.value, lowerBound)
+			g.Expect(err).To(MatchError(ContainSubstring(tt.message)))
+		})
+	}
+}
+
 func TestResolveHistoryReference_UnprefixedTagWinsOverCommitAndDate(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
