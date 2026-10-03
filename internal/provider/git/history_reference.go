@@ -134,6 +134,10 @@ func (s *repoService) resolvePreviousHistoryReference(
 
 	prefix, payload, explicit := splitHistoryReference(value)
 	if explicit {
+		if payload == "" {
+			return resolvedHistoryReference{}, eris.Errorf("%s reference cannot be empty", prefix)
+		}
+
 		return s.resolveExplicitPreviousReference(prefix, payload)
 	}
 
@@ -583,7 +587,11 @@ func parseHistoryDateInLocation(
 	}
 
 	if parsed, claimed, err := parseAgoDate(value, timeNow); claimed {
-		return parsed, err
+		if err != nil {
+			return time.Time{}, eris.Wrapf(err, "invalid date %q", value)
+		}
+
+		return parsed, nil
 	}
 
 	for _, candidate := range historyDateLayouts {

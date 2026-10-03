@@ -108,6 +108,8 @@ func TestResolveHistoryReference_RejectsInvalidPredecessors(t *testing.T) {
 	}{
 		{"^", "predecessor reference cannot be empty"},
 		{"^^HEAD", "nested predecessor references are not supported"},
+		{"^tag:", "tag reference cannot be empty"},
+		{"^sha:", "sha reference cannot be empty"},
 		{"^" + fixture.initial, "has no first parent"},
 		{"^v1.0", `tag "v1.0" has no previous reachable tag`},
 		{"^date:2025-01-01", "predecessor requires a revision reference"},
@@ -219,6 +221,12 @@ func TestResolveHistoryReference_RejectsInvalidExplicitReferences(t *testing.T) 
 
 	_, err = s.resolveHistoryReference("date:tomorrow", lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring(`invalid date "tomorrow"`)))
+
+	_, err = s.resolveHistoryReference("date:ago(0d)", lowerBound)
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring(`invalid date "ago(0d)"`),
+		ContainSubstring("expected ago(<positive days>d)"),
+	)))
 }
 
 func TestResolveHistoryReference_RejectsAmbiguousCommitID(t *testing.T) {
