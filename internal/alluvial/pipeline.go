@@ -2,6 +2,8 @@ package alluvial
 
 import (
 	"context"
+	"errors"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -11,9 +13,12 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	gitprovider "github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -218,9 +223,15 @@ func (p *AcquisitionPlan) AcquireReference(
 		return eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
 	}
 
+	directFiles, err := directFilesAggregate(snapshotCommon)
+	if err != nil {
+		return eris.Wrapf(err, "failed to aggregate direct files for alluvial reference %q", reference)
+	}
+
 	state.Snapshots = append(state.Snapshots, Snapshot{
-		Reference: SnapshotReference(reference),
-		Root:      snapshotCommon.Root,
+		Reference:   SnapshotReference(reference),
+		Root:        snapshotCommon.Root,
+		DirectFiles: directFiles,
 	})
 
 	if index == 0 {
@@ -230,6 +241,31 @@ func (p *AcquisitionPlan) AcquireReference(
 	}
 
 	return nil
+}
+
+func directFilesAggregate(common *stages.CommonState) (*model.Directory, error) {
+	root := common.Root
+	if root == nil || len(root.Files) == 0 {
+		return &model.Directory{}, nil
+	}
+
+	direct := &model.Directory{
+		Path:            root.Path,
+		RepoPath:        root.RepoPath,
+		RepoRoot:        root.RepoRoot,
+		Name:            root.Name,
+		Source:          root.Source,
+		ReferenceTime:   root.ReferenceTime,
+		Files:           root.Files,
+		DirectFileCount: len(root.Files),
+		AllFileCount:    len(root.Files),
+	}
+
+	if err := stages.ComputeAggregations(direct, common.Requested.Expressions); err != nil {
+		return nil, eris.Wrap(err, "compute direct-file metrics")
+	}
+
+	return direct, nil
 }
 
 func prepareSnapshot(
@@ -260,6 +296,15 @@ func prepareSnapshot(
 		stages.CheckGitRequirement,
 	} {
 		if err := stage(&snapshotCommon); err != nil {
+			recovered, recoveryErr := recoverEmptySnapshot(&snapshotCommon, err)
+			if recoveryErr != nil {
+				return nil, recoveryErr
+			}
+
+			if recovered {
+				continue
+			}
+
 			return nil, err
 		}
 	}
@@ -267,11 +312,49 @@ func prepareSnapshot(
 	return &snapshotCommon, nil
 }
 
+func recoverEmptySnapshot(common *stages.CommonState, scanErr error) (bool, error) {
+	if !errors.Is(scanErr, scan.ErrNoFiles) && !gitprovider.IsSnapshotTargetMissing(scanErr) {
+		return false, nil
+	}
+
+	emptyRoot, err := emptySnapshotRoot(common)
+	if err != nil {
+		return false, eris.Wrap(err, "prepare empty alluvial snapshot")
+	}
+
+	common.Root = emptyRoot
+
+	return true, nil
+}
+
+func emptySnapshotRoot(common *stages.CommonState) (*model.Directory, error) {
+	absolute, err := filepath.Abs(common.TargetPath)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to resolve empty snapshot target")
+	}
+
+	repoPath, err := filepath.Rel(common.RepoRoot, absolute)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to resolve empty snapshot repository path")
+	}
+
+	return &model.Directory{
+		Path:     absolute,
+		RepoPath: filepath.ToSlash(repoPath),
+		RepoRoot: common.RepoRoot,
+		Name:     filepath.Base(absolute),
+	}, nil
+}
+
 func finishSnapshot(
 	ctx context.Context,
 	sink progress.Sink,
 	snapshotCommon *stages.CommonState,
 ) error {
+	if model.CountFiles(snapshotCommon.Root) == 0 {
+		return nil
+	}
+
 	for _, stage := range []func(*stages.CommonState) error{
 		func(state *stages.CommonState) error {
 			return stages.LoadCommitMetrics(state, ctx, sink)

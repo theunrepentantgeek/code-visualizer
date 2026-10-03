@@ -80,6 +80,72 @@ func TestBuildData_PreservesReferenceOrderAndAlignsSnapshotWidths(t *testing.T) 
 	}))
 }
 
+func TestBuildData_IncludesTargetDirectFilesBesideChildDirectories(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{
+			Reference:   "before",
+			Root:        testRoot(testDirectory("internal/child", 10)),
+			DirectFiles: testDirectory("internal", 4),
+		},
+		{
+			Reference:   "after",
+			Root:        testRoot(testDirectory("internal/child", 12)),
+			DirectFiles: testDirectory("internal", 7),
+		},
+	}, alluvial.Options{Metric: widthMetric})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns).To(Equal([]alluvial.Column{
+		{Reference: "before", Values: []alluvial.Value{
+			{Path: "internal", Width: 4},
+			{Path: "internal/child", Width: 10},
+		}},
+		{Reference: "after", Values: []alluvial.Value{
+			{Path: "internal", Width: 7},
+			{Path: "internal/child", Width: 12},
+		}},
+	}))
+}
+
+func TestBuildData_RendersLeafTargetAsDirectFilesBand(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{
+			Reference:   "before",
+			Root:        testRoot(),
+			DirectFiles: testDirectory("internal/alluvial", 9),
+		},
+		{
+			Reference:   "after",
+			Root:        testRoot(),
+			DirectFiles: testDirectory("internal/alluvial", 11),
+		},
+	}, alluvial.Options{Metric: widthMetric})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data.Columns).To(Equal([]alluvial.Column{
+		{Reference: "before", Values: []alluvial.Value{{Path: "internal/alluvial", Width: 9}}},
+		{Reference: "after", Values: []alluvial.Value{{Path: "internal/alluvial", Width: 11}}},
+	}))
+}
+
+func TestBuildData_RejectsSnapshotsWithoutAnyBands(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	_, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot()},
+		{Reference: "after", Root: testRoot()},
+	}, alluvial.Options{Metric: widthMetric})
+
+	g.Expect(err).To(MatchError("alluvial target contains no files in any reference"))
+}
+
 func TestBuildData_HidesOnlyPathsConstantAcrossEveryReference(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
