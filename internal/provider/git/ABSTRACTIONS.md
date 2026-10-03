@@ -34,12 +34,13 @@
 
 **Purpose.**
 
-- `HistoryRange` is the user's selection of which commits count: a `From` lower bound and an `Until` upper bound, each given as a tag, commit id, or date ([history_range.go#L17](history_range.go#L17), [../../../cmd/codeviz/treemap_cmd.go#L17](../../../cmd/codeviz/treemap_cmd.go#L17)).
+- `HistoryRange` is the user's selection of which commits count: a `From` lower bound and an `Until` upper bound, each given as `HEAD`, a tag, commit ID, date, `^` predecessor, or `ago(Nd)` relative date ([history_range.go#L17](history_range.go#L17), [../../../cmd/codeviz/treemap_cmd.go#L17](../../../cmd/codeviz/treemap_cmd.go#L17)).
 
 **Boundary and invariants.**
 
 - The zero value means "all history", and every unranged entry point delegates to the ranged one with an empty range ([commit.go#L39](commit.go#L39), [author_history.go#L69](author_history.go#L69)).
 - Resolution to concrete graph positions and timestamps is internal; callers pass the user-facing strings and never plumbing hashes ([history_range.go#L23](history_range.go#L23), [history_range.go#L30](history_range.go#L30)).
+- `TimeNow` is captured once for the range and is the shared clock for every `ago(Nd)` bound, preventing one command's references from drifting apart.
 - It travels with the run as part of the shared flag bundle rather than being re-parsed per metric ([../../stages/common.go#L29](../../stages/common.go#L29)).
 
 **Related operations.**

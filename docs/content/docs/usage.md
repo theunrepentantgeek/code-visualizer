@@ -73,10 +73,23 @@ constraints:
 | `--from <ref>`  | Commits after a revision, or on/after a date or timestamp    |
 | `--until <ref>` | A revision and its history, or commits on/before a timestamp |
 
-`<ref>` is resolved as an exact tag, then a unique short or full commit ID,
-then a date. Use `tag:`, `sha:`, or `date:` to force an interpretation. Dates
-accept ISO 8601 or `YYYYMMDD[-HHMM][Z]`. Values without a timezone use local
-time; a date-only `--until` includes the complete day.
+`<ref>` accepts `HEAD`, an exact tag, a unique short or full commit ID, or a
+date. Unprefixed values are resolved in that order. Use `tag:`, `sha:`, or
+`date:` to force an interpretation. Dates accept ISO 8601 or
+`YYYYMMDD[-HHMM][Z]`. Values without a timezone use local time; a date-only
+`--until` includes the complete day.
+
+Prefix a revision reference with `^` to select its predecessor. For `HEAD` and
+commit IDs, this is the first parent. For tags, CodeViz searches backwards one
+parent generation at a time across every merge parent and selects the first
+generation containing a tag. If multiple tagged commits occur in that
+generation, the commit with the latest author timestamp wins. Dates cannot use
+the `^` prefix.
+
+Use `ago(Nd)` for the instant `N` 24-hour days before the command started, for
+example `ago(14d)`. `N` must be a positive whole number. CodeViz captures the
+current time once per command, so every relative reference in that command uses
+the same clock.
 
 Reference types may be mixed:
 
@@ -86,6 +99,12 @@ codeviz tree-map . -o release.png -f commit-count \
 
 codeviz tree-map . -o recent.png -f commit-count \
   --from sha:a1b2c3d --until 20260905
+
+codeviz tree-map . -o fortnight.png -f commit-count \
+  --from 'ago(14d)' --until HEAD
+
+codeviz tree-map . -o release.png -f commit-count \
+  --from '^latest' --until latest
 ```
 
 Revision ranges follow the full Git commit graph. The lower revision is
