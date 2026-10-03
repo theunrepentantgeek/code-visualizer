@@ -264,6 +264,24 @@ func TestHistoryRange_MixesRevisionAndDateBounds(t *testing.T) {
 	g.Expect(hashes).NotTo(ContainElement(fixture.initial))
 }
 
+func TestHistoryRange_RelativeBoundsShareTimeNow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+	timeNow := time.Date(2025, 5, 1, 12, 0, 0, 0, time.UTC)
+
+	resolved, err := s.resolveHistoryRange(context.Background(), HistoryRange{
+		From:    "ago(14d)",
+		Until:   "ago(7d)",
+		TimeNow: timeNow,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.from).To(Equal(timeNow.Add(-14 * 24 * time.Hour)))
+	g.Expect(resolved.until).To(Equal(timeNow.Add(-7 * 24 * time.Hour)))
+}
+
 func TestHistoryRange_RejectsReversedDateRange(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

@@ -44,12 +44,12 @@ func (s *repoService) resolveHistoryRange(ctx context.Context, r HistoryRange) (
 
 	r = r.withTimeNow()
 
-	from, err := s.resolveHistoryReference(r.From, lowerBound)
+	from, err := s.resolveHistoryReference(r.From, lowerBound, r.TimeNow)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "invalid --from")
 	}
 
-	until, err := s.resolveHistoryReference(r.Until, upperBound)
+	until, err := s.resolveHistoryReference(r.Until, upperBound, r.TimeNow)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "invalid --until")
 	}

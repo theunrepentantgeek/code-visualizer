@@ -28,7 +28,11 @@ func ResolveSnapshot(repoPath string, historyRange HistoryRange) (Snapshot, erro
 
 	historyRange = historyRange.withTimeNow()
 
-	resolved, err := s.resolveHistoryReference(strings.TrimSpace(historyRange.Until), upperBound)
+	resolved, err := s.resolveHistoryReference(
+		strings.TrimSpace(historyRange.Until),
+		upperBound,
+		historyRange.TimeNow,
+	)
 	if err != nil {
 		return Snapshot{}, eris.Wrap(err, "invalid --until")
 	}

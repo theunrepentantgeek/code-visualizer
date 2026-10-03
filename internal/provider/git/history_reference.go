@@ -3,6 +3,8 @@ package git
 import (
 	"encoding/hex"
 	"errors"
+	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -38,9 +40,15 @@ func (r resolvedHistoryReference) hasRevision() bool {
 func (s *repoService) resolveHistoryReference(
 	value string,
 	bound historyBound,
+	timeNowValues ...time.Time,
 ) (resolvedHistoryReference, error) {
 	if value == "" {
 		return resolvedHistoryReference{}, nil
+	}
+
+	timeNow := time.Now()
+	if len(timeNowValues) > 0 {
+		timeNow = timeNowValues[0]
 	}
 
 	prefix, payload, explicit := splitHistoryReference(value)
@@ -58,18 +66,24 @@ func (s *repoService) resolveHistoryReference(
 
 		return resolvedHistoryReference{revision: hash}, err
 	case "date":
-		when, err := parseHistoryDate(payload, bound)
+		when, err := parseHistoryDate(payload, bound, timeNow)
 
 		return resolvedHistoryReference{timestamp: when}, err
 	}
 
-	return s.resolveUnprefixedHistoryReference(value, bound)
+	return s.resolveUnprefixedHistoryReference(value, bound, timeNow)
 }
 
 func (s *repoService) resolveUnprefixedHistoryReference(
 	value string,
 	bound historyBound,
+	timeNow time.Time,
 ) (resolvedHistoryReference, error) {
+	if after, ok := strings.CutPrefix(value, "^"); ok &&
+		(strings.HasPrefix(after, "ago(") || strings.HasPrefix(after, "date:")) {
+		return resolvedHistoryReference{}, eris.New("predecessor requires a revision reference")
+	}
+
 	if value == "HEAD" {
 		head, err := s.repo.Head()
 		if err != nil {
@@ -87,8 +101,10 @@ func (s *repoService) resolveUnprefixedHistoryReference(
 		return resolved, err
 	}
 
-	if when, err := parseHistoryDate(value, bound); err == nil {
+	if when, err := parseHistoryDate(value, bound, timeNow); err == nil {
 		return resolvedHistoryReference{timestamp: when}, nil
+	} else if strings.HasPrefix(value, "ago(") {
+		return resolvedHistoryReference{}, err
 	}
 
 	return resolvedHistoryReference{}, eris.Errorf(
@@ -308,15 +324,30 @@ var historyDateLayouts = []historyDateLayout{
 	{layout: "20060102-1504", explicitZone: false},
 }
 
-func parseHistoryDate(value string, bound historyBound) (time.Time, error) {
-	return parseHistoryDateInLocation(value, bound, time.Now().Location())
+func parseHistoryDate(value string, bound historyBound, timeNowValues ...time.Time) (time.Time, error) {
+	timeNow := time.Now()
+	if len(timeNowValues) > 0 {
+		timeNow = timeNowValues[0]
+	}
+
+	return parseHistoryDateInLocation(value, bound, timeNow.Location(), timeNow)
 }
 
 func parseHistoryDateInLocation(
 	value string,
 	bound historyBound,
 	location *time.Location,
+	timeNowValues ...time.Time,
 ) (time.Time, error) {
+	timeNow := time.Now()
+	if len(timeNowValues) > 0 {
+		timeNow = timeNowValues[0]
+	}
+
+	if parsed, claimed, err := parseAgoDate(value, timeNow); claimed {
+		return parsed, err
+	}
+
 	for _, candidate := range historyDateLayouts {
 		parsed, err := parseHistoryDateLayout(value, candidate, location)
 		if err != nil {
@@ -334,6 +365,35 @@ func parseHistoryDateInLocation(
 		"invalid date %q: expected ISO 8601 or YYYYMMDD[-HHMM][Z]",
 		value,
 	)
+}
+
+func parseAgoDate(value string, timeNow time.Time) (time.Time, bool, error) {
+	if !strings.HasPrefix(value, "ago(") {
+		return time.Time{}, false, nil
+	}
+
+	if !strings.HasSuffix(value, "d)") {
+		return time.Time{}, true, eris.Errorf(
+			"invalid relative date %q: expected ago(<positive days>d)",
+			value,
+		)
+	}
+
+	daysText := strings.TrimSuffix(strings.TrimPrefix(value, "ago("), "d)")
+	days, err := strconv.ParseUint(daysText, 10, 64)
+	if err != nil || days == 0 {
+		return time.Time{}, true, eris.Errorf(
+			"invalid relative date %q: expected ago(<positive days>d)",
+			value,
+		)
+	}
+
+	const day = 24 * time.Hour
+	if days > uint64(math.MaxInt64/int64(day)) {
+		return time.Time{}, true, eris.Errorf("relative date %q exceeds supported duration", value)
+	}
+
+	return timeNow.Add(-time.Duration(days) * day), true, nil
 }
 
 func parseHistoryDateLayout(

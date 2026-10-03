@@ -186,6 +186,72 @@ func TestResolveHistoryReference_ReportsUnknownValue(t *testing.T) {
 	))
 }
 
+func TestParseAgoDate_UsesCapturedTimeNow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	timeNow := time.Date(2026, 10, 3, 3, 20, 57, 451_000_000, time.FixedZone("NZDT", 13*60*60))
+
+	got, claimed, err := parseAgoDate("ago(7d)", timeNow)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(claimed).To(BeTrue())
+	g.Expect(got).To(Equal(timeNow.Add(-7 * 24 * time.Hour)))
+}
+
+func TestResolveHistoryReference_AcceptsRelativeDates(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+	timeNow := time.Date(2026, 10, 3, 3, 20, 57, 0, time.UTC)
+
+	unprefixed, err := s.resolveHistoryReference("ago(7d)", lowerBound, timeNow)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(unprefixed.timestamp).To(Equal(timeNow.Add(-7 * 24 * time.Hour)))
+
+	explicit, err := s.resolveHistoryReference("date:ago(14d)", upperBound, timeNow)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(explicit.timestamp).To(Equal(timeNow.Add(-14 * 24 * time.Hour)))
+}
+
+func TestParseAgoDate_RejectsInvalidExpressions(t *testing.T) {
+	t.Parallel()
+
+	tests := []string{
+		"ago(0d)",
+		"ago(-1d)",
+		"ago(1.5d)",
+		"ago(7)",
+		"ago(7h)",
+		"ago(999999999999999999999999999d)",
+		"ago()",
+		"ago(7d",
+	}
+
+	for _, value := range tests {
+		t.Run(value, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			_, claimed, err := parseAgoDate(value, time.Now())
+
+			g.Expect(claimed).To(BeTrue())
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}
+
+func TestResolveHistoryReference_RejectsRelativeDatePredecessor(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	_, err := s.resolveHistoryReference("^ago(7d)", lowerBound, time.Now())
+
+	g.Expect(err).To(MatchError(ContainSubstring("predecessor requires a revision reference")))
+}
+
 func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {
 	t.Parallel()
 

@@ -30,3 +30,17 @@ func TestResolveSnapshotReportsNoCommitBeforeDate(t *testing.T) {
 	_, err := ResolveSnapshot(fixture.dir, HistoryRange{Until: "date:2024-01-01"})
 	g.Expect(err).To(MatchError(ContainSubstring("no reachable commit")))
 }
+
+func TestResolveSnapshotSelectsCommitBeforeRelativeDate(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+
+	snapshot, err := ResolveSnapshot(fixture.dir, HistoryRange{
+		Until:   "ago(7d)",
+		TimeNow: time.Date(2025, 3, 8, 0, 0, 0, 0, time.UTC),
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(snapshot.Commit.Hash.String()).To(Equal(fixture.feature))
+}
