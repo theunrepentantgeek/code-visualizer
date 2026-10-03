@@ -1,6 +1,8 @@
 package spiral
 
 import (
+	"strconv"
+
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
@@ -18,9 +20,18 @@ func AggregateBucketMetrics(
 	buckets []TimeBucket,
 	requested stages.RequestedMetrics,
 	sizeMetric, fillMetric, borderMetric, surfaceMetric metric.Name,
+	labelMetrics []metric.Name,
 ) {
 	for i := range buckets {
-		aggregateBucket(&buckets[i], requested, sizeMetric, fillMetric, borderMetric, surfaceMetric)
+		aggregateBucket(
+			&buckets[i],
+			requested,
+			sizeMetric,
+			fillMetric,
+			borderMetric,
+			surfaceMetric,
+			labelMetrics,
+		)
 	}
 }
 
@@ -28,6 +39,7 @@ func aggregateBucket(
 	b *TimeBucket,
 	requested stages.RequestedMetrics,
 	sizeMetric, fillMetric, borderMetric, surfaceMetric metric.Name,
+	labelMetrics []metric.Name,
 ) {
 	if sizeMetric != "" {
 		b.SizeValue, b.SizeValueAvailable = bucketNumericMetricValue(b.Files, sizeMetric)
@@ -42,6 +54,40 @@ func aggregateBucket(
 	if surfaceMetric != "" {
 		b.SurfaceValue, b.SurfaceValueAvailable = bucketNumericMetricValue(b.Files, surfaceMetric)
 	}
+
+	b.LabelValues = aggregateLabelValues(b.Files, requested, labelMetrics)
+}
+
+func aggregateLabelValues(
+	files []*model.File,
+	requested stages.RequestedMetrics,
+	names []metric.Name,
+) []LabelValue {
+	values := make([]LabelValue, 0, len(names))
+
+	for _, name := range names {
+		descriptor, ok := requested.DescriptorFor(name)
+		if !ok {
+			values = append(values, LabelValue{})
+
+			continue
+		}
+
+		if descriptor.Kind == metric.Classification {
+			value := modeCategory(files, name)
+			values = append(values, LabelValue{Formatted: value, Available: value != ""})
+
+			continue
+		}
+
+		value, available := bucketNumericMetricValue(files, name)
+		values = append(values, LabelValue{
+			Formatted: strconv.FormatFloat(value, 'f', -1, 64),
+			Available: available,
+		})
+	}
+
+	return values
 }
 
 func aggregateColourMetric(

@@ -53,6 +53,13 @@ type TimeBucket struct {
 	BorderLabel           string
 	SurfaceValue          float64
 	SurfaceValueAvailable bool
+	LabelValues           []LabelValue
+}
+
+// LabelValue is a formatted additional metric value for a bucket label.
+type LabelValue struct {
+	Formatted string
+	Available bool
 }
 
 // BuildTimeBuckets creates consecutive time buckets at the given resolution

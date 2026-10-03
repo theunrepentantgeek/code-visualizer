@@ -14,11 +14,12 @@ const discLabelPadding = 2.0
 
 // LabelMetrics identifies the metrics included in each disc label.
 type LabelMetrics struct {
-	Size      metric.Name
-	Fill      metric.Name
-	Border    metric.Name
-	Surface   metric.Name
-	Requested stages.RequestedMetrics
+	Size       metric.Name
+	Fill       metric.Name
+	Border     metric.Name
+	Surface    metric.Name
+	Additional []metric.Name
+	Requested  stages.RequestedMetrics
 }
 
 type numericLabelValue struct {
@@ -64,6 +65,12 @@ func buildDiscLabel(bucket TimeBucket, metrics LabelMetrics) []string {
 		}
 	}
 
+	for _, value := range bucket.LabelValues {
+		if value.Available {
+			lines = append(lines, value.Formatted)
+		}
+	}
+
 	return lines
 }
 
@@ -80,6 +87,12 @@ func buildLegendLabelSample(metrics LabelMetrics) []string {
 
 		seen[name] = true
 		lines = append(lines, string(name))
+	}
+
+	for _, name := range metrics.Additional {
+		if name != "" {
+			lines = append(lines, string(name))
+		}
 	}
 
 	return lines
