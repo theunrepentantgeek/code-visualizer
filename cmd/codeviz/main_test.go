@@ -407,6 +407,109 @@ func TestCLI_ParsesDonutTreeMetricFlags(t *testing.T) {
 	g.Expect(cli.DonutTree.Border).To(Equal(config.MetricSpec{Metric: "file-freshness", Palette: "good-bad"}))
 }
 
+func TestCLI_ParsesRepeatedLabelsInOrder(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		command string
+		labels  func(CLI) []metric.Name
+	}{
+		{name: "treemap", command: "tree-map", labels: func(cli CLI) []metric.Name { return cli.TreeMap.Labels }},
+		{name: "spiral", command: "spiral", labels: func(cli CLI) []metric.Name { return cli.Spiral.Labels }},
+		{
+			name:    "donut tree",
+			command: "donut-tree",
+			labels:  func(cli CLI) []metric.Name { return cli.DonutTree.Labels },
+		},
+		{name: "alluvial", command: "alluvial", labels: func(cli CLI) []metric.Name { return cli.Alluvial.Labels }},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			cli := CLI{}
+			parser, err := kong.New(
+				&cli,
+				kong.Name("codeviz"),
+				filterMapperOption(),
+				kong.Exit(func(int) {}),
+			)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			_, err = parser.Parse([]string{
+				tc.command, ".", "-o", "out.png",
+				"--label", "file-lines",
+				"--label", "file-type",
+			})
+
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(tc.labels(cli)).To(Equal([]metric.Name{"file-lines", "file-type"}))
+		})
+	}
+}
+
+func TestLabelMetrics_MergeConfig(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name   string
+		labels func(*config.Config) []metric.Name
+		apply  func(*config.Config, []metric.Name)
+	}
+
+	cases := []testCase{
+		{
+			name:   "treemap",
+			labels: func(cfg *config.Config) []metric.Name { return cfg.Treemap.Labels },
+			apply: func(cfg *config.Config, labels []metric.Name) {
+				(&TreemapCmd{Labels: labels}).applyOverrides(cfg)
+			},
+		},
+		{
+			name:   "spiral",
+			labels: func(cfg *config.Config) []metric.Name { return cfg.Spiral.Labels },
+			apply: func(cfg *config.Config, labels []metric.Name) {
+				(&SpiralCmd{Labels: labels}).applyOverrides(cfg)
+			},
+		},
+		{
+			name:   "donut tree",
+			labels: func(cfg *config.Config) []metric.Name { return cfg.DonutTree.Labels },
+			apply: func(cfg *config.Config, labels []metric.Name) {
+				(&DonutTreeCmd{Labels: labels}).applyOverrides(cfg)
+			},
+		},
+		{
+			name:   "alluvial",
+			labels: func(cfg *config.Config) []metric.Name { return cfg.Alluvial.Labels },
+			apply: func(cfg *config.Config, labels []metric.Name) {
+				(&AlluvialCmd{Labels: labels}).applyOverrides(cfg)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			cfg := config.New()
+			configured := []metric.Name{"file-age", "file-type"}
+			tc.apply(cfg, configured)
+
+			tc.apply(cfg, nil)
+			g.Expect(tc.labels(cfg)).To(Equal(configured))
+
+			supplied := []metric.Name{"file-lines", "file-size"}
+			tc.apply(cfg, supplied)
+			supplied[0] = "commit-count"
+
+			g.Expect(tc.labels(cfg)).To(Equal([]metric.Name{"file-lines", "file-size"}))
+		})
+	}
+}
+
 func TestCLI_ParsesMaxLayersFlags(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

@@ -23,6 +23,8 @@ type AlluvialCmd struct {
 	References []string          `help:"Ordered revision reference (repeatable)." name:"reference"`
 	Metric     metric.Name       `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"`             //nolint:revive,nolintlint // kong struct tags require long lines
 	Fill       config.MetricSpec `help:"Band colour: metric[,palette]; append .delta (first-to-last) or .stepdelta (adjacent change)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
+	//nolint:revive,nolintlint // kong struct tags require long lines
+	Labels []metric.Name `help:"Additional metric to include in labels (repeatable)." name:"label" placeholder:"metric"`
 
 	Expand        []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
 	ConstantBands string   `default:"" enum:",hide,mute,merge" help:"How to display bands whose width is unchanged: hide, mute, or merge." name:"constant-bands" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
@@ -71,7 +73,12 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 		}
 	}
 
-	return nil
+	return validateLabelMetrics(
+		cfg.Labels,
+		resolveDirectoryLabelMetric,
+		resolvedRole("width", metricName, resolveDirectoryLabelMetric),
+		resolvedRole("fill", cfg.Fill.MetricName(), resolveDirectoryLabelMetric),
+	)
 }
 
 func validateAlluvialReferences(values []string) error {
@@ -259,4 +266,5 @@ func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Alluvial.OverrideFill(c.Fill)
 	cfg.Alluvial.OverrideExpand(c.Expand)
 	cfg.Alluvial.OverrideConstantBands(c.ConstantBands)
+	cfg.Alluvial.OverrideLabels(c.Labels)
 }

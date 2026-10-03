@@ -1,6 +1,6 @@
 package config
 
-import "slices"
+import "github.com/theunrepentantgeek/code-visualizer/internal/metric"
 
 // ConstantBandsMode controls how alluvial bands with unchanged widths are displayed.
 type ConstantBandsMode string
@@ -18,6 +18,7 @@ type Alluvial struct {
 	Fill          *MetricSpec        `yaml:"fill,omitempty"          json:"fill,omitempty"`
 	Expand        []string           `yaml:"expand,omitempty"        json:"expand,omitempty"`
 	ConstantBands *ConstantBandsMode `yaml:"constantBands,omitempty" json:"constantBands,omitempty"`
+	Labels        []metric.Name      `yaml:"labels,omitempty"        json:"labels,omitempty"`
 }
 
 // OverrideReferences replaces configured references when CLI references are supplied.
@@ -55,10 +56,9 @@ func (a *Alluvial) OverrideConstantBands(v string) {
 	a.ConstantBands = &mode
 }
 
-func overrideStrings(target *[]string, values []string) {
-	if len(values) == 0 {
-		return
-	}
+// OverrideLabels replaces configured labels when CLI labels are supplied.
+func (a *Alluvial) OverrideLabels(v []metric.Name) { overrideSlice(&a.Labels, v) }
 
-	*target = slices.Clone(values)
+func overrideStrings(target *[]string, values []string) {
+	overrideSlice(target, values)
 }
