@@ -2,8 +2,6 @@ package golang
 
 import (
 	"go/token"
-	"os"
-	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -126,9 +124,6 @@ func TestAnalyzeFile(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	dir := t.TempDir()
-	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/test/example\n\ngo 1.26\n"), 0o600)
-
 	src := `package example
 
 import (
@@ -164,14 +159,11 @@ const ExportedConst = 1
 
 var unexportedVar int
 `
-	goFile := filepath.Join(dir, "example.go")
-	_ = os.WriteFile(goFile, []byte(src), 0o600)
-
-	stats, err := analyzeFile(goFile, "github.com/test/example")
+	stats, err := analyzeSource("example.go", []byte(src), "github.com/test/example")
 	g.Expect(err).NotTo(HaveOccurred())
 
 	if stats == nil {
-		t.Fatal("analyzeFile returned nil stats without error")
+		t.Fatal("analyzeSource returned nil stats without error")
 	}
 
 	// Types
@@ -218,9 +210,6 @@ func TestAnalyzeFileNotGo(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	dir := t.TempDir()
-	_ = os.WriteFile(filepath.Join(dir, "bad.go"), []byte("not go code at all"), 0o600)
-
-	_, err := analyzeFile(filepath.Join(dir, "bad.go"), "")
+	_, err := analyzeSource("bad.go", []byte("not go code at all"), "")
 	g.Expect(err).To(HaveOccurred())
 }

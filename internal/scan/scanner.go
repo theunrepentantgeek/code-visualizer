@@ -4,7 +4,6 @@ package scan
 import (
 	"context"
 	"errors"
-	"path/filepath"
 
 	"github.com/rotisserie/eris"
 
@@ -44,8 +43,10 @@ func ScanTree(
 	return root, nil
 }
 
-// Scan recursively scans the directory at path and returns a model.Directory tree.
-// File symlinks are followed; directory symlinks are skipped.
+// Scan recursively scans the directory at path and returns a source-backed
+// model.Directory tree. File symlinks within the scan root are followed;
+// directory symlinks and file symlinks outside the root are skipped. Select a
+// wider root when files reached through outside-root symlinks are intended.
 // Permission-denied errors are logged and scanning continues.
 // When includeBinary is false, binary files are excluded during the scan rather
 // than being added to the tree and filtered later.
@@ -61,19 +62,29 @@ func Scan(
 		return nil, eris.Wrap(err, "directory scan cancelled")
 	}
 
-	absPath, err := filepath.Abs(path)
+	tree, err := source.WorkingTree(path)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to resolve absolute path")
+		return nil, eris.Wrap(err, "failed to open working tree source")
 	}
 
-	root, err := newWalker(ctx, absPath, rules, progress, includeBinary).scanDir(absPath)
+	root, err := ScanTree(ctx, tree, rules, progress, includeBinary)
 	if err != nil {
 		return nil, err
 	}
 
-	if !hasFiles(root) {
-		return nil, errors.New("no files found in directory")
-	}
+	clearRepoPaths(root)
 
 	return root, nil
+}
+
+func clearRepoPaths(root *model.Directory) {
+	root.RepoPath = ""
+
+	for _, file := range root.Files {
+		file.RepoPath = ""
+	}
+
+	for _, child := range root.Dirs {
+		clearRepoPaths(child)
+	}
 }

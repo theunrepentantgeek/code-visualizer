@@ -9,6 +9,8 @@ import (
 )
 
 // File represents a single file in the scanned tree.
+// Manually constructed files must set Source and, when Path is not valid within
+// that filesystem, SourcePath before callers can read their content.
 type File struct {
 	MetricContainer
 	Path         string

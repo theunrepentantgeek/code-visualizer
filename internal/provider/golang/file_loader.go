@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"log/slog"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -77,10 +76,6 @@ func populateFileMetrics(f *model.File) {
 }
 
 func analyzeModelFile(f *model.File) (*fileStats, error) {
-	if f.Source == nil {
-		return getOrAnalyze(f.Path)
-	}
-
 	src, err := f.ReadAll()
 	if err != nil {
 		return nil, eris.Wrap(err, "reading Go file metrics")
@@ -95,9 +90,6 @@ func analyzeModelFile(f *model.File) (*fileStats, error) {
 	}
 
 	modulePath := findModulePathFS(moduleFS, moduleDir)
-	if modulePath == "" && f.RepoSource == nil {
-		modulePath = globalModuleCache.findModulePath(filepath.Dir(f.Path))
-	}
 
 	return analyzeSource(f.Path, src, modulePath)
 }

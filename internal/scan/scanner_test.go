@@ -65,12 +65,138 @@ func TestScan_CancelledContextStopsBeforeProgress(t *testing.T) {
 	g.Expect(progress.directories).To(Equal(0))
 }
 
+func TestScanAttachesReadableSource(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	content := []byte("attached source\n")
+	g.Expect(os.WriteFile(filepath.Join(dir, "source.txt"), content, 0o600)).To(Succeed())
+
+	root, err := Scan(context.Background(), dir, nil, nil, true)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.Files).To(HaveLen(1))
+
+	file := root.Files[0]
+	g.Expect(file.Source).NotTo(BeNil())
+	g.Expect(file.SourcePath).To(Equal("source.txt"))
+	g.Expect(file.Path).To(Equal(filepath.Join(dir, "source.txt")))
+
+	data, err := file.ReadAll()
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(data).To(Equal(content))
+}
+
+func TestScanPreservesWorkingTreeMetadata(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	g.Expect(os.Mkdir(filepath.Join(dir, "nested"), 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(dir, "root.txt"), []byte("root\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(dir, "nested", "child.go"), []byte("package child\n"), 0o600)).To(Succeed())
+
+	root, err := Scan(context.Background(), dir, nil, nil, true)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.Path).To(Equal(dir))
+	g.Expect(root.RepoPath).To(BeEmpty())
+	g.Expect(root.DirectFileCount).To(Equal(1))
+	g.Expect(root.AllFileCount).To(Equal(2))
+	g.Expect(root.AllDirCount).To(Equal(1))
+	g.Expect(root.Files).To(HaveLen(1))
+	g.Expect(root.Dirs).To(HaveLen(1))
+
+	rootFile := root.Files[0]
+	g.Expect(rootFile.Path).To(Equal(filepath.Join(dir, "root.txt")))
+	g.Expect(rootFile.SourcePath).To(Equal("root.txt"))
+	g.Expect(rootFile.RepoPath).To(BeEmpty())
+	g.Expect(rootFile.IsBinary).To(BeFalse())
+
+	size, ok := rootFile.Quantity(filesystem.FileSize)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(size).To(Equal(int64(5)))
+
+	fileType, ok := rootFile.Classification(filesystem.FileType)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(fileType).To(Equal("txt"))
+
+	nested := root.Dirs[0]
+	g.Expect(nested.Path).To(Equal(filepath.Join(dir, "nested")))
+	g.Expect(nested.RepoPath).To(BeEmpty())
+	g.Expect(nested.Files).To(HaveLen(1))
+	g.Expect(nested.Files[0].Path).To(Equal(filepath.Join(dir, "nested", "child.go")))
+	g.Expect(nested.Files[0].SourcePath).To(Equal("nested/child.go"))
+	g.Expect(nested.Files[0].RepoPath).To(BeEmpty())
+}
+
+func TestScanLeavesRepoPathEmptyWithoutRepositoryContext(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	dir := t.TempDir()
+	g.Expect(os.WriteFile(filepath.Join(dir, "file.txt"), []byte("content\n"), 0o600)).To(Succeed())
+
+	root, err := Scan(context.Background(), dir, nil, nil, true)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(root).NotTo(BeNil())
+
+	if root == nil {
+		t.Fatal("expected scanned root")
+	}
+
+	g.Expect(root.RepoPath).To(BeEmpty())
+	g.Expect(root.Files).To(HaveLen(1))
+	g.Expect(root.Files[0].RepoPath).To(BeEmpty())
+}
+
+func TestScanReportsProgressPerDirectory(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	rootPath, err := filepath.Abs(filepath.Join("testdata", "nested"))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	progress := &recordingProgress{}
+
+	_, err = Scan(context.Background(), rootPath, nil, progress, true)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(progress.calls).To(ConsistOf(
+		progressCall{path: rootPath, fileCount: 1},
+		progressCall{path: filepath.Join(rootPath, "sub"), fileCount: 1},
+		progressCall{path: filepath.Join(rootPath, "sub", "deep"), fileCount: 1},
+	))
+}
+
 type permissionFS struct {
 	fstest.MapFS
 }
 
 type disappearingFS struct {
 	fstest.MapFS
+}
+
+type progressCall struct {
+	path      string
+	fileCount int
+}
+
+type recordingProgress struct {
+	calls []progressCall
+}
+
+func (r *recordingProgress) OnDirectoryScanned(path string, fileCount int) {
+	r.calls = append(r.calls, progressCall{path: path, fileCount: fileCount})
 }
 
 func (d disappearingFS) Stat(name string) (fs.FileInfo, error) {
