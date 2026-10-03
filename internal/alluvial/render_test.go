@@ -86,6 +86,95 @@ func TestRenderToCanvas_AddsExplicitFillValueToBandLabel(t *testing.T) {
 	g.Expect(labels).To(ContainElements("api", "12", "-3"))
 }
 
+func TestRenderToCanvas_UsesFixedGreyForMutedBandsAndFlows(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	constantGrey := color.RGBA{R: 0xE2, G: 0xE2, B: 0xE2, A: 0xFF}
+	fillInk := inks.NumericInk("fill", []float64{0, 100}, palette.GetPalette(palette.GoodBad))
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{
+			{X: 20, Bands: []alluvial.Band{
+				{Path: "constant", Top: 10, Bottom: 50, Width: 10, FillValue: 100, HasFillValue: true, Muted: true},
+			}},
+			{X: 180, Bands: []alluvial.Band{
+				{Path: "constant", Top: 10, Bottom: 50, Width: 10, FillValue: 100, HasFillValue: true, Muted: true},
+			}},
+		},
+		Flows: []alluvial.Flow{{
+			Path: "constant", FillValue: 100, HasFillValue: true, Muted: true,
+			FromX: 20, ToX: 180, FromTop: 10, FromBottom: 50, ToTop: 10, ToBottom: 50,
+		}},
+	}, 200, 100, fillInk, "")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	var fills []color.Color
+
+	for _, call := range backend.Calls {
+		if call.Method == "DrawFilledPath" {
+			fills = append(fills, call.Fill)
+		}
+	}
+
+	g.Expect(fills).To(HaveLen(3))
+	g.Expect(fills).To(ConsistOf(constantGrey, constantGrey, constantGrey))
+	g.Expect(fills).NotTo(ContainElement(fillInk.Dip(inks.MeasureValue(100))))
+}
+
+func TestRenderToCanvas_SuppressesMutedLabelsAndEdgeExtensions(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fillInk := inks.NumericInk("fill", []float64{0, 100}, palette.GetPalette(palette.Neutral))
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{
+			{
+				Reference: "before",
+				X:         20,
+				Bands: []alluvial.Band{{
+					Path: "constant", Top: 10, Bottom: 70, Width: 10,
+					FillValue: 100, HasFillValue: true, Muted: true,
+				}},
+			},
+			{
+				Reference: "after",
+				X:         180,
+				Bands: []alluvial.Band{{
+					Path: "constant", Top: 10, Bottom: 70, Width: 10,
+					FillValue: 100, HasFillValue: true, Muted: true,
+				}},
+			},
+		},
+	}, 200, 100, fillInk, "fill")
+	backend := mock.NewBackend()
+
+	g.Expect(cv.RenderTo(backend)).To(Succeed())
+
+	var (
+		labels []string
+		paths  []mock.Call
+	)
+
+	for _, call := range backend.Calls {
+		switch call.Method {
+		case "DrawText":
+			labels = append(labels, call.Text)
+		case "DrawFilledPath":
+			paths = append(paths, call)
+		default:
+			continue
+		}
+	}
+
+	g.Expect(labels).To(ConsistOf("before", "after"))
+	g.Expect(paths).To(HaveLen(2))
+	minimumX, maximumX := pathXBounds(paths)
+	g.Expect(minimumX).To(Equal(float64(20)))
+	g.Expect(maximumX).To(Equal(float64(180)))
+}
+
 func TestRenderToCanvas_UsesContrastingInkForBandLabels(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -249,13 +338,20 @@ func TestRenderToCanvas_ExtendsMissingInitialFillWithPaletteMidpoint(t *testing.
 }
 
 func pathXBounds(paths []mock.Call) (minimum, maximum float64) {
-	minimum = paths[0].Loops[0][0].X
-	maximum = minimum
+	initialized := false
 
 	for _, path := range paths {
-		for _, point := range path.Loops[0] {
-			minimum = min(minimum, point.X)
-			maximum = max(maximum, point.X)
+		for _, loop := range path.Loops {
+			for _, point := range loop {
+				if !initialized {
+					minimum = point.X
+					maximum = point.X
+					initialized = true
+				}
+
+				minimum = min(minimum, point.X)
+				maximum = max(maximum, point.X)
+			}
 		}
 	}
 

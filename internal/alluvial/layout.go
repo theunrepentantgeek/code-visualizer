@@ -35,6 +35,7 @@ type Band struct {
 	Width        float64
 	FillValue    float64
 	HasFillValue bool
+	Muted        bool
 }
 
 // Flow is a filled quadrilateral joining one directory between adjacent columns.
@@ -43,6 +44,7 @@ type Flow struct {
 	Path                string
 	FillValue           float64
 	HasFillValue        bool
+	Muted               bool
 	FromX, ToX          float64
 	FromTop, FromBottom float64
 	ToTop, ToBottom     float64
@@ -76,6 +78,7 @@ func LayoutData(data Data, width, height int) Layout {
 		for bandIndex := range bands {
 			band := &bands[bandIndex]
 			band.FillValue, band.HasFillValue = fillValueFor(data, column.Reference, band.Path)
+			_, band.Muted = data.MutedPaths[band.Path]
 		}
 
 		layout.Columns[index] = ColumnLayout{
@@ -90,6 +93,7 @@ func LayoutData(data Data, width, height int) Layout {
 	for _, transition := range data.Transitions {
 		if flow, ok := transitionFlow(transition, bandsByReference, xByReference); ok {
 			flow.FillValue, flow.HasFillValue = fillValueFor(data, transition.ToReference, flow.Path)
+			_, flow.Muted = data.MutedPaths[flow.Path]
 			layout.Flows = append(layout.Flows, flow)
 		}
 	}

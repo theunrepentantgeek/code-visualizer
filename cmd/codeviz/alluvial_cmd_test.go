@@ -127,6 +127,54 @@ func TestCLI_ParsesAlluvialOrderedInputs(t *testing.T) {
 	g.Expect(rules[1].Mode).To(Equal(filter.Exclude))
 }
 
+func TestCLI_ParsesAlluvialConstantBandModes(t *testing.T) {
+	t.Parallel()
+
+	for _, mode := range []string{"hide", "mute", "merge"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			cli := CLI{}
+			parser, err := kong.New(&cli, kong.Name("codeviz"), filterMapperOption(), kong.Exit(func(int) {}))
+			g.Expect(err).NotTo(HaveOccurred())
+
+			_, err = parser.Parse([]string{
+				"alluvial", ".", "-o", "out.svg", "--constant-bands", mode,
+			})
+
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cli.Alluvial.ConstantBands).To(Equal(mode))
+		})
+	}
+}
+
+func TestCLI_RejectsUnknownAlluvialConstantBandMode(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cli := CLI{}
+	parser, err := kong.New(&cli, kong.Name("codeviz"), filterMapperOption(), kong.Exit(func(int) {}))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{
+		"alluvial", ".", "-o", "out.svg", "--constant-bands", "dim",
+	})
+
+	g.Expect(err).To(MatchError(ContainSubstring(`must be one of "","hide","mute","merge"`)))
+}
+
+func TestCLI_OmitsAlluvialConstantBandModeByDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	cli := CLI{}
+	parser, err := kong.New(&cli, kong.Name("codeviz"), filterMapperOption(), kong.Exit(func(int) {}))
+	g.Expect(err).NotTo(HaveOccurred())
+
+	_, err = parser.Parse([]string{"alluvial", ".", "-o", "out.svg"})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cli.Alluvial.ConstantBands).To(BeEmpty())
+}
+
 func TestAlluvialCmd_MergeConfig_ReplacesConfiguredReferences(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -146,6 +194,32 @@ func TestAlluvialCmd_MergeConfig_ReplacesConfiguredReferences(t *testing.T) {
 	g.Expect(cfg.Alluvial.References).To(Equal([]string{"tag:v2.0", "date:2026-01-01"}))
 	g.Expect(*cfg.Alluvial.Fill).To(Equal(config.MetricSpec{Metric: "file-lines.delta", Palette: "temperature"}))
 	g.Expect(cfg.Alluvial.Expand).To(Equal([]string{"cmd", "internal/config"}))
+}
+
+func TestAlluvialCmd_MergeConfig_OverridesConfiguredConstantBands(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Alluvial.OverrideConstantBands("mute")
+
+	cmd := &AlluvialCmd{ConstantBands: "merge"}
+
+	cmd.applyOverrides(cfg)
+
+	g.Expect(cfg.Alluvial.ConstantBandsMode()).To(Equal(config.ConstantBandsMerge))
+}
+
+func TestAlluvialCmd_MergeConfig_OmittedConstantBandsPreservesConfig(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := config.New()
+	cfg.Alluvial.OverrideConstantBands("mute")
+
+	(&AlluvialCmd{}).applyOverrides(cfg)
+
+	g.Expect(cfg.Alluvial.ConstantBandsMode()).To(Equal(config.ConstantBandsMute))
 }
 
 func TestAlluvialCmd_ValidateConfig(t *testing.T) {
@@ -201,6 +275,14 @@ func TestAlluvialCmd_ValidateConfig(t *testing.T) {
 			},
 			wantErr: "invalid expansion path",
 		},
+		"rejects unknown constant band mode": {
+			cfg: &config.Alluvial{
+				References:    []string{"tag:v1.0", "tag:v2.0"},
+				Metric:        new("file-size"),
+				ConstantBands: new(config.ConstantBandsMode("dim")),
+			},
+			wantErr: `invalid constant bands mode "dim": must be one of hide, mute, merge`,
+		},
 		"accepts tags and supported references": {
 			cfg: &config.Alluvial{
 				References: []string{"tag:v1.0", "sha:abc1234", "date:2026-01-01"},
@@ -250,6 +332,52 @@ func TestAlluvialCmd_Run_ResolvesTaggedSnapshots(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(string(image)).To(ContainSubstring("tag:v1.0"))
 	g.Expect(string(image)).To(ContainSubstring("tag:v2.0"))
+}
+
+func TestAlluvialCmd_Run_AppliesConstantBandModes(t *testing.T) {
+	t.Parallel()
+	repository := createAlluvialTagFixture(t)
+
+	cases := map[string]struct {
+		mode         string
+		wantConstant bool
+	}{
+		"default": {wantConstant: true},
+		"hide":    {mode: "hide"},
+		"mute":    {mode: "mute"},
+		"merge":   {mode: "merge"},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			output := filepath.Join(t.TempDir(), "alluvial.svg")
+			cmd := &AlluvialCmd{
+				TargetPath:    repository,
+				Output:        output,
+				References:    []string{"tag:v1.0", "tag:v2.0"},
+				Metric:        "file-lines",
+				ConstantBands: c.mode,
+				Width:         800,
+				Height:        600,
+			}
+
+			g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+			image, err := os.ReadFile(output)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			labels := svgTextLabels(string(image))
+			g.Expect(labels).To(ContainElements("api", "docs", "legacy"))
+
+			if c.wantConstant {
+				g.Expect(labels).To(ContainElement("stable"))
+			} else {
+				g.Expect(labels).NotTo(ContainElement("stable"))
+			}
+		})
+	}
 }
 
 func TestAlluvialCmd_Run_ComputesGitFillMetricForTaggedSnapshots(t *testing.T) {
@@ -399,7 +527,7 @@ func createAlluvialTagFixture(t *testing.T) string {
 
 		worktree, worktreeErr := repository.Worktree()
 		g.Expect(worktreeErr).NotTo(HaveOccurred())
-		_, worktreeErr = worktree.Add(".")
+		worktreeErr = worktree.AddWithOptions(&gogit.AddOptions{All: true})
 		g.Expect(worktreeErr).NotTo(HaveOccurred())
 
 		hash, commitErr := worktree.Commit(message, &gogit.CommitOptions{
@@ -411,6 +539,8 @@ func createAlluvialTagFixture(t *testing.T) string {
 	}
 
 	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\n")
+	writeFixtureFile("stable/main.go", "package stable\n\nconst Value = 1\n")
+	writeFixtureFile("legacy/main.go", "package legacy\n\nfunc Removed() {}\n")
 
 	first := commit("first release", time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v1.0", first, nil)
@@ -418,6 +548,7 @@ func createAlluvialTagFixture(t *testing.T) string {
 
 	writeFixtureFile("docs/guide.md", "# Guide\n")
 	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\nfunc Second() {}\n")
+	g.Expect(os.Remove(filepath.Join(root, "legacy/main.go"))).To(Succeed())
 
 	second := commit("second release", time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC))
 	_, err = repository.CreateTag("v2.0", second, nil)

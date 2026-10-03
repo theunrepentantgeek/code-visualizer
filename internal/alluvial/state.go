@@ -1,6 +1,7 @@
 package alluvial
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
@@ -69,8 +70,9 @@ type Snapshot struct {
 
 // Options controls the metric and directory detail represented in Data.
 type Options struct {
-	Metric       metric.Name
-	FillMetric   metric.Name
-	FillTemporal metric.TemporalName
-	Expand       []string
+	Metric        metric.Name
+	FillMetric    metric.Name
+	FillTemporal  metric.TemporalName
+	Expand        []string
+	ConstantBands config.ConstantBandsMode
 }

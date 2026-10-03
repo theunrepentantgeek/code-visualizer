@@ -34,6 +34,7 @@ the repository's `HEAD` commit.
 | Flag | Default | Description |
 | ---- | ------- | ----------- |
 | `--expand` | none | Repository-relative directory whose direct children are shown; repeatable |
+| `--constant-bands` | none | Unchanged bands: `hide`, `mute`, or `merge` |
 | `--width` | `1920` | Canvas width in pixels |
 | `--height` | `1080` | Canvas height in pixels |
 | `--title` | none | Override the title text on the generated image |
@@ -47,6 +48,14 @@ the repository's `HEAD` commit.
 directories. They do not control hierarchy detail. Use `--expand` to replace a
 directory with its direct children; it never expands recursively or adds an
 `Other` aggregate.
+
+By default, unchanged bands are displayed normally. A band is constant when
+its width metric has exactly the same value at every displayed reference; a
+directory introduced or removed during the range is therefore not constant.
+Use `--constant-bands hide` to remove constant bands, or `mute` to retain their
+geometry in light grey without labels. `merge` also combines each adjacent run
+of constant bands in path order into one light-grey, unlabeled band. Changed
+bands separate merge runs and keep their normal colours and labels.
 
 ## Examples
 
@@ -62,7 +71,7 @@ Show the direct children of `cmd` and `internal` across three snapshots:
 ```sh
 codeviz alluvial . -o milestones.png -m file-lines \
   --reference tag:v1.0 --reference tag:v1.1 --reference tag:v1.2 \
-  --expand cmd --expand internal
+  --expand cmd --expand internal --constant-bands merge
 ```
 
 Flow widths are the selected directory metric at each snapshot, not the

@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/alluvial"
+	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 )
 
 func TestLayoutData_ScalesBandsInProportionToTheirMetricValues(t *testing.T) {
@@ -59,6 +60,62 @@ func TestLayoutData_UsesDestinationSnapshotFillValue(t *testing.T) {
 	g.Expect(layout.Columns[1].Bands[0].HasFillValue).To(BeTrue())
 	g.Expect(layout.Flows[0].FillValue).To(Equal(float64(2)))
 	g.Expect(layout.Flows[0].HasFillValue).To(BeTrue())
+}
+
+func TestLayoutData_ProjectsMutedPathsOntoBandsAndFlows(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	layout := alluvial.LayoutData(alluvial.Data{
+		Columns: []alluvial.Column{
+			{Reference: "before", Values: []alluvial.Value{{Path: "constant", Width: 10}, {Path: "changed", Width: 5}}},
+			{Reference: "after", Values: []alluvial.Value{{Path: "constant", Width: 10}, {Path: "changed", Width: 7}}},
+		},
+		Transitions: []alluvial.Transition{
+			{FromReference: "before", ToReference: "after", Path: "constant", FromWidth: 10, ToWidth: 10},
+			{FromReference: "before", ToReference: "after", Path: "changed", FromWidth: 5, ToWidth: 7},
+		},
+		MutedPaths: map[string]struct{}{"constant": {}},
+	}, 200, 100)
+
+	g.Expect(bandByPath(layout.Columns[0].Bands, "constant").Muted).To(BeTrue())
+	g.Expect(bandByPath(layout.Columns[1].Bands, "constant").Muted).To(BeTrue())
+	g.Expect(bandByPath(layout.Columns[0].Bands, "changed").Muted).To(BeFalse())
+	g.Expect(flowByPath(layout.Flows, "constant").Muted).To(BeTrue())
+	g.Expect(flowByPath(layout.Flows, "changed").Muted).To(BeFalse())
+}
+
+func TestLayoutData_KeepsChangedPathsBetweenMergedConstantRuns(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data, err := alluvial.BuildData([]alluvial.Snapshot{
+		{Reference: "before", Root: testRoot(
+			testDirectory("alpha", 1),
+			testDirectory("bravo", 2),
+			testDirectory("charlie", 3),
+			testDirectory("delta", 5),
+			testDirectory("echo", 6),
+		)},
+		{Reference: "after", Root: testRoot(
+			testDirectory("alpha", 1),
+			testDirectory("bravo", 2),
+			testDirectory("charlie", 4),
+			testDirectory("delta", 5),
+			testDirectory("echo", 6),
+		)},
+	}, alluvial.Options{
+		Metric:        widthMetric,
+		ConstantBands: config.ConstantBandsMerge,
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	layout := alluvial.LayoutData(data, 200, 100)
+
+	g.Expect(layout.Columns[0].Bands).To(HaveLen(3))
+	g.Expect(layout.Columns[0].Bands[1].Path).To(Equal("charlie"))
+	g.Expect(layout.Columns[0].Bands[0].Top).To(BeNumerically("<", layout.Columns[0].Bands[1].Top))
+	g.Expect(layout.Columns[0].Bands[1].Top).To(BeNumerically("<", layout.Columns[0].Bands[2].Top))
 }
 
 func TestLayoutData_UsesSharedScaleAcrossColumns(t *testing.T) {

@@ -24,7 +24,8 @@ type AlluvialCmd struct {
 	Metric     metric.Name       `default:"" help:"Metric for directory flow width; run 'codeviz help metrics' for available metrics." short:"m"`             //nolint:revive,nolintlint // kong struct tags require long lines
 	Fill       config.MetricSpec `help:"Band colour: metric[,palette]; append .delta (first-to-last) or .stepdelta (adjacent change)." optional:"" short:"f"` //nolint:revive,nolintlint // kong struct tags require long lines
 
-	Expand []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
+	Expand        []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
+	ConstantBands string   `default:"" enum:",hide,mute,merge" help:"How to display bands whose width is unchanged: hide, mute, or merge." name:"constant-bands" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1080" help:"Image height in pixels."`
@@ -43,18 +44,8 @@ func (c *AlluvialCmd) Filters() []filter.Rule {
 }
 
 func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
-	if len(cfg.References) < 2 {
-		return eris.New("alluvial requires at least two references")
-	}
-
-	references := make(map[string]struct{}, len(cfg.References))
-	for _, reference := range cfg.References {
-		reference = alluvial.SnapshotReference(reference)
-		if _, exists := references[reference]; exists {
-			return eris.Errorf("alluvial references must be unique: duplicate reference %q", reference)
-		}
-
-		references[reference] = struct{}{}
+	if err := validateAlluvialReferences(cfg.References); err != nil {
+		return err
 	}
 
 	metricName := metric.Name(ptrString(cfg.Metric))
@@ -70,6 +61,10 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 		return err
 	}
 
+	if err := validateConstantBandsMode(cfg.ConstantBandsMode()); err != nil {
+		return err
+	}
+
 	for _, expansion := range cfg.Expand {
 		if err := validateExpansionPath(expansion); err != nil {
 			return err
@@ -77,6 +72,36 @@ func (*AlluvialCmd) validateConfig(cfg *config.Alluvial) error {
 	}
 
 	return nil
+}
+
+func validateAlluvialReferences(values []string) error {
+	if len(values) < 2 {
+		return eris.New("alluvial requires at least two references")
+	}
+
+	references := make(map[string]struct{}, len(values))
+	for _, reference := range values {
+		reference = alluvial.SnapshotReference(reference)
+		if _, exists := references[reference]; exists {
+			return eris.Errorf("alluvial references must be unique: duplicate reference %q", reference)
+		}
+
+		references[reference] = struct{}{}
+	}
+
+	return nil
+}
+
+func validateConstantBandsMode(mode config.ConstantBandsMode) error {
+	switch mode {
+	case "", config.ConstantBandsHide, config.ConstantBandsMute, config.ConstantBandsMerge:
+		return nil
+	default:
+		return eris.Errorf(
+			"invalid constant bands mode %q: must be one of hide, mute, merge",
+			mode,
+		)
+	}
 }
 
 func validateAlluvialFill(fillSpec *config.MetricSpec, defaultMetric metric.Name) error {
@@ -233,4 +258,5 @@ func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {
 	cfg.Alluvial.OverrideMetric(string(c.Metric))
 	cfg.Alluvial.OverrideFill(c.Fill)
 	cfg.Alluvial.OverrideExpand(c.Expand)
+	cfg.Alluvial.OverrideConstantBands(c.ConstantBands)
 }
