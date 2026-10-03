@@ -155,7 +155,7 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 		return eris.Wrap(err, "alluvial pipeline failed")
 	}
 
-	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
+	if err := runBoundary(boundaries, phasePreparing, progress.StageLive, progress.WorkNone, func() {
 		prepareAlluvialState(s, common, viz, cfg)
 	}); err != nil {
 		return eris.Wrap(err, "alluvial pipeline failed")
