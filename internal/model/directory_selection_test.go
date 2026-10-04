@@ -79,6 +79,18 @@ func TestPartitionDirectories_RecursivelyPartitionsExpandedDirectories(t *testin
 	g.Expect(partition["internal/api/private"].Scope).To(Equal(DirectorySubtree))
 }
 
+func TestPartitionDirectories_ResolvesExpansionsRelativeToSelectedRoot(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	root := selectionTestTree().Dirs[0]
+
+	partition := PartitionDirectories(root, []string{"api"})
+
+	g.Expect(partition).To(HaveKey("internal/api"))
+	g.Expect(partition["internal/api"].Scope).To(Equal(DirectoryDirectFiles))
+	g.Expect(partition["internal/api/private"].Scope).To(Equal(DirectorySubtree))
+}
+
 func TestPartitionDirectories_OmitsEmptyDirectFileSelections(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)

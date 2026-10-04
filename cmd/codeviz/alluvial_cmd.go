@@ -26,7 +26,7 @@ type AlluvialCmd struct {
 	//nolint:revive,nolintlint // kong struct tags require long lines
 	Labels []metric.Name `help:"Additional metric to include in labels (repeatable)." name:"label" placeholder:"metric"`
 
-	Expand        []string `help:"Directory whose direct children should be shown (repeatable)." placeholder:"path"`
+	Expand        []string `help:"Directory, relative to the scanned path, whose direct children should be shown (repeatable)." placeholder:"path"`                           //nolint:revive,nolintlint // kong struct tags require long lines
 	ConstantBands string   `default:"" enum:",hide,mute,merge" help:"How to display bands whose width is unchanged: hide, mute, or merge." name:"constant-bands" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Width  int `default:"1920" help:"Image width in pixels."`
@@ -145,7 +145,7 @@ func validateExpansionPath(expansion string) error {
 	cleaned := path.Clean(expansion)
 	if strings.TrimSpace(expansion) == "" || path.IsAbs(expansion) ||
 		cleaned == ".." || strings.HasPrefix(cleaned, "../") {
-		return eris.Errorf("invalid expansion path %q: must be repository-relative", expansion)
+		return eris.Errorf("invalid expansion path %q: must be relative to the scanned path", expansion)
 	}
 
 	return nil
