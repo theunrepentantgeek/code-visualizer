@@ -33,7 +33,7 @@ the repository's `HEAD` commit.
 
 | Flag | Default | Description |
 | ---- | ------- | ----------- |
-| `--expand` | none | Repository-relative directory whose direct children are shown; repeatable |
+| `--expand` | none | Directory relative to the scanned target whose direct children are shown; repeatable |
 | `--constant-bands` | none | Unchanged bands: `hide`, `mute`, or `merge` |
 | `--width` | `1920` | Canvas width in pixels |
 | `--height` | `1080` | Canvas height in pixels |
