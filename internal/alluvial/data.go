@@ -2,7 +2,6 @@ package alluvial
 
 import (
 	"cmp"
-	"path"
 	"slices"
 
 	"github.com/rotisserie/eris"
@@ -84,17 +83,30 @@ func BuildData(snapshots []Snapshot, options Options) (Data, error) {
 	}
 
 	fillSnapshots := make([]map[string]float64, 0, len(snapshots))
+	hasBands := false
+
 	for _, snapshot := range snapshots {
-		if snapshot.Root == nil {
-			return Data{}, eris.Errorf("alluvial reference %q has no source tree", snapshot.Reference)
+		if snapshot.Bands == nil {
+			return Data{}, eris.Errorf("alluvial reference %q has no evaluated bands", snapshot.Reference)
 		}
 
-		values := selectedValues(snapshot.Root, options)
-		fillSnapshots = append(fillSnapshots, selectedMetricValues(snapshot.Root, options.Expand, fillMetric))
+		values := selectedValues(snapshot.Bands, options.Metric)
+		if len(values) > 0 {
+			hasBands = true
+		}
+
+		fillSnapshots = append(
+			fillSnapshots,
+			selectedMetricValues(snapshot.Bands, fillMetric),
+		)
 		data.Columns = append(data.Columns, Column{
 			Reference: snapshot.Reference,
 			Values:    values,
 		})
+	}
+
+	if !hasBands {
+		return Data{}, eris.New("alluvial target contains no files in any reference")
 	}
 
 	data.Columns, data.MutedPaths = applyConstantBands(data.Columns, options.ConstantBands)
@@ -118,14 +130,15 @@ func removeMutedFillValues(data *Data) {
 	}
 }
 
-func selectedValues(root *model.Directory, options Options) []Value {
-	selected := selectedDirectories(root, options.Expand)
-
-	values := make([]Value, 0, len(selected))
-	for _, directory := range selected {
+func selectedValues(
+	bands map[string]*model.MetricContainer,
+	metricName metric.Name,
+) []Value {
+	values := make([]Value, 0, len(bands))
+	for directoryPath, band := range bands {
 		values = append(values, Value{
-			Path:  directory.RepoPath,
-			Width: directoryWidth(directory, options.Metric),
+			Path:  directoryPath,
+			Width: metricValue(band, metricName),
 		})
 	}
 
@@ -136,57 +149,25 @@ func selectedValues(root *model.Directory, options Options) []Value {
 	return values
 }
 
-func selectedDirectories(root *model.Directory, expansions []string) []*model.Directory {
-	expanded := make(map[string]struct{}, len(expansions))
-	for _, directory := range expansions {
-		expanded[path.Clean(directory)] = struct{}{}
-	}
-
-	selected := append([]*model.Directory(nil), root.Dirs...)
-	for i := 0; i < len(selected); i++ {
-		directory := selected[i]
-		if directory == nil {
-			continue
-		}
-
-		if _, ok := expanded[directory.RepoPath]; !ok {
-			continue
-		}
-
-		selected = append(selected[:i], append(directory.Dirs, selected[i+1:]...)...)
-		i--
-	}
-
-	result := make([]*model.Directory, 0, len(selected))
-	for _, directory := range selected {
-		if directory == nil || directory.RepoPath == "" {
-			continue
-		}
-
-		result = append(result, directory)
-	}
-
-	return result
-}
-
-func directoryWidth(directory *model.Directory, metricName metric.Name) float64 {
-	if value, ok := directory.Quantity(metricName); ok {
+func metricValue(values *model.MetricContainer, metricName metric.Name) float64 {
+	if value, ok := values.Quantity(metricName); ok {
 		return float64(value)
 	}
 
-	if value, ok := directory.Measure(metricName); ok {
+	if value, ok := values.Measure(metricName); ok {
 		return value
 	}
 
 	return 0
 }
 
-func selectedMetricValues(root *model.Directory, expansions []string, metricName metric.Name) map[string]float64 {
-	directories := selectedDirectories(root, expansions)
-
-	values := make(map[string]float64, len(directories))
-	for _, directory := range directories {
-		values[directory.RepoPath] = directoryWidth(directory, metricName)
+func selectedMetricValues(
+	bands map[string]*model.MetricContainer,
+	metricName metric.Name,
+) map[string]float64 {
+	values := make(map[string]float64, len(bands))
+	for directoryPath, band := range bands {
+		values[directoryPath] = metricValue(band, metricName)
 	}
 
 	return values

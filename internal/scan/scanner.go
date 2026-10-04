@@ -13,6 +13,8 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 )
 
+var ErrNoFiles = errors.New("no files found in directory")
+
 // Progress receives notifications as directories are scanned.
 type Progress interface {
 	// OnDirectoryScanned is called after each directory is fully processed.
@@ -38,7 +40,7 @@ func ScanTree(
 	}
 
 	if !hasFiles(root) {
-		return nil, errors.New("no files found in directory")
+		return nil, ErrNoFiles
 	}
 
 	return root, nil
@@ -72,7 +74,7 @@ func Scan(
 	}
 
 	if !hasFiles(root) {
-		return nil, errors.New("no files found in directory")
+		return nil, ErrNoFiles
 	}
 
 	return root, nil

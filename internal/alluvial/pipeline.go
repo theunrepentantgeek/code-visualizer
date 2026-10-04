@@ -2,6 +2,8 @@ package alluvial
 
 import (
 	"context"
+	"errors"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -11,9 +13,12 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/legend"
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
+	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/pipeline"
 	"github.com/theunrepentantgeek/code-visualizer/internal/progress"
 	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
+	gitprovider "github.com/theunrepentantgeek/code-visualizer/internal/provider/git"
+	"github.com/theunrepentantgeek/code-visualizer/internal/scan"
 	"github.com/theunrepentantgeek/code-visualizer/internal/source"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
@@ -163,6 +168,9 @@ func (p *AcquisitionPlan) PrepareReferences(
 	}
 
 	p.snapshotStates = snapshotStates
+
+	p.expansions = append([]string(nil), cfg.Expand...)
+	p.expressions = append([]provider.ResolvedMetric(nil), common.Requested.Expressions...)
 	state.Snapshots = nil
 
 	return nil
@@ -218,9 +226,18 @@ func (p *AcquisitionPlan) AcquireReference(
 		return eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
 	}
 
+	bands, err := evaluateSnapshotBands(
+		snapshotCommon.Root,
+		p.expansions,
+		p.expressions,
+	)
+	if err != nil {
+		return eris.Wrapf(err, "failed to evaluate alluvial bands for reference %q", reference)
+	}
+
 	state.Snapshots = append(state.Snapshots, Snapshot{
 		Reference: SnapshotReference(reference),
-		Root:      snapshotCommon.Root,
+		Bands:     bands,
 	})
 
 	if index == 0 {
@@ -230,6 +247,26 @@ func (p *AcquisitionPlan) AcquireReference(
 	}
 
 	return nil
+}
+
+func evaluateSnapshotBands(
+	root *model.Directory,
+	expansions []string,
+	expressions []provider.ResolvedMetric,
+) (map[string]*model.MetricContainer, error) {
+	selections := model.PartitionDirectories(root, expansions)
+	bands := make(map[string]*model.MetricContainer, len(selections))
+
+	for directoryPath, selection := range selections {
+		values, err := stages.EvaluateAggregations(selection, expressions)
+		if err != nil {
+			return nil, eris.Wrapf(err, "evaluate directory band %q", directoryPath)
+		}
+
+		bands[directoryPath] = values
+	}
+
+	return bands, nil
 }
 
 func prepareSnapshot(
@@ -260,6 +297,15 @@ func prepareSnapshot(
 		stages.CheckGitRequirement,
 	} {
 		if err := stage(&snapshotCommon); err != nil {
+			recovered, recoveryErr := recoverEmptySnapshot(&snapshotCommon, err)
+			if recoveryErr != nil {
+				return nil, recoveryErr
+			}
+
+			if recovered {
+				continue
+			}
+
 			return nil, err
 		}
 	}
@@ -267,11 +313,49 @@ func prepareSnapshot(
 	return &snapshotCommon, nil
 }
 
+func recoverEmptySnapshot(common *stages.CommonState, scanErr error) (bool, error) {
+	if !errors.Is(scanErr, scan.ErrNoFiles) && !gitprovider.IsSnapshotTargetMissing(scanErr) {
+		return false, nil
+	}
+
+	emptyRoot, err := emptySnapshotRoot(common)
+	if err != nil {
+		return false, eris.Wrap(err, "prepare empty alluvial snapshot")
+	}
+
+	common.Root = emptyRoot
+
+	return true, nil
+}
+
+func emptySnapshotRoot(common *stages.CommonState) (*model.Directory, error) {
+	absolute, err := filepath.Abs(common.TargetPath)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to resolve empty snapshot target")
+	}
+
+	repoPath, err := filepath.Rel(common.RepoRoot, absolute)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to resolve empty snapshot repository path")
+	}
+
+	return &model.Directory{
+		Path:     absolute,
+		RepoPath: filepath.ToSlash(repoPath),
+		RepoRoot: common.RepoRoot,
+		Name:     filepath.Base(absolute),
+	}, nil
+}
+
 func finishSnapshot(
 	ctx context.Context,
 	sink progress.Sink,
 	snapshotCommon *stages.CommonState,
 ) error {
+	if model.CountFiles(snapshotCommon.Root) == 0 {
+		return nil
+	}
+
 	for _, stage := range []func(*stages.CommonState) error{
 		func(state *stages.CommonState) error {
 			return stages.LoadCommitMetrics(state, ctx, sink)
@@ -317,7 +401,6 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 		Metric:        metricName,
 		FillMetric:    state.Fill.Encoding.Metric,
 		FillTemporal:  state.Fill.Temporal,
-		Expand:        cfg.Expand,
 		ConstantBands: cfg.ConstantBandsMode(),
 	})
 	if err != nil {
