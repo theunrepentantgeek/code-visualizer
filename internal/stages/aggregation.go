@@ -37,6 +37,11 @@ func EvaluateAggregations(
 	expressions []provider.ResolvedMetric,
 ) (*model.MetricContainer, error) {
 	result := &model.MetricContainer{}
+	if len(expressions) == 0 {
+		err := selection.WalkFiles(func(*model.File) {})
+
+		return result, eris.Wrap(err, "validate directory selection")
+	}
 
 	for _, resolved := range expressions {
 		var err error

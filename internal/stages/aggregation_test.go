@@ -153,6 +153,31 @@ func TestEvaluateAggregations_RejectsInvalidScope(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("invalid directory scope")))
 }
 
+func TestEvaluateAggregations_RejectsInvalidSelectionWithoutExpressions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]model.DirectorySelection{
+		"nil directory": {
+			Scope: model.DirectorySubtree,
+		},
+		"invalid scope": {
+			Directory: &model.Directory{},
+			Scope:     model.DirectoryScopeInvalid,
+		},
+	}
+
+	for name, selection := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+
+			_, err := stages.EvaluateAggregations(selection, nil)
+
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}
+
 func TestComputeAggregations_StillPopulatesEveryDirectoryFromSubtrees(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
