@@ -530,8 +530,8 @@ func testBands(directories ...*model.Directory) map[string]*model.MetricContaine
 	return result
 }
 
-func testDirectory(repoPath string, width int64, children ...*model.Directory) *model.Directory {
-	directory := &model.Directory{RepoPath: repoPath, Dirs: children}
+func testDirectory(repoPath string, width int64) *model.Directory {
+	directory := &model.Directory{RepoPath: repoPath}
 	directory.SetQuantity(widthMetric, width)
 
 	return directory

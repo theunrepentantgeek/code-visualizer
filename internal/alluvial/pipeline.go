@@ -168,6 +168,7 @@ func (p *AcquisitionPlan) PrepareReferences(
 	}
 
 	p.snapshotStates = snapshotStates
+
 	p.expansions = append([]string(nil), cfg.Expand...)
 	p.expressions = append([]provider.ResolvedMetric(nil), common.Requested.Expressions...)
 	state.Snapshots = nil

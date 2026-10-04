@@ -420,6 +420,7 @@ func TestAlluvialCmd_Run_RendersRootFilesAndOmitsEmptyExpandedRemainder(t *testi
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
+
 	labels := svgTextLabels(string(image))
 	g.Expect(labels).To(ContainElements(".", "internal/config"))
 	g.Expect(labels).NotTo(ContainElement("internal"))

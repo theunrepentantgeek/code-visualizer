@@ -12,6 +12,7 @@ func TestDirectorySelection_WalkFiles_SubtreeIncludesDescendants(t *testing.T) {
 	root := selectionTestTree()
 
 	var names []string
+
 	err := (DirectorySelection{
 		Directory: root,
 		Scope:     DirectorySubtree,
@@ -29,6 +30,7 @@ func TestDirectorySelection_WalkFiles_DirectFilesExcludesDescendants(t *testing.
 	root := selectionTestTree()
 
 	var names []string
+
 	err := (DirectorySelection{
 		Directory: root,
 		Scope:     DirectoryDirectFiles,
@@ -114,6 +116,7 @@ func TestPartitionDirectories_AssignsEveryFileExactlyOnce(t *testing.T) {
 
 	partition := PartitionDirectories(root, []string{"internal", "internal/api"})
 	names := make([]string, 0)
+
 	for _, selection := range partition {
 		g.Expect(selection.WalkFiles(func(file *File) {
 			names = append(names, file.Name)

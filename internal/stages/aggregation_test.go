@@ -31,6 +31,7 @@ func TestEvaluateAggregations_DirectFilesExcludesDescendantValues(t *testing.T) 
 	directSum, ok := direct.Quantity("file-size.sum")
 	g.Expect(ok).To(BeTrue())
 	g.Expect(directSum).To(Equal(int64(400)))
+
 	subtreeSum, ok := subtree.Quantity("file-size.sum")
 	g.Expect(ok).To(BeTrue())
 	g.Expect(subtreeSum).To(Equal(int64(1300)))
@@ -54,6 +55,7 @@ func TestEvaluateAggregations_PreservesNonAdditiveMeanAndDistinct(t *testing.T) 
 	mean, ok := direct.Measure("file-size.mean")
 	g.Expect(ok).To(BeTrue())
 	g.Expect(mean).To(Equal(float64(200)))
+
 	distinct, ok := direct.Quantity("file-type.distinct")
 	g.Expect(ok).To(BeTrue())
 	g.Expect(distinct).To(Equal(int64(1)))
@@ -72,6 +74,7 @@ func TestEvaluateAggregations_NonEmptyZeroMetricSelectionIsRetained(t *testing.T
 	}, []provider.ResolvedMetric{resolveMetricForTest(t, "file-size.sum")})
 
 	g.Expect(err).NotTo(HaveOccurred())
+
 	value, ok := result.Quantity("file-size.sum")
 	g.Expect(ok).To(BeTrue())
 	g.Expect(value).To(BeZero())
@@ -82,19 +85,16 @@ func TestEvaluateAggregations_DirectFilesLimitsDeclarationValues(t *testing.T) {
 	g := NewWithT(t)
 	direct := &model.Declaration{}
 	direct.SetQuantity("cyclomatic-complexity", 2)
+
 	child := &model.Declaration{}
 	child.SetQuantity("cyclomatic-complexity", 10)
-	root := &model.Directory{
-		Files: []*model.File{{Declarations: []*model.Declaration{direct}}},
-		Dirs:  []*model.Directory{{Files: []*model.File{{Declarations: []*model.Declaration{child}}}}},
-	}
+	result := evaluateDirectSelection(
+		t,
+		&model.File{Declarations: []*model.Declaration{direct}},
+		&model.File{Declarations: []*model.Declaration{child}},
+		declarationMeanMetric(),
+	)
 
-	result, err := stages.EvaluateAggregations(model.DirectorySelection{
-		Directory: root,
-		Scope:     model.DirectoryDirectFiles,
-	}, []provider.ResolvedMetric{declarationMeanMetric()})
-
-	g.Expect(err).NotTo(HaveOccurred())
 	value, ok := result.Measure("cyclomatic-complexity.mean")
 	g.Expect(ok).To(BeTrue())
 	g.Expect(value).To(Equal(float64(2)))
@@ -105,22 +105,41 @@ func TestEvaluateAggregations_DirectFilesLimitsCommitValues(t *testing.T) {
 	g := NewWithT(t)
 	direct := &model.Commit{}
 	direct.SetQuantity("lines-changed", 5)
+
 	child := &model.Commit{}
 	child.SetQuantity("lines-changed", 50)
+	result := evaluateDirectSelection(
+		t,
+		&model.File{Commits: []*model.Commit{direct}},
+		&model.File{Commits: []*model.Commit{child}},
+		commitMaxMetric(),
+	)
+
+	value, ok := result.Quantity("lines-changed.max")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(value).To(Equal(int64(5)))
+}
+
+func evaluateDirectSelection(
+	t *testing.T,
+	direct *model.File,
+	child *model.File,
+	resolved provider.ResolvedMetric,
+) *model.MetricContainer {
+	t.Helper()
+	g := NewWithT(t)
 	root := &model.Directory{
-		Files: []*model.File{{Commits: []*model.Commit{direct}}},
-		Dirs:  []*model.Directory{{Files: []*model.File{{Commits: []*model.Commit{child}}}}},
+		Files: []*model.File{direct},
+		Dirs:  []*model.Directory{{Files: []*model.File{child}}},
 	}
 
 	result, err := stages.EvaluateAggregations(model.DirectorySelection{
 		Directory: root,
 		Scope:     model.DirectoryDirectFiles,
-	}, []provider.ResolvedMetric{commitMaxMetric()})
-
+	}, []provider.ResolvedMetric{resolved})
 	g.Expect(err).NotTo(HaveOccurred())
-	value, ok := result.Quantity("lines-changed.max")
-	g.Expect(ok).To(BeTrue())
-	g.Expect(value).To(Equal(int64(5)))
+
+	return result
 }
 
 func TestEvaluateAggregations_RejectsInvalidScope(t *testing.T) {
@@ -145,9 +164,11 @@ func TestComputeAggregations_StillPopulatesEveryDirectoryFromSubtrees(t *testing
 	)
 
 	g.Expect(err).NotTo(HaveOccurred())
+
 	rootValue, rootOK := root.Quantity("file-size.sum")
 	g.Expect(rootOK).To(BeTrue())
 	g.Expect(rootValue).To(Equal(int64(1300)))
+
 	childValue, childOK := root.Dirs[0].Quantity("file-size.sum")
 	g.Expect(childOK).To(BeTrue())
 	g.Expect(childValue).To(Equal(int64(900)))
@@ -178,8 +199,10 @@ func TestComputeAggregations_SumFileSize(t *testing.T) {
 func aggregationScopeTree() *model.Directory {
 	directA := fileWithQuantity("a.go", 100)
 	directA.SetClassification("file-type", "go")
+
 	directB := fileWithQuantity("b.go", 300)
 	directB.SetClassification("file-type", "go")
+
 	child := fileWithQuantity("child.py", 900)
 	child.SetClassification("file-type", "python")
 

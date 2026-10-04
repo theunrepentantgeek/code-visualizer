@@ -136,9 +136,14 @@ func selectedValues(
 ) []Value {
 	values := make([]Value, 0, len(bands))
 	for directoryPath, band := range bands {
+		width := float64(0)
+		if band != nil {
+			width = metricValue(*band, metricName)
+		}
+
 		values = append(values, Value{
 			Path:  directoryPath,
-			Width: metricValue(band, metricName),
+			Width: width,
 		})
 	}
 
@@ -149,11 +154,7 @@ func selectedValues(
 	return values
 }
 
-func metricValue(values *model.MetricContainer, metricName metric.Name) float64 {
-	if values == nil {
-		return 0
-	}
-
+func metricValue(values model.MetricContainer, metricName metric.Name) float64 {
 	if value, ok := values.Quantity(metricName); ok {
 		return float64(value)
 	}
@@ -171,7 +172,13 @@ func selectedMetricValues(
 ) map[string]float64 {
 	values := make(map[string]float64, len(bands))
 	for directoryPath, band := range bands {
-		values[directoryPath] = metricValue(band, metricName)
+		if band == nil {
+			values[directoryPath] = 0
+
+			continue
+		}
+
+		values[directoryPath] = metricValue(*band, metricName)
 	}
 
 	return values

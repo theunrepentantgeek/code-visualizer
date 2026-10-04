@@ -120,6 +120,7 @@ func aggregateNumeric(
 	resolved provider.ResolvedMetric,
 ) error {
 	lookupKey := fileLevelLookupKey(resolved.Expression)
+
 	values, err := collectNumericValues(selection, lookupKey, resolved.Descriptor.Kind)
 	if err != nil {
 		return err
@@ -138,6 +139,7 @@ func aggregateClassification(
 	resolved provider.ResolvedMetric,
 ) error {
 	lookupKey := fileLevelLookupKey(resolved.Expression)
+
 	values, err := collectClassificationValues(selection, lookupKey)
 	if err != nil {
 		return err
@@ -553,20 +555,27 @@ func collectCommitNumericValues(
 
 	err := selection.WalkFiles(func(file *model.File) {
 		for _, commit := range file.Commits {
-			switch resolved.Descriptor.Kind {
-			case metric.Quantity:
-				if value, ok := commit.Quantity(resolved.Expression.Base); ok {
-					values = append(values, float64(value))
-				}
-			case metric.Measure:
-				if value, ok := commit.Measure(resolved.Expression.Base); ok {
-					values = append(values, value)
-				}
-			default:
-				// Commit-level classification metrics are not supported.
+			if value, ok := commitNumericValue(commit, resolved); ok {
+				values = append(values, value)
 			}
 		}
 	})
 
 	return values, eris.Wrap(err, "collect commit metric values")
+}
+
+func commitNumericValue(
+	commit *model.Commit,
+	resolved provider.ResolvedMetric,
+) (float64, bool) {
+	switch resolved.Descriptor.Kind {
+	case metric.Quantity:
+		value, ok := commit.Quantity(resolved.Expression.Base)
+
+		return float64(value), ok
+	case metric.Measure:
+		return commit.Measure(resolved.Expression.Base)
+	default:
+		return 0, false
+	}
 }
