@@ -2,7 +2,6 @@ package alluvial
 
 import (
 	"cmp"
-	"path"
 	"slices"
 
 	"github.com/rotisserie/eris"
@@ -87,18 +86,18 @@ func BuildData(snapshots []Snapshot, options Options) (Data, error) {
 	hasBands := false
 
 	for _, snapshot := range snapshots {
-		if snapshot.Root == nil {
-			return Data{}, eris.Errorf("alluvial reference %q has no source tree", snapshot.Reference)
+		if snapshot.Bands == nil {
+			return Data{}, eris.Errorf("alluvial reference %q has no evaluated bands", snapshot.Reference)
 		}
 
-		values := selectedValues(snapshot.Root, snapshot.DirectFiles, options)
+		values := selectedValues(snapshot.Bands, options.Metric)
 		if len(values) > 0 {
 			hasBands = true
 		}
 
 		fillSnapshots = append(
 			fillSnapshots,
-			selectedMetricValues(snapshot.Root, snapshot.DirectFiles, options.Expand, fillMetric),
+			selectedMetricValues(snapshot.Bands, fillMetric),
 		)
 		data.Columns = append(data.Columns, Column{
 			Reference: snapshot.Reference,
@@ -131,14 +130,15 @@ func removeMutedFillValues(data *Data) {
 	}
 }
 
-func selectedValues(root, directFiles *model.Directory, options Options) []Value {
-	selected := selectedDirectories(root, directFiles, options.Expand)
-
-	values := make([]Value, 0, len(selected))
-	for _, directory := range selected {
+func selectedValues(
+	bands map[string]*model.MetricContainer,
+	metricName metric.Name,
+) []Value {
+	values := make([]Value, 0, len(bands))
+	for directoryPath, band := range bands {
 		values = append(values, Value{
-			Path:  directory.RepoPath,
-			Width: directoryWidth(directory, options.Metric),
+			Path:  directoryPath,
+			Width: metricValue(band, metricName),
 		})
 	}
 
@@ -149,60 +149,16 @@ func selectedValues(root, directFiles *model.Directory, options Options) []Value
 	return values
 }
 
-func selectedDirectories(
-	root,
-	directFiles *model.Directory,
-	expansions []string,
-) []*model.Directory {
-	expanded := make(map[string]struct{}, len(expansions))
-	for _, directory := range expansions {
-		expanded[path.Clean(directory)] = struct{}{}
+func metricValue(values *model.MetricContainer, metricName metric.Name) float64 {
+	if values == nil {
+		return 0
 	}
 
-	selected := append([]*model.Directory(nil), root.Dirs...)
-	for i := 0; i < len(selected); i++ {
-		selected, i = expandSelectedDirectory(selected, i, expanded)
-	}
-
-	result := make([]*model.Directory, 0, len(selected)+1)
-	if directFiles != nil && directFiles.RepoPath != "" {
-		result = append(result, directFiles)
-	}
-
-	for _, directory := range selected {
-		if directory == nil || directory.RepoPath == "" {
-			continue
-		}
-
-		result = append(result, directory)
-	}
-
-	return result
-}
-
-func expandSelectedDirectory(
-	selected []*model.Directory,
-	index int,
-	expanded map[string]struct{},
-) ([]*model.Directory, int) {
-	directory := selected[index]
-	if directory == nil {
-		return selected, index
-	}
-
-	if _, ok := expanded[directory.RepoPath]; !ok {
-		return selected, index
-	}
-
-	return append(selected[:index], append(directory.Dirs, selected[index+1:]...)...), index - 1
-}
-
-func directoryWidth(directory *model.Directory, metricName metric.Name) float64 {
-	if value, ok := directory.Quantity(metricName); ok {
+	if value, ok := values.Quantity(metricName); ok {
 		return float64(value)
 	}
 
-	if value, ok := directory.Measure(metricName); ok {
+	if value, ok := values.Measure(metricName); ok {
 		return value
 	}
 
@@ -210,16 +166,12 @@ func directoryWidth(directory *model.Directory, metricName metric.Name) float64 
 }
 
 func selectedMetricValues(
-	root,
-	directFiles *model.Directory,
-	expansions []string,
+	bands map[string]*model.MetricContainer,
 	metricName metric.Name,
 ) map[string]float64 {
-	directories := selectedDirectories(root, directFiles, expansions)
-
-	values := make(map[string]float64, len(directories))
-	for _, directory := range directories {
-		values[directory.RepoPath] = directoryWidth(directory, metricName)
+	values := make(map[string]float64, len(bands))
+	for directoryPath, band := range bands {
+		values[directoryPath] = metricValue(band, metricName)
 	}
 
 	return values

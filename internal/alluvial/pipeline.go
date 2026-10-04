@@ -168,6 +168,8 @@ func (p *AcquisitionPlan) PrepareReferences(
 	}
 
 	p.snapshotStates = snapshotStates
+	p.expansions = append([]string(nil), cfg.Expand...)
+	p.expressions = append([]provider.ResolvedMetric(nil), common.Requested.Expressions...)
 	state.Snapshots = nil
 
 	return nil
@@ -223,15 +225,18 @@ func (p *AcquisitionPlan) AcquireReference(
 		return eris.Wrapf(err, "failed to acquire alluvial reference %q", reference)
 	}
 
-	directFiles, err := directFilesAggregate(snapshotCommon)
+	bands, err := evaluateSnapshotBands(
+		snapshotCommon.Root,
+		p.expansions,
+		p.expressions,
+	)
 	if err != nil {
-		return eris.Wrapf(err, "failed to aggregate direct files for alluvial reference %q", reference)
+		return eris.Wrapf(err, "failed to evaluate alluvial bands for reference %q", reference)
 	}
 
 	state.Snapshots = append(state.Snapshots, Snapshot{
-		Reference:   SnapshotReference(reference),
-		Root:        snapshotCommon.Root,
-		DirectFiles: directFiles,
+		Reference: SnapshotReference(reference),
+		Bands:     bands,
 	})
 
 	if index == 0 {
@@ -243,29 +248,24 @@ func (p *AcquisitionPlan) AcquireReference(
 	return nil
 }
 
-func directFilesAggregate(common *stages.CommonState) (*model.Directory, error) {
-	root := common.Root
-	if root == nil || len(root.Files) == 0 {
-		return &model.Directory{}, nil
+func evaluateSnapshotBands(
+	root *model.Directory,
+	expansions []string,
+	expressions []provider.ResolvedMetric,
+) (map[string]*model.MetricContainer, error) {
+	selections := model.PartitionDirectories(root, expansions)
+	bands := make(map[string]*model.MetricContainer, len(selections))
+
+	for directoryPath, selection := range selections {
+		values, err := stages.EvaluateAggregations(selection, expressions)
+		if err != nil {
+			return nil, eris.Wrapf(err, "evaluate directory band %q", directoryPath)
+		}
+
+		bands[directoryPath] = values
 	}
 
-	direct := &model.Directory{
-		Path:            root.Path,
-		RepoPath:        root.RepoPath,
-		RepoRoot:        root.RepoRoot,
-		Name:            root.Name,
-		Source:          root.Source,
-		ReferenceTime:   root.ReferenceTime,
-		Files:           root.Files,
-		DirectFileCount: len(root.Files),
-		AllFileCount:    len(root.Files),
-	}
-
-	if err := stages.ComputeAggregations(direct, common.Requested.Expressions); err != nil {
-		return nil, eris.Wrap(err, "compute direct-file metrics")
-	}
-
-	return direct, nil
+	return bands, nil
 }
 
 func prepareSnapshot(
@@ -400,7 +400,6 @@ func BuildDataStage(state *State, cfg *config.Alluvial) error {
 		Metric:        metricName,
 		FillMetric:    state.Fill.Encoding.Metric,
 		FillTemporal:  state.Fill.Temporal,
-		Expand:        cfg.Expand,
 		ConstantBands: cfg.ConstantBandsMode(),
 	})
 	if err != nil {

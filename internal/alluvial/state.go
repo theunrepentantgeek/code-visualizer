@@ -7,6 +7,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/metric"
 	"github.com/theunrepentantgeek/code-visualizer/internal/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
+	"github.com/theunrepentantgeek/code-visualizer/internal/provider"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 	"github.com/theunrepentantgeek/code-visualizer/internal/viz"
 )
@@ -24,6 +25,8 @@ type State struct {
 // AcquisitionPlan owns the pipeline state needed while loading snapshots.
 type AcquisitionPlan struct {
 	snapshotStates []*stages.CommonState
+	expansions     []string
+	expressions    []provider.ResolvedMetric
 }
 
 func NewAcquisitionPlan() *AcquisitionPlan {
@@ -62,11 +65,10 @@ func (f *BandFill) ResolveInk(values []float64) {
 	f.Ink = inks.NumericInk(f.Label, values, palette.GetPalette(f.Encoding.Palette))
 }
 
-// Snapshot is the scanned directory tree at one caller-ordered reference.
+// Snapshot contains evaluated bands at one caller-ordered reference.
 type Snapshot struct {
-	Reference   string
-	Root        *model.Directory
-	DirectFiles *model.Directory
+	Reference string
+	Bands     map[string]*model.MetricContainer
 }
 
 // Options controls the metric and directory detail represented in Data.
@@ -74,6 +76,5 @@ type Options struct {
 	Metric        metric.Name
 	FillMetric    metric.Name
 	FillTemporal  metric.TemporalName
-	Expand        []string
 	ConstantBands config.ConstantBandsMode
 }
