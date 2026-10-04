@@ -1,9 +1,13 @@
 package alluvial
 
 import (
-	"fmt"
 	"image/color"
 	"math"
+	"strconv"
+	"strings"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
@@ -18,6 +22,7 @@ var (
 	alluvialGuide      = color.RGBA{R: 0xD0, G: 0xD0, B: 0xD0, A: 0xFF}
 	alluvialMuted      = color.RGBA{R: 0xE2, G: 0xE2, B: 0xE2, A: 0xFF}
 	alluvialLabel      = color.RGBA{R: 0x28, G: 0x28, B: 0x28, A: 0xFF}
+	alluvialPrinter    = message.NewPrinter(language.English)
 )
 
 // RenderToCanvas draws readable release columns and the filled alluvial paths.
@@ -224,16 +229,27 @@ func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
 		return nil
 	}
 
-	lines := []string{band.Path, fmt.Sprintf("%g", band.Width)}
+	lines := []string{band.Path, formatAlluvialMetric(band.Width)}
 	if labelFillMetric != "" {
 		if band.HasFillValue {
-			lines = append(lines, fmt.Sprintf("%g", band.FillValue))
+			lines = append(lines, formatAlluvialMetric(band.FillValue))
 		} else {
 			lines = append(lines, "-")
 		}
 	}
 
 	return append(lines, band.Labels...)
+}
+
+func formatAlluvialMetric(value float64) string {
+	decimal := strconv.FormatFloat(value, 'f', -1, 64)
+	precision := 0
+
+	if separator := strings.IndexByte(decimal, '.'); separator >= 0 {
+		precision = len(decimal) - separator - 1
+	}
+
+	return alluvialPrinter.Sprintf("%.*f", precision, value)
 }
 
 func alluvialBandInk(fillInk inks.Ink, band Band) inks.Ink {
