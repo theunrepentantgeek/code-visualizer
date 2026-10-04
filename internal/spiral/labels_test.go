@@ -83,7 +83,7 @@ func TestBuildDiscLabel_OmitsUnavailableNumericMetric(t *testing.T) {
 		[]metric.Name{commitCountMetric, "file-lines"},
 		metric.LevelDirectory,
 	)
-	AggregateBucketMetrics(buckets, requested, commitCountMetric, "file-lines", "", "")
+	AggregateBucketMetrics(buckets, requested, commitCountMetric, "file-lines", "", "", nil)
 
 	g.Expect(buildDiscLabel(buckets[0], LabelMetrics{
 		Size: commitCountMetric, Fill: "file-lines", Requested: requested,
@@ -102,6 +102,29 @@ func TestBuildDiscLabel_DefaultSizeUsesCommitCount(t *testing.T) {
 	g.Expect(effectiveSizeMetric("")).To(Equal(commitCountMetric))
 	g.Expect(buildDiscLabel(bucket, LabelMetrics{})).
 		To(Equal([]string{"7", "Aug", "3"}))
+}
+
+func TestBuildDiscLabel_AppendsAvailableAdditionalValuesAfterRoleRows(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	bucket := TimeBucket{
+		Start:              time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC),
+		SizeValue:          2,
+		SizeValueAvailable: true,
+		FillLabel:          "go",
+		LabelValues: []LabelValue{
+			{Formatted: "20", Available: true},
+			{},
+			{Formatted: "stable", Available: true},
+		},
+	}
+
+	g.Expect(buildDiscLabel(bucket, LabelMetrics{
+		Size:       "file-size",
+		Fill:       "file-type",
+		Additional: []metric.Name{"file-lines", "stability"},
+	})).To(Equal([]string{"7", "Aug", "2", "go", "20", "stable"}))
 }
 
 func TestBuildDiscLabels_UsesActiveNodesAndContrastingFillInk(t *testing.T) {
@@ -239,6 +262,19 @@ func TestBuildLegendLabelSample_IncludesDistinctSurfaceMetric(t *testing.T) {
 		Size: "file-size", Fill: "file-lines", Border: "file-size", Surface: "git-age",
 	})).To(Equal([]string{
 		"Day", "Month", "file-size", "file-lines", "git-age",
+	}))
+}
+
+func TestBuildLegendLabelSample_AppendsAdditionalMetricNamesInOrder(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	g.Expect(buildLegendLabelSample(LabelMetrics{
+		Size:       "file-size",
+		Fill:       "file-type",
+		Additional: []metric.Name{"file-lines", "stability"},
+	})).To(Equal([]string{
+		"Day", "Month", "file-size", "file-type", "file-lines", "stability",
 	}))
 }
 

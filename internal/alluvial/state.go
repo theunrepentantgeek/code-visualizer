@@ -14,12 +14,13 @@ import (
 
 // State holds data prepared for a later alluvial layout and render pipeline.
 type State struct {
-	WidthMetric metric.Name
-	Fill        BandFill
-	Snapshots   []Snapshot
-	Data        Data
-	Layout      Layout
-	Legend      *legend.Config
+	WidthMetric  metric.Name
+	LabelMetrics []metric.Name
+	Fill         BandFill
+	Snapshots    []Snapshot
+	Data         Data
+	Layout       Layout
+	Legend       *legend.Config
 }
 
 // AcquisitionPlan owns the pipeline state needed while loading snapshots.
@@ -74,6 +75,7 @@ type Snapshot struct {
 // Options controls the metric and directory detail represented in Data.
 type Options struct {
 	Metric        metric.Name
+	LabelMetrics  []metric.Name
 	FillMetric    metric.Name
 	FillTemporal  metric.TemporalName
 	ConstantBands config.ConstantBandsMode

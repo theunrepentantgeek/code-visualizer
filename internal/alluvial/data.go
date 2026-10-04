@@ -3,6 +3,7 @@ package alluvial
 import (
 	"cmp"
 	"slices"
+	"strconv"
 
 	"github.com/rotisserie/eris"
 
@@ -54,8 +55,9 @@ type Column struct {
 
 // Value identifies a directory and its metric width in one snapshot.
 type Value struct {
-	Path  string
-	Width float64
+	Path   string
+	Width  float64
+	Labels []string
 }
 
 // Transition joins one path in adjacent reference columns. A missing endpoint
@@ -90,7 +92,7 @@ func BuildData(snapshots []Snapshot, options Options) (Data, error) {
 			return Data{}, eris.Errorf("alluvial reference %q has no evaluated bands", snapshot.Reference)
 		}
 
-		values := selectedValues(snapshot.Bands, options.Metric)
+		values := selectedValues(snapshot.Bands, options.Metric, options.LabelMetrics)
 		if len(values) > 0 {
 			hasBands = true
 		}
@@ -133,12 +135,14 @@ func removeMutedFillValues(data *Data) {
 func selectedValues(
 	bands map[string]*model.MetricContainer,
 	metricName metric.Name,
+	labelMetrics []metric.Name,
 ) []Value {
 	values := make([]Value, 0, len(bands))
 	for directoryPath, band := range bands {
 		values = append(values, Value{
-			Path:  directoryPath,
-			Width: metricValue(band, metricName),
+			Path:   directoryPath,
+			Width:  metricValue(band, metricName),
+			Labels: metricLabels(band, labelMetrics),
 		})
 	}
 
@@ -147,6 +151,37 @@ func selectedValues(
 	})
 
 	return values
+}
+
+func metricLabels(values *model.MetricContainer, names []metric.Name) []string {
+	if len(names) == 0 {
+		return nil
+	}
+
+	labels := make([]string, 0, len(names))
+	for _, name := range names {
+		if value, ok := values.Quantity(name); ok {
+			labels = append(labels, strconv.FormatInt(value, 10))
+
+			continue
+		}
+
+		if value, ok := values.Measure(name); ok {
+			labels = append(labels, strconv.FormatFloat(value, 'f', -1, 64))
+
+			continue
+		}
+
+		if value, ok := values.Classification(name); ok {
+			labels = append(labels, value)
+
+			continue
+		}
+
+		labels = append(labels, "-")
+	}
+
+	return labels
 }
 
 func metricValue(values *model.MetricContainer, metricName metric.Name) float64 {

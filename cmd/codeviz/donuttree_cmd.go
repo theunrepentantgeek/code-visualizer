@@ -19,7 +19,8 @@ type DonutTreeCmd struct {
 	Until       string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	ChangedOnly bool   `help:"Show only files modified in the selected Git range." name:"changed-only" optional:""`
 
-	Size metric.Name `default:"" help:"Metric for folder sector size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Size   metric.Name   `default:"" help:"Metric for folder sector size; run 'codeviz help metrics' for available metrics." short:"s"` //nolint:revive,nolintlint // kong struct tags require long lines
+	Labels []metric.Name `help:"Additional metric to include in labels (repeatable)." name:"label" placeholder:"metric"`
 
 	Fill   config.MetricSpec `help:"Folder fill colour: metric[,palette] (defaults to size)." optional:"" short:"f"`
 	Border config.MetricSpec `help:"Folder border colour: metric[,palette]." optional:"" short:"b"`
@@ -61,7 +62,13 @@ func (*DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
 		return eris.Errorf("max layers must be >= 0")
 	}
 
-	return nil
+	return validateLabelMetrics(
+		cfg.Labels,
+		resolveDirectoryLabelMetric,
+		resolvedRole("size", metric.Name(ptrString(cfg.Size)), resolveDirectoryRoleMetric),
+		resolvedRole("fill", cfg.Fill.MetricName(), resolveDirectoryRoleMetric),
+		resolvedRole("border", cfg.Border.MetricName(), resolveDirectoryRoleMetric),
+	)
 }
 
 func (c *DonutTreeCmd) mergeConfigAndValidate(flags *Flags) error {
@@ -175,6 +182,7 @@ func (c *DonutTreeCmd) applyOverrides(cfg *config.Config) {
 	cfg.DonutTree.OverrideFill(c.Fill)
 	cfg.DonutTree.OverrideBorder(c.Border)
 	cfg.DonutTree.OverrideMaxLayers(c.MaxLayers)
+	cfg.DonutTree.OverrideLabels(c.Labels)
 	cfg.OverrideLegendPosition(c.Legend)
 	cfg.OverrideLegendOrientation(c.LegendOrientation)
 }

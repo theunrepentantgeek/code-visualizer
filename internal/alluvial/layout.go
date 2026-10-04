@@ -30,6 +30,7 @@ type ColumnLayout struct {
 // Band is the vertical extent allocated to one directory in a release column.
 type Band struct {
 	Path         string
+	Labels       []string
 	Top          float64
 	Bottom       float64
 	Width        float64
@@ -133,6 +134,17 @@ func fillValueFor(data Data, reference, directoryPath string) (float64, bool) {
 }
 
 func columnsWithZeroPlaceholders(columns []Column) []Column {
+	paths := activeColumnPaths(columns)
+	result := make([]Column, len(columns))
+
+	for index, column := range columns {
+		result[index] = columnWithPaths(column, paths)
+	}
+
+	return result
+}
+
+func activeColumnPaths(columns []Column) []string {
 	activePaths := make(map[string]struct{})
 
 	for _, column := range columns {
@@ -150,19 +162,23 @@ func columnsWithZeroPlaceholders(columns []Column) []Column {
 
 	slices.Sort(paths)
 
-	result := make([]Column, len(columns))
-	for index, column := range columns {
-		widths := valuesByPath(column.Values)
+	return paths
+}
 
-		values := make([]Value, 0, len(paths))
-		for _, path := range paths {
-			values = append(values, Value{Path: path, Width: widths[path]})
-		}
-
-		result[index] = Column{Reference: column.Reference, Values: values}
+func columnWithPaths(column Column, paths []string) Column {
+	valuesByPath := make(map[string]Value, len(column.Values))
+	for _, value := range column.Values {
+		valuesByPath[value.Path] = value
 	}
 
-	return result
+	values := make([]Value, 0, len(paths))
+	for _, path := range paths {
+		value := valuesByPath[path]
+		value.Path = path
+		values = append(values, value)
+	}
+
+	return Column{Reference: column.Reference, Values: values}
 }
 
 func layoutBounds(height int) (top, bottom float64) {
@@ -269,7 +285,10 @@ func layoutBands(values []Value, top, verticalSpace, scale, available, gap float
 			y += gap
 		}
 
-		bands = append(bands, Band{Path: value.Path, Top: y, Bottom: y + bandHeight, Width: value.Width})
+		bands = append(bands, Band{
+			Path: value.Path, Labels: append([]string(nil), value.Labels...),
+			Top: y, Bottom: y + bandHeight, Width: value.Width,
+		})
 		y += bandHeight
 	}
 
