@@ -3,10 +3,11 @@ package alluvial
 import (
 	"image/color"
 	"math"
+	"strconv"
+	"strings"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"golang.org/x/text/number"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	canvasmodel "github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
@@ -241,7 +242,14 @@ func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
 }
 
 func formatAlluvialMetric(value float64) string {
-	return alluvialPrinter.Sprint(number.Decimal(value))
+	decimal := strconv.FormatFloat(value, 'f', -1, 64)
+	precision := 0
+
+	if separator := strings.IndexByte(decimal, '.'); separator >= 0 {
+		precision = len(decimal) - separator - 1
+	}
+
+	return alluvialPrinter.Sprintf("%.*f", precision, value)
 }
 
 func alluvialBandInk(fillInk inks.Ink, band Band) inks.Ink {

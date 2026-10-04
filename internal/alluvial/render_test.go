@@ -77,6 +77,13 @@ func TestRenderToCanvas_FormatsMetricValuesInBandLabel(t *testing.T) {
 			expectedWidth: "1,234,567",
 			expectedFill:  "-1,234,567.89",
 		},
+		{
+			name:          "precise measures",
+			width:         0.12345,
+			fill:          -0.0004,
+			expectedWidth: "0.12345",
+			expectedFill:  "-0.0004",
+		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
