@@ -30,6 +30,21 @@ func TestMetricContainer_Quantity_NilMap_ReturnsFalse(t *testing.T) {
 	g.Expect(v).To(BeZero())
 }
 
+func TestMetricContainer_NilPointerNumericReadsReturnFalse(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	var container *model.MetricContainer
+
+	quantity, quantityOK := container.Quantity(metric.Name("lines"))
+	g.Expect(quantityOK).To(BeFalse())
+	g.Expect(quantity).To(BeZero())
+
+	measure, measureOK := container.Measure(metric.Name("coverage"))
+	g.Expect(measureOK).To(BeFalse())
+	g.Expect(measure).To(BeZero())
+}
+
 func TestMetricContainer_Quantity_UnknownName_ReturnsFalse(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

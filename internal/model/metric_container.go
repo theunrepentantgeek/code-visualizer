@@ -18,6 +18,10 @@ type MetricContainer struct {
 
 // Quantity returns the int64 value for the named metric and whether it was set.
 func (mc *MetricContainer) Quantity(name metric.Name) (int64, bool) {
+	if mc == nil {
+		return 0, false
+	}
+
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
 
@@ -32,6 +36,10 @@ func (mc *MetricContainer) Quantity(name metric.Name) (int64, bool) {
 
 // Measure returns the float64 value for the named metric and whether it was set.
 func (mc *MetricContainer) Measure(name metric.Name) (float64, bool) {
+	if mc == nil {
+		return 0, false
+	}
+
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
 
