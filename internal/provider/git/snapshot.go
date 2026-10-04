@@ -125,3 +125,7 @@ func (s Snapshot) Subtree(repoRelativeDir string) (*object.Tree, error) {
 
 	return tree, nil
 }
+
+func IsSnapshotTargetMissing(err error) bool {
+	return errors.Is(err, object.ErrDirectoryNotFound)
+}

@@ -105,14 +105,14 @@ func TestLayoutData_KeepsChangedPathsBetweenMergedConstantRuns(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data, err := alluvial.BuildData([]alluvial.Snapshot{
-		{Reference: "before", Root: testRoot(
+		{Reference: "before", Bands: testBands(
 			testDirectory("alpha", 1),
 			testDirectory("bravo", 2),
 			testDirectory("charlie", 3),
 			testDirectory("delta", 5),
 			testDirectory("echo", 6),
 		)},
-		{Reference: "after", Root: testRoot(
+		{Reference: "after", Bands: testBands(
 			testDirectory("alpha", 1),
 			testDirectory("bravo", 2),
 			testDirectory("charlie", 4),

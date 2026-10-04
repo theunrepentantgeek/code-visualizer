@@ -11,6 +11,194 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
 
+func TestEvaluateAggregations_DirectFilesExcludesDescendantValues(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	root := aggregationScopeTree()
+	expressions := []provider.ResolvedMetric{resolveMetricForTest(t, "file-size.sum")}
+
+	direct, err := stages.EvaluateAggregations(model.DirectorySelection{
+		Directory: root,
+		Scope:     model.DirectoryDirectFiles,
+	}, expressions)
+	g.Expect(err).NotTo(HaveOccurred())
+	subtree, err := stages.EvaluateAggregations(model.DirectorySelection{
+		Directory: root,
+		Scope:     model.DirectorySubtree,
+	}, expressions)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	directSum, ok := direct.Quantity("file-size.sum")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(directSum).To(Equal(int64(400)))
+
+	subtreeSum, ok := subtree.Quantity("file-size.sum")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(subtreeSum).To(Equal(int64(1300)))
+}
+
+func TestEvaluateAggregations_PreservesNonAdditiveMeanAndDistinct(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	root := aggregationScopeTree()
+	expressions := []provider.ResolvedMetric{
+		resolveMetricForTest(t, "file-size.mean"),
+		resolveMetricForTest(t, "file-type.distinct"),
+	}
+
+	direct, err := stages.EvaluateAggregations(model.DirectorySelection{
+		Directory: root,
+		Scope:     model.DirectoryDirectFiles,
+	}, expressions)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	mean, ok := direct.Measure("file-size.mean")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(mean).To(Equal(float64(200)))
+
+	distinct, ok := direct.Quantity("file-type.distinct")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(distinct).To(Equal(int64(1)))
+}
+
+func TestEvaluateAggregations_NonEmptyZeroMetricSelectionIsRetained(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	root := &model.Directory{
+		Files: []*model.File{fileWithQuantity("zero.go", 0)},
+	}
+
+	result, err := stages.EvaluateAggregations(model.DirectorySelection{
+		Directory: root,
+		Scope:     model.DirectoryDirectFiles,
+	}, []provider.ResolvedMetric{resolveMetricForTest(t, "file-size.sum")})
+
+	g.Expect(err).NotTo(HaveOccurred())
+
+	value, ok := result.Quantity("file-size.sum")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(value).To(BeZero())
+}
+
+func TestEvaluateAggregations_DirectFilesLimitsDeclarationValues(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	direct := &model.Declaration{}
+	direct.SetQuantity("cyclomatic-complexity", 2)
+
+	child := &model.Declaration{}
+	child.SetQuantity("cyclomatic-complexity", 10)
+	result := evaluateDirectSelection(
+		t,
+		&model.File{Declarations: []*model.Declaration{direct}},
+		&model.File{Declarations: []*model.Declaration{child}},
+		declarationMeanMetric(),
+	)
+
+	value, ok := result.Measure("cyclomatic-complexity.mean")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(value).To(Equal(float64(2)))
+}
+
+func TestEvaluateAggregations_DirectFilesLimitsCommitValues(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	direct := &model.Commit{}
+	direct.SetQuantity("lines-changed", 5)
+
+	child := &model.Commit{}
+	child.SetQuantity("lines-changed", 50)
+	result := evaluateDirectSelection(
+		t,
+		&model.File{Commits: []*model.Commit{direct}},
+		&model.File{Commits: []*model.Commit{child}},
+		commitMaxMetric(),
+	)
+
+	value, ok := result.Quantity("lines-changed.max")
+	g.Expect(ok).To(BeTrue())
+	g.Expect(value).To(Equal(int64(5)))
+}
+
+func evaluateDirectSelection(
+	t *testing.T,
+	direct *model.File,
+	child *model.File,
+	resolved provider.ResolvedMetric,
+) *model.MetricContainer {
+	t.Helper()
+	g := NewWithT(t)
+	root := &model.Directory{
+		Files: []*model.File{direct},
+		Dirs:  []*model.Directory{{Files: []*model.File{child}}},
+	}
+
+	result, err := stages.EvaluateAggregations(model.DirectorySelection{
+		Directory: root,
+		Scope:     model.DirectoryDirectFiles,
+	}, []provider.ResolvedMetric{resolved})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	return result
+}
+
+func TestEvaluateAggregations_RejectsInvalidScope(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	_, err := stages.EvaluateAggregations(model.DirectorySelection{
+		Directory: aggregationScopeTree(),
+	}, []provider.ResolvedMetric{resolveMetricForTest(t, "file-size.sum")})
+
+	g.Expect(err).To(MatchError(ContainSubstring("invalid directory scope")))
+}
+
+func TestEvaluateAggregations_RejectsInvalidSelectionWithoutExpressions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]model.DirectorySelection{
+		"nil directory": {
+			Scope: model.DirectorySubtree,
+		},
+		"invalid scope": {
+			Directory: &model.Directory{},
+			Scope:     model.DirectoryScopeInvalid,
+		},
+	}
+
+	for name, selection := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+
+			_, err := stages.EvaluateAggregations(selection, nil)
+
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}
+
+func TestComputeAggregations_StillPopulatesEveryDirectoryFromSubtrees(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	root := aggregationScopeTree()
+
+	err := stages.ComputeAggregations(
+		root,
+		[]provider.ResolvedMetric{resolveMetricForTest(t, "file-size.sum")},
+	)
+
+	g.Expect(err).NotTo(HaveOccurred())
+
+	rootValue, rootOK := root.Quantity("file-size.sum")
+	g.Expect(rootOK).To(BeTrue())
+	g.Expect(rootValue).To(Equal(int64(1300)))
+
+	childValue, childOK := root.Dirs[0].Quantity("file-size.sum")
+	g.Expect(childOK).To(BeTrue())
+	g.Expect(childValue).To(Equal(int64(900)))
+}
+
 func TestComputeAggregations_SumFileSize(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -31,6 +219,60 @@ func TestComputeAggregations_SumFileSize(t *testing.T) {
 	val, ok := root.Quantity(metric.Name("file-size.sum"))
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal(int64(300)))
+}
+
+func aggregationScopeTree() *model.Directory {
+	directA := fileWithQuantity("a.go", 100)
+	directA.SetClassification("file-type", "go")
+
+	directB := fileWithQuantity("b.go", 300)
+	directB.SetClassification("file-type", "go")
+
+	child := fileWithQuantity("child.py", 900)
+	child.SetClassification("file-type", "python")
+
+	return &model.Directory{
+		Files: []*model.File{directA, directB},
+		Dirs:  []*model.Directory{{Files: []*model.File{child}}},
+	}
+}
+
+func declarationMeanMetric() provider.ResolvedMetric {
+	return provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "cyclomatic-complexity",
+			Aggregation: metric.AggMean,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "cyclomatic-complexity",
+			Kind:  metric.Quantity,
+			Level: metric.LevelDeclaration,
+		},
+		SourceLevel:      metric.LevelDeclaration,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Measure,
+		ResultName:       "cyclomatic-complexity.mean",
+		NeedsAggregation: true,
+	}
+}
+
+func commitMaxMetric() provider.ResolvedMetric {
+	return provider.ResolvedMetric{
+		Expression: metric.MetricExpression{
+			Base:        "lines-changed",
+			Aggregation: metric.AggMax,
+		},
+		Descriptor: provider.BaseMetricDescriptor{
+			Name:  "lines-changed",
+			Kind:  metric.Quantity,
+			Level: metric.LevelCommit,
+		},
+		SourceLevel:      metric.LevelCommit,
+		TargetLevel:      metric.LevelDirectory,
+		ResultKind:       metric.Quantity,
+		ResultName:       "lines-changed.max",
+		NeedsAggregation: true,
+	}
 }
 
 func TestComputeAggregations_MeanFileSize(t *testing.T) {

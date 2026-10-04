@@ -46,8 +46,20 @@ the repository's `HEAD` commit.
 
 `--include` and `--exclude` limit the source files that contribute to
 directories. They do not control hierarchy detail. Use `--expand` to replace a
-directory with its direct children; it never expands recursively or adds an
-`Other` aggregate.
+directory with its direct children and, when present, a band for files directly
+in that directory. Repeat `--expand` for reachable nested directories to reveal
+additional levels.
+
+Each snapshot includes a band for files directly in the target directory,
+labelled with the target's repository-relative path (`.` for the repository
+root), plus bands for the target's child directories. The same partitioning
+applies to every expanded directory: child subtrees become bands, and the
+expanded directory keeps a band only when it contains files directly. This
+means a leaf target still produces one band when it contains files, while an
+expanded directory with no direct files does not create an empty remainder
+band. A target may be absent or empty at an individual reference, in which case
+its bands taper to or from zero; the command fails only when the target contains
+no files at every reference.
 
 By default, unchanged bands are displayed normally. A band is constant when
 its width metric has exactly the same value at every displayed reference; a
