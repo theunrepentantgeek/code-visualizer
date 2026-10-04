@@ -400,6 +400,54 @@ func TestAlluvialCmd_Run_RendersDirectFilesBesideTargetChildren(t *testing.T) {
 	g.Expect(svgTextLabels(string(image))).To(ContainElements("module", "module/child"))
 }
 
+func TestAlluvialCmd_Run_RendersRootFilesAndOmitsEmptyExpandedRemainder(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialTagFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: repository,
+		Output:     output,
+		References: []string{"tag:v2.0", "tag:v3.0"},
+		Metric:     "file-lines",
+		Expand:     []string{"internal"},
+		Width:      800,
+		Height:     600,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+	labels := svgTextLabels(string(image))
+	g.Expect(labels).To(ContainElements(".", "internal/config"))
+	g.Expect(labels).NotTo(ContainElement("internal"))
+}
+
+func TestAlluvialCmd_Run_RendersDirectFilesWhenExpandingNestedDirectory(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	repository := createAlluvialSubdirectoryFixture(t)
+	output := filepath.Join(t.TempDir(), "alluvial.svg")
+	cmd := &AlluvialCmd{
+		TargetPath: repository,
+		Output:     output,
+		References: []string{"tag:v2.0", "tag:v3.0"},
+		Metric:     "file-lines",
+		Expand:     []string{"module"},
+		Width:      800,
+		Height:     600,
+	}
+
+	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+
+	image, err := os.ReadFile(output)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(svgTextLabels(string(image))).To(ContainElements("module", "module/child"))
+}
+
 func TestAlluvialCmd_Run_AppliesConstantBandModes(t *testing.T) {
 	t.Parallel()
 	repository := createAlluvialTagFixture(t)
@@ -604,6 +652,7 @@ func createAlluvialTagFixture(t *testing.T) string {
 		return hash
 	}
 
+	writeFixtureFile("root.go", "package fixture\n")
 	writeFixtureFile("api/main.go", "package api\n\nfunc First() {}\n")
 	writeFixtureFile("stable/main.go", "package stable\n\nconst Value = 1\n")
 	writeFixtureFile("legacy/main.go", "package legacy\n\nfunc Removed() {}\n")
