@@ -46,7 +46,7 @@ func PartitionDirectories(root *Directory, expansions []string) map[string]Direc
 
 	expanded := make(map[string]struct{}, len(expansions))
 	for _, expansion := range expansions {
-		expanded[path.Clean(expansion)] = struct{}{}
+		expanded[path.Join(root.RepoPath, path.Clean(expansion))] = struct{}{}
 	}
 
 	partitionDirectory(root, expanded, result)
