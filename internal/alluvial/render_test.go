@@ -59,31 +59,61 @@ func TestRenderToCanvas_AddsFilledPathForEachValidFlow(t *testing.T) {
 	g.Expect(filledPaths[0].Fill).NotTo(Equal(filledPaths[1].Fill))
 }
 
-func TestRenderToCanvas_AddsExplicitFillValueToBandLabel(t *testing.T) {
+func TestRenderToCanvas_FormatsMetricValuesInBandLabel(t *testing.T) {
 	t.Parallel()
-	g := NewGomegaWithT(t)
 
-	cv := alluvial.RenderToCanvas(alluvial.Layout{
-		Columns: []alluvial.ColumnLayout{{
-			X: 100,
-			Bands: []alluvial.Band{{
-				Path: "api", Top: 10, Bottom: 90, Width: 12, FillValue: -3, HasFillValue: true,
-			}},
-		}},
-	}, 200, 100, inks.NumericInk("fill", []float64{-3}, palette.GetPalette(palette.Neutral)), "fill.delta")
-	backend := mock.NewBackend()
+	for _, testCase := range []struct {
+		name          string
+		width         float64
+		fill          float64
+		expectedWidth string
+		expectedFill  string
+	}{
+		{name: "small values", width: 12, fill: -3, expectedWidth: "12", expectedFill: "-3"},
+		{
+			name:          "large values",
+			width:         1234567,
+			fill:          -1234567.89,
+			expectedWidth: "1,234,567",
+			expectedFill:  "-1,234,567.89",
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
 
-	g.Expect(cv.RenderTo(backend)).To(Succeed())
+			cv := alluvial.RenderToCanvas(alluvial.Layout{
+				Columns: []alluvial.ColumnLayout{{
+					X: 100,
+					Bands: []alluvial.Band{{
+						Path:         "api",
+						Top:          10,
+						Bottom:       90,
+						Width:        testCase.width,
+						FillValue:    testCase.fill,
+						HasFillValue: true,
+					}},
+				}},
+			}, 200, 100, inks.NumericInk(
+				"fill",
+				[]float64{testCase.fill},
+				palette.GetPalette(palette.Neutral),
+			), "fill.delta")
+			backend := mock.NewBackend()
 
-	var labels []string
+			g.Expect(cv.RenderTo(backend)).To(Succeed())
 
-	for _, call := range backend.Calls {
-		if call.Method == "DrawText" {
-			labels = append(labels, call.Text)
-		}
+			var labels []string
+
+			for _, call := range backend.Calls {
+				if call.Method == "DrawText" {
+					labels = append(labels, call.Text)
+				}
+			}
+
+			g.Expect(labels).To(ContainElements("api", testCase.expectedWidth, testCase.expectedFill))
+		})
 	}
-
-	g.Expect(labels).To(ContainElements("api", "12", "-3"))
 }
 
 func TestRenderToCanvas_UsesFixedGreyForMutedBandsAndFlows(t *testing.T) {
