@@ -32,6 +32,37 @@ func ComputeAggregations(root *model.Directory, expressions []provider.ResolvedM
 	return nil
 }
 
+func EvaluateAggregations(
+	selection model.DirectorySelection,
+	expressions []provider.ResolvedMetric,
+) (*model.MetricContainer, error) {
+	result := &model.MetricContainer{}
+
+	for _, resolved := range expressions {
+		var err error
+
+		switch resolved.SourceLevel {
+		case metric.LevelFile:
+			err = evaluateFileAggregation(selection, result, resolved)
+		case metric.LevelDeclaration:
+			err = evaluateDeclarationAggregation(selection, result, resolved)
+		case metric.LevelCommit:
+			err = evaluateCommitAggregation(selection, result, resolved)
+		default:
+			err = eris.Errorf(
+				"aggregation of %s-level metric %q is not supported",
+				resolved.SourceLevel, resolved.Expression.Base,
+			)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
+}
+
 func computeOneAggregation(root *model.Directory, resolved provider.ResolvedMetric) error {
 	switch resolved.SourceLevel {
 	case metric.LevelFile:
@@ -59,11 +90,22 @@ func aggregateDirectory(dir *model.Directory, resolved provider.ResolvedMetric) 
 		}
 	}
 
+	return evaluateFileAggregation(model.DirectorySelection{
+		Directory: dir,
+		Scope:     model.DirectorySubtree,
+	}, &dir.MetricContainer, resolved)
+}
+
+func evaluateFileAggregation(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
 	switch resolved.Descriptor.Kind {
 	case metric.Classification:
-		return aggregateClassification(dir, resolved)
+		return aggregateClassification(selection, target, resolved)
 	case metric.Quantity, metric.Measure:
-		return aggregateNumeric(dir, resolved)
+		return aggregateNumeric(selection, target, resolved)
 	default:
 		return eris.Errorf(
 			"aggregation for metric %q uses unsupported source kind %d",
@@ -72,20 +114,34 @@ func aggregateDirectory(dir *model.Directory, resolved provider.ResolvedMetric) 
 	}
 }
 
-func aggregateNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
+func aggregateNumeric(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
 	lookupKey := fileLevelLookupKey(resolved.Expression)
-	values := collectNumericValues(dir, lookupKey, resolved.Descriptor.Kind)
+	values, err := collectNumericValues(selection, lookupKey, resolved.Descriptor.Kind)
+	if err != nil {
+		return err
+	}
 
 	if len(values) == 0 {
 		return nil
 	}
 
-	return applyAndStoreNumeric(dir, resolved, values)
+	return applyAndStoreNumeric(target, resolved, values)
 }
 
-func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
+func aggregateClassification(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
 	lookupKey := fileLevelLookupKey(resolved.Expression)
-	values := collectClassificationValues(dir, lookupKey)
+	values, err := collectClassificationValues(selection, lookupKey)
+	if err != nil {
+		return err
+	}
 
 	if len(values) == 0 {
 		return nil
@@ -100,7 +156,7 @@ func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMet
 			)
 		}
 
-		dir.SetClassification(resolved.ResultName, metric.AggregateMode(values))
+		target.SetClassification(resolved.ResultName, metric.AggregateMode(values))
 	case metric.AggDistinct:
 		if resolved.ResultKind != metric.Quantity {
 			return eris.Errorf(
@@ -109,7 +165,7 @@ func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMet
 			)
 		}
 
-		dir.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
+		target.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
 	default:
 		return eris.Errorf(
 			"classification aggregation %q for metric %q is unsupported",
@@ -120,10 +176,14 @@ func aggregateClassification(dir *model.Directory, resolved provider.ResolvedMet
 	return nil
 }
 
-func collectNumericValues(dir *model.Directory, name metric.Name, kind metric.Kind) []float64 {
-	values := make([]float64, 0, dir.AllFileCount)
+func collectNumericValues(
+	selection model.DirectorySelection,
+	name metric.Name,
+	kind metric.Kind,
+) ([]float64, error) {
+	values := make([]float64, 0)
 
-	model.WalkFiles(dir, func(f *model.File) {
+	err := selection.WalkFiles(func(f *model.File) {
 		switch kind {
 		case metric.Quantity:
 			if v, ok := f.Quantity(name); ok {
@@ -138,29 +198,32 @@ func collectNumericValues(dir *model.Directory, name metric.Name, kind metric.Ki
 		}
 	})
 
-	return values
+	return values, eris.Wrap(err, "collect numeric metric values")
 }
 
-func collectClassificationValues(dir *model.Directory, name metric.Name) []string {
-	values := make([]string, 0, dir.AllFileCount)
+func collectClassificationValues(
+	selection model.DirectorySelection,
+	name metric.Name,
+) ([]string, error) {
+	values := make([]string, 0)
 
-	model.WalkFiles(dir, func(f *model.File) {
+	err := selection.WalkFiles(func(f *model.File) {
 		if v, ok := f.Classification(name); ok {
 			values = append(values, v)
 		}
 	})
 
-	return values
+	return values, eris.Wrap(err, "collect classification metric values")
 }
 
-// metricStorer is the subset of MetricContainer needed by applyAndStoreNumeric.
-type metricStorer interface {
+type aggregationStorer interface {
 	SetQuantity(name metric.Name, v int64)
 	SetMeasure(name metric.Name, v float64)
+	SetClassification(name metric.Name, v string)
 }
 
 // applyAndStoreNumeric computes the aggregation and stores the result on the container.
-func applyAndStoreNumeric(container metricStorer, resolved provider.ResolvedMetric, values []float64) error {
+func applyAndStoreNumeric(container aggregationStorer, resolved provider.ResolvedMetric, values []float64) error {
 	result, err := applyNumericAggregation(resolved.Expression.Aggregation, values)
 	if err != nil {
 		return err
@@ -219,8 +282,10 @@ func aggregateDeclarations(dir *model.Directory, resolved provider.ResolvedMetri
 		aggregateFileDeclarations(f, resolved)
 	}
 
-	// Step 2: aggregate all descendant declarations (flat) for the directory.
-	return aggregateDirectoryDeclarations(dir, resolved)
+	return evaluateDeclarationAggregation(model.DirectorySelection{
+		Directory: dir,
+		Scope:     model.DirectorySubtree,
+	}, &dir.MetricContainer, resolved)
 }
 
 // aggregateFileDeclarations computes the aggregation across a single file's
@@ -264,26 +329,38 @@ func aggregateFileDeclarationClassification(f *model.File, resolved provider.Res
 // aggregateDirectoryDeclarations computes the directory-level value from all
 // descendant declarations directly (flat aggregation preserving correct
 // semantics for mean/count/etc).
-func aggregateDirectoryDeclarations(dir *model.Directory, resolved provider.ResolvedMetric) error {
+func evaluateDeclarationAggregation(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
 	switch resolved.Descriptor.Kind {
 	case metric.Classification:
-		return aggregateDirectoryDeclarationClassification(dir, resolved)
+		return aggregateDirectoryDeclarationClassification(selection, target, resolved)
 	default:
-		return aggregateDirectoryDeclarationNumeric(dir, resolved)
+		return aggregateDirectoryDeclarationNumeric(selection, target, resolved)
 	}
 }
 
-func aggregateDirectoryDeclarationClassification(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectAllDeclarationClassificationValues(dir, resolved)
+func aggregateDirectoryDeclarationClassification(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
+	values, err := collectAllDeclarationClassificationValues(selection, resolved)
+	if err != nil {
+		return err
+	}
+
 	if len(values) == 0 {
 		return nil
 	}
 
 	switch resolved.Expression.Aggregation {
 	case metric.AggMode:
-		dir.SetClassification(resolved.ResultName, metric.AggregateMode(values))
+		target.SetClassification(resolved.ResultName, metric.AggregateMode(values))
 	case metric.AggDistinct:
-		dir.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
+		target.SetQuantity(resolved.ResultName, int64(metric.AggregateDistinct(values)))
 	default:
 		return eris.Errorf(
 			"classification aggregation %q for declaration metric %q is unsupported",
@@ -294,13 +371,21 @@ func aggregateDirectoryDeclarationClassification(dir *model.Directory, resolved 
 	return nil
 }
 
-func aggregateDirectoryDeclarationNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectAllDeclarationNumericValues(dir, resolved)
+func aggregateDirectoryDeclarationNumeric(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
+	values, err := collectAllDeclarationNumericValues(selection, resolved)
+	if err != nil {
+		return err
+	}
+
 	if len(values) == 0 {
 		return nil
 	}
 
-	return applyAndStoreNumeric(dir, resolved, values)
+	return applyAndStoreNumeric(target, resolved, values)
 }
 
 func collectFileDeclarationNumericValues(f *model.File, resolved provider.ResolvedMetric) []float64 {
@@ -335,40 +420,46 @@ func collectFileDeclarationClassificationValues(f *model.File, resolved provider
 	return values
 }
 
-func collectAllDeclarationNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
-	// Use AllFileCount as a cheap capacity hint; avoids a full extra tree
-	// traversal that CountDeclarations would perform before WalkDeclarations.
-	values := make([]float64, 0, dir.AllFileCount)
+func collectAllDeclarationNumericValues(
+	selection model.DirectorySelection,
+	resolved provider.ResolvedMetric,
+) ([]float64, error) {
+	values := make([]float64, 0)
 
-	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
-		if !declarationMatchesExpression(d, resolved) {
-			return
-		}
+	err := selection.WalkFiles(func(file *model.File) {
+		for _, declaration := range file.Declarations {
+			if !declarationMatchesExpression(declaration, resolved) {
+				continue
+			}
 
-		if v, ok := declarationNumericValue(d, resolved); ok {
-			values = append(values, v)
+			if value, ok := declarationNumericValue(declaration, resolved); ok {
+				values = append(values, value)
+			}
 		}
 	})
 
-	return values
+	return values, eris.Wrap(err, "collect declaration metric values")
 }
 
-func collectAllDeclarationClassificationValues(dir *model.Directory, resolved provider.ResolvedMetric) []string {
-	// Use AllFileCount as a cheap capacity hint; avoids a full extra tree
-	// traversal that CountDeclarations would perform before WalkDeclarations.
-	values := make([]string, 0, dir.AllFileCount)
+func collectAllDeclarationClassificationValues(
+	selection model.DirectorySelection,
+	resolved provider.ResolvedMetric,
+) ([]string, error) {
+	values := make([]string, 0)
 
-	model.WalkDeclarations(dir, func(d *model.Declaration, _ *model.File) {
-		if !declarationMatchesExpression(d, resolved) {
-			return
-		}
+	err := selection.WalkFiles(func(file *model.File) {
+		for _, declaration := range file.Declarations {
+			if !declarationMatchesExpression(declaration, resolved) {
+				continue
+			}
 
-		if v, ok := d.Classification(resolved.Expression.Base); ok {
-			values = append(values, v)
+			if value, ok := declaration.Classification(resolved.Expression.Base); ok {
+				values = append(values, value)
+			}
 		}
 	})
 
-	return values
+	return values, eris.Wrap(err, "collect declaration classification values")
 }
 
 func declarationNumericValue(d *model.Declaration, resolved provider.ResolvedMetric) (float64, bool) {
@@ -415,9 +506,20 @@ func aggregateCommits(dir *model.Directory, resolved provider.ResolvedMetric) er
 		}
 	}
 
+	return evaluateCommitAggregation(model.DirectorySelection{
+		Directory: dir,
+		Scope:     model.DirectorySubtree,
+	}, &dir.MetricContainer, resolved)
+}
+
+func evaluateCommitAggregation(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
 	switch resolved.Descriptor.Kind {
 	case metric.Quantity, metric.Measure:
-		return aggregateCommitNumeric(dir, resolved)
+		return aggregateCommitNumeric(selection, target, resolved)
 	default:
 		return eris.Errorf(
 			"aggregation for commit metric %q uses unsupported source kind %d",
@@ -426,34 +528,45 @@ func aggregateCommits(dir *model.Directory, resolved provider.ResolvedMetric) er
 	}
 }
 
-func aggregateCommitNumeric(dir *model.Directory, resolved provider.ResolvedMetric) error {
-	values := collectCommitNumericValues(dir, resolved)
+func aggregateCommitNumeric(
+	selection model.DirectorySelection,
+	target aggregationStorer,
+	resolved provider.ResolvedMetric,
+) error {
+	values, err := collectCommitNumericValues(selection, resolved)
+	if err != nil {
+		return err
+	}
+
 	if len(values) == 0 {
 		return nil
 	}
 
-	return applyAndStoreNumeric(dir, resolved, values)
+	return applyAndStoreNumeric(target, resolved, values)
 }
 
-func collectCommitNumericValues(dir *model.Directory, resolved provider.ResolvedMetric) []float64 {
-	// Use AllFileCount as a cheap capacity hint; avoids a full extra tree
-	// traversal that CountCommits would perform before WalkCommits.
-	values := make([]float64, 0, dir.AllFileCount)
+func collectCommitNumericValues(
+	selection model.DirectorySelection,
+	resolved provider.ResolvedMetric,
+) ([]float64, error) {
+	values := make([]float64, 0)
 
-	model.WalkCommits(dir, func(c *model.Commit, _ *model.File) {
-		switch resolved.Descriptor.Kind {
-		case metric.Quantity:
-			if v, ok := c.Quantity(resolved.Expression.Base); ok {
-				values = append(values, float64(v))
+	err := selection.WalkFiles(func(file *model.File) {
+		for _, commit := range file.Commits {
+			switch resolved.Descriptor.Kind {
+			case metric.Quantity:
+				if value, ok := commit.Quantity(resolved.Expression.Base); ok {
+					values = append(values, float64(value))
+				}
+			case metric.Measure:
+				if value, ok := commit.Measure(resolved.Expression.Base); ok {
+					values = append(values, value)
+				}
+			default:
+				// Commit-level classification metrics are not supported.
 			}
-		case metric.Measure:
-			if v, ok := c.Measure(resolved.Expression.Base); ok {
-				values = append(values, v)
-			}
-		default:
-			// Commit-level classification metrics not yet supported
 		}
 	})
 
-	return values
+	return values, eris.Wrap(err, "collect commit metric values")
 }
