@@ -4,7 +4,6 @@ imageSize:
 legend:
     position: bottom-center
     orientation: horizontal
-tree-map: {}
 radial-tree:
     fileDiscSize: file-lines
     fileFill:
@@ -21,11 +20,6 @@ radial-tree:
         metric: file-freshness.mean
         palette: good-bad
     labels: folders
-bubble-tree:
-    labels: folders
-spiral:
-    resolution: daily
-    labels: laps
 fileFilter:
     - pattern: .*
       mode: exclude
