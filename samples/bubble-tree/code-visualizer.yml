@@ -1,9 +1,6 @@
 imageSize:
     width: 1920
     height: 1080
-tree-map: {}
-radial-tree:
-    labels: all
 bubble-tree:
     size: file-lines
     fill:
@@ -13,9 +10,6 @@ bubble-tree:
         metric: public.methods.count
         palette: good-bad
     labels: folders
-spiral:
-    resolution: daily
-    labels: laps
 fileFilter:
     - pattern: .*
       mode: exclude
