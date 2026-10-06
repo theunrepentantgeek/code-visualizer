@@ -12,13 +12,6 @@ tree-map:
     border:
         metric: file-freshness
         palette: good-bad
-radial-tree:
-    labels: all
-bubble-tree:
-    labels: folders
-spiral:
-    resolution: daily
-    labels: laps
 fileFilter:
     - pattern: superpowers
       mode: exclude
