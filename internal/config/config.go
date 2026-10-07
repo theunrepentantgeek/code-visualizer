@@ -3,9 +3,13 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/rotisserie/eris"
@@ -65,13 +69,6 @@ type Config struct {
 	Source *string `yaml:"-" json:"-"`
 }
 
-// imageSizeCompatConfig captures both the new and legacy image dimension formats.
-type imageSizeCompatConfig struct {
-	ImageSize *ImageSize `yaml:"imageSize,omitempty" json:"imageSize,omitempty"`
-	Width     *int       `yaml:"width,omitempty"     json:"width,omitempty"`
-	Height    *int       `yaml:"height,omitempty"    json:"height,omitempty"`
-}
-
 // New returns a Config populated with sensible defaults.
 // Call this unconditionally at startup; subsequent layers (config file, CLI
 // flags) overlay their values on top of the struct returned here.
@@ -120,37 +117,128 @@ func (c *Config) Load(path string) error {
 
 	ext := strings.ToLower(filepath.Ext(path))
 
-	// Parse into a small compatibility struct as well so legacy top-level width/height
-	// values can be migrated into ImageSize without changing the persisted format.
-	var compat imageSizeCompatConfig
-
 	switch ext {
 	case extYAML, extYML:
-		if err := yaml.Unmarshal(data, c); err != nil {
-			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
-		}
+		decoder := yaml.NewDecoder(bytes.NewReader(data))
+		decoder.KnownFields(true)
 
-		if err := yaml.Unmarshal(data, &compat); err != nil {
+		if err := decoder.Decode(c); err != nil {
 			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
 		}
 	case extJSON:
-		if err := json.Unmarshal(data, c); err != nil {
-			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
+		decoder := json.NewDecoder(bytes.NewReader(data))
+		decoder.DisallowUnknownFields()
+
+		if err := decoder.Decode(c); err != nil {
+			return eris.Wrapf(withJSONLine(data, err), "failed to parse JSON config file %q", path)
 		}
 
-		if err := json.Unmarshal(data, &compat); err != nil {
-			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
+		if err := ensureJSONEOF(decoder); err != nil {
+			return eris.Wrapf(withJSONLine(data, err), "failed to parse JSON config file %q", path)
 		}
 	default:
 		return eris.Errorf("unsupported config file extension %q (use .yaml, .yml, or .json)", ext)
 	}
 
-	c.applyLegacyImageSize(compat)
-
 	// Record the source path for informational purposes.
 	c.Source = &path
 
 	return nil
+}
+
+func ensureJSONEOF(decoder *json.Decoder) error {
+	var trailing any
+
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err != nil {
+			return eris.Wrap(err, "failed to decode trailing JSON content")
+		}
+
+		return errors.New("multiple JSON values are not allowed")
+	}
+
+	return nil
+}
+
+func withJSONLine(data []byte, err error) error {
+	offset := jsonErrorOffset(data, err)
+	if offset == 0 {
+		return err
+	}
+
+	return eris.Wrapf(err, "line %d", lineAtOffset(data, offset))
+}
+
+func jsonErrorOffset(data []byte, err error) int64 {
+	if syntaxError, ok := errors.AsType[*json.SyntaxError](err); ok {
+		return syntaxError.Offset
+	}
+
+	if typeError, ok := errors.AsType[*json.UnmarshalTypeError](err); ok {
+		return jsonTypeErrorOffset(data, typeError)
+	}
+
+	return jsonUnknownFieldOffset(data, err)
+}
+
+func jsonTypeErrorOffset(data []byte, typeError *json.UnmarshalTypeError) int64 {
+	field := typeError.Field
+	if separator := strings.LastIndexByte(field, '.'); separator >= 0 {
+		field = field[separator+1:]
+	}
+
+	if offset := jsonFieldOffset(data, field); offset != 0 {
+		return offset
+	}
+
+	return typeError.Offset
+}
+
+func jsonUnknownFieldOffset(data []byte, err error) int64 {
+	const prefix = "json: unknown field "
+
+	index := strings.Index(err.Error(), prefix)
+	if index < 0 {
+		return 0
+	}
+
+	field, unquoteErr := strconv.Unquote(err.Error()[index+len(prefix):])
+	if unquoteErr != nil {
+		return 0
+	}
+
+	return jsonFieldOffset(data, field)
+}
+
+func jsonFieldOffset(data []byte, field string) int64 {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			return 0
+		}
+
+		name, ok := token.(string)
+		if !ok || name != field {
+			continue
+		}
+
+		offset := decoder.InputOffset()
+
+		remainder := bytes.TrimLeft(data[offset:], " \t\r\n")
+		if len(remainder) > 0 && remainder[0] == ':' {
+			return offset
+		}
+	}
+}
+
+func lineAtOffset(data []byte, offset int64) int {
+	if offset > int64(len(data)) {
+		offset = int64(len(data))
+	}
+
+	return bytes.Count(data[:max(offset-1, 0)], []byte{'\n'}) + 1
 }
 
 func (c *Config) TryAutoLoad(outputPath string) error {
@@ -239,20 +327,6 @@ func (c *Config) Save(path string) error {
 func (c *Config) ensureImageSize() {
 	if c.ImageSize == nil {
 		c.ImageSize = &ImageSize{}
-	}
-}
-
-func (c *Config) applyLegacyImageSize(compat imageSizeCompatConfig) {
-	if compat.ImageSize != nil || compat.Width != nil || compat.Height != nil {
-		c.ensureImageSize()
-	}
-
-	if compat.Width != nil && (compat.ImageSize == nil || compat.ImageSize.Width == nil) {
-		c.ImageSize.Width = compat.Width
-	}
-
-	if compat.Height != nil && (compat.ImageSize == nil || compat.ImageSize.Height == nil) {
-		c.ImageSize.Height = compat.Height
 	}
 }
 

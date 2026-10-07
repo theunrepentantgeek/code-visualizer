@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 
@@ -141,6 +142,13 @@ func (m *MetricSpec) UnmarshalYAML(value *yaml.Node) error {
 		return m.UnmarshalText([]byte(value.Value))
 	}
 
+	for index := 0; index < len(value.Content); index += 2 {
+		key := value.Content[index]
+		if key.Value != "metric" && key.Value != "palette" {
+			return eris.Errorf("line %d: field %s not found in type config.MetricSpec", key.Line, key.Value)
+		}
+	}
+
 	type plain MetricSpec // strips methods to avoid recursion via TextUnmarshaler
 
 	var p plain
@@ -177,7 +185,11 @@ func (m *MetricSpec) UnmarshalJSON(data []byte) error {
 	type plain MetricSpec // strips methods to avoid recursion via TextUnmarshaler
 
 	var p plain
-	if err := json.Unmarshal(data, &p); err != nil {
+
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&p); err != nil {
 		return eris.Wrap(err, "failed to decode metric spec from JSON")
 	}
 
