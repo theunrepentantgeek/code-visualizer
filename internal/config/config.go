@@ -4,13 +4,15 @@ package config
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/jsontext"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
+
+	jsonv1 "encoding/json"
+	jsonv2 "encoding/json/v2"
 
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
@@ -119,22 +121,12 @@ func (c *Config) Load(path string) error {
 
 	switch ext {
 	case extYAML, extYML:
-		decoder := yaml.NewDecoder(bytes.NewReader(data))
-		decoder.KnownFields(true)
-
-		if err := decoder.Decode(c); err != nil {
+		if err := parseYAMLConfig(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
 		}
 	case extJSON:
-		decoder := json.NewDecoder(bytes.NewReader(data))
-		decoder.DisallowUnknownFields()
-
-		if err := decoder.Decode(c); err != nil {
-			return eris.Wrapf(withJSONLine(data, err), "failed to parse JSON config file %q", path)
-		}
-
-		if err := ensureJSONEOF(decoder); err != nil {
-			return eris.Wrapf(withJSONLine(data, err), "failed to parse JSON config file %q", path)
+		if err := parseJSONConfig(data, c); err != nil {
+			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
 		}
 	default:
 		return eris.Errorf("unsupported config file extension %q (use .yaml, .yml, or .json)", ext)
@@ -146,99 +138,146 @@ func (c *Config) Load(path string) error {
 	return nil
 }
 
-func ensureJSONEOF(decoder *json.Decoder) error {
-	var trailing any
+func parseYAMLConfig(data []byte, cfg *Config) error {
+	document, trailingLine, documentEnded := splitYAMLDocument(data)
+	decoder := yaml.NewDecoder(bytes.NewReader(document))
+	decoder.KnownFields(true)
 
-	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
-		if err != nil {
-			return eris.Wrap(err, "failed to decode trailing JSON content")
+	if err := decoder.Decode(cfg); err != nil {
+		if errors.Is(err, io.EOF) {
+			return errors.New("line 1: configuration file is empty")
 		}
 
-		return errors.New("multiple JSON values are not allowed")
+		return eris.Wrap(err, "failed to decode YAML configuration")
+	}
+
+	if documentEnded {
+		if trailingLine != 0 {
+			return eris.Errorf("line %d: trailing content after YAML document is not allowed", trailingLine)
+		}
+
+		return nil
+	}
+
+	var trailing yaml.Node
+	if err := decoder.Decode(&trailing); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+
+		return eris.Wrap(err, "failed to decode trailing YAML content")
+	}
+
+	return eris.Errorf("line %d: multiple YAML documents are not allowed", trailing.Line)
+}
+
+func splitYAMLDocument(data []byte) ([]byte, int, bool) {
+	lines := bytes.SplitAfter(data, []byte{'\n'})
+	documentStarted := false
+	offset := 0
+
+	for index, lineWithEnding := range lines {
+		line := bytes.TrimSuffix(lineWithEnding, []byte{'\n'})
+		line = bytes.TrimSuffix(line, []byte{'\r'})
+
+		trimmed := bytes.TrimSpace(line)
+		if len(trimmed) == 0 || trimmed[0] == '#' {
+			offset += len(lineWithEnding)
+
+			continue
+		}
+
+		marker := yamlDocumentMarker(line)
+		if marker == "---" && documentStarted {
+			return yamlDocumentPrefix(data, offset), index + 1, true
+		}
+
+		if marker == "..." {
+			documentEnd := offset + len(lineWithEnding)
+			trailingLine := firstNonWhitespaceLine(lines[index+1:], index+2)
+
+			return yamlDocumentPrefix(data, documentEnd), trailingLine, true
+		}
+
+		documentStarted = true
+		offset += len(lineWithEnding)
+	}
+
+	return data, 0, false
+}
+
+func yamlDocumentMarker(line []byte) string {
+	for _, marker := range []string{"---", "..."} {
+		if !bytes.HasPrefix(line, []byte(marker)) {
+			continue
+		}
+
+		remainder := line[len(marker):]
+		if len(remainder) == 0 || remainder[0] == ' ' || remainder[0] == '\t' || remainder[0] == '#' {
+			return marker
+		}
+	}
+
+	return ""
+}
+
+func firstNonWhitespaceLine(lines [][]byte, firstLine int) int {
+	for index, line := range lines {
+		if len(bytes.TrimSpace(line)) != 0 {
+			return firstLine + index
+		}
+	}
+
+	return 0
+}
+
+func yamlDocumentPrefix(data []byte, end int) []byte {
+	if end >= len(data) {
+		return data
+	}
+
+	return data[:end]
+}
+
+func parseJSONConfig(data []byte, cfg *Config) error {
+	if err := jsonv2.Unmarshal(data, cfg, jsonv2.RejectUnknownMembers(true)); err != nil {
+		return withJSONPosition(data, err)
 	}
 
 	return nil
 }
 
-func withJSONLine(data []byte, err error) error {
-	offset := jsonErrorOffset(data, err)
-	if offset == 0 {
+func withJSONPosition(data []byte, err error) error {
+	offset, ok := jsonErrorOffset(err)
+	if !ok {
 		return err
 	}
 
-	return eris.Wrapf(err, "line %d", lineAtOffset(data, offset))
+	line, column := lineAndColumnAtOffset(data, offset)
+
+	return eris.Wrapf(err, "line %d, column %d", line, column)
 }
 
-func jsonErrorOffset(data []byte, err error) int64 {
-	if syntaxError, ok := errors.AsType[*json.SyntaxError](err); ok {
-		return syntaxError.Offset
+func jsonErrorOffset(err error) (int64, bool) {
+	if syntaxError, ok := errors.AsType[*jsontext.SyntacticError](err); ok {
+		return syntaxError.ByteOffset, true
 	}
 
-	if typeError, ok := errors.AsType[*json.UnmarshalTypeError](err); ok {
-		return jsonTypeErrorOffset(data, typeError)
+	if semanticError, ok := errors.AsType[*jsonv2.SemanticError](err); ok {
+		return semanticError.ByteOffset, true
 	}
 
-	return jsonUnknownFieldOffset(data, err)
+	return 0, false
 }
 
-func jsonTypeErrorOffset(data []byte, typeError *json.UnmarshalTypeError) int64 {
-	field := typeError.Field
-	if separator := strings.LastIndexByte(field, '.'); separator >= 0 {
-		field = field[separator+1:]
-	}
+func lineAndColumnAtOffset(data []byte, offset int64) (line, column int) {
+	offset = min(max(offset, 0), int64(len(data)))
+	prefix := data[:offset]
+	line = bytes.Count(prefix, []byte{'\n'}) + 1
+	lastNewline := bytes.LastIndexByte(prefix, '\n')
+	column = int(offset) - lastNewline
 
-	if offset := jsonFieldOffset(data, field); offset != 0 {
-		return offset
-	}
-
-	return typeError.Offset
-}
-
-func jsonUnknownFieldOffset(data []byte, err error) int64 {
-	const prefix = "json: unknown field "
-
-	index := strings.Index(err.Error(), prefix)
-	if index < 0 {
-		return 0
-	}
-
-	field, unquoteErr := strconv.Unquote(err.Error()[index+len(prefix):])
-	if unquoteErr != nil {
-		return 0
-	}
-
-	return jsonFieldOffset(data, field)
-}
-
-func jsonFieldOffset(data []byte, field string) int64 {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-
-	for {
-		token, err := decoder.Token()
-		if err != nil {
-			return 0
-		}
-
-		name, ok := token.(string)
-		if !ok || name != field {
-			continue
-		}
-
-		offset := decoder.InputOffset()
-
-		remainder := bytes.TrimLeft(data[offset:], " \t\r\n")
-		if len(remainder) > 0 && remainder[0] == ':' {
-			return offset
-		}
-	}
-}
-
-func lineAtOffset(data []byte, offset int64) int {
-	if offset > int64(len(data)) {
-		offset = int64(len(data))
-	}
-
-	return bytes.Count(data[:max(offset-1, 0)], []byte{'\n'}) + 1
+	return line, column
 }
 
 func (c *Config) TryAutoLoad(outputPath string) error {
@@ -307,7 +346,7 @@ func (c *Config) Save(path string) error {
 			return eris.Wrap(err, "failed to marshal config to YAML")
 		}
 	case extJSON:
-		data, err = json.MarshalIndent(c, "", "  ")
+		data, err = jsonv1.MarshalIndent(c, "", "  ")
 		if err != nil {
 			return eris.Wrap(err, "failed to marshal config to JSON")
 		}

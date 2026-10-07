@@ -1,9 +1,9 @@
 package config
 
 import (
-	"bytes"
-	"encoding/json"
 	"strings"
+
+	json "encoding/json/v2"
 
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
@@ -185,12 +185,8 @@ func (m *MetricSpec) UnmarshalJSON(data []byte) error {
 	type plain MetricSpec // strips methods to avoid recursion via TextUnmarshaler
 
 	var p plain
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&p); err != nil {
-		return eris.Wrap(err, "failed to decode metric spec from JSON")
+	if err := json.Unmarshal(data, &p, json.RejectUnknownMembers(true)); err != nil {
+		return err //nolint:wrapcheck // json/v2 needs the semantic error intact to compose its nested offset.
 	}
 
 	*m = MetricSpec(p)

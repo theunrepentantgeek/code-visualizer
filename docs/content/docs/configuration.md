@@ -6,7 +6,8 @@ weight: 9
 `codeviz` reads an optional configuration file (`.yaml`, `.yml`, or `.json`)
 supplied with the `--config` flag. This page documents the available keys.
 Configuration parsing is strict: unknown keys and malformed values are rejected,
-and the error identifies the line containing the problem.
+and the error identifies the line containing the problem. Empty files are
+invalid, and each file must contain exactly one YAML or JSON document.
 
 {{< callout type="info" >}}
 This reference is being expanded. For the authoritative list of flags, run

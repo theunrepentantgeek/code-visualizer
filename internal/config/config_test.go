@@ -349,7 +349,7 @@ func TestLoad_JSONUnknownField_ReturnsLineNumber(t *testing.T) {
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("failed to parse JSON"),
 		ContainSubstring("line 4"),
-		ContainSubstring(`unknown field "depth"`),
+		ContainSubstring(`unknown object member name "depth"`),
 	)))
 }
 
@@ -376,7 +376,7 @@ func TestLoad_JSONUnknownMetricSpecField_ReturnsLineNumber(t *testing.T) {
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("failed to parse JSON"),
 		ContainSubstring("line 5"),
-		ContainSubstring(`unknown field "scheme"`),
+		ContainSubstring(`unknown object member name "scheme"`),
 	)))
 }
 
@@ -396,7 +396,7 @@ func TestLoad_JSONInvalidMetricSpecType_ReturnsLineNumber(t *testing.T) {
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("failed to parse JSON"),
 		ContainSubstring("line 4"),
-		ContainSubstring("cannot unmarshal number"),
+		ContainSubstring("JSON number"),
 	)))
 }
 
@@ -416,7 +416,7 @@ func TestLoad_JSONLegacyTopLevelWidth_ReturnsUnknownFieldError(t *testing.T) {
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("failed to parse JSON"),
 		ContainSubstring("line 3"),
-		ContainSubstring(`unknown field "width"`),
+		ContainSubstring(`unknown object member name "width"`),
 	)))
 }
 
@@ -441,6 +441,53 @@ func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
 	)))
 }
 
+func TestParseYAMLConfig_TrailingDocument_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("imageSize:\n  width: 800\n---\nfooter:\n  hidden: true\n")
+	err := parseYAMLConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 3"),
+		ContainSubstring("trailing content"),
+	)))
+}
+
+func TestParseYAMLConfig_EmptyFile_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	err := parseYAMLConfig(nil, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 1"),
+		ContainSubstring("configuration file is empty"),
+	)))
+}
+
+func TestParseYAMLConfig_ContentAfterDocumentEnd_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("imageSize:\n  width: 800\n...\n# trailing comment\n")
+	err := parseYAMLConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 4"),
+		ContainSubstring("trailing content"),
+	)))
+}
+
+func TestParseYAMLConfig_WhitespaceAfterDocumentEnd_Succeeds(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("imageSize:\n  width: 800\n...\n  \n\t\n")
+
+	g.Expect(parseYAMLConfig(data, New())).To(Succeed())
+}
+
 func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -458,6 +505,30 @@ func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
 	// Assert
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("failed to parse JSON"),
+		ContainSubstring("line 3"),
+	)))
+}
+
+func TestParseJSONConfig_TrailingValue_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("{\n  \"imageSize\": {\"width\": 800}\n}\n{\n  \"footer\": {\"hidden\": true}\n}\n")
+	err := parseJSONConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 4"),
+	)))
+}
+
+func TestParseJSONConfig_RepeatedLeafNameReportsUnknownFieldLine(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("{\n  \"title\": {\"text\": \"Example\"},\n  \"imageSize\": {\n    \"text\": \"invalid\"\n  }\n}\n")
+	err := parseJSONConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
 		ContainSubstring("line 4"),
 	)))
 }
