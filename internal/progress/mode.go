@@ -26,7 +26,6 @@ func ParseMode(value string) (Mode, error) {
 	}
 }
 
-//nolint:cyclop,revive // Mode, terminal, CI, and colour resolution are one cohesive decision.
 func resolveConfig(config Config) (resolvedConfig, error) {
 	mode, err := ParseMode(string(config.Mode))
 	if err != nil {
@@ -38,36 +37,59 @@ func resolveConfig(config Config) (resolvedConfig, error) {
 		lookupEnv = func(string) (string, bool) { return "", false }
 	}
 
-	terminal := config.IsTerminal != nil && config.IsTerminal(config.Writer)
 	term, _ := lookupEnv("TERM")
-	capable := terminal && term != "dumb"
+
+	mode, err = resolveMode(mode, config, term, lookupEnv)
+	if err != nil {
+		return resolvedConfig{}, err
+	}
+
+	noColor := config.NoColor ||
+		term == "dumb" ||
+		envNonEmpty(lookupEnv, "NO_COLOR") ||
+		envEquals(lookupEnv, "FORCE_COLOR", "0")
+
+	return resolvedConfig{Config: config, mode: mode, noColor: noColor}, nil
+}
+
+func resolveMode(
+	mode Mode,
+	config Config,
+	term string,
+	lookupEnv func(string) (string, bool),
+) (Mode, error) {
+	terminal := config.IsTerminal != nil && config.IsTerminal(config.Writer)
 
 	switch mode {
 	case ModeAuto:
-		if !capable || ciEnabled(lookupEnv) {
-			mode = ModePlain
-		} else {
-			mode = ModeTTY
+		if !terminal || term == "dumb" || ciEnabled(lookupEnv) {
+			return ModePlain, nil
 		}
+
+		return ModeTTY, nil
 	case ModeTTY:
 		if !terminal {
-			return resolvedConfig{}, errors.New("configured stderr does not support terminal progress")
+			return "", errors.New("configured stderr does not support terminal progress")
 		}
+
+		return ModeTTY, nil
 	case ModePlain:
+		return ModePlain, nil
 	default:
-		return resolvedConfig{}, errors.New("unreachable progress mode")
+		return "", errors.New("unreachable progress mode")
 	}
+}
 
-	noColor := config.NoColor || term == "dumb"
-	if value, ok := lookupEnv("NO_COLOR"); ok && value != "" {
-		noColor = true
-	}
+func envNonEmpty(lookupEnv func(string) (string, bool), key string) bool {
+	value, ok := lookupEnv(key)
 
-	if value, ok := lookupEnv("FORCE_COLOR"); ok && value == "0" {
-		noColor = true
-	}
+	return ok && value != ""
+}
 
-	return resolvedConfig{Config: config, mode: mode, noColor: noColor}, nil
+func envEquals(lookupEnv func(string) (string, bool), key, expected string) bool {
+	value, ok := lookupEnv(key)
+
+	return ok && value == expected
 }
 
 func ciEnabled(lookupEnv func(string) (string, bool)) bool {
