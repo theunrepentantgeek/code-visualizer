@@ -11,8 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	jsonv1 "encoding/json"
-	jsonv2 "encoding/json/v2"
+	json "encoding/json/v2"
 
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
@@ -240,7 +239,7 @@ func yamlDocumentPrefix(data []byte, end int) []byte {
 }
 
 func parseJSONConfig(data []byte, cfg *Config) error {
-	if err := jsonv2.Unmarshal(data, cfg, jsonv2.RejectUnknownMembers(true)); err != nil {
+	if err := json.Unmarshal(data, cfg, json.RejectUnknownMembers(true)); err != nil {
 		return withJSONPosition(data, err)
 	}
 
@@ -263,7 +262,7 @@ func jsonErrorOffset(err error) (int64, bool) {
 		return syntaxError.ByteOffset, true
 	}
 
-	if semanticError, ok := errors.AsType[*jsonv2.SemanticError](err); ok {
+	if semanticError, ok := errors.AsType[*json.SemanticError](err); ok {
 		return semanticError.ByteOffset, true
 	}
 
@@ -346,7 +345,7 @@ func (c *Config) Save(path string) error {
 			return eris.Wrap(err, "failed to marshal config to YAML")
 		}
 	case extJSON:
-		data, err = jsonv1.MarshalIndent(c, "", "  ")
+		data, err = json.Marshal(c, jsontext.WithIndent("  "), json.Deterministic(true))
 		if err != nil {
 			return eris.Wrap(err, "failed to marshal config to JSON")
 		}

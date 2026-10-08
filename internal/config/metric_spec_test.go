@@ -1,10 +1,11 @@
 package config
 
 import (
-	"encoding/json"
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	json "encoding/json/v2"
 
 	"go.yaml.in/yaml/v3"
 

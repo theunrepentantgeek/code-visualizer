@@ -1,12 +1,13 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	json "encoding/json/v2"
 
 	"go.yaml.in/yaml/v3"
 
@@ -546,6 +547,20 @@ func TestSave_UnknownExtension_ReturnsError(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("unsupported config file extension")))
 }
 
+func TestSave_JSONPreservesIndentedFormat(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	cfg := &Config{ImageSize: &ImageSize{Width: new(1920)}}
+
+	g.Expect(cfg.Save(path)).To(Succeed())
+
+	data, err := os.ReadFile(path)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(Equal("{\n  \"imageSize\": {\n    \"width\": 1920\n  }\n}\n"))
+}
+
 func TestSave_WritesImageSizeObject(t *testing.T) {
 	t.Parallel()
 
@@ -566,9 +581,11 @@ func TestSave_WritesImageSizeObject(t *testing.T) {
 		{
 			name:     "json",
 			fileName: "out.json",
-			decode:   json.Unmarshal,
-			width:    1920.0,
-			height:   1080.0,
+			decode: func(data []byte, value any) error {
+				return json.Unmarshal(data, value)
+			},
+			width:  1920.0,
+			height: 1080.0,
 		},
 	}
 
