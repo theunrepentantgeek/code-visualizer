@@ -3,10 +3,15 @@
 package config
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/json/jsontext"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	json "encoding/json/v2"
 
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
@@ -65,13 +70,6 @@ type Config struct {
 	Source *string `yaml:"-" json:"-"`
 }
 
-// imageSizeCompatConfig captures both the new and legacy image dimension formats.
-type imageSizeCompatConfig struct {
-	ImageSize *ImageSize `yaml:"imageSize,omitempty" json:"imageSize,omitempty"`
-	Width     *int       `yaml:"width,omitempty"     json:"width,omitempty"`
-	Height    *int       `yaml:"height,omitempty"    json:"height,omitempty"`
-}
-
 // New returns a Config populated with sensible defaults.
 // Call this unconditionally at startup; subsequent layers (config file, CLI
 // flags) overlay their values on top of the struct returned here.
@@ -120,37 +118,165 @@ func (c *Config) Load(path string) error {
 
 	ext := strings.ToLower(filepath.Ext(path))
 
-	// Parse into a small compatibility struct as well so legacy top-level width/height
-	// values can be migrated into ImageSize without changing the persisted format.
-	var compat imageSizeCompatConfig
-
 	switch ext {
 	case extYAML, extYML:
-		if err := yaml.Unmarshal(data, c); err != nil {
-			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
-		}
-
-		if err := yaml.Unmarshal(data, &compat); err != nil {
+		if err := parseYAMLConfig(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse YAML config file %q", path)
 		}
 	case extJSON:
-		if err := json.Unmarshal(data, c); err != nil {
-			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
-		}
-
-		if err := json.Unmarshal(data, &compat); err != nil {
+		if err := parseJSONConfig(data, c); err != nil {
 			return eris.Wrapf(err, "failed to parse JSON config file %q", path)
 		}
 	default:
 		return eris.Errorf("unsupported config file extension %q (use .yaml, .yml, or .json)", ext)
 	}
 
-	c.applyLegacyImageSize(compat)
-
 	// Record the source path for informational purposes.
 	c.Source = &path
 
 	return nil
+}
+
+func parseYAMLConfig(data []byte, cfg *Config) error {
+	document, trailingLine, documentEnded := splitYAMLDocument(data)
+	decoder := yaml.NewDecoder(bytes.NewReader(document))
+	decoder.KnownFields(true)
+
+	if err := decoder.Decode(cfg); err != nil {
+		if errors.Is(err, io.EOF) {
+			return errors.New("line 1: configuration file is empty")
+		}
+
+		return eris.Wrap(err, "failed to decode YAML configuration")
+	}
+
+	if documentEnded {
+		if trailingLine != 0 {
+			return eris.Errorf("line %d: trailing content after YAML document is not allowed", trailingLine)
+		}
+
+		return nil
+	}
+
+	var trailing yaml.Node
+	if err := decoder.Decode(&trailing); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+
+		return eris.Wrap(err, "failed to decode trailing YAML content")
+	}
+
+	return eris.Errorf("line %d: multiple YAML documents are not allowed", trailing.Line)
+}
+
+func splitYAMLDocument(data []byte) ([]byte, int, bool) {
+	lines := bytes.SplitAfter(data, []byte{'\n'})
+	documentStarted := false
+	offset := 0
+
+	for index, lineWithEnding := range lines {
+		line := bytes.TrimSuffix(lineWithEnding, []byte{'\n'})
+		line = bytes.TrimSuffix(line, []byte{'\r'})
+
+		trimmed := bytes.TrimSpace(line)
+		if len(trimmed) == 0 || trimmed[0] == '#' {
+			offset += len(lineWithEnding)
+
+			continue
+		}
+
+		marker := yamlDocumentMarker(line)
+		if marker == "---" && documentStarted {
+			return yamlDocumentPrefix(data, offset), index + 1, true
+		}
+
+		if marker == "..." {
+			documentEnd := offset + len(lineWithEnding)
+			trailingLine := firstNonWhitespaceLine(lines[index+1:], index+2)
+
+			return yamlDocumentPrefix(data, documentEnd), trailingLine, true
+		}
+
+		documentStarted = true
+		offset += len(lineWithEnding)
+	}
+
+	return data, 0, false
+}
+
+func yamlDocumentMarker(line []byte) string {
+	for _, marker := range []string{"---", "..."} {
+		if !bytes.HasPrefix(line, []byte(marker)) {
+			continue
+		}
+
+		remainder := line[len(marker):]
+		if len(remainder) == 0 || remainder[0] == ' ' || remainder[0] == '\t' || remainder[0] == '#' {
+			return marker
+		}
+	}
+
+	return ""
+}
+
+func firstNonWhitespaceLine(lines [][]byte, firstLine int) int {
+	for index, line := range lines {
+		if len(bytes.TrimSpace(line)) != 0 {
+			return firstLine + index
+		}
+	}
+
+	return 0
+}
+
+func yamlDocumentPrefix(data []byte, end int) []byte {
+	if end >= len(data) {
+		return data
+	}
+
+	return data[:end]
+}
+
+func parseJSONConfig(data []byte, cfg *Config) error {
+	if err := json.Unmarshal(data, cfg, json.RejectUnknownMembers(true)); err != nil {
+		return withJSONPosition(data, err)
+	}
+
+	return nil
+}
+
+func withJSONPosition(data []byte, err error) error {
+	offset, ok := jsonErrorOffset(err)
+	if !ok {
+		return err
+	}
+
+	line, column := lineAndColumnAtOffset(data, offset)
+
+	return eris.Wrapf(err, "line %d, column %d", line, column)
+}
+
+func jsonErrorOffset(err error) (int64, bool) {
+	if syntaxError, ok := errors.AsType[*jsontext.SyntacticError](err); ok {
+		return syntaxError.ByteOffset, true
+	}
+
+	if semanticError, ok := errors.AsType[*json.SemanticError](err); ok {
+		return semanticError.ByteOffset, true
+	}
+
+	return 0, false
+}
+
+func lineAndColumnAtOffset(data []byte, offset int64) (line, column int) {
+	offset = min(max(offset, 0), int64(len(data)))
+	prefix := data[:offset]
+	line = bytes.Count(prefix, []byte{'\n'}) + 1
+	lastNewline := bytes.LastIndexByte(prefix, '\n')
+	column = int(offset) - lastNewline
+
+	return line, column
 }
 
 func (c *Config) TryAutoLoad(outputPath string) error {
@@ -219,7 +345,7 @@ func (c *Config) Save(path string) error {
 			return eris.Wrap(err, "failed to marshal config to YAML")
 		}
 	case extJSON:
-		data, err = json.MarshalIndent(c, "", "  ")
+		data, err = json.Marshal(c, jsontext.WithIndent("  "), json.Deterministic(true))
 		if err != nil {
 			return eris.Wrap(err, "failed to marshal config to JSON")
 		}
@@ -239,20 +365,6 @@ func (c *Config) Save(path string) error {
 func (c *Config) ensureImageSize() {
 	if c.ImageSize == nil {
 		c.ImageSize = &ImageSize{}
-	}
-}
-
-func (c *Config) applyLegacyImageSize(compat imageSizeCompatConfig) {
-	if compat.ImageSize != nil || compat.Width != nil || compat.Height != nil {
-		c.ensureImageSize()
-	}
-
-	if compat.Width != nil && (compat.ImageSize == nil || compat.ImageSize.Width == nil) {
-		c.ImageSize.Width = compat.Width
-	}
-
-	if compat.Height != nil && (compat.ImageSize == nil || compat.ImageSize.Height == nil) {
-		c.ImageSize.Height = compat.Height
 	}
 }
 

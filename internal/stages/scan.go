@@ -13,7 +13,7 @@ import (
 // ScanFilesystem walks c.TargetPath, populates c.Root, and wires progress
 // reporting based on Flags verbosity.
 //
-//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func ScanFilesystem(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	if c.Source.FS == nil {
 		if err := ResolveSource(c); err != nil {

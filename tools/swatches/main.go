@@ -53,6 +53,7 @@ func writeSwatch(outDir string, p palette.ColourPalette) error {
 	if err != nil {
 		return fmt.Errorf("stat output directory %s: %w", cleanDir, err)
 	}
+
 	if !info.IsDir() {
 		return fmt.Errorf("output path is not a directory: %s", cleanDir)
 	}

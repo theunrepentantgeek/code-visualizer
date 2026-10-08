@@ -17,7 +17,7 @@ import (
 
 // RunProviders calculates c.Requested metrics against c.Root.
 //
-//nolint:revive,nolintlint // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func RunProviders(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	progressMetrics := metricsRemainingAfterPrewarm(c)
 	total := provider.FileProgressTotal(progressMetrics, model.CountFiles(c.Root))
@@ -49,7 +49,7 @@ func metricsRemainingAfterPrewarm(c *CommonState) []metric.Name {
 
 // RunFilesystemProviders loads metrics that do not require Git history.
 //
-//nolint:revive,nolintlint // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func RunFilesystemProviders(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	c.Root.ReferenceTime = c.ReferenceNow
 

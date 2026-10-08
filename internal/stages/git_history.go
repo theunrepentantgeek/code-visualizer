@@ -18,7 +18,7 @@ import (
 // LoadCommitMetrics loads and attaches per-file commit values needed by
 // directory-level expressions such as lines-changed.sum.
 //
-//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func LoadCommitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	if !c.Requested.HasCommitExpressions() {
 		return nil
@@ -87,7 +87,7 @@ type TimeRange struct {
 // It returns an error when no commits touch any tracked file — visualizations
 // that depend on git history cannot proceed in that case.
 //
-//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func LoadGitHistory(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
@@ -165,7 +165,7 @@ func ShareGitHistoryPaths(states []*CommonState) error {
 // PrewarmGitMetrics loads history only when the requested metrics need the
 // file-level Git cache populated before provider execution.
 //
-//nolint:revive // Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
+//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
 func PrewarmGitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
 	if len(c.GitHistory) > 0 || len(onlyFileGitMetrics(c.Requested.BaseMetrics)) == 0 {
 		return nil

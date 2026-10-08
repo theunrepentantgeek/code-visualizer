@@ -1,12 +1,13 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	json "encoding/json/v2"
 
 	"go.yaml.in/yaml/v3"
 
@@ -251,48 +252,64 @@ func TestSaveLoad_RoundTripsAlluvialConstantBandsAsJSON(t *testing.T) {
 	g.Expect(loaded.Alluvial.ConstantBandsMode()).To(Equal(ConstantBandsMerge))
 }
 
-func TestLoad_YAMLLegacyWidth_ParsesIntoImageSize(t *testing.T) {
+func TestLoad_YAMLUnknownField_ReturnsLineNumber(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-	content := "width: 800\n"
+	content := "imageSize:\n  width: 800\n  depth: 900\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
 
-	// Act
 	err := cfg.Load(path)
 
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cfg.ImageSize).NotTo(BeNil())
-	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
-	g.Expect(*cfg.ImageSize.Height).To(Equal(1080)) // default preserved
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse YAML"),
+		ContainSubstring("line 3"),
+		ContainSubstring("field depth not found"),
+	)))
 }
 
-func TestLoad_YMLExtension_ParsesLegacyHeight(t *testing.T) {
+func TestLoad_YAMLUnknownMetricSpecField_ReturnsLineNumber(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	// Arrange
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yml")
-	content := "height: 720\n"
+	path := filepath.Join(dir, "config.yaml")
+	content := "tree-map:\n  fill:\n    metric: file-type\n    scheme: categorization\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
 
-	// Act
 	err := cfg.Load(path)
 
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cfg.ImageSize).NotTo(BeNil())
-	g.Expect(*cfg.ImageSize.Height).To(Equal(720))
-	g.Expect(*cfg.ImageSize.Width).To(Equal(1920)) // default preserved
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse YAML"),
+		ContainSubstring("line 4"),
+		ContainSubstring("field scheme not found"),
+	)))
+}
+
+func TestLoad_YAMLLegacyTopLevelWidth_ReturnsUnknownFieldError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yml")
+	content := "title:\n  text: Example\nwidth: 800\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	err := cfg.Load(path)
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse YAML"),
+		ContainSubstring("line 3"),
+		ContainSubstring("field width not found"),
+	)))
 }
 
 func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
@@ -317,47 +334,91 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	g.Expect(cfg.Treemap.Fill.Palette).To(Equal(palette.PaletteName("categorization")))
 }
 
-func TestLoad_JSONLegacyWidth_ParsesIntoImageSize(t *testing.T) {
+func TestLoad_JSONUnknownField_ReturnsLineNumber(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"width":800}`
+	content := "{\n  \"imageSize\": {\n    \"width\": 800,\n    \"depth\": 900\n  }\n}\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
 
-	// Act
 	err := cfg.Load(path)
 
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cfg.ImageSize).NotTo(BeNil())
-	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
-	g.Expect(*cfg.ImageSize.Height).To(Equal(1080))
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse JSON"),
+		ContainSubstring("line 4"),
+		ContainSubstring(`unknown object member name "depth"`),
+	)))
 }
 
-func TestLoad_ImageSizeTakesPrecedenceOverLegacyWidth(t *testing.T) {
+func TestLoad_JSONUnknownMetricSpecField_ReturnsLineNumber(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	// Arrange
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	content := "width: 700\nimageSize:\n  width: 800\n"
+	path := filepath.Join(dir, "config.json")
+	content := "{\n" +
+		"  \"tree-map\": {\n" +
+		"    \"fill\": {\n" +
+		"      \"metric\": \"file-type\",\n" +
+		"      \"scheme\": \"categorization\"\n" +
+		"    }\n" +
+		"  }\n" +
+		"}\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
 	cfg := New()
 
-	// Act
 	err := cfg.Load(path)
 
-	// Assert
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cfg.ImageSize).NotTo(BeNil())
-	g.Expect(*cfg.ImageSize.Width).To(Equal(800))
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse JSON"),
+		ContainSubstring("line 5"),
+		ContainSubstring(`unknown object member name "scheme"`),
+	)))
+}
+
+func TestLoad_JSONInvalidMetricSpecType_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := "{\n  \"tree-map\": {\n    \"fill\": {\n      \"metric\": 42\n    }\n  }\n}\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	err := cfg.Load(path)
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse JSON"),
+		ContainSubstring("line 4"),
+		ContainSubstring("JSON number"),
+	)))
+}
+
+func TestLoad_JSONLegacyTopLevelWidth_ReturnsUnknownFieldError(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := "{\n  \"title\": {\"text\": \"Example\"},\n  \"width\": 800\n}\n"
+	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+
+	cfg := New()
+
+	err := cfg.Load(path)
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse JSON"),
+		ContainSubstring("line 3"),
+		ContainSubstring(`unknown object member name "width"`),
+	)))
 }
 
 func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
@@ -367,7 +428,7 @@ func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-	g.Expect(os.WriteFile(path, []byte(":\t: bad yaml"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(path, []byte("imageSize:\n  width: 800\n  height: [\n"), 0o600)).To(Succeed())
 
 	cfg := New()
 
@@ -375,7 +436,57 @@ func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
 	err := cfg.Load(path)
 
 	// Assert
-	g.Expect(err).To(MatchError(ContainSubstring("failed to parse YAML")))
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse YAML"),
+		ContainSubstring("line 3"),
+	)))
+}
+
+func TestParseYAMLConfig_TrailingDocument_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("imageSize:\n  width: 800\n---\nfooter:\n  hidden: true\n")
+	err := parseYAMLConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 3"),
+		ContainSubstring("trailing content"),
+	)))
+}
+
+func TestParseYAMLConfig_EmptyFile_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	err := parseYAMLConfig(nil, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 1"),
+		ContainSubstring("configuration file is empty"),
+	)))
+}
+
+func TestParseYAMLConfig_ContentAfterDocumentEnd_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("imageSize:\n  width: 800\n...\n# trailing comment\n")
+	err := parseYAMLConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 4"),
+		ContainSubstring("trailing content"),
+	)))
+}
+
+func TestParseYAMLConfig_WhitespaceAfterDocumentEnd_Succeeds(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("imageSize:\n  width: 800\n...\n  \n\t\n")
+
+	g.Expect(parseYAMLConfig(data, New())).To(Succeed())
 }
 
 func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
@@ -385,7 +496,7 @@ func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	g.Expect(os.WriteFile(path, []byte("{not valid json"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(path, []byte("{\n  \"imageSize\": {\n    \"width\": 800,\n  }\n}\n"), 0o600)).To(Succeed())
 
 	cfg := New()
 
@@ -393,7 +504,34 @@ func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
 	err := cfg.Load(path)
 
 	// Assert
-	g.Expect(err).To(MatchError(ContainSubstring("failed to parse JSON")))
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("failed to parse JSON"),
+		ContainSubstring("line 3"),
+	)))
+}
+
+func TestParseJSONConfig_TrailingValue_ReturnsLineNumber(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("{\n  \"imageSize\": {\"width\": 800}\n}\n{\n  \"footer\": {\"hidden\": true}\n}\n")
+	err := parseJSONConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 4"),
+	)))
+}
+
+func TestParseJSONConfig_RepeatedLeafNameReportsUnknownFieldLine(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	data := []byte("{\n  \"title\": {\"text\": \"Example\"},\n  \"imageSize\": {\n    \"text\": \"invalid\"\n  }\n}\n")
+	err := parseJSONConfig(data, New())
+
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring("line 4"),
+	)))
 }
 
 // Save tests
@@ -407,6 +545,20 @@ func TestSave_UnknownExtension_ReturnsError(t *testing.T) {
 
 	// Assert
 	g.Expect(err).To(MatchError(ContainSubstring("unsupported config file extension")))
+}
+
+func TestSave_JSONPreservesIndentedFormat(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	cfg := &Config{ImageSize: &ImageSize{Width: new(1920)}}
+
+	g.Expect(cfg.Save(path)).To(Succeed())
+
+	data, err := os.ReadFile(path)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(data)).To(Equal("{\n  \"imageSize\": {\n    \"width\": 1920\n  }\n}\n"))
 }
 
 func TestSave_WritesImageSizeObject(t *testing.T) {
@@ -429,9 +581,11 @@ func TestSave_WritesImageSizeObject(t *testing.T) {
 		{
 			name:     "json",
 			fileName: "out.json",
-			decode:   json.Unmarshal,
-			width:    1920.0,
-			height:   1080.0,
+			decode: func(data []byte, value any) error {
+				return json.Unmarshal(data, value)
+			},
+			width:  1920.0,
+			height: 1080.0,
 		},
 	}
 
@@ -787,7 +941,7 @@ func TestFindAutoConfig_YMLExists_ReturnsYMLPath(t *testing.T) {
 	dir := t.TempDir()
 	outputPath := filepath.Join(dir, "my-output.png")
 	configPath := filepath.Join(dir, "my-output-config.yml")
-	g.Expect(os.WriteFile(configPath, []byte("width: 800\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(configPath, []byte("imageSize:\n  width: 800\n"), 0o600)).To(Succeed())
 
 	result, ok := FindAutoConfig(outputPath)
 
@@ -881,7 +1035,7 @@ func TestTryAutoLoad_ConfigFilePresent_LoadsIt(t *testing.T) {
 	dir := t.TempDir()
 	outputPath := filepath.Join(dir, "output.png")
 	configPath := filepath.Join(dir, "output-config.yml")
-	g.Expect(os.WriteFile(configPath, []byte("width: 800\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(configPath, []byte("imageSize:\n  width: 800\n"), 0o600)).To(Succeed())
 
 	cfg := New()
 	err := cfg.TryAutoLoad(outputPath)
@@ -900,13 +1054,11 @@ func TestTryAutoLoad_AlreadyLoaded_SkipsAutoLoad(t *testing.T) {
 	dir := t.TempDir()
 	outputPath := filepath.Join(dir, "output.png")
 
-	// Write an auto-config that would set width=800
 	autoConfigPath := filepath.Join(dir, "output-config.yml")
-	g.Expect(os.WriteFile(autoConfigPath, []byte("width: 800\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(autoConfigPath, []byte("imageSize:\n  width: 800\n"), 0o600)).To(Succeed())
 
-	// Manually load a different config first (sets Source)
 	manualConfigPath := filepath.Join(dir, "manual.yml")
-	g.Expect(os.WriteFile(manualConfigPath, []byte("width: 1600\n"), 0o600)).To(Succeed())
+	g.Expect(os.WriteFile(manualConfigPath, []byte("imageSize:\n  width: 1600\n"), 0o600)).To(Succeed())
 
 	cfg := New()
 	g.Expect(cfg.Load(manualConfigPath)).To(Succeed())

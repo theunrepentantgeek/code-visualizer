@@ -1,8 +1,9 @@
 package config
 
 import (
-	"encoding/json"
 	"strings"
+
+	json "encoding/json/v2"
 
 	"github.com/rotisserie/eris"
 	"go.yaml.in/yaml/v3"
@@ -141,6 +142,13 @@ func (m *MetricSpec) UnmarshalYAML(value *yaml.Node) error {
 		return m.UnmarshalText([]byte(value.Value))
 	}
 
+	for index := 0; index < len(value.Content); index += 2 {
+		key := value.Content[index]
+		if key.Value != "metric" && key.Value != "palette" {
+			return eris.Errorf("line %d: field %s not found in type config.MetricSpec", key.Line, key.Value)
+		}
+	}
+
 	type plain MetricSpec // strips methods to avoid recursion via TextUnmarshaler
 
 	var p plain
@@ -177,8 +185,8 @@ func (m *MetricSpec) UnmarshalJSON(data []byte) error {
 	type plain MetricSpec // strips methods to avoid recursion via TextUnmarshaler
 
 	var p plain
-	if err := json.Unmarshal(data, &p); err != nil {
-		return eris.Wrap(err, "failed to decode metric spec from JSON")
+	if err := json.Unmarshal(data, &p, json.RejectUnknownMembers(true)); err != nil {
+		return err //nolint:wrapcheck // json/v2 needs the semantic error intact to compose its nested offset.
 	}
 
 	*m = MetricSpec(p)
