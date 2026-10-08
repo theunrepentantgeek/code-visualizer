@@ -601,6 +601,7 @@ func (s *repoService) doBulkPrewarm(
 	visit := func(c *object.Commit, changed []trackedChange) {
 		prewarmTrackedChanges(cache, c, changed, requirements)
 	}
+
 	if err := s.walkTrackedHistoryInHistoryRange(
 		ctx,
 		paths,

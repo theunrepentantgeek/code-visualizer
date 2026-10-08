@@ -34,9 +34,7 @@ func BuildInks(
 	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
-		ShapeInks: inks.ShapeInks{
-			Border: inks.FixedInk(defaultBorder),
-		},
+		Border:          inks.FixedInk(defaultBorder),
 		DirectoryFill:   inks.FixedInk(defaultDirFill),
 		DirectoryBorder: inks.FixedInk(defaultBorder),
 	}

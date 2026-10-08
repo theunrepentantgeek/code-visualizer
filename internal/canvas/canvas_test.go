@@ -57,11 +57,9 @@ func TestCanvas_AddRectangle_DispatchesToBackend(t *testing.T) {
 	}
 	fillInk := &fillAwareInk{fillValue: gradient}
 	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        fillInk,
-			Border:      inks.FixedInk(black),
-			BorderWidth: 2.0,
-		},
+		Fill:        fillInk,
+		Border:      inks.FixedInk(black),
+		BorderWidth: 2.0,
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
@@ -89,11 +87,9 @@ func TestCanvas_AddDisc_DispatchesToBackend(t *testing.T) {
 	c := canvas.NewCanvas(800, 600)
 	blue := color.RGBA{B: 255, A: 255}
 	spec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(blue),
-			Border:      inks.FixedInk(black),
-			BorderWidth: 1.0,
-		},
+		Fill:        inks.FixedInk(blue),
+		Border:      inks.FixedInk(black),
+		BorderWidth: 1.0,
 	}
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
@@ -193,10 +189,8 @@ func TestCanvas_AddPolygon_DispatchesBeforeStructurePath(t *testing.T) {
 	c := canvas.NewCanvas(800, 600)
 	red := color.RGBA{R: 255, A: 255}
 	polygonSpec := &canvas.PolygonSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(red),
-			Border: inks.FixedInk(black),
-		},
+		Fill:   inks.FixedInk(red),
+		Border: inks.FixedInk(black),
 	}
 	pathSpec := &canvas.LineSpec{
 		Stroke:      inks.FixedInk(black),
@@ -260,17 +254,13 @@ func TestCanvas_LayerOrdering_BackgroundBeforeContent(t *testing.T) {
 
 	c := canvas.NewCanvas(800, 600)
 	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(palette.White),
-		},
+		Fill:   inks.FixedInk(palette.White),
+		Border: inks.FixedInk(palette.White),
 	}
 
 	fgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(black),
-			Border: inks.FixedInk(black),
-		},
+		Fill:   inks.FixedInk(black),
+		Border: inks.FixedInk(black),
 	}
 
 	// Add content first, then background — layer ordering should override insertion order.
@@ -300,17 +290,13 @@ func TestCanvas_InsertionOrder_WithinSameLayer(t *testing.T) {
 	green := color.RGBA{G: 255, A: 255}
 
 	spec1 := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(red),
-			Border: inks.FixedInk(red),
-		},
+		Fill:   inks.FixedInk(red),
+		Border: inks.FixedInk(red),
 	}
 
 	spec2 := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(green),
-			Border: inks.FixedInk(green),
-		},
+		Fill:   inks.FixedInk(green),
+		Border: inks.FixedInk(green),
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
@@ -339,10 +325,8 @@ func TestCanvas_InkResolution_NumericInk(t *testing.T) {
 	ink := inks.NumericInk("test-metric", []float64{10, 50, 90}, pal)
 
 	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   ink,
-			Border: inks.FixedInk(black),
-		},
+		Fill:   ink,
+		Border: inks.FixedInk(black),
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
@@ -364,10 +348,8 @@ func TestCanvas_MultipleShapeTypes_MixedLayers(t *testing.T) {
 
 	c := canvas.NewCanvas(800, 600)
 	rectSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(black),
-		},
+		Fill:   inks.FixedInk(palette.White),
+		Border: inks.FixedInk(black),
 	}
 
 	lineSpec := &canvas.LineSpec{
@@ -426,10 +408,8 @@ func TestCanvas_Render_RasterFormats(t *testing.T) {
 
 			c := canvas.NewCanvas(200, 200)
 			spec := &canvas.RectangleSpec{
-				ShapeStyle: canvas.ShapeStyle{
-					Fill:   inks.FixedInk(palette.White),
-					Border: inks.FixedInk(black),
-				},
+				Fill:   inks.FixedInk(palette.White),
+				Border: inks.FixedInk(black),
 			}
 
 			c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
@@ -457,10 +437,8 @@ func TestCanvas_Render_SVG(t *testing.T) {
 
 	c := canvas.NewCanvas(200, 200)
 	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(black),
-		},
+		Fill:   inks.FixedInk(palette.White),
+		Border: inks.FixedInk(black),
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
@@ -497,10 +475,8 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	c := canvas.NewCanvas(800, 600)
 
 	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(palette.White),
-		},
+		Fill:   inks.FixedInk(palette.White),
+		Border: inks.FixedInk(palette.White),
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
@@ -523,11 +499,9 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	fillInk := inks.NumericInk("test-metric", []float64{10, 20, 30, 40, 50}, pal)
 
 	rectSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        fillInk,
-			Border:      inks.FixedInk(black),
-			BorderWidth: 1.0,
-		},
+		Fill:        fillInk,
+		Border:      inks.FixedInk(black),
+		BorderWidth: 1.0,
 	}
 
 	c.AddRectangle(canvas.LayerContent, canvas.Rectangle{
@@ -543,11 +517,9 @@ func TestCanvas_Integration_AllShapeTypes_PNG(t *testing.T) {
 	})
 
 	discSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(color.RGBA{R: 100, G: 200, B: 100, A: 255}),
-			Border:      inks.FixedInk(black),
-			BorderWidth: 1.0,
-		},
+		Fill:        inks.FixedInk(color.RGBA{R: 100, G: 200, B: 100, A: 255}),
+		Border:      inks.FixedInk(black),
+		BorderWidth: 1.0,
 	}
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{
@@ -617,10 +589,8 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 	c := canvas.NewCanvas(800, 600)
 
 	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:   inks.FixedInk(palette.White),
-			Border: inks.FixedInk(palette.White),
-		},
+		Fill:   inks.FixedInk(palette.White),
+		Border: inks.FixedInk(palette.White),
 	}
 
 	c.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
@@ -629,11 +599,9 @@ func TestCanvas_Integration_AllShapeTypes_SVG(t *testing.T) {
 	})
 
 	discSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(color.RGBA{R: 100, B: 200, A: 255}),
-			Border:      inks.FixedInk(black),
-			BorderWidth: 2.0,
-		},
+		Fill:        inks.FixedInk(color.RGBA{R: 100, B: 200, A: 255}),
+		Border:      inks.FixedInk(black),
+		BorderWidth: 2.0,
 	}
 
 	c.AddDisc(canvas.LayerContent, canvas.Disc{

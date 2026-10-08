@@ -108,7 +108,7 @@ type scanProgressAdapter struct {
 }
 
 func newScanProgress(sink progress.Sink) *scanProgressAdapter {
-	return &scanProgressAdapter{progressAdapter: progressAdapter{sink: sink}}
+	return &scanProgressAdapter{sink: sink}
 }
 
 func (a *scanProgressAdapter) OnDirectoryScanned(_ string, fileCount int) {
@@ -124,8 +124,8 @@ type metricProgressAdapter struct {
 
 func newMetricProgress(sink progress.Sink, total int64) *metricProgressAdapter {
 	a := &metricProgressAdapter{
-		progressAdapter: progressAdapter{sink: sink},
-		selected:        sink.WorkKind() == progress.WorkObservations,
+		sink:     sink,
+		selected: sink.WorkKind() == progress.WorkObservations,
 	}
 	if a.selected {
 		a.setTotal(total)
@@ -155,8 +155,8 @@ type historyProgressAdapter struct {
 
 func newHistoryProgress(sink progress.Sink, total int64) *historyProgressAdapter {
 	a := &historyProgressAdapter{
-		progressAdapter: progressAdapter{sink: sink},
-		selected:        sink.WorkKind() == progress.WorkCommits,
+		sink:     sink,
+		selected: sink.WorkKind() == progress.WorkCommits,
 	}
 	if a.selected {
 		a.setTotal(total)

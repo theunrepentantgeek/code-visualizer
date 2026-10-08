@@ -36,10 +36,8 @@ func BuildInks(
 	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
-		ShapeInks: inks.ShapeInks{
-			Fill:   buildMetricInk(dataset.metricSources(), requested, fill, scatterDefaultFill),
-			Border: inks.FixedInk(scatterDefaultBorder),
-		},
+		Fill:   buildMetricInk(dataset.metricSources(), requested, fill, scatterDefaultFill),
+		Border: inks.FixedInk(scatterDefaultBorder),
 	}
 
 	if border.IsSet() {

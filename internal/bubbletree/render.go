@@ -46,11 +46,9 @@ func RenderToCanvas(
 // addBubbleBackground adds a white background rectangle.
 func addBubbleBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(bubbleBgColour),
-			Border:      inks.FixedInk(bubbleBgColour),
-			BorderWidth: 0,
-		},
+		Fill:        inks.FixedInk(bubbleBgColour),
+		Border:      inks.FixedInk(bubbleBgColour),
+		BorderWidth: 0,
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
@@ -85,11 +83,9 @@ func addBubbleDirDiscs(
 	dirBorder := inks.FixedInk(bubbleDefaultBorder)
 
 	dirSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        dirFill,
-			Border:      dirBorder,
-			BorderWidth: bubbleBorderWidth,
-		},
+		Fill:        dirFill,
+		Border:      dirBorder,
+		BorderWidth: bubbleBorderWidth,
 	}
 
 	for _, e := range entries {
@@ -144,11 +140,9 @@ func addBubbleFileDiscsWalk(
 	}
 
 	fileSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        is.Fill,
-			Border:      is.Border,
-			BorderWidth: borderWidth,
-		},
+		Fill:        is.Fill,
+		Border:      is.Border,
+		BorderWidth: borderWidth,
 	}
 
 	for _, f := range dir.Files {

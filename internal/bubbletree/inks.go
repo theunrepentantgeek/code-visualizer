@@ -34,7 +34,7 @@ func BuildInks(
 	border viz.ColourEncoding,
 ) Inks {
 	is := Inks{
-		ShapeInks: inks.ShapeInks{Border: inks.FixedInk(bubbleDefaultBorder)},
+		Border: inks.FixedInk(bubbleDefaultBorder),
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fill.Metric)

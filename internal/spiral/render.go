@@ -56,11 +56,9 @@ func RenderToCanvas(
 // addBackground adds the white background rectangle.
 func addBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(bgColour),
-			Border:      inks.FixedInk(bgColour),
-			BorderWidth: 0,
-		},
+		Fill:        inks.FixedInk(bgColour),
+		Border:      inks.FixedInk(bgColour),
+		BorderWidth: 0,
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
@@ -200,18 +198,14 @@ func addDiscs(
 	// Pre-allocate the two spec variants (borderWidth is either 2.0 or 3.0)
 	// so they are not re-created for every disc in the loop.
 	smallSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        is.Fill,
-			Border:      is.Border,
-			BorderWidth: 2.0,
-		},
+		Fill:        is.Fill,
+		Border:      is.Border,
+		BorderWidth: 2.0,
 	}
 	largeSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        is.Fill,
-			Border:      is.Border,
-			BorderWidth: 3.0,
-		},
+		Fill:        is.Fill,
+		Border:      is.Border,
+		BorderWidth: 3.0,
 	}
 
 	for i, n := range nodes {

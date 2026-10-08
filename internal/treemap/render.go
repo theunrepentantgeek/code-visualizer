@@ -62,11 +62,9 @@ func buildDirBorderSpecs() dirBorderSpecs {
 	var table dirBorderSpecs
 	for i, bw := range dynBorderWidths {
 		table[i] = &canvas.RectangleSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        dirBorderFillInk,
-				Border:      dirBorderLineInk,
-				BorderWidth: bw,
-			},
+			Fill:        dirBorderFillInk,
+			Border:      dirBorderLineInk,
+			BorderWidth: bw,
 		}
 	}
 
@@ -84,11 +82,9 @@ func buildDirRailSpecs() dirRailSpecs {
 	for i, fill := range headerFills {
 		ink := inks.FixedInk(fill)
 		table[i] = &canvas.RectangleSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        ink,
-				Border:      ink,
-				BorderWidth: 0,
-			},
+			Fill:        ink,
+			Border:      ink,
+			BorderWidth: 0,
 		}
 	}
 
@@ -117,11 +113,9 @@ func buildFileRectSpecs(is Inks) fileRectSpecs {
 	var table fileRectSpecs
 	for i, bw := range dynBorderWidths {
 		table[i] = &canvas.RectangleSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        is.Fill,
-				Border:      is.Border,
-				BorderWidth: bw,
-			},
+			Fill:        is.Fill,
+			Border:      is.Border,
+			BorderWidth: bw,
 		}
 	}
 
@@ -141,11 +135,9 @@ func RenderToCanvas(
 
 	// Background
 	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(palette.White),
-			Border:      inks.FixedInk(palette.White),
-			BorderWidth: 0,
-		},
+		Fill:        inks.FixedInk(palette.White),
+		Border:      inks.FixedInk(palette.White),
+		BorderWidth: 0,
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec: bgSpec,
@@ -241,11 +233,9 @@ func addDirectoryShapes(
 		borderSpec = dirSpecs[idx]
 	} else {
 		borderSpec = &canvas.RectangleSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        dirBorderFillInk,
-				Border:      dirBorderLineInk,
-				BorderWidth: bw,
-			},
+			Fill:        dirBorderFillInk,
+			Border:      dirBorderLineInk,
+			BorderWidth: bw,
 		}
 	}
 
@@ -283,11 +273,9 @@ func addFileRectForFile(
 		spec = fileSpecs[idx]
 	} else {
 		spec = &canvas.RectangleSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        is.Fill,
-				Border:      is.Border,
-				BorderWidth: bw,
-			},
+			Fill:        is.Fill,
+			Border:      is.Border,
+			BorderWidth: bw,
 		}
 	}
 
