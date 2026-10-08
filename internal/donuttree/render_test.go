@@ -321,10 +321,10 @@ func TestRenderToCanvas_UsesContrastSafeSectorLabelInks(t *testing.T) {
 	root := donutDirectory("root", 200)
 	root.Dirs = []*model.Directory{dark, light}
 	fill := inks.NumericInk(fillMetric, []float64{0, 100}, palette.GetPalette(palette.Neutral))
-	is := Inks{ShapeInks: inks.ShapeInks{
+	is := Inks{
 		Fill:   fill,
 		Border: inks.FixedInk(donutFallbackBorder),
-	}}
+	}
 
 	calls := renderCalls(t, RenderToCanvas(
 		Layout(root, 600, filesystem.FileLines), root, 600, 600, is, LabelMetrics{},

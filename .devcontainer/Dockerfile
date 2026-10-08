@@ -1,6 +1,6 @@
 # See here for image contents: https://github.com/devcontainers/images/blob/main/src/go/.devcontainer/Dockerfile
 
-# Compound versioning - v2 of the devcontainer, v1.26 of Go. 
+# Compound versioning - v2 of the devcontainer, v1.27 of Go.
 # Should be automatically kept up to date by dependabot.
 FROM mcr.microsoft.com/devcontainers/go:2.3-1.27
 

@@ -1,6 +1,6 @@
 module github.com/theunrepentantgeek/code-visualizer
 
-go 1.26.1
+go 1.27.1
 
 require (
 	github.com/alecthomas/kong v1.16.1

@@ -287,11 +287,9 @@ func alluvialBandLabelFontSize(band Band, lineCount int) (float64, bool) {
 
 func addAlluvialBackground(cv *canvas.Canvas, width, height int) {
 	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(alluvialBackground),
-			Border:      inks.FixedInk(alluvialBackground),
-			BorderWidth: 0,
-		},
+		Fill:        inks.FixedInk(alluvialBackground),
+		Border:      inks.FixedInk(alluvialBackground),
+		BorderWidth: 0,
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec: spec,

@@ -39,11 +39,9 @@ func RenderToCanvas(
 
 func addDonutBackground(cv *canvas.Canvas, width, height int) {
 	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(donutBackgroundColour),
-			Border:      inks.FixedInk(donutBackgroundColour),
-			BorderWidth: 0,
-		},
+		Fill:        inks.FixedInk(donutBackgroundColour),
+		Border:      inks.FixedInk(donutBackgroundColour),
+		BorderWidth: 0,
 	}
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
 		Spec: spec,
@@ -57,11 +55,9 @@ func addDonutBackground(cv *canvas.Canvas, width, height int) {
 
 func addRootAnchor(cv *canvas.Canvas, layout LayoutResult, root *model.Directory) {
 	discSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(donutAnchorFillColour),
-			Border:      inks.FixedInk(donutAnchorBorder),
-			BorderWidth: 1,
-		},
+		Fill:        inks.FixedInk(donutAnchorFillColour),
+		Border:      inks.FixedInk(donutAnchorBorder),
+		BorderWidth: 1,
 	}
 	cv.AddDisc(canvas.LayerContent, canvas.Disc{
 		Spec: discSpec,
@@ -93,9 +89,7 @@ func addDonutSectors(
 	labelMetrics LabelMetrics,
 ) {
 	fillSpec := &canvas.PolygonSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill: is.Fill, Border: is.Border,
-		},
+		Fill: is.Fill, Border: is.Border,
 	}
 	for _, node := range nodes {
 		fillValue := inks.MetricValueForDirectory(node.Directory, is.Fill)
@@ -109,9 +103,7 @@ func addDonutSectors(
 		if is.HasBorderMetric {
 			borderWidth := sectorBorderWidth(node)
 			borderSpec := &canvas.PolygonSpec{
-				ShapeStyle: canvas.ShapeStyle{
-					Fill: transparentInk, Border: is.Border, BorderWidth: borderWidth,
-				},
+				Fill: transparentInk, Border: is.Border, BorderWidth: borderWidth,
 			}
 			cv.AddPolygon(canvas.LayerContent, canvas.Polygon{
 				Spec:   borderSpec,

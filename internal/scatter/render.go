@@ -31,11 +31,9 @@ func RenderToCanvas(layout ScatterLayout, width, height int, is Inks) *canvas.Ca
 
 func addScatterBackground(cv *canvas.Canvas, width, height int) {
 	bgSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(scatterBgColour),
-			Border:      inks.FixedInk(scatterBgColour),
-			BorderWidth: 0,
-		},
+		Fill:        inks.FixedInk(scatterBgColour),
+		Border:      inks.FixedInk(scatterBgColour),
+		BorderWidth: 0,
 	}
 
 	cv.AddRectangle(canvas.LayerBackground, canvas.Rectangle{
@@ -56,11 +54,9 @@ func addScatterStructure(cv *canvas.Canvas, layout ScatterLayout) {
 
 func addScatterPlotBorder(cv *canvas.Canvas, plot geometry.Rect) {
 	plotSpec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(scatterBgColour),
-			Border:      inks.FixedInk(scatterAxisColour),
-			BorderWidth: scatterAxisStrokeWidth,
-		},
+		Fill:        inks.FixedInk(scatterBgColour),
+		Border:      inks.FixedInk(scatterAxisColour),
+		BorderWidth: scatterAxisStrokeWidth,
 	}
 
 	cv.AddRectangle(canvas.LayerStructure, canvas.Rectangle{
@@ -189,7 +185,7 @@ func addScatterPoints(cv *canvas.Canvas, points []ScatterPoint, is Inks) {
 	}
 
 	discSpec := &canvas.DiscSpec{
-		ShapeStyle: canvas.ShapeStyle{Fill: is.Fill, Border: is.Border, BorderWidth: borderWidth},
+		Fill: is.Fill, Border: is.Border, BorderWidth: borderWidth,
 	}
 
 	// Pre-allocate both possible label inks so per-point rendering avoids heap allocations.

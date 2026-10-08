@@ -28,7 +28,7 @@ func BuildInks(
 	border viz.ColourEncoding,
 ) Inks {
 	result := Inks{
-		ShapeInks: inks.ShapeInks{Border: inks.FixedInk(donutFallbackBorder)},
+		Border: inks.FixedInk(donutFallbackBorder),
 	}
 
 	fillDesc, _ := requested.DescriptorFor(fill.Metric)

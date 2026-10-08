@@ -422,11 +422,9 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 	switch sample.Shape {
 	case model.LegendLabelSampleCircle:
 		spec := &canvas.DiscSpec{
-			ShapeStyle: canvas.ShapeStyle{
-				Fill:        inks.FixedInk(palette.White),
-				Border:      inks.FixedInk(lb.swBorder),
-				BorderWidth: lb.scaleValue(0.5),
-			},
+			Fill:        inks.FixedInk(palette.White),
+			Border:      inks.FixedInk(lb.swBorder),
+			BorderWidth: lb.scaleValue(0.5),
 		}
 		lb.cv.AddDisc(canvas.LayerOverlay, canvas.Disc{
 			Spec: spec,
@@ -461,11 +459,9 @@ func (lb *legendBuilder) addLabelSample(sample *model.LegendLabelSample, x, y fl
 
 func (lb *legendBuilder) addArcLabelSample(x, y, w, h float64) {
 	spec := &canvas.PolygonSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(palette.White),
-			Border:      inks.FixedInk(lb.swBorder),
-			BorderWidth: lb.scaleValue(0.5),
-		},
+		Fill:        inks.FixedInk(palette.White),
+		Border:      inks.FixedInk(lb.swBorder),
+		BorderWidth: lb.scaleValue(0.5),
 	}
 	lb.cv.AddPolygon(canvas.LayerOverlay, canvas.Polygon{
 		Spec: spec, Points: arcLabelSamplePoints(x, y, w, h),
@@ -515,11 +511,9 @@ func (lb *legendBuilder) addRect(
 	x, y, w, h float64, fill, border color.RGBA, borderWidth float64,
 ) {
 	spec := &canvas.RectangleSpec{
-		ShapeStyle: canvas.ShapeStyle{
-			Fill:        inks.FixedInk(fill),
-			Border:      inks.FixedInk(border),
-			BorderWidth: borderWidth,
-		},
+		Fill:        inks.FixedInk(fill),
+		Border:      inks.FixedInk(border),
+		BorderWidth: borderWidth,
 	}
 
 	lb.cv.AddRectangle(canvas.LayerOverlay, canvas.Rectangle{
