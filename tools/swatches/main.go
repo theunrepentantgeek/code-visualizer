@@ -49,8 +49,12 @@ func writeSwatch(outDir string, p palette.ColourPalette) error {
 	cleanDir := filepath.Clean(outDir)
 
 	//nolint:gosec // The caller intentionally selects the output directory.
-	if info, err := os.Stat(cleanDir); err != nil || !info.IsDir() {
-		return fmt.Errorf("output directory does not exist: %s", cleanDir)
+	info, err := os.Stat(cleanDir)
+	if err != nil {
+		return fmt.Errorf("stat output directory %s: %w", cleanDir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("output path is not a directory: %s", cleanDir)
 	}
 
 	n := len(p.Colours)
