@@ -15,7 +15,7 @@ func TestChangedPathsInHistoryRange_StopsForCancelledContext(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 	dir := setupTestGitRepo(t)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	_, err := ChangedPathsInHistoryRange(
@@ -34,7 +34,7 @@ func TestChangedPathsInHistoryRange_SelectsCurrentPathsChangedByDate(t *testing.
 	dir := setupTestGitRepo(t)
 
 	changed, err := ChangedPathsInHistoryRange(
-		context.Background(),
+		t.Context(),
 		dir,
 		map[string]bool{"old.go": true, "shared.go": true, "new.go": true},
 		HistoryRange{
@@ -53,7 +53,7 @@ func TestChangedPathsInHistoryRange_UsesUnifiedTagBounds(t *testing.T) {
 	fixture := setupTagRangeRepo(t)
 
 	changed, err := ChangedPathsInHistoryRange(
-		context.Background(),
+		t.Context(),
 		fixture.dir,
 		map[string]bool{"shared.go": true, "main.go": true, "feature.go": true},
 		HistoryRange{From: "tag:v1.0", Until: "tag:v2.0"},
@@ -72,7 +72,7 @@ func TestChangedPathsInHistoryRange_UsesCurrentRenameDestinationAndOmitsDeletion
 	dir := setupChangedPathsRepo(t)
 
 	changed, err := ChangedPathsInHistoryRange(
-		context.Background(),
+		t.Context(),
 		dir,
 		map[string]bool{"renamed.go": true, "stable.go": true},
 		HistoryRange{From: "tag:before-changes"},
@@ -88,7 +88,7 @@ func TestChangedPathsInHistoryRange_ReturnsEmptySetWhenNoCurrentPathChanged(t *t
 	fixture := setupTagRangeRepo(t)
 
 	changed, err := ChangedPathsInHistoryRange(
-		context.Background(),
+		t.Context(),
 		fixture.dir,
 		map[string]bool{"shared.go": true},
 		HistoryRange{From: "tag:v1.0", Until: "tag:v2.0"},
@@ -105,7 +105,7 @@ func TestChangedPathsInHistoryRange_OmitsUntrackedReplacementOfDeletedPath(t *te
 	writeTestFile(t, filepath.Join(dir, "deleted.go"), "package replacement\n")
 
 	changed, err := ChangedPathsInHistoryRange(
-		context.Background(),
+		t.Context(),
 		dir,
 		map[string]bool{"deleted.go": true},
 		HistoryRange{From: "tag:before-changes"},
@@ -121,7 +121,7 @@ func TestSnapshotChangedPathsInHistoryRangeKeepsHistoricalPath(t *testing.T) {
 	dir := setupChangedPathsRepo(t)
 
 	changed, err := SnapshotChangedPathsInHistoryRange(
-		context.Background(),
+		t.Context(),
 		dir,
 		map[string]bool{"deleted.go": true},
 		HistoryRange{From: "tag:before-changes"},

@@ -1,7 +1,6 @@
 package git_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -57,13 +56,13 @@ func setupE2E(t *testing.T, rules []filter.Rule) *model.Directory {
 
 	git.Register()
 
-	root, err := scan.Scan(context.Background(), repoRoot(t), rules, nil, true)
+	root, err := scan.Scan(t.Context(), repoRoot(t), rules, nil, true)
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
 
 	err = provider.RunLoaders(
-		context.Background(),
+		t.Context(),
 		root,
 		[]metric.Name{
 			git.FileAge,

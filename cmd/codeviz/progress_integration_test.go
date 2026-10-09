@@ -29,7 +29,7 @@ func TestRunApplication_PlainAndRedirectedAutoUsePlainProgress(t *testing.T) {
 			},
 			stdout:     &stdout,
 			stderr:     &stderr,
-			context:    context.Background(),
+			context:    t.Context(),
 			isTerminal: func(io.Writer) bool { return false },
 			lookupEnv:  func(string) (string, bool) { return "", false },
 		})
@@ -59,7 +59,7 @@ func TestRunApplication_SeparatesGitAndFilesystemMetricProgress(t *testing.T) {
 		},
 		stdout:     &bytes.Buffer{},
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})
@@ -79,7 +79,7 @@ func TestRunApplication_SeparatesGitAndFilesystemMetricProgress(t *testing.T) {
 //nolint:paralleltest // runApplication replaces the process-wide default logger.
 func TestRunApplication_PreCancelledContextReturns130(t *testing.T) {
 	g := NewWithT(t)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	target := t.TempDir()
@@ -123,7 +123,7 @@ func TestRunApplication_QuietSuppressesProgress(t *testing.T) {
 		},
 		stdout:     &bytes.Buffer{},
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})
@@ -142,7 +142,7 @@ func TestRunApplication_ForcedTTYRequiresTerminal(t *testing.T) {
 		args:       []string{"--progress=tty", "tree-map", ".", "-o", "out.png", "-s", "file-size"},
 		stdout:     &bytes.Buffer{},
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})
@@ -161,7 +161,7 @@ func TestRunApplication_InvalidProgressModeIsUsageFailure(t *testing.T) {
 		args:       []string{"--progress=animated", "tree-map", ".", "-o", "out.png"},
 		stdout:     &bytes.Buffer{},
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})
@@ -181,7 +181,7 @@ func TestRunApplication_HelpUsesStdoutWithoutProgress(t *testing.T) {
 		args:       []string{"help", "metrics"},
 		stdout:     &stdout,
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})
@@ -207,7 +207,7 @@ func TestRunApplication_NoColorKeepsPlainProgressANSIFree(t *testing.T) {
 		},
 		stdout:     &bytes.Buffer{},
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})
@@ -234,7 +234,7 @@ func TestRunApplication_ProcessingFailureLeavesDurableFailedStage(t *testing.T) 
 		},
 		stdout:     &bytes.Buffer{},
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})
@@ -258,7 +258,7 @@ func TestRunApplication_PresetUsesSingleProgressOperation(t *testing.T) {
 		},
 		stdout:     &bytes.Buffer{},
 		stderr:     &stderr,
-		context:    context.Background(),
+		context:    t.Context(),
 		isTerminal: func(io.Writer) bool { return false },
 		lookupEnv:  func(string) (string, bool) { return "", false },
 	})

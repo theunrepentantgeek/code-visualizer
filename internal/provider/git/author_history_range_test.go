@@ -1,7 +1,6 @@
 package git
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -13,7 +12,7 @@ func TestBulkAuthorHistoryInHistoryRange_UsesTagSelection(t *testing.T) {
 	fixture := setupTagRangeRepo(t)
 
 	result, err := BulkAuthorHistoryInHistoryRange(
-		context.Background(),
+		t.Context(),
 		fixture.dir,
 		map[string]bool{"main.go": true, "feature.go": true},
 		false,

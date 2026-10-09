@@ -1,7 +1,6 @@
 package alluvial_test
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -26,7 +25,7 @@ func TestAcquisitionPlanRejectsReferenceBeforePreparation(t *testing.T) {
 
 	plan := alluvial.NewAcquisitionPlan()
 	err := plan.AcquireReference(
-		context.Background(),
+		t.Context(),
 		inactiveSink{},
 		&alluvial.State{},
 		"HEAD",
