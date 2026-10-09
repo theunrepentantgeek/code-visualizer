@@ -103,8 +103,8 @@ func (c *DonutTreeCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(donuttree.ResolveMetrics)
 
 	needsGit := stages.NeedsGitMetrics(common)
 
@@ -114,9 +114,9 @@ func (c *DonutTreeCmd) Run(flags *Flags) error {
 	}
 
 	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
-		pipeline.ApplyFuncX(s, stages.ValidatePaths)
-		pipeline.ApplyFuncX(s, stages.ExportConfig)
-		pipeline.ApplyFuncX(s, stages.BuildFilterRules)
+		s.ApplyFuncX(stages.ValidatePaths)
+		s.ApplyFuncX(stages.ExportConfig)
+		s.ApplyFuncX(stages.BuildFilterRules)
 	}); err != nil {
 		return eris.Wrap(err, "donut-tree pipeline failed")
 	}

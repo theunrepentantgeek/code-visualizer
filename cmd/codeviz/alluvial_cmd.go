@@ -201,7 +201,7 @@ func (c *AlluvialCmd) Run(flags *Flags) error {
 			progress.StageLive,
 			work,
 			func() {
-				pipeline.ApplyFuncXYZ(s, func(
+				s.ApplyFuncXYZ(func(
 					ctx context.Context,
 					sink progress.Sink,
 					plan *alluvial.AcquisitionPlan,
@@ -236,12 +236,12 @@ func prepareAlluvialState(
 	viz *alluvial.State,
 	cfg *config.Alluvial,
 ) {
-	pipeline.ApplyFuncX(s, stages.ValidatePaths)
-	pipeline.ApplyFuncX(s, stages.ExportConfig)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, alluvial.ResolveMetrics)
-	pipeline.ApplyFuncXYZ(s, func(
+	s.ApplyFuncX(stages.ValidatePaths)
+	s.ApplyFuncX(stages.ExportConfig)
+	s.ApplyFuncX(stages.BuildFilterRules)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(alluvial.ResolveMetrics)
+	s.ApplyFuncXYZ(func(
 		ctx context.Context,
 		sink progress.Sink,
 		plan *alluvial.AcquisitionPlan,

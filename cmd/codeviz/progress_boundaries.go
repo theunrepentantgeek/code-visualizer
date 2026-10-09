@@ -128,7 +128,7 @@ func newProgressBoundaries(
 		}
 	}
 
-	pipeline.Set[context.Context](state, ctx)
+	state.Set[context.Context](ctx)
 
 	if err := reporter.Begin(title, stageCount); err != nil {
 		return nil, eris.Wrap(err, "begin workflow progress")
@@ -164,7 +164,7 @@ func (b *progressBoundaries) Start(
 	}
 
 	b.active = stage
-	pipeline.Set[progress.Sink](b.state, stage)
+	b.state.Set[progress.Sink](stage)
 
 	return nil
 }
@@ -205,7 +205,7 @@ func (b *progressBoundaries) StartDeterminate(
 	}
 
 	b.active = stage
-	pipeline.Set[progress.Sink](b.state, stage)
+	b.state.Set[progress.Sink](stage)
 
 	return nil
 }
@@ -238,7 +238,7 @@ func (b *progressBoundaries) End() error {
 	}
 
 	b.active = nil
-	pipeline.Set[progress.Sink](b.state, inactiveProgressSink{})
+	b.state.Set[progress.Sink](inactiveProgressSink{})
 
 	return errors.Join(processingErr, outcomeErr)
 }
@@ -261,7 +261,7 @@ func (inactiveProgressSink) SetStatus(string) error      { return errInactivePro
 func determineGitMetricTotal(state *pipeline.State) int64 {
 	var total int64
 
-	pipeline.ApplyFuncXY(state, func(common *stages.CommonState, ctx context.Context) error {
+	state.ApplyFuncXY(func(common *stages.CommonState, ctx context.Context) error {
 		var err error
 
 		total, err = stages.GitMetricTotal(ctx, common)

@@ -16,9 +16,7 @@ import (
 //
 // This is the data foundation for all authorship metrics (#550).
 // It must be called after ScanFilesystem (c.Root must be populated).
-//
-//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
-func LoadAuthorHistory(c *CommonState, ctx context.Context, sink progress.Sink) error {
+func LoadAuthorHistory(ctx context.Context, c *CommonState, sink progress.Sink) error {
 	repoRoot, err := repoRootForState(c, "author history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")

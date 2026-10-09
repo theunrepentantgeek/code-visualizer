@@ -16,7 +16,7 @@ func TestNewState_GivenValue_ReturnsValueViaLookup(t *testing.T) {
 
 	state := NewState(k)
 
-	v, ok := lookup[Kind](state)
+	v, ok := state.lookup[Kind]()
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(Equal(k))
 }
@@ -31,7 +31,7 @@ func TestState_Lookup_WhenValueNotPresent_ReturnsZeroValue(t *testing.T) {
 
 	state := NewState(alpha)
 
-	_, ok := lookup[Color](state)
+	_, ok := state.lookup[Color]()
 	g.Expect(ok).To(BeFalse())
 }
 
@@ -49,9 +49,9 @@ func TestState_Store_WhenValuePresent_OverwritesValue(t *testing.T) {
 		name: "beta",
 	}
 
-	store(state, beta)
+	state.store(beta)
 
-	v, ok := lookup[Kind](state)
+	v, ok := state.lookup[Kind]()
 
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v).To(Equal(beta))
@@ -66,8 +66,8 @@ func TestNewState_GivenMultipleValues_StoresAll(t *testing.T) {
 
 	state := NewState(k, c)
 
-	kv, kok := lookup[Kind](state)
-	cv, cok := lookup[Color](state)
+	kv, kok := state.lookup[Kind]()
+	cv, cok := state.lookup[Color]()
 
 	g.Expect(kok).To(BeTrue())
 	g.Expect(cok).To(BeTrue())
@@ -97,9 +97,9 @@ func Test_store_StoresValue(t *testing.T) {
 	g := NewWithT(t)
 
 	state := NewState()
-	store(state, Kind{name: "x"})
+	state.store(Kind{name: "x"})
 
-	v, ok := lookup[Kind](state)
+	v, ok := state.lookup[Kind]()
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v.name).To(Equal("x"))
 }
@@ -112,6 +112,6 @@ func TestLookup_WhenStoredValueTypeMismatchesKey_PanicsWithHelpfulMessage(t *tes
 	state.content[keyOf[Kind]()] = Color{name: "wrong-type"}
 
 	g.Expect(func() {
-		_, _ = lookup[Kind](state)
+		_, _ = state.lookup[Kind]()
 	}).To(PanicWith(ContainSubstring("pipeline.lookup: stored value type mismatch")))
 }

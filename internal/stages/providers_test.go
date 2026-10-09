@@ -89,7 +89,7 @@ func TestRunProvidersReportsCompletedMetricProgress(t *testing.T) {
 
 	sink := newTestSink()
 
-	g.Expect(stages.RunProviders(progressState(), context.Background(), sink)).To(Succeed())
+	g.Expect(stages.RunProviders(context.Background(), progressState(), sink)).To(Succeed())
 	g.Expect(sink.totals).To(Equal([]int64{2}))
 	g.Expect(sink.current).To(Equal([]int64{1, 2}))
 }
@@ -136,7 +136,7 @@ func TestRunProvidersReportsOnlyWorkRemainingAfterGitPrewarm(t *testing.T) {
 	}
 
 	sink := newTestSink()
-	g.Expect(stages.RunProviders(state, context.Background(), sink)).To(Succeed())
+	g.Expect(stages.RunProviders(context.Background(), state, sink)).To(Succeed())
 
 	g.Expect(prewarmedGitRan.Load()).To(BeTrue())
 	g.Expect(sink.totals).To(Equal([]int64{10}))
@@ -150,7 +150,7 @@ func TestRunProvidersOmitsCompletionWhenLoadingFailsAtTotal(t *testing.T) {
 
 	sink := newTestSink()
 
-	err := stages.RunProviders(progressState(), context.Background(), sink)
+	err := stages.RunProviders(context.Background(), progressState(), sink)
 
 	g.Expect(err).To(MatchError(ContainSubstring("load failed after reporting progress")))
 	g.Expect(err).To(MatchError(ContainSubstring("load requested metrics")))
@@ -166,7 +166,7 @@ func TestRunProvidersPropagatesCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	err := stages.RunProviders(progressState(), ctx, newTestSink())
+	err := stages.RunProviders(ctx, progressState(), newTestSink())
 
 	g.Expect(err).To(MatchError(context.Canceled))
 }

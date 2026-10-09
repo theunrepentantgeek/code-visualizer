@@ -5,7 +5,7 @@
 **Purpose.**
 
 - `State` is a type-keyed bag of pipeline values plus a single latched error: each value is stored under its own Go type, so stages declare what they need by parameter type rather than by string key ([state.go#L6](state.go#L6), [state.go#L14](state.go#L14), [state.go#L58](state.go#L58)).
-- It turns a visualization run into a flat list of `Apply*` calls with no per-step error handling at the call site ([../../cmd/codeviz/treemap_cmd.go#L98](../../cmd/codeviz/treemap_cmd.go#L98)).
+- It turns a visualization run into a flat list of `State.Apply*` calls with no per-step error handling at the call site ([../../cmd/codeviz/treemap_cmd.go#L98](../../cmd/codeviz/treemap_cmd.go#L98)).
 
 **Boundary and invariants.**
 
@@ -15,7 +15,8 @@
 
 **Related operations.**
 
-- `NewState` seeds the state; `ApplyFuncX`, `ApplyFuncXR`, `ApplyFuncXY`, `ApplyFuncXYR` and `ApplyFuncXYZ` run a stage over one to three state-resident inputs, optionally storing a result ([state.go#L14](state.go#L14), [apply.go#L12](apply.go#L12), [apply.go#L38](apply.go#L38), [apply.go#L69](apply.go#L69), [apply.go#L103](apply.go#L103), [apply.go#L127](apply.go#L127)).
+- `NewState` seeds the state; the `ApplyFuncX`, `ApplyFuncXR`, `ApplyFuncXY`, `ApplyFuncXYR` and `ApplyFuncXYZ` methods run a stage over one to three state-resident inputs, optionally storing a result ([state.go#L14](state.go#L14), [apply.go](apply.go)).
+- `State.Set` replaces a value under its static type without changing the latched error ([state.go](state.go)).
 - `Err` reports the latched error at the end of the run ([state.go#L68](state.go#L68)).
 
 **Proper-use patterns.**
@@ -27,7 +28,7 @@
 **Anti-patterns.**
 
 - Do not put two values of the same type (for example two `*config.Config` values) into one state — construction panics, and by design there is no per-key namespace ([state.go#L23](state.go#L23)).
-- Do not check for errors between `Apply*` calls; the error latch already short-circuits the remaining stages ([apply.go#L16](apply.go#L16)).
+- Do not check for errors between `State.Apply*` calls; the error latch already short-circuits the remaining stages ([apply.go](apply.go)).
 - Do not use `State` as a general mutable scratchpad shared across goroutines: it is an unsynchronised map ([state.go#L6](state.go#L6), [state.go#L52](state.go#L52)).
 
 **Source locations.**

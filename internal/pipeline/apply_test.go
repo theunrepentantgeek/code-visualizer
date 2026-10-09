@@ -21,13 +21,13 @@ func TestSet_StoresAndReplacesInterfaceByStaticType(t *testing.T) {
 
 	state := NewState(Kind{})
 
-	Set[testSink](state, sinkValue("first"))
-	stored, ok := lookup[testSink](state)
+	state.Set[testSink](sinkValue("first"))
+	stored, ok := state.lookup[testSink]()
 	g.Expect(ok).To(BeTrue())
 	g.Expect(stored.Value()).To(Equal("first"))
 
-	Set[testSink](state, sinkValue("second"))
-	stored, ok = lookup[testSink](state)
+	state.Set[testSink](sinkValue("second"))
+	stored, ok = state.lookup[testSink]()
 	g.Expect(ok).To(BeTrue())
 	g.Expect(stored.Value()).To(Equal("second"))
 }
@@ -40,7 +40,7 @@ func TestSet_PreservesExistingError(t *testing.T) {
 	prior := errors.New("prior")
 	state.setErr(prior)
 
-	Set[testSink](state, sinkValue("value"))
+	state.Set[testSink](sinkValue("value"))
 
 	g.Expect(state.Err()).To(MatchError(prior))
 }
@@ -58,7 +58,7 @@ func Test_ApplyFuncX_WhenStateDoesNotContainX_Panics(t *testing.T) {
 	state := NewState(c)
 
 	g.Expect(func() {
-		ApplyFuncX(state, func(Kind) error { return nil })
+		state.ApplyFuncX(func(Kind) error { return nil })
 	}).To(PanicWith(ContainSubstring("Kind")))
 }
 
@@ -71,7 +71,7 @@ func Test_ApplyFuncX_WhenStateContainsX_CallsMethod(t *testing.T) {
 	state := NewState(k)
 	called := false
 
-	ApplyFuncX(state, func(Kind) error {
+	state.ApplyFuncX(func(Kind) error {
 		called = true
 
 		return nil
@@ -87,7 +87,7 @@ func Test_ApplyFuncX_WhenMethodReturnsError_SetsErrorInState(t *testing.T) {
 	var k Kind
 
 	state := NewState(k)
-	ApplyFuncX(state, func(Kind) error {
+	state.ApplyFuncX(func(Kind) error {
 		return errors.New("error")
 	})
 	g.Expect(state.Err()).To(MatchError(ContainSubstring("error")))
@@ -106,7 +106,7 @@ func Test_ApplyFuncXR_WhenStateDoesNotContainX_Panics(t *testing.T) {
 	state := NewState(c)
 
 	g.Expect(func() {
-		ApplyFuncXR(state, SetKind("k"))
+		state.ApplyFuncXR(SetKind("k"))
 	}).To(PanicWith(ContainSubstring("Kind")))
 }
 
@@ -117,11 +117,11 @@ func Test_ApplyFuncXR_WhenStateContainsX_CallsMethod(t *testing.T) {
 	var k Kind
 
 	state := NewState(k)
-	ApplyFuncXR(state, SetKind("k"))
+	state.ApplyFuncXR(SetKind("k"))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 
 	var name *string
-	ApplyFuncXR(state, ExtractKind(&name))
+	state.ApplyFuncXR(ExtractKind(&name))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 	g.Expect(name).ToNot(BeNil())
 
@@ -137,10 +137,10 @@ func Test_ApplyFuncXR_WhenMethodReturnsValue_SavesValueInState(t *testing.T) {
 	var k Kind
 
 	state := NewState(k)
-	ApplyFuncXR(state, SetKind("k"))
+	state.ApplyFuncXR(SetKind("k"))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 
-	v, ok := lookup[Kind](state)
+	v, ok := state.lookup[Kind]()
 	g.Expect(ok).To(BeTrue())
 	g.Expect(v.name).To(Equal("k"))
 }
@@ -152,7 +152,7 @@ func Test_ApplyFuncXR_WhenMethodReturnsError_SetsErrorInState(t *testing.T) {
 	var k Kind
 
 	state := NewState(k)
-	ApplyFuncXR(state, func(Kind) (Kind, error) {
+	state.ApplyFuncXR(func(Kind) (Kind, error) {
 		return Kind{}, errors.New("error")
 	})
 	g.Expect(state.Err()).To(MatchError(ContainSubstring("error")))
@@ -173,7 +173,7 @@ func Test_ApplyFuncXYR_WhenStateDoesNotContainX_Panics(t *testing.T) {
 	state := NewState(k)
 
 	g.Expect(func() {
-		ApplyFuncXYR(state, CreateTexture)
+		state.ApplyFuncXYR(CreateTexture)
 	}).To(PanicWith(ContainSubstring("Color")))
 }
 
@@ -188,7 +188,7 @@ func Test_ApplyFuncXYR_WhenStateDoesNotContainY_Panics(t *testing.T) {
 	state := NewState(c)
 
 	g.Expect(func() {
-		ApplyFuncXYR(state, CreateTexture)
+		state.ApplyFuncXYR(CreateTexture)
 	}).To(PanicWith(ContainSubstring("Kind")))
 }
 
@@ -205,13 +205,13 @@ func Test_ApplyFuncXYR_WhenStateContainsXAndY_StoresResultInState(t *testing.T) 
 	}
 
 	state := NewState(c)
-	store(state, k)
+	state.store(k)
 
-	ApplyFuncXYR(state, CreateTexture)
+	state.ApplyFuncXYR(CreateTexture)
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 
 	var name *string
-	ApplyFuncXR(state, ExtractTexture(&name))
+	state.ApplyFuncXR(ExtractTexture(&name))
 	g.Expect(state.Err()).ToNot(HaveOccurred())
 	g.Expect(name).ToNot(BeNil())
 
@@ -233,7 +233,7 @@ func Test_ApplyFuncXY_WhenStateMissingX_Panics(t *testing.T) {
 	state := NewState(k)
 
 	g.Expect(func() {
-		ApplyFuncXY(state, func(Color, Kind) error { return nil })
+		state.ApplyFuncXY(func(Color, Kind) error { return nil })
 	}).To(PanicWith(ContainSubstring("Color")))
 }
 
@@ -244,7 +244,7 @@ func Test_ApplyFuncXY_WhenBothPresent_CallsFunc(t *testing.T) {
 	state := NewState(Kind{name: "k"}, Color{name: "c"})
 	called := false
 
-	ApplyFuncXY(state, func(Kind, Color) error {
+	state.ApplyFuncXY(func(Kind, Color) error {
 		called = true
 
 		return nil
@@ -258,7 +258,7 @@ func Test_ApplyFuncXY_WhenFuncReturnsError_SetsStateErr(t *testing.T) {
 	g := NewWithT(t)
 
 	state := NewState(Kind{}, Color{})
-	ApplyFuncXY(state, func(Kind, Color) error { return errors.New("boom") })
+	state.ApplyFuncXY(func(Kind, Color) error { return errors.New("boom") })
 	g.Expect(state.Err()).To(MatchError(ContainSubstring("boom")))
 }
 
@@ -271,7 +271,7 @@ func Test_ApplyFuncXY_WhenAlreadyErrored_ShortCircuits(t *testing.T) {
 
 	called := false
 
-	ApplyFuncXY(state, func(Kind, Color) error {
+	state.ApplyFuncXY(func(Kind, Color) error {
 		called = true
 
 		return nil
@@ -290,7 +290,7 @@ func Test_ApplyFuncXYZ_WhenStateMissingZ_Panics(t *testing.T) {
 	state := NewState(Kind{}, Color{})
 
 	g.Expect(func() {
-		ApplyFuncXYZ(state, func(Kind, Color, Texture) error { return nil })
+		state.ApplyFuncXYZ(func(Kind, Color, Texture) error { return nil })
 	}).To(PanicWith(ContainSubstring("Texture")))
 }
 
@@ -301,7 +301,7 @@ func Test_ApplyFuncXYZ_WhenAllPresent_CallsFunc(t *testing.T) {
 	state := NewState(Kind{name: "k"}, Color{name: "c"}, Texture{name: "t"})
 	called := false
 
-	ApplyFuncXYZ(state, func(Kind, Color, Texture) error {
+	state.ApplyFuncXYZ(func(Kind, Color, Texture) error {
 		called = true
 
 		return nil
@@ -315,6 +315,6 @@ func Test_ApplyFuncXYZ_WhenFuncReturnsError_SetsStateErr(t *testing.T) {
 	g := NewWithT(t)
 
 	state := NewState(Kind{}, Color{}, Texture{})
-	ApplyFuncXYZ(state, func(Kind, Color, Texture) error { return errors.New("boom") })
+	state.ApplyFuncXYZ(func(Kind, Color, Texture) error { return errors.New("boom") })
 	g.Expect(state.Err()).To(MatchError(ContainSubstring("boom")))
 }

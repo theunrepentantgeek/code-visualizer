@@ -32,7 +32,7 @@ func NewState(values ...any) *State {
 
 // lookup retrieves a value of type S from the state.
 // It returns the value and a boolean indicating whether the value was found.
-func lookup[S any](s *State) (S, bool) {
+func (s *State) lookup[S any]() (S, bool) {
 	var zero S
 
 	key := keyOf[S]()
@@ -49,15 +49,15 @@ func lookup[S any](s *State) (S, bool) {
 
 // store saves a value of type S in the state, overwriting any existing
 // value of the same type.
-func store[S any](s *State, value S) {
+func (s *State) store[S any](value S) {
 	key := keyOf[S]()
 	s.content[key] = value
 }
 
 // Set stores value under its static type, replacing any existing value of
 // that type without changing the pipeline error state.
-func Set[S any](s *State, value S) {
-	store(s, value)
+func (s *State) Set[S any](value S) {
+	s.store(value)
 }
 
 // keyOf returns a key to use for the specified type.

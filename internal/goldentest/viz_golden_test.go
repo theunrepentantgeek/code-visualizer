@@ -84,9 +84,9 @@ func renderTreemap(common *stages.CommonState) error {
 	viz := &treemap.State{}
 	s := pipeline.NewState(common, cfg.Treemap, viz)
 
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, treemap.ResolveMetrics)
+	s.ApplyFuncX(stages.BuildFilterRules)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(treemap.ResolveMetrics)
 	treemap.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "treemap render failed")
@@ -112,9 +112,9 @@ func renderRadial(common *stages.CommonState) error {
 	viz := &radialtree.State{}
 	s := pipeline.NewState(common, cfg.Radial, viz)
 
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, radialtree.ResolveMetrics)
+	s.ApplyFuncX(stages.BuildFilterRules)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(radialtree.ResolveMetrics)
 	radialtree.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "radial render failed")
@@ -135,9 +135,9 @@ func renderBubbletree(common *stages.CommonState) error {
 	viz := &bubbletree.State{}
 	s := pipeline.NewState(common, cfg.Bubbletree, viz)
 
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, bubbletree.ResolveMetrics)
+	s.ApplyFuncX(stages.BuildFilterRules)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(bubbletree.ResolveMetrics)
 	bubbletree.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "bubbletree render failed")
@@ -162,9 +162,9 @@ func renderScatter(common *stages.CommonState) error {
 	viz := &scatterviz.State{}
 	s := pipeline.NewState(common, cfg.Scatter, viz)
 
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, scatterviz.ResolveMetrics)
+	s.ApplyFuncX(stages.BuildFilterRules)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(scatterviz.ResolveMetrics)
 	scatterviz.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "scatter render failed")
@@ -189,9 +189,9 @@ func renderDonutTree(common *stages.CommonState) error {
 
 	viz := &donuttree.State{}
 	s := pipeline.NewState(common, common.RootConfig.DonutTree, viz)
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, donuttree.ResolveMetrics)
+	s.ApplyFuncX(stages.BuildFilterRules)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(donuttree.ResolveMetrics)
 	donuttree.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "donut tree render failed")
@@ -256,9 +256,9 @@ func renderSpiralPipeline(common *stages.CommonState) error {
 	viz := &spiral.State{}
 	s := pipeline.NewState(common, cfg.Spiral, viz)
 
-	pipeline.ApplyFuncX(s, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(s, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(s, spiral.ResolveMetrics)
+	s.ApplyFuncX(stages.BuildFilterRules)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics)
+	s.ApplyFuncXYZ(spiral.ResolveMetrics)
 	spiral.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "spiral render failed")
@@ -307,7 +307,7 @@ func renderAlluvial(common *stages.CommonState) error {
 	}
 	s := pipeline.NewState(common, common.RootConfig.Alluvial, state)
 
-	pipeline.ApplyFuncXY(s, alluvial.BuildLegendStage)
+	s.ApplyFuncXY(alluvial.BuildLegendStage)
 	alluvial.RenderPipeline(s)
 
 	return eris.Wrap(s.Err(), "alluvial render failed")

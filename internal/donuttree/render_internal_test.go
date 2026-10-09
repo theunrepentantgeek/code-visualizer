@@ -45,9 +45,9 @@ func renderDonutPipeline(t *testing.T, output string, width, height int) *stages
 		VizName:    "donut-tree",
 	}
 	state := pipeline.NewState(common, cfg.DonutTree, &State{})
-	pipeline.ApplyFuncX(state, stages.BuildFilterRules)
-	pipeline.ApplyFuncX(state, stages.RegisterSelectionMetrics)
-	pipeline.ApplyFuncXYZ(state, ResolveMetrics)
+	state.ApplyFuncX(stages.BuildFilterRules)
+	state.ApplyFuncX(stages.RegisterSelectionMetrics)
+	state.ApplyFuncXYZ(ResolveMetrics)
 	RenderPipeline(state)
 	g.Expect(state.Err()).To(Succeed())
 
