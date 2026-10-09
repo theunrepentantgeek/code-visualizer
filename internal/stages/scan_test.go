@@ -61,7 +61,7 @@ func TestScanFilesystem_EmptyDir(t *testing.T) {
 		Flags:      &stages.Flags{},
 	}
 
-	g.Expect(stages.ScanFilesystem(s, context.Background(), newTestSink())).To(Succeed())
+	g.Expect(stages.ScanFilesystem(context.Background(), s, newTestSink())).To(Succeed())
 	g.Expect(s.Root).NotTo(BeNil())
 }
 
@@ -76,7 +76,7 @@ func TestScanFilesystem_PropagatesCancellation(t *testing.T) {
 		Flags:      &stages.Flags{},
 	}
 
-	err := stages.ScanFilesystem(s, ctx, newTestSink())
+	err := stages.ScanFilesystem(ctx, s, newTestSink())
 
 	g.Expect(err).To(MatchError(context.Canceled))
 }

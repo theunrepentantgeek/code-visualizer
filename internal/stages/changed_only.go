@@ -13,9 +13,7 @@ import (
 
 // FilterChangedOnly limits the scanned tree to current files modified in the
 // selected Git history range.
-//
-//nolint:revive,nolintlint // Pipeline ApplyFuncXY fixes dependency order as state, context.
-func FilterChangedOnly(c *CommonState, ctx context.Context) error {
+func FilterChangedOnly(ctx context.Context, c *CommonState) error {
 	if c.Flags == nil || !c.Flags.ChangedOnly {
 		return nil
 	}

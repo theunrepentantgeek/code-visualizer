@@ -17,15 +17,13 @@ import (
 
 // LoadCommitMetrics loads and attaches per-file commit values needed by
 // directory-level expressions such as lines-changed.sum.
-//
-//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
-func LoadCommitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
+func LoadCommitMetrics(ctx context.Context, c *CommonState, sink progress.Sink) error {
 	if !c.Requested.HasCommitExpressions() {
 		return nil
 	}
 
 	if len(c.GitHistory) == 0 {
-		if err := LoadGitHistory(c, ctx, sink); err != nil {
+		if err := LoadGitHistory(ctx, c, sink); err != nil {
 			return err
 		}
 	}
@@ -86,9 +84,7 @@ type TimeRange struct {
 // LoadGitHistory walks the commit graph once and populates c.GitHistory.
 // It returns an error when no commits touch any tracked file — visualizations
 // that depend on git history cannot proceed in that case.
-//
-//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
-func LoadGitHistory(c *CommonState, ctx context.Context, sink progress.Sink) error {
+func LoadGitHistory(ctx context.Context, c *CommonState, sink progress.Sink) error {
 	repoRoot, err := repoRootForState(c, "Git history")
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve git root")
@@ -164,14 +160,12 @@ func ShareGitHistoryPaths(states []*CommonState) error {
 
 // PrewarmGitMetrics loads history only when the requested metrics need the
 // file-level Git cache populated before provider execution.
-//
-//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
-func PrewarmGitMetrics(c *CommonState, ctx context.Context, sink progress.Sink) error {
+func PrewarmGitMetrics(ctx context.Context, c *CommonState, sink progress.Sink) error {
 	if len(c.GitHistory) > 0 || len(onlyFileGitMetrics(c.Requested.BaseMetrics)) == 0 {
 		return nil
 	}
 
-	return LoadGitHistory(c, ctx, sink)
+	return LoadGitHistory(ctx, c, sink)
 }
 
 // GroupGitHistoryByFile joins c.GitHistory against c.Root and writes

@@ -15,18 +15,18 @@ func AcquireData(s *pipeline.State) {
 }
 
 func ScanData(s *pipeline.State) {
-	pipeline.ApplyFuncXYZ(s, stages.ScanFilesystem)
-	pipeline.ApplyFuncXY(s, stages.FilterChangedOnly)
-	pipeline.ApplyFuncX(s, stages.CheckGitRequirement)
+	s.ApplyFuncXYZ(stages.ScanFilesystem)
+	s.ApplyFuncXY(stages.FilterChangedOnly)
+	s.ApplyFuncX(stages.CheckGitRequirement)
 }
 
 func LoadGitMetrics(s *pipeline.State) {
-	pipeline.ApplyFuncXYZ(s, stages.LoadGitMetrics)
+	s.ApplyFuncXYZ(stages.LoadGitMetrics)
 }
 
 func LoadFilesystemMetrics(s *pipeline.State) {
-	pipeline.ApplyFuncXYZ(s, stages.RunFilesystemProviders)
-	pipeline.ApplyFuncX(s, stages.PopulateDeclarations)
+	s.ApplyFuncXYZ(stages.RunFilesystemProviders)
+	s.ApplyFuncX(stages.PopulateDeclarations)
 }
 
 // RenderPipeline runs every stage from aggregation through writing the canvas.
@@ -40,23 +40,23 @@ func RenderPipeline(s *pipeline.State) {
 }
 
 func RenderVisualization(s *pipeline.State) {
-	pipeline.ApplyFuncX(s, stages.RunAggregations)
-	pipeline.ApplyFuncX(s, stages.FilterBinaryFiles)
-	pipeline.ApplyFuncX(s, stages.ExportData)
-	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
-	pipeline.ApplyFuncX(s, stages.InitDrawingBounds)
-	pipeline.ApplyFuncX(s, stages.ReserveTitleBounds)
-	pipeline.ApplyFuncX(s, stages.ReserveFooterBounds)
-	pipeline.ApplyFuncXY(s, BuildInksStage)
-	pipeline.ApplyFuncXYZ(s, BuildLegendStage)
-	pipeline.ApplyFuncXY(s, LayoutStage)
-	pipeline.ApplyFuncXY(s, RenderStage)
-	pipeline.ApplyFuncXYZ(s, LabelStage)
-	pipeline.ApplyFuncXY(s, ApplyCanvasBlockLabels)
-	pipeline.ApplyFuncX(s, stages.ApplyTitle)
-	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+	s.ApplyFuncX(stages.RunAggregations)
+	s.ApplyFuncX(stages.FilterBinaryFiles)
+	s.ApplyFuncX(stages.ExportData)
+	s.ApplyFuncX(stages.ResolveDimensions)
+	s.ApplyFuncX(stages.InitDrawingBounds)
+	s.ApplyFuncX(stages.ReserveTitleBounds)
+	s.ApplyFuncX(stages.ReserveFooterBounds)
+	s.ApplyFuncXY(BuildInksStage)
+	s.ApplyFuncXYZ(BuildLegendStage)
+	s.ApplyFuncXY(LayoutStage)
+	s.ApplyFuncXY(RenderStage)
+	s.ApplyFuncXYZ(LabelStage)
+	s.ApplyFuncXY(ApplyCanvasBlockLabels)
+	s.ApplyFuncX(stages.ApplyTitle)
+	s.ApplyFuncX(stages.ApplyFooter)
 }
 
 func WriteOutput(s *pipeline.State) {
-	pipeline.ApplyFuncX(s, stages.WriteCanvas)
+	s.ApplyFuncX(stages.WriteCanvas)
 }

@@ -99,8 +99,8 @@ func resolveBandFill(fill *config.MetricSpec, widthMetric metric.Name) (BandFill
 }
 
 func FinalizeData(s *pipeline.State) {
-	pipeline.ApplyFuncXY(s, BuildDataStage)
-	pipeline.ApplyFuncXY(s, BuildLegendStage)
+	s.ApplyFuncXY(BuildDataStage)
+	s.ApplyFuncXY(BuildLegendStage)
 }
 
 // RenderPipeline lays out the acquired snapshot data and writes the shared
@@ -111,18 +111,18 @@ func RenderPipeline(s *pipeline.State) {
 }
 
 func RenderVisualization(s *pipeline.State) {
-	pipeline.ApplyFuncX(s, stages.ResolveDimensions)
-	pipeline.ApplyFuncX(s, stages.InitDrawingBounds)
-	pipeline.ApplyFuncX(s, stages.ReserveTitleBounds)
-	pipeline.ApplyFuncX(s, stages.ReserveFooterBounds)
-	pipeline.ApplyFuncXY(s, LayoutStage)
-	pipeline.ApplyFuncXY(s, RenderStage)
-	pipeline.ApplyFuncX(s, stages.ApplyTitle)
-	pipeline.ApplyFuncX(s, stages.ApplyFooter)
+	s.ApplyFuncX(stages.ResolveDimensions)
+	s.ApplyFuncX(stages.InitDrawingBounds)
+	s.ApplyFuncX(stages.ReserveTitleBounds)
+	s.ApplyFuncX(stages.ReserveFooterBounds)
+	s.ApplyFuncXY(LayoutStage)
+	s.ApplyFuncXY(RenderStage)
+	s.ApplyFuncX(stages.ApplyTitle)
+	s.ApplyFuncX(stages.ApplyFooter)
 }
 
 func WriteOutput(s *pipeline.State) {
-	pipeline.ApplyFuncX(s, stages.WriteCanvas)
+	s.ApplyFuncX(stages.WriteCanvas)
 }
 
 // LayoutStage reserves legend space, assigns metric-proportional vertical
@@ -316,7 +316,7 @@ func prepareSnapshot(
 
 	for _, stage := range []func(*stages.CommonState) error{
 		func(state *stages.CommonState) error {
-			return stages.ScanFilesystem(state, ctx, sink)
+			return stages.ScanFilesystem(ctx, state, sink)
 		},
 		stages.CheckGitRequirement,
 	} {
@@ -382,10 +382,10 @@ func finishSnapshot(
 
 	for _, stage := range []func(*stages.CommonState) error{
 		func(state *stages.CommonState) error {
-			return stages.LoadCommitMetrics(state, ctx, sink)
+			return stages.LoadCommitMetrics(ctx, state, sink)
 		},
 		func(state *stages.CommonState) error {
-			return stages.RunProviders(state, ctx, sink)
+			return stages.RunProviders(ctx, state, sink)
 		},
 		stages.PopulateDeclarations,
 		stages.RunAggregations,

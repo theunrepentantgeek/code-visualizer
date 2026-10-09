@@ -121,7 +121,7 @@ func TestProgressBoundaries_StartsAndCompletesStages(t *testing.T) {
 
 	seen := []progress.WorkKind{}
 
-	pipeline.ApplyFuncX(state, func(sink progress.Sink) error {
+	state.ApplyFuncX(func(sink progress.Sink) error {
 		seen = append(seen, sink.WorkKind())
 
 		return nil
@@ -130,7 +130,7 @@ func TestProgressBoundaries_StartsAndCompletesStages(t *testing.T) {
 	g.Expect(boundaries.End()).To(Succeed())
 	g.Expect(boundaries.Start("Acquire", progress.StageLive, progress.WorkObservations)).To(Succeed())
 
-	pipeline.ApplyFuncX(state, func(sink progress.Sink) error {
+	state.ApplyFuncX(func(sink progress.Sink) error {
 		seen = append(seen, sink.WorkKind())
 
 		return nil
@@ -185,7 +185,7 @@ func TestProgressBoundaries_EndsFailedStageAfterPipelineError(t *testing.T) {
 
 	processingErr := errors.New("processing failed")
 
-	pipeline.ApplyFuncX(state, func(progress.Sink) error {
+	state.ApplyFuncX(func(progress.Sink) error {
 		return processingErr
 	})
 
@@ -269,7 +269,7 @@ func TestProgressBoundaries_ReplacesFinishedSinkWithInactiveSink(t *testing.T) {
 		sinkErr  error
 	)
 
-	pipeline.ApplyFuncX(state, func(sink progress.Sink) error {
+	state.ApplyFuncX(func(sink progress.Sink) error {
 		sinkWork = sink.WorkKind()
 		sinkErr = sink.SetStatus("late")
 
@@ -292,7 +292,7 @@ func TestProgressBoundaries_JoinsProcessingAndTerminalErrors(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(boundaries.Start("Acquire", progress.StageLive, progress.WorkObservations)).To(Succeed())
 
-	pipeline.ApplyFuncX(state, func(progress.Sink) error {
+	state.ApplyFuncX(func(progress.Sink) error {
 		return processingErr
 	})
 
@@ -324,7 +324,7 @@ func pipelineValue[T any](state *pipeline.State) (T, error) {
 		err   error
 	)
 
-	pipeline.ApplyFuncX(state, func(v T) error {
+	state.ApplyFuncX(func(v T) error {
 		value = v
 
 		return nil

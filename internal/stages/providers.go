@@ -16,14 +16,12 @@ import (
 )
 
 // RunProviders calculates c.Requested metrics against c.Root.
-//
-//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
-func RunProviders(c *CommonState, ctx context.Context, sink progress.Sink) error {
+func RunProviders(ctx context.Context, c *CommonState, sink progress.Sink) error {
 	progressMetrics := metricsRemainingAfterPrewarm(c)
 	total := provider.FileProgressTotal(progressMetrics, model.CountFiles(c.Root))
 	metricProg := newMetricProgress(sink, total)
 
-	err := loadRequestedMetrics(c, ctx, sink, filterMetricProgress(metricProg, progressMetrics))
+	err := loadRequestedMetrics(ctx, c, sink, filterMetricProgress(metricProg, progressMetrics))
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
 			return eris.Wrap(ctx.Err(), "metric loading cancelled")
@@ -48,9 +46,7 @@ func metricsRemainingAfterPrewarm(c *CommonState) []metric.Name {
 }
 
 // RunFilesystemProviders loads metrics that do not require Git history.
-//
-//revive:disable-next-line:context-as-argument Pipeline ApplyFuncXYZ fixes dependency order as state, context, sink.
-func RunFilesystemProviders(c *CommonState, ctx context.Context, sink progress.Sink) error {
+func RunFilesystemProviders(ctx context.Context, c *CommonState, sink progress.Sink) error {
 	c.Root.ReferenceTime = c.ReferenceNow
 
 	progressMetrics := withoutGitMetrics(c.Requested.BaseMetrics)
@@ -147,10 +143,9 @@ func (f *metricProgressFilter) OnFileProcessed(name metric.Name) {
 	}
 }
 
-//nolint:revive,nolintlint // Callers consistently pass shared state before scoped dependencies.
 func loadRequestedMetrics(
-	c *CommonState,
 	ctx context.Context,
+	c *CommonState,
 	sink progress.Sink,
 	metricProg provider.MetricProgress,
 ) error {
@@ -187,7 +182,7 @@ func loadRequestedMetrics(
 		requested = withoutAuthorshipMetrics(requested)
 	}
 
-	requested, err := loadFileGitMetrics(c, ctx, requested, metricProg)
+	requested, err := loadFileGitMetrics(ctx, c, requested, metricProg)
 	if err != nil {
 		return err
 	}
@@ -198,10 +193,10 @@ func loadRequestedMetrics(
 	)
 }
 
-//nolint:revive,nolintlint // Callers consistently pass shared state before scoped dependencies.
+//nolint:revive // The staged progress offsets keep the Git metric passes coordinated in one place.
 func LoadGitMetrics(
-	c *CommonState,
 	ctx context.Context,
+	c *CommonState,
 	sink progress.Sink,
 ) error {
 	c.Root.ReferenceTime = c.ReferenceNow
@@ -226,7 +221,7 @@ func LoadGitMetrics(
 	var offset int64
 	if needsHistory {
 		historySink := progressSegment{sink: sink, total: commitTotal, offset: offset}
-		if err := LoadGitHistory(c, ctx, historySink); err != nil {
+		if err := LoadGitHistory(ctx, c, historySink); err != nil {
 			return err
 		}
 
@@ -288,10 +283,9 @@ func gitMetricPasses(c *CommonState) int {
 	return passes
 }
 
-//nolint:revive,nolintlint // Callers consistently pass shared state before scoped dependencies.
 func loadFileGitMetrics(
-	c *CommonState,
 	ctx context.Context,
+	c *CommonState,
 	requested []metric.Name,
 	metricProg provider.MetricProgress,
 ) ([]metric.Name, error) {
