@@ -9,20 +9,19 @@
 **Boundary and invariants.**
 
 - Every field is optional and pointer- or slice-typed: nil/empty means "not configured", non-nil means "explicitly set" — that is what makes layering possible ([config.go#L32](config.go#L32), [config.go#L35](config.go#L35)).
-- The layers apply in a fixed order — `New()` defaults, then `Load`/`TryAutoLoad` on top of the existing struct, then `Override*` for CLI flags — and each layer only overwrites what it actually specifies ([config.go#L78](config.go#L78), [config.go#L114](config.go#L114), [override.go#L5](override.go#L5)).
-- `TryAutoLoad` is a no-op once `Source` is set, so an explicitly loaded file is never silently overlaid by auto-discovery ([config.go#L155](config.go#L155)).
+- The layers apply in a fixed order — `New(vizName)` defaults for the selected visualization, then `Load`/`TryAutoLoad` on top of the existing struct, then `Override*` for CLI flags — and each layer only overwrites what it actually specifies ([config.go#L76](config.go#L76), [config.go#L116](config.go#L116), [override.go#L5](override.go#L5)).
+- `TryAutoLoad` is a no-op once `Source` is set, so an explicitly loaded file is never silently overlaid by auto-discovery ([config.go#L289](config.go#L289)).
 
 **Related operations.**
 
-- `New`, `Load`, `TryAutoLoad`, `Save`, and the `Override*` methods on `Config` and its viz sections ([config.go#L78](config.go#L78), [config.go#L114](config.go#L114), [config.go#L155](config.go#L155), [treemap.go#L13](treemap.go#L13)).
-- `ForExport` returns a shallow copy carrying the shared sections plus only the named visualization's section ([config.go#L174](config.go#L174)).
+- `New`, `Load`, `TryAutoLoad`, `Save`, and the `Override*` methods on `Config` and its viz sections ([config.go#L76](config.go#L76), [config.go#L116](config.go#L116), [config.go#L289](config.go#L289), [config.go#L307](config.go#L307), [treemap.go#L13](treemap.go#L13)).
 - `SelectionMetricsList` exposes the on-disk selection-metric map as an ordered slice ([config.go#L272](config.go#L272)).
 
 **Proper-use patterns.**
 
-- In a command, run the whole merge in one place — auto-load, apply overrides, then validate the effective config — before building any pipeline state ([../../cmd/codeviz/treemap_cmd.go#L66](../../cmd/codeviz/treemap_cmd.go#L66)).
+- In a concrete visualization command, initialize with `New(vizName)` so only that visualization's defaults are populated; then run the whole merge in one place — auto-load, apply overrides, then validate the effective config — before building any pipeline state ([../../cmd/codeviz/treemap_cmd.go#L66](../../cmd/codeviz/treemap_cmd.go#L66)).
 - Write CLI values through the `Override*` helpers, which ignore zero values so an unset flag is transparent ([../../cmd/codeviz/treemap_cmd.go#L112](../../cmd/codeviz/treemap_cmd.go#L112), [override.go#L11](override.go#L11)).
-- Export the config for reproduction with `ForExport(vizName)` so the emitted file describes one visualization ([config.go#L174](config.go#L174), [../stages/common.go#L42](../stages/common.go#L42)).
+- Export the merged effective config for reproduction by calling `Config.Save` directly; visualization-scoped defaults keep unrelated visualization defaults out of the file ([../stages/export.go#L9](../stages/export.go#L9), [config.go#L307](config.go#L307)).
 
 **Anti-patterns.**
 
@@ -31,7 +30,7 @@
 
 **Source locations.**
 
-- [config.go#L34](config.go#L34) — `Config`, `New`, `Load`, `TryAutoLoad`, `ForExport`.
+- [config.go#L34](config.go#L34) — `Config`, `New`, `Load`, `TryAutoLoad`, `Save`.
 - [override.go#L5](override.go#L5) — the non-zero-only override helpers.
 
 ## MetricSpec
