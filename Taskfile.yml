@@ -1,5 +1,8 @@
 version: "3"
 
+env:
+  GOLANGCI_LINT_CACHE: "{{.ROOT_DIR}}/.golangci-lint-cache"
+
 tasks:
   build:
     desc: Build the codeviz binary

@@ -1,5 +1,6 @@
 .specify/extensions/.cache
 .context/compound-engineering/
+.golangci-lint-cache/
 
 # Task runner
 .task/
