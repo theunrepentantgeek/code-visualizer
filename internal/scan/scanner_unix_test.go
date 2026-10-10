@@ -3,7 +3,6 @@
 package scan
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,7 +24,7 @@ func TestScanPermissionDenied(t *testing.T) {
 	err = os.WriteFile(unreadable, []byte("secret"), 0o000)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	root, err := Scan(context.Background(), tmp, nil, nil, true)
+	root, err := Scan(t.Context(), tmp, nil, nil, true)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(root).ToNot(BeNil())
 

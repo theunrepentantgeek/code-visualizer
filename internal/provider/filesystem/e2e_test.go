@@ -1,7 +1,6 @@
 package filesystem_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -69,13 +68,13 @@ func setupE2E(
 
 	rules = append(rules, filter.Rule{Pattern: ".*", Mode: filter.Exclude})
 
-	root, err := scan.Scan(context.Background(), repoRoot(t), rules, nil, true)
+	root, err := scan.Scan(t.Context(), repoRoot(t), rules, nil, true)
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
 
 	err = provider.RunLoaders(
-		context.Background(),
+		t.Context(),
 		root,
 		[]metric.Name{filesystem.FileSize, filesystem.FileLines, filesystem.FileType},
 		nil,

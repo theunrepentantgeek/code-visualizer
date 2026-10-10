@@ -89,7 +89,7 @@ func TestRunApplication_ClosesReporterAfterSuccessfulCommand(t *testing.T) {
 		},
 		stdout:    &bytes.Buffer{},
 		stderr:    &bytes.Buffer{},
-		context:   context.Background(),
+		context:   t.Context(),
 		lookupEnv: func(string) (string, bool) { return "", false },
 		newReporter: func(progress.Config) (progress.Reporter, error) {
 			return reporter, nil
@@ -122,7 +122,7 @@ func TestRunApplication_ClosesReporterAfterPreBoundaryCommandFailure(t *testing.
 		},
 		stdout:    &bytes.Buffer{},
 		stderr:    &stderr,
-		context:   context.Background(),
+		context:   t.Context(),
 		lookupEnv: func(string) (string, bool) { return "", false },
 		newReporter: func(progress.Config) (progress.Reporter, error) {
 			reporter.diagnostic = &stderr
@@ -147,7 +147,7 @@ func TestRunApplication_ReturnsCloseFailure(t *testing.T) {
 		args:      []string{"help", "metrics"},
 		stdout:    &stdout,
 		stderr:    &stderr,
-		context:   context.Background(),
+		context:   t.Context(),
 		lookupEnv: func(string) (string, bool) { return "", false },
 		newReporter: func(progress.Config) (progress.Reporter, error) {
 			reporter.diagnostic = &stderr

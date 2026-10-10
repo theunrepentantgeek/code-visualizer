@@ -111,7 +111,7 @@ func TestProgressBoundaries_StartsAndCompletesStages(t *testing.T) {
 	state := pipeline.NewState()
 
 	boundaries, err := newProgressBoundaries(&Flags{
-		Context:  context.Background(),
+		Context:  t.Context(),
 		Reporter: reporter,
 	}, state, "Build", 2)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -204,7 +204,7 @@ func TestProgressBoundaries_CancelsWhenContextEndsAtBoundary(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
 	reporter := &boundaryReporter{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	state := pipeline.NewState()
 
 	boundaries, err := newProgressBoundaries(&Flags{Context: ctx, Reporter: reporter}, state, "Build", 1)
@@ -227,7 +227,7 @@ func TestProgressBoundaries_DoesNotStartNextStageAfterCancellation(t *testing.T)
 	t.Parallel()
 	g := NewWithT(t)
 	reporter := &boundaryReporter{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	state := pipeline.NewState()
 
 	boundaries, err := newProgressBoundaries(&Flags{Context: ctx, Reporter: reporter}, state, "Build", 2)

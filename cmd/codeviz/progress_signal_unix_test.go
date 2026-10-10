@@ -4,7 +4,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"io"
 	"os"
@@ -20,12 +19,12 @@ import (
 )
 
 //nolint:paralleltest,revive // The helper must terminate with the application exit code.
-func TestProgressSignalHelper(_ *testing.T) {
+func TestProgressSignalHelper(t *testing.T) {
 	if os.Getenv("CODEVIZ_SIGNAL_HELPER") != "1" {
 		return
 	}
 
-	runContext, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	runContext, stop := signal.NotifyContext(t.Context(), os.Interrupt)
 	code := runApplication(application{
 		args: []string{
 			"--progress=plain", "--verbose", "tree-map", os.Getenv("CODEVIZ_SIGNAL_TARGET"),
