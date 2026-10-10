@@ -160,7 +160,8 @@ and CI alike — runs exactly the same commands with exactly the same flags.
   can scope to a single package.
 - **Lint**: Always run `task lint`. Never run `golangci-lint` directly — the project uses a
   custom build that includes nilaway, and running the stock binary will miss checks or produce
-  incorrect results.
+  incorrect results. The task uses `.golangci-lint-cache` at the repository root so each
+  worktree has an isolated cache.
 - **Tidy**: `task tidy` runs `gofumpt`, `go mod tidy`, and `golangci-lint --fix` in one step.
   Run this before committing to catch formatting and import issues early.
 - **CI**: `task ci` runs build, tests, and lint. If CI passes, you are good to merge.

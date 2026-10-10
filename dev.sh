@@ -6,6 +6,8 @@ GIT_ROOT=$(git rev-parse --show-toplevel)
 TOOL_DEST=$GIT_ROOT/tools
 mkdir -p "$TOOL_DEST"
 
+export GOLANGCI_LINT_CACHE="$GIT_ROOT/.golangci-lint-cache"
+
 # This will be fast if everything is already installed
 VERBOSE=true
 $GIT_ROOT/.devcontainer/install-dependencies.sh --skip-installed
