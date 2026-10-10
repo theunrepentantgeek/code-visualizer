@@ -236,18 +236,18 @@ func prepareAlluvialState(
 	viz *alluvial.State,
 	cfg *config.Alluvial,
 ) {
-	s.ApplyFuncX(stages.ValidatePaths)
-	s.ApplyFuncX(stages.ExportConfig)
-	s.ApplyFuncX(stages.BuildFilterRules)
-	s.ApplyFuncX(stages.RegisterSelectionMetrics)
-	s.ApplyFuncXYZ(alluvial.ResolveMetrics)
-	s.ApplyFuncXYZ(func(
-		ctx context.Context,
-		sink progress.Sink,
-		plan *alluvial.AcquisitionPlan,
-	) error {
-		return plan.PrepareReferences(ctx, sink, common, viz, cfg)
-	})
+	s.ApplyFuncX(stages.ValidatePaths).
+		ApplyFuncX(stages.ExportConfig).
+		ApplyFuncX(stages.BuildFilterRules).
+		ApplyFuncX(stages.RegisterSelectionMetrics).
+		ApplyFuncXYZ(alluvial.ResolveMetrics).
+		ApplyFuncXYZ(func(
+			ctx context.Context,
+			sink progress.Sink,
+			plan *alluvial.AcquisitionPlan,
+		) error {
+			return plan.PrepareReferences(ctx, sink, common, viz, cfg)
+		})
 }
 
 func (c *AlluvialCmd) applyOverrides(cfg *config.Config) {

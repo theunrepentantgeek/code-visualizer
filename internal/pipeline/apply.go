@@ -8,12 +8,13 @@ import (
 // It retrieves the value of type X from the state and applies the function.
 // If the value of type X is not found in the state, panics (as this is a programming error).
 // If the function returns an error, it stores the error in the state.
-// If already in an error state, it does not apply the function and simply returns.
+// If already in an error state, it does not apply the function.
+// Returns the state so calls can be chained.
 func (s *State) ApplyFuncX[X any](
 	f func(X) error,
-) {
+) *State {
 	if s.Err() != nil {
-		return
+		return s
 	}
 
 	v, ok := s.lookup[X]()
@@ -26,6 +27,8 @@ func (s *State) ApplyFuncX[X any](
 	if err != nil {
 		s.setErr(err)
 	}
+
+	return s
 }
 
 // ApplyFuncXR updates pipeline state by applying a function that takes an input of type X and produces an output of
@@ -33,12 +36,13 @@ func (s *State) ApplyFuncX[X any](
 // It retrieves the value of type X from the state, applies the function, and stores the result back in the state.
 // If the value of type X is not found in the state, panics (as this is a programming error).
 // If the function returns an error, it stores the error in the state.
-// If already in an error state, it does not apply the function and simply returns.
+// If already in an error state, it does not apply the function.
+// Returns the state so calls can be chained.
 func (s *State) ApplyFuncXR[X any, R any](
 	f func(X) (R, error),
-) {
+) *State {
 	if s.Err() != nil {
-		return
+		return s
 	}
 
 	v, ok := s.lookup[X]()
@@ -51,10 +55,12 @@ func (s *State) ApplyFuncXR[X any, R any](
 	if err != nil {
 		s.setErr(err)
 
-		return
+		return s
 	}
 
 	s.store(r)
+
+	return s
 }
 
 // ApplyFuncXYR is a variant of ApplyFuncXR that works with functions that take two inputs (X and Y) and produce an
@@ -63,12 +69,13 @@ func (s *State) ApplyFuncXR[X any, R any](
 // state.
 // If either value of type X or Y is not found in the state, panics (as this is a programming error).
 // If the function returns an error, it stores the error in the state.
-// If already in an error state, it does not apply the function and simply returns.
+// If already in an error state, it does not apply the function.
+// Returns the state so calls can be chained.
 func (s *State) ApplyFuncXYR[X any, Y any, R any](
 	f func(X, Y) (R, error),
-) {
+) *State {
 	if s.Err() != nil {
-		return
+		return s
 	}
 
 	vx, ok := s.lookup[X]()
@@ -87,21 +94,23 @@ func (s *State) ApplyFuncXYR[X any, Y any, R any](
 	if err != nil {
 		s.setErr(err)
 
-		return
+		return s
 	}
 
 	s.store(r)
+
+	return s
 }
 
 // ApplyFuncXY updates pipeline state by applying an error-returning function
 // that consumes two typed inputs and mutates them in place. Panics if either
 // input type is absent from the state. Short-circuits when state already
-// holds an error.
+// holds an error. Returns the state so calls can be chained.
 func (s *State) ApplyFuncXY[X any, Y any](
 	f func(X, Y) error,
-) {
+) *State {
 	if s.Err() != nil {
-		return
+		return s
 	}
 
 	vx, ok := s.lookup[X]()
@@ -117,14 +126,17 @@ func (s *State) ApplyFuncXY[X any, Y any](
 	if err := f(vx, vy); err != nil {
 		s.setErr(err)
 	}
+
+	return s
 }
 
-// ApplyFuncXYZ is the three-input variant of ApplyFuncXY.
+// ApplyFuncXYZ is the three-input variant of ApplyFuncXY. It returns the
+// state so calls can be chained.
 func (s *State) ApplyFuncXYZ[X any, Y any, Z any](
 	f func(X, Y, Z) error,
-) {
+) *State {
 	if s.Err() != nil {
-		return
+		return s
 	}
 
 	vx, ok := s.lookup[X]()
@@ -145,4 +157,6 @@ func (s *State) ApplyFuncXYZ[X any, Y any, Z any](
 	if err := f(vx, vy, vz); err != nil {
 		s.setErr(err)
 	}
+
+	return s
 }

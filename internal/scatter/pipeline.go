@@ -13,9 +13,9 @@ func AcquireData(s *pipeline.State) {
 }
 
 func ScanData(s *pipeline.State) {
-	s.ApplyFuncXYZ(stages.ScanFilesystem)
-	s.ApplyFuncXY(stages.FilterChangedOnly)
-	s.ApplyFuncX(stages.CheckGitRequirement)
+	s.ApplyFuncXYZ(stages.ScanFilesystem).
+		ApplyFuncXY(stages.FilterChangedOnly).
+		ApplyFuncX(stages.CheckGitRequirement)
 }
 
 func LoadGitMetrics(s *pipeline.State) {
@@ -23,8 +23,8 @@ func LoadGitMetrics(s *pipeline.State) {
 }
 
 func LoadFilesystemMetrics(s *pipeline.State) {
-	s.ApplyFuncXYZ(stages.RunFilesystemProviders)
-	s.ApplyFuncX(stages.PopulateDeclarations)
+	s.ApplyFuncXYZ(stages.RunFilesystemProviders).
+		ApplyFuncX(stages.PopulateDeclarations)
 }
 
 // RenderPipeline runs aggregation through writing the canvas, assuming
@@ -36,19 +36,19 @@ func RenderPipeline(s *pipeline.State) {
 }
 
 func RenderVisualization(s *pipeline.State) {
-	s.ApplyFuncX(stages.RunAggregations)
-	s.ApplyFuncX(stages.FilterBinaryFiles)
-	s.ApplyFuncX(stages.ExportData)
-	s.ApplyFuncX(stages.ResolveDimensions)
-	s.ApplyFuncX(stages.InitDrawingBounds)
-	s.ApplyFuncX(stages.ReserveTitleBounds)
-	s.ApplyFuncX(stages.ReserveFooterBounds)
-	s.ApplyFuncXY(BuildInksStage)
-	s.ApplyFuncXY(BuildLegendStage)
-	s.ApplyFuncXY(LayoutStage)
-	s.ApplyFuncXY(RenderStage)
-	s.ApplyFuncX(stages.ApplyTitle)
-	s.ApplyFuncX(stages.ApplyFooter)
+	s.ApplyFuncX(stages.RunAggregations).
+		ApplyFuncX(stages.FilterBinaryFiles).
+		ApplyFuncX(stages.ExportData).
+		ApplyFuncX(stages.ResolveDimensions).
+		ApplyFuncX(stages.InitDrawingBounds).
+		ApplyFuncX(stages.ReserveTitleBounds).
+		ApplyFuncX(stages.ReserveFooterBounds).
+		ApplyFuncXY(BuildInksStage).
+		ApplyFuncXY(BuildLegendStage).
+		ApplyFuncXY(LayoutStage).
+		ApplyFuncXY(RenderStage).
+		ApplyFuncX(stages.ApplyTitle).
+		ApplyFuncX(stages.ApplyFooter)
 }
 
 func WriteOutput(s *pipeline.State) {

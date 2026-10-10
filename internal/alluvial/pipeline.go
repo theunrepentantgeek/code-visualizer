@@ -99,8 +99,8 @@ func resolveBandFill(fill *config.MetricSpec, widthMetric metric.Name) (BandFill
 }
 
 func FinalizeData(s *pipeline.State) {
-	s.ApplyFuncXY(BuildDataStage)
-	s.ApplyFuncXY(BuildLegendStage)
+	s.ApplyFuncXY(BuildDataStage).
+		ApplyFuncXY(BuildLegendStage)
 }
 
 // RenderPipeline lays out the acquired snapshot data and writes the shared
@@ -111,14 +111,14 @@ func RenderPipeline(s *pipeline.State) {
 }
 
 func RenderVisualization(s *pipeline.State) {
-	s.ApplyFuncX(stages.ResolveDimensions)
-	s.ApplyFuncX(stages.InitDrawingBounds)
-	s.ApplyFuncX(stages.ReserveTitleBounds)
-	s.ApplyFuncX(stages.ReserveFooterBounds)
-	s.ApplyFuncXY(LayoutStage)
-	s.ApplyFuncXY(RenderStage)
-	s.ApplyFuncX(stages.ApplyTitle)
-	s.ApplyFuncX(stages.ApplyFooter)
+	s.ApplyFuncX(stages.ResolveDimensions).
+		ApplyFuncX(stages.InitDrawingBounds).
+		ApplyFuncX(stages.ReserveTitleBounds).
+		ApplyFuncX(stages.ReserveFooterBounds).
+		ApplyFuncXY(LayoutStage).
+		ApplyFuncXY(RenderStage).
+		ApplyFuncX(stages.ApplyTitle).
+		ApplyFuncX(stages.ApplyFooter)
 }
 
 func WriteOutput(s *pipeline.State) {

@@ -187,8 +187,8 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	s.ApplyFuncX(stages.RegisterSelectionMetrics)
-	s.ApplyFuncXYZ(scatterviz.ResolveMetrics)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics).
+		ApplyFuncXYZ(scatterviz.ResolveMetrics)
 
 	needsGit := stages.NeedsGitMetrics(common)
 
@@ -198,9 +198,9 @@ func (c *ScatterCmd) Run(flags *Flags) error {
 	}
 
 	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
-		s.ApplyFuncX(stages.ValidatePaths)
-		s.ApplyFuncX(stages.ExportConfig)
-		s.ApplyFuncX(stages.BuildFilterRules)
+		s.ApplyFuncX(stages.ValidatePaths).
+			ApplyFuncX(stages.ExportConfig).
+			ApplyFuncX(stages.BuildFilterRules)
 	}); err != nil {
 		return eris.Wrap(err, "scatter pipeline failed")
 	}

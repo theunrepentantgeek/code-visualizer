@@ -105,8 +105,8 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	s.ApplyFuncX(stages.RegisterSelectionMetrics)
-	s.ApplyFuncXYZ(treemap.ResolveMetrics)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics).
+		ApplyFuncXYZ(treemap.ResolveMetrics)
 
 	needsGit := stages.NeedsGitMetrics(common)
 
@@ -116,9 +116,9 @@ func (c *TreemapCmd) Run(flags *Flags) error {
 	}
 
 	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
-		s.ApplyFuncX(stages.ValidatePaths)
-		s.ApplyFuncX(stages.ExportConfig)
-		s.ApplyFuncX(stages.BuildFilterRules)
+		s.ApplyFuncX(stages.ValidatePaths).
+			ApplyFuncX(stages.ExportConfig).
+			ApplyFuncX(stages.BuildFilterRules)
 	}); err != nil {
 		return eris.Wrap(err, "tree-map pipeline failed")
 	}

@@ -169,8 +169,8 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 
 	s := pipeline.NewState(common, cfg, viz)
 
-	s.ApplyFuncX(stages.RegisterSelectionMetrics)
-	s.ApplyFuncXYZ(spiral.ResolveMetrics)
+	s.ApplyFuncX(stages.RegisterSelectionMetrics).
+		ApplyFuncXYZ(spiral.ResolveMetrics)
 
 	boundaries, err := newProgressBoundaries(flags, s, "Spiral", 6)
 	if err != nil {
@@ -178,9 +178,9 @@ func (c *SpiralCmd) Run(flags *Flags) error {
 	}
 
 	if err := runBoundary(boundaries, phasePreparing, progress.StageSummary, progress.WorkNone, func() {
-		s.ApplyFuncX(stages.ValidatePaths)
-		s.ApplyFuncX(stages.ExportConfig)
-		s.ApplyFuncX(stages.BuildFilterRules)
+		s.ApplyFuncX(stages.ValidatePaths).
+			ApplyFuncX(stages.ExportConfig).
+			ApplyFuncX(stages.BuildFilterRules)
 	}); err != nil {
 		return eris.Wrap(err, "spiral pipeline failed")
 	}
