@@ -13,8 +13,7 @@ func ExportConfig(c *CommonState) error {
 		return nil
 	}
 
-	exportCfg := c.RootConfig.ForExport(c.VizName)
-	if err := exportCfg.Save(c.Flags.ExportConfig); err != nil {
+	if err := c.RootConfig.Save(c.Flags.ExportConfig); err != nil {
 		return eris.Wrap(err, "failed to save config")
 	}
 

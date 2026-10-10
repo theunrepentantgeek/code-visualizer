@@ -33,6 +33,18 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+func newTestConfig() *config.Config {
+	cfg := config.New("tree-map")
+	cfg.Radial = config.New("radial-tree").Radial
+	cfg.DonutTree = config.New("donut-tree").DonutTree
+	cfg.Bubbletree = config.New("bubble-tree").Bubbletree
+	cfg.Spiral = config.New("spiral").Spiral
+	cfg.Scatter = config.New("scatter").Scatter
+	cfg.Alluvial = config.New("alluvial").Alluvial
+
+	return cfg
+}
+
 type applicationReporter struct {
 	diagnostic io.Writer
 	closeErr   error
@@ -494,7 +506,7 @@ func TestLabelMetrics_MergeConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			cfg := config.New()
+			cfg := newTestConfig()
 			configured := []metric.Name{"file-age", "file-type"}
 			tc.apply(cfg, configured)
 
@@ -791,7 +803,7 @@ func TestTreemapCmd_ConfigSuppliesSize(t *testing.T) {
 	cfgPath := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(cfgPath, []byte("tree-map:\n  size: file-size\n"), 0o600)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &TreemapCmd{
@@ -816,7 +828,7 @@ func TestTreemapCmd_CLISizeOverridesConfig(t *testing.T) {
 	cfgPath := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(cfgPath, []byte("tree-map:\n  size: file-size\n"), 0o600)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &TreemapCmd{
@@ -836,7 +848,7 @@ func TestTreemapCmd_MissingSizeEverywhere_NilAfterMerge(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New() // default config does not set tree-map.size
+	cfg := newTestConfig() // default config does not set tree-map.size
 
 	cmd := &TreemapCmd{
 		TargetPath: ".",
@@ -868,7 +880,7 @@ func TestTreemapCmd_Run_WritesFileLabelsIntoSVG(t *testing.T) {
 		Height:     240,
 	}
 
-	flags := &Flags{Config: config.New()}
+	flags := &Flags{Config: newTestConfig()}
 	g.Expect(cmd.Run(flags)).To(Succeed())
 
 	data, err := os.ReadFile(out)
@@ -882,7 +894,7 @@ func TestDonutTreeCmd_ConfigSuppliesSizeAndCLIOverridesIt(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.DonutTree.Size = new("file-size")
 
 	cmd := &DonutTreeCmd{Size: "file-lines"}
@@ -907,7 +919,7 @@ func TestDonutTreeCmd_OmittedDimensionsPreserveConfigValues(t *testing.T) {
 	_, err = parser.Parse([]string{"donut-tree", ".", "-o", "out.png", "-s", "file-lines"})
 	g.Expect(err).NotTo(HaveOccurred())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	*cfg.ImageSize.Width = 800
 	*cfg.ImageSize.Height = 600
 
@@ -921,7 +933,7 @@ func TestDonutTreeCmd_ExplicitDimensionsOverrideConfigValues(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	*cfg.ImageSize.Width = 800
 	*cfg.ImageSize.Height = 600
 
@@ -935,7 +947,7 @@ func TestDonutTreeCmd_ValidateConfig_MissingSizeFails(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	err := (&DonutTreeCmd{}).validateConfig(config.New().DonutTree)
+	err := (&DonutTreeCmd{}).validateConfig(newTestConfig().DonutTree)
 
 	g.Expect(err).To(MatchError(ContainSubstring(`unknown size metric ""`)))
 }
@@ -944,7 +956,7 @@ func TestDonutTreeCmd_ValidateConfig_ClassificationSizeFails(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.DonutTree.Size = new("file-type")
 
 	err := (&DonutTreeCmd{}).validateConfig(cfg.DonutTree)
@@ -956,7 +968,7 @@ func TestDonutTreeCmd_ValidateConfig_OmittedFillAndBorderPass(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.DonutTree.Size = new("file-size")
 
 	err := (&DonutTreeCmd{}).validateConfig(cfg.DonutTree)
@@ -968,7 +980,7 @@ func TestDonutTreeCmd_ValidateConfig_InvalidFillFailsWithContext(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.DonutTree.Size = new("file-size")
 	cfg.DonutTree.Fill = &config.MetricSpec{Metric: "not-a-real-metric"}
 
@@ -981,7 +993,7 @@ func TestDonutTreeCmd_ValidateConfig_InvalidBorderFailsWithContext(t *testing.T)
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.DonutTree.Size = new("file-size")
 	cfg.DonutTree.Border = &config.MetricSpec{Metric: "not-a-real-metric"}
 
@@ -1002,7 +1014,7 @@ func TestTreemapCmd_ValidateConfig_ConfigSuppliesFillAndPalette(t *testing.T) {
 		0o600,
 	)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &TreemapCmd{Output: "out.png"}
@@ -1017,7 +1029,7 @@ func TestTreemapCmd_ValidateConfig_InvalidFillMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Treemap.Size = new("file-size")
 	cfg.Treemap.Fill = &config.MetricSpec{Metric: "not-a-real-metric"}
 
@@ -1030,7 +1042,7 @@ func TestTreemapCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Treemap.Size = new("file-size")
 	cfg.Treemap.Fill = &config.MetricSpec{Metric: "file-lines", Palette: "not-a-real-palette"}
 
@@ -1043,7 +1055,7 @@ func TestTreemapCmd_ValidateConfig_InvalidSizeMetricListsAvailableMetrics(t *tes
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Treemap.Size = new("not-a-real-metric")
 
 	cmd := &TreemapCmd{}
@@ -1062,7 +1074,7 @@ func TestTreemapCmd_ValidateConfig_MeasureMetricAccepted(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Treemap.Size = new("commit-density")
 
 	cmd := &TreemapCmd{}
@@ -1078,7 +1090,7 @@ func TestSpiralCmd_ConfigSuppliesSize(t *testing.T) {
 	cfgPath := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(cfgPath, []byte("spiral:\n  size: file-size\n"), 0o600)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &SpiralCmd{
@@ -1103,7 +1115,7 @@ func TestSpiralCmd_CLISizeOverridesConfig(t *testing.T) {
 	cfgPath := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(cfgPath, []byte("spiral:\n  size: file-size\n"), 0o600)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &SpiralCmd{
@@ -1123,7 +1135,7 @@ func TestSpiralCmd_ValidateConfig_InvalidFillMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Spiral.Size = new("file-size")
 	cfg.Spiral.Fill = &config.MetricSpec{Metric: "not-a-real-metric"}
 
@@ -1136,7 +1148,7 @@ func TestSpiralCmd_ValidateConfig_InvalidFillPalette(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Spiral.Size = new("file-size")
 	cfg.Spiral.Fill = &config.MetricSpec{Metric: "file-lines", Palette: "not-a-real-palette"}
 
@@ -1175,7 +1187,7 @@ func TestSpiralCmd_ValidateConfig_SurfaceDisabledLeavesFillOptional(t *testing.T
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	err := (&SpiralCmd{}).validateConfig(config.New().Spiral)
+	err := (&SpiralCmd{}).validateConfig(newTestConfig().Spiral)
 
 	g.Expect(err).NotTo(HaveOccurred())
 }
@@ -1184,7 +1196,7 @@ func TestSpiralCmd_ValidateConfig_SurfaceNeedsMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Spiral.Surface = new(true)
 
 	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
@@ -1198,7 +1210,7 @@ func TestSpiralCmd_ValidateConfig_SurfaceMetricMustBeNumeric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Spiral.SurfaceMetric = &config.MetricSpec{Metric: "file-type"}
 
 	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
@@ -1210,7 +1222,7 @@ func TestSpiralCmd_ValidateConfig_SurfaceMetricMustNotUseAggregation(t *testing.
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Spiral.SurfaceMetric = &config.MetricSpec{Metric: "file-size.sum"}
 
 	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
@@ -1222,7 +1234,7 @@ func TestSpiralCmd_ValidateConfig_SurfaceFallbackFillMustBeNumeric(t *testing.T)
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Spiral.Surface = new(true)
 	cfg.Spiral.Fill = &config.MetricSpec{Metric: "file-type"}
 
@@ -1235,7 +1247,7 @@ func TestSpiralCmd_ValidateConfig_NumericSurfaceMetricWithoutFillPasses(t *testi
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Spiral.SurfaceMetric = &config.MetricSpec{Metric: "file-lines"}
 
 	err := (&SpiralCmd{}).validateConfig(cfg.Spiral)
@@ -1275,7 +1287,7 @@ func TestScatterCmd_ValidateConfig_CategoricalAxesAreAccepted(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("file-type")
 	cfg.Scatter.YAxis = new("file-lines")
 	cfg.Scatter.Size = new("file-size")
@@ -1288,7 +1300,7 @@ func TestScatterCmd_ValidateConfig_CategoricalAxesAreAccepted(t *testing.T) {
 func TestScatterCmd_ValidateConfig_XAxisIsRequired(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.YAxis = new("file-lines")
 	cfg.Scatter.Size = new("file-size")
 
@@ -1300,7 +1312,7 @@ func TestScatterCmd_ValidateConfig_XAxisIsRequired(t *testing.T) {
 func TestScatterCmd_ValidateConfig_YAxisIsRequired(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("file-type")
 	cfg.Scatter.Size = new("file-size")
 
@@ -1312,7 +1324,7 @@ func TestScatterCmd_ValidateConfig_YAxisIsRequired(t *testing.T) {
 func TestScatterCmd_ValidateConfig_SizeIsRequired(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("file-type")
 	cfg.Scatter.YAxis = new("file-lines")
 
@@ -1325,7 +1337,7 @@ func TestScatterCmd_ValidateConfig_SizeMustBeNumeric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("file-type")
 	cfg.Scatter.YAxis = new("file-lines")
 	cfg.Scatter.Size = new("file-type")
@@ -1338,7 +1350,7 @@ func TestScatterCmd_ValidateConfig_SizeMustBeNumeric(t *testing.T) {
 func TestScatterCmd_ValidateConfig_DirectoryGrainAcceptsAggregatedMetrics(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.Grain = new("directory")
 	cfg.Scatter.XAxis = new("file-lines.sum")
 	cfg.Scatter.YAxis = new("file-size.sum")
@@ -1352,7 +1364,7 @@ func TestScatterCmd_ValidateConfig_DirectoryGrainAcceptsAggregatedMetrics(t *tes
 func TestScatterCmd_ValidateConfig_DirectoryGrainRejectsBareFileMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.Grain = new("directory")
 	cfg.Scatter.XAxis = new("file-lines")
 	cfg.Scatter.YAxis = new("file-size.sum")
@@ -1366,7 +1378,7 @@ func TestScatterCmd_ValidateConfig_DirectoryGrainRejectsBareFileMetric(t *testin
 func TestScatterCmd_ValidateConfig_RejectsUnknownGrain(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.Grain = new("package")
 	cfg.Scatter.XAxis = new("file-lines")
 	cfg.Scatter.YAxis = new("file-size")
@@ -1386,7 +1398,7 @@ func TestScatterCmd_ConfigSuppliesAxesAndSize(t *testing.T) {
 	configText := "scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"
 	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &ScatterCmd{TargetPath: ".", Output: "out.png"}
@@ -1410,7 +1422,7 @@ func TestScatterCmd_CLIAxesOverrideConfig(t *testing.T) {
 	configText := "scatter:\n  xAxis: file-lines\n  yAxis: file-size\n  size: file-size\n"
 	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &ScatterCmd{
@@ -1431,7 +1443,7 @@ func TestScatterCmd_CLIAxesOverrideConfig(t *testing.T) {
 func TestScatterCmd_CLIGrainOverridesConfig(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.Grain = new("file")
 
 	(&ScatterCmd{Grain: "directory"}).applyOverrides(cfg)
@@ -1448,7 +1460,7 @@ func TestScatterCmd_MergeConfigAndValidate_LoadsScatterConfig(t *testing.T) {
 	configText := "scatter:\n  xAxis: file-type\n  yAxis: file-lines\n  size: file-size\n"
 	g.Expect(os.WriteFile(cfgPath, []byte(configText), 0o600)).To(Succeed())
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(cfgPath)).To(Succeed())
 
 	cmd := &ScatterCmd{TargetPath: ".", Output: filepath.Join(dir, "out.png")}

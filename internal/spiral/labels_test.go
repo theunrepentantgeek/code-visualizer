@@ -290,7 +290,7 @@ func TestBuildLegendStage_UsesCircleSampleAndDefaultCommitCountSize(t *testing.T
 		Inks: Inks{Fill: inks.FixedInk(color.RGBA{A: 255})},
 	}
 
-	g.Expect(BuildLegendStage(&stages.CommonState{RootConfig: config.New()}, viz)).To(Succeed())
+	g.Expect(BuildLegendStage(&stages.CommonState{RootConfig: config.New("spiral")}, viz)).To(Succeed())
 	g.Expect(viz.LegendConfig.Entries).To(ContainElement(legend.Entry{
 		Role: legend.RoleSize, MetricName: string(commitCountMetric),
 		Ink: inks.FixedInk(color.RGBA{R: 255, G: 255, B: 255, A: 255}),
@@ -307,7 +307,7 @@ func TestBuildLegendStage_SetsSampleWithoutActiveBuckets(t *testing.T) {
 
 	viz := &State{Inks: Inks{Fill: inks.FixedInk(color.RGBA{A: 255})}}
 
-	g.Expect(BuildLegendStage(&stages.CommonState{RootConfig: config.New()}, viz)).To(Succeed())
+	g.Expect(BuildLegendStage(&stages.CommonState{RootConfig: config.New("spiral")}, viz)).To(Succeed())
 	g.Expect(viz.LegendConfig.LabelSample).To(Equal(legend.LabelSample{
 		Shape: legend.LabelSampleCircle,
 		Lines: []string{"Day", "Month", "commit-count"},

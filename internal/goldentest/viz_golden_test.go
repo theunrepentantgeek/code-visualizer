@@ -53,13 +53,25 @@ func newCommonState(outputPath string, cfg *config.Config) *stages.CommonState {
 	}
 }
 
+func newTestConfig() *config.Config {
+	cfg := config.New("tree-map")
+	cfg.Radial = config.New("radial-tree").Radial
+	cfg.DonutTree = config.New("donut-tree").DonutTree
+	cfg.Bubbletree = config.New("bubble-tree").Bubbletree
+	cfg.Spiral = config.New("spiral").Spiral
+	cfg.Scatter = config.New("scatter").Scatter
+	cfg.Alluvial = config.New("alluvial").Alluvial
+
+	return cfg
+}
+
 // runViz writes the visualization to outputPath using the supplied render
 // closure, then returns the bytes.
 func runViz(t *testing.T, outputPath string, render func(*stages.CommonState) error) []byte {
 	t.Helper()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	common := newCommonState(outputPath, cfg)
 
 	g.Expect(render(common)).To(Succeed())

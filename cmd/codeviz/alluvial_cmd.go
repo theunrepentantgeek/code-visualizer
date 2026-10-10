@@ -152,6 +152,10 @@ func validateExpansionPath(expansion string) error {
 }
 
 func (c *AlluvialCmd) mergeConfigAndValidate(flags *Flags) error {
+	if err := flags.initializeConfig(config.New("alluvial")); err != nil {
+		return err
+	}
+
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}

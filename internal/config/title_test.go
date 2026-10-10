@@ -58,7 +58,7 @@ func TestConfig_OverrideTitleText_SetsText(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 	cfg.OverrideTitleText("My Project")
 
 	g.Expect(cfg.Title).NotTo(BeNil())
@@ -69,7 +69,7 @@ func TestConfig_OverrideTitleText_Empty_LeavesNil(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 	cfg.OverrideTitleText("")
 
 	g.Expect(cfg.Title).To(BeNil())

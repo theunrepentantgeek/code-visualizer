@@ -14,7 +14,7 @@ import (
 func TestConfig_OverrideWidth_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := New()
+	cfg := newTestConfig()
 	cfg.OverrideWidth(2560)
 	g.Expect(cfg.ImageSize).NotTo(BeNil())
 	g.Expect(*cfg.ImageSize.Width).To(Equal(2560))
@@ -23,7 +23,7 @@ func TestConfig_OverrideWidth_SetsWhenNonZero(t *testing.T) {
 func TestConfig_OverrideWidth_SkipsWhenZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := New()
+	cfg := newTestConfig()
 	original := *cfg.ImageSize.Width
 	cfg.OverrideWidth(0)
 	g.Expect(*cfg.ImageSize.Width).To(Equal(original))
@@ -32,7 +32,7 @@ func TestConfig_OverrideWidth_SkipsWhenZero(t *testing.T) {
 func TestConfig_OverrideHeight_SetsWhenNonZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := New()
+	cfg := newTestConfig()
 	cfg.OverrideHeight(1440)
 	g.Expect(cfg.ImageSize).NotTo(BeNil())
 	g.Expect(*cfg.ImageSize.Height).To(Equal(1440))
@@ -41,7 +41,7 @@ func TestConfig_OverrideHeight_SetsWhenNonZero(t *testing.T) {
 func TestConfig_OverrideHeight_SkipsWhenZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
-	cfg := New()
+	cfg := newTestConfig()
 	original := *cfg.ImageSize.Height
 	cfg.OverrideHeight(0)
 	g.Expect(*cfg.ImageSize.Height).To(Equal(original))

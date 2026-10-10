@@ -138,6 +138,10 @@ func validateSurfaceConfig(cfg *config.Spiral) error {
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
 // and validates the effective configuration. Called at the start of Run().
 func (c *SpiralCmd) mergeConfigAndValidate(flags *Flags) error {
+	if err := flags.initializeConfig(config.New("spiral")); err != nil {
+		return err
+	}
+
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}

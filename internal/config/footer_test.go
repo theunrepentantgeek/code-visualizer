@@ -37,7 +37,7 @@ func TestConfig_OverrideFooterText_SetsText(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 	cfg.OverrideFooterText("custom text")
 
 	g.Expect(cfg.Footer).NotTo(BeNil())
@@ -48,7 +48,7 @@ func TestConfig_OverrideHideFooter_SetsHidden(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 	cfg.OverrideHideFooter(true)
 
 	g.Expect(cfg.Footer).NotTo(BeNil())

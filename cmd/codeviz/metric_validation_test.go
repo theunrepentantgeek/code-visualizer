@@ -4,15 +4,13 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-
-	"github.com/theunrepentantgeek/code-visualizer/internal/config"
 )
 
 func TestTreemapCmd_ValidateConfig_UsesBaseRegistry(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Treemap.Size = new("file-size")
 
 	cmd := &TreemapCmd{}
@@ -24,7 +22,7 @@ func TestScatterCmd_ValidateConfig_UsesBaseRegistryForAxesAndSize(t *testing.T) 
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("file-type")
 	cfg.Scatter.YAxis = new("file-lines")
 	cfg.Scatter.Size = new("file-size")
@@ -38,7 +36,7 @@ func TestScatterCmd_ValidateConfig_AggregationSizeMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("file-size")
 	cfg.Scatter.YAxis = new("comment-ratio")
 	cfg.Scatter.Size = new("declarations.count")
@@ -52,7 +50,7 @@ func TestScatterCmd_ValidateConfig_FilteredAggregationSizeMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("file-size")
 	cfg.Scatter.YAxis = new("comment-ratio")
 	cfg.Scatter.Size = new("public.declarations.count")
@@ -66,7 +64,7 @@ func TestScatterCmd_ValidateConfig_AggregationAxisMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Scatter.XAxis = new("declarations.count")
 	cfg.Scatter.YAxis = new("comment-ratio")
 	cfg.Scatter.Size = new("file-size")
@@ -80,7 +78,7 @@ func TestTreemapCmd_ValidateConfig_AggregationSizeMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Treemap.Size = new("declarations.count")
 
 	cmd := &TreemapCmd{}

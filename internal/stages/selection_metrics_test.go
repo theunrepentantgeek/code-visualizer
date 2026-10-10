@@ -16,7 +16,7 @@ import (
 func configWithSelectionMetrics(t *testing.T, yamlSnippet string) *config.Config {
 	t.Helper()
 
-	cfg := config.New()
+	cfg := config.New("")
 
 	err := yaml.Unmarshal([]byte(yamlSnippet), cfg)
 	if err != nil {
@@ -78,7 +78,7 @@ func TestRegisterSelectionMetrics_NoopWhenNoMetrics(t *testing.T) {
 	beforeCount := len(provider.BaseNames())
 
 	s := &stages.CommonState{
-		Flags: &stages.Flags{Config: config.New()},
+		Flags: &stages.Flags{Config: config.New("")},
 	}
 
 	g.Expect(stages.RegisterSelectionMetrics(s)).To(Succeed())
