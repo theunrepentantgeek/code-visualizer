@@ -318,3 +318,64 @@ func Test_ApplyFuncXYZ_WhenFuncReturnsError_SetsStateErr(t *testing.T) {
 	state.ApplyFuncXYZ(func(Kind, Color, Texture) error { return errors.New("boom") })
 	g.Expect(state.Err()).To(MatchError(ContainSubstring("boom")))
 }
+
+func Test_ApplyFuncs_ReturnSameStateForChaining(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{}, Color{}, Texture{})
+	callCount := 0
+
+	returned := state.
+		ApplyFuncX(func(Kind) error {
+			callCount++
+
+			return nil
+		}).
+		ApplyFuncXR(func(kind Kind) (Kind, error) {
+			callCount++
+
+			return kind, nil
+		}).
+		ApplyFuncXYR(func(Color, Kind) (Texture, error) {
+			callCount++
+
+			return Texture{}, nil
+		}).
+		ApplyFuncXY(func(Kind, Color) error {
+			callCount++
+
+			return nil
+		}).
+		ApplyFuncXYZ(func(Kind, Color, Texture) error {
+			callCount++
+
+			return nil
+		})
+
+	g.Expect(returned).To(BeIdenticalTo(state))
+	g.Expect(callCount).To(Equal(5))
+	g.Expect(state.Err()).ToNot(HaveOccurred())
+}
+
+func Test_ApplyFuncs_ChainingShortCircuitsAfterError(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+
+	state := NewState(Kind{})
+	called := false
+
+	returned := state.
+		ApplyFuncX(func(Kind) error {
+			return errors.New("boom")
+		}).
+		ApplyFuncX(func(Kind) error {
+			called = true
+
+			return nil
+		})
+
+	g.Expect(returned).To(BeIdenticalTo(state))
+	g.Expect(called).To(BeFalse())
+	g.Expect(state.Err()).To(MatchError("boom"))
+}
