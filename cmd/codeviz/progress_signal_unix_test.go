@@ -71,7 +71,7 @@ func TestCLI_SIGINTCancelsActiveProgressAndExits130(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(command.Start()).To(Succeed())
 
-	stageStarted := make(chan struct{})
+	scanStarted := make(chan struct{})
 	scanDone := make(chan struct{})
 
 	var lines []string
@@ -84,22 +84,22 @@ func TestCLI_SIGINTCancelsActiveProgressAndExits130(t *testing.T) {
 			line := scanner.Text()
 			lines = append(lines, line)
 
-			if strings.Contains(line, "Discovered ") {
+			if strings.Contains(line, "Scanning filesystem: started") {
 				select {
-				case <-stageStarted:
+				case <-scanStarted:
 				default:
-					close(stageStarted)
+					close(scanStarted)
 				}
 			}
 		}
 	}()
 
 	select {
-	case <-stageStarted:
+	case <-scanStarted:
 	case <-time.After(10 * time.Second):
 		_ = command.Process.Kill()
 
-		t.Fatal("timed out waiting for acquisition progress")
+		t.Fatal("timed out waiting for scan stage start")
 	}
 
 	g.Expect(command.Process.Signal(os.Interrupt)).To(Succeed())
