@@ -29,7 +29,7 @@ selectionMetrics:
       filename: "*"
 `
 
-	cfg := config.New()
+	cfg := config.New(config.VisTypeNone)
 	err := yaml.Unmarshal([]byte(input), cfg)
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -69,7 +69,7 @@ func TestSelectionMetricsList_EmptyConfig(t *testing.T) {
 
 	g := NewWithT(t)
 
-	cfg := config.New()
+	cfg := config.New(config.VisTypeNone)
 	g.Expect(cfg.SelectionMetricsList()).To(BeNil())
 }
 
@@ -91,7 +91,7 @@ selectionMetrics:
       filename: "*"
 `
 
-	cfg := config.New()
+	cfg := config.New(config.VisTypeNone)
 	err := yaml.Unmarshal([]byte(input), cfg)
 	g.Expect(err).NotTo(HaveOccurred())
 

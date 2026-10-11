@@ -180,7 +180,7 @@ func TestBuildLegendStage_GrainDirectoryDescribesDirectoryMetrics(t *testing.T) 
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	common := &stages.CommonState{RootConfig: config.New()}
+	common := &stages.CommonState{RootConfig: config.New(config.VisTypeRadialTree)}
 	viz := &radialtree.State{
 		Grain:         radialtree.GrainDirectory,
 		Fill:          vizmodel.ColourEncoding{Metric: metric.Name("file-lines")},
@@ -197,7 +197,7 @@ func TestBuildLegendStage_GrainFileBuildsLegend(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	common := &stages.CommonState{RootConfig: config.New()}
+	common := &stages.CommonState{RootConfig: config.New(config.VisTypeRadialTree)}
 	viz := &radialtree.State{
 		Grain: radialtree.GrainFile,
 		Fill:  vizmodel.ColourEncoding{Metric: metric.Name("file-lines")},

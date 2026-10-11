@@ -29,7 +29,7 @@ func TestAlluvialCmd_Run_EntersDataPipeline(t *testing.T) {
 		Output:     "out.png",
 		References: []string{"tag:v1.0", "tag:v2.0"},
 		Metric:     "file-size",
-	}).Run(&Flags{Config: config.New()})
+	}).Run(&Flags{Config: newTestConfig()})
 
 	g.Expect(err).To(MatchError(ContainSubstring("alluvial pipeline failed")))
 }
@@ -60,7 +60,7 @@ func TestAlluvialCmd_ReportsOrderedReferenceBoundaries(t *testing.T) {
 		Height:     240,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New(), Reporter: reporter})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig(), Reporter: reporter})).To(Succeed())
 	g.Expect(reporter.events).To(Equal([]string{
 		"begin:Alluvial:6",
 		"start:Preparing",
@@ -179,7 +179,7 @@ func TestAlluvialCmd_MergeConfig_ReplacesConfiguredReferences(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Alluvial.References = []string{"tag:v1.0", "tag:v1.1"}
 	cfg.Alluvial.Expand = []string{"configured"}
 	cmd := &AlluvialCmd{
@@ -200,7 +200,7 @@ func TestAlluvialCmd_MergeConfig_OverridesConfiguredConstantBands(t *testing.T) 
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Alluvial.OverrideConstantBands("mute")
 
 	cmd := &AlluvialCmd{ConstantBands: "merge"}
@@ -214,7 +214,7 @@ func TestAlluvialCmd_MergeConfig_OmittedConstantBandsPreservesConfig(t *testing.
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.Alluvial.OverrideConstantBands("mute")
 
 	(&AlluvialCmd{}).applyOverrides(cfg)
@@ -326,7 +326,7 @@ func TestAlluvialCmd_Run_ResolvesTaggedSnapshots(t *testing.T) {
 		Footer:     "fixture footer",
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -349,7 +349,7 @@ func TestAlluvialCmd_Run_RendersLeafTargetDirectFiles(t *testing.T) {
 		Height:     480,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -371,7 +371,7 @@ func TestAlluvialCmd_Run_RendersTargetIntroducedAfterFirstReference(t *testing.T
 		Height:     480,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -393,7 +393,7 @@ func TestAlluvialCmd_Run_RendersDirectFilesBesideTargetChildren(t *testing.T) {
 		Height:     480,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -416,7 +416,7 @@ func TestAlluvialCmd_Run_RendersRootFilesAndOmitsEmptyExpandedRemainder(t *testi
 		Height:     600,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -442,7 +442,7 @@ func TestAlluvialCmd_Run_RendersDirectFilesWhenExpandingNestedDirectory(t *testi
 		Height:     600,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -478,7 +478,7 @@ func TestAlluvialCmd_Run_AppliesConstantBandModes(t *testing.T) {
 				Height:        600,
 			}
 
-			g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+			g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 			image, err := os.ReadFile(output)
 			g.Expect(err).NotTo(HaveOccurred())
@@ -511,7 +511,7 @@ func TestAlluvialCmd_Run_ComputesGitFillMetricForTaggedSnapshots(t *testing.T) {
 		Height:     480,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -538,7 +538,7 @@ func TestAlluvialCmd_Run_UsesHEADForEmptyReference(t *testing.T) {
 		Height:     240,
 	}
 
-	g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+	g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 	image, err := os.ReadFile(output)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -562,7 +562,7 @@ func TestAlluvialCmd_Run_ExportsFirstSnapshotAndIgnoresChangedOnly(t *testing.T)
 		Width:      320,
 		Height:     240,
 	}
-	cfg := config.New()
+	cfg := newTestConfig()
 	cfg.ChangedOnly = &changedOnly
 
 	g.Expect(cmd.Run(&Flags{Config: cfg, ExportData: exportPath})).To(Succeed())
@@ -613,7 +613,7 @@ func TestAlluvialCmd_Run_RendersFilteredExpandedSnapshotsInEachFormat(t *testing
 				Height:     240,
 			}
 
-			g.Expect(cmd.Run(&Flags{Config: config.New()})).To(Succeed())
+			g.Expect(cmd.Run(&Flags{Config: newTestConfig()})).To(Succeed())
 
 			image, err := os.ReadFile(output)
 			g.Expect(err).NotTo(HaveOccurred())

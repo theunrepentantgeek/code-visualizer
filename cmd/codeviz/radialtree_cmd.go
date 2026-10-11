@@ -94,6 +94,10 @@ func (*RadialCmd) validateConfig(cfg *config.Radial) error {
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
 // and validates the effective configuration. Called at the start of Run().
 func (c *RadialCmd) mergeConfigAndValidate(flags *Flags) error {
+	if err := flags.initializeConfig(config.New(config.VisTypeRadialTree)); err != nil {
+		return err
+	}
+
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}

@@ -242,7 +242,7 @@ func TestRenderStage_DefaultFooterKeepsConfiguredCanvasSize(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	root := radialTestRoot()
-	cfg := config.New()
+	cfg := config.New(config.VisTypeRadialTree)
 	common := &stages.CommonState{
 		Root:       root,
 		RootConfig: cfg,

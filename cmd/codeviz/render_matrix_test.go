@@ -295,7 +295,7 @@ func renderMetricEndToEnd(t *testing.T, target string, expr metricExpr) {
 		cmd.Size = metric.Name(expr.name)
 	}
 
-	flags := &Flags{Config: config.New()}
+	flags := &Flags{Config: newTestConfig()}
 	g.Expect(cmd.Run(flags)).To(Succeed(), "rendering metric %q", expr.name)
 
 	data, err := os.ReadFile(out)
@@ -334,7 +334,7 @@ func TestLabelOnlyMetrics_RenderEndToEnd(t *testing.T) {
 	)).To(Succeed())
 
 	out := filepath.Join(t.TempDir(), "labels.svg")
-	flags := &Flags{Config: config.New()}
+	flags := &Flags{Config: newTestConfig()}
 	flags.Config.Treemap.Labels = []metric.Name{filesystem.FileLines, filesystem.FileType}
 	cmd := &TreemapCmd{
 		TargetPath: target,

@@ -181,7 +181,7 @@ func TestLayoutStage_FooterEnabled_ReducesAvailableHeight(t *testing.T) {
 		Files: []*model.File{makeTestFile("a.go", "go", 100)},
 	}
 
-	cfg := config.New()
+	cfg := config.New(config.VisTypeTreeMap)
 	// Footer has text set by default (from config.New()), so it will be shown.
 
 	const width, height = 800, 600
@@ -219,7 +219,7 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 		Files: []*model.File{makeTestFile("a.go", "go", 100)},
 	}
 
-	cfgWithFooter := config.New()
+	cfgWithFooter := config.New(config.VisTypeTreeMap)
 	cfgWithFooter.OverrideHideFooter(true)
 
 	const width, height = 800, 600
@@ -243,7 +243,7 @@ func TestLayoutStage_FooterDisabled_UsesFullHeight(t *testing.T) {
 		Root:       root,
 		Width:      width,
 		Height:     height,
-		RootConfig: config.New(),
+		RootConfig: config.New(config.VisTypeTreeMap),
 	}
 	g.Expect(stages.InitDrawingBounds(commonWithFooter)).To(Succeed())
 	g.Expect(stages.ReserveFooterBounds(commonWithFooter)).To(Succeed())

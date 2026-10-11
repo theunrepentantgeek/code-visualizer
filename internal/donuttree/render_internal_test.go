@@ -21,7 +21,7 @@ import (
 func renderDonutPipeline(t *testing.T, output string, width, height int) *stages.CommonState {
 	t.Helper()
 	g := NewGomegaWithT(t)
-	cfg := config.New()
+	cfg := config.New(config.VisTypeDonutTree)
 	cfg.ImageSize = &config.ImageSize{Width: &width, Height: &height}
 	cfg.Title = &config.Title{Text: new("Nested donut")}
 	cfg.Footer.Text = new("donut tree test")

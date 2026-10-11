@@ -41,7 +41,7 @@ func TestNew_AuthorshipDefaultsSet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	g.Expect(cfg.Authorship).NotTo(BeNil())
 	g.Expect(cfg.Authorship.ActivityWindowDays).NotTo(BeNil())

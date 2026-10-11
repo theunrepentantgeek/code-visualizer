@@ -29,7 +29,7 @@ const defaultAuthorshipIdentityTopK = 11
 const defaultAuthorshipHonorMailmap = true
 
 // DefaultAuthorshipConfig returns an *AuthorshipConfig with every field set to
-// the spec-mandated default value.  config.New() embeds this so that
+// the spec-mandated default value. Config.New embeds this so that
 // --export-config always emits an authorship section, making all thresholds
 // discoverable without any git://issue#550 documentation lookup.
 func DefaultAuthorshipConfig() *AuthorshipConfig {

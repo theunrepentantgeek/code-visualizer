@@ -70,31 +70,18 @@ type Config struct {
 	Source *string `yaml:"-" json:"-"`
 }
 
-// New returns a Config populated with sensible defaults.
-// Call this unconditionally at startup; subsequent layers (config file, CLI
-// flags) overlay their values on top of the struct returned here.
-func New() *Config {
+// New returns a Config populated with common defaults and defaults for the
+// requested visualization. Subsequent layers (config file and CLI flags)
+// overlay their values on top of the returned struct.
+func New(visType VisType) *Config {
 	width := 1920
 	height := 1080
 
-	return &Config{
+	cfg := &Config{
 		ImageSize: &ImageSize{
 			Width:  &width,
 			Height: &height,
 		},
-		Treemap: &Treemap{},
-		Radial: &Radial{
-			Labels: new("all"),
-		},
-		DonutTree: &DonutTree{},
-		Bubbletree: &Bubbletree{
-			Labels: new("folders"),
-		},
-		Spiral: &Spiral{
-			Resolution: new("daily"),
-		},
-		Scatter:  &Scatter{},
-		Alluvial: &Alluvial{},
 		FileFilter: []filter.Rule{
 			{Pattern: ".*", Mode: filter.Exclude},
 		},
@@ -104,6 +91,26 @@ func New() *Config {
 		},
 		Authorship: DefaultAuthorshipConfig(),
 	}
+
+	switch visType {
+	case VisTypeTreeMap:
+		cfg.Treemap = &Treemap{}
+	case VisTypeRadialTree:
+		cfg.Radial = &Radial{Labels: new("all")}
+	case VisTypeDonutTree:
+		cfg.DonutTree = &DonutTree{}
+	case VisTypeBubbleTree:
+		cfg.Bubbletree = &Bubbletree{Labels: new("folders")}
+	case VisTypeSpiral:
+		cfg.Spiral = &Spiral{Resolution: new("daily")}
+	case VisTypeScatter:
+		cfg.Scatter = &Scatter{}
+	case VisTypeAlluvial:
+		cfg.Alluvial = &Alluvial{}
+	default:
+	}
+
+	return cfg
 }
 
 // Load reads the file at path and unmarshals it on top of c.
@@ -292,39 +299,6 @@ func (c *Config) TryAutoLoad(outputPath string) error {
 	}
 
 	return nil
-}
-
-// ForExport returns a shallow copy of c with only the requested
-// visualization section populated.
-func (c *Config) ForExport(vizName string) *Config {
-	exported := &Config{
-		ImageSize:   c.ImageSize,
-		Legend:      c.Legend,
-		FileFilter:  c.FileFilter,
-		ChangedOnly: c.ChangedOnly,
-		Authorship:  c.Authorship,
-		Source:      c.Source,
-	}
-
-	switch vizName {
-	case "tree-map":
-		exported.Treemap = c.Treemap
-	case "radial-tree":
-		exported.Radial = c.Radial
-	case "donut-tree":
-		exported.DonutTree = c.DonutTree
-	case "bubble-tree":
-		exported.Bubbletree = c.Bubbletree
-	case "spiral":
-		exported.Spiral = c.Spiral
-	case "scatter":
-		exported.Scatter = c.Scatter
-	case "alluvial":
-		exported.Alluvial = c.Alluvial
-	default:
-	}
-
-	return exported
 }
 
 // Save writes c to path in YAML or JSON format, determined by the file extension.

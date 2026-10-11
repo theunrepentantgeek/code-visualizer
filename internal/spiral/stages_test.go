@@ -303,7 +303,7 @@ func TestBuildLegendStage_AddsDistinctSurfaceMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	common := &stages.CommonState{RootConfig: config.New()}
+	common := &stages.CommonState{RootConfig: config.New(config.VisTypeSpiral)}
 	viz := &spiral.State{
 		Fill:       vizmodel.ColourEncoding{Metric: "file-lines"},
 		Surface:    vizmodel.ColourEncoding{Metric: "file-size"},
@@ -321,7 +321,7 @@ func TestBuildLegendStage_AppendsLabelNamesOnlyToCircleSample(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	common := &stages.CommonState{RootConfig: config.New()}
+	common := &stages.CommonState{RootConfig: config.New(config.VisTypeSpiral)}
 	viz := &spiral.State{
 		Size:         "file-size",
 		LabelMetrics: []metric.Name{"file-lines", "file-type"},
@@ -344,7 +344,7 @@ func TestBuildLegendStage_SkipsSurfaceMatchingFillMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	common := &stages.CommonState{RootConfig: config.New()}
+	common := &stages.CommonState{RootConfig: config.New(config.VisTypeSpiral)}
 	viz := &spiral.State{
 		Fill:       vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
 		Surface:    vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
@@ -361,7 +361,7 @@ func TestBuildLegendStage_AddsSurfaceForSameMetricWithDifferentPalette(t *testin
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	common := &stages.CommonState{RootConfig: config.New()}
+	common := &stages.CommonState{RootConfig: config.New(config.VisTypeSpiral)}
 	viz := &spiral.State{
 		Fill:       vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Foliage},
 		Surface:    vizmodel.ColourEncoding{Metric: "file-lines", Palette: palette.Temperature},

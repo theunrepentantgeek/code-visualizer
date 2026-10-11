@@ -86,6 +86,22 @@ func (f *Flags) HasExplicitConfig() bool {
 	return f.configPath != ""
 }
 
+func (f *Flags) initializeConfig(cfg *config.Config) error {
+	if f.Config != nil {
+		return nil
+	}
+
+	if f.configPath != "" {
+		if err := cfg.Load(f.configPath); err != nil {
+			return eris.Wrap(err, "load config")
+		}
+	}
+
+	f.Config = cfg
+
+	return nil
+}
+
 func (f *Flags) stdoutWriter() io.Writer {
 	if f.Stdout != nil {
 		return f.Stdout
@@ -158,7 +174,7 @@ func main() {
 	os.Exit(code)
 }
 
-//nolint:cyclop,funlen,revive // Bootstrap failures map directly to documented process exit codes.
+//nolint:funlen // Bootstrap failures map directly to documented process exit codes.
 func runApplication(app application) int {
 	// Install tint early so bootstrap errors are formatted consistently.
 	setupLogger(app.stderr, false, false)
@@ -216,24 +232,12 @@ func runApplication(app application) int {
 	noColor := cli.NoColor || environmentDisablesColor(lookupEnv)
 	setupLogger(reporter.DiagnosticWriter(), cli.Debug, noColor)
 
-	cfg := config.New()
-
-	if cli.Config != "" {
-		if loadErr := cfg.Load(cli.Config); loadErr != nil {
-			err = errors.Join(loadErr, reporter.Close())
-			slog.Error(err.Error())
-
-			return classifyError(err)
-		}
-	}
-
 	flags := &Flags{
 		Quiet:        cli.Quiet,
 		Verbose:      cli.Verbose,
 		Debug:        cli.Debug,
 		ExportConfig: cli.ExportConfig,
 		ExportData:   cli.ExportData,
-		Config:       cfg,
 		Context:      app.context,
 		Reporter:     reporter,
 		Stdout:       app.stdout,

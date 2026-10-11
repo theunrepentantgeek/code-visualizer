@@ -18,12 +18,24 @@ import (
 
 // New tests
 
+func newTestConfig() *Config {
+	cfg := New(VisTypeTreeMap)
+	cfg.Radial = New(VisTypeRadialTree).Radial
+	cfg.DonutTree = New(VisTypeDonutTree).DonutTree
+	cfg.Bubbletree = New(VisTypeBubbleTree).Bubbletree
+	cfg.Spiral = New(VisTypeSpiral).Spiral
+	cfg.Scatter = New(VisTypeScatter).Scatter
+	cfg.Alluvial = New(VisTypeAlluvial).Alluvial
+
+	return cfg
+}
+
 func TestNew_ReturnsNonNil(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New()
+	cfg := New(VisTypeNone)
 
 	// Assert
 	g.Expect(cfg).NotTo(BeNil())
@@ -34,7 +46,7 @@ func TestNew_DefaultsSet(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New()
+	cfg := New(VisTypeNone)
 
 	// Assert
 	g.Expect(cfg.ImageSize).NotTo(BeNil())
@@ -49,7 +61,7 @@ func TestNew_TreemapDefaultsSet(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New()
+	cfg := New(VisTypeTreeMap)
 
 	// Assert
 	g.Expect(cfg.Treemap).NotTo(BeNil())
@@ -59,7 +71,7 @@ func TestNew_AlluvialDefaultsSet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := New(VisTypeAlluvial)
 
 	g.Expect(cfg.Alluvial).NotTo(BeNil())
 }
@@ -69,11 +81,65 @@ func TestNew_OptionalFieldsNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New()
+	cfg := New(VisTypeTreeMap)
 
 	// Assert
 	g.Expect(cfg.Treemap.Fill).To(BeNil())
 	g.Expect(cfg.Treemap.Border).To(BeNil())
+}
+
+func TestNew_OnlySetsSelectedVisualizationDefaults(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cfg := New(VisTypeSpiral)
+
+	g.Expect(cfg.Spiral).NotTo(BeNil())
+	g.Expect(cfg.Treemap).To(BeNil())
+	g.Expect(cfg.Radial).To(BeNil())
+	g.Expect(cfg.DonutTree).To(BeNil())
+	g.Expect(cfg.Bubbletree).To(BeNil())
+	g.Expect(cfg.Scatter).To(BeNil())
+	g.Expect(cfg.Alluvial).To(BeNil())
+}
+
+func TestNew_SupportsEveryVisType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		visType  VisType
+		selected func(*Config) bool
+	}{
+		{
+			name: "tree map", visType: VisTypeTreeMap,
+			selected: func(cfg *Config) bool { return cfg.Treemap != nil },
+		},
+		{
+			name: "radial tree", visType: VisTypeRadialTree,
+			selected: func(cfg *Config) bool { return cfg.Radial != nil },
+		},
+		{
+			name: "donut tree", visType: VisTypeDonutTree,
+			selected: func(cfg *Config) bool { return cfg.DonutTree != nil },
+		},
+		{
+			name: "bubble tree", visType: VisTypeBubbleTree,
+			selected: func(cfg *Config) bool { return cfg.Bubbletree != nil },
+		},
+		{name: "spiral", visType: VisTypeSpiral, selected: func(cfg *Config) bool { return cfg.Spiral != nil }},
+		{name: "scatter", visType: VisTypeScatter, selected: func(cfg *Config) bool { return cfg.Scatter != nil }},
+		{name: "alluvial", visType: VisTypeAlluvial, selected: func(cfg *Config) bool { return cfg.Alluvial != nil }},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			g.Expect(test.selected(New(test.visType))).To(BeTrue())
+		})
+	}
 }
 
 func TestLabels_RoundTripPreservesOrder(t *testing.T) {
@@ -84,7 +150,7 @@ func TestLabels_RoundTripPreservesOrder(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 			want := []metric.Name{"file-lines", "file-type"}
-			cfg := New()
+			cfg := newTestConfig()
 
 			cfg.Treemap.Labels = append([]metric.Name(nil), want...)
 			cfg.Spiral.Labels = append([]metric.Name(nil), want...)
@@ -94,7 +160,7 @@ func TestLabels_RoundTripPreservesOrder(t *testing.T) {
 
 			g.Expect(cfg.Save(path)).To(Succeed())
 
-			loaded := New()
+			loaded := newTestConfig()
 			g.Expect(loaded.Load(path)).To(Succeed())
 			g.Expect(loaded.Treemap.Labels).To(Equal(want))
 			g.Expect(loaded.Spiral.Labels).To(Equal(want))
@@ -115,7 +181,7 @@ func TestLoad_UnknownExtension_ReturnsError(t *testing.T) {
 	path := filepath.Join(dir, "config.toml")
 	g.Expect(os.WriteFile(path, []byte("[treemap]\nfill = \"file-type\"\n"), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	// Act
 	err := cfg.Load(path)
@@ -129,7 +195,7 @@ func TestLoad_MissingFile_ReturnsError(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Arrange
-	cfg := New()
+	cfg := newTestConfig()
 
 	// Act
 	err := cfg.Load("/nonexistent/path/config.yaml")
@@ -148,7 +214,7 @@ func TestLoad_YAMLImageSize_OverridesWidth(t *testing.T) {
 	content := "imageSize:\n  width: 800\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	// Act
 	err := cfg.Load(path)
@@ -175,7 +241,7 @@ func TestLoad_YAMLRadialTree_ParsesFileAndDirectoryMetrics(t *testing.T) {
 		"  directoryBorder: file-freshness.mean,good-bad\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	g.Expect(cfg.Load(path)).To(Succeed())
 	g.Expect(*cfg.Radial.FileDiscSize).To(Equal("file-size"))
@@ -198,7 +264,7 @@ func TestLoad_YAMLDonutTree_ParsesMetrics(t *testing.T) {
 		"  border: file-freshness,good-bad\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	g.Expect(cfg.Load(path)).To(Succeed())
 	g.Expect(*cfg.DonutTree.Size).To(Equal("file-lines"))
@@ -227,7 +293,7 @@ func TestLoad_YAMLAlluvial_ParsesOrderedReferencesAndExpansions(t *testing.T) {
 		"  constantBands: merge\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	g.Expect(cfg.Load(path)).To(Succeed())
 	g.Expect(cfg.Alluvial.References).To(Equal([]string{"tag:v1.0", "sha:abc1234", "2026-01-01"}))
@@ -242,12 +308,12 @@ func TestSaveLoad_RoundTripsAlluvialConstantBandsAsJSON(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	path := filepath.Join(t.TempDir(), "config.json")
-	original := New()
+	original := newTestConfig()
 	original.Alluvial.OverrideConstantBands("merge")
 
 	g.Expect(original.Save(path)).To(Succeed())
 
-	loaded := New()
+	loaded := newTestConfig()
 	g.Expect(loaded.Load(path)).To(Succeed())
 	g.Expect(loaded.Alluvial.ConstantBandsMode()).To(Equal(ConstantBandsMerge))
 }
@@ -261,7 +327,7 @@ func TestLoad_YAMLUnknownField_ReturnsLineNumber(t *testing.T) {
 	content := "imageSize:\n  width: 800\n  depth: 900\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	err := cfg.Load(path)
 
@@ -281,7 +347,7 @@ func TestLoad_YAMLUnknownMetricSpecField_ReturnsLineNumber(t *testing.T) {
 	content := "tree-map:\n  fill:\n    metric: file-type\n    scheme: categorization\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	err := cfg.Load(path)
 
@@ -301,7 +367,7 @@ func TestLoad_YAMLLegacyTopLevelWidth_ReturnsUnknownFieldError(t *testing.T) {
 	content := "title:\n  text: Example\nwidth: 800\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	err := cfg.Load(path)
 
@@ -322,7 +388,7 @@ func TestLoad_JSONConfig_OverridesFill(t *testing.T) {
 	content := `{"tree-map":{"fill":"file-type,categorization"}}`
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	// Act
 	err := cfg.Load(path)
@@ -343,7 +409,7 @@ func TestLoad_JSONUnknownField_ReturnsLineNumber(t *testing.T) {
 	content := "{\n  \"imageSize\": {\n    \"width\": 800,\n    \"depth\": 900\n  }\n}\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	err := cfg.Load(path)
 
@@ -370,7 +436,7 @@ func TestLoad_JSONUnknownMetricSpecField_ReturnsLineNumber(t *testing.T) {
 		"}\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	err := cfg.Load(path)
 
@@ -390,7 +456,7 @@ func TestLoad_JSONInvalidMetricSpecType_ReturnsLineNumber(t *testing.T) {
 	content := "{\n  \"tree-map\": {\n    \"fill\": {\n      \"metric\": 42\n    }\n  }\n}\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	err := cfg.Load(path)
 
@@ -410,7 +476,7 @@ func TestLoad_JSONLegacyTopLevelWidth_ReturnsUnknownFieldError(t *testing.T) {
 	content := "{\n  \"title\": {\"text\": \"Example\"},\n  \"width\": 800\n}\n"
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	err := cfg.Load(path)
 
@@ -430,7 +496,7 @@ func TestLoad_InvalidYAML_ReturnsError(t *testing.T) {
 	path := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(path, []byte("imageSize:\n  width: 800\n  height: [\n"), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	// Act
 	err := cfg.Load(path)
@@ -447,7 +513,7 @@ func TestParseYAMLConfig_TrailingDocument_ReturnsLineNumber(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := []byte("imageSize:\n  width: 800\n---\nfooter:\n  hidden: true\n")
-	err := parseYAMLConfig(data, New())
+	err := parseYAMLConfig(data, newTestConfig())
 
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("line 3"),
@@ -459,7 +525,7 @@ func TestParseYAMLConfig_EmptyFile_ReturnsLineNumber(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	err := parseYAMLConfig(nil, New())
+	err := parseYAMLConfig(nil, newTestConfig())
 
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("line 1"),
@@ -472,7 +538,7 @@ func TestParseYAMLConfig_ContentAfterDocumentEnd_ReturnsLineNumber(t *testing.T)
 	g := NewGomegaWithT(t)
 
 	data := []byte("imageSize:\n  width: 800\n...\n# trailing comment\n")
-	err := parseYAMLConfig(data, New())
+	err := parseYAMLConfig(data, newTestConfig())
 
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("line 4"),
@@ -486,7 +552,7 @@ func TestParseYAMLConfig_WhitespaceAfterDocumentEnd_Succeeds(t *testing.T) {
 
 	data := []byte("imageSize:\n  width: 800\n...\n  \n\t\n")
 
-	g.Expect(parseYAMLConfig(data, New())).To(Succeed())
+	g.Expect(parseYAMLConfig(data, newTestConfig())).To(Succeed())
 }
 
 func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
@@ -498,7 +564,7 @@ func TestLoad_InvalidJSON_ReturnsError(t *testing.T) {
 	path := filepath.Join(dir, "config.json")
 	g.Expect(os.WriteFile(path, []byte("{\n  \"imageSize\": {\n    \"width\": 800,\n  }\n}\n"), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	// Act
 	err := cfg.Load(path)
@@ -515,7 +581,7 @@ func TestParseJSONConfig_TrailingValue_ReturnsLineNumber(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := []byte("{\n  \"imageSize\": {\"width\": 800}\n}\n{\n  \"footer\": {\"hidden\": true}\n}\n")
-	err := parseJSONConfig(data, New())
+	err := parseJSONConfig(data, newTestConfig())
 
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("line 4"),
@@ -527,7 +593,7 @@ func TestParseJSONConfig_RepeatedLeafNameReportsUnknownFieldLine(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	data := []byte("{\n  \"title\": {\"text\": \"Example\"},\n  \"imageSize\": {\n    \"text\": \"invalid\"\n  }\n}\n")
-	err := parseJSONConfig(data, New())
+	err := parseJSONConfig(data, newTestConfig())
 
 	g.Expect(err).To(MatchError(And(
 		ContainSubstring("line 4"),
@@ -541,7 +607,7 @@ func TestSave_UnknownExtension_ReturnsError(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	err := New().Save("/tmp/config.toml")
+	err := newTestConfig().Save("/tmp/config.toml")
 
 	// Assert
 	g.Expect(err).To(MatchError(ContainSubstring("unsupported config file extension")))
@@ -597,7 +663,7 @@ func TestSave_WritesImageSizeObject(t *testing.T) {
 			// Arrange
 			dir := t.TempDir()
 			path := filepath.Join(dir, tc.fileName)
-			cfg := New()
+			cfg := newTestConfig()
 
 			// Act
 			err := cfg.Save(path)
@@ -630,13 +696,13 @@ func TestSave_ThenLoad_RoundTrips(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 
-	original := New()
+	original := newTestConfig()
 	original.Treemap.Fill = &MetricSpec{Metric: metric.Name("file-type")}
 
 	// Act: save then load into fresh config
 	g.Expect(original.Save(path)).To(Succeed())
 
-	loaded := New()
+	loaded := newTestConfig()
 	g.Expect(loaded.Load(path)).To(Succeed())
 
 	// Assert
@@ -656,7 +722,7 @@ func TestSave_ThenLoad_RoundTripsSpiralSurface(t *testing.T) {
 			g := NewGomegaWithT(t)
 
 			path := filepath.Join(t.TempDir(), "config."+ext)
-			original := New()
+			original := newTestConfig()
 			original.Spiral.Surface = new(true)
 			original.Spiral.SurfaceMetric = &MetricSpec{
 				Metric:  metric.Name("file-lines"),
@@ -665,7 +731,7 @@ func TestSave_ThenLoad_RoundTripsSpiralSurface(t *testing.T) {
 
 			g.Expect(original.Save(path)).To(Succeed())
 
-			loaded := New()
+			loaded := newTestConfig()
 			g.Expect(loaded.Load(path)).To(Succeed())
 			g.Expect(loaded.Spiral.Surface).NotTo(BeNil())
 			g.Expect(*loaded.Spiral.Surface).To(BeTrue())
@@ -682,7 +748,7 @@ func TestSave_OmitsNilFields(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.yaml")
-	cfg := New() // Fill, Border etc. are nil
+	cfg := newTestConfig() // Fill, Border etc. are nil
 
 	// Act
 	g.Expect(cfg.Save(path)).To(Succeed())
@@ -695,135 +761,11 @@ func TestSave_OmitsNilFields(t *testing.T) {
 	g.Expect(string(data)).NotTo(ContainSubstring("border"))
 }
 
-func TestForExport_OnlyIncludesRelevantViz(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := New()
-
-	exported := cfg.ForExport("tree-map")
-
-	g.Expect(exported.Treemap).To(BeIdenticalTo(cfg.Treemap))
-	g.Expect(exported.Radial).To(BeNil())
-	g.Expect(exported.Bubbletree).To(BeNil())
-	g.Expect(exported.Spiral).To(BeNil())
-	g.Expect(exported.Scatter).To(BeNil())
-}
-
-func TestForExport_DonutTree_OnlyIncludesDonutTreeSection(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := New()
-
-	exported := cfg.ForExport("donut-tree")
-
-	g.Expect(exported.DonutTree).To(BeIdenticalTo(cfg.DonutTree))
-	g.Expect(exported.Treemap).To(BeNil())
-	g.Expect(exported.Radial).To(BeNil())
-	g.Expect(exported.Bubbletree).To(BeNil())
-	g.Expect(exported.Spiral).To(BeNil())
-	g.Expect(exported.Scatter).To(BeNil())
-}
-
-func TestForExport_PreservesImageSizeAndFilter(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	width := 800
-	height := 600
-	cfg := New()
-	cfg.ImageSize = &ImageSize{Width: &width, Height: &height}
-	cfg.FileFilter = []filter.Rule{{Pattern: "*.go", Mode: filter.Include}}
-
-	exported := cfg.ForExport("scatter")
-
-	g.Expect(exported.ImageSize).To(BeIdenticalTo(cfg.ImageSize))
-	g.Expect(exported.FileFilter).To(Equal(cfg.FileFilter))
-	g.Expect(exported.Scatter).To(BeIdenticalTo(cfg.Scatter))
-}
-
-func TestForExport_UnknownViz_ExportsNoVizSection(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := New()
-
-	exported := cfg.ForExport("unknown")
-
-	g.Expect(exported.Treemap).To(BeNil())
-	g.Expect(exported.Radial).To(BeNil())
-	g.Expect(exported.Bubbletree).To(BeNil())
-	g.Expect(exported.Spiral).To(BeNil())
-	g.Expect(exported.Scatter).To(BeNil())
-}
-
-func TestForExport_Radial_OnlyIncludesRadialSection(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := New()
-
-	exported := cfg.ForExport("radial-tree")
-
-	g.Expect(exported.Radial).To(BeIdenticalTo(cfg.Radial))
-	g.Expect(exported.Treemap).To(BeNil())
-	g.Expect(exported.Bubbletree).To(BeNil())
-	g.Expect(exported.Spiral).To(BeNil())
-	g.Expect(exported.Scatter).To(BeNil())
-}
-
-func TestForExport_BubbleTree_OnlyIncludesBubbletreeSection(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := New()
-
-	exported := cfg.ForExport("bubble-tree")
-
-	g.Expect(exported.Bubbletree).To(BeIdenticalTo(cfg.Bubbletree))
-	g.Expect(exported.Treemap).To(BeNil())
-	g.Expect(exported.Radial).To(BeNil())
-	g.Expect(exported.Spiral).To(BeNil())
-	g.Expect(exported.Scatter).To(BeNil())
-}
-
-func TestForExport_Spiral_OnlyIncludesSpiralSection(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := New()
-
-	exported := cfg.ForExport("spiral")
-
-	g.Expect(exported.Spiral).To(BeIdenticalTo(cfg.Spiral))
-	g.Expect(exported.Treemap).To(BeNil())
-	g.Expect(exported.Radial).To(BeNil())
-	g.Expect(exported.Bubbletree).To(BeNil())
-	g.Expect(exported.Scatter).To(BeNil())
-}
-
-func TestForExport_Alluvial_OnlyIncludesAlluvialSection(t *testing.T) {
-	t.Parallel()
-	g := NewGomegaWithT(t)
-
-	cfg := New()
-
-	exported := cfg.ForExport("alluvial")
-
-	g.Expect(exported.Alluvial).To(BeIdenticalTo(cfg.Alluvial))
-	g.Expect(exported.Treemap).To(BeNil())
-	g.Expect(exported.Radial).To(BeNil())
-	g.Expect(exported.Bubbletree).To(BeNil())
-	g.Expect(exported.Spiral).To(BeNil())
-	g.Expect(exported.Scatter).To(BeNil())
-}
-
 func TestNew_DefaultFileFilter(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	g.Expect(cfg.FileFilter).To(HaveLen(1))
 	g.Expect(cfg.FileFilter[0].Pattern).To(Equal(".*"))
@@ -846,7 +788,7 @@ func TestLoad_YAMLFileFilter_ReplacesDefaults(t *testing.T) {
 `
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 	err := cfg.Load(path)
 
 	g.Expect(err).NotTo(HaveOccurred())
@@ -864,7 +806,7 @@ func TestSave_Load_RoundTripsFileFilter(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 
-	original := New()
+	original := newTestConfig()
 	original.FileFilter = []filter.Rule{
 		{Pattern: ".*", Mode: filter.Exclude},
 		{Pattern: ".github/**", Mode: filter.Include},
@@ -872,7 +814,7 @@ func TestSave_Load_RoundTripsFileFilter(t *testing.T) {
 
 	g.Expect(original.Save(path)).To(Succeed())
 
-	loaded := New()
+	loaded := newTestConfig()
 	g.Expect(loaded.Load(path)).To(Succeed())
 
 	g.Expect(loaded.FileFilter).To(HaveLen(2))
@@ -890,7 +832,7 @@ func TestLoad_YAMLChangedOnly(t *testing.T) {
 	path := filepath.Join(dir, "config.yaml")
 	g.Expect(os.WriteFile(path, []byte("changedOnly: true\n"), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(path)).To(Succeed())
 	g.Expect(cfg.ChangedOnlyEnabled()).To(BeTrue())
 }
@@ -901,12 +843,12 @@ func TestSaveLoad_RoundTripsChangedOnlyAsJSON(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	original := New()
+	original := newTestConfig()
 	original.OverrideChangedOnly(true)
 
 	g.Expect(original.Save(path)).To(Succeed())
 
-	loaded := New()
+	loaded := newTestConfig()
 	g.Expect(loaded.Load(path)).To(Succeed())
 	g.Expect(loaded.ChangedOnlyEnabled()).To(BeTrue())
 }
@@ -915,7 +857,7 @@ func TestOverrideChangedOnly_OmittedFalsePreservesConfigValue(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 	cfg.OverrideChangedOnly(true)
 	cfg.OverrideChangedOnly(false)
 
@@ -1021,7 +963,7 @@ func TestTryAutoLoad_NoConfigFile_NoChange(t *testing.T) {
 	dir := t.TempDir()
 	outputPath := filepath.Join(dir, "output.png")
 
-	cfg := New()
+	cfg := newTestConfig()
 	err := cfg.TryAutoLoad(outputPath)
 
 	g.Expect(err).NotTo(HaveOccurred())
@@ -1037,7 +979,7 @@ func TestTryAutoLoad_ConfigFilePresent_LoadsIt(t *testing.T) {
 	configPath := filepath.Join(dir, "output-config.yml")
 	g.Expect(os.WriteFile(configPath, []byte("imageSize:\n  width: 800\n"), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 	err := cfg.TryAutoLoad(outputPath)
 
 	g.Expect(err).NotTo(HaveOccurred())
@@ -1060,7 +1002,7 @@ func TestTryAutoLoad_AlreadyLoaded_SkipsAutoLoad(t *testing.T) {
 	manualConfigPath := filepath.Join(dir, "manual.yml")
 	g.Expect(os.WriteFile(manualConfigPath, []byte("imageSize:\n  width: 1600\n"), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(manualConfigPath)).To(Succeed())
 
 	// TryAutoLoad should be a no-op because Source is already set
@@ -1074,7 +1016,7 @@ func TestNew_ScatterDefaultsSet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New()
+	cfg := newTestConfig()
 
 	g.Expect(cfg.Scatter).NotTo(BeNil())
 }
@@ -1093,7 +1035,7 @@ func TestLoad_ScatterConfig_ParsesAxesAndSize(t *testing.T) {
 `
 	g.Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 	err := cfg.Load(path)
 
 	g.Expect(err).NotTo(HaveOccurred())
@@ -1115,7 +1057,7 @@ func TestLoad_JSONScatterConfig_ParsesGrain(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	g.Expect(os.WriteFile(path, []byte(`{"scatter":{"grain":"directory"}}`), 0o600)).To(Succeed())
 
-	cfg := New()
+	cfg := newTestConfig()
 	g.Expect(cfg.Load(path)).To(Succeed())
 	g.Expect(cfg.Scatter.Grain).NotTo(BeNil())
 	g.Expect(*cfg.Scatter.Grain).To(Equal("directory"))

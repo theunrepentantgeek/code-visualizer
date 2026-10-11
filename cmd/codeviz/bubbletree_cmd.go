@@ -68,6 +68,10 @@ func (*BubbletreeCmd) validateConfig(cfg *config.Bubbletree) error {
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
 // and validates the effective configuration. Called at the start of Run().
 func (c *BubbletreeCmd) mergeConfigAndValidate(flags *Flags) error {
+	if err := flags.initializeConfig(config.New(config.VisTypeBubbleTree)); err != nil {
+		return err
+	}
+
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}

@@ -72,6 +72,10 @@ func (*DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
 }
 
 func (c *DonutTreeCmd) mergeConfigAndValidate(flags *Flags) error {
+	if err := flags.initializeConfig(config.New(config.VisTypeDonutTree)); err != nil {
+		return err
+	}
+
 	if err := flags.Config.TryAutoLoad(c.Output); err != nil {
 		return eris.Wrap(err, "auto-config load failed")
 	}
