@@ -147,7 +147,7 @@ func TestLoadGitMetrics_ReportsAuthorshipProgress(t *testing.T) {
 	g := NewGomegaWithT(t)
 	state := buildHistoryState(setupHistoryRepo(t))
 	state.RepoRoot = state.TargetPath
-	state.RootConfig = config.New("")
+	state.RootConfig = config.New(config.VisTypeNone)
 	state.Requested.BaseMetrics = []metric.Name{git.CodeOwnerMetric}
 	sink := newTestSink(progress.WorkCommits)
 
@@ -161,7 +161,7 @@ func TestLoadGitMetrics_CombinesHistoryAndAuthorshipProgress(t *testing.T) {
 	g := NewGomegaWithT(t)
 	state := buildHistoryState(setupHistoryRepo(t))
 	state.RepoRoot = state.TargetPath
-	state.RootConfig = config.New("")
+	state.RootConfig = config.New(config.VisTypeNone)
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
 	sink := newTestSink(progress.WorkCommits)
 
@@ -191,7 +191,7 @@ func TestLoadGitMetrics_PropagatesCancellationDuringHistoryPass(t *testing.T) {
 	g := NewGomegaWithT(t)
 	state := buildHistoryState(setupHistoryRepo(t))
 	state.RepoRoot = state.TargetPath
-	state.RootConfig = config.New("")
+	state.RootConfig = config.New(config.VisTypeNone)
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
 	ctx, cancel := context.WithCancel(t.Context())
 	sink := &cancelingProgressSink{
@@ -210,7 +210,7 @@ func TestLoadGitMetrics_PropagatesCancellationDuringAuthorshipPass(t *testing.T)
 	g := NewGomegaWithT(t)
 	state := buildHistoryState(setupHistoryRepo(t))
 	state.RepoRoot = state.TargetPath
-	state.RootConfig = config.New("")
+	state.RootConfig = config.New(config.VisTypeNone)
 	state.Requested.BaseMetrics = []metric.Name{git.CommitCount, git.CodeOwnerMetric}
 	ctx, cancel := context.WithCancel(t.Context())
 	sink := &cancelingProgressSink{
@@ -398,7 +398,7 @@ func TestRunProviders_AppliesRevisionRangeToAuthorshipMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	state.RootConfig = config.New("")
+	state.RootConfig = config.New(config.VisTypeNone)
 	state.Flags.HistoryRange = git.HistoryRange{From: "v1.0"}
 	state.Requested.BaseMetrics = []metric.Name{git.CodeOwnerMetric}
 
@@ -428,7 +428,7 @@ func TestRunProviders_UsesSnapshotClockForAuthorshipWindows(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	state := buildHistoryState(setupHistoryRepo(t))
-	state.RootConfig = config.New("")
+	state.RootConfig = config.New(config.VisTypeNone)
 	state.ReferenceNow = time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
 	state.Requested.BaseMetrics = []metric.Name{git.CurrentMaintainerMetric}
 

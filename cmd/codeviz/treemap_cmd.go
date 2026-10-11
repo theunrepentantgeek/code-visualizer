@@ -72,7 +72,7 @@ func (*TreemapCmd) validateConfig(cfg *config.Treemap) error {
 // mergeConfigAndValidate loads the config file, merges CLI overrides on top,
 // and validates the effective configuration. Called at the start of Run().
 func (c *TreemapCmd) mergeConfigAndValidate(flags *Flags) error {
-	if err := flags.initializeConfig(config.New("tree-map")); err != nil {
+	if err := flags.initializeConfig(config.New(config.VisTypeTreeMap)); err != nil {
 		return err
 	}
 

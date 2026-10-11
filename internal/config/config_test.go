@@ -19,13 +19,13 @@ import (
 // New tests
 
 func newTestConfig() *Config {
-	cfg := New("tree-map")
-	cfg.Radial = New("radial-tree").Radial
-	cfg.DonutTree = New("donut-tree").DonutTree
-	cfg.Bubbletree = New("bubble-tree").Bubbletree
-	cfg.Spiral = New("spiral").Spiral
-	cfg.Scatter = New("scatter").Scatter
-	cfg.Alluvial = New("alluvial").Alluvial
+	cfg := New(VisTypeTreeMap)
+	cfg.Radial = New(VisTypeRadialTree).Radial
+	cfg.DonutTree = New(VisTypeDonutTree).DonutTree
+	cfg.Bubbletree = New(VisTypeBubbleTree).Bubbletree
+	cfg.Spiral = New(VisTypeSpiral).Spiral
+	cfg.Scatter = New(VisTypeScatter).Scatter
+	cfg.Alluvial = New(VisTypeAlluvial).Alluvial
 
 	return cfg
 }
@@ -35,7 +35,7 @@ func TestNew_ReturnsNonNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New("")
+	cfg := New(VisTypeNone)
 
 	// Assert
 	g.Expect(cfg).NotTo(BeNil())
@@ -46,7 +46,7 @@ func TestNew_DefaultsSet(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New("")
+	cfg := New(VisTypeNone)
 
 	// Assert
 	g.Expect(cfg.ImageSize).NotTo(BeNil())
@@ -61,7 +61,7 @@ func TestNew_TreemapDefaultsSet(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New("tree-map")
+	cfg := New(VisTypeTreeMap)
 
 	// Assert
 	g.Expect(cfg.Treemap).NotTo(BeNil())
@@ -71,7 +71,7 @@ func TestNew_AlluvialDefaultsSet(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New("alluvial")
+	cfg := New(VisTypeAlluvial)
 
 	g.Expect(cfg.Alluvial).NotTo(BeNil())
 }
@@ -81,7 +81,7 @@ func TestNew_OptionalFieldsNil(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	// Act
-	cfg := New("tree-map")
+	cfg := New(VisTypeTreeMap)
 
 	// Assert
 	g.Expect(cfg.Treemap.Fill).To(BeNil())
@@ -92,7 +92,7 @@ func TestNew_OnlySetsSelectedVisualizationDefaults(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := New("spiral")
+	cfg := New(VisTypeSpiral)
 
 	g.Expect(cfg.Spiral).NotTo(BeNil())
 	g.Expect(cfg.Treemap).To(BeNil())
@@ -101,6 +101,45 @@ func TestNew_OnlySetsSelectedVisualizationDefaults(t *testing.T) {
 	g.Expect(cfg.Bubbletree).To(BeNil())
 	g.Expect(cfg.Scatter).To(BeNil())
 	g.Expect(cfg.Alluvial).To(BeNil())
+}
+
+func TestNew_SupportsEveryVisType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		visType  VisType
+		selected func(*Config) bool
+	}{
+		{
+			name: "tree map", visType: VisTypeTreeMap,
+			selected: func(cfg *Config) bool { return cfg.Treemap != nil },
+		},
+		{
+			name: "radial tree", visType: VisTypeRadialTree,
+			selected: func(cfg *Config) bool { return cfg.Radial != nil },
+		},
+		{
+			name: "donut tree", visType: VisTypeDonutTree,
+			selected: func(cfg *Config) bool { return cfg.DonutTree != nil },
+		},
+		{
+			name: "bubble tree", visType: VisTypeBubbleTree,
+			selected: func(cfg *Config) bool { return cfg.Bubbletree != nil },
+		},
+		{name: "spiral", visType: VisTypeSpiral, selected: func(cfg *Config) bool { return cfg.Spiral != nil }},
+		{name: "scatter", visType: VisTypeScatter, selected: func(cfg *Config) bool { return cfg.Scatter != nil }},
+		{name: "alluvial", visType: VisTypeAlluvial, selected: func(cfg *Config) bool { return cfg.Alluvial != nil }},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			g.Expect(test.selected(New(test.visType))).To(BeTrue())
+		})
+	}
 }
 
 func TestLabels_RoundTripPreservesOrder(t *testing.T) {

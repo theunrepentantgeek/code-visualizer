@@ -149,7 +149,7 @@ func TestBuildLegendStage_AddsArcLabelSampleLines(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New("donut-tree")
+	cfg := config.New(config.VisTypeDonutTree)
 	cfg.Legend = &config.Legend{Position: new("bottom-right")}
 	cfg.DonutTree.Fill = &config.MetricSpec{Metric: "file-type"}
 	cfg.DonutTree.Border = &config.MetricSpec{Metric: "file-size"}
@@ -219,7 +219,7 @@ func TestBuildLegendStage_OmitsDerivedMetricsFromLabelSample(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	cfg := config.New("donut-tree")
+	cfg := config.New(config.VisTypeDonutTree)
 	cfg.Legend = &config.Legend{Position: new("bottom-right")}
 	state := &State{
 		SizeMetric: "file-lines.sum",
@@ -548,7 +548,7 @@ func TestRenderStage_SetsDrawingBoundsBeforeRenderingLegend(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	root := donutRoot()
-	cfg := config.New("donut-tree")
+	cfg := config.New(config.VisTypeDonutTree)
 	width, height := 800, 480
 	cfg.ImageSize.Width = &width
 	cfg.ImageSize.Height = &height
@@ -607,7 +607,7 @@ func TestRenderStage_KeepsConfiguredDimensionsAfterTitleAndFooterReservation(t *
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	root := donutRoot()
-	cfg := config.New("donut-tree")
+	cfg := config.New(config.VisTypeDonutTree)
 	width, height := 800, 480
 	cfg.ImageSize.Width = &width
 	cfg.ImageSize.Height = &height

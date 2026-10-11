@@ -9,17 +9,17 @@
 **Boundary and invariants.**
 
 - Every field is optional and pointer- or slice-typed: nil/empty means "not configured", non-nil means "explicitly set" — that is what makes layering possible ([config.go#L32](config.go#L32), [config.go#L35](config.go#L35)).
-- The layers apply in a fixed order — `New(vizName)` defaults for the selected visualization, then `Load`/`TryAutoLoad` on top of the existing struct, then `Override*` for CLI flags — and each layer only overwrites what it actually specifies ([config.go#L76](config.go#L76), [config.go#L116](config.go#L116), [override.go#L5](override.go#L5)).
+- The layers apply in a fixed order — `New(visType)` defaults for the selected `VisType`, then `Load`/`TryAutoLoad` on top of the existing struct, then `Override*` for CLI flags — and each layer only overwrites what it actually specifies ([config.go#L76](config.go#L76), [config.go#L116](config.go#L116), [override.go#L5](override.go#L5)).
 - `TryAutoLoad` is a no-op once `Source` is set, so an explicitly loaded file is never silently overlaid by auto-discovery ([config.go#L289](config.go#L289)).
 
 **Related operations.**
 
-- `New`, `Load`, `TryAutoLoad`, `Save`, and the `Override*` methods on `Config` and its viz sections ([config.go#L76](config.go#L76), [config.go#L116](config.go#L116), [config.go#L289](config.go#L289), [config.go#L307](config.go#L307), [treemap.go#L13](treemap.go#L13)).
+- `VisType`, `New`, `Load`, `TryAutoLoad`, `Save`, and the `Override*` methods on `Config` and its viz sections ([vis_type.go](vis_type.go), [config.go#L76](config.go#L76), [config.go#L116](config.go#L116), [config.go#L289](config.go#L289), [config.go#L307](config.go#L307), [treemap.go#L13](treemap.go#L13)).
 - `SelectionMetricsList` exposes the on-disk selection-metric map as an ordered slice ([config.go#L272](config.go#L272)).
 
 **Proper-use patterns.**
 
-- In a concrete visualization command, initialize with `New(vizName)` so only that visualization's defaults are populated; then run the whole merge in one place — auto-load, apply overrides, then validate the effective config — before building any pipeline state ([../../cmd/codeviz/treemap_cmd.go#L66](../../cmd/codeviz/treemap_cmd.go#L66)).
+- In a concrete visualization command, initialize with the corresponding `VisType` constant so only that visualization's defaults are populated; then run the whole merge in one place — auto-load, apply overrides, then validate the effective config — before building any pipeline state ([../../cmd/codeviz/treemap_cmd.go#L66](../../cmd/codeviz/treemap_cmd.go#L66)).
 - Write CLI values through the `Override*` helpers, which ignore zero values so an unset flag is transparent ([../../cmd/codeviz/treemap_cmd.go#L112](../../cmd/codeviz/treemap_cmd.go#L112), [override.go#L11](override.go#L11)).
 - Export the merged effective config for reproduction by calling `Config.Save` directly; visualization-scoped defaults keep unrelated visualization defaults out of the file ([../stages/export.go#L9](../stages/export.go#L9), [config.go#L307](config.go#L307)).
 

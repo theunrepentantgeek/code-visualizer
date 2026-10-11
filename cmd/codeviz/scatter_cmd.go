@@ -156,7 +156,7 @@ func validateScatterNumericMetric(label string, name metric.Name, level metric.M
 }
 
 func (c *ScatterCmd) mergeConfigAndValidate(flags *Flags) error {
-	if err := flags.initializeConfig(config.New("scatter")); err != nil {
+	if err := flags.initializeConfig(config.New(config.VisTypeScatter)); err != nil {
 		return err
 	}
 

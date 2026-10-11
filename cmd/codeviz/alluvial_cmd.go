@@ -152,7 +152,7 @@ func validateExpansionPath(expansion string) error {
 }
 
 func (c *AlluvialCmd) mergeConfigAndValidate(flags *Flags) error {
-	if err := flags.initializeConfig(config.New("alluvial")); err != nil {
+	if err := flags.initializeConfig(config.New(config.VisTypeAlluvial)); err != nil {
 		return err
 	}
 

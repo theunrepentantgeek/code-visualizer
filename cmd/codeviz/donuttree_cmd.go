@@ -72,7 +72,7 @@ func (*DonutTreeCmd) validateConfig(cfg *config.DonutTree) error {
 }
 
 func (c *DonutTreeCmd) mergeConfigAndValidate(flags *Flags) error {
-	if err := flags.initializeConfig(config.New("donut-tree")); err != nil {
+	if err := flags.initializeConfig(config.New(config.VisTypeDonutTree)); err != nil {
 		return err
 	}
 

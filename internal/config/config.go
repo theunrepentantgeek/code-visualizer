@@ -73,7 +73,7 @@ type Config struct {
 // New returns a Config populated with common defaults and defaults for the
 // requested visualization. Subsequent layers (config file and CLI flags)
 // overlay their values on top of the returned struct.
-func New(vizName string) *Config {
+func New(visType VisType) *Config {
 	width := 1920
 	height := 1080
 
@@ -92,20 +92,20 @@ func New(vizName string) *Config {
 		Authorship: DefaultAuthorshipConfig(),
 	}
 
-	switch vizName {
-	case "tree-map":
+	switch visType {
+	case VisTypeTreeMap:
 		cfg.Treemap = &Treemap{}
-	case "radial-tree":
+	case VisTypeRadialTree:
 		cfg.Radial = &Radial{Labels: new("all")}
-	case "donut-tree":
+	case VisTypeDonutTree:
 		cfg.DonutTree = &DonutTree{}
-	case "bubble-tree":
+	case VisTypeBubbleTree:
 		cfg.Bubbletree = &Bubbletree{Labels: new("folders")}
-	case "spiral":
+	case VisTypeSpiral:
 		cfg.Spiral = &Spiral{Resolution: new("daily")}
-	case "scatter":
+	case VisTypeScatter:
 		cfg.Scatter = &Scatter{}
-	case "alluvial":
+	case VisTypeAlluvial:
 		cfg.Alluvial = &Alluvial{}
 	default:
 	}

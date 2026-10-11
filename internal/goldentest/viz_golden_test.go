@@ -54,13 +54,13 @@ func newCommonState(outputPath string, cfg *config.Config) *stages.CommonState {
 }
 
 func newTestConfig() *config.Config {
-	cfg := config.New("tree-map")
-	cfg.Radial = config.New("radial-tree").Radial
-	cfg.DonutTree = config.New("donut-tree").DonutTree
-	cfg.Bubbletree = config.New("bubble-tree").Bubbletree
-	cfg.Spiral = config.New("spiral").Spiral
-	cfg.Scatter = config.New("scatter").Scatter
-	cfg.Alluvial = config.New("alluvial").Alluvial
+	cfg := config.New(config.VisTypeTreeMap)
+	cfg.Radial = config.New(config.VisTypeRadialTree).Radial
+	cfg.DonutTree = config.New(config.VisTypeDonutTree).DonutTree
+	cfg.Bubbletree = config.New(config.VisTypeBubbleTree).Bubbletree
+	cfg.Spiral = config.New(config.VisTypeSpiral).Spiral
+	cfg.Scatter = config.New(config.VisTypeScatter).Scatter
+	cfg.Alluvial = config.New(config.VisTypeAlluvial).Alluvial
 
 	return cfg
 }

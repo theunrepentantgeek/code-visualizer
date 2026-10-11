@@ -484,7 +484,7 @@ func TestBuildLegendStage_UsesFillMetricAndNumericSplits(t *testing.T) {
 	}
 
 	g.Expect(alluvial.BuildLegendStage(
-		&stages.CommonState{RootConfig: config.New("alluvial")},
+		&stages.CommonState{RootConfig: config.New(config.VisTypeAlluvial)},
 		state,
 	)).To(Succeed())
 

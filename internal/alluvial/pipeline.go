@@ -443,7 +443,7 @@ func BuildLegendStage(common *stages.CommonState, state *State) error {
 
 	rootConfig := common.RootConfig
 	if rootConfig == nil {
-		rootConfig = config.New("alluvial")
+		rootConfig = config.New(config.VisTypeAlluvial)
 	}
 
 	position, orientation := legend.ResolveOptions(rootConfig.LegendPositionStr(), rootConfig.LegendOrientationStr())

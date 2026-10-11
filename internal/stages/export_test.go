@@ -20,7 +20,7 @@ func TestExportConfig_NoFlag_NoOp(t *testing.T) {
 
 	s := &stages.CommonState{
 		Flags:      &stages.Flags{ExportConfig: ""},
-		RootConfig: config.New("tree-map"),
+		RootConfig: config.New(config.VisTypeTreeMap),
 	}
 
 	g.Expect(stages.ExportConfig(s)).To(Succeed())
@@ -32,7 +32,7 @@ func TestExportConfig_OnlyWritesSelectedVizSection(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.yaml")
-	rootCfg := config.New("tree-map")
+	rootCfg := config.New(config.VisTypeTreeMap)
 
 	s := &stages.CommonState{
 		Flags:      &stages.Flags{ExportConfig: path},
@@ -57,7 +57,7 @@ func TestExportConfig_PreservesCommonConfiguration(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.yaml")
-	rootCfg := config.New("tree-map")
+	rootCfg := config.New(config.VisTypeTreeMap)
 	rootCfg.Title = &config.Title{Text: new("Repository overview")}
 
 	s := &stages.CommonState{
