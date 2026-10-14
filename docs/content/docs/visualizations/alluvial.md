@@ -79,7 +79,7 @@ codeviz alluvial . -o releases.svg -m file-lines \
   --reference tag:v1.0 --reference tag:v2.0
 ```
 
-Compare the previous reachable release tag with `latest`:
+Compare the previous chronological release tag on the same branch with `latest`:
 
 ```sh
 codeviz alluvial . -o latest-release.svg -m file-lines \

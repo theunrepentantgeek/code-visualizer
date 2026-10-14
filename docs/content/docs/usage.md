@@ -80,11 +80,10 @@ date. Unprefixed values are resolved in that order. Use `tag:`, `sha:`, or
 `--until` includes the complete day.
 
 Prefix a revision reference with `^` to select its predecessor. For `HEAD` and
-commit IDs, this is the first parent. For tags, CodeViz searches backwards one
-parent generation at a time across every merge parent and selects the first
-generation containing a tag. If multiple tagged commits occur in that
-generation, the commit with the latest author timestamp wins. Dates cannot use
-the `^` prefix.
+commit IDs, this is the first parent. For tags, CodeViz follows the first-parent
+history and selects the tagged commit with the latest author timestamp. This
+keeps release comparisons on the tag's branch instead of selecting tags from
+merged side branches. Dates cannot use the `^` prefix.
 
 Use `ago(Nd)` for the instant `N` 24-hour days before the command started, for
 example `ago(14d)`. `N` must be a positive whole number. CodeViz captures the

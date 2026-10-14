@@ -71,7 +71,7 @@ func TestResolveHistoryReference_CommitPredecessorsUseFirstParent(t *testing.T) 
 	}
 }
 
-func TestResolveHistoryReference_TagPredecessorUsesNearestTaggedGeneration(t *testing.T) {
+func TestResolveHistoryReference_TagPredecessorUsesFirstParentHistory(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
@@ -80,21 +80,53 @@ func TestResolveHistoryReference_TagPredecessorUsesNearestTaggedGeneration(t *te
 	for _, value := range []string{"^v2.0", "^tag:v2.0", "^latest-lightweight"} {
 		resolved, err := s.resolveHistoryReference(value, lowerBound)
 		g.Expect(err).NotTo(HaveOccurred(), value)
-		g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.featureTip)), value)
+		g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)), value)
 	}
 }
 
-func TestResolveHistoryReference_TagPredecessorStopsAtFirstTaggedGeneration(t *testing.T) {
+func TestResolveHistoryReference_TagPredecessorUsesLatestCommitTime(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 	fixture := setupTagRangeRepo(t)
-	runHistoryGit(t, fixture.dir, "tag", "deeper-but-later", fixture.feature)
+	runHistoryGit(t, fixture.dir, "switch", "--orphan", "chronological-tags")
+
+	runHistoryGit(
+		t,
+		fixture.dir,
+		"commit",
+		"--allow-empty",
+		"-m",
+		"deeper but later",
+		"--date=2025-06-01T00:00:00Z",
+	)
+	deeper := runHistoryGit(t, fixture.dir, "rev-parse", "HEAD")
+	runHistoryGit(t, fixture.dir, "tag", "deeper-but-later", deeper)
+	runHistoryGit(
+		t,
+		fixture.dir,
+		"commit",
+		"--allow-empty",
+		"-m",
+		"nearer but earlier",
+		"--date=2025-05-01T00:00:00Z",
+	)
+	runHistoryGit(t, fixture.dir, "tag", "nearer-but-earlier")
+	runHistoryGit(
+		t,
+		fixture.dir,
+		"commit",
+		"--allow-empty",
+		"-m",
+		"release",
+		"--date=2025-07-01T00:00:00Z",
+	)
+	runHistoryGit(t, fixture.dir, "tag", "v3.0")
 	s := requireRepoService(t, fixture.dir)
 
-	resolved, err := s.resolveHistoryReference("^v2.0", lowerBound)
+	resolved, err := s.resolveHistoryReference("^v3.0", lowerBound)
 
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.featureTip)))
+	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(deeper)))
 }
 
 func TestResolveHistoryReference_RejectsInvalidPredecessors(t *testing.T) {

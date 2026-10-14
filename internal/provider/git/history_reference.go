@@ -271,55 +271,51 @@ func (s *repoService) previousTaggedCommit(
 		return plumbing.ZeroHash, eris.Wrapf(err, "failed to load tag %q commit", tagName)
 	}
 
-	generation := append([]plumbing.Hash(nil), startCommit.ParentHashes...)
-	seen := map[plumbing.Hash]struct{}{start: {}}
-
-	for len(generation) > 0 {
-		next, selected, generationErr := s.inspectTagGeneration(generation, seen, tagged, tagName)
-		if generationErr != nil {
-			return plumbing.ZeroHash, generationErr
-		}
-
-		if selected != nil {
-			return selected.Hash, nil
-		}
-
-		generation = next
+	if len(startCommit.ParentHashes) == 0 {
+		return plumbing.ZeroHash, eris.Errorf("tag %q has no previous reachable tag", tagName)
 	}
 
-	return plumbing.ZeroHash, eris.Errorf("tag %q has no previous reachable tag", tagName)
+	selected, err := s.latestTaggedFirstParent(startCommit.ParentHashes[0], tagged, tagName)
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+
+	if selected == nil {
+		return plumbing.ZeroHash, eris.Errorf("tag %q has no previous reachable tag", tagName)
+	}
+
+	return selected.Hash, nil
 }
 
-func (s *repoService) inspectTagGeneration(
-	generation []plumbing.Hash,
-	seen map[plumbing.Hash]struct{},
+func (s *repoService) latestTaggedFirstParent(
+	hash plumbing.Hash,
 	tagged map[plumbing.Hash]struct{},
 	tagName string,
-) ([]plumbing.Hash, *object.Commit, error) {
-	next := make([]plumbing.Hash, 0, len(generation))
-
+) (*object.Commit, error) {
 	var selected *object.Commit
 
-	for _, hash := range generation {
-		if _, duplicate := seen[hash]; duplicate {
-			continue
-		}
-
-		seen[hash] = struct{}{}
-
-		commit, err := s.repo.CommitObject(hash)
-		if err != nil {
-			return nil, nil, eris.Wrapf(err, "failed to traverse history from tag %q", tagName)
+	for {
+		commit, commitErr := s.repo.CommitObject(hash)
+		if commitErr != nil {
+			return nil, eris.Wrapf(
+				commitErr,
+				"failed to traverse first-parent history from tag %q",
+				tagName,
+			)
 		}
 
 		if _, isTagged := tagged[hash]; isTagged && laterTaggedCommit(commit, selected) {
 			selected = commit
 		}
 
-		next = append(next, commit.ParentHashes...)
+		if len(commit.ParentHashes) == 0 {
+			break
+		}
+
+		hash = commit.ParentHashes[0]
 	}
 
-	return next, selected, nil
+	return selected, nil
 }
 
 func (s *repoService) taggedCommits() (map[plumbing.Hash]struct{}, error) {
