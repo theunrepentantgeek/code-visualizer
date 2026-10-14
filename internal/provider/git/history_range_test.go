@@ -8,9 +8,37 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 )
+
+func TestHistoryRangeWithTimeNow_PreservesExistingTime(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	referenceTime := time.Date(2026, 10, 3, 3, 20, 0, 0, time.UTC)
+
+	historyRange := (HistoryRange{
+		From:    "ago(14d)",
+		Until:   "HEAD",
+		TimeNow: referenceTime,
+	}).withTimeNow()
+
+	g.Expect(historyRange.TimeNow).To(Equal(referenceTime))
+}
+
+func TestHistoryRangeWithTimeNow_CapturesCurrentTimeOnce(t *testing.T) {
+	t.Parallel()
+	g := NewWithT(t)
+	before := time.Now()
+
+	historyRange := (HistoryRange{From: "ago(14d)", Until: "HEAD"}).withTimeNow()
+
+	after := time.Now()
+
+	g.Expect(historyRange.TimeNow).To(BeTemporally(">=", before))
+	g.Expect(historyRange.TimeNow).To(BeTemporally("<=", after))
+}
 
 func TestResolveHistoryRange_StopsForCancelledContext(t *testing.T) {
 	t.Parallel()
@@ -32,12 +60,13 @@ func TestResolveHistoryRange_StopsForCancelledContext(t *testing.T) {
 }
 
 type tagRangeFixture struct {
-	dir      string
-	initial  string
-	main     string
-	feature  string
-	merged   string
-	detached string
+	dir        string
+	initial    string
+	main       string
+	feature    string
+	featureTip string
+	merged     string
+	detached   string
 }
 
 func setupTagRangeRepo(t *testing.T) tagRangeFixture {
@@ -89,12 +118,15 @@ func setupTagRangeRepo(t *testing.T) tagRangeFixture {
 	run("git", "switch", "-c", "feature")
 
 	feature := writeCommit("feature.go", "package feature\n", "C", "2025-03-01T00:00:00Z")
-	writeCommit("feature.go", "package feature\n// D\n", "D", "2025-04-01T00:00:00Z")
+	featureTip := writeCommit("feature.go", "package feature\n// D\n", "D", "2025-04-01T00:00:00Z")
 
 	run("git", "switch", "main")
 	run("git", "merge", "--no-ff", "feature", "-m", "M")
 	merged := run("git", "rev-parse", "HEAD")
 	run("git", "tag", "-a", "v2.0", "-m", "release v2")
+	run("git", "tag", "previous-main", mainCommit)
+	run("git", "tag", "-a", "previous-feature", featureTip, "-m", "feature checkpoint")
+	run("git", "tag", "latest-lightweight", merged)
 	blob := run("git", "hash-object", "-w", "shared.go")
 	run("git", "tag", "-a", "blob-tag", blob, "-m", "non-commit tag")
 
@@ -106,12 +138,13 @@ func setupTagRangeRepo(t *testing.T) tagRangeFixture {
 	run("git", "switch", "main")
 
 	return tagRangeFixture{
-		dir:      dir,
-		initial:  initial,
-		main:     mainCommit,
-		feature:  feature,
-		merged:   merged,
-		detached: detached,
+		dir:        dir,
+		initial:    initial,
+		main:       mainCommit,
+		feature:    feature,
+		featureTip: featureTip,
+		merged:     merged,
+		detached:   detached,
 	}
 }
 
@@ -141,6 +174,30 @@ func TestHistoryRange_FromRevisionIsExclusiveAndUntilRevisionIsInclusive(t *test
 
 	g.Expect(hashes).To(ContainElements(fixture.main, fixture.feature, fixture.merged))
 	g.Expect(hashes).NotTo(ContainElement(fixture.initial))
+}
+
+func TestHistoryRange_AcceptsPredecessorBounds(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	commits, err := s.commitIterator(context.Background(), HistoryRange{
+		From:  "^HEAD",
+		Until: "HEAD",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	var hashes []string
+
+	for commit, iterationErr := range commits {
+		g.Expect(iterationErr).NotTo(HaveOccurred())
+
+		hashes = append(hashes, commit.Hash.String())
+	}
+
+	g.Expect(hashes).To(ContainElements(fixture.feature, fixture.featureTip, fixture.merged))
+	g.Expect(hashes).NotTo(ContainElements(fixture.initial, fixture.main))
 }
 
 func TestHistoryRange_UntilRevisionCanBeOutsideHeadAncestry(t *testing.T) {
@@ -235,6 +292,24 @@ func TestHistoryRange_MixesRevisionAndDateBounds(t *testing.T) {
 
 	g.Expect(hashes).To(ContainElements(fixture.main, fixture.feature))
 	g.Expect(hashes).NotTo(ContainElement(fixture.initial))
+}
+
+func TestHistoryRange_RelativeBoundsShareTimeNow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+	timeNow := time.Date(2025, 5, 1, 12, 0, 0, 0, time.UTC)
+
+	resolved, err := s.resolveHistoryRange(context.Background(), HistoryRange{
+		From:    "ago(14d)",
+		Until:   "ago(7d)",
+		TimeNow: timeNow,
+	})
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.from).To(Equal(timeNow.Add(-14 * 24 * time.Hour)))
+	g.Expect(resolved.until).To(Equal(timeNow.Add(-7 * 24 * time.Hour)))
 }
 
 func TestHistoryRange_RejectsReversedDateRange(t *testing.T) {

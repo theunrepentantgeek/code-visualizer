@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/lmittmann/tint"
@@ -134,8 +135,9 @@ func toStagesFlags(f *Flags) *stages.Flags {
 func stagesFlagsForCommand(flags *Flags, fromValue, untilValue string) *stages.Flags {
 	parsedFlags := toStagesFlags(flags)
 	parsedFlags.HistoryRange = git.HistoryRange{
-		From:  fromValue,
-		Until: untilValue,
+		From:    fromValue,
+		Until:   untilValue,
+		TimeNow: time.Now(),
 	}
 
 	return parsedFlags

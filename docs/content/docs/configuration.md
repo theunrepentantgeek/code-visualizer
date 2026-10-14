@@ -17,7 +17,8 @@ This reference is being expanded. For the authoritative list of flags, run
 ## Alluvial
 
 Configure an alluvial release comparison under `alluvial`. `references` is an
-ordered list with at least two tag, commit ID, or date references. Tags are the
+ordered list with at least two Git references. References accept `HEAD`, tags,
+commit IDs, dates, `^` predecessors, and `ago(Nd)` relative dates. Tags are the
 typical release input. The selected `metric` supplies each directory's
 per-snapshot flow width; it is not calculated as a change between references.
 
@@ -38,7 +39,8 @@ alluvial:
 
 CLI `--reference` values replace the configured `references` list while
 preserving their order. An empty reference selects the repository's `HEAD`
-commit. Repeat `--expand` to show only a selected directory's direct children.
+commit. Relative dates share one current-time value captured when the command
+starts. Repeat `--expand` to show only a selected directory's direct children.
 For an alluvial `fill.metric`, `.delta` compares the final reference with the
 first, while `.stepdelta` compares each later reference with its predecessor;
 the first `.stepdelta` value is unavailable and displays as `-`.

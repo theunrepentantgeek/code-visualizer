@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -297,12 +298,53 @@ func TestCLI_ParsesUnifiedHistoryReferences(t *testing.T) {
 
 	_, err = parser.Parse([]string{
 		"tree-map", ".", "-o", "out.png",
-		"--from", "sha:abc1234",
-		"--until", "tag:v2.0",
+		"--from", "ago(14d)",
+		"--until", "^tag:v2.0",
 	})
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cli.TreeMap.From).To(Equal("sha:abc1234"))
-	g.Expect(cli.TreeMap.Until).To(Equal("tag:v2.0"))
+	g.Expect(cli.TreeMap.From).To(Equal("ago(14d)"))
+	g.Expect(cli.TreeMap.Until).To(Equal("^tag:v2.0"))
+}
+
+func TestHistoryReferenceHelpAdvertisesExtendedGrammar(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	commandType := reflect.TypeFor[TreemapCmd]()
+	from, found := commandType.FieldByName("From")
+	g.Expect(found).To(BeTrue())
+	until, found := commandType.FieldByName("Until")
+	g.Expect(found).To(BeTrue())
+
+	for _, field := range []reflect.StructField{from, until} {
+		help := field.Tag.Get("help")
+		g.Expect(help).To(ContainSubstring("HEAD"))
+		g.Expect(help).To(ContainSubstring("^"))
+		g.Expect(help).To(ContainSubstring("ago(Nd)"))
+	}
+
+	alluvialType := reflect.TypeFor[AlluvialCmd]()
+	references, found := alluvialType.FieldByName("References")
+	g.Expect(found).To(BeTrue())
+	g.Expect(references.Tag.Get("help")).To(ContainSubstring("HEAD"))
+	g.Expect(references.Tag.Get("help")).To(ContainSubstring("^"))
+	g.Expect(references.Tag.Get("help")).To(ContainSubstring("ago(Nd)"))
+}
+
+func TestStagesFlagsForCommand_CapturesSharedTimeNow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	before := time.Now()
+
+	flags := stagesFlagsForCommand(&Flags{}, "ago(14d)", "HEAD")
+
+	after := time.Now()
+
+	g.Expect(flags.HistoryRange.TimeNow).To(BeTemporally(">=", before))
+	g.Expect(flags.HistoryRange.TimeNow).To(BeTemporally("<=", after))
+
+	copied := flags.HistoryRange
+	g.Expect(copied.TimeNow).To(Equal(flags.HistoryRange.TimeNow))
 }
 
 func TestCLI_RejectsRemovedTagRangeFlags(t *testing.T) {

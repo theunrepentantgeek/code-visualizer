@@ -48,7 +48,7 @@ func main() {
 func writeSwatch(outDir string, p palette.ColourPalette) error {
 	cleanDir := filepath.Clean(outDir)
 
-	//nolint:gosec // The caller intentionally selects the output directory.
+	//nolint:gosec,nolintlint // The caller intentionally selects the output directory.
 	info, err := os.Stat(cleanDir)
 	if err != nil {
 		return fmt.Errorf("stat output directory %s: %w", cleanDir, err)
@@ -66,7 +66,7 @@ func writeSwatch(outDir string, p palette.ColourPalette) error {
 
 	path := filepath.Join(cleanDir, fmt.Sprintf("palette-%s.png", p.Name))
 
-	f, err := os.Create(path) //nolint:gosec // The caller intentionally selects the output directory.
+	f, err := os.Create(path) //nolint:gosec,nolintlint // The caller intentionally selects the output directory.
 	if err != nil {
 		return fmt.Errorf("create %s: %w", path, err)
 	}

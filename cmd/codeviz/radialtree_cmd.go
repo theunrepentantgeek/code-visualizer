@@ -15,8 +15,8 @@ import (
 type RadialCmd struct {
 	TargetPath  string `arg:"" help:"Path to directory to scan."`
 	Output      string `help:"Output image file path (png, jpg, jpeg, svg)." required:"true" short:"o"`
-	From        string `help:"Git history lower bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
-	Until       string `help:"Git history upper bound (tag, commit ID, or date; prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
+	From        string `help:"Git history lower bound (HEAD, tag, commit ID, date, ^revision, or ago(Nd); prefixes: tag:, sha:, date:)." name:"from" optional:""`  //nolint:revive,nolintlint // kong struct tags require long lines
+	Until       string `help:"Git history upper bound (HEAD, tag, commit ID, date, ^revision, or ago(Nd); prefixes: tag:, sha:, date:)." name:"until" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 	ChangedOnly bool   `help:"Show only files modified in the selected Git range." name:"changed-only" optional:""`
 
 	FileDiscSize metric.Name `default:"" help:"Metric for file disc size; run 'codeviz help metrics' for available metrics." name:"file-disc-size" short:"d"` //nolint:revive,nolintlint // kong struct tags require long lines

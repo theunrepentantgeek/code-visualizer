@@ -19,14 +19,20 @@ type Snapshot struct {
 	Tree     *object.Tree
 }
 
-// ResolveSnapshot resolves until to the exact commit whose tree should be scanned.
-func ResolveSnapshot(repoPath, until string) (Snapshot, error) {
+// ResolveSnapshot resolves historyRange.Until to the exact commit whose tree should be scanned.
+func ResolveSnapshot(repoPath string, historyRange HistoryRange) (Snapshot, error) {
 	s, err := getService(repoPath)
 	if err != nil {
 		return Snapshot{}, eris.Wrap(err, "failed to open snapshot repository")
 	}
 
-	resolved, err := s.resolveHistoryReference(strings.TrimSpace(until), upperBound)
+	historyRange = historyRange.withTimeNow()
+
+	resolved, err := s.resolveHistoryReference(
+		strings.TrimSpace(historyRange.Until),
+		upperBound,
+		historyRange.TimeNow,
+	)
 	if err != nil {
 		return Snapshot{}, eris.Wrap(err, "invalid --until")
 	}

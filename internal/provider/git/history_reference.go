@@ -3,10 +3,13 @@ package git
 import (
 	"encoding/hex"
 	"errors"
+	"math"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rotisserie/eris"
 )
 
@@ -15,6 +18,13 @@ type historyBound int
 const (
 	lowerBound historyBound = iota
 	upperBound
+)
+
+const (
+	headReference = "HEAD"
+	tagPrefix     = "tag"
+	shaPrefix     = "sha"
+	datePrefix    = "date"
 )
 
 type resolvedHistoryReference struct {
@@ -38,9 +48,19 @@ func (r resolvedHistoryReference) hasRevision() bool {
 func (s *repoService) resolveHistoryReference(
 	value string,
 	bound historyBound,
+	timeNowValues ...time.Time,
 ) (resolvedHistoryReference, error) {
 	if value == "" {
 		return resolvedHistoryReference{}, nil
+	}
+
+	timeNow := time.Now()
+	if len(timeNowValues) > 0 {
+		timeNow = timeNowValues[0]
+	}
+
+	if after, ok := strings.CutPrefix(value, "^"); ok {
+		return s.resolvePreviousHistoryReference(after, timeNow)
 	}
 
 	prefix, payload, explicit := splitHistoryReference(value)
@@ -49,28 +69,29 @@ func (s *repoService) resolveHistoryReference(
 	}
 
 	switch prefix {
-	case "tag":
+	case tagPrefix:
 		hash, err := s.resolveTagCommit(payload)
 
 		return resolvedHistoryReference{revision: hash}, err
-	case "sha":
+	case shaPrefix:
 		hash, err := s.requireCommitID(payload)
 
 		return resolvedHistoryReference{revision: hash}, err
-	case "date":
-		when, err := parseHistoryDate(payload, bound)
+	case datePrefix:
+		when, err := parseHistoryDate(payload, bound, timeNow)
 
 		return resolvedHistoryReference{timestamp: when}, err
 	}
 
-	return s.resolveUnprefixedHistoryReference(value, bound)
+	return s.resolveUnprefixedHistoryReference(value, bound, timeNow)
 }
 
 func (s *repoService) resolveUnprefixedHistoryReference(
 	value string,
 	bound historyBound,
+	timeNow time.Time,
 ) (resolvedHistoryReference, error) {
-	if value == "HEAD" {
+	if value == headReference {
 		head, err := s.repo.Head()
 		if err != nil {
 			return resolvedHistoryReference{}, eris.Wrap(err, "failed to resolve HEAD")
@@ -87,8 +108,10 @@ func (s *repoService) resolveUnprefixedHistoryReference(
 		return resolved, err
 	}
 
-	if when, err := parseHistoryDate(value, bound); err == nil {
+	if when, err := parseHistoryDate(value, bound, timeNow); err == nil {
 		return resolvedHistoryReference{timestamp: when}, nil
+	} else if strings.HasPrefix(value, "ago(") {
+		return resolvedHistoryReference{}, err
 	}
 
 	return resolvedHistoryReference{}, eris.Errorf(
@@ -97,8 +120,239 @@ func (s *repoService) resolveUnprefixedHistoryReference(
 	)
 }
 
+func (s *repoService) resolvePreviousHistoryReference(
+	value string,
+	timeNow time.Time,
+) (resolvedHistoryReference, error) {
+	if value == "" {
+		return resolvedHistoryReference{}, eris.New("predecessor reference cannot be empty")
+	}
+
+	if strings.HasPrefix(value, "^") {
+		return resolvedHistoryReference{}, eris.New("nested predecessor references are not supported")
+	}
+
+	prefix, payload, explicit := splitHistoryReference(value)
+	if explicit {
+		if payload == "" {
+			return resolvedHistoryReference{}, eris.Errorf("%s reference cannot be empty", prefix)
+		}
+
+		return s.resolveExplicitPreviousReference(prefix, payload)
+	}
+
+	return s.resolveUnprefixedPreviousReference(value, timeNow)
+}
+
+func (s *repoService) resolveExplicitPreviousReference(
+	prefix string,
+	payload string,
+) (resolvedHistoryReference, error) {
+	switch prefix {
+	case tagPrefix:
+		hash, err := s.resolveTagCommit(payload)
+		if err != nil {
+			return resolvedHistoryReference{}, err
+		}
+
+		previous, err := s.previousTaggedCommit(hash, payload)
+
+		return resolvedHistoryReference{revision: previous}, err
+	case shaPrefix:
+		hash, err := s.requireCommitID(payload)
+		if err != nil {
+			return resolvedHistoryReference{}, err
+		}
+
+		previous, err := s.firstParent(hash)
+
+		return resolvedHistoryReference{revision: previous}, err
+	case datePrefix:
+		return resolvedHistoryReference{}, eris.New("predecessor requires a revision reference")
+	}
+
+	return resolvedHistoryReference{}, eris.Errorf("unsupported predecessor prefix %q", prefix)
+}
+
+func (s *repoService) resolveUnprefixedPreviousReference(
+	value string,
+	timeNow time.Time,
+) (resolvedHistoryReference, error) {
+	if value == headReference {
+		return s.resolveHeadPredecessor()
+	}
+
+	if resolved, found, err := s.tryResolveTagPredecessor(value); found {
+		return resolved, err
+	}
+
+	if resolved, found, err := s.tryResolveCommitPredecessor(value); found || err != nil {
+		return resolved, err
+	}
+
+	if _, err := parseHistoryDate(value, lowerBound, timeNow); err == nil ||
+		strings.HasPrefix(value, "ago(") {
+		return resolvedHistoryReference{}, eris.New("predecessor requires a revision reference")
+	}
+
+	return resolvedHistoryReference{}, eris.Errorf(
+		"history reference %q is not a tag, commit ID, or supported date",
+		value,
+	)
+}
+
+func (s *repoService) resolveHeadPredecessor() (resolvedHistoryReference, error) {
+	head, err := s.repo.Head()
+	if err != nil {
+		return resolvedHistoryReference{}, eris.Wrap(err, "failed to resolve HEAD")
+	}
+
+	previous, err := s.firstParent(head.Hash())
+
+	return resolvedHistoryReference{revision: previous}, err
+}
+
+func (s *repoService) tryResolveTagPredecessor(
+	value string,
+) (resolvedHistoryReference, bool, error) {
+	if hash, found, err := s.tryResolveTagCommit(value); found {
+		if err != nil {
+			return resolvedHistoryReference{}, true, err
+		}
+
+		previous, previousErr := s.previousTaggedCommit(hash, value)
+
+		return resolvedHistoryReference{revision: previous}, true, previousErr
+	}
+
+	return resolvedHistoryReference{}, false, nil
+}
+
+func (s *repoService) tryResolveCommitPredecessor(
+	value string,
+) (resolvedHistoryReference, bool, error) {
+	if resolved, found, err := s.tryResolveCommitID(value); found || err != nil {
+		if err != nil {
+			return resolvedHistoryReference{}, found, err
+		}
+
+		previous, previousErr := s.firstParent(resolved.revision)
+
+		return resolvedHistoryReference{revision: previous}, true, previousErr
+	}
+
+	return resolvedHistoryReference{}, false, nil
+}
+
+func (s *repoService) firstParent(hash plumbing.Hash) (plumbing.Hash, error) {
+	commit, err := s.repo.CommitObject(hash)
+	if err != nil {
+		return plumbing.ZeroHash, eris.Wrapf(err, "failed to load commit %s", hash)
+	}
+
+	if len(commit.ParentHashes) == 0 {
+		return plumbing.ZeroHash, eris.Errorf("commit %s has no first parent", hash)
+	}
+
+	return commit.ParentHashes[0], nil
+}
+
+func (s *repoService) previousTaggedCommit(
+	start plumbing.Hash,
+	tagName string,
+) (plumbing.Hash, error) {
+	tagged, err := s.taggedCommits()
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+
+	startCommit, err := s.repo.CommitObject(start)
+	if err != nil {
+		return plumbing.ZeroHash, eris.Wrapf(err, "failed to load tag %q commit", tagName)
+	}
+
+	if len(startCommit.ParentHashes) == 0 {
+		return plumbing.ZeroHash, eris.Errorf("tag %q has no previous reachable tag", tagName)
+	}
+
+	selected, err := s.latestTaggedFirstParent(startCommit.ParentHashes[0], tagged, tagName)
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+
+	if selected == nil {
+		return plumbing.ZeroHash, eris.Errorf("tag %q has no previous reachable tag", tagName)
+	}
+
+	return selected.Hash, nil
+}
+
+func (s *repoService) latestTaggedFirstParent(
+	hash plumbing.Hash,
+	tagged map[plumbing.Hash]struct{},
+	tagName string,
+) (*object.Commit, error) {
+	var selected *object.Commit
+
+	for {
+		commit, commitErr := s.repo.CommitObject(hash)
+		if commitErr != nil {
+			return nil, eris.Wrapf(
+				commitErr,
+				"failed to traverse first-parent history from tag %q",
+				tagName,
+			)
+		}
+
+		if _, isTagged := tagged[hash]; isTagged && laterTaggedCommit(commit, selected) {
+			selected = commit
+		}
+
+		if len(commit.ParentHashes) == 0 {
+			break
+		}
+
+		hash = commit.ParentHashes[0]
+	}
+
+	return selected, nil
+}
+
+func (s *repoService) taggedCommits() (map[plumbing.Hash]struct{}, error) {
+	iter, err := s.repo.Tags()
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to list tags")
+	}
+	defer iter.Close()
+
+	tagged := make(map[plumbing.Hash]struct{})
+
+	err = iter.ForEach(func(ref *plumbing.Reference) error {
+		name := ref.Name().Short()
+
+		hash, peelErr := peelTagCommit(s.repo, name, ref.Hash())
+		if peelErr == nil {
+			tagged[hash] = struct{}{}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to iterate tags")
+	}
+
+	return tagged, nil
+}
+
+func laterTaggedCommit(candidate, selected *object.Commit) bool {
+	return selected == nil ||
+		candidate.Author.When.After(selected.Author.When) ||
+		(candidate.Author.When.Equal(selected.Author.When) &&
+			candidate.Hash.String() < selected.Hash.String())
+}
+
 func splitHistoryReference(value string) (prefix, payload string, explicit bool) {
-	for _, prefix := range []string{"tag", "sha", "date"} {
+	for _, prefix := range []string{tagPrefix, shaPrefix, datePrefix} {
 		marker := prefix + ":"
 		if after, ok := strings.CutPrefix(value, marker); ok {
 			return prefix, after, true
@@ -308,15 +562,34 @@ var historyDateLayouts = []historyDateLayout{
 	{layout: "20060102-1504", explicitZone: false},
 }
 
-func parseHistoryDate(value string, bound historyBound) (time.Time, error) {
-	return parseHistoryDateInLocation(value, bound, time.Now().Location())
+func parseHistoryDate(value string, bound historyBound, timeNowValues ...time.Time) (time.Time, error) {
+	timeNow := time.Now()
+	if len(timeNowValues) > 0 {
+		timeNow = timeNowValues[0]
+	}
+
+	return parseHistoryDateInLocation(value, bound, timeNow.Location(), timeNow)
 }
 
 func parseHistoryDateInLocation(
 	value string,
 	bound historyBound,
 	location *time.Location,
+	timeNowValues ...time.Time,
 ) (time.Time, error) {
+	timeNow := time.Now()
+	if len(timeNowValues) > 0 {
+		timeNow = timeNowValues[0]
+	}
+
+	if parsed, claimed, err := parseAgoDate(value, timeNow); claimed {
+		if err != nil {
+			return time.Time{}, eris.Wrapf(err, "invalid date %q", value)
+		}
+
+		return parsed, nil
+	}
+
 	for _, candidate := range historyDateLayouts {
 		parsed, err := parseHistoryDateLayout(value, candidate, location)
 		if err != nil {
@@ -334,6 +607,36 @@ func parseHistoryDateInLocation(
 		"invalid date %q: expected ISO 8601 or YYYYMMDD[-HHMM][Z]",
 		value,
 	)
+}
+
+func parseAgoDate(value string, timeNow time.Time) (time.Time, bool, error) {
+	if !strings.HasPrefix(value, "ago(") {
+		return time.Time{}, false, nil
+	}
+
+	if !strings.HasSuffix(value, "d)") {
+		return time.Time{}, true, eris.Errorf(
+			"invalid relative date %q: expected ago(<positive days>d)",
+			value,
+		)
+	}
+
+	daysText := strings.TrimSuffix(strings.TrimPrefix(value, "ago("), "d)")
+
+	days, err := strconv.ParseUint(daysText, 10, 64)
+	if err != nil || days == 0 {
+		return time.Time{}, true, eris.Errorf(
+			"invalid relative date %q: expected ago(<positive days>d)",
+			value,
+		)
+	}
+
+	const day = 24 * time.Hour
+	if days > uint64(math.MaxInt64/int64(day)) {
+		return time.Time{}, true, eris.Errorf("relative date %q exceeds supported duration", value)
+	}
+
+	return timeNow.Add(-time.Duration(days) * day), true, nil
 }
 
 func parseHistoryDateLayout(

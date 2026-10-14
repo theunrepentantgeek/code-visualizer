@@ -61,7 +61,10 @@ func resolveHistoricalSource(
 		return eris.Wrap(repository.discoveryErr, "--until requires a Git repository")
 	}
 
-	snapshot, err := git.ResolveSnapshot(repository.root, until)
+	historyRange := c.Flags.HistoryRange
+	historyRange.Until = until
+
+	snapshot, err := git.ResolveSnapshot(repository.root, historyRange)
 	if err != nil {
 		return eris.Wrap(err, "failed to resolve historical filesystem snapshot")
 	}

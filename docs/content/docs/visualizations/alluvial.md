@@ -19,13 +19,14 @@ codeviz alluvial [flags] <target-path>
 ## Required input
 
 `--output` is required. Provide at least two ordered references and a numeric
-metric with flags, the configuration file, or both. An empty reference selects
-the repository's `HEAD` commit.
+metric with flags, the configuration file, or both. References accept `HEAD`,
+tags, commit IDs, dates, `^` predecessors, and `ago(Nd)` relative dates. An
+empty reference selects the repository's `HEAD` commit.
 
 | Flag | Short | Values | Description |
 | ---- | ----- | ------ | ----------- |
 | `--output` | `-o` | `.png`, `.jpg`, `.jpeg`, `.svg` | Output image file path |
-| `--reference` | | tag, commit ID, or date (repeatable) | Ordered snapshots; replaces configured references |
+| `--reference` | | Git reference (repeatable) | Ordered snapshots; replaces configured references |
 | `--metric` | `-m` | numeric metric | Directory metric that determines each flow width |
 | `--fill` | `-f` | `metric[,palette]` | Numeric metric and optional palette that determine band colour |
 
@@ -76,6 +77,13 @@ Compare two release tags using line count for the bands:
 ```sh
 codeviz alluvial . -o releases.svg -m file-lines \
   --reference tag:v1.0 --reference tag:v2.0
+```
+
+Compare the previous chronological release tag on the same branch with `latest`:
+
+```sh
+codeviz alluvial . -o latest-release.svg -m file-lines \
+  --reference '^latest' --reference latest
 ```
 
 Show the direct children of `cmd` and `internal` across three snapshots:

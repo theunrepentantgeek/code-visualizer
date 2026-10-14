@@ -54,6 +54,112 @@ func TestResolveHistoryReference_AcceptsFullCommitID(t *testing.T) {
 	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)))
 }
 
+func TestResolveHistoryReference_CommitPredecessorsUseFirstParent(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	for _, value := range []string{
+		"^HEAD",
+		"^" + fixture.merged[:8],
+		"^sha:" + fixture.merged[:8],
+	} {
+		resolved, err := s.resolveHistoryReference(value, lowerBound)
+		g.Expect(err).NotTo(HaveOccurred(), value)
+		g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)), value)
+	}
+}
+
+func TestResolveHistoryReference_TagPredecessorUsesFirstParentHistory(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	for _, value := range []string{"^v2.0", "^tag:v2.0", "^latest-lightweight"} {
+		resolved, err := s.resolveHistoryReference(value, lowerBound)
+		g.Expect(err).NotTo(HaveOccurred(), value)
+		g.Expect(resolved.revision).To(Equal(plumbing.NewHash(fixture.main)), value)
+	}
+}
+
+func TestResolveHistoryReference_TagPredecessorUsesLatestCommitTime(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	runHistoryGit(t, fixture.dir, "switch", "--orphan", "chronological-tags")
+
+	runHistoryGit(
+		t,
+		fixture.dir,
+		"commit",
+		"--allow-empty",
+		"-m",
+		"deeper but later",
+		"--date=2025-06-01T00:00:00Z",
+	)
+	deeper := runHistoryGit(t, fixture.dir, "rev-parse", "HEAD")
+	runHistoryGit(t, fixture.dir, "tag", "deeper-but-later", deeper)
+	runHistoryGit(
+		t,
+		fixture.dir,
+		"commit",
+		"--allow-empty",
+		"-m",
+		"nearer but earlier",
+		"--date=2025-05-01T00:00:00Z",
+	)
+	runHistoryGit(t, fixture.dir, "tag", "nearer-but-earlier")
+	runHistoryGit(
+		t,
+		fixture.dir,
+		"commit",
+		"--allow-empty",
+		"-m",
+		"release",
+		"--date=2025-07-01T00:00:00Z",
+	)
+	runHistoryGit(t, fixture.dir, "tag", "v3.0")
+	s := requireRepoService(t, fixture.dir)
+
+	resolved, err := s.resolveHistoryReference("^v3.0", lowerBound)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(resolved.revision).To(Equal(plumbing.NewHash(deeper)))
+}
+
+func TestResolveHistoryReference_RejectsInvalidPredecessors(t *testing.T) {
+	t.Parallel()
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	tests := []struct {
+		value   string
+		message string
+	}{
+		{"^", "predecessor reference cannot be empty"},
+		{"^^HEAD", "nested predecessor references are not supported"},
+		{"^tag:", "tag reference cannot be empty"},
+		{"^sha:", "sha reference cannot be empty"},
+		{"^" + fixture.initial, "has no first parent"},
+		{"^v1.0", `tag "v1.0" has no previous reachable tag`},
+		{"^date:2025-01-01", "predecessor requires a revision reference"},
+		{"^ago(7d)", "predecessor requires a revision reference"},
+		{"^sha:deadbeef", `unknown commit ID "deadbeef"`},
+		{"^tag:blob-tag", `tag "blob-tag" does not reference a commit`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			_, err := s.resolveHistoryReference(tt.value, lowerBound)
+			g.Expect(err).To(MatchError(ContainSubstring(tt.message)))
+		})
+	}
+}
+
 func TestResolveHistoryReference_UnprefixedTagWinsOverCommitAndDate(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -147,6 +253,12 @@ func TestResolveHistoryReference_RejectsInvalidExplicitReferences(t *testing.T) 
 
 	_, err = s.resolveHistoryReference("date:tomorrow", lowerBound)
 	g.Expect(err).To(MatchError(ContainSubstring(`invalid date "tomorrow"`)))
+
+	_, err = s.resolveHistoryReference("date:ago(0d)", lowerBound)
+	g.Expect(err).To(MatchError(And(
+		ContainSubstring(`invalid date "ago(0d)"`),
+		ContainSubstring("expected ago(<positive days>d)"),
+	)))
 }
 
 func TestResolveHistoryReference_RejectsAmbiguousCommitID(t *testing.T) {
@@ -184,6 +296,72 @@ func TestResolveHistoryReference_ReportsUnknownValue(t *testing.T) {
 	g.Expect(err).To(MatchError(
 		`history reference "not-a-reference" is not a tag, commit ID, or supported date`,
 	))
+}
+
+func TestParseAgoDate_UsesCapturedTimeNow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	timeNow := time.Date(2026, 10, 3, 3, 20, 57, 451000000, time.FixedZone("NZDT", 13*60*60))
+
+	got, claimed, err := parseAgoDate("ago(7d)", timeNow)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(claimed).To(BeTrue())
+	g.Expect(got).To(Equal(timeNow.Add(-7 * 24 * time.Hour)))
+}
+
+func TestResolveHistoryReference_AcceptsRelativeDates(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+	timeNow := time.Date(2026, 10, 3, 3, 20, 57, 0, time.UTC)
+
+	unprefixed, err := s.resolveHistoryReference("ago(7d)", lowerBound, timeNow)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(unprefixed.timestamp).To(Equal(timeNow.Add(-7 * 24 * time.Hour)))
+
+	explicit, err := s.resolveHistoryReference("date:ago(14d)", upperBound, timeNow)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(explicit.timestamp).To(Equal(timeNow.Add(-14 * 24 * time.Hour)))
+}
+
+func TestParseAgoDate_RejectsInvalidExpressions(t *testing.T) {
+	t.Parallel()
+
+	tests := []string{
+		"ago(0d)",
+		"ago(-1d)",
+		"ago(1.5d)",
+		"ago(7)",
+		"ago(7h)",
+		"ago(999999999999999999999999999d)",
+		"ago()",
+		"ago(7d",
+	}
+
+	for _, value := range tests {
+		t.Run(value, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			_, claimed, err := parseAgoDate(value, time.Now())
+
+			g.Expect(claimed).To(BeTrue())
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}
+
+func TestResolveHistoryReference_RejectsRelativeDatePredecessor(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	fixture := setupTagRangeRepo(t)
+	s := requireRepoService(t, fixture.dir)
+
+	_, err := s.resolveHistoryReference("^ago(7d)", lowerBound, time.Now())
+
+	g.Expect(err).To(MatchError(ContainSubstring("predecessor requires a revision reference")))
 }
 
 func TestParseHistoryDate_SupportsDocumentedFormats(t *testing.T) {

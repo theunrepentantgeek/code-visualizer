@@ -17,8 +17,17 @@ import (
 
 // HistoryRange selects commits by graph position and author timestamp.
 type HistoryRange struct {
-	From  string
-	Until string
+	From    string
+	Until   string
+	TimeNow time.Time
+}
+
+func (r HistoryRange) withTimeNow() HistoryRange {
+	if r.TimeNow.IsZero() {
+		r.TimeNow = time.Now()
+	}
+
+	return r
 }
 
 type resolvedHistoryRange struct {
@@ -33,12 +42,14 @@ func (s *repoService) resolveHistoryRange(ctx context.Context, r HistoryRange) (
 		return resolvedHistoryRange{}, eris.Wrap(err, "history range resolution cancelled")
 	}
 
-	from, err := s.resolveHistoryReference(r.From, lowerBound)
+	r = r.withTimeNow()
+
+	from, err := s.resolveHistoryReference(r.From, lowerBound, r.TimeNow)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "invalid --from")
 	}
 
-	until, err := s.resolveHistoryReference(r.Until, upperBound)
+	until, err := s.resolveHistoryReference(r.Until, upperBound, r.TimeNow)
 	if err != nil {
 		return resolvedHistoryRange{}, eris.Wrap(err, "invalid --until")
 	}
@@ -112,7 +123,7 @@ func (s *repoService) resolveRangeTip(
 		return plumbing.ZeroHash, "", eris.Wrap(err, "failed to get HEAD")
 	}
 
-	return head.Hash(), "HEAD", nil
+	return head.Hash(), headReference, nil
 }
 
 func (s *repoService) resolveTagCommit(name string) (plumbing.Hash, error) {
