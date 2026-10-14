@@ -170,6 +170,10 @@ linters:
           - funlen
           - noctx
         path: (.+)_test\.go
+      # revive versions disagree on whether this rule exists; keep behavior stable across environments.
+      - linters:
+          - revive
+        text: "^multiline-if-init:"
     paths:
       - third_party$
       - builtin$
