@@ -60,7 +60,7 @@ func (p *FileLinesProvider) FileProgressMutex() *sync.Mutex {
 	return &p.mu
 }
 
-//nolint:revive // Traversal, cancellation, and callback coordination form one operation.
+//nolint:revive,nolintlint // Traversal, cancellation, and callback coordination form one operation.
 func (p *FileLinesProvider) Load(ctx context.Context, root *model.Directory) error {
 	var cancelled error
 
