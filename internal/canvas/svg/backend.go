@@ -287,6 +287,17 @@ func (s *svgBackend) DrawArcText(
 	)
 }
 
+func (s *svgBackend) DrawTooltip(bounds geometry.Rect, text string) {
+	size := bounds.Size()
+
+	fmt.Fprintf(
+		&s.buf,
+		`<g><title>%s</title><rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="transparent"/></g>`+"\n",
+		html.EscapeString(text),
+		bounds.Min.X, bounds.Min.Y, size.Width, size.Height,
+	)
+}
+
 func (s *svgBackend) Finish(outputPath string) (err error) {
 	s.buf.WriteString("</svg>\n")
 

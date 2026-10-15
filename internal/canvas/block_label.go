@@ -3,6 +3,7 @@ package canvas
 import (
 	"image/color"
 	"slices"
+	"strings"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
@@ -36,6 +37,15 @@ func (c *Canvas) AddBlockLabel(layer Layer, label BlockLabel, format ImageFormat
 
 	layout, ok := fitBlockLabel(lines, size.Width, size.Height)
 	if !ok {
+		return
+	}
+
+	if format == FormatSVG && layout.lineHeight <= greekedLineHeight {
+		c.AddTooltip(layer, Tooltip{
+			Bounds: geometry.RectFromPositionSize(label.Bounds.Min, size),
+			Text:   strings.Join(lines, "\n"),
+		})
+
 		return
 	}
 

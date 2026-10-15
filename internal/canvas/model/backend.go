@@ -20,6 +20,7 @@ type Backend interface {
 	DrawPath(points []geometry.Point, stroke color.RGBA, strokeWidth float64)
 	DrawText(pos geometry.Point, text string, ink color.RGBA, fontSize float64, anchor TextAnchor, rotation float64)
 	DrawArcText(center geometry.Point, radius float64, text string, ink color.RGBA, fontSize float64)
+	DrawTooltip(bounds geometry.Rect, text string)
 	Finish(outputPath string) error
 }
 

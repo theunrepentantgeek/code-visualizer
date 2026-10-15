@@ -71,6 +71,8 @@ func (c *captureBackend) DrawArcText(
 	c.arcTexts = append(c.arcTexts, capturedArcText{text: text, radius: radius})
 }
 
+func (*captureBackend) DrawTooltip(geometry.Rect, string) {}
+
 func (*captureBackend) Finish(string) error { return nil }
 
 func testRoot() *model.Directory {

@@ -330,6 +330,8 @@ func (r *rasterBackend) DrawText(
 	}
 }
 
+func (*rasterBackend) DrawTooltip(_ geometry.Rect, _ string) {}
+
 func (r *rasterBackend) DrawArcText(
 	center geometry.Point,
 	radius float64,

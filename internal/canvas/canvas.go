@@ -191,6 +191,15 @@ func (c *Canvas) AddArcText(layer Layer, a ArcText) {
 	})
 }
 
+// AddTooltip records a tooltip hover target on the given layer.
+func (c *Canvas) AddTooltip(layer Layer, tooltip Tooltip) {
+	c.shapes = append(c.shapes, layeredShape{
+		layer: layer,
+		order: len(c.shapes),
+		shape: &tooltip,
+	})
+}
+
 // FooterText returns the current footer text, or an empty string if no footer
 // has been set. Primarily useful for testing.
 func (c *Canvas) FooterText() string {

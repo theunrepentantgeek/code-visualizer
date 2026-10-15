@@ -135,6 +135,14 @@ func (m *Backend) DrawArcText(center geometry.Point, _ float64, text string, ink
 	})
 }
 
+func (m *Backend) DrawTooltip(bounds geometry.Rect, text string) {
+	m.Calls = append(m.Calls, Call{
+		Method: "DrawTooltip",
+		Bounds: bounds,
+		Text:   text,
+	})
+}
+
 func (m *Backend) Finish(outputPath string) error {
 	m.FinishPath = outputPath
 
