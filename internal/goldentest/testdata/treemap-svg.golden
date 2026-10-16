@@ -43,6 +43,9 @@
 <text x="246.500" y="142.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Text</text>
 <text x="226.500" y="182.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Size</text>
 <text x="226.500" y="198.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
+<text x="156.613" y="176.912" fill="rgb(0,0,0)" font-size="3.300" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">readme.md</text>
+<text x="156.613" y="180.212" fill="rgb(0,0,0)" font-size="3.300" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">40</text>
+<text x="156.613" y="183.512" fill="rgb(0,0,0)" font-size="3.300" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Markdown</text>
 <text x="44.161" y="164.353" fill="rgb(255,255,255)" font-size="15.859" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">main.go</text>
 <text x="44.161" y="180.212" fill="rgb(255,255,255)" font-size="15.859" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">120</text>
 <text x="44.161" y="196.071" fill="rgb(255,255,255)" font-size="15.859" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Go</text>
@@ -52,6 +55,9 @@
 <text x="114.003" y="115.392" fill="rgb(255,255,255)" font-size="10.413" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">util.go</text>
 <text x="114.003" y="125.804" fill="rgb(255,255,255)" font-size="10.413" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">75</text>
 <text x="114.003" y="136.217" fill="rgb(255,255,255)" font-size="10.413" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Go</text>
+<text x="153.065" y="122.664" fill="rgb(0,0,0)" font-size="3.141" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">styles.css</text>
+<text x="153.065" y="125.804" fill="rgb(0,0,0)" font-size="3.141" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">33</text>
+<text x="153.065" y="128.945" fill="rgb(0,0,0)" font-size="3.141" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">CSS</text>
 <text x="55.939" y="68.375" fill="rgb(255,255,255)" font-size="15.228" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">big.go</text>
 <text x="55.939" y="83.603" fill="rgb(255,255,255)" font-size="15.228" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">305</text>
 <text x="55.939" y="98.831" fill="rgb(255,255,255)" font-size="15.228" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Go</text>

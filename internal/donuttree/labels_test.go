@@ -198,6 +198,38 @@ func TestAddSectorLabel_RendersUnreadableLinesAsSectorTooltip(t *testing.T) {
 	g.Expect(svg).To(ContainSubstring(`>42</tspan>`))
 }
 
+func TestAddSectorLabel_PreservesUnreadableSVGTextWhenTooltipsDisabled(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	node := DonutNode{
+		StartAngle:  math.Pi / 4,
+		SweepAngle:  0.05,
+		InnerRadius: 100,
+		OuterRadius: 140,
+	}
+	cv := canvas.NewCanvas(400, 400)
+	addSectorLabel(
+		cv,
+		node,
+		geometry.Point{X: 200, Y: 200},
+		[]string{"wide label", "42"},
+		inks.FixedInk(donutLabelColour),
+	)
+	cv.SetTooltipsEnabled(false)
+
+	outputPath := filepath.Join(t.TempDir(), "donut-text.svg")
+	g.Expect(cv.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	svg := string(output)
+	g.Expect(svg).NotTo(ContainSubstring(`class="tooltip-target"`))
+	g.Expect(svg).To(ContainSubstring(`>wide label</text>`))
+	g.Expect(svg).To(ContainSubstring(`>42</text>`))
+}
+
 func TestSectorLabelFontSize_FitsRadialCaptionBlockInBothDimensions(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

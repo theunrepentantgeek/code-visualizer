@@ -19,7 +19,8 @@ This reference is being expanded. For the authoritative list of flags, run
 Set `addTooltips: true` to add SVG tooltips for labels that are too small to
 display in tree-map, spiral, donut-tree, and alluvial visualizations. Tooltips
 are disabled by default. The same setting is available as `--add-tooltips` on
-those visualization commands.
+those visualization commands. Without tooltips, undersized SVG labels remain
+as tiny text that can be read by zooming or extracted by other tools.
 
 ## Alluvial
 

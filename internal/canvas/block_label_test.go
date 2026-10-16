@@ -119,6 +119,30 @@ func TestCanvas_AddBlockLabel_RendersTinySVGLabelAsCombinedTooltip(t *testing.T)
 	g.Expect(svg).NotTo(ContainSubstring("<title>"))
 }
 
+func TestCanvas_AddBlockLabel_PreservesTinySVGTextWhenTooltipsDisabled(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(40, 20)
+	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
+		Bounds: geometry.Rect{Min: geometry.NewPoint(5, 5), Max: geometry.NewPoint(35, 13)},
+		Lines:  []string{"a.go", "42"},
+		Ink:    color.RGBA{A: 255},
+	}, canvas.FormatSVG)
+	c.SetTooltipsEnabled(false)
+
+	outputPath := filepath.Join(t.TempDir(), "tiny-text.svg")
+	g.Expect(c.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	svg := string(output)
+	g.Expect(svg).NotTo(ContainSubstring(`class="tooltip-target"`))
+	g.Expect(svg).To(ContainSubstring(`>a.go</text>`))
+	g.Expect(svg).To(ContainSubstring(`>42</text>`))
+}
+
 func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

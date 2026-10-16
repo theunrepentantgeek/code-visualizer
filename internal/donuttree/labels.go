@@ -111,20 +111,39 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center geometry.Point, li
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
 	blockCenter := center.Translate(geometry.NewRadialVector(midpoint, midRadius))
 
-	fontSize := sectorLabelFontSize(node, lines)
-	if fontSize == 0 {
+	fontSize := fittedSectorLabelFontSize(node, lines)
+
+	rotation := midpoint + math.Pi/2
+	if isLowerHalf(midpoint) {
+		rotation += math.Pi
+	}
+
+	texts := sectorLabelTexts(blockCenter, lines, ink, fontSize, rotation)
+	if fontSize < donutMinimumLabelFontSize {
 		cv.AddPolygonTooltip(canvas.LayerOverlay, canvas.PolygonTooltip{
 			Points:   sectorPoints(node, center),
 			Position: blockCenter,
 			Text:     strings.Join(lines, "\n"),
+			Fallback: texts,
 		})
 
 		return
 	}
 
-	rotation := midpoint + math.Pi/2
-	if isLowerHalf(midpoint) {
-		rotation += math.Pi
+	for _, text := range texts {
+		cv.AddText(canvas.LayerOverlay, text)
+	}
+}
+
+func sectorLabelTexts(
+	blockCenter geometry.Point,
+	lines []string,
+	ink inks.Ink,
+	fontSize float64,
+	rotation float64,
+) []canvas.Text {
+	if fontSize <= 0 {
+		return nil
 	}
 
 	_, lineHeight := textlayout.MeasureStrings(lines, fontSize)
@@ -134,10 +153,11 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center geometry.Point, li
 		Anchor:   canvas.AnchorMiddle,
 		Rotation: rotation,
 	}
+	texts := make([]canvas.Text, 0, len(lines))
 
 	for index, line := range lines {
 		offset := (float64(index) - float64(len(lines)-1)/2) * lineHeight
-		cv.AddText(canvas.LayerOverlay, canvas.Text{
+		texts = append(texts, canvas.Text{
 			Spec: spec,
 			Position: blockCenter.Translate(geometry.NewVector(
 				-offset*math.Sin(rotation),
@@ -146,6 +166,8 @@ func addSectorLabel(cv *canvas.Canvas, node DonutNode, center geometry.Point, li
 			Content: line,
 		})
 	}
+
+	return texts
 }
 
 func isLowerHalf(angle float64) bool {
@@ -158,6 +180,15 @@ func isLowerHalf(angle float64) bool {
 }
 
 func sectorLabelFontSize(node DonutNode, lines []string) float64 {
+	fontSize := fittedSectorLabelFontSize(node, lines)
+	if fontSize < donutMinimumLabelFontSize {
+		return 0
+	}
+
+	return fontSize
+}
+
+func fittedSectorLabelFontSize(node DonutNode, lines []string) float64 {
 	if len(lines) == 0 || node.SweepAngle <= 0 || node.OuterRadius <= node.InnerRadius {
 		return 0
 	}
@@ -186,9 +217,6 @@ func sectorLabelFontSize(node DonutNode, lines []string) float64 {
 		donutDefaultLabelFontSize*availableArcLength/maxWidth,
 		donutDefaultLabelFontSize*ringWidth/blockHeight,
 	)
-	if fontSize < donutMinimumLabelFontSize {
-		return 0
-	}
 
 	return fontSize
 }

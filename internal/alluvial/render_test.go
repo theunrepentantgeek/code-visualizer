@@ -224,6 +224,32 @@ func TestRenderToCanvas_RendersUnreadableBandLabelsAsTooltips(t *testing.T) {
 	g.Expect(svg).To(ContainSubstring(`>three</tspan>`))
 }
 
+func TestRenderToCanvas_PreservesUnreadableBandTextWhenTooltipsDisabled(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{{
+			X: 100,
+			Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 50, Width: 12, Labels: []string{"one", "two", "three"},
+			}},
+		}},
+	}, 200, 80, inks.NumericInk("fill", []float64{0}, palette.GetPalette(palette.Neutral)), "")
+	cv.SetTooltipsEnabled(false)
+
+	outputPath := filepath.Join(t.TempDir(), "alluvial-text.svg")
+	g.Expect(cv.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	svg := string(output)
+	g.Expect(svg).NotTo(ContainSubstring(`class="tooltip-target"`))
+	g.Expect(svg).To(ContainSubstring(`>api</text>`))
+	g.Expect(svg).To(ContainSubstring(`>three</text>`))
+}
+
 func TestRenderToCanvas_DoesNotRenderTooltipForEmptyBand(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

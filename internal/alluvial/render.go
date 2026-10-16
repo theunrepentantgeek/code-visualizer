@@ -205,18 +205,33 @@ func addAlluvialBandLabel(
 	}
 
 	fontSize, ok := alluvialBandLabelFontSize(band, len(lines))
+
+	texts := alluvialBandLabelTexts(x, band, lines, fontSize, fillInk)
 	if !ok {
 		cv.AddTooltip(canvas.LayerOverlay, canvas.Tooltip{
 			Bounds: geometry.RectFromPositionSize(
 				geometry.Point{X: x - alluvialTooltipTargetWidth/2, Y: band.Top},
 				geometry.Size{Width: alluvialTooltipTargetWidth, Height: band.Bottom - band.Top},
 			),
-			Text: strings.Join(lines, "\n"),
+			Text:     strings.Join(lines, "\n"),
+			Fallback: texts,
 		})
 
 		return
 	}
 
+	for _, text := range texts {
+		cv.AddText(canvas.LayerOverlay, text)
+	}
+}
+
+func alluvialBandLabelTexts(
+	x float64,
+	band Band,
+	lines []string,
+	fontSize float64,
+	fillInk inks.Ink,
+) []canvas.Text {
 	center := (band.Top + band.Bottom) / 2
 	labelColour := canvas.TextColourFor(
 		alluvialBandInk(fillInk, band).Dip(inks.MeasureValue(band.FillValue)),
@@ -228,13 +243,17 @@ func addAlluvialBandLabel(
 	}
 
 	start := center - float64(len(lines)-1)*fontSize/2
+
+	texts := make([]canvas.Text, 0, len(lines))
 	for index, line := range lines {
-		cv.AddText(canvas.LayerOverlay, canvas.Text{
+		texts = append(texts, canvas.Text{
 			Spec:     spec,
 			Position: geometry.Point{X: x, Y: start + float64(index)*fontSize},
 			Content:  line,
 		})
 	}
+
+	return texts
 }
 
 func alluvialBandLabelLines(band Band, labelFillMetric metric.Name) []string {
@@ -292,7 +311,7 @@ func alluvialFlowInk(fillInk inks.Ink, flow Flow) inks.Ink {
 func alluvialBandLabelFontSize(band Band, lineCount int) (float64, bool) {
 	fontSize := min(13, (band.Bottom-band.Top)/float64(lineCount+1))
 	if fontSize < 8 {
-		return 0, false
+		return fontSize, false
 	}
 
 	return fontSize, true

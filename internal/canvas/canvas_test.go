@@ -2,6 +2,7 @@ package canvas_test
 
 import (
 	"image/color"
+	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/mock"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/raster"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/inks"
 	"github.com/theunrepentantgeek/code-visualizer/internal/palette"
@@ -131,6 +133,52 @@ func TestCanvas_AddText_DispatchesToBackend(t *testing.T) {
 	g.Expect(mb.Calls).To(HaveLen(1))
 	g.Expect(mb.Calls[0].Method).To(Equal("DrawText"))
 	g.Expect(mb.Calls[0].Text).To(Equal("hello"))
+}
+
+func TestCanvas_RenderToRaster_OmitsTooltipFallback(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	c := canvas.NewCanvas(100, 100)
+	c.AddTooltip(canvas.LayerOverlay, canvas.Tooltip{
+		Bounds: geometry.RectFromPositionSize(
+			geometry.NewPoint(10, 10),
+			geometry.Size{Width: 80, Height: 80},
+		),
+		Text: "tooltip",
+		Fallback: []canvas.Text{{
+			Spec: &canvas.TextSpec{
+				Ink:      inks.FixedInk(black),
+				FontSize: 24,
+				Anchor:   canvas.AnchorMiddle,
+			},
+			Position: geometry.NewPoint(50, 50),
+			Content:  "visible",
+		}},
+	})
+	c.SetTooltipsEnabled(false)
+
+	outputPath := filepath.Join(t.TempDir(), "fallback.png")
+	backend := raster.New(100, 100)
+	g.Expect(c.RenderTo(backend)).To(Succeed())
+	g.Expect(backend.Finish(outputPath)).To(Succeed())
+
+	file, err := os.Open(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	defer file.Close()
+
+	image, err := png.Decode(file)
+	if err != nil {
+		t.Fatalf("decode PNG: %v", err)
+	}
+
+	for y := image.Bounds().Min.Y; y < image.Bounds().Max.Y; y++ {
+		for x := image.Bounds().Min.X; x < image.Bounds().Max.X; x++ {
+			_, _, _, alpha := image.At(x, y).RGBA()
+			g.Expect(alpha).To(BeZero())
+		}
+	}
 }
 
 func TestCanvas_AddLine_DispatchesToBackend(t *testing.T) {
