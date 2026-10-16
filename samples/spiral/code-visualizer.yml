@@ -1,11 +1,6 @@
 imageSize:
     width: 1920
     height: 1920
-tree-map: {}
-radial-tree:
-    labels: all
-bubble-tree:
-    labels: folders
 spiral:
     resolution: daily
     size: commit-count
