@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -174,6 +176,40 @@ func TestSVGBackend_DrawText_ProducesValidSVG(t *testing.T) {
 	content := readFile(t, out)
 	g.Expect(content).To(ContainSubstring("<text"))
 	g.Expect(content).To(ContainSubstring("hello"))
+}
+
+func TestSVGBackend_DrawTooltip_ClampsPopupInsideCanvas(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	b := New(200, 100)
+	b.DrawTooltip(
+		geometry.RectFromPositionSize(geometry.NewPoint(0, 0), geometry.Size{Width: 10, Height: 8}),
+		"top left",
+	)
+	b.DrawTooltip(
+		geometry.RectFromPositionSize(geometry.NewPoint(190, 92), geometry.Size{Width: 10, Height: 8}),
+		"bottom right",
+	)
+
+	out := filepath.Join(t.TempDir(), "tooltips.svg")
+	g.Expect(b.Finish(out)).To(Succeed())
+
+	content := readFile(t, out)
+	popupPattern := regexp.MustCompile(
+		`class="tooltip-popup"[^>]*><rect x="([-\d.]+)" y="([-\d.]+)" ` +
+			`width="([-\d.]+)" height="([-\d.]+)"`,
+	)
+	matches := popupPattern.FindAllStringSubmatch(content, -1)
+	g.Expect(matches).To(HaveLen(2))
+
+	topLeft := parseTooltipRect(t, matches[0])
+	g.Expect(topLeft.Min.X).To(BeNumerically(">=", 4))
+	g.Expect(topLeft.Min.Y).To(BeNumerically(">=", 4))
+
+	bottomRight := parseTooltipRect(t, matches[1])
+	g.Expect(bottomRight.Max.X).To(BeNumerically("<=", 196))
+	g.Expect(bottomRight.Max.Y).To(BeNumerically("<=", 96))
 }
 
 func TestSVGBackend_DrawLine_ProducesValidSVG(t *testing.T) {
@@ -468,4 +504,24 @@ func readFile(t *testing.T, path string) string {
 	}
 
 	return string(data)
+}
+
+func parseTooltipRect(t *testing.T, match []string) geometry.Rect {
+	t.Helper()
+
+	values := make([]float64, 4)
+
+	for index, value := range match[1:] {
+		parsed, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		values[index] = parsed
+	}
+
+	return geometry.RectFromPositionSize(
+		geometry.NewPoint(values[0], values[1]),
+		geometry.Size{Width: values[2], Height: values[3]},
+	)
 }

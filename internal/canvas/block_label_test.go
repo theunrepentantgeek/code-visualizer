@@ -89,9 +89,9 @@ func TestCanvas_AddBlockLabel_RendersTinySVGLabelAsCombinedTooltip(t *testing.T)
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
-	c := canvas.NewCanvas(40, 20)
+	c := canvas.NewCanvas(200, 100)
 	c.AddBlockLabel(canvas.LayerOverlay, canvas.BlockLabel{
-		Bounds:     geometry.Rect{Min: geometry.NewPoint(5, 5), Max: geometry.NewPoint(35, 13)},
+		Bounds:     geometry.Rect{Min: geometry.NewPoint(90, 46), Max: geometry.NewPoint(110, 54)},
 		LayoutSize: geometry.Size{Width: 20, Height: 8},
 		Lines:      []string{"a<&.go", "", "42"},
 		Ink:        color.RGBA{A: 255},
@@ -104,12 +104,19 @@ func TestCanvas_AddBlockLabel_RendersTinySVGLabelAsCombinedTooltip(t *testing.T)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	svg := string(output)
-	g.Expect(svg).To(ContainSubstring("<title>a&lt;&amp;.go\n42</title>"))
+	g.Expect(svg).To(ContainSubstring(`.tooltip-target:hover .tooltip-popup`))
+	g.Expect(svg).To(ContainSubstring(`.tooltip-target:focus-within .tooltip-popup`))
+	g.Expect(svg).To(ContainSubstring(`<g class="tooltip-target">`))
 	g.Expect(svg).To(ContainSubstring(
-		`<rect x="5.000" y="5.000" width="20.000" height="8.000" fill="transparent"/>`,
+		`<rect x="90.000" y="46.000" width="20.000" height="8.000" fill="transparent" ` +
+			`tabindex="0" aria-label="a&lt;&amp;.go; 42"/>`,
 	))
-	g.Expect(strings.Count(svg, "<title>")).To(Equal(1))
-	g.Expect(svg).NotTo(ContainSubstring("<text"))
+	g.Expect(svg).To(ContainSubstring(`class="tooltip-popup"`))
+	g.Expect(svg).To(ContainSubstring(`text-anchor="middle"`))
+	g.Expect(svg).To(ContainSubstring(`<tspan x="100.000">a&lt;&amp;.go</tspan>`))
+	g.Expect(svg).To(ContainSubstring(`<tspan x="100.000" dy="16.000">42</tspan>`))
+	g.Expect(strings.Count(svg, `class="tooltip-popup"`)).To(Equal(1))
+	g.Expect(svg).NotTo(ContainSubstring("<title>"))
 }
 
 func TestCanvas_AddBlockLabel_PreservesTinyRasterTextWhenRequested(t *testing.T) {
