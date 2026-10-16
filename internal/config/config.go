@@ -55,6 +55,7 @@ type Config struct {
 	Footer      *Footer       `yaml:"footer,omitempty"      json:"footer,omitempty"`
 	FileFilter  []filter.Rule `yaml:"fileFilter,omitempty"  json:"fileFilter,omitempty"`
 	ChangedOnly *bool         `yaml:"changedOnly,omitempty" json:"changedOnly,omitempty"`
+	AddTooltips *bool         `yaml:"addTooltips,omitempty" json:"addTooltips,omitempty"`
 
 	// SelectionMetrics holds user-defined, filename-glob-based classification metrics.
 	// The map key is the metric name; the value is an ordered list of match rules.
@@ -417,12 +418,26 @@ func (c *Config) ChangedOnlyEnabled() bool {
 	return c != nil && c.ChangedOnly != nil && *c.ChangedOnly
 }
 
+// TooltipsEnabled reports whether omitted SVG labels should be rendered as tooltips.
+func (c *Config) TooltipsEnabled() bool {
+	return c != nil && c.AddTooltips != nil && *c.AddTooltips
+}
+
 // OverrideChangedOnly enables changed-only filtering when v is true.
 //
 //nolint:revive,nolintlint // flag-parameter: v is a command-line enablement flag
 func (c *Config) OverrideChangedOnly(v bool) {
 	if v {
 		c.ChangedOnly = &v
+	}
+}
+
+// OverrideAddTooltips enables tooltips when v is true.
+//
+//nolint:revive,nolintlint // flag-parameter: v is a command-line enablement flag
+func (c *Config) OverrideAddTooltips(v bool) {
+	if v {
+		c.AddTooltips = &v
 	}
 }
 

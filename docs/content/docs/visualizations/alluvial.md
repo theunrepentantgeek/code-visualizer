@@ -41,6 +41,7 @@ empty reference selects the repository's `HEAD` commit.
 | `--title` | none | Override the title text on the generated image |
 | `--footer` | none | Override the footer text on the generated image |
 | `--hide-footer` | `false` | Suppress the attribution footer |
+| `--add-tooltips` | `false` | Add SVG tooltips for labels too small to display |
 | `--include` | none | Include matching files; simple glob (repeatable) |
 | `--exclude` | none | Exclude matching files; simple glob (repeatable) |
 | `--include-binary-files` | `false` | Include binary files, which are excluded by default |

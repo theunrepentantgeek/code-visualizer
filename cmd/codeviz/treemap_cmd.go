@@ -34,6 +34,8 @@ type TreemapCmd struct {
 	Title      string `default:"" help:"Override title text on the generated image." optional:""`
 	Footer     string `default:"" help:"Override footer text on the generated image." optional:""`
 	HideFooter bool   `default:"false" help:"Suppress the attribution footer." name:"hide-footer" optional:""`
+	//nolint:revive,nolintlint // Long help text is more important than minimizing line length, and annotations can't be wrapped
+	AddTooltips bool `default:"false" help:"Add tooltips for labels too small to display." name:"add-tooltips" optional:""`
 
 	Include            []filter.Rule `type:"filterrule" name:"include" help:"Include matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
 	Exclude            []filter.Rule `type:"filterrule" name:"exclude" help:"Exclude matching files (repeatable)." placeholder:"glob"`                 //nolint:revive,nolintlint // kong struct tags require long lines
@@ -181,6 +183,7 @@ func (c *TreemapCmd) applyOverrides(cfg *config.Config) {
 	cfg.OverrideFooterText(c.Footer)
 	cfg.OverrideHideFooter(c.HideFooter)
 	cfg.OverrideChangedOnly(c.ChangedOnly)
+	cfg.OverrideAddTooltips(c.AddTooltips)
 	cfg.Treemap.OverrideSize(string(c.Size))
 	cfg.Treemap.OverrideFill(c.Fill)
 	cfg.Treemap.OverrideBorder(c.Border)

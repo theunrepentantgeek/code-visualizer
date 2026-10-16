@@ -283,6 +283,117 @@ func TestCLI_ParsesTreemapFlatFlag(t *testing.T) {
 	g.Expect(cli.TreeMap.Flat).To(BeTrue())
 }
 
+func TestCLI_ParsesAddTooltipsForSupportedVisualizations(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "tree map", args: []string{"tree-map", ".", "-o", "out.svg", "--add-tooltips"}},
+		{name: "spiral", args: []string{"spiral", ".", "-o", "out.svg", "--add-tooltips"}},
+		{name: "donut tree", args: []string{"donut-tree", ".", "-o", "out.svg", "--add-tooltips"}},
+		{
+			name: "alluvial",
+			args: []string{
+				"alluvial", ".", "-o", "out.svg", "--reference", "HEAD~1", "--reference", "HEAD",
+				"--metric", "file-lines", "--add-tooltips",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			cli := CLI{}
+			parser, err := kong.New(
+				&cli,
+				kong.Name("codeviz"),
+				filterMapperOption(),
+				kong.Exit(func(int) {}),
+			)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			_, err = parser.Parse(tc.args)
+			g.Expect(err).NotTo(HaveOccurred())
+		})
+	}
+}
+
+func TestVisualizationCommands_ApplyAddTooltipsOverride(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		apply func(*config.Config)
+	}{
+		{name: "tree map", apply: func(cfg *config.Config) {
+			(&TreemapCmd{AddTooltips: true}).applyOverrides(cfg)
+		}},
+		{name: "spiral", apply: func(cfg *config.Config) {
+			(&SpiralCmd{AddTooltips: true}).applyOverrides(cfg)
+		}},
+		{name: "donut tree", apply: func(cfg *config.Config) {
+			(&DonutTreeCmd{AddTooltips: true}).applyOverrides(cfg)
+		}},
+		{name: "alluvial", apply: func(cfg *config.Config) {
+			(&AlluvialCmd{AddTooltips: true}).applyOverrides(cfg)
+		}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			cfg := newTestConfig()
+
+			tc.apply(cfg)
+
+			g.Expect(cfg.AddTooltips).NotTo(BeNil())
+			g.Expect(*cfg.AddTooltips).To(BeTrue())
+		})
+	}
+}
+
+func TestVisualizationCommands_OmittedAddTooltipsPreservesConfigValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		apply func(*config.Config)
+	}{
+		{name: "tree map", apply: func(cfg *config.Config) {
+			(&TreemapCmd{}).applyOverrides(cfg)
+		}},
+		{name: "spiral", apply: func(cfg *config.Config) {
+			(&SpiralCmd{}).applyOverrides(cfg)
+		}},
+		{name: "donut tree", apply: func(cfg *config.Config) {
+			(&DonutTreeCmd{}).applyOverrides(cfg)
+		}},
+		{name: "alluvial", apply: func(cfg *config.Config) {
+			(&AlluvialCmd{}).applyOverrides(cfg)
+		}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			enabled := true
+			cfg := newTestConfig()
+			cfg.AddTooltips = &enabled
+
+			tc.apply(cfg)
+
+			g.Expect(cfg.AddTooltips).NotTo(BeNil())
+			g.Expect(*cfg.AddTooltips).To(BeTrue())
+		})
+	}
+}
+
 func TestCLI_ParsesUnifiedHistoryReferences(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
