@@ -143,6 +143,15 @@ func (m *Backend) DrawTooltip(bounds geometry.Rect, text string) {
 	})
 }
 
+func (m *Backend) DrawPolygonTooltip(points []geometry.Point, position geometry.Point, text string) {
+	m.Calls = append(m.Calls, Call{
+		Method: "DrawPolygonTooltip",
+		Pos:    position,
+		Points: slices.Clone(points),
+		Text:   text,
+	})
+}
+
 func (m *Backend) Finish(outputPath string) error {
 	m.FinishPath = outputPath
 

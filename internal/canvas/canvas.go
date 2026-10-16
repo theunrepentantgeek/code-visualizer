@@ -200,6 +200,16 @@ func (c *Canvas) AddTooltip(layer Layer, tooltip Tooltip) {
 	})
 }
 
+// AddPolygonTooltip records a polygonal tooltip hover target on the given layer.
+func (c *Canvas) AddPolygonTooltip(layer Layer, tooltip PolygonTooltip) {
+	tooltip.Points = slices.Clone(tooltip.Points)
+	c.shapes = append(c.shapes, layeredShape{
+		layer: layer,
+		order: len(c.shapes),
+		shape: &tooltip,
+	})
+}
+
 // FooterText returns the current footer text, or an empty string if no footer
 // has been set. Primarily useful for testing.
 func (c *Canvas) FooterText() string {

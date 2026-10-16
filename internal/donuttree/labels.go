@@ -3,6 +3,7 @@ package donuttree
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
@@ -102,14 +103,24 @@ func directoryMetricLabel(name metric.Name, dir *model.Directory) (string, bool)
 }
 
 func addSectorLabel(cv *canvas.Canvas, node DonutNode, center geometry.Point, lines []string, ink inks.Ink) {
-	fontSize := sectorLabelFontSize(node, lines)
-	if fontSize == 0 {
+	if len(lines) == 0 {
 		return
 	}
 
 	midpoint := node.StartAngle + node.SweepAngle/2
 	midRadius := (node.InnerRadius + node.OuterRadius) / 2
 	blockCenter := center.Translate(geometry.NewRadialVector(midpoint, midRadius))
+
+	fontSize := sectorLabelFontSize(node, lines)
+	if fontSize == 0 {
+		cv.AddPolygonTooltip(canvas.LayerOverlay, canvas.PolygonTooltip{
+			Points:   sectorPoints(node, center),
+			Position: blockCenter,
+			Text:     strings.Join(lines, "\n"),
+		})
+
+		return
+	}
 
 	rotation := midpoint + math.Pi/2
 	if isLowerHalf(midpoint) {

@@ -298,6 +298,53 @@ func (s *svgBackend) DrawArcText(
 }
 
 func (s *svgBackend) DrawTooltip(bounds geometry.Rect, text string) {
+	s.writeTooltipStyle()
+
+	size := bounds.Size()
+	fmt.Fprintf(
+		&s.buf,
+		`<g class="tooltip-target">`+
+			`<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="transparent" `+
+			`tabindex="0" aria-label="%s"/>`,
+		bounds.Min.X, bounds.Min.Y, size.Width, size.Height,
+		html.EscapeString(tooltipAccessibleText(text)),
+	)
+	s.writeTooltipPopup(geometry.NewPoint(
+		bounds.Min.X+size.Width/2,
+		bounds.Min.Y+size.Height/2,
+	), text)
+	s.buf.WriteString("</g>\n")
+}
+
+func (s *svgBackend) DrawPolygonTooltip(points []geometry.Point, position geometry.Point, text string) {
+	if len(points) < 3 {
+		return
+	}
+
+	s.writeTooltipStyle()
+
+	var pointPairs strings.Builder
+
+	for index, point := range points {
+		if index > 0 {
+			pointPairs.WriteByte(' ')
+		}
+
+		fmt.Fprintf(&pointPairs, "%.3f,%.3f", point.X, point.Y)
+	}
+
+	fmt.Fprintf(
+		&s.buf,
+		`<g class="tooltip-target"><polygon points="%s" fill="transparent" `+
+			`tabindex="0" aria-label="%s"/>`,
+		pointPairs.String(),
+		html.EscapeString(tooltipAccessibleText(text)),
+	)
+	s.writeTooltipPopup(position, text)
+	s.buf.WriteString("</g>\n")
+}
+
+func (s *svgBackend) writeTooltipStyle() {
 	if !s.tooltipStyleWritten {
 		s.buf.WriteString(
 			`<style>.tooltip-popup{visibility:hidden;pointer-events:none}` +
@@ -306,7 +353,9 @@ func (s *svgBackend) DrawTooltip(bounds geometry.Rect, text string) {
 		)
 		s.tooltipStyleWritten = true
 	}
+}
 
+func (s *svgBackend) writeTooltipPopup(position geometry.Point, text string) {
 	lines := strings.Split(text, "\n")
 	widths, _ := textlayout.MeasureStrings(lines, tooltipFontSize)
 
@@ -315,35 +364,26 @@ func (s *svgBackend) DrawTooltip(bounds geometry.Rect, text string) {
 		maxTextWidth = max(maxTextWidth, width)
 	}
 
-	size := bounds.Size()
 	panelWidth := maxTextWidth + 2*tooltipPaddingX
 	panelHeight := float64(len(lines))*tooltipLineHeight + 2*tooltipPaddingY
-	targetCenterX := bounds.Min.X + size.Width/2
-	targetCenterY := bounds.Min.Y + size.Height/2
 	panelX := max(
 		tooltipMargin,
-		min(targetCenterX-panelWidth/2, float64(s.width)-tooltipMargin-panelWidth),
+		min(position.X-panelWidth/2, float64(s.width)-tooltipMargin-panelWidth),
 	)
 	panelY := max(
 		tooltipMargin,
-		min(targetCenterY-panelHeight/2, float64(s.height)-tooltipMargin-panelHeight),
+		min(position.Y-panelHeight/2, float64(s.height)-tooltipMargin-panelHeight),
 	)
 	textX := panelX + panelWidth/2
 	textY := panelY + tooltipPaddingY + tooltipLineHeight/2
-	accessibleText := strings.ReplaceAll(text, "\n", "; ")
 
 	fmt.Fprintf(
 		&s.buf,
-		`<g class="tooltip-target">`+
-			`<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="transparent" `+
-			`tabindex="0" aria-label="%s"/>`+
-			`<g class="tooltip-popup" aria-hidden="true">`+
+		`<g class="tooltip-popup" aria-hidden="true">`+
 			`<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" rx="4" `+
 			`fill="rgb(255,255,255)" fill-opacity="0.950" stroke="rgb(64,64,64)"/>`+
 			`<text x="%.3f" y="%.3f" fill="rgb(0,0,0)" font-size="%.3f" `+
 			`font-family="sans-serif" text-anchor="middle" dominant-baseline="central">`,
-		bounds.Min.X, bounds.Min.Y, size.Width, size.Height,
-		html.EscapeString(accessibleText),
 		panelX, panelY, panelWidth, panelHeight,
 		textX, textY, tooltipFontSize,
 	)
@@ -362,7 +402,11 @@ func (s *svgBackend) DrawTooltip(bounds geometry.Rect, text string) {
 		)
 	}
 
-	s.buf.WriteString("</text></g></g>\n")
+	s.buf.WriteString("</text></g>")
+}
+
+func tooltipAccessibleText(text string) string {
+	return strings.ReplaceAll(text, "\n", "; ")
 }
 
 func (s *svgBackend) Finish(outputPath string) (err error) {
