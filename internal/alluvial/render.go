@@ -25,6 +25,8 @@ var (
 	alluvialPrinter    = message.NewPrinter(language.English)
 )
 
+const alluvialTooltipTargetWidth = 12.0
+
 // RenderToCanvas draws readable release columns and the filled alluvial paths.
 func RenderToCanvas(layout Layout, width, height int, fillInk inks.Ink, labelFillMetric metric.Name) *canvas.Canvas {
 	cv := canvas.NewCanvas(width, height)
@@ -198,9 +200,20 @@ func addAlluvialBandLabel(
 	fillInk inks.Ink,
 ) {
 	lines := alluvialBandLabelLines(band, labelFillMetric)
+	if len(lines) == 0 || band.Bottom <= band.Top {
+		return
+	}
 
 	fontSize, ok := alluvialBandLabelFontSize(band, len(lines))
 	if !ok {
+		cv.AddTooltip(canvas.LayerOverlay, canvas.Tooltip{
+			Bounds: geometry.RectFromPositionSize(
+				geometry.Point{X: x - alluvialTooltipTargetWidth/2, Y: band.Top},
+				geometry.Size{Width: alluvialTooltipTargetWidth, Height: band.Bottom - band.Top},
+			),
+			Text: strings.Join(lines, "\n"),
+		})
+
 		return
 	}
 

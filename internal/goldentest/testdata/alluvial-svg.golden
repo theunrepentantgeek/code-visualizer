@@ -18,6 +18,8 @@
 <text x="138.600" y="9.300" fill="rgb(40,40,40)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">tag:v3.0</text>
 <text x="15.400" y="83.781" fill="rgb(255,255,255)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">api</text>
 <text x="15.400" y="96.781" fill="rgb(255,255,255)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">12</text>
+<style>.tooltip-popup{visibility:hidden;pointer-events:none}.tooltip-target:hover .tooltip-popup,.tooltip-target:focus-within .tooltip-popup{visibility:visible}</style>
+<g class="tooltip-target"><rect x="9.400" y="126.939" width="12.000" height="20.439" fill="transparent" tabindex="0" aria-label="docs; 4"/><g class="tooltip-popup" aria-hidden="true"><rect x="4.000" y="115.158" width="41.000" height="44.000" rx="4" fill="rgb(255,255,255)" fill-opacity="0.950" stroke="rgb(64,64,64)"/><text x="24.500" y="129.158" fill="rgb(0,0,0)" font-size="12.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central"><tspan x="24.500">docs</tspan><tspan x="24.500" dy="16.000">4</tspan></text></g></g>
 <text x="77.000" y="60.787" fill="rgb(255,255,255)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">api</text>
 <text x="77.000" y="73.787" fill="rgb(255,255,255)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">18</text>
 <text x="77.000" y="127.790" fill="rgb(255,255,255)" font-size="8.516" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">docs</text>
