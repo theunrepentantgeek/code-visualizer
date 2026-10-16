@@ -20,6 +20,10 @@ func WriteCanvas(c *CommonState) error {
 		c.Canvas.SetDrawingBounds(int(c.DrawingBounds.Min.Y), int(c.DrawingBounds.Max.Y))
 	}
 
+	if c.RootConfig != nil {
+		c.Canvas.SetTooltipsEnabled(c.RootConfig.TooltipsEnabled())
+	}
+
 	if err := c.Canvas.Render(c.Output); err != nil {
 		return eris.Wrap(err, "render failed")
 	}

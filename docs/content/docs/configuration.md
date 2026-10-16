@@ -14,6 +14,13 @@ This reference is being expanded. For the authoritative list of flags, run
 `codeviz <visualization> --help`, and see the [Usage]({{< relref "/docs/usage" >}}) page.
 {{< /callout >}}
 
+## Tooltips
+
+Set `addTooltips: true` to add SVG tooltips for labels that are too small to
+display in tree-map, spiral, donut-tree, and alluvial visualizations. Tooltips
+are disabled by default. The same setting is available as `--add-tooltips` on
+those visualization commands.
+
 ## Alluvial
 
 Configure an alluvial release comparison under `alluvial`. `references` is an

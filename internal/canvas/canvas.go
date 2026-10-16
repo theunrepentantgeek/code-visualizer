@@ -53,22 +53,29 @@ type layeredShape struct {
 // Canvas is a retained-then-render drawing surface.
 // Shapes are added with layer assignments, then rendered in batch.
 type Canvas struct {
-	width       int
-	height      int
-	shapes      []layeredShape
-	title       *string
-	footer      *string
-	drawingMinY int // top of content area (pixels below title)
-	drawingMaxY int // bottom of content area (pixels above footer)
+	width        int
+	height       int
+	shapes       []layeredShape
+	title        *string
+	footer       *string
+	drawingMinY  int // top of content area (pixels below title)
+	drawingMaxY  int // bottom of content area (pixels above footer)
+	showTooltips bool
 }
 
 // NewCanvas creates a canvas for the given dimensions.
 func NewCanvas(width, height int) *Canvas {
 	return &Canvas{
-		width:       width,
-		height:      height,
-		drawingMaxY: height, // default: full canvas
+		width:        width,
+		height:       height,
+		drawingMaxY:  height, // default: full canvas
+		showTooltips: true,
 	}
+}
+
+// SetTooltipsEnabled controls whether retained tooltip shapes are rendered.
+func (c *Canvas) SetTooltipsEnabled(enabled bool) {
+	c.showTooltips = enabled
 }
 
 // SetDrawingBounds stores the vertical drawing bounds available for content.
@@ -290,6 +297,10 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	})
 
 	for _, s := range c.shapes {
+		if !c.showTooltips && isTooltipShape(s.shape) {
+			continue
+		}
+
 		s.shape.drawTo(backend)
 	}
 
@@ -304,6 +315,15 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	}
 
 	return nil
+}
+
+func isTooltipShape(shape drawnShape) bool {
+	switch shape.(type) {
+	case *Tooltip, *PolygonTooltip:
+		return true
+	default:
+		return false
+	}
 }
 
 // createBackend creates the appropriate backend for the given format.
