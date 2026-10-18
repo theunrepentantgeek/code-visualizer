@@ -90,7 +90,7 @@ jobs:
           group_suite: true
           failed_summary: true
           failed_summary_logs: true
-          include_passed: false
+          include_passed: true
           include_skipped: false
           include_time_in_summary: true
           verbose_summary: false
