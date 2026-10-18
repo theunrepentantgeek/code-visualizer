@@ -161,6 +161,11 @@ and CI alike — runs exactly the same commands with exactly the same flags.
   output format. `task test:race`, `task test:cover`, and `task update-golden-files` use
   the same runner. For a quick check during development, you can scope to a single
   package with `gotestsum --format testname -- ./internal/metric`.
+  `task test` also writes `out/junit.xml` (ignored by Git and removed by `task clean`).
+  PR validation publishes its totals, timing, and collapsible failure logs to the
+  job summary and an updating PR comment, even when tests fail. Individual passing
+  and skipped tests are omitted from the details. Fork PRs get the job summary
+  only because their read-only token cannot post comments.
 - **Lint**: Always run `task lint`. Never run `golangci-lint` directly — the project uses a
   custom build that includes nilaway, and running the stock binary will miss checks or produce
   incorrect results. The task uses `.golangci-lint-cache` at the repository root so each

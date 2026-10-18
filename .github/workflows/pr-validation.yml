@@ -46,6 +46,7 @@ jobs:
     permissions:
       packages: read
       contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -73,3 +74,24 @@ jobs:
           imageName: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
           push: never
           runCmd: task ci
+
+      - name: Publish test summary
+        if: ${{ !cancelled() && hashFiles('out/junit.xml') != '' }}
+        uses: mikepenz/action-junit-report@6ef3fdcfcd5f0b5d14df3e659ef19b8c6820f93d # v6.6.1
+        with:
+          report_paths: out/junit.xml
+          check_name: Go Test Results
+          skip_annotations: false
+          comment: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
+          updateComment: true
+          job_summary: true
+          detailed_summary: true
+          failed_summary: true
+          failed_summary_logs: true
+          include_passed: false
+          include_skipped: false
+          include_time_in_summary: true
+          verbose_summary: false
+          require_tests: true
+          fail_on_failure: true
+          fail_on_parse_error: true
