@@ -87,6 +87,7 @@ jobs:
           updateComment: true
           job_summary: true
           detailed_summary: true
+          group_suite: true
           failed_summary: true
           failed_summary_logs: true
           include_passed: false
