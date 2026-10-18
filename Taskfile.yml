@@ -29,17 +29,17 @@ tasks:
   test:
     desc: Run all tests
     cmds:
-      - go test ./... -count=1
+      - gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1
 
   test:race:
     desc: Run all tests with the race detector enabled
     cmds:
-      - go test ./... -count=1 -race
+      - gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1 -race
 
   test:cover:
     desc: Run tests with coverage report
     cmds:
-      - go test ./... -count=1 -coverprofile=coverage.out
+      - gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1 -coverprofile=coverage.out
       - go tool cover -func=coverage.out
 
   bench:
@@ -124,7 +124,7 @@ tasks:
   update-golden-files:
     desc: Regenerate golden file snapshots
     cmds:
-      - GOLDIE_UPDATE=1 go test ./... -count=1
+      - GOLDIE_UPDATE=1 gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1
 
   update-superpowers:
     desc: Update superpower snapshots

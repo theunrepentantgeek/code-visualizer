@@ -27,6 +27,7 @@ Thumbs.db
 /codeviz
 codeviz.png
 tools/gofumpt
+tools/gotestsum
 tools/golangci-lint
 tools/golangci-lint-custom
 tools/task
@@ -41,4 +42,3 @@ docs/content/hero.png
 
 # Miscellaneous
 .custom-gcl.yml # Temporary custom GolangCI-Lint configuration file
-
