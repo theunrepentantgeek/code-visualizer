@@ -1,7 +1,6 @@
 # Agent Instructions
 
-Run repository development tools through `dev.sh` so they use the project's
-configured environment:
+Run repository development tools through `dev.sh` so they use the project's configured environment:
 
 ```bash
 ./dev.sh -c '<command>'
