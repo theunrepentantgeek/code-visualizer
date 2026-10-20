@@ -21,6 +21,7 @@ jobs:
           name: Go Test Results
           path: junit.xml
           reporter: java-junit
+          use-actions-summary: 'false'
           list-suites: failed
           list-tests: failed
           fail-on-error: 'true'
