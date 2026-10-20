@@ -83,11 +83,11 @@ jobs:
           report_paths: out/junit.xml
           check_name: Go Test Results
           skip_annotations: false
-          annotate_only: false
+          annotate_only: true
           comment: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
           updateComment: true
           job_summary: true
-          detailed_summary: true
+          detailed_summary: false
           group_suite: true
           failed_summary: true
           failed_summary_logs: true
