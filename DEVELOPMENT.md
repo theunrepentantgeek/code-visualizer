@@ -162,10 +162,13 @@ and CI alike — runs exactly the same commands with exactly the same flags.
   the same runner. For a quick check during development, you can scope to a single
   package with `gotestsum --format testname -- ./internal/metric`.
   `task test` also writes `out/junit.xml` (ignored by Git and removed by `task clean`).
-  PR validation publishes its totals, timing, and collapsible failure logs to the
-  job summary and an updating PR comment, even when tests fail. Individual passing
-  and skipped tests are omitted from the details. Fork PRs get the job summary
-  only because their read-only token cannot post comments.
+  PR validation uploads this file as the `go-test-results` artifact, even when tests fail.
+  The separate `Test Report` workflow uses `dorny/test-reporter` to publish a
+  `Go Test Results` check and job summary with totals, timing, and failure details.
+  This also works for fork PRs: validation needs no report-writing permissions, and
+  the reporting workflow does not check out or execute PR code. Individual passing
+  and skipped tests are omitted from the details; PR comments are not posted.
+  The reporting workflow must be merged into the default branch before it can run.
 - **Lint**: Always run `task lint`. Never run `golangci-lint` directly — the project uses a
   custom build that includes nilaway, and running the stock binary will miss checks or produce
   incorrect results. The task uses `.golangci-lint-cache` at the repository root so each

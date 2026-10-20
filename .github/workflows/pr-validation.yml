@@ -46,8 +46,6 @@ jobs:
     permissions:
       packages: read
       contents: read
-      pull-requests: write
-      checks: write
 
     steps:
       - name: Checkout code
@@ -76,25 +74,10 @@ jobs:
           push: never
           runCmd: task ci
 
-      - name: Publish test summary
+      - name: Upload test results
         if: ${{ !cancelled() && hashFiles('out/junit.xml') != '' }}
-        uses: mikepenz/action-junit-report@6ef3fdcfcd5f0b5d14df3e659ef19b8c6820f93d # v6.6.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          report_paths: out/junit.xml
-          check_name: Go Test Results
-          skip_annotations: false
-          annotate_only: true
-          comment: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
-          updateComment: true
-          job_summary: true
-          detailed_summary: false
-          group_suite: true
-          failed_summary: true
-          failed_summary_logs: true
-          include_passed: true
-          include_skipped: false
-          include_time_in_summary: true
-          verbose_summary: false
-          require_tests: true
-          fail_on_failure: true
-          fail_on_parse_error: true
+          name: go-test-results
+          path: out/junit.xml
+          if-no-files-found: error
