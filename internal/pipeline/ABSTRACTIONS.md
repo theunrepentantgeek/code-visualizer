@@ -9,7 +9,7 @@
 
 **Boundary and invariants.**
 
-- One value per type, and wiring mistakes are programming errors: `NewState` panics on a nil value or a duplicate type, and applying a function whose input type is absent panics ([state.go#L18](state.go#L18), [state.go#L23](state.go#L23), [apply.go#L20](apply.go#L20)).
+- One value per type, and wiring mistakes are programming errors: `NewState` keys seeds by dynamic type and panics on an untyped nil or duplicate type; a typed nil pointer still has a key and is accepted. Applying a function whose input type is absent panics ([state.go#L14](state.go#L14), [apply.go#L20](apply.go#L20)).
 - The error is sticky: once a stage returns an error it is stored and every subsequent `Apply*` returns immediately without running, so the first failure wins ([apply.go#L16](apply.go#L16), [apply.go#L27](apply.go#L27), [state.go#L68](state.go#L68)).
 - Results are stored by *static* type parameter, so a stage returning `R` overwrites the previous `R` ([apply.go#L59](apply.go#L59), [state.go#L52](state.go#L52)).
 
@@ -17,6 +17,7 @@
 
 - `NewState` seeds the state; the `ApplyFuncX`, `ApplyFuncXR`, `ApplyFuncXY`, `ApplyFuncXYR` and `ApplyFuncXYZ` methods run a stage over one to three state-resident inputs, optionally storing a result ([state.go#L14](state.go#L14), [apply.go](apply.go)).
 - `State.Set` replaces a value under its static type without changing the latched error ([state.go](state.go)).
+- Use `Set[Interface](value)` when a stage requests an interface: seeding the same object through `NewState` stores its concrete dynamic type, not every interface it implements ([state.go](state.go), [../../cmd/codeviz/progress_boundaries.go](../../cmd/codeviz/progress_boundaries.go)).
 - `Err` reports the latched error at the end of the run ([state.go#L68](state.go#L68)).
 
 **Proper-use patterns.**
@@ -35,3 +36,4 @@
 
 - [state.go#L6](state.go#L6) — `State`, `NewState`, `Err`.
 - [apply.go#L12](apply.go#L12) — the typed `Apply*` family and its panic/latch rules.
+- [../../cmd/codeviz/treemap_cmd.go](../../cmd/codeviz/treemap_cmd.go), [../../cmd/codeviz/progress_boundaries.go](../../cmd/codeviz/progress_boundaries.go), and [../scatter/pipeline.go](../scatter/pipeline.go) — seed construction, interface-keyed values, and stage sequences.

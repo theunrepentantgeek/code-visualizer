@@ -10,12 +10,12 @@
 **Boundary and invariants.**
 
 - Immutable after loading: once `BulkCommitHistory` returns, no field of any returned commit is mutated, so consumers may hold `*Commit` references for the lifetime of the slice ([commit.go#L26](commit.go#L26), [../../stages/common.go#L59](../../stages/common.go#L59)).
-- `ChangedPaths` is slash-separated and repo-relative, and is restricted to the tracked path set passed in, which keeps each commit's memory bounded ([commit.go#L23](commit.go#L23), [commit.go#L34](commit.go#L34)).
+- `Changes` contains `FileChange` records with slash-separated, repository-relative paths and added/removed line counts, restricted to the tracked path set. It is not a list of every repository change ([commit.go#L30](commit.go#L30), [commit.go#L40](commit.go#L40)).
 - This is the acquisition-side record; the per-file commit attached to the model tree is a separate, smaller type ([../../model/commit.go#L6](../../model/commit.go#L6)).
 
 **Related operations.**
 
-- `BulkCommitHistory` and its range/prewarm variants walk the graph once for a whole run; `CommitTotal` counts reachable commits ([commit.go#L85](commit.go#L85), [commit.go#L120](commit.go#L120), [commit.go#L39](commit.go#L39)).
+- `BulkCommitHistory` and its ranged/prewarm variants acquire shared history; `CommitTotal` and `CommitTotalInHistoryRange` count commits, with context-aware ranged entry points available for cancellation ([bulk_history.go](bulk_history.go), [commit.go](commit.go)).
 
 **Proper-use patterns.**
 
@@ -29,6 +29,7 @@
 
 - [commit.go#L15](commit.go#L15) — `Signature`.
 - [commit.go#L29](commit.go#L29) — `Commit` and its invariant.
+- [../../stages/git_history.go](../../stages/git_history.go) and [../../spiral/bucketing.go](../../spiral/bucketing.go) — per-file history and timeline consumers.
 
 ## HistoryRange
 
@@ -38,9 +39,9 @@
 
 **Boundary and invariants.**
 
-- The zero value means "all history", and every unranged entry point delegates to the ranged one with an empty range ([commit.go#L39](commit.go#L39), [author_history.go#L69](author_history.go#L69)).
-- Resolution to concrete graph positions and timestamps is internal; callers pass the user-facing strings and never plumbing hashes ([history_range.go#L23](history_range.go#L23), [history_range.go#L30](history_range.go#L30)).
-- `TimeNow` is captured once for the range and is the shared clock for every `ago(Nd)` bound, preventing one command's references from drifting apart.
+- The zero value selects history reachable from HEAD. A revision lower bound excludes that revision and its ancestors; an upper revision chooses the effective tip. Date bounds filter author timestamps, not committer timestamps ([history_range.go](history_range.go)).
+- Resolution to concrete graph positions and timestamps is internal; callers pass reference strings, including explicit `tag:`, `sha:`, or `date:` forms when disambiguation is needed ([history_reference.go](history_reference.go)).
+- `TimeNow` supplies the shared clock for `ago(Nd)` bounds. CLI construction captures it once for the run; a zero clock is filled by each range-resolution call, so independently resolved zero-clock ranges need not share an instant ([history_range.go#L26](history_range.go#L26), [../../../cmd/codeviz/main.go](../../../cmd/codeviz/main.go)).
 - It travels with the run as part of the shared flag bundle rather than being re-parsed per metric ([../../stages/common.go#L29](../../stages/common.go#L29)).
 
 **Related operations.**
@@ -58,6 +59,7 @@
 **Source locations.**
 
 - [history_range.go#L18](history_range.go#L18) — `HistoryRange`.
+- [history_reference.go](history_reference.go), [../../stages/changed_only.go](../../stages/changed_only.go), and [../../stages/source.go](../../stages/source.go) — reference syntax, change filtering, and source selection.
 
 ## Snapshot
 
@@ -70,7 +72,7 @@
 
 - Resolving requires a git repository; without one the `--until` request is an error, not a silent fallback ([../../stages/source.go#L61](../../stages/source.go#L61), [snapshot.go#L23](snapshot.go#L23)).
 - `Subtree` scopes the snapshot to the repo-relative directory being visualized, so a snapshot of a subdirectory is still a real git tree ([snapshot.go#L115](snapshot.go#L115), [../../stages/source.go#L69](../../stages/source.go#L69)).
-- The snapshot commit's date becomes the run's reference clock, so time-based metrics are computed relative to the snapshot rather than to now ([../../stages/source.go#L74](../../stages/source.go#L74), [../../stages/source.go#L83](../../stages/source.go#L83)).
+- A date reference selects the latest reachable commit by author time at or before the cutoff. After selection, the commit's committer time (falling back to author time) becomes the source and metric reference clock; selection time and evaluation time are distinct ([snapshot.go](snapshot.go), [../../stages/source.go](../../stages/source.go)).
 
 **Related operations.**
 
@@ -87,63 +89,7 @@
 **Source locations.**
 
 - [snapshot.go#L16](snapshot.go#L16) — `Snapshot`, `ResolveSnapshot`, `Subtree`.
-
-## AuthorRecord
-
-**Purpose.**
-
-- `AuthorRecord` is one author's aggregate contribution to a single file, plus the per-commit `ContributionPoint` list that window-based metrics filter by calendar time ([author_history.go#L20](author_history.go#L20), [author_history.go#L23](author_history.go#L23)).
-
-**Boundary and invariants.**
-
-- Contribution weight is `Added + Removed`: removals count equally, so the model rewards improving or deleting code, not just adding volume ([author_history.go#L21](author_history.go#L21), [author_history.go#L58](author_history.go#L58)).
-- Records are per file *and* per author; `FirstSeen`/`LastSeen` bound that author's activity on that file ([author_history.go#L28](author_history.go#L28), [author_history.go#L29](author_history.go#L29)).
-- `Contributions` is retained deliberately — aggregate totals alone cannot answer initial-developer, current-maintainer, orphan-risk, or knowledge-handoff questions ([author_history.go#L10](author_history.go#L10), [author_history.go#L30](author_history.go#L30)).
-
-**Related operations.**
-
-- `BulkAuthorHistory` produces them; author identity can be normalised through the repository `.mailmap` before aggregation ([author_history.go#L69](author_history.go#L69), [authorship_metrics.go#L46](authorship_metrics.go#L46)).
-
-**Proper-use patterns.**
-
-- Derive shares and rankings from the records' weights rather than from raw line counts ([authorship_metrics.go#L76](authorship_metrics.go#L76)).
-
-**Anti-patterns.**
-
-- Do not drop `Contributions` to save memory; the windowed metrics need per-commit timestamps ([authorship_metrics.go#L152](authorship_metrics.go#L152)).
-
-**Source locations.**
-
-- [author_history.go#L14](author_history.go#L14) — `ContributionPoint`.
-- [author_history.go#L23](author_history.go#L23) — `AuthorRecord`, `FileAuthorRecords`.
-
-## AuthorHistoryResult
-
-**Purpose.**
-
-- `AuthorHistoryResult` is the whole-repository authorship picture produced by one graph walk: per-file records, a repo-wide author last-active map, and the HEAD commit date ([author_history.go#L42](author_history.go#L42), [author_history.go#L43](author_history.go#L43)).
-
-**Boundary and invariants.**
-
-- `HeadDate` is the global clock for every authorship window calculation, so results do not drift with wall-clock time ([author_history.go#L48](author_history.go#L48), [../../stages/common.go#L66](../../stages/common.go#L66)).
-- `LastActive` covers all authors in the repository, not only those touching tracked files, because orphan-risk asks whether an author is still active anywhere ([author_history.go#L48](author_history.go#L48), [author_history.go#L54](author_history.go#L54)).
-- It is produced by a single walk over the commit graph and then treated as read-only run state ([author_history.go#L55](author_history.go#L55), [../../stages/author_history.go#L40](../../stages/author_history.go#L40)).
-
-**Related operations.**
-
-- `BulkAuthorHistory` / `BulkAuthorHistoryInHistoryRange` build it; the authorship stage stores it on the shared state ([author_history.go#L69](author_history.go#L69), [../../stages/author_history.go#L15](../../stages/author_history.go#L15)).
-
-**Proper-use patterns.**
-
-- Compute all nine authorship metrics from one stored result instead of re-walking history per metric ([../../stages/author_history.go#L15](../../stages/author_history.go#L15)).
-
-**Anti-patterns.**
-
-- Do not use `time.Now()` for authorship windows; use `HeadDate` so output is reproducible ([author_history.go#L48](author_history.go#L48), [authorship_metrics.go#L244](authorship_metrics.go#L244)).
-
-**Source locations.**
-
-- [author_history.go#L43](author_history.go#L43) — `AuthorHistoryResult`.
+- [../../stages/source.go](../../stages/source.go) and [../../alluvial/pipeline.go](../../alluvial/pipeline.go) — single-source substitution and ordered-snapshot acquisition.
 
 ## AuthorshipParams
 
@@ -153,7 +99,7 @@
 
 **Boundary and invariants.**
 
-- Every field has a specified default supplied by `DefaultAuthorshipParams`; config only overrides individual values ([authorship_metrics.go#L53](authorship_metrics.go#L53), [../../stages/providers.go#L173](../../stages/providers.go#L173)).
+- `DefaultAuthorshipParams` supplies the baseline; the stages layer overlays only configured fields before calling the Git metric loader ([authorship_metrics.go](authorship_metrics.go), [../../stages/providers.go#L354](../../stages/providers.go#L354)).
 - Identity metrics return sentinel classifications rather than empty strings: `Unmaintained` when no qualifying author exists, `OtherContributor` for contributors beyond top-k ([authorship_metrics.go#L10](authorship_metrics.go#L10), [authorship_metrics.go#L14](authorship_metrics.go#L14)).
 - `IdentityTopK` exists to bound legend size, not to filter data ([authorship_metrics.go#L42](authorship_metrics.go#L42)).
 
@@ -163,13 +109,14 @@
 
 **Proper-use patterns.**
 
-- Start from the defaults and apply only the values the user set, so unset config keys keep spec behaviour ([../../stages/providers.go#L173](../../stages/providers.go#L173)).
+- Start from the defaults and apply only values the user set, then pass the result to `LoadAuthorshipMetricsInHistoryRange` so one run's settings do not become mutable global provider state ([../../stages/providers.go#L354](../../stages/providers.go#L354), [authorship_loader.go#L32](authorship_loader.go#L32)).
 
 **Anti-patterns.**
 
-- Do not treat the sentinel strings as real author names; they are deliberately bracketed placeholders ([authorship_metrics.go#L14](authorship_metrics.go#L14)).
+- Do not use a zero-valued `AuthorshipParams` as the default or overwrite omitted options with zero; neither preserves the metric family's configured thresholds ([authorship_metrics.go](authorship_metrics.go), [../../stages/providers.go#L354](../../stages/providers.go#L354)).
 
 **Source locations.**
 
 - [authorship_metrics.go#L10](authorship_metrics.go#L10) — `Unmaintained`, `OtherContributor`.
 - [authorship_metrics.go#L24](authorship_metrics.go#L24) — `AuthorshipParams`, `DefaultAuthorshipParams`.
+- [../../stages/providers.go#L354](../../stages/providers.go#L354) and [authorship_loader.go](authorship_loader.go) — config translation and parameterized loading.

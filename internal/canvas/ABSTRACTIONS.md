@@ -11,7 +11,7 @@
 
 - Draw order is layer first, then insertion order within a layer — a stable sort, so equal-layer shapes keep the order they were added ([canvas.go#L264](canvas.go#L264), [canvas.go#L47](canvas.go#L47)).
 - Title and footer are drawn last, after every recorded shape, and are always horizontally centred ([canvas.go#L277](canvas.go#L277), [canvas.go#L282](canvas.go#L282)).
-- The content area is narrower than the canvas: `SetDrawingBounds` records the vertical band left after the title and footer reservations, and `DrawingSize` reports it ([canvas.go#L74](canvas.go#L74), [canvas.go#L104](canvas.go#L104), [../stages/canvas.go#L119](../stages/canvas.go#L119)).
+- The content area can be shorter than the canvas: `SetDrawingBounds` records the vertical band left after title and footer reservations, and `DrawingSize` reports the full width and that band's height ([canvas.go#L74](canvas.go#L74), [canvas.go#L104](canvas.go#L104), [../stages/canvas.go](../stages/canvas.go)).
 
 **Related operations.**
 
@@ -32,6 +32,7 @@
 
 - [canvas.go#L53](canvas.go#L53) — `Canvas`, drawing bounds, `RenderTo`.
 - [canvas.go#L21](canvas.go#L21) — the reserved-height constants.
+- [../stages/canvas.go](../stages/canvas.go) and [../treemap/pipeline.go](../treemap/pipeline.go) — shared canvas setup and visualization composition.
 
 ## Layer
 
@@ -59,6 +60,7 @@
 **Source locations.**
 
 - [layer.go#L6](layer.go#L6) — `Layer` and its constants.
+- [../scatter/render.go](../scatter/render.go) and [../legend/render.go](../legend/render.go) — data, structure, and overlay ordering.
 
 ## ShapeStyle
 
@@ -90,6 +92,7 @@
 
 - [spec.go#L7](spec.go#L7) — `ShapeStyle` and the filled-shape specs that embed it.
 - [rectangle.go#L10](rectangle.go#L10) — an instance carrying geometry, metric values, and focus.
+- [../bubbletree/render.go](../bubbletree/render.go) and [../treemap/render.go](../treemap/render.go) — reusable styles for independent shape families.
 
 ## BlockLabel
 
@@ -109,7 +112,7 @@
 
 **Proper-use patterns.**
 
-- Build labels during a labelling stage and hand them to the canvas with the output format, so SVG keeps real text while raster output greeks tiny labels ([../treemap/state.go#L24](../treemap/state.go#L24), [block_label.go#L42](block_label.go#L42)).
+- Build labels during a labelling stage and hand them to the canvas with the output format, so SVG keeps real text while raster output greeks tiny labels ([../treemap/labels_stage.go#L12](../treemap/labels_stage.go#L12), [block_label.go#L42](block_label.go#L42)).
 
 **Anti-patterns.**
 
@@ -118,3 +121,4 @@
 **Source locations.**
 
 - [block_label.go#L18](block_label.go#L18) — `BlockLabel`, `AddBlockLabel`, and the fitting rules.
+- [../treemap/labels_stage.go](../treemap/labels_stage.go) and [../donuttree/labels.go](../donuttree/labels.go) — visualization label consumers.

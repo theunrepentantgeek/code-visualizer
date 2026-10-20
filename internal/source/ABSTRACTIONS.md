@@ -10,8 +10,8 @@
 **Boundary and invariants.**
 
 - Paths inside a `Tree` are `fs.FS` names (slash-separated, relative to `FS`); `RepoPath` rebases such a name onto `RepoBase` to produce a repository-relative path, treating an empty or `"."` base as "already repo-relative" ([tree.go#L39](tree.go#L39)).
-- A tree is populated in stages: `WorkingTree` fills only `FS`, `RootName` and `RootPath`, while the repository fields and `Clock` are set later — `Clock` to the snapshot commit time when scanning history, so age calculations are relative to the snapshot rather than "now" ([tree.go#L22](tree.go#L22), [tree.go#L26](tree.go#L26), [../stages/source.go#L74](../stages/source.go#L74)).
-- The tree is read-only: `NewGitFS` exposes a committed `object.Tree` as an `fs.FS` whose file modes and modification times come from the commit, never from disk ([gitfs.go#L39](gitfs.go#L39), [gitfs.go#L228](gitfs.go#L228)).
+- A tree is populated in stages: `WorkingTree` fills only `FS`, `RootName` and `RootPath`; repository discovery fills repository context, and historical resolution sets `Clock` to the commit's committer time (falling back to author time). Live trees leave `Clock` unset ([tree.go#L26](tree.go#L26), [../stages/source.go](../stages/source.go)).
+- Access is read-only through `fs.FS`, but an OS-backed working tree is not an immutable snapshot. `NewGitFS` exposes committed objects with git file modes and the caller-supplied snapshot modification time, never disk metadata ([tree.go#L26](tree.go#L26), [gitfs.go](gitfs.go)).
 
 **Related operations.**
 
@@ -35,3 +35,4 @@
 - [tree.go#L15](tree.go#L15) — `Tree`.
 - [tree.go#L26](tree.go#L26) — `WorkingTree`; [tree.go#L39](tree.go#L39) — `RepoPath`.
 - [gitfs.go#L39](gitfs.go#L39) — `NewGitFS`, the committed-tree `fs.FS`.
+- [../stages/source.go](../stages/source.go) and [../scan/fs_walker.go](../scan/fs_walker.go) — source selection and source-relative scanning.

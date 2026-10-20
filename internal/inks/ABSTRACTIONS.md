@@ -11,7 +11,7 @@
 
 - Three concrete behaviours exist — fixed, numeric (bucketed through `metric.BucketBoundaries`), and categorical — and `Info().Kind` is how callers tell them apart without type assertions ([ink.go#L14](ink.go#L14), [introspection.go#L10](introspection.go#L10)).
 - Inks are built from the whole dataset, not per shape: numeric inks bucket all values against the palette size, categorical inks take the distinct categories ([ink.go#L73](ink.go#L73), [ink.go#L88](ink.go#L88)).
-- An unknown metric or an empty value set degrades to a fixed fallback colour rather than failing, and opacity is fixed at construction rather than per shape ([inks.go#L31](inks.go#L31), [options.go#L16](options.go#L16)).
+- An unnamed descriptor or an empty numeric value set yields a fixed fallback ink. An empty classification set still constructs a categorical ink, whose mapper returns grey for unknown categories. Opacity is fixed at construction rather than per shape ([inks.go#L17](inks.go#L17), [../palette/mapper.go#L63](../palette/mapper.go#L63), [options.go#L16](options.go#L16)).
 
 **Related operations.**
 
@@ -32,6 +32,7 @@
 
 - [ink.go#L27](ink.go#L27) — `Ink`, `Kind`, and the three constructors.
 - [inks.go#L17](inks.go#L17) — `BuildMetricInk` and the metric-value helpers.
+- [../canvas/spec.go](../canvas/spec.go) and [../legend/config.go](../legend/config.go) — shared drawing styles and legend swatches.
 
 ## MetricValue
 
@@ -60,6 +61,7 @@
 **Source locations.**
 
 - [metric_value.go#L9](metric_value.go#L9) — `MetricValue` and its constructors.
+- [../canvas/rectangle.go](../canvas/rectangle.go) and [../scatter/render.go](../scatter/render.go) — retained values and visualization construction.
 
 ## RadialGradientInk
 
@@ -88,3 +90,4 @@
 **Source locations.**
 
 - [radial_gradient.go#L14](radial_gradient.go#L14) — `RadialGradientInk`, `NewRadialGradientInk`.
+- [../treemap/stages.go](../treemap/stages.go) and [../bubbletree/stages.go](../bubbletree/stages.go) — independent shading selection.
