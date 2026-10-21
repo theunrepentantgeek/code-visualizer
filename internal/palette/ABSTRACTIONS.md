@@ -27,6 +27,7 @@
 **Source locations.**
 
 - [palette.go#L16](palette.go#L16) — `PaletteName`, its constants, and `IsValid`.
+- [../config/metric_spec.go](../config/metric_spec.go) and [../stages/metrics.go](../stages/metrics.go) — validation and default resolution.
 
 ## ColourPalette
 
@@ -37,7 +38,7 @@
 **Boundary and invariants.**
 
 - `Ordered` distinguishes sequential palettes suitable for numeric gradients from unordered ones intended for classifications ([palette.go#L54](palette.go#L54), [palette.go#L80](palette.go#L80)).
-- The palette's length is the available step count: numeric inks bucket their values into exactly `len(Colours)` steps ([../inks/ink.go#L81](../inks/ink.go#L81)).
+- The palette's length is the requested step count for numeric inks, not a guarantee of that many buckets: rounded, deduplicated quantile boundaries can yield fewer buckets, which are then spread across the palette range ([../inks/ink.go#L81](../inks/ink.go#L81), [../metric/bucket.go](../metric/bucket.go), [mapper.go#L10](mapper.go#L10)).
 - `Description` is user-facing help text, so palettes are self-documenting in CLI output ([palette.go#L53](palette.go#L53), [palette.go#L206](palette.go#L206)).
 
 **Related operations.**
@@ -57,6 +58,7 @@
 
 - [palette.go#L43](palette.go#L43) — `ColourPalette` and the built-in palettes.
 - [mapper.go#L10](mapper.go#L10) — `MapNumericToColour`.
+- [../inks/ink.go](../inks/ink.go) and [../inks/legend_data.go](../inks/legend_data.go) — palette-sized bucketing and matching swatches.
 
 ## CategoricalMapper
 
@@ -85,3 +87,4 @@
 **Source locations.**
 
 - [mapper.go#L31](mapper.go#L31) — `CategoricalMapper`, `NewCategoricalMapper`, `Map`.
+- [../inks/ink.go](../inks/ink.go) and [../inks/legend_data.go](../inks/legend_data.go) — one category mapping reused for drawing and legends.

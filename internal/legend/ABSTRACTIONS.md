@@ -28,6 +28,7 @@
 
 - [config.go#L14](config.go#L14) — `Role` and its constants.
 - [config.go#L24](config.go#L24) — `Entry`.
+- [../treemap/stages.go](../treemap/stages.go) and [../spiral/stages.go](../spiral/stages.go) — standard and visualization-specific legend roles.
 
 ## Config
 
@@ -61,3 +62,4 @@
 - [config.go#L49](config.go#L49) — `Config`, `DefaultOrientation`, `ReserveSpace`, `toLegendData`.
 - [reserve.go#L14](reserve.go#L14) — `Reservation` and `ReserveLayout`.
 - [legend.go#L28](legend.go#L28) — `Builder` and `Build`.
+- [../treemap/stages.go](../treemap/stages.go) and [../alluvial/pipeline.go](../alluvial/pipeline.go) — reservation, layout, and rendering consumers.

@@ -1,6 +1,6 @@
 # Abstractions — `internal/geometry`
 
-All types here are immutable value types: every operation returns a new value rather than mutating the receiver, and operations that cannot produce a meaningful value report failure with a second `bool` result or `NaN` instead of panicking.
+Types here have value semantics: operations return new values rather than mutating the receiver. Fields remain exported and writable. Fallible operations report invalidity with a `bool` result or `NaN`; callers must check those results.
 
 ## Point
 
@@ -31,6 +31,7 @@ All types here are immutable value types: every operation returns a new value ra
 **Source locations.**
 
 - [point.go#L5](point.go#L5) — `Point` and its operations.
+- [../bubbletree/packing.go](../bubbletree/packing.go) and [../canvas/model/backend.go](../canvas/model/backend.go) — packing and drawing positions.
 
 ## Vector
 
@@ -63,6 +64,7 @@ All types here are immutable value types: every operation returns a new value ra
 **Source locations.**
 
 - [vector.go#L5](vector.go#L5) — `Vector` and its operations.
+- [../radialtree/layout.go](../radialtree/layout.go) and [../bubbletree/packing.go](../bubbletree/packing.go) — radial placement and packing displacements.
 
 ## Size
 
@@ -92,6 +94,7 @@ All types here are immutable value types: every operation returns a new value ra
 **Source locations.**
 
 - [size.go#L5](size.go#L5) — `Size` and its operations.
+- [../canvas/canvas.go](../canvas/canvas.go) and [../legend/config.go](../legend/config.go) — available and reserved dimensions.
 
 ## Rect
 
@@ -102,7 +105,7 @@ All types here are immutable value types: every operation returns a new value ra
 **Boundary and invariants.**
 
 - Validity requires both corners valid *and* `Min <= Max` on both axes; a "backwards" rectangle is never silently normalised ([rect.go#L23](rect.go#L23)).
-- Operations that can leave the valid domain (`Inset`, `ExpandToInclude`, `Union`) return `(Rect, bool)` and yield the zero `Rect` on failure ([rect.go#L47](rect.go#L47), [rect.go#L60](rect.go#L60), [rect.go#L71](rect.go#L71)).
+- Operations that can leave the valid domain (`Inset`, `ExpandToInclude`, `Union`) return `(Rect, bool)`. Invalid inputs yield the zero rectangle and `false`; an excessive inset can instead return the computed backwards rectangle and `false`, so the rectangle alone is never a success signal ([rect.go#L57](rect.go#L57), [rect.go#L71](rect.go#L71), [rect.go#L82](rect.go#L82)).
 - `Bounds()` returns the receiver, letting a `Rect` stand in wherever a boundable region is expected — the same interface `Circle` and `surface.Region` satisfy ([rect.go#L17](rect.go#L17), [circle.go#L48](circle.go#L48), [../surface/types.go#L23](../surface/types.go#L23)).
 
 **Related operations.**
@@ -118,11 +121,12 @@ All types here are immutable value types: every operation returns a new value ra
 **Anti-patterns.**
 
 - Do not assume `Width()`/`Height()` are non-negative without checking `Valid()`; they are plain subtractions ([rect.go#L32](rect.go#L32), [rect.go#L23](rect.go#L23)).
-- Do not discard the `bool` from `Inset`/`Union`/`ExpandToInclude` — the zero `Rect` it pairs with is not a usable rectangle ([rect.go#L47](rect.go#L47)).
+- Do not discard the `bool` from `Inset`/`Union`/`ExpandToInclude`: failure can return either a zero rectangle or an invalid computed rectangle, and a zero rectangle is itself geometrically valid but empty ([rect.go#L23](rect.go#L23), [rect.go#L57](rect.go#L57)).
 
 **Source locations.**
 
 - [rect.go#L5](rect.go#L5) — `Rect` and its operations.
+- [../treemap/labels.go](../treemap/labels.go) and [../canvas/raster/backend.go](../canvas/raster/backend.go) — layout and drawing bounds.
 
 ## Circle
 
@@ -152,3 +156,4 @@ All types here are immutable value types: every operation returns a new value ra
 **Source locations.**
 
 - [circle.go#L5](circle.go#L5) — `Circle` and its operations.
+- [../bubbletree/geometry.go](../bubbletree/geometry.go) and [../scatter/layout.go](../scatter/layout.go) — packing predicates and plot-disc geometry.

@@ -85,6 +85,7 @@
 **Source locations.**
 
 - [grain.go#L4](grain.go#L4) — `Grain` and its constants.
+- [../scatter/data.go](../scatter/data.go) and [../radialtree/node.go](../radialtree/node.go) — node selection and shared vocabulary aliases.
 
 ## LabelMode
 
@@ -112,3 +113,4 @@
 **Source locations.**
 
 - [label_mode.go#L5](label_mode.go#L5) — `LabelMode` and its constants.
+- [../bubbletree/layout.go](../bubbletree/layout.go) and [../radialtree/node.go](../radialtree/node.go) — label selection and visualization-specific supported subsets.
