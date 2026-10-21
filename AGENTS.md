@@ -8,4 +8,4 @@ Run repository development tools through `dev.sh` so they use the project's conf
 
 The first invocation may take several minutes while dependencies are installed.
 
-Later invocations will be faster.
+Later invocations will be skip installation.
