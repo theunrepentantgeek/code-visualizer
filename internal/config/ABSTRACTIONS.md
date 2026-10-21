@@ -8,7 +8,7 @@
 
 **Boundary and invariants.**
 
-- Every field is optional and pointer- or slice-typed: nil/empty means "not configured", non-nil means "explicitly set" — that is what makes layering possible ([config.go#L32](config.go#L32), [config.go#L35](config.go#L35)).
+- Configuration uses optional pointers and collections (including the selection-metric map): nil/empty represents no configured value; a non-nil scalar pointer can preserve an explicitly configured zero. Layering overlays these values on the selected defaults ([config.go#L34](config.go#L34), [config.go#L39](config.go#L39)).
 - The layers apply in a fixed order — `New(visType)` defaults for the selected `VisType`, then `Load`/`TryAutoLoad` on top of the existing struct, then `Override*` for CLI flags — and each layer only overwrites what it actually specifies ([config.go#L76](config.go#L76), [config.go#L116](config.go#L116), [override.go#L5](override.go#L5)).
 - `TryAutoLoad` is a no-op once `Source` is set, so an explicitly loaded file is never silently overlaid by auto-discovery ([config.go#L289](config.go#L289)).
 
@@ -32,6 +32,7 @@
 
 - [config.go#L34](config.go#L34) — `Config`, `New`, `Load`, `TryAutoLoad`, `Save`.
 - [override.go#L5](override.go#L5) — the non-zero-only override helpers.
+- [../../cmd/codeviz/treemap_cmd.go](../../cmd/codeviz/treemap_cmd.go) and [../stages/export.go](../stages/export.go) — effective configuration construction and export.
 
 ## MetricSpec
 
@@ -43,7 +44,8 @@
 
 - The metric name is mandatory when the spec is non-empty; the palette is optional, and a trailing extra comma is a parse error ([metric_spec.go#L72](metric_spec.go#L72), [metric_spec.go#L76](metric_spec.go#L76)).
 - Accessors are nil-safe by design so a missing config section reads as "" rather than requiring nil checks at every call site ([metric_spec.go#L30](metric_spec.go#L30), [metric_spec.go#L42](metric_spec.go#L42)).
-- It round-trips identically through CLI text, YAML, and JSON, with `String()` as the canonical form, and `Validate` checks the metric against the provider registry and the palette against the known palettes ([metric_spec.go#L51](metric_spec.go#L51), [metric_spec.go#L131](metric_spec.go#L131), [metric_spec.go#L96](metric_spec.go#L96)).
+- `String()` is the canonical CLI text form; YAML/JSON use a mapping with `metric` and optional `palette` fields and also accept scalar text for compatibility. The representations preserve the same selection, not the same serialized shape ([metric_spec.go](metric_spec.go)).
+- `Validate` checks ordinary metrics through provider resolution and palettes against the known names. Alluvial fills use visualization-specific validation for temporal comparisons, which ordinary `ResolveForValidation` rejects ([metric_spec.go#L97](metric_spec.go#L97), [../provider/resolution.go#L51](../provider/resolution.go#L51), [alluvial.go](alluvial.go)).
 
 **Related operations.**
 
@@ -62,6 +64,7 @@
 **Source locations.**
 
 - [metric_spec.go#L20](metric_spec.go#L20) — `MetricSpec`, its accessors, text/YAML/JSON codecs, and `Validate`.
+- [../../cmd/codeviz/treemap_cmd.go](../../cmd/codeviz/treemap_cmd.go) and [../stages/metrics.go](../stages/metrics.go) — flag parsing and shared colour resolution.
 
 ## SelectionMetric
 
@@ -91,3 +94,4 @@
 **Source locations.**
 
 - [selection_metric.go#L15](selection_metric.go#L15) — `SelectionMetricRule`, `SelectionMetric`, and the raw map conversion.
+- [../provider/classification/provider.go](../provider/classification/provider.go) and [../stages/selection_metrics.go](../stages/selection_metrics.go) — classification registration and pipeline integration.

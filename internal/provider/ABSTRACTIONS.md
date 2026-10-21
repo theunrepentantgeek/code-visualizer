@@ -27,6 +27,7 @@
 **Source locations.**
 
 - [base_descriptor.go#L12](base_descriptor.go#L12) — `ProviderDescriptor`, `HasFilter`.
+- [git/base_metrics.go](git/base_metrics.go) and [golang/base_metrics.go](golang/base_metrics.go) — independent provider registrations.
 
 ## BaseMetricDescriptor
 
@@ -44,7 +45,7 @@
 **Related operations.**
 
 - `SupportsFilter`, `SupportsAggregation`, `MatchesDeclKind`, `PassesFilter` ([base_descriptor.go#L42](base_descriptor.go#L42), [base_descriptor.go#L62](base_descriptor.go#L62), [base_descriptor.go#L68](base_descriptor.go#L68)).
-- Registry access: `RegisterBase`/`RegisterBaseWithProvider`, `GetBase`, `AllBase`, `AllBaseForLevel`, `BaseNames` — all sorted by name for stable output ([base_registry.go#L150](base_registry.go#L150), [base_registry.go#L104](base_registry.go#L104), [base_registry.go#L116](base_registry.go#L116)).
+- Registry access: `RegisterBase`/`RegisterBaseWithProvider` and `GetBase` operate on individual descriptors; list queries `AllBase`, `AllBaseForLevel`, and `BaseNames` sort by name for stable output ([base_registry.go](base_registry.go)).
 
 **Proper-use patterns.**
 
@@ -59,6 +60,7 @@
 
 - [base_descriptor.go#L25](base_descriptor.go#L25) — `BaseMetricDescriptor` and its predicates.
 - [base_registry.go#L146](base_registry.go#L146) — the process-wide registry and its exported accessors.
+- [../stages/requested.go](../stages/requested.go) and [../../cmd/codeviz/help_metrics_cmd.go](../../cmd/codeviz/help_metrics_cmd.go) — expression descriptors and user-facing help.
 
 ## BaseMetricLoader
 
@@ -84,12 +86,14 @@
 
 **Anti-patterns.**
 
-- Do not load every metric the loader knows about; honour the `requested` slice so unrequested work is not performed ([loader.go#L21](loader.go#L21)).
+- Do not assume dependencies are automatically added to the requested set: the runner schedules only selected loaders and errors on an unsatisfied dependency ([run.go](run.go)).
+- Normally honor the `requested` subset rather than loading an entire family. The authorship loader explicitly computes all nine metrics together because they share one history walk; that documented exception is not a guarantee that every loader computes all its advertised metrics ([loader.go#L23](loader.go#L23), [git/authorship_loader.go](git/authorship_loader.go)).
 
 **Source locations.**
 
 - [loader.go#L10](loader.go#L10) — `BaseMetricLoader`, `LoadFunc`.
 - [run.go#L45](run.go#L45) — dependency-ordered execution.
+- [filesystem/base_metrics.go](filesystem/base_metrics.go), [golang/base_metrics.go](golang/base_metrics.go), and [../stages/providers.go](../stages/providers.go) — loader registration and pipeline execution.
 
 ## ResolvedMetric
 
@@ -99,9 +103,9 @@
 
 **Boundary and invariants.**
 
-- Resolution is the only place where existence, filter applicability, and aggregation legality are checked; producing a `ResolvedMetric` means all three passed ([resolution.go#L75](resolution.go#L75), [resolution.go#L79](resolution.go#L79)).
+- Resolver-produced values have passed existence, filter-applicability, and aggregation-legality checks. This does not validate visualization-specific temporal support; ordinary `ResolveForValidation` rejects temporal modifiers while alluvial validates their role separately ([resolution.go](resolution.go), [../config/alluvial.go](../config/alluvial.go)).
 - `ResultKind` may differ from the descriptor's kind, because some aggregations change it ([resolution.go#L84](resolution.go#L84), [resolution.go#L158](resolution.go#L158)).
-- `ResultName` is the expression's canonical name, which is also the key the value is stored under ([resolution.go#L92](resolution.go#L92), [../metric/expression.go#L107](../metric/expression.go#L107)).
+- `ResultName` is `Expression.WithoutTemporal().ResultName()`, the storage key for snapshot computation. `Expression` still retains any temporal suffix so a later consumer can compare snapshots ([resolution.go](resolution.go), [resolution_test.go#L72](resolution_test.go#L72)).
 
 **Related operations.**
 
@@ -119,3 +123,4 @@
 **Source locations.**
 
 - [resolution.go#L12](resolution.go#L12) — `ResolvedMetric` and the three resolver entry points.
+- [../config/metric_spec.go](../config/metric_spec.go), [../stages/aggregation.go](../stages/aggregation.go), and [../alluvial/pipeline.go](../alluvial/pipeline.go) — validation, snapshot computation, and ordered comparison setup.

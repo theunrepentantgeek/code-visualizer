@@ -73,3 +73,11 @@ jobs:
           imageName: ghcr.io/theunrepentantgeek/code-visualizer-devcontainer
           push: never
           runCmd: task ci
+
+      - name: Upload test results
+        if: ${{ !cancelled() && hashFiles('out/junit.xml') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: go-test-results
+          path: out/junit.xml
+          if-no-files-found: error

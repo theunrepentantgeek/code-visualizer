@@ -9,7 +9,7 @@
 **Boundary and invariants.**
 
 - Provider packages own the constants; this package deliberately defines none, so the vocabulary stays open ([metric.go#L5](metric.go#L5), [../provider/git/base_metrics.go#L26](../provider/git/base_metrics.go#L26)).
-- A `Name` may be a bare base metric *or* the canonical string form of a metric expression: `MetricExpression.ResultName()` is the storage key for a computed metric ([expression.go#L107](expression.go#L107)).
+- A `Name` may be a bare base metric or the canonical spelling of a metric expression. For snapshot computation, use `ResolvedMetric.ResultName`: it omits the temporal suffix, while `MetricExpression.ResultName()` preserves the entire expression ([expression.go](expression.go), [../provider/resolution.go](../provider/resolution.go)).
 - Names are the key type for every metric map on a model node ([../model/metric_container.go#L12](../model/metric_container.go#L12)).
 
 **Related operations.**
@@ -23,11 +23,12 @@
 
 **Anti-patterns.**
 
-- Do not invent a private naming scheme for aggregated results; store them under `ResultName()` so lookups match what the user asked for ([expression.go#L107](expression.go#L107), [../stages/requested.go#L38](../stages/requested.go#L38)).
+- Do not invent a private naming scheme for aggregated results; use the resolved result name. A temporal comparison reads underlying snapshot values rather than requesting a provider value named with `.delta` or `.stepdelta` ([../provider/resolution.go](../provider/resolution.go), [../alluvial/pipeline.go](../alluvial/pipeline.go)).
 
 **Source locations.**
 
 - [metric.go#L6](metric.go#L6) — `Name`.
+- [../model/metric_container.go](../model/metric_container.go) and [../provider/resolution.go](../provider/resolution.go) — storage keys and request validation.
 
 ## Kind
 
@@ -59,6 +60,7 @@
 **Source locations.**
 
 - [metric.go#L9](metric.go#L9) — `Kind` and its constants.
+- [../model/metric_container.go](../model/metric_container.go) and [../inks/inks.go](../inks/inks.go) — storage and numeric/categorical handling.
 
 ## MetricLevel
 
@@ -88,6 +90,7 @@
 **Source locations.**
 
 - [level.go#L4](level.go#L4) — `MetricLevel` and its constants.
+- [../provider/resolution.go](../provider/resolution.go) and [../scatter/stages.go](../scatter/stages.go) — source/target legality and grain-driven selection.
 
 ## AggregationName
 
@@ -118,6 +121,7 @@
 
 - [aggregation_name.go#L4](aggregation_name.go#L4) — `AggregationName`, constants, `IsKnown`.
 - [aggregation.go#L8](aggregation.go#L8) — the aggregation implementations.
+- [../provider/resolution.go](../provider/resolution.go) and [../stages/aggregation.go](../stages/aggregation.go) — permitted operations and computed-value storage.
 
 ## FilterName
 
@@ -146,35 +150,66 @@
 **Source locations.**
 
 - [filter.go#L4](filter.go#L4) — `FilterName`.
+- [../provider/base_descriptor.go](../provider/base_descriptor.go) and [../model/declaration.go](../model/declaration.go) — provider-owned vocabulary and declaration predicates.
 
 ## MetricExpression
 
 **Purpose.**
 
-- `MetricExpression` is the parsed form of a user-supplied metric string in the grammar `[filter.]base-metric[.aggregation]` ([expression.go#L12](expression.go#L12), [expression.go#L24](expression.go#L24)).
+- `MetricExpression` is the parsed form of a user-supplied metric string in the grammar `[filter.]base-metric[.aggregation][.temporal]` ([expression.go#L12](expression.go#L12), [expression.go#L25](expression.go#L25)).
 
 **Boundary and invariants.**
 
-- At most three dot-separated segments, each a lowercase kebab-case identifier; anything else is a parse error ([expression.go#L33](expression.go#L33), [expression.go#L46](expression.go#L46), [expression.go#L52](expression.go#L52)).
-- Ambiguity in the two-segment form is resolved by the known-aggregation table: a known trailing word is an aggregation, otherwise the leading word is a filter ([expression.go#L57](expression.go#L57)).
-- Parsing is purely syntactic (existence, filter applicability and permitted aggregation are resolution's job), and `ResultName()` is the canonical spelling used as the storage key ([../provider/resolution.go#L24](../provider/resolution.go#L24), [expression.go#L107](expression.go#L107)).
+- At most four dot-separated segments, each matching the lowercase identifier grammar. A recognized temporal modifier is allowed only at the end and is removed before parsing the remaining one-to-three core segments ([expression.go#L25](expression.go#L25), [expression_test.go](expression_test.go)).
+- Ambiguity in a two-segment core is resolved by the known-aggregation table: a known trailing word is an aggregation, otherwise the leading word is a filter ([expression.go#L83](expression.go#L83)).
+- Parsing is syntactic; existence, filter applicability, and aggregation legality belong to provider resolution. `String()` and `ResultName()` retain the temporal suffix; `WithoutTemporal()` produces the expression evaluated within each snapshot ([expression.go](expression.go), [../provider/resolution.go](../provider/resolution.go)).
 
 **Related operations.**
 
-- `ParseExpression` to build; `provider.ResolveExpression` to validate against the registry and produce a `ResolvedMetric` ([expression.go#L24](expression.go#L24), [../provider/resolution.go#L24](../provider/resolution.go#L24)).
+- `ParseExpression` to build; `WithoutTemporal` to select snapshot computation; `provider.ResolveExpression` to validate the underlying metric and produce a `ResolvedMetric`. Ordinary `ResolveForValidation` explicitly rejects temporal requests ([expression.go](expression.go), [../provider/resolution.go](../provider/resolution.go)).
 
 **Proper-use patterns.**
 
 - Parse first, then resolve; treat a parse failure as "this is just a base metric name" only where that fallback is intended ([../stages/requested.go#L62](../stages/requested.go#L62)).
-- Store aggregated values under `ResultName()` so later lookups by the requested name succeed ([../stages/aggregation.go#L25](../stages/aggregation.go#L25)).
+- Store aggregated values under `ResolvedMetric.ResultName`; retain the full expression separately when a visualization must compare those values across snapshots ([../stages/aggregation.go](../stages/aggregation.go), [../alluvial/pipeline.go](../alluvial/pipeline.go)).
 
 **Anti-patterns.**
 
-- Do not hand-split metric strings on `.`; the filter/aggregation disambiguation lives in `ParseExpression` ([expression.go#L57](expression.go#L57)).
+- Do not hand-split metric strings on `.`; filter/aggregation disambiguation and terminal temporal recognition live in `ParseExpression` ([expression.go](expression.go)).
+- Do not mistake successful parsing or underlying provider resolution for authorization to use a temporal modifier in every visualization ([../provider/resolution.go#L57](../provider/resolution.go#L57), [../config/alluvial.go](../config/alluvial.go)).
 
 **Source locations.**
 
-- [expression.go#L12](expression.go#L12) — `MetricExpression`, `ParseExpression`, `String`, `ResultName`.
+- [expression.go#L12](expression.go#L12) — `MetricExpression`, parsing, canonical names, and `WithoutTemporal`.
+- [../provider/resolution.go](../provider/resolution.go) and [../config/alluvial.go](../config/alluvial.go) — ordinary and ordered-snapshot validation.
+
+## TemporalName
+
+**Purpose.**
+
+- `TemporalName` identifies a comparison across ordered snapshots, separate from aggregation within a snapshot ([temporal_name.go](temporal_name.go)).
+
+**Boundary and invariants.**
+
+- The recognized values are `delta` and `stepdelta`; the zero value means no comparison. Recognition does not establish that the selected visualization or metric role supports it ([temporal_name.go](temporal_name.go), [../provider/resolution.go#L57](../provider/resolution.go#L57)).
+- In alluvial fill evaluation, `delta` is last minus first; `stepdelta` is each snapshot minus its predecessor, with no fill value at the first snapshot. Caller order, not date sorting, defines those relationships ([../alluvial/data.go#L211](../alluvial/data.go#L211), [../../docs/content/docs/visualizations/alluvial.md](../../docs/content/docs/visualizations/alluvial.md)).
+
+**Related operations.**
+
+- `IsZero`/`IsKnown` query the vocabulary; expression parsing recognizes a terminal modifier; `WithoutTemporal` and provider resolution select the underlying per-snapshot result ([temporal_name.go](temporal_name.go), [expression.go](expression.go), [../provider/resolution.go](../provider/resolution.go)).
+
+**Proper-use patterns.**
+
+- Validate role support in configuration, resolve the underlying numeric metric, then compare acquired snapshot values. Alluvial keeps the full fill label separate from the metric used for acquisition ([../config/alluvial.go](../config/alluvial.go), [../alluvial/pipeline.go#L77](../alluvial/pipeline.go#L77)).
+
+**Anti-patterns.**
+
+- Do not implement temporal comparison in a base provider or treat it as a directory roll-up: providers and aggregation compute each snapshot's values before the visualization compares them ([../provider/resolution.go](../provider/resolution.go), [../alluvial/data.go#L211](../alluvial/data.go#L211)).
+
+**Source locations.**
+
+- [temporal_name.go](temporal_name.go) and [expression_test.go](expression_test.go) — vocabulary and grammar.
+- [../provider/resolution_test.go](../provider/resolution_test.go), [../config/alluvial.go](../config/alluvial.go), and [../alluvial/data.go](../alluvial/data.go) — resolution, role validation, and evaluation.
 
 ## BucketBoundaries
 
@@ -205,3 +240,4 @@
 **Source locations.**
 
 - [bucket.go#L9](bucket.go#L9) — `BucketBoundaries`, `ComputeBuckets`, `BucketIndex`.
+- [../inks/ink.go](../inks/ink.go) and [../inks/legend_data.go](../inks/legend_data.go) — the same boundaries for drawing and legends.

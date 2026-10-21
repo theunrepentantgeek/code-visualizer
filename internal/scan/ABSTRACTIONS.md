@@ -30,3 +30,4 @@
 
 - [scanner.go#L23](scanner.go#L23) — public scan entry points and result contract.
 - [fs_walker.go#L68](fs_walker.go#L68) and [walker.go#L73](walker.go#L73) — read-only-source and local-filesystem traversal policies.
+- [../stages/scan.go](../stages/scan.go) and [../alluvial/pipeline.go](../alluvial/pipeline.go) — model acquisition and explicit empty-snapshot handling.

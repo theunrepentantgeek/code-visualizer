@@ -39,6 +39,7 @@ Each library earns its place by solving a specific problem well.
 | eris          | Error wrapping with stack traces; preferred over `fmt.Errorf` |
 | gomega        | Fluent test assertions; preferred over testify                |
 | goldie        | Golden file testing for output verification                   |
+| gotestsum     | Test runner with per-test output and a summary                 |
 | gofumpt       | Stricter `gofmt` for consistent formatting                    |
 | golangci-lint | Broad linter set with custom build (includes nilaway)         |
 | Task          | Build automation via `Taskfile.yml`                           |
@@ -156,8 +157,18 @@ All build, test, and lint operations go through `Taskfile.yml`. This ensures eve
 and CI alike — runs exactly the same commands with exactly the same flags.
 
 - **Build**: `task build` compiles the project.
-- **Test**: `go test ./...` runs the full test suite. For a quick check during development, you
-  can scope to a single package.
+- **Test**: `task test` runs the full test suite through gotestsum using the `pkgname-and-test-fails`
+  output format. `task test:race`, `task test:cover`, and `task update-golden-files` use
+  the same runner. For a quick check during development, you can scope to a single
+  package with `gotestsum --format testname -- ./internal/metric`.
+  `task test` also writes `out/junit.xml` (ignored by Git and removed by `task clean`).
+  PR validation uploads this file as the `go-test-results` artifact, even when tests fail.
+  The separate `Test Report` workflow uses `dorny/test-reporter` to publish a
+  `Go Test Results` check and job summary with totals, timing, and failure details.
+  This also works for fork PRs: validation needs no report-writing permissions, and
+  the reporting workflow does not check out or execute PR code. Individual passing
+  and skipped tests are omitted from the details; PR comments are not posted.
+  The reporting workflow must be merged into the default branch before it can run.
 - **Lint**: Always run `task lint`. Never run `golangci-lint` directly — the project uses a
   custom build that includes nilaway, and running the stock binary will miss checks or produce
   incorrect results. The task uses `.golangci-lint-cache` at the repository root so each

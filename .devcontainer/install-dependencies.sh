@@ -143,6 +143,9 @@ go-install() {
 # Pinned to keep local and devcontainer formatting deterministic.
 go-install gofumpt mvdan.cc/gofumpt@v0.10.0
 
+# Test runner
+go-install gotestsum gotest.tools/gotestsum@v1.13.0
+
 # Install golangci-lint
 write-verbose "Checking for $TOOL_DEST/golangci-lint"
 if should-install "$TOOL_DEST/golangci-lint"; then

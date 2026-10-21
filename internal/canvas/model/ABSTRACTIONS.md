@@ -28,6 +28,7 @@
 **Source locations.**
 
 - [backend.go#L14](backend.go#L14) — `Backend`, `TextAnchor`, and the shared rendering constants.
+- [../canvas.go](../canvas.go), [../raster/backend.go](../raster/backend.go), and [../svg/backend.go](../svg/backend.go) — driver and independent format implementations.
 
 ## Fill
 
@@ -56,6 +57,7 @@
 **Source locations.**
 
 - [fill.go#L11](fill.go#L11) — `Fill`, `SolidFill`, `RadialGradientFill`, `GradientPoint`, `SolidColor`.
+- [../../inks/radial_gradient.go](../../inks/radial_gradient.go), [../raster/backend.go](../raster/backend.go), and [../svg/backend.go](../svg/backend.go) — fill production and backend interpretation.
 
 ## LegendData
 
@@ -84,3 +86,4 @@
 **Source locations.**
 
 - [legend.go#L44](legend.go#L44) — `LegendData`, `LegendEntryData`, `LegendSwatch`, and the layout constants.
+- [../../legend/config.go](../../legend/config.go), [../legendlayout/layout.go](../legendlayout/layout.go), and [../../inks/legend_data.go](../../inks/legend_data.go) — conversion, sizing, and swatch production.

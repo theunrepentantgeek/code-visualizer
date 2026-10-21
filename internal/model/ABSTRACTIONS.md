@@ -16,8 +16,8 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 
 **Related operations.**
 
-- `WalkFiles`, `WalkDirectories`, `WalkDeclarations`, `WalkCommits` traverse the tree depth-first and tolerate nil children; `CountFiles`/`CountDirs`/`CountDeclarations`/`CountCommits` summarise it ([walk.go#L4](walk.go#L4), [walk.go#L92](walk.go#L92), [walk.go#L125](walk.go#L125)).
-- `PruneLayers` returns a depth-limited *copy* of the tree for visualizations with a layer budget ([walk.go#L44](walk.go#L44), [../donuttree/stages.go#L152](../donuttree/stages.go#L152)).
+- `WalkFiles` visits direct files before descending and tolerates a nil root or nil child directories; `WalkDeclarations` and `WalkCommits` use that traversal. `WalkDirectories` is post-order (children before parents) and requires non-nil directory nodes, as do `CountFiles`/`CountDirs` ([walk.go](walk.go)).
+- `PruneLayers` returns a depth-limited copy of directory nodes for a positive layer budget, cloning metric maps but sharing file objects. A non-positive budget returns the original tree ([walk.go#L44](walk.go#L44), [../donuttree/stages.go](../donuttree/stages.go)).
 
 **Proper-use patterns.**
 
@@ -27,11 +27,13 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 **Anti-patterns.**
 
 - Do not prune the shared root in place when limiting depth; `PruneLayers` deliberately builds new nodes so other stages keep the full tree ([walk.go#L57](walk.go#L57)).
+- Do not treat the pruned result as a fully independent acquisition tree: it shares files and copies only selected directory fields, not repository/source context ([walk.go#L57](walk.go#L57)).
 
 **Source locations.**
 
 - [directory.go#L9](directory.go#L9) — `Directory`.
 - [walk.go#L4](walk.go#L4) — traversal and counting helpers.
+- [../scatter/data.go](../scatter/data.go) and [../provider/git/metrics.go](../provider/git/metrics.go) — independent model consumers.
 
 ## File
 
@@ -60,6 +62,7 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 **Source locations.**
 
 - [file.go#L12](file.go#L12) — `File`, `Open`, `ReadAll`.
+- [../provider/filesystem/metrics.go](../provider/filesystem/metrics.go) and [../provider/golang/file_loader.go](../provider/golang/file_loader.go) — content/metric consumers.
 
 ## Declaration
 
@@ -88,6 +91,7 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 **Source locations.**
 
 - [declaration.go#L17](declaration.go#L17) — `Declaration`, kind constants, `MatchesFilter`.
+- [../provider/golang/declarations.go](../provider/golang/declarations.go) and [../stages/aggregation.go](../stages/aggregation.go) — production and aggregation of declarations.
 
 ## Commit
 
@@ -115,6 +119,7 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 **Source locations.**
 
 - [commit.go#L6](commit.go#L6) — `Commit`.
+- [../stages/git_history.go](../stages/git_history.go) and [../stages/aggregation.go](../stages/aggregation.go) — attachment and commit-level aggregation.
 
 ## MetricContainer
 
@@ -134,7 +139,7 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 
 **Proper-use patterns.**
 
-- Store an aggregated value under the expression's `ResultName()` and with the kind the resolution says it produces ([../metric/expression.go#L107](../metric/expression.go#L107), [../provider/resolution.go#L12](../provider/resolution.go#L12)).
+- Store an aggregated value under `ResolvedMetric.ResultName` and with its `ResultKind`; the resolved name omits temporal modifiers because this container stores per-snapshot values, not cross-snapshot comparisons ([../provider/resolution.go](../provider/resolution.go), [../stages/aggregation.go](../stages/aggregation.go)).
 - Check the `ok` result and record the node as skipped rather than treating a missing metric as zero ([../scatter/data.go#L136](../scatter/data.go#L136), [../scatter/data.go#L142](../scatter/data.go#L142)).
 
 **Anti-patterns.**
@@ -144,3 +149,32 @@ The model package is the shared vocabulary for the scanned codebase: a tree of d
 **Source locations.**
 
 - [metric_container.go#L12](metric_container.go#L12) — `MetricContainer` and its accessors.
+- [../stages/aggregation.go](../stages/aggregation.go) and [../inks/inks.go](../inks/inks.go) — computed-value storage and colour lookup.
+
+## DirectorySelection
+
+**Purpose.**
+
+- `DirectorySelection` couples a directory with an explicit file scope so aggregation can distinguish a whole subtree from only the directory's direct files ([directory_selection.go](directory_selection.go)).
+
+**Boundary and invariants.**
+
+- `DirectorySubtree` includes descendants; `DirectoryDirectFiles` excludes them. The zero scope is invalid, and `WalkFiles` returns an error for it or a nil directory ([directory_selection.go#L22](directory_selection.go#L22)).
+- `PartitionDirectories` returns disjoint selections keyed by repository-relative directory path. Expansions are relative to the selected root and only take effect when their ancestors are expanded. Direct-file selections with no files are omitted ([directory_selection.go#L41](directory_selection.go#L41), [directory_selection_test.go](directory_selection_test.go)).
+
+**Related operations.**
+
+- `WalkFiles` evaluates the scope; `PartitionDirectories` forms the selections without copying the model; `stages.EvaluateAggregations` returns scoped metric values separately from the directory's stored subtree metrics ([../stages/aggregation.go#L35](../stages/aggregation.go#L35)).
+
+**Proper-use patterns.**
+
+- Shared directory aggregation explicitly chooses `DirectorySubtree`; alluvial acquisition evaluates the partition's supplied scope for each band, including direct-file remainder bands ([../stages/aggregation.go#L92](../stages/aggregation.go#L92), [../alluvial/pipeline.go#L276](../alluvial/pipeline.go#L276)).
+
+**Anti-patterns.**
+
+- Do not substitute the directory's existing roll-up value for a direct-file selection: it includes descendants and would count files in more than one expanded band ([../alluvial/pipeline.go#L281](../alluvial/pipeline.go#L281), [directory_selection_test.go](directory_selection_test.go)).
+
+**Source locations.**
+
+- [directory_selection.go](directory_selection.go) — scopes, selections, and partitioning.
+- [../stages/aggregation.go](../stages/aggregation.go) and [../alluvial/pipeline.go](../alluvial/pipeline.go) — independent aggregation and partition consumers.
