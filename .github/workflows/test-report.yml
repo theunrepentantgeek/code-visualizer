@@ -26,3 +26,4 @@ jobs:
           list-tests: failed
           fail-on-error: 'true'
           fail-on-empty: 'true'
+          collapsed: 'never'
