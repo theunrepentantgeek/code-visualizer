@@ -22,7 +22,7 @@ jobs:
           path: junit.xml
           reporter: java-junit
           use-actions-summary: 'false'
-          list-suites: failed
+          list-suites: all
           list-tests: failed
           fail-on-error: 'true'
           fail-on-empty: 'true'
