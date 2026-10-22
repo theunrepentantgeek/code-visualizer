@@ -3,6 +3,7 @@ package canvas
 import (
 	"image/color"
 	"slices"
+	"strings"
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/textlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
@@ -36,6 +37,16 @@ func (c *Canvas) AddBlockLabel(layer Layer, label BlockLabel, format ImageFormat
 
 	layout, ok := fitBlockLabel(lines, size.Width, size.Height)
 	if !ok {
+		return
+	}
+
+	if format == FormatSVG && layout.lineHeight <= greekedLineHeight {
+		c.AddTooltip(layer, Tooltip{
+			Bounds:   geometry.RectFromPositionSize(label.Bounds.Min, size),
+			Text:     strings.Join(lines, "\n"),
+			Fallback: blockLabelTexts(label, size, lines, layout.fontSize, layout.lineHeight, layout.totalHeight),
+		})
+
 		return
 	}
 
@@ -140,6 +151,17 @@ func (c *Canvas) addTextBlockLabel(
 	lines []string,
 	fontSize, lineHeight, totalHeight float64,
 ) {
+	for _, text := range blockLabelTexts(label, size, lines, fontSize, lineHeight, totalHeight) {
+		c.AddText(layer, text)
+	}
+}
+
+func blockLabelTexts(
+	label BlockLabel,
+	size geometry.Size,
+	lines []string,
+	fontSize, lineHeight, totalHeight float64,
+) []Text {
 	spec := &TextSpec{
 		Ink:      inks.FixedInk(label.Ink),
 		FontSize: fontSize,
@@ -147,9 +169,10 @@ func (c *Canvas) addTextBlockLabel(
 	}
 	centerX := label.Bounds.Min.X + size.Width/2.0
 	top := label.Bounds.Min.Y + (size.Height-totalHeight)/2.0
+	texts := make([]Text, 0, len(lines))
 
 	for i, line := range lines {
-		c.AddText(layer, Text{
+		texts = append(texts, Text{
 			Spec: spec,
 			Position: geometry.NewPoint(
 				centerX,
@@ -158,6 +181,8 @@ func (c *Canvas) addTextBlockLabel(
 			Content: line,
 		})
 	}
+
+	return texts
 }
 
 func (c *Canvas) addGreekedBlockLabel(

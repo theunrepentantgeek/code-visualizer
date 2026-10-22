@@ -2,6 +2,8 @@ package alluvial_test
 
 import (
 	"image/color"
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -192,6 +194,81 @@ func TestRenderToCanvas_AdditionalLineCountSuppressesLabelsAndEdgeExtensions(t *
 	minimumX, maximumX := pathXBounds(paths)
 	g.Expect(minimumX).To(Equal(float64(20)))
 	g.Expect(maximumX).To(Equal(float64(180)))
+}
+
+func TestRenderToCanvas_RendersUnreadableBandLabelsAsTooltips(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{{
+			X: 100,
+			Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 50, Width: 12, Labels: []string{"one", "two", "three"},
+			}},
+		}},
+	}, 200, 80, inks.NumericInk("fill", []float64{0}, palette.GetPalette(palette.Neutral)), "")
+
+	outputPath := filepath.Join(t.TempDir(), "alluvial-tooltip.svg")
+	g.Expect(cv.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	svg := string(output)
+	g.Expect(svg).To(ContainSubstring(
+		`<rect x="94.000" y="10.000" width="12.000" height="40.000" fill="transparent" ` +
+			`tabindex="0" aria-label="api; 12; one; two; three"/>`,
+	))
+	g.Expect(svg).To(ContainSubstring(`>api</tspan>`))
+	g.Expect(svg).To(ContainSubstring(`>three</tspan>`))
+}
+
+func TestRenderToCanvas_PreservesUnreadableBandTextWhenTooltipsDisabled(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{{
+			X: 100,
+			Bands: []alluvial.Band{{
+				Path: "api", Top: 10, Bottom: 50, Width: 12, Labels: []string{"one", "two", "three"},
+			}},
+		}},
+	}, 200, 80, inks.NumericInk("fill", []float64{0}, palette.GetPalette(palette.Neutral)), "")
+	cv.SetTooltipsEnabled(false)
+
+	outputPath := filepath.Join(t.TempDir(), "alluvial-text.svg")
+	g.Expect(cv.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	svg := string(output)
+	g.Expect(svg).NotTo(ContainSubstring(`class="tooltip-target"`))
+	g.Expect(svg).To(ContainSubstring(`>api</text>`))
+	g.Expect(svg).To(ContainSubstring(`>three</text>`))
+}
+
+func TestRenderToCanvas_DoesNotRenderTooltipForEmptyBand(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := alluvial.RenderToCanvas(alluvial.Layout{
+		Columns: []alluvial.ColumnLayout{{
+			X: 100,
+			Bands: []alluvial.Band{{
+				Path: "empty", Top: 30, Bottom: 30, Width: 0,
+			}},
+		}},
+	}, 200, 80, inks.NumericInk("fill", []float64{0}, palette.GetPalette(palette.Neutral)), "")
+
+	outputPath := filepath.Join(t.TempDir(), "empty-band.svg")
+	g.Expect(cv.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(output)).NotTo(ContainSubstring(`class="tooltip-target"`))
 }
 
 func TestRenderToCanvas_UsesFixedGreyForMutedBandsAndFlows(t *testing.T) {

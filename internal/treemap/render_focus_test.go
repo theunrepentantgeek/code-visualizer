@@ -65,6 +65,10 @@ func (b *captureBackend) DrawText(
 
 func (*captureBackend) DrawArcText(geometry.Point, float64, string, color.RGBA, float64) {}
 
+func (*captureBackend) DrawTooltip(geometry.Rect, string) {}
+
+func (*captureBackend) DrawPolygonTooltip([]geometry.Point, geometry.Point, string) {}
+
 func (*captureBackend) Finish(string) error { return nil }
 
 func TestRenderToCanvas_ComputesWeightedFocusForGradientFill(t *testing.T) {

@@ -42,6 +42,7 @@ with `--changed-only`, filtering is intersected with files in the snapshot.
 | `--title`              |       | none           | Override the title text on the generated image                    |
 | `--footer`             |       | none           | Override footer text on the generated image                       |
 | `--hide-footer`        |       | `false`        | Suppress the attribution footer                                   |
+| `--add-tooltips`       |       | `false`        | Add SVG tooltips for labels too small to display                  |
 | `--include`            |       | none           | Include matching files; simple glob (repeatable)                  |
 | `--exclude`            |       | none           | Exclude matching files; simple glob (repeatable)                  |
 | `--include-binary-files` |     | `false`        | Include binary files, which are excluded by default               |

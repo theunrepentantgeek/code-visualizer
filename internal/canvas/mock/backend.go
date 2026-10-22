@@ -135,6 +135,23 @@ func (m *Backend) DrawArcText(center geometry.Point, _ float64, text string, ink
 	})
 }
 
+func (m *Backend) DrawTooltip(bounds geometry.Rect, text string) {
+	m.Calls = append(m.Calls, Call{
+		Method: "DrawTooltip",
+		Bounds: bounds,
+		Text:   text,
+	})
+}
+
+func (m *Backend) DrawPolygonTooltip(points []geometry.Point, position geometry.Point, text string) {
+	m.Calls = append(m.Calls, Call{
+		Method: "DrawPolygonTooltip",
+		Pos:    position,
+		Points: slices.Clone(points),
+		Text:   text,
+	})
+}
+
 func (m *Backend) Finish(outputPath string) error {
 	m.FinishPath = outputPath
 

@@ -41,6 +41,7 @@ with `--changed-only`, filtering is intersected with files in the snapshot.
 | `--title`              |       | none           | Override the title text on the generated image                    |
 | `--footer`             |       | none           | Override the footer text on the generated image                   |
 | `--hide-footer`        |       | `false`        | Suppress the attribution footer                                   |
+| `--add-tooltips`       |       | `false`        | Add SVG tooltips for labels too small to display                  |
 | `--flat`               |       | `false`        | Disable pincushion shading and use flat solid fills               |
 | `--include`            |       | none           | Include matching files; simple glob (repeatable)                  |
 | `--exclude`            |       | none           | Exclude matching files; simple glob (repeatable)                  |

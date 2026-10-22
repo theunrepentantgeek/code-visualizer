@@ -43,6 +43,11 @@ type drawnShape interface {
 	drawTo(backend Backend)
 }
 
+type tooltipShape interface {
+	drawnShape
+	fallbackText() []Text
+}
+
 // layeredShape holds a shape with its assigned layer and insertion order.
 type layeredShape struct {
 	layer Layer
@@ -53,22 +58,30 @@ type layeredShape struct {
 // Canvas is a retained-then-render drawing surface.
 // Shapes are added with layer assignments, then rendered in batch.
 type Canvas struct {
-	width       int
-	height      int
-	shapes      []layeredShape
-	title       *string
-	footer      *string
-	drawingMinY int // top of content area (pixels below title)
-	drawingMaxY int // bottom of content area (pixels above footer)
+	width         int
+	height        int
+	shapes        []layeredShape
+	title         *string
+	footer        *string
+	drawingMinY   int // top of content area (pixels below title)
+	drawingMaxY   int // bottom of content area (pixels above footer)
+	showTooltips  bool
+	showFallbacks bool
 }
 
 // NewCanvas creates a canvas for the given dimensions.
 func NewCanvas(width, height int) *Canvas {
 	return &Canvas{
-		width:       width,
-		height:      height,
-		drawingMaxY: height, // default: full canvas
+		width:        width,
+		height:       height,
+		drawingMaxY:  height, // default: full canvas
+		showTooltips: true,
 	}
+}
+
+// SetTooltipsEnabled controls whether retained tooltip shapes are rendered.
+func (c *Canvas) SetTooltipsEnabled(enabled bool) {
+	c.showTooltips = enabled
 }
 
 // SetDrawingBounds stores the vertical drawing bounds available for content.
@@ -191,6 +204,27 @@ func (c *Canvas) AddArcText(layer Layer, a ArcText) {
 	})
 }
 
+// AddTooltip records a tooltip hover target on the given layer.
+func (c *Canvas) AddTooltip(layer Layer, tooltip Tooltip) {
+	tooltip.Fallback = slices.Clone(tooltip.Fallback)
+	c.shapes = append(c.shapes, layeredShape{
+		layer: layer,
+		order: len(c.shapes),
+		shape: &tooltip,
+	})
+}
+
+// AddPolygonTooltip records a polygonal tooltip hover target on the given layer.
+func (c *Canvas) AddPolygonTooltip(layer Layer, tooltip PolygonTooltip) {
+	tooltip.Points = slices.Clone(tooltip.Points)
+	tooltip.Fallback = slices.Clone(tooltip.Fallback)
+	c.shapes = append(c.shapes, layeredShape{
+		layer: layer,
+		order: len(c.shapes),
+		shape: &tooltip,
+	})
+}
+
 // FooterText returns the current footer text, or an empty string if no footer
 // has been set. Primarily useful for testing.
 func (c *Canvas) FooterText() string {
@@ -243,6 +277,8 @@ func (c *Canvas) Render(outputPath string) error {
 		return err
 	}
 
+	c.showFallbacks = format == FormatSVG
+
 	backend, err := c.createBackend(format)
 	if err != nil {
 		return err
@@ -271,6 +307,12 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	})
 
 	for _, s := range c.shapes {
+		if tooltip, ok := s.shape.(tooltipShape); !c.showTooltips && ok {
+			c.drawTooltipFallback(backend, tooltip)
+
+			continue
+		}
+
 		s.shape.drawTo(backend)
 	}
 
@@ -285,6 +327,17 @@ func (c *Canvas) RenderTo(backend Backend) error {
 	}
 
 	return nil
+}
+
+func (c *Canvas) drawTooltipFallback(backend Backend, tooltip tooltipShape) {
+	if !c.showFallbacks {
+		return
+	}
+
+	fallback := tooltip.fallbackText()
+	for index := range fallback {
+		fallback[index].drawTo(backend)
+	}
 }
 
 // createBackend creates the appropriate backend for the given format.

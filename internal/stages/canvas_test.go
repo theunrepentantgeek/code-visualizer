@@ -1,6 +1,7 @@
 package stages_test
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -9,8 +10,123 @@ import (
 
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas"
 	"github.com/theunrepentantgeek/code-visualizer/internal/config"
+	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 	"github.com/theunrepentantgeek/code-visualizer/internal/stages"
 )
+
+func TestWriteCanvas_OmitsTooltipsByDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := canvas.NewCanvas(100, 100)
+	cv.AddTooltip(canvas.LayerOverlay, canvas.Tooltip{
+		Bounds: geometry.RectFromPositionSize(
+			geometry.NewPoint(10, 10),
+			geometry.Size{Width: 20, Height: 20},
+		),
+		Text: "hidden",
+	})
+
+	outputPath := filepath.Join(t.TempDir(), "out.svg")
+	state := &stages.CommonState{
+		Canvas:     cv,
+		Output:     outputPath,
+		RootConfig: config.New(config.VisTypeNone),
+	}
+
+	g.Expect(stages.WriteCanvas(state)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(output)).NotTo(ContainSubstring(`class="tooltip-target"`))
+}
+
+func TestWriteCanvas_RendersConfiguredTooltips(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := canvas.NewCanvas(100, 100)
+	cv.AddTooltip(canvas.LayerOverlay, canvas.Tooltip{
+		Bounds: geometry.RectFromPositionSize(
+			geometry.NewPoint(10, 10),
+			geometry.Size{Width: 20, Height: 20},
+		),
+		Text: "visible",
+	})
+
+	outputPath := filepath.Join(t.TempDir(), "out.svg")
+	cfg := config.New(config.VisTypeNone)
+	cfg.OverrideAddTooltips(true)
+	state := &stages.CommonState{
+		Canvas:     cv,
+		Output:     outputPath,
+		RootConfig: cfg,
+	}
+
+	g.Expect(stages.WriteCanvas(state)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(output)).To(ContainSubstring(`class="tooltip-target"`))
+}
+
+func TestWriteCanvas_OmitsPolygonTooltipsByDefault(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := canvas.NewCanvas(100, 100)
+	cv.AddPolygonTooltip(canvas.LayerOverlay, canvas.PolygonTooltip{
+		Points: []geometry.Point{
+			geometry.NewPoint(10, 10),
+			geometry.NewPoint(30, 10),
+			geometry.NewPoint(20, 30),
+		},
+		Text: "hidden",
+	})
+
+	outputPath := filepath.Join(t.TempDir(), "out.svg")
+	state := &stages.CommonState{
+		Canvas:     cv,
+		Output:     outputPath,
+		RootConfig: config.New(config.VisTypeNone),
+	}
+
+	g.Expect(stages.WriteCanvas(state)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(output)).NotTo(ContainSubstring(`class="tooltip-target"`))
+}
+
+func TestWriteCanvas_RendersConfiguredPolygonTooltips(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	cv := canvas.NewCanvas(100, 100)
+	cv.AddPolygonTooltip(canvas.LayerOverlay, canvas.PolygonTooltip{
+		Points: []geometry.Point{
+			geometry.NewPoint(10, 10),
+			geometry.NewPoint(30, 10),
+			geometry.NewPoint(20, 30),
+		},
+		Text: "visible",
+	})
+
+	outputPath := filepath.Join(t.TempDir(), "out.svg")
+	cfg := config.New(config.VisTypeNone)
+	cfg.OverrideAddTooltips(true)
+	state := &stages.CommonState{
+		Canvas:     cv,
+		Output:     outputPath,
+		RootConfig: cfg,
+	}
+
+	g.Expect(stages.WriteCanvas(state)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(output)).To(ContainSubstring(`class="tooltip-target"`))
+}
 
 func TestApplyFooter_NilCanvas_ReturnsNil(t *testing.T) {
 	t.Parallel()

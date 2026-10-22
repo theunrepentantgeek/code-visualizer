@@ -2,6 +2,8 @@ package donuttree
 
 import (
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -166,6 +168,66 @@ func TestAddSectorLabel_FlipsTangentialBaselineOnLowerHalf(t *testing.T) {
 		g.Expect(call.Pos.X).To(BeNumerically("~", expected.X, 0.001))
 		g.Expect(call.Pos.Y).To(BeNumerically("~", expected.Y, 0.001))
 	}
+}
+
+func TestAddSectorLabel_RendersUnreadableLinesAsSectorTooltip(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	node := DonutNode{
+		StartAngle:  math.Pi / 4,
+		SweepAngle:  0.05,
+		InnerRadius: 100,
+		OuterRadius: 140,
+	}
+	center := geometry.Point{X: 200, Y: 200}
+	cv := canvas.NewCanvas(400, 400)
+	addSectorLabel(cv, node, center, []string{"wide label", "42"}, inks.FixedInk(donutLabelColour))
+
+	outputPath := filepath.Join(t.TempDir(), "donut-tooltip.svg")
+	g.Expect(cv.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	svg := string(output)
+	g.Expect(svg).To(ContainSubstring(`<g class="tooltip-target"><polygon points="`))
+	g.Expect(svg).To(ContainSubstring(`tabindex="0" aria-label="wide label; 42"`))
+	g.Expect(svg).To(ContainSubstring(`<tspan`))
+	g.Expect(svg).To(ContainSubstring(`>wide label</tspan>`))
+	g.Expect(svg).To(ContainSubstring(`>42</tspan>`))
+}
+
+func TestAddSectorLabel_PreservesUnreadableSVGTextWhenTooltipsDisabled(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	node := DonutNode{
+		StartAngle:  math.Pi / 4,
+		SweepAngle:  0.05,
+		InnerRadius: 100,
+		OuterRadius: 140,
+	}
+	cv := canvas.NewCanvas(400, 400)
+	addSectorLabel(
+		cv,
+		node,
+		geometry.Point{X: 200, Y: 200},
+		[]string{"wide label", "42"},
+		inks.FixedInk(donutLabelColour),
+	)
+	cv.SetTooltipsEnabled(false)
+
+	outputPath := filepath.Join(t.TempDir(), "donut-text.svg")
+	g.Expect(cv.Render(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	svg := string(output)
+	g.Expect(svg).NotTo(ContainSubstring(`class="tooltip-target"`))
+	g.Expect(svg).To(ContainSubstring(`>wide label</text>`))
+	g.Expect(svg).To(ContainSubstring(`>42</text>`))
 }
 
 func TestSectorLabelFontSize_FitsRadialCaptionBlockInBothDimensions(t *testing.T) {

@@ -741,6 +741,24 @@ func TestSave_ThenLoad_RoundTripsSpiralSurface(t *testing.T) {
 	}
 }
 
+func TestSave_ThenLoad_RoundTripsAddTooltips(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	inputPath := filepath.Join(t.TempDir(), "input.yaml")
+	g.Expect(os.WriteFile(inputPath, []byte("addTooltips: true\n"), 0o600)).To(Succeed())
+
+	cfg := newTestConfig()
+	g.Expect(cfg.Load(inputPath)).To(Succeed())
+
+	outputPath := filepath.Join(t.TempDir(), "output.yaml")
+	g.Expect(cfg.Save(outputPath)).To(Succeed())
+
+	output, err := os.ReadFile(outputPath)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(string(output)).To(ContainSubstring("addTooltips: true"))
+}
+
 func TestSave_OmitsNilFields(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
