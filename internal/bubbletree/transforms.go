@@ -90,6 +90,7 @@ func scaleToFit(node *BubbleNode, width, height float64) {
 
 	usable := 1 - 2*canvasMarginFraction
 	scale := math.Min(width*usable/boxW, height*usable/boxH)
+	node.layoutScale = scale
 
 	// Place the root node so that the bounding box centre maps to the canvas centre.
 	boxCx := (box.Min.X + box.Max.X) / 2
@@ -110,6 +111,11 @@ func applyScale(parent *BubbleNode, scale float64) {
 			Y: child.Geometry.Center.Y * scale,
 		})
 		child.Geometry.Radius *= scale
+
+		if scale < 1 {
+			child.labelBand *= scale
+		}
+
 		applyScale(child, scale)
 	}
 }

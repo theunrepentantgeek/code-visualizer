@@ -1,6 +1,7 @@
 package bubbletree
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -312,6 +313,55 @@ func TestLayoutLargeFlatDirectory(t *testing.T) {
 	assertContainment(g, node)
 	// No siblings should overlap.
 	assertNoOverlap(g, node)
+}
+
+func TestLayoutDenseLabelledDirectoryContainsRenderedFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	sub := &model.Directory{Name: "dense", Path: "root/dense"}
+	for i := range 40 {
+		sub.Files = append(sub.Files, makeFile(fmt.Sprintf("small-%d.go", i), 1))
+	}
+
+	root := &model.Directory{Name: "root", Dirs: []*model.Directory{sub}}
+	node := Layout(root, 80, 60, filesystem.FileSize, LabelFoldersOnly)
+	dir := node.Children[0]
+
+	g.Expect(dir.ShowLabel).To(BeTrue())
+
+	for _, file := range dir.Children {
+		dist := dir.Geometry.Center.DistanceTo(file.Geometry.Center)
+		g.Expect(dist+file.Geometry.Radius).To(
+			BeNumerically("<=", bubbleDirDiscRadius(dir)-bubbleBorderWidth/2),
+			"rendered file %q must fit inside the visible directory disc", file.Label,
+		)
+	}
+}
+
+func TestLayoutDenseNestedDirectoriesKeepPackingAndContainment(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{Name: "root"}
+	for i := range 6 {
+		dir := &model.Directory{Name: fmt.Sprintf("dir-%d", i)}
+		for j := range 30 {
+			dir.Files = append(dir.Files, makeFile(
+				fmt.Sprintf("file-%d-%d", i, j), int64(1+(i*71+j*37)%600),
+			))
+		}
+
+		root.Dirs = append(root.Dirs, dir)
+	}
+
+	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelFoldersOnly)
+	assertContainment(g, node)
+	assertNoOverlap(g, node)
+
+	for _, dir := range node.Children {
+		assertNoOverlaps(t, g, dir.Children)
+	}
 }
 
 func TestLayoutZeroMetric(t *testing.T) {

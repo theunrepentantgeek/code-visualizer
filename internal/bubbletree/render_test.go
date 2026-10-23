@@ -3,6 +3,7 @@ package bubbletree_test
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"image"
 	"image/color"
 	_ "image/jpeg"
@@ -26,12 +27,15 @@ import (
 )
 
 type capturedDisc struct {
-	radius float64
+	geometry    geometry.Circle
+	borderWidth float64
+	radius      float64
 }
 
 type capturedArcText struct {
 	text   string
 	radius float64
+	font   float64
 }
 
 type captureBackend struct {
@@ -45,9 +49,9 @@ func (c *captureBackend) DrawDisc(
 	circle geometry.Circle,
 	_ canvasmodel.Fill,
 	_ canvasmodel.Fill,
-	_ float64,
+	borderWidth float64,
 ) {
-	c.discs = append(c.discs, capturedDisc{radius: circle.Radius})
+	c.discs = append(c.discs, capturedDisc{geometry: circle, borderWidth: borderWidth, radius: circle.Radius})
 }
 
 func (*captureBackend) DrawPolygon([]geometry.Point, canvasmodel.Fill, canvasmodel.Fill, float64) {}
@@ -66,9 +70,9 @@ func (c *captureBackend) DrawArcText(
 	radius float64,
 	text string,
 	_ color.RGBA,
-	_ float64,
+	fontSize float64,
 ) {
-	c.arcTexts = append(c.arcTexts, capturedArcText{text: text, radius: radius})
+	c.arcTexts = append(c.arcTexts, capturedArcText{text: text, radius: radius, font: fontSize})
 }
 
 func (*captureBackend) DrawTooltip(geometry.Rect, string) {}
@@ -485,6 +489,72 @@ func TestRenderBubbleToCanvas_RasterPlacesDirectoryLabelInReservedBand(t *testin
 		BeTrue(),
 		"expected raster output to place the directory label in the reserved band above the bubble",
 	)
+}
+
+func TestRenderBubbleToCanvas_DenseFileBordersDoNotOverlap(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{Name: "root"}
+
+	for i := range 40 {
+		f := makeFile(fmt.Sprintf("small-%d.go", i), "go", 1)
+		f.Path = fmt.Sprintf("root/small-%d.go", i)
+		root.Files = append(root.Files, f)
+	}
+
+	inks := bubbletree.BuildInks(
+		root, stages.RequestedMetrics{},
+		bubbleEncoding(filesystem.FileSize, palette.Temperature),
+		bubbleEncoding(filesystem.FileSize, palette.Temperature),
+	)
+	nodes := bubbletree.Layout(root, 30, 20, filesystem.FileSize, bubbletree.LabelNone)
+	backend := &captureBackend{}
+	g.Expect(bubbletree.RenderToCanvas(&nodes, root, 30, 20, inks).RenderTo(backend)).To(Succeed())
+	g.Expect(backend.discs).To(HaveLen(40))
+
+	for i, first := range backend.discs {
+		for _, second := range backend.discs[i+1:] {
+			distance := first.geometry.Center.DistanceTo(second.geometry.Center)
+			outer := first.radius + first.borderWidth/2 + second.radius + second.borderWidth/2
+			g.Expect(distance).To(BeNumerically(">=", outer-1e-6),
+				"rendered file outlines must not overlap")
+		}
+	}
+}
+
+func TestRenderBubbleToCanvas_ScaledDirectoryLabelFitsReservedBand(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := testRoot()
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{},
+		bubbleEncoding(filesystem.FileSize, palette.Temperature), viz.NoColourEncoding)
+	nodes := bubbletree.Layout(root, 80, 60, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	backend := &captureBackend{}
+	g.Expect(bubbletree.RenderToCanvas(&nodes, root, 80, 60, inks).RenderTo(backend)).To(Succeed())
+
+	g.Expect(backend.arcTexts).NotTo(BeEmpty())
+
+	dirs, _ := nodes.Index()
+	pkg, ok := dirs["root/pkg"]
+
+	if !ok {
+		t.Fatal("expected pkg directory in the rendered tree")
+	}
+
+	for _, label := range backend.arcTexts {
+		if label.text == "pkg" {
+			g.Expect(label.radius-canvasmodel.ArcTextInset+label.font/2).To(
+				BeNumerically("<=", pkg.Geometry.Radius+1e-6),
+				"rendered label must fit its directory's reserved radius",
+			)
+
+			return
+		}
+	}
+
+	t.Fatal("expected a rendered pkg label")
 }
 
 func TestRenderBubbleToCanvas_SVGOmitsRootLabel(t *testing.T) {
