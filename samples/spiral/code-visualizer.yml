@@ -8,7 +8,6 @@ spiral:
         metric: commit-count
         palette: temperature
     surface: true
-    x-axis: log
 fileFilter:
     - pattern: .*
       mode: exclude
