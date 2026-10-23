@@ -36,7 +36,7 @@ with `--changed-only`, filtering is intersected with files in the snapshot.
 | `--fill`               | `-f`  | `size`         | Folder fill colour: `metric[,palette]`                             |
 | `--border`             | `-b`  | no stroke      | Folder border colour: `metric[,palette]`                          |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
-| `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
+| `--legend-orientation` |       | auto           | Swatch orientation: `vertical` or `horizontal`; entries can reflow when needed |
 | `--width`              |       | `1920`         | Image width in pixels                                             |
 | `--height`             |       | `1920`         | Image height in pixels                                            |
 | `--title`              |       | none           | Override the title text on the generated image                    |

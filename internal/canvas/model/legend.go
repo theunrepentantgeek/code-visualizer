@@ -20,8 +20,9 @@ const (
 	LegendPositionCenterLeft   LegendPosition = "center-left"
 )
 
-// LegendOrientation controls whether swatches are stacked vertically
-// or laid out horizontally.
+// LegendOrientation controls whether each entry's swatches are stacked
+// vertically or laid out horizontally. Metric entries can reflow onto the
+// other axis when the legend does not fit.
 type LegendOrientation string
 
 const (
