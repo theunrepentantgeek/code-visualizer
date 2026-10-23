@@ -33,8 +33,8 @@ type RadialCmd struct {
 	Grain     string `enum:",file,directory" default:"" help:"Granularity of nodes shown: file (default) or directory."`      //nolint:revive,nolintlint // kong struct tags require long lines
 	MaxLayers int    `default:"0" help:"Maximum number of directory layers to display; 0 means unlimited." name:"max-layers"` //nolint:revive,nolintlint // kong struct tags require long lines
 
-	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
-	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend orientation (auto-detected from position if omitted)." name:"legend-orientation" optional:""`                                  //nolint:revive,nolintlint // kong struct tags require long lines
+	Legend            string `default:"" enum:",top-left,top-center,top-right,center-right,bottom-right,bottom-center,bottom-left,center-left,none" help:"Legend position (default: bottom-right)." optional:""`       //nolint:revive,nolintlint // kong struct tags require long lines
+	LegendOrientation string `default:"" enum:",vertical,horizontal" help:"Legend swatch orientation (auto-detected from position if omitted; entries can reflow when needed)." name:"legend-orientation" optional:""` //nolint:revive,nolintlint // kong struct tags require long lines
 
 	Width  int `default:"1920" help:"Image width in pixels."`
 	Height int `default:"1920" help:"Image height in pixels."`

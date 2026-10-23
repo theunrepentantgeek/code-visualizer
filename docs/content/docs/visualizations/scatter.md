@@ -40,7 +40,7 @@ commit as their reference time. `--from` alone keeps the live tree; with
 | `--fill`               | `-f`  | none           | Fill colour: `metric[,palette]` (e.g. `file-type,categorization`) |
 | `--border`             | `-b`  | none           | Border colour: `metric[,palette]` (e.g. `file-lines,foliage`)     |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
-| `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
+| `--legend-orientation` |       | auto           | Swatch orientation: `vertical` or `horizontal`; entries can reflow when needed |
 | `--width`              |       | `1920`         | Image width in pixels                                             |
 | `--height`             |       | `1080`         | Image height in pixels                                            |
 | `--title`              |       | none           | Override the title text on the generated image                    |

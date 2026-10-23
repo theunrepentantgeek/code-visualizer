@@ -10,6 +10,16 @@ import (
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
 
+// EntryArrangement controls how metric entries are grouped within a legend.
+type EntryArrangement int
+
+const (
+	// EntriesStacked places each metric entry below the previous one.
+	EntriesStacked EntryArrangement = iota
+	// EntriesSideBySide places each metric entry beside the previous one.
+	EntriesSideBySide
+)
+
 // FormatBreakpoint formats a numeric breakpoint for display.
 func FormatBreakpoint(v float64) string {
 	if v == float64(int(v)) {
@@ -26,11 +36,167 @@ func MeasureLegend(data *model.LegendData, measurer StringMeasurer) geometry.Siz
 		return geometry.Size{}
 	}
 
-	if data.Orientation == model.LegendOrientationHorizontal {
-		return measureLegendH(measurer, data)
+	return MeasureLegendWithArrangement(data, measurer, preferredEntryArrangement(data.Orientation))
+}
+
+// MeasureLegendWithArrangement computes the legend size while laying out
+// metric entries according to arrangement. Each entry retains data's
+// configured swatch orientation.
+func MeasureLegendWithArrangement(
+	data *model.LegendData, measurer StringMeasurer, arrangement EntryArrangement,
+) geometry.Size {
+	if data == nil || len(data.Entries) == 0 {
+		return geometry.Size{}
 	}
 
-	return measureLegendV(measurer, data)
+	entriesSize := measureEntries(data, measurer, arrangement)
+	if data.LabelSample != nil {
+		entriesSize = includeLabelSample(data, measurer, entriesSize)
+	}
+
+	return geometry.NewSize(
+		entriesSize.Width+2*model.LegendPadding,
+		entriesSize.Height+2*model.LegendPadding,
+	)
+}
+
+func measureEntries(
+	data *model.LegendData, measurer StringMeasurer, arrangement EntryArrangement,
+) geometry.Size {
+	var size geometry.Size
+
+	for index, entry := range data.Entries {
+		if index > 0 {
+			if arrangement == EntriesStacked {
+				size.Height += model.EntryGap
+			} else {
+				size.Width += model.EntryGap
+			}
+		}
+
+		entrySize := measureSingleEntry(data.Orientation, measurer, entry)
+
+		if arrangement == EntriesStacked {
+			size.Width = max(size.Width, entrySize.Width)
+			size.Height += entrySize.Height
+		} else {
+			size.Width += entrySize.Width
+			size.Height = max(size.Height, entrySize.Height)
+		}
+	}
+
+	return size
+}
+
+func measureSingleEntry(
+	orientation model.LegendOrientation,
+	measurer StringMeasurer,
+	entry model.LegendEntryData,
+) geometry.Size {
+	if orientation == model.LegendOrientationHorizontal {
+		width, height := measureSingleEntryH(measurer, entry)
+
+		return geometry.NewSize(width, height)
+	}
+
+	width, height := measureSingleEntryV(measurer, entry)
+
+	return geometry.NewSize(width, height)
+}
+
+func includeLabelSample(
+	data *model.LegendData, measurer StringMeasurer, entriesSize geometry.Size,
+) geometry.Size {
+	sampleSize := measureLabelSampleImpl(measurer, data.LabelSample)
+	if data.Orientation == model.LegendOrientationVertical {
+		entriesSize.Width = max(entriesSize.Width, sampleSize.Width)
+		entriesSize.Height += sampleSize.Height + model.EntryGap
+	} else {
+		entriesSize.Width += sampleSize.Width + model.EntryGap
+		entriesSize.Height = max(entriesSize.Height, sampleSize.Height)
+	}
+
+	return entriesSize
+}
+
+// ResolveEntryArrangement keeps the configured grouping when it fits and
+// otherwise reflows entries onto the other axis.
+func ResolveEntryArrangement(
+	data *model.LegendData, available geometry.Size, measurer StringMeasurer,
+) EntryArrangement {
+	if data == nil {
+		return EntriesStacked
+	}
+
+	preferred := preferredEntryArrangement(data.Orientation)
+	if len(data.Entries) < 2 {
+		return preferred
+	}
+
+	preferredSize := MeasureLegendWithArrangement(data, measurer, preferred)
+	if fitsWithin(preferredSize, available) {
+		return preferred
+	}
+
+	if preferred == EntriesStacked {
+		return EntriesSideBySide
+	}
+
+	return EntriesStacked
+}
+
+func preferredEntryArrangement(orientation model.LegendOrientation) EntryArrangement {
+	if orientation == model.LegendOrientationHorizontal {
+		return EntriesSideBySide
+	}
+
+	return EntriesStacked
+}
+
+func fitsWithin(size, available geometry.Size) bool {
+	return size.Width <= available.Width && size.Height <= available.Height
+}
+
+// ReserveSpace computes the width and height reductions needed to reserve
+// space for the legend. Returns a zero size if data is nil, position is
+// "none", or there are no entries.
+func ReserveSpace(data *model.LegendData, measurer StringMeasurer) geometry.Size {
+	if data == nil {
+		return geometry.Size{}
+	}
+
+	return ReserveSpaceWithArrangement(data, measurer, preferredEntryArrangement(data.Orientation))
+}
+
+// ReserveSpaceWithArrangement computes the space needed for a legend using
+// the supplied metric-entry arrangement.
+func ReserveSpaceWithArrangement(
+	data *model.LegendData, measurer StringMeasurer, arrangement EntryArrangement,
+) geometry.Size {
+	if data == nil || data.Position == model.LegendPositionNone || len(data.Entries) == 0 {
+		return geometry.Size{}
+	}
+
+	size := MeasureLegendWithArrangement(data, measurer, arrangement)
+
+	return reserveSpaceForSize(data, size)
+}
+
+func reserveSpaceForSize(data *model.LegendData, size geometry.Size) geometry.Size {
+	m := model.LegendMargin
+
+	switch data.Position {
+	case model.LegendPositionCenterLeft, model.LegendPositionCenterRight:
+		return geometry.Size{Width: size.Width + 2*m}
+	case model.LegendPositionTopCenter, model.LegendPositionBottomCenter:
+		return geometry.Size{Height: size.Height + 2*m}
+	default:
+		if data.Orientation == model.LegendOrientationHorizontal {
+			return geometry.Size{Height: size.Height + 2*m}
+		}
+
+		return geometry.Size{Width: size.Width + 2*m}
+	}
 }
 
 // LegendOrigin computes the top-left (x, y) for the legend box.
@@ -59,96 +225,6 @@ func LegendOrigin(
 	default:
 		return m, available.Height - legend.Height - m
 	}
-}
-
-// ReserveSpace computes the width and height reductions needed to reserve
-// space for the legend. Returns a zero size if data is nil, position is
-// "none", or there are no entries.
-func ReserveSpace(data *model.LegendData, measurer StringMeasurer) geometry.Size {
-	if data == nil || data.Position == model.LegendPositionNone || len(data.Entries) == 0 {
-		return geometry.Size{}
-	}
-
-	size := MeasureLegend(data, measurer)
-	m := model.LegendMargin
-
-	switch data.Position {
-	case model.LegendPositionCenterLeft, model.LegendPositionCenterRight:
-		return geometry.Size{Width: size.Width + 2*m}
-	case model.LegendPositionTopCenter, model.LegendPositionBottomCenter:
-		return geometry.Size{Height: size.Height + 2*m}
-	default:
-		if data.Orientation == model.LegendOrientationHorizontal {
-			return geometry.Size{Height: size.Height + 2*m}
-		}
-
-		return geometry.Size{Width: size.Width + 2*m}
-	}
-}
-
-func measureLegendV(measurer StringMeasurer, data *model.LegendData) geometry.Size {
-	var totalH float64
-
-	maxW := 0.0
-
-	if data.LabelSample != nil {
-		sampleSize := measureLabelSampleImpl(measurer, data.LabelSample)
-		totalH += sampleSize.Height
-		maxW = max(maxW, sampleSize.Width)
-
-		if len(data.Entries) > 0 {
-			totalH += model.EntryGap
-		}
-	}
-
-	for i, entry := range data.Entries {
-		if i > 0 {
-			totalH += model.EntryGap
-		}
-
-		entryW, entryH := measureSingleEntryV(measurer, entry)
-		totalH += entryH
-		maxW = max(maxW, entryW)
-	}
-
-	return geometry.NewSize(
-		maxW+2*model.LegendPadding,
-		totalH+2*model.LegendPadding,
-	)
-}
-
-func measureLegendH(measurer StringMeasurer, data *model.LegendData) geometry.Size {
-	var totalW float64
-
-	maxH := 0.0
-
-	if data.LabelSample != nil {
-		sampleSize := measureLabelSampleImpl(measurer, data.LabelSample)
-		totalW += sampleSize.Width
-		maxH = max(maxH, sampleSize.Height)
-
-		if len(data.Entries) > 0 {
-			totalW += model.EntryGap
-		}
-	}
-
-	for i, entry := range data.Entries {
-		if i > 0 {
-			totalW += model.EntryGap
-		}
-
-		entryW, entryH := measureSingleEntryH(measurer, entry)
-		totalW += entryW
-
-		if entryH > maxH {
-			maxH = entryH
-		}
-	}
-
-	return geometry.NewSize(
-		totalW+2*model.LegendPadding,
-		maxH+2*model.LegendPadding,
-	)
 }
 
 func measureSingleEntryH(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
@@ -281,6 +357,14 @@ func MeasureEntryVContentWidth(entry model.LegendEntryData) float64 {
 	return w
 }
 
+// MeasureEntryVWidth returns the full width of one vertically oriented entry.
+func MeasureEntryVWidth(entry model.LegendEntryData) float64 {
+	measurer := NewBasicMeasurer()
+	w, _ := measureSingleEntryV(measurer, entry)
+
+	return w
+}
+
 // titleHeight returns the vertical space reserved for a two-line entry
 // title (label + metric name), including the gap below the title block.
 func titleHeight() float64 {
@@ -331,7 +415,7 @@ func ContentOffsetV(data *model.LegendData) float64 {
 	}
 
 	contentBoundingWidth := rightExtent - leftExtent
-	legendContentSize := measureLegendV(measurer, data)
+	legendContentSize := MeasureLegendWithArrangement(data, measurer, EntriesStacked)
 	legendContentW := legendContentSize.Width - 2*model.LegendPadding
 
 	offset := (legendContentW-contentBoundingWidth)/2 - leftExtent

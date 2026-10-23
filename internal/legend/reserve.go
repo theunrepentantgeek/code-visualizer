@@ -1,6 +1,7 @@
 package legend
 
 import (
+	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/legendlayout"
 	"github.com/theunrepentantgeek/code-visualizer/internal/canvas/model"
 	"github.com/theunrepentantgeek/code-visualizer/internal/geometry"
 )
@@ -27,7 +28,18 @@ func ReserveLayout(cfg *Config, width, height int) Reservation {
 		return result
 	}
 
-	reserved := cfg.ReserveSpace()
+	data := cfg.toLegendData()
+	if data == nil {
+		return result
+	}
+
+	measurer := legendlayout.NewBasicMeasurer()
+	arrangement := legendlayout.ResolveEntryArrangement(
+		data,
+		geometry.Size{Width: float64(width), Height: float64(height)},
+		measurer,
+	)
+	reserved := legendlayout.ReserveSpaceWithArrangement(data, measurer, arrangement)
 	result.Width -= int(reserved.Width)
 	result.Height -= int(reserved.Height)
 
