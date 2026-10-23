@@ -6,6 +6,9 @@ weight: 30
 The `bubble-tree` visualisation draws every file as a circle sized by a metric,
 with directories packed as enclosing bubbles. It offers a softer, more organic
 alternative to the tree-map while conveying the same nested structure.
+Directory bubbles enclose their packed children and reserve room for labels;
+on dense images, outlines shrink with the layout so they do not consume the
+gaps between circles.
 
 ![bubble-tree](bubble-tree-thumb.png)
 
