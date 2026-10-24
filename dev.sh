@@ -6,7 +6,9 @@ GIT_ROOT=$(git rev-parse --show-toplevel)
 TOOL_DEST=$GIT_ROOT/tools
 mkdir -p "$TOOL_DEST"
 
-export GOLANGCI_LINT_CACHE="$GIT_ROOT/.golangci-lint-cache"
+# Keep the lint cache outside the worktree so tests scanning the repo never see it change.
+# Must match GOLANGCI_LINT_CACHE in Taskfile.yml.
+export GOLANGCI_LINT_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/codeviz/golangci-lint/$(printf %s "$GIT_ROOT" | cksum | cut -d' ' -f1)"
 
 # This will be fast if everything is already installed
 VERBOSE=true

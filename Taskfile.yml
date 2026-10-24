@@ -1,7 +1,9 @@
 version: "3"
 
 env:
-  GOLANGCI_LINT_CACHE: "{{.ROOT_DIR}}/.golangci-lint-cache"
+  # Keep the lint cache outside the worktree so tests scanning the repo never see it change.
+  GOLANGCI_LINT_CACHE:
+    sh: echo "${XDG_CACHE_HOME:-$HOME/.cache}/codeviz/golangci-lint/$(printf %s '{{.ROOT_DIR}}' | cksum | cut -d' ' -f1)"
 
 tasks:
   build:
