@@ -557,6 +557,40 @@ func TestRenderBubbleToCanvas_ScaledDirectoryLabelFitsReservedBand(t *testing.T)
 	t.Fatal("expected a rendered pkg label")
 }
 
+func TestRenderBubbleToCanvas_OmitsDirectoryLabelBelowMinimumScaledFontSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	file := makeFile("large.go", "go", 10000)
+	file.Path = "root/pkg/large.go"
+	root := &model.Directory{
+		Name: "root",
+		Path: "root",
+		Dirs: []*model.Directory{{
+			Name:  "pkg",
+			Path:  "root/pkg",
+			Files: []*model.File{file},
+		}},
+	}
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{},
+		bubbleEncoding(filesystem.FileSize, palette.Temperature), viz.NoColourEncoding)
+	nodes := bubbletree.Layout(root, 100, 100, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	backend := &captureBackend{}
+	g.Expect(bubbletree.RenderToCanvas(&nodes, root, 100, 100, inks).RenderTo(backend)).To(Succeed())
+
+	g.Expect(nodes.Children).To(HaveLen(1))
+	pkg := nodes.Children[0]
+	g.Expect(pkg.ShowLabel).To(BeTrue())
+	g.Expect(backend.discs).To(HaveLen(2))
+
+	labelBand := pkg.Geometry.Radius - backend.discs[0].radius
+	g.Expect(labelBand).To(BeNumerically(">", 0))
+	g.Expect(labelBand).To(BeNumerically("<", 7),
+		"scaled label band must be smaller than the minimum readable font size")
+	g.Expect(backend.arcTexts).To(BeEmpty(),
+		"directory labels below the minimum readable font size must be omitted")
+}
+
 func TestRenderBubbleToCanvas_SVGOmitsRootLabel(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
