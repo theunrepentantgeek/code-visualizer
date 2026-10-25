@@ -79,6 +79,10 @@ func LayoutStage(c *stages.CommonState, t *State) error {
 // RenderStage renders the treemap to a canvas and attaches the legend.
 func RenderStage(c *stages.CommonState, t *State) error {
 	cv := RenderToCanvas(t.Root, c.Root, c.Width, c.Height, t.Inks, t.Size)
+	if c.DrawingBounds.Max.Y > 0 {
+		cv.SetDrawingBounds(int(c.DrawingBounds.Min.Y), int(c.DrawingBounds.Max.Y))
+	}
+
 	legend.RenderInto(cv, t.LegendConfig)
 
 	c.Canvas = cv

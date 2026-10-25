@@ -290,6 +290,9 @@ func measureNumericV(measurer StringMeasurer, entry model.LegendEntryData) (widt
 
 func measureNumericH(entry model.LegendEntryData) (width, height float64) {
 	n := len(entry.Swatches)
+	if n == 0 {
+		return 0, 0
+	}
 
 	step := model.SwatchSize
 	if entry.IsBorder {
@@ -325,6 +328,10 @@ func measureCategoryV(measurer StringMeasurer, entry model.LegendEntryData) (wid
 }
 
 func measureCategoryH(measurer StringMeasurer, entry model.LegendEntryData) (width, height float64) {
+	if len(entry.Swatches) == 0 {
+		return 0, 0
+	}
+
 	w := 0.0
 
 	for _, sw := range entry.Swatches {

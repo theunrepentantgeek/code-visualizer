@@ -132,6 +132,33 @@ func TestMeasureLegend_Horizontal_ShorterThanVertical(t *testing.T) {
 		"horizontal legend should be shorter than vertical")
 }
 
+func TestMeasureLegend_StackedSwatchlessHorizontalEntriesMatchRenderedHeight(t *testing.T) {
+	t.Parallel()
+
+	for _, kind := range []model.LegendEntryKind{
+		model.LegendEntryNumeric, model.LegendEntryCategorical,
+	} {
+		t.Run(map[model.LegendEntryKind]string{
+			model.LegendEntryNumeric:     "numeric",
+			model.LegendEntryCategorical: "categorical",
+		}[kind], func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			data := &model.LegendData{
+				Orientation: model.LegendOrientationHorizontal,
+				Entries: []model.LegendEntryData{
+					{Label: "Fill", Metric: "size", Kind: kind},
+					{Label: "Border", Metric: "age", Kind: kind},
+				},
+			}
+
+			size := MeasureLegendWithArrangement(data, NewBasicMeasurer(), EntriesStacked)
+
+			g.Expect(size.Height).To(Equal(114.0)) // Two 38px titles, 14px gap, 24px padding.
+		})
+	}
+}
+
 func TestReserveSpace_NilData_ReturnsZero(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
