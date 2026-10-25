@@ -364,6 +364,51 @@ func TestLayoutDenseNestedDirectoriesKeepPackingAndContainment(t *testing.T) {
 	}
 }
 
+func TestLayoutLargeMetricsReserveReadableLabelsWithoutOverflow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	root := &model.Directory{Name: "root"}
+
+	for i := range 6 {
+		dir := &model.Directory{Name: fmt.Sprintf("dir-%d", i)}
+		dir.Files = []*model.File{
+			makeFile("small.go", 1_000_000),
+			makeFile("large.go", 4_000_000),
+		}
+		root.Dirs = append(root.Dirs, dir)
+	}
+
+	node := Layout(root, 800, 600, filesystem.FileSize, LabelFoldersOnly)
+	assertContainment(g, node)
+	assertNoOverlap(g, node)
+
+	box := contentBoundsForTest(node)
+	g.Expect(box.Min.X).To(BeNumerically(">=", 0))
+	g.Expect(box.Min.Y).To(BeNumerically(">=", 0))
+	g.Expect(box.Max.X).To(BeNumerically("<=", 800))
+	g.Expect(box.Max.Y).To(BeNumerically("<=", 600))
+
+	for _, dir := range node.Children {
+		g.Expect(bubbleDirLabelBand(dir)).To(BeNumerically(">=", 7),
+			"large file metrics must not shrink the reserved label band below a readable size")
+
+		for _, file := range dir.Children {
+			dist := dir.Geometry.Center.DistanceTo(file.Geometry.Center)
+			g.Expect(dist+file.Geometry.Radius+bubbleMetricBorderWidth/2).To(
+				BeNumerically("<=", bubbleDirDiscRadius(dir)-bubbleBorderWidth/2),
+				"file outlines must stay inside the visible directory disc",
+			)
+		}
+
+		a, b := dir.Children[0], dir.Children[1]
+		g.Expect(a.Geometry.Radius / b.Geometry.Radius).To(BeNumerically("~", 2, 1e-6))
+		g.Expect(a.Geometry.Center.DistanceTo(b.Geometry.Center)).To(
+			BeNumerically(">=", a.Geometry.Radius+b.Geometry.Radius+bubbleMetricBorderWidth),
+			"file outlines must not overlap after reserving label space",
+		)
+	}
+}
+
 func TestLayoutZeroMetric(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

@@ -9,6 +9,10 @@ alternative to the tree-map while conveying the same nested structure.
 Directory bubbles enclose their packed children and reserve room for labels;
 on dense images, outlines shrink with the layout so they do not consume the
 gaps between circles.
+When directory labels are enabled, the layout adjusts file-circle sizes before
+packing to retain readable label bands without changing their relative sizes.
+Labels are omitted only when they cannot fit at a readable size, including on
+canvases too small to accommodate the labelled directory structure.
 
 ![bubble-tree](bubble-tree-thumb.png)
 

@@ -574,9 +574,9 @@ func TestRenderBubbleToCanvas_OmitsDirectoryLabelBelowMinimumScaledFontSize(t *t
 	}
 	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{},
 		bubbleEncoding(filesystem.FileSize, palette.Temperature), viz.NoColourEncoding)
-	nodes := bubbletree.Layout(root, 100, 100, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	nodes := bubbletree.Layout(root, 10, 10, filesystem.FileSize, bubbletree.LabelFoldersOnly)
 	backend := &captureBackend{}
-	g.Expect(bubbletree.RenderToCanvas(&nodes, root, 100, 100, inks).RenderTo(backend)).To(Succeed())
+	g.Expect(bubbletree.RenderToCanvas(&nodes, root, 10, 10, inks).RenderTo(backend)).To(Succeed())
 
 	g.Expect(nodes.Children).To(HaveLen(1))
 	pkg := nodes.Children[0]
@@ -589,6 +589,69 @@ func TestRenderBubbleToCanvas_OmitsDirectoryLabelBelowMinimumScaledFontSize(t *t
 		"scaled label band must be smaller than the minimum readable font size")
 	g.Expect(backend.arcTexts).To(BeEmpty(),
 		"directory labels below the minimum readable font size must be omitted")
+}
+
+func denseDirectoryRoot(size int64) *model.Directory {
+	root := &model.Directory{Name: "root", Path: "root"}
+
+	for i := range 6 {
+		dir := &model.Directory{Name: fmt.Sprintf("group-%d", i), Path: fmt.Sprintf("root/group-%d", i)}
+		for j := range 3 {
+			name := fmt.Sprintf("pkg-%d-%d", i, j)
+			sub := &model.Directory{Name: name, Path: dir.Path + "/" + name}
+			file := makeFile("large.go", "go", size)
+			file.Path = sub.Path + "/large.go"
+			sub.Files = []*model.File{file}
+			dir.Dirs = append(dir.Dirs, sub)
+		}
+
+		root.Dirs = append(root.Dirs, dir)
+	}
+
+	return root
+}
+
+func TestRenderBubbleToCanvas_DenseDirectoriesRetainReadableLabels(t *testing.T) {
+	t.Parallel()
+
+	for _, size := range []int64{1_000_000, 1_000_000_000_000} {
+		t.Run(fmt.Sprintf("file-size-%d", size), func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			root := denseDirectoryRoot(size)
+			inks := bubbletree.BuildInks(root, stages.RequestedMetrics{},
+				bubbleEncoding(filesystem.FileSize, palette.Temperature), viz.NoColourEncoding)
+			nodes := bubbletree.Layout(root, 1920, 1080, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+			backend := &captureBackend{}
+			g.Expect(bubbletree.RenderToCanvas(&nodes, root, 1920, 1080, inks).RenderTo(backend)).To(Succeed())
+
+			dirs, _ := nodes.Index()
+			g.Expect(dirs).To(HaveLen(24))
+			g.Expect(backend.arcTexts).To(HaveLen(24),
+				"every directory in this layout has room for a readable label")
+
+			dirsByLabel := make(map[string]*bubbletree.BubbleNode, len(dirs))
+			for _, dir := range dirs {
+				dirsByLabel[dir.Label] = dir
+			}
+
+			seenLabels := make(map[string]bool, len(dirs))
+
+			for _, label := range backend.arcTexts {
+				g.Expect(label.font).To(BeNumerically(">=", 7))
+
+				dir := dirsByLabel[label.text]
+				g.Expect(dir).NotTo(BeNil())
+				g.Expect(label.radius-canvasmodel.ArcTextInset+label.font/2).To(
+					BeNumerically("<=", dir.Geometry.Radius+1e-6),
+					"label %q must fit its packed directory radius", label.text,
+				)
+				seenLabels[label.text] = true
+			}
+
+			g.Expect(seenLabels).To(HaveLen(24), "each directory must have its own label")
+		})
+	}
 }
 
 func TestRenderBubbleToCanvas_SVGOmitsRootLabel(t *testing.T) {

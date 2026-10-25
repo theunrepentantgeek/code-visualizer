@@ -27,7 +27,18 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, la
 		return BubbleNode{}
 	}
 
-	node := layoutDir(root, sizeMetric, labels)
+	node := layoutRoot(root, sizeMetric, labels, 1)
+	scaleToFit(&node, float64(width), float64(height))
+
+	if labels != LabelNone && len(root.Dirs) > 0 && node.layoutScale > 0 && node.layoutScale < 1 {
+		node = fitReadableLabels(root, width, height, sizeMetric, labels, node)
+	}
+
+	return node
+}
+
+func layoutRoot(dir *model.Directory, sizeMetric metric.Name, labels LabelMode, fileScale float64) BubbleNode {
+	node := layoutDir(dir, sizeMetric, labels, fileScale)
 
 	// The root directory's disc is never rendered, so its label is never
 	// shown either. Strip the label reservation so the children fill the
@@ -37,23 +48,49 @@ func Layout(root *model.Directory, width, height int, sizeMetric metric.Name, la
 		node.ShowLabel = false
 	}
 
-	scaleToFit(&node, float64(width), float64(height))
-
 	return node
+}
+
+// fitReadableLabels scales file radii before packing, leaving labels and gaps in
+// pixel units. Keep the original scaled layout if even its directory structure
+// cannot fit with readable label bands (for example, on a tiny canvas).
+func fitReadableLabels(
+	root *model.Directory,
+	width, height int,
+	sizeMetric metric.Name,
+	labels LabelMode,
+	best BubbleNode,
+) BubbleNode {
+	low, high := 0.0, best.layoutScale
+
+	for range 20 {
+		fileScale := (low + high) / 2
+		candidate := layoutRoot(root, sizeMetric, labels, fileScale)
+		scaleToFit(&candidate, float64(width), float64(height))
+
+		if candidate.layoutScale < 1 {
+			high = fileScale
+		} else {
+			low = fileScale
+			best = candidate
+		}
+	}
+
+	return best
 }
 
 // layoutDir recursively builds a BubbleNode for dir. Children are packed
 // using the front-chain algorithm and enclosed. All coordinates are relative
 // to the parent centre (local frame).
-func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) BubbleNode {
+func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode, fileScale float64) BubbleNode {
 	children := make([]BubbleNode, 0, len(dir.Dirs)+len(dir.Files))
 
 	for _, d := range dir.Dirs {
-		children = append(children, layoutDir(d, sizeMetric, labels))
+		children = append(children, layoutDir(d, sizeMetric, labels, fileScale))
 	}
 
 	for _, f := range dir.Files {
-		children = append(children, layoutFile(f, sizeMetric, labels))
+		children = append(children, layoutFile(f, sizeMetric, labels, fileScale))
 	}
 
 	node := BubbleNode{
@@ -100,11 +137,13 @@ func layoutDir(dir *model.Directory, sizeMetric metric.Name, labels LabelMode) B
 	return node
 }
 
-func layoutFile(f *model.File, sizeMetric metric.Name, labels LabelMode) BubbleNode {
+func layoutFile(f *model.File, sizeMetric metric.Name, labels LabelMode, fileScale float64) BubbleNode {
 	r := math.Sqrt(fileMetricValue(f, sizeMetric))
 	if r < minFileRadius {
 		r = minFileRadius
 	}
+
+	r *= fileScale
 
 	return BubbleNode{
 		Geometry:  geometry.NewCircle(geometry.OriginPoint, r),
