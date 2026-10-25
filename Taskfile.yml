@@ -3,6 +3,12 @@ version: "3"
 env:
   GOLANGCI_LINT_CACHE: "{{.ROOT_DIR}}/.golangci-lint-cache"
 
+vars:
+  # Tests scan the repository, and lint rewrites .golangci-lint-cache inside it, so the two
+  # must never run at the same time. Serialise them with an exclusive lock when flock exists.
+  EXCLUSIVE:
+    sh: command -v flock >/dev/null 2>&1 && echo "flock -x .task-exclusive.lock" || true
+
 tasks:
   build:
     desc: Build the codeviz binary
@@ -30,17 +36,17 @@ tasks:
     desc: Run all tests
     cmds:
       - mkdir -p out
-      - gotestsum --format pkgname-and-test-fails --format-icons default --junitfile out/junit.xml -- ./... -count=1
+      - '{{.EXCLUSIVE}} gotestsum --format pkgname-and-test-fails --format-icons default --junitfile out/junit.xml -- ./... -count=1'
 
   test:race:
     desc: Run all tests with the race detector enabled
     cmds:
-      - gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1 -race
+      - '{{.EXCLUSIVE}} gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1 -race'
 
   test:cover:
     desc: Run tests with coverage report
     cmds:
-      - gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1 -coverprofile=coverage.out
+      - '{{.EXCLUSIVE}} gotestsum --format pkgname-and-test-fails --format-icons default -- ./... -count=1 -coverprofile=coverage.out'
       - go tool cover -func=coverage.out
 
   bench:
@@ -58,8 +64,8 @@ tasks:
       - .devcontainer/.custom-gcl.template.yml
     cmds:
       - golangci-lint-custom version
-      - golangci-lint-custom cache clean
-      - golangci-lint-custom run --verbose
+      - '{{.EXCLUSIVE}} golangci-lint-custom cache clean'
+      - '{{.EXCLUSIVE}} golangci-lint-custom run --verbose'
     preconditions:
        - sh: test -f ./.golangci.yml
          msg: "Required configuration file .golangci.yml not found."     
@@ -111,7 +117,7 @@ tasks:
       - go mod tidy
       - go fix ./...
       - golangci-lint-custom version
-      - golangci-lint-custom run --fix --verbose
+      - '{{.EXCLUSIVE}} golangci-lint-custom run --fix --verbose'
 
   ci:
     desc: Build, test, and lint
