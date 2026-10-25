@@ -3,6 +3,7 @@ package legend_test
 import (
 	"image/color"
 	"slices"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -411,7 +412,7 @@ func TestRenderInto_ConstrainedCircleSampleScalesWithinDrawingBounds(t *testing.
 	}
 }
 
-func TestRenderInto_ConstrainedCircleSamplePreservesExplicitVerticalOrientation(t *testing.T) {
+func TestRenderInto_ConstrainedCircleSamplePreservesVerticalSwatchOrientation(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -458,8 +459,8 @@ func TestRenderInto_ConstrainedCircleSamplePreservesExplicitVerticalOrientation(
 		t.Fatal("expected fill and border headings")
 	}
 
-	g.Expect(fill.Pos.X).To(BeNumerically("==", border.Pos.X))
-	g.Expect(fill.Pos.Y).To(BeNumerically("<", border.Pos.Y))
+	g.Expect(fill.Pos.Y).To(BeNumerically("~", border.Pos.Y, 0.01))
+	g.Expect(fill.Pos.X).To(BeNumerically("<", border.Pos.X))
 }
 
 func collectConstrainedCircleSampleCalls(
@@ -481,4 +482,155 @@ func collectConstrainedCircleSampleCalls(
 	}
 
 	return background, disc, sampleTexts
+}
+
+func TestRenderInto_OvertallVerticalEntriesArePlacedSideBySide(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	categoriesA := []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"}
+	categoriesB := []string{"b1", "b2", "b3", "b4", "b5", "b6", "b7"}
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomRight,
+		Orientation: model.LegendOrientationVertical,
+		Entries: []legend.Entry{
+			{
+				Role: legend.RoleFill, MetricName: "metric-a",
+				Ink: inks.CategoricalInk("metric-a", categoriesA, palette.GetPalette(palette.Categorization)),
+			},
+			{
+				Role: legend.RoleBorder, MetricName: "metric-b",
+				Ink: inks.CategoricalInk("metric-b", categoriesB, palette.GetPalette(palette.Categorization)),
+			},
+		},
+	}
+	cv := canvas.NewCanvas(450, 400)
+
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	background := mb.Calls[0]
+	g.Expect(background.Pos.X).To(BeNumerically(">=", 0))
+	g.Expect(background.Pos.Y).To(BeNumerically(">=", 0))
+	g.Expect(background.Bounds.Max.X).To(BeNumerically("<=", 450))
+	g.Expect(background.Bounds.Max.Y).To(BeNumerically("<=", 400))
+
+	headings := legendHeadingCalls(mb.Calls)
+	g.Expect(headings["metric-a"].Pos.Y).To(BeNumerically("~", headings["metric-b"].Pos.Y, 0.01))
+	g.Expect(headings["metric-a"].Pos.X).To(BeNumerically("<", headings["metric-b"].Pos.X))
+
+	renderedCategoriesA := textCallsWithPrefix(mb.Calls, "a")
+	g.Expect(renderedCategoriesA).To(HaveLen(7))
+
+	if len(renderedCategoriesA) < 2 {
+		t.Fatal("expected at least two rendered categories")
+	}
+
+	g.Expect(renderedCategoriesA[0].Pos.X).To(BeNumerically("==", renderedCategoriesA[1].Pos.X))
+	g.Expect(renderedCategoriesA[0].Pos.Y).To(BeNumerically("<", renderedCategoriesA[1].Pos.Y))
+}
+
+func TestRenderInto_OverwideHorizontalEntriesAreStacked(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	categoriesA := []string{"a1", "a2", "a3", "a4", "a5", "a6"}
+	categoriesB := []string{"b1", "b2", "b3", "b4", "b5", "b6"}
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomCenter,
+		Orientation: model.LegendOrientationHorizontal,
+		Entries: []legend.Entry{
+			{
+				Role: legend.RoleFill, MetricName: "metric-a",
+				Ink: inks.CategoricalInk("metric-a", categoriesA, palette.GetPalette(palette.Categorization)),
+			},
+			{
+				Role: legend.RoleBorder, MetricName: "metric-b",
+				Ink: inks.CategoricalInk("metric-b", categoriesB, palette.GetPalette(palette.Categorization)),
+			},
+		},
+	}
+	cv := canvas.NewCanvas(400, 300)
+
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	background := mb.Calls[0]
+	g.Expect(background.Pos.X).To(BeNumerically(">=", 0))
+	g.Expect(background.Pos.Y).To(BeNumerically(">=", 0))
+	g.Expect(background.Bounds.Max.X).To(BeNumerically("<=", 400))
+	g.Expect(background.Bounds.Max.Y).To(BeNumerically("<=", 300))
+
+	headings := legendHeadingCalls(mb.Calls)
+	g.Expect(headings["metric-a"].Pos.X).To(BeNumerically("~", headings["metric-b"].Pos.X, 0.01))
+	g.Expect(headings["metric-a"].Pos.Y).To(BeNumerically("<", headings["metric-b"].Pos.Y))
+
+	renderedCategoriesA := textCallsWithPrefix(mb.Calls, "a")
+	g.Expect(renderedCategoriesA).To(HaveLen(6))
+
+	if len(renderedCategoriesA) < 2 {
+		t.Fatal("expected at least two rendered categories")
+	}
+
+	g.Expect(renderedCategoriesA[0].Pos.Y).To(BeNumerically("==", renderedCategoriesA[1].Pos.Y))
+	g.Expect(renderedCategoriesA[0].Pos.X).To(BeNumerically("<", renderedCategoriesA[1].Pos.X))
+}
+
+func TestRenderInto_OversizedSingleEntryRetainsSwatchSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	categories := []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"}
+	cfg := &legend.Config{
+		Position:    model.LegendPositionBottomRight,
+		Orientation: model.LegendOrientationVertical,
+		Entries: []legend.Entry{{
+			Role: legend.RoleFill, MetricName: "metric-a",
+			Ink: inks.CategoricalInk("metric-a", categories, palette.GetPalette(palette.Categorization)),
+		}},
+	}
+	cv := canvas.NewCanvas(220, 150)
+
+	legend.RenderInto(cv, cfg)
+
+	mb := mock.NewBackend()
+	g.Expect(cv.RenderTo(mb)).To(Succeed())
+
+	renderedCategories := textCallsWithPrefix(mb.Calls, "a")
+	g.Expect(renderedCategories).To(HaveLen(7))
+
+	if len(renderedCategories) < 2 {
+		t.Fatal("expected at least two rendered categories")
+	}
+
+	g.Expect(renderedCategories[1].Pos.Y - renderedCategories[0].Pos.Y).
+		To(BeNumerically("==", model.SwatchSize+model.SwatchGap))
+}
+
+func legendHeadingCalls(calls []mock.Call) map[string]mock.Call {
+	headings := make(map[string]mock.Call)
+
+	for _, call := range calls {
+		if call.Method == "DrawText" && (call.Text == "metric-a" || call.Text == "metric-b") {
+			headings[call.Text] = call
+		}
+	}
+
+	return headings
+}
+
+func textCallsWithPrefix(calls []mock.Call, prefix string) []mock.Call {
+	var matches []mock.Call
+
+	for _, call := range calls {
+		if call.Method == "DrawText" && strings.HasPrefix(call.Text, prefix) {
+			matches = append(matches, call)
+		}
+	}
+
+	return matches
 }

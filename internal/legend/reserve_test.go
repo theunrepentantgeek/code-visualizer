@@ -141,3 +141,29 @@ func TestReserveLayoutAcceptsExactlyMinimumContentSize(t *testing.T) {
 	g.Expect(got.Height).To(Equal(legend.MinReservableSize))
 	g.Expect(got.Offset).To(Equal(geometry.NewVector(0, reserved.Height)))
 }
+
+func TestReserveLayout_UsesReflowedLegendSize(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	categories := []string{"a", "b", "c", "d", "e", "f", "g"}
+	cfg := &legend.Config{
+		Position:    canvasmodel.LegendPositionBottomRight,
+		Orientation: canvasmodel.LegendOrientationVertical,
+		Entries: []legend.Entry{
+			{
+				Role: legend.RoleFill, MetricName: "metric-a",
+				Ink: inks.CategoricalInk("metric-a", categories, palette.GetPalette(palette.Categorization)),
+			},
+			{
+				Role: legend.RoleBorder, MetricName: "metric-b",
+				Ink: inks.CategoricalInk("metric-b", categories, palette.GetPalette(palette.Categorization)),
+			},
+		},
+	}
+
+	withoutReflow := cfg.ReserveSpace()
+	got := legend.ReserveLayout(cfg, 450, 400)
+
+	g.Expect(got.Width).To(BeNumerically("<", 450-int(withoutReflow.Width)))
+}

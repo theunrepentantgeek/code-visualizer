@@ -147,6 +147,10 @@ func RenderStage(common *stages.CommonState, state *State) error {
 		state.Fill.Ink,
 		state.Fill.LabelMetric(),
 	)
+	if common.DrawingBounds.Max.Y > 0 {
+		common.Canvas.SetDrawingBounds(int(common.DrawingBounds.Min.Y), int(common.DrawingBounds.Max.Y))
+	}
+
 	legend.RenderInto(common.Canvas, state.Legend)
 
 	return nil

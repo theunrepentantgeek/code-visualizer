@@ -20,7 +20,7 @@ func RenderInto(cv *canvas.Canvas, cfg *Config) {
 	}
 
 	data := cfg.toLegendData()
-	if data == nil || data.Position == model.LegendPositionNone || len(data.Entries) == 0 {
+	if data == nil {
 		return
 	}
 
@@ -33,40 +33,40 @@ func RenderInto(cv *canvas.Canvas, cfg *Config) {
 	px := ox + lb.scaleValue(model.LegendPadding)
 	py := oy + lb.scaleValue(model.LegendPadding)
 
-	if layout.data.Orientation == model.LegendOrientationHorizontal {
-		lb.addEntriesH(layout.data, px, py)
-	} else {
-		contentAreaW := layout.size.Width - 2*lb.scaleValue(model.LegendPadding)
-		lb.addEntriesV(layout.data, px, py, contentAreaW)
-	}
+	contentAreaW := layout.size.Width - 2*lb.scaleValue(model.LegendPadding)
+	lb.addEntries(layout, px, py, contentAreaW)
 }
 
 type legendLayout struct {
-	data  *model.LegendData
-	size  geometry.Size
-	scale float64
+	data        *model.LegendData
+	size        geometry.Size
+	scale       float64
+	arrangement legendlayout.EntryArrangement
 }
 
-// fitLegendToCanvas scales oversized legends to keep them fully visible while
-// preserving their configured orientation.
+// fitLegendToCanvas reflows oversized legends before applying the existing
+// circle/arc label-sample scaling behavior.
 func fitLegendToCanvas(cv *canvas.Canvas, data *model.LegendData) legendLayout {
-	size := legendlayout.MeasureLegend(data, legendlayout.NewBasicMeasurer())
+	measurer := legendlayout.NewBasicMeasurer()
+	arrangement := legendlayout.ResolveEntryArrangement(data, cv.DrawingSize(), measurer)
+	size := legendlayout.MeasureLegendWithArrangement(data, measurer, arrangement)
+
 	if legendFits(cv, size) ||
 		data.LabelSample == nil ||
 		(data.LabelSample.Shape != model.LegendLabelSampleCircle &&
 			data.LabelSample.Shape != model.LegendLabelSampleArc) {
-		return legendLayout{data: data, size: size, scale: 1}
+		return legendLayout{data: data, size: size, scale: 1, arrangement: arrangement}
 	}
 
 	canvasSize := cv.Size()
 	drawingSize := cv.DrawingSize()
 	scale := min(
-		canvasSize.Width/size.Width,
-		drawingSize.Height/size.Height,
+		max(0, canvasSize.Width-2*model.LegendMargin)/size.Width,
+		max(0, drawingSize.Height-2*model.LegendMargin)/size.Height,
 	)
 
 	return legendLayout{
-		data: data, size: size.Scale(scale), scale: scale,
+		data: data, size: size.Scale(scale), scale: scale, arrangement: arrangement,
 	}
 }
 
@@ -152,6 +152,23 @@ func (lb *legendBuilder) scaleValue(value float64) float64 {
 	return value * lb.scale
 }
 
+func (lb *legendBuilder) addEntries(
+	layout legendLayout, x, y float64, contentAreaW float64,
+) {
+	switch {
+	case layout.arrangement == legendlayout.EntriesSideBySide &&
+		layout.data.Orientation == model.LegendOrientationVertical:
+		lb.addEntriesVSideBySide(layout.data, x, y, contentAreaW)
+	case layout.arrangement == legendlayout.EntriesStacked &&
+		layout.data.Orientation == model.LegendOrientationHorizontal:
+		lb.addEntriesHStacked(layout.data, x, y)
+	case layout.data.Orientation == model.LegendOrientationHorizontal:
+		lb.addEntriesH(layout.data, x, y)
+	default:
+		lb.addEntriesV(layout.data, x, y, contentAreaW)
+	}
+}
+
 func (lb *legendBuilder) addBackground(x, y, w, h float64) {
 	lb.addRect(x, y, w, h, lb.bgFill, lb.bgBorder, 1.0)
 }
@@ -205,6 +222,59 @@ func (lb *legendBuilder) addEntriesH(
 		ew := legendlayout.MeasureEntryHWidth(entry)
 		lb.addEntry(data.Orientation, entry, cx, y)
 		cx += lb.scaleValue(ew)
+	}
+}
+
+func (lb *legendBuilder) addEntriesVSideBySide(
+	data *model.LegendData, x, y float64, contentAreaW float64,
+) {
+	if data.LabelSample != nil {
+		sampleSize := legendlayout.MeasureLabelSample(data.LabelSample)
+		sampleX := x + (contentAreaW-lb.scaleValue(sampleSize.Width))/2
+		y = lb.addLabelSample(data.LabelSample, sampleX, y)
+
+		if len(data.Entries) > 0 {
+			y += lb.scaleValue(model.EntryGap)
+		}
+	}
+
+	cx := x
+
+	for i, entry := range data.Entries {
+		if i > 0 {
+			cx += lb.scaleValue(model.EntryGap)
+		}
+
+		entryWidth := legendlayout.MeasureEntryVWidth(entry)
+		contentWidth := legendlayout.MeasureEntryVContentWidth(entry)
+		entryX := cx + lb.scaleValue(max(0, (entryWidth-contentWidth)/2))
+		lb.addEntry(data.Orientation, entry, entryX, y)
+		cx += lb.scaleValue(entryWidth)
+	}
+}
+
+func (lb *legendBuilder) addEntriesHStacked(data *model.LegendData, x, y float64) {
+	if data.LabelSample != nil {
+		sampleSize := legendlayout.MeasureLabelSample(data.LabelSample)
+		lb.addLabelSample(data.LabelSample, x, y)
+		x += lb.scaleValue(sampleSize.Width + model.EntryGap)
+	}
+
+	maxEntryWidth := 0.0
+	for _, entry := range data.Entries {
+		maxEntryWidth = max(maxEntryWidth, legendlayout.MeasureEntryHWidth(entry))
+	}
+
+	cy := y
+
+	for i, entry := range data.Entries {
+		if i > 0 {
+			cy += lb.scaleValue(model.EntryGap)
+		}
+
+		entryWidth := legendlayout.MeasureEntryHWidth(entry)
+		entryX := x + lb.scaleValue((maxEntryWidth-entryWidth)/2)
+		cy = lb.addEntry(data.Orientation, entry, entryX, cy)
 	}
 }
 

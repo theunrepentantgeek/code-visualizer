@@ -40,7 +40,7 @@ intersected with files in the snapshot.
 | `--surface`            |       | `false`        | Render a metric surface; requires numeric fill or surface metric   |
 | `--surface-metric`     |       | none           | Numeric surface metric: `metric[,palette]`; enables the surface   |
 | `--legend`             |       | `bottom-right` | Legend position, or `none` to hide it                             |
-| `--legend-orientation` |       | auto           | Legend orientation: `vertical` or `horizontal`                    |
+| `--legend-orientation` |       | auto           | Swatch orientation: `vertical` or `horizontal`; entries can reflow when needed |
 | `--width`              |       | `1920`         | Canvas width in pixels                                            |
 | `--height`             |       | `1920`         | Canvas height in pixels                                           |
 | `--title`              |       | none           | Override the title text on the generated image                    |
