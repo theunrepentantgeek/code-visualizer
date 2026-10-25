@@ -21,6 +21,7 @@ const (
 	bubbleMinArcFontSize    = 7.0
 	bubbleDefaultFontSize   = 14.0
 	bubbleMaxArcFraction    = math.Pi / 2.0
+	bubbleArcCharWidth      = 0.6
 )
 
 // RenderToCanvas walks the BubbleNode tree and model tree using
@@ -243,6 +244,12 @@ func bubbleDirLabelFontSize(node BubbleNode) float64 {
 	return fontSize
 }
 
+func bubbleMinLabelDiscRadius(label string) float64 {
+	minArcLength := float64(utf8.RuneCountInString(label)) * bubbleArcCharWidth * bubbleMinArcFontSize
+
+	return max(minFileRadius, minArcLength/bubbleMaxArcFraction)
+}
+
 // addBubbleDirLabel adds an arc text label curved just above the top of a directory circle.
 func addBubbleDirLabel(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink) {
 	fontSize := bubbleDirLabelFontSize(node)
@@ -289,7 +296,7 @@ func bubbleArcFontSize(label string, radius float64) float64 {
 
 	maxArcLen := arcR * bubbleMaxArcFraction
 	// Each character is approximately 0.6 × fontSize wide.
-	maxSize := maxArcLen / (charCount * 0.6)
+	maxSize := maxArcLen / (charCount * bubbleArcCharWidth)
 	fontSize := min(bubbleDefaultFontSize, maxSize)
 
 	if fontSize < bubbleMinArcFontSize {

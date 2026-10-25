@@ -654,6 +654,92 @@ func TestRenderBubbleToCanvas_DenseDirectoriesRetainReadableLabels(t *testing.T)
 	}
 }
 
+func TestRenderBubbleToCanvas_LargeTreeKeepsLabelsOnLargerDirectories(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	root := &model.Directory{Name: "root", Path: "root"}
+	expected := make([]string, 0, 12)
+
+	for i := range 12 {
+		name := fmt.Sprintf("area-%02d", i)
+		dir := &model.Directory{Name: name, Path: "root/" + name}
+		expected = append(expected, name)
+
+		for j := range 100 {
+			name := fmt.Sprintf("tiny-%02d-%03d", i, j)
+			sub := &model.Directory{Name: name, Path: dir.Path + "/" + name}
+			file := makeFile("main.go", "go", 1_000_000)
+			file.Path = sub.Path + "/main.go"
+			sub.Files = []*model.File{file}
+			dir.Dirs = append(dir.Dirs, sub)
+		}
+
+		root.Dirs = append(root.Dirs, dir)
+	}
+
+	inks := bubbletree.BuildInks(root, stages.RequestedMetrics{},
+		bubbleEncoding(filesystem.FileSize, palette.Temperature), viz.NoColourEncoding)
+	nodes := bubbletree.Layout(root, 1280, 720, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+	backend := &captureBackend{}
+	g.Expect(bubbletree.RenderToCanvas(&nodes, root, 1280, 720, inks).RenderTo(backend)).To(Succeed())
+	g.Expect(backend.discs).To(HaveLen(2412), "label allocation must retain all directories and files")
+
+	labels := make([]string, 0, len(backend.arcTexts))
+	for _, label := range backend.arcTexts {
+		g.Expect(label.font).To(BeNumerically(">=", 7))
+		labels = append(labels, label.text)
+	}
+
+	g.Expect(labels).To(ConsistOf(expected),
+		"tiny directories must not prevent larger directories from having readable labels")
+}
+
+func deepDirectoryRoot(files []*model.File) *model.Directory {
+	root := &model.Directory{Name: "root", Path: "root"}
+	dir := root
+
+	for i := range 80 {
+		name := fmt.Sprintf("level-%02d", i)
+		child := &model.Directory{Name: name, Path: dir.Path + "/" + name}
+		dir.Dirs = []*model.Directory{child}
+		dir = child
+	}
+
+	for _, file := range files {
+		file.Path = dir.Path + "/" + file.Name
+	}
+
+	dir.Files = files
+
+	return root
+}
+
+func TestRenderBubbleToCanvas_DeepTreeRetainsReadableAncestorLabels(t *testing.T) {
+	t.Parallel()
+
+	for _, files := range [][]*model.File{nil, {makeFile("main.go", "go", 1_000_000)}} {
+		t.Run(fmt.Sprintf("file-count-%d", len(files)), func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			root := deepDirectoryRoot(files)
+			inks := bubbletree.BuildInks(root, stages.RequestedMetrics{},
+				bubbleEncoding(filesystem.FileSize, palette.Temperature), viz.NoColourEncoding)
+			nodes := bubbletree.Layout(root, 800, 600, filesystem.FileSize, bubbletree.LabelFoldersOnly)
+			backend := &captureBackend{}
+			g.Expect(bubbletree.RenderToCanvas(&nodes, root, 800, 600, inks).RenderTo(backend)).To(Succeed())
+
+			labels := make([]string, 0, len(backend.arcTexts))
+			for _, label := range backend.arcTexts {
+				g.Expect(label.font).To(BeNumerically(">=", 7))
+				labels = append(labels, label.text)
+			}
+
+			g.Expect(labels).To(ContainElement("level-00"),
+				"an unlabelable full hierarchy must still label its largest visible ancestor")
+		})
+	}
+}
+
 func TestRenderBubbleToCanvas_SVGOmitsRootLabel(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

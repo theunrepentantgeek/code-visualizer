@@ -11,8 +11,9 @@ on dense images, outlines shrink with the layout so they do not consume the
 gaps between circles.
 When directory labels are enabled, the layout adjusts file-circle sizes before
 packing to retain readable label bands without changing their relative sizes.
-Labels are omitted only when they cannot fit at a readable size, including on
-canvases too small to accommodate the labelled directory structure.
+Dense trees budget label space largest-first. Directories too small for
+readable labels are skipped without suppressing labels on larger directories;
+all directory and file circles remain in the visualisation.
 
 ![bubble-tree](bubble-tree-thumb.png)
 
