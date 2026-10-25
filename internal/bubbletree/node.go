@@ -23,6 +23,8 @@ type BubbleNode struct {
 	ShowLabel   bool            // whether to render the label for this node
 	IsDirectory bool            // true for directory nodes, false for file nodes
 	Children    []BubbleNode
+	labelBand   float64 // occupied radius outside the visible directory disc
+	layoutScale float64 // root layout scale, used to keep rendered strokes within packed gaps
 }
 
 // Index builds path-based lookup maps for all descendant BubbleNodes,

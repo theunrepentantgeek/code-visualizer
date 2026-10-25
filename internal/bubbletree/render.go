@@ -18,9 +18,10 @@ const (
 	bubbleBorderWidth       = 0.5
 	bubbleMetricBorderWidth = 2.0
 	bubbleArcLabelInset     = canvasmodel.ArcTextInset
-	bubbleMinArcFontSize    = 7.0
+	bubbleMinArcFontSize    = 5.0
 	bubbleDefaultFontSize   = 14.0
 	bubbleMaxArcFraction    = math.Pi / 2.0
+	bubbleArcCharWidth      = 0.6
 )
 
 // RenderToCanvas walks the BubbleNode tree and model tree using
@@ -36,8 +37,14 @@ func RenderToCanvas(
 	addBubbleBackground(cv, width, height)
 
 	dirs, files := nodes.Index()
-	addBubbleDirDiscs(cv, dirs, root)
-	addBubbleFileDiscs(cv, files, root, is)
+
+	strokeScale := 1.0
+	if nodes.layoutScale > 0 && nodes.layoutScale < 1 {
+		strokeScale = nodes.layoutScale
+	}
+
+	addBubbleDirDiscs(cv, dirs, root, strokeScale)
+	addBubbleFileDiscs(cv, files, root, is, strokeScale)
 	addBubbleLabels(cv, *nodes)
 
 	return cv
@@ -72,6 +79,7 @@ func addBubbleDirDiscs(
 	cv *canvas.Canvas,
 	dirIndex map[string]*BubbleNode,
 	root *model.Directory,
+	strokeScale float64,
 ) {
 	entries := collectBubbleDirEntries(dirIndex, root)
 
@@ -85,7 +93,7 @@ func addBubbleDirDiscs(
 	dirSpec := &canvas.DiscSpec{
 		Fill:        dirFill,
 		Border:      dirBorder,
-		BorderWidth: bubbleBorderWidth,
+		BorderWidth: bubbleBorderWidth * strokeScale,
 	}
 
 	for _, e := range entries {
@@ -124,8 +132,9 @@ func addBubbleFileDiscs(
 	fileIndex map[string]*BubbleNode,
 	root *model.Directory,
 	is Inks,
+	strokeScale float64,
 ) {
-	addBubbleFileDiscsWalk(cv, fileIndex, root, is)
+	addBubbleFileDiscsWalk(cv, fileIndex, root, is, strokeScale)
 }
 
 func addBubbleFileDiscsWalk(
@@ -133,6 +142,7 @@ func addBubbleFileDiscsWalk(
 	fileIndex map[string]*BubbleNode,
 	dir *model.Directory,
 	is Inks,
+	strokeScale float64,
 ) {
 	borderWidth := bubbleBorderWidth
 	if is.HasBorderMetric {
@@ -142,7 +152,7 @@ func addBubbleFileDiscsWalk(
 	fileSpec := &canvas.DiscSpec{
 		Fill:        is.Fill,
 		Border:      is.Border,
-		BorderWidth: borderWidth,
+		BorderWidth: borderWidth * strokeScale,
 	}
 
 	for _, f := range dir.Files {
@@ -163,7 +173,7 @@ func addBubbleFileDiscsWalk(
 	}
 
 	for _, d := range dir.Dirs {
-		addBubbleFileDiscsWalk(cv, fileIndex, d, is)
+		addBubbleFileDiscsWalk(cv, fileIndex, d, is, strokeScale)
 	}
 }
 
@@ -200,10 +210,18 @@ func addBubbleLabelsInner(cv *canvas.Canvas, node BubbleNode, labelInk inks.Ink,
 
 func bubbleDirDiscRadius(node BubbleNode) float64 {
 	if node.IsDirectory && node.ShowLabel {
-		return max(0.0, node.Geometry.Radius-LabelReservation)
+		return max(0.0, node.Geometry.Radius-bubbleDirLabelBand(node))
 	}
 
 	return node.Geometry.Radius
+}
+
+func bubbleDirLabelBand(node BubbleNode) float64 {
+	if node.labelBand > 0 {
+		return node.labelBand
+	}
+
+	return LabelReservation
 }
 
 func bubbleDirLabelRadius(node BubbleNode, fontSize float64) float64 {
@@ -216,7 +234,20 @@ func bubbleDirLabelFontSize(node BubbleNode) float64 {
 		return 0
 	}
 
-	return bubbleArcFontSize(node.Label, bubbleDirLabelRadius(node, fontSize))
+	fontSize = bubbleArcFontSize(node.Label, bubbleDirLabelRadius(node, fontSize))
+
+	fontSize = min(fontSize, bubbleDirLabelBand(node))
+	if fontSize < bubbleMinArcFontSize {
+		return 0
+	}
+
+	return fontSize
+}
+
+func bubbleMinLabelDiscRadius(label string) float64 {
+	minArcLength := float64(utf8.RuneCountInString(label)) * bubbleArcCharWidth * bubbleMinArcFontSize
+
+	return max(minFileRadius, minArcLength/bubbleMaxArcFraction)
 }
 
 // addBubbleDirLabel adds an arc text label curved just above the top of a directory circle.
@@ -265,7 +296,7 @@ func bubbleArcFontSize(label string, radius float64) float64 {
 
 	maxArcLen := arcR * bubbleMaxArcFraction
 	// Each character is approximately 0.6 × fontSize wide.
-	maxSize := maxArcLen / (charCount * 0.6)
+	maxSize := maxArcLen / (charCount * bubbleArcCharWidth)
 	fontSize := min(bubbleDefaultFontSize, maxSize)
 
 	if fontSize < bubbleMinArcFontSize {
