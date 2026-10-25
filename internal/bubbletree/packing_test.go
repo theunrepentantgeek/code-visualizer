@@ -279,6 +279,19 @@ func TestPackCircles_LargeCircleFirst_NoOverlap(t *testing.T) {
 	assertNoOverlaps(t, g, circles)
 }
 
+func TestPackCircles_ManySmallAndLargeCircles_KeepSiblingPadding(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	circles := make([]BubbleNode, 120)
+	for i := range circles {
+		circles[i].Geometry.Radius = float64(2 + (i*37)%79)
+	}
+
+	packCircles(circles)
+	assertNoOverlaps(t, g, circles)
+}
+
 // ---------------------------------------------------------------------------
 // assertNoOverlaps verifies that no two circles in the slice overlap.
 // ---------------------------------------------------------------------------.

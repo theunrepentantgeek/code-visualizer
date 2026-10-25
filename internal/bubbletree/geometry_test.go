@@ -1,7 +1,9 @@
 package bubbletree
 
 import (
+	"cmp"
 	"math"
+	"slices"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -260,5 +262,28 @@ func TestComputeEnclosing_OneNodeInsideAnother(t *testing.T) {
 	for _, n := range nodes {
 		e := geometry.NewCircle(n.Geometry.Center, n.Geometry.Radius)
 		g.Expect(enclosesWithin(result, e, welzlTolerance)).To(BeTrue())
+	}
+}
+
+func TestComputeEnclosing_PackedUnequalCircles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	nodes := make([]BubbleNode, 30)
+	for i := range nodes {
+		nodes[i].Geometry.Radius = math.Sqrt(float64(1 + (2*71+i*37)%600))
+	}
+
+	slices.SortFunc(nodes, func(a, b BubbleNode) int {
+		return cmp.Compare(b.Geometry.Radius, a.Geometry.Radius)
+	})
+
+	packCircles(nodes)
+
+	enclosure := computeEnclosing(nodes)
+	for i, node := range nodes {
+		g.Expect(enclosesWithin(enclosure, node.Geometry, welzlTolerance)).To(
+			BeTrue(), "packed circle %d must be enclosed", i,
+		)
 	}
 }

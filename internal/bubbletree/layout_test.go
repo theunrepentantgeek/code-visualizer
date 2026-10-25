@@ -1,6 +1,7 @@
 package bubbletree
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -50,6 +51,26 @@ func assertNoOverlap(g Gomega, parent BubbleNode) {
 	for _, child := range parent.Children {
 		if child.IsDirectory {
 			assertNoOverlap(g, child)
+		}
+	}
+}
+
+func assertRenderedContainment(g Gomega, parent BubbleNode, strokeScale float64) {
+	visibleRadius := bubbleDirDiscRadius(parent) - bubbleBorderWidth*strokeScale/2
+
+	for _, child := range parent.Children {
+		borderWidth := bubbleBorderWidth
+		if !child.IsDirectory {
+			borderWidth = bubbleMetricBorderWidth
+		}
+
+		extent := parent.Geometry.Center.DistanceTo(child.Geometry.Center) +
+			child.Geometry.Radius + borderWidth*strokeScale/2
+		g.Expect(extent).To(BeNumerically("<=", visibleRadius+1e-6),
+			"child %q must fit inside the visible disc of %q", child.Label, parent.Label)
+
+		if child.IsDirectory {
+			assertRenderedContainment(g, child, strokeScale)
 		}
 	}
 }
@@ -312,6 +333,143 @@ func TestLayoutLargeFlatDirectory(t *testing.T) {
 	assertContainment(g, node)
 	// No siblings should overlap.
 	assertNoOverlap(g, node)
+}
+
+func TestLayoutDenseLabelledDirectoryContainsRenderedFiles(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	sub := &model.Directory{Name: "dense", Path: "root/dense"}
+	for i := range 40 {
+		sub.Files = append(sub.Files, makeFile(fmt.Sprintf("small-%d.go", i), 1))
+	}
+
+	root := &model.Directory{Name: "root", Dirs: []*model.Directory{sub}}
+	node := Layout(root, 80, 60, filesystem.FileSize, LabelFoldersOnly)
+	dir := node.Children[0]
+
+	g.Expect(dir.ShowLabel).To(BeTrue())
+
+	for _, file := range dir.Children {
+		dist := dir.Geometry.Center.DistanceTo(file.Geometry.Center)
+		g.Expect(dist+file.Geometry.Radius).To(
+			BeNumerically("<=", bubbleDirDiscRadius(dir)-bubbleBorderWidth/2),
+			"rendered file %q must fit inside the visible directory disc", file.Label,
+		)
+	}
+}
+
+func TestLayoutDenseNestedDirectoriesKeepPackingAndContainment(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	root := &model.Directory{Name: "root"}
+	for i := range 6 {
+		dir := &model.Directory{Name: fmt.Sprintf("dir-%d", i)}
+		for j := range 30 {
+			dir.Files = append(dir.Files, makeFile(
+				fmt.Sprintf("file-%d-%d", i, j), int64(1+(i*71+j*37)%600),
+			))
+		}
+
+		root.Dirs = append(root.Dirs, dir)
+	}
+
+	node := Layout(root, 1920, 1080, filesystem.FileSize, LabelFoldersOnly)
+	assertContainment(g, node)
+	assertNoOverlap(g, node)
+	assertRenderedContainment(g, node, min(1.0, node.layoutScale))
+
+	for _, dir := range node.Children {
+		assertNoOverlaps(t, g, dir.Children)
+	}
+}
+
+func TestLayoutLargeMetricsReserveReadableLabelsWithoutOverflow(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	root := &model.Directory{Name: "root"}
+
+	for i := range 6 {
+		dir := &model.Directory{Name: fmt.Sprintf("dir-%d", i)}
+		dir.Files = []*model.File{
+			makeFile("small.go", 1_000_000),
+			makeFile("large.go", 4_000_000),
+		}
+		root.Dirs = append(root.Dirs, dir)
+	}
+
+	node := Layout(root, 800, 600, filesystem.FileSize, LabelFoldersOnly)
+	strokeScale := min(1.0, node.layoutScale)
+	assertContainment(g, node)
+	assertNoOverlap(g, node)
+	assertRenderedContainment(g, node, strokeScale)
+
+	box := contentBoundsForTest(node)
+	g.Expect(box.Min.X).To(BeNumerically(">=", 0))
+	g.Expect(box.Min.Y).To(BeNumerically(">=", 0))
+	g.Expect(box.Max.X).To(BeNumerically("<=", 800))
+	g.Expect(box.Max.Y).To(BeNumerically("<=", 600))
+
+	for _, dir := range node.Children {
+		g.Expect(bubbleDirLabelBand(dir)).To(BeNumerically(">=", bubbleMinArcFontSize),
+			"large file metrics must not shrink the reserved label band below a readable size")
+
+		for _, file := range dir.Children {
+			dist := dir.Geometry.Center.DistanceTo(file.Geometry.Center)
+			g.Expect(dist+file.Geometry.Radius+bubbleMetricBorderWidth*strokeScale/2).To(
+				BeNumerically("<=", bubbleDirDiscRadius(dir)-bubbleBorderWidth*strokeScale/2),
+				"file outlines must stay inside the visible directory disc",
+			)
+		}
+
+		a, b := dir.Children[0], dir.Children[1]
+		g.Expect(a.Geometry.Radius / b.Geometry.Radius).To(BeNumerically("~", 2, 1e-6))
+		g.Expect(a.Geometry.Center.DistanceTo(b.Geometry.Center)).To(
+			BeNumerically(">=", a.Geometry.Radius+b.Geometry.Radius+bubbleMetricBorderWidth*strokeScale),
+			"file outlines must not overlap after reserving label space",
+		)
+	}
+}
+
+func TestLayoutDeepLabelBudgetPreservesVisibleContainment(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+	root := &model.Directory{Name: "root", Path: "root"}
+	dir := root
+
+	for i := range 80 {
+		name := fmt.Sprintf("level-%02d", i)
+		child := &model.Directory{Name: name, Path: dir.Path + "/" + name}
+		dir.Dirs = []*model.Directory{child}
+		dir = child
+	}
+
+	dir.Files = []*model.File{makeFile("main.go", 1_000_000)}
+	node := Layout(root, 800, 600, filesystem.FileSize, LabelFoldersOnly)
+	assertRenderedContainment(g, node, min(1.0, node.layoutScale))
+	assertNoOverlap(g, node)
+	dirs, files := node.Index()
+	g.Expect(dirs).To(HaveLen(80))
+	g.Expect(files).To(HaveLen(1))
+
+	ancestor, ok := dirs["root/level-00"]
+	if !ok {
+		t.Fatal("expected the largest ancestor directory")
+	}
+
+	g.Expect(ancestor.ShowLabel).To(BeTrue())
+
+	for _, dir := range dirs {
+		if dir.ShowLabel {
+			font := bubbleDirLabelFontSize(*dir)
+			g.Expect(font).To(BeNumerically(">=", bubbleMinArcFontSize))
+			g.Expect(bubbleDirLabelRadius(*dir, font)-bubbleArcLabelInset+font/2).To(
+				BeNumerically("<=", dir.Geometry.Radius+1e-6),
+				"readable labels must remain inside their occupied directory radius",
+			)
+		}
+	}
 }
 
 func TestLayoutZeroMetric(t *testing.T) {
