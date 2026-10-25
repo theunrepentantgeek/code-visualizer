@@ -14,6 +14,7 @@ packing to retain readable label bands without changing their relative sizes.
 Dense trees budget label space largest-first. Directories too small for
 readable labels are skipped without suppressing labels on larger directories;
 all directory and file circles remain in the visualisation.
+Directory labels use fonts up to 14 px and are omitted below 5 px.
 
 ![bubble-tree](bubble-tree-thumb.png)
 

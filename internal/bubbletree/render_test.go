@@ -585,7 +585,7 @@ func TestRenderBubbleToCanvas_OmitsDirectoryLabelBelowMinimumScaledFontSize(t *t
 
 	labelBand := pkg.Geometry.Radius - backend.discs[0].radius
 	g.Expect(labelBand).To(BeNumerically(">", 0))
-	g.Expect(labelBand).To(BeNumerically("<", 7),
+	g.Expect(labelBand).To(BeNumerically("<", 5),
 		"scaled label band must be smaller than the minimum readable font size")
 	g.Expect(backend.arcTexts).To(BeEmpty(),
 		"directory labels below the minimum readable font size must be omitted")
@@ -638,7 +638,7 @@ func TestRenderBubbleToCanvas_DenseDirectoriesRetainReadableLabels(t *testing.T)
 			seenLabels := make(map[string]bool, len(dirs))
 
 			for _, label := range backend.arcTexts {
-				g.Expect(label.font).To(BeNumerically(">=", 7))
+				g.Expect(label.font).To(BeNumerically(">=", 5))
 
 				dir := dirsByLabel[label.text]
 				g.Expect(dir).NotTo(BeNil())
@@ -686,7 +686,7 @@ func TestRenderBubbleToCanvas_LargeTreeKeepsLabelsOnLargerDirectories(t *testing
 
 	labels := make([]string, 0, len(backend.arcTexts))
 	for _, label := range backend.arcTexts {
-		g.Expect(label.font).To(BeNumerically(">=", 7))
+		g.Expect(label.font).To(BeNumerically(">=", 5))
 		labels = append(labels, label.text)
 	}
 
@@ -730,7 +730,7 @@ func TestRenderBubbleToCanvas_DeepTreeRetainsReadableAncestorLabels(t *testing.T
 
 			labels := make([]string, 0, len(backend.arcTexts))
 			for _, label := range backend.arcTexts {
-				g.Expect(label.font).To(BeNumerically(">=", 7))
+				g.Expect(label.font).To(BeNumerically(">=", 5))
 				labels = append(labels, label.text)
 			}
 

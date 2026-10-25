@@ -412,7 +412,7 @@ func TestLayoutLargeMetricsReserveReadableLabelsWithoutOverflow(t *testing.T) {
 	g.Expect(box.Max.Y).To(BeNumerically("<=", 600))
 
 	for _, dir := range node.Children {
-		g.Expect(bubbleDirLabelBand(dir)).To(BeNumerically(">=", 7),
+		g.Expect(bubbleDirLabelBand(dir)).To(BeNumerically(">=", bubbleMinArcFontSize),
 			"large file metrics must not shrink the reserved label band below a readable size")
 
 		for _, file := range dir.Children {

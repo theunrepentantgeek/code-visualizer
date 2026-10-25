@@ -18,7 +18,7 @@ const (
 	bubbleBorderWidth       = 0.5
 	bubbleMetricBorderWidth = 2.0
 	bubbleArcLabelInset     = canvasmodel.ArcTextInset
-	bubbleMinArcFontSize    = 7.0
+	bubbleMinArcFontSize    = 5.0
 	bubbleDefaultFontSize   = 14.0
 	bubbleMaxArcFraction    = math.Pi / 2.0
 	bubbleArcCharWidth      = 0.6
