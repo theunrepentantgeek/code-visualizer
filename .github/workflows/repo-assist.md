@@ -369,14 +369,14 @@ The schema stores only:
 
 - `cursors`: the last issue reached by Tasks 1 and 2, or `null` when a fresh search is required
 - `issues`: the latest still-actionable Repo Assist interaction or investigation state for an issue
-- `fixes`: one record per attempted issue fix, including its PR or branch when known
+- `fixes`: one object per attempted issue fix, with exactly these fields: `issue` (positive integer), `pr` (positive integer or `null`), `branch` (non-empty string or `null`), `status` (`open`, `merged`, `closed`, or `blocked`), `updated_at` (`YYYY-MM-DD`), and `note` (1-300 characters). Use `open` for an outstanding PR; do not invent status values or omit unknown fields.
 - `checks`: only the latest result for each engineering, documentation, QA, testing, release, or maintenance area
 - `completed_actions`: Monthly Activity actions checked off by a maintainer, so they are not proposed again
-- `priorities`: a short queue of concrete follow-up work
+- `priorities`: a short queue of objects, each with exactly `task` (integer 1-10), `item` (1-100 characters), and `note` (1-300 characters). Do not store priorities as strings.
 
 Keep notes terse and current. Replace superseded entries, remove resolved issue records and closed fix records once they are no longer needed for duplicate prevention, and never store run-by-run narration, exhaustive label histories, stale PR inventories, copied GitHub content, or facts that can be cheaply queried again. Stay within the schema's array and text limits; do not create another memory file.
 
-After every change to `notes.json`, run `jq empty /tmp/gh-aw/repo-memory/default/notes.json`, then call `push_repo_memory`. A successful tool result is required before finishing the run. If either check reports an error, repair `notes.json` and retry both checks. Prefer `jq` with a temporary file and atomic rename over manual partial JSON edits.
+After every change to `notes.json`, run `jq empty /tmp/gh-aw/repo-memory/default/notes.json` and wait for that shell command to finish successfully. Then call `push_repo_memory` in a separate tool call, never in the same tool-call batch as the edit or JSON check; parallel calls can validate the previous file contents. Wait for a successful tool result before finishing the run. If either check reports an error, repair `notes.json` and retry both checks. Prefer `jq` with a temporary file and atomic rename over manual partial JSON edits.
 
 **Important**: Memory may not be 100% accurate. Issues may have been created, closed, or commented on; PRs may have been created, merged, commented on, or closed since the last run. Always verify memory against current repository state — reviewing recent activity since your last run is wise before acting on stale assumptions.
 
