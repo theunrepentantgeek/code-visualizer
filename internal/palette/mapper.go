@@ -1,6 +1,7 @@
 package palette
 
 import (
+	"hash/fnv"
 	"image/color"
 	"log/slog"
 )
@@ -33,7 +34,8 @@ type CategoricalMapper struct {
 }
 
 // NewCategoricalMapper creates a mapper that assigns each distinct value a palette colour.
-// If there are more values than colours, colours wrap around with a warning.
+// Different values can share colours; if there are more values than colours,
+// a warning is logged.
 func NewCategoricalMapper(values []string, p ColourPalette) *CategoricalMapper {
 	if len(p.Colours) == 0 {
 		// Fallback: generate a single grey colour
@@ -51,8 +53,11 @@ func NewCategoricalMapper(values []string, p ColourPalette) *CategoricalMapper {
 	}
 
 	mapping := make(map[string]color.RGBA, len(values))
-	for i, v := range values {
-		idx := i % len(p.Colours)
+	for _, v := range values {
+		hasher := fnv.New32a()
+		_, _ = hasher.Write([]byte(v))
+		hashValue := hasher.Sum32() & 0x7fffffff
+		idx := int(hashValue) % len(p.Colours)
 		mapping[v] = p.Colours[idx]
 	}
 

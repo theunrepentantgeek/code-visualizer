@@ -68,8 +68,8 @@
 
 **Boundary and invariants.**
 
-- Assignment follows the order of the values passed in, so callers control colour assignment by controlling that order ([mapper.go#L54](mapper.go#L54), [../inks/ink.go#L94](../inks/ink.go#L94)).
-- More values than colours is allowed but degrades explicitly: colours wrap around and a warning is logged ([mapper.go#L36](mapper.go#L36), [mapper.go#L48](mapper.go#L48)).
+- Each value's palette index is derived from its string using FNV-1a, so its colour does not depend on the other values passed in or their order ([mapper.go#L54](mapper.go#L54)).
+- Different values can share a colour when their indices collide; more values than colours guarantees collisions and logs a warning ([mapper.go#L36](mapper.go#L36), [mapper.go#L49](mapper.go#L49)).
 - Unknown values and empty palettes both fall back to mid grey rather than failing ([mapper.go#L38](mapper.go#L38), [mapper.go#L68](mapper.go#L68)).
 
 **Related operations.**
@@ -82,7 +82,7 @@
 
 **Anti-patterns.**
 
-- Do not hash category strings to colours; the mapper exists so the same value keeps the same colour for the whole run ([mapper.go#L63](mapper.go#L63)).
+- Do not use Go's process-dependent map hash for category colours; use the mapper's stable FNV-1a assignment so the same value keeps the same colour across runs and category sets ([mapper.go#L54](mapper.go#L54)).
 
 **Source locations.**
 

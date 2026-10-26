@@ -1,7 +1,6 @@
 package palette
 
 import (
-	"image/color"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -41,7 +40,7 @@ func TestMapNumeric_MedianToMiddleColour(t *testing.T) {
 	g.Expect(col.R).To(BeNumerically("<", 200))
 }
 
-func TestMapCategorical_DistinctValues(t *testing.T) {
+func TestMapCategorical_KnownValuesUsePaletteColours(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -49,18 +48,26 @@ func TestMapCategorical_DistinctValues(t *testing.T) {
 	values := []string{"go", "rs", "py"}
 
 	mapper := NewCategoricalMapper(values, p)
-	colours := map[color.RGBA]bool{}
 
 	for _, v := range values {
 		col := mapper.Map(v)
-		colours[col] = true
 		g.Expect(col.A).To(Equal(uint8(255)))
+		g.Expect(p.Colours).To(ContainElement(col))
 	}
-
-	g.Expect(colours).To(HaveLen(3))
 }
 
-func TestMapCategorical_WrapAround(t *testing.T) {
+func TestMapCategorical_ColourIsIndependentOfOtherValues(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	p := GetPalette(Categorization)
+	single := NewCategoricalMapper([]string{"go"}, p)
+	withOtherValue := NewCategoricalMapper([]string{"c", "go"}, p)
+
+	g.Expect(withOtherValue.Map("go")).To(Equal(single.Map("go")))
+}
+
+func TestMapCategorical_MoreValuesThanPaletteUsePaletteColours(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -75,5 +82,6 @@ func TestMapCategorical_WrapAround(t *testing.T) {
 	for _, v := range values {
 		col := mapper.Map(v)
 		g.Expect(col.A).To(Equal(uint8(255)))
+		g.Expect(p.Colours).To(ContainElement(col))
 	}
 }
