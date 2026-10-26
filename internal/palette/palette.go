@@ -83,25 +83,80 @@ var palettes = map[PaletteName]ColourPalette{
 	Leaf:           leafPalette,
 }
 
-// Categorization palette: 12 visually distinct unordered colours (ColorBrewer Paired).
-var categorizationPalette = ColourPalette{
-	Name:        Categorization,
-	Description: "12 visually distinct unordered colours (ColorBrewer Paired). Best for classification metrics.",
-	Ordered:     false,
-	Colours: []color.RGBA{
-		{R: 166, G: 206, B: 227, A: 255},
-		{R: 31, G: 120, B: 180, A: 255},
-		{R: 178, G: 223, B: 138, A: 255},
-		{R: 51, G: 160, B: 44, A: 255},
-		{R: 251, G: 154, B: 153, A: 255},
-		{R: 227, G: 26, B: 28, A: 255},
-		{R: 253, G: 191, B: 111, A: 255},
-		{R: 255, G: 127, B: 0, A: 255},
-		{R: 202, G: 178, B: 214, A: 255},
-		{R: 106, G: 61, B: 154, A: 255},
-		{R: 255, G: 255, B: 153, A: 255},
-		{R: 177, G: 89, B: 40, A: 255},
-	},
+const categorizationHueCount = 12
+
+// Categorization colours combine 12 evenly spaced hues with 9 lightness and
+// saturation transformations, providing 108 distinct unordered colours.
+var categorizationPalette = newCategorizationPalette()
+
+func newCategorizationPalette() ColourPalette {
+	const (
+		baseSaturation = 0.55
+		baseLightness  = 0.5
+		change         = 0.5
+	)
+
+	variants := [...]struct {
+		saturation float64
+		lightness  float64
+	}{
+		{baseSaturation, baseLightness},
+		{baseSaturation, baseLightness + (1-baseLightness)*change},
+		{baseSaturation, baseLightness * (1 - change)},
+		{baseSaturation + (1-baseSaturation)*change, baseLightness},
+		{baseSaturation * (1 - change), baseLightness},
+		{baseSaturation + (1-baseSaturation)*change, baseLightness + (1-baseLightness)*change},
+		{baseSaturation * (1 - change), baseLightness + (1-baseLightness)*change},
+		{baseSaturation + (1-baseSaturation)*change, baseLightness * (1 - change)},
+		{baseSaturation * (1 - change), baseLightness * (1 - change)},
+	}
+
+	colours := make([]color.RGBA, 0, categorizationHueCount*len(variants))
+	for _, variant := range variants {
+		for hueIndex := range categorizationHueCount {
+			hue := float64(hueIndex) * 360 / categorizationHueCount
+			colours = append(colours, hslToRGBA(hue, variant.saturation, variant.lightness))
+		}
+	}
+
+	return ColourPalette{
+		Name:        Categorization,
+		Description: "108 generated colours from 12 hues and 9 variants for classification metrics.",
+		Ordered:     false,
+		Colours:     colours,
+	}
+}
+
+func hslToRGBA(hue, saturation, lightness float64) color.RGBA {
+	chroma := (1 - math.Abs(2*lightness-1)) * saturation
+	hueSegment := hue / 60
+	x := chroma * (1 - math.Abs(math.Mod(hueSegment, 2)-1))
+
+	var r, g, b float64
+
+	switch {
+	case hueSegment < 1:
+		r, g = chroma, x
+	case hueSegment < 2:
+		r, g = x, chroma
+	case hueSegment < 3:
+		g, b = chroma, x
+	case hueSegment < 4:
+		g, b = x, chroma
+	case hueSegment < 5:
+		r, b = x, chroma
+	default:
+		r, b = chroma, x
+	}
+
+	m := lightness - chroma/2
+
+	return color.RGBA{
+		R: uint8(math.Round((r + m) * 255)),
+		G: uint8(math.Round((g + m) * 255)),
+		B: uint8(math.Round((b + m) * 255)),
+		A: 255,
+	}
 }
 
 // Temperature palette: 11 steps, dark blue → white → bright red (ColorBrewer RdBu diverging).

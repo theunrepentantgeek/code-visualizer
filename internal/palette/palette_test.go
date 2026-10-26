@@ -1,6 +1,7 @@
 package palette
 
 import (
+	"image/color"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -63,9 +64,17 @@ func TestCategorizationPalette(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	p := GetPalette(Categorization)
-	g.Expect(p.Colours).To(HaveLen(12))
+	g.Expect(p.Colours).To(HaveLen(108))
 	g.Expect(p.Ordered).To(BeFalse())
 	g.Expect(p.Name).To(Equal(Categorization))
+
+	colours := make(map[color.RGBA]struct{}, len(p.Colours))
+	for i, colour := range p.Colours {
+		g.Expect(colour.A).To(Equal(uint8(255)), "colour %d should be opaque", i)
+		colours[colour] = struct{}{}
+	}
+
+	g.Expect(colours).To(HaveLen(108), "every generated colour should be unique")
 }
 
 func TestTemperaturePalette(t *testing.T) {

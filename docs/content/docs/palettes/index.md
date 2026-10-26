@@ -11,27 +11,31 @@ The categorization palette assigns visually distinct colours to discrete categor
 
 ## Categorization
 
-**Name:** `categorization` · **Steps:** 12 · **Ordered:** No
+**Name:** `categorization` · **Steps:** 108 · **Ordered:** No
 
-Twelve visually distinct colours for categorical data such as file type.
-Colours are drawn from the ColorBrewer *Paired* scheme.
+The palette generates 108 colours from 12 hues, spaced 30° apart around the
+colour wheel, and 9 lightness and saturation variants. Hue varies fastest:
+category index modulo 12 selects a hue, while integer division by 12 selects
+its variant. The mapper warns and reuses colours if there are more than 108
+distinct categories.
 
-![Categorization palette swatch](palette-categorization.png)
+![Categorization palette swatches arranged as 12 hues across 9 variants](palette-categorization.png)
 
-| Step | Hex | RGB |
-|------|-----|-----|
-| 1 | `#A6CEE3` | 166, 206, 227 |
-| 2 | `#1F78B4` | 31, 120, 180 |
-| 3 | `#B2DF8A` | 178, 223, 138 |
-| 4 | `#33A02C` | 51, 160, 44 |
-| 5 | `#FB9A99` | 251, 154, 153 |
-| 6 | `#E31A1C` | 227, 26, 28 |
-| 7 | `#FDBF6F` | 253, 191, 111 |
-| 8 | `#FF7F00` | 255, 127, 0 |
-| 9 | `#CAB2D6` | 202, 178, 214 |
-| 10 | `#6A3D9A` | 106, 61, 154 |
-| 11 | `#FFFF99` | 255, 255, 153 |
-| 12 | `#B15928` | 177, 89, 40 |
+The base colours use HSL saturation 55% and lightness 50%. Each brightness
+change moves lightness 50% toward white or black; each vibrance change moves
+saturation 50% toward full or zero saturation.
+
+| Variant | Hue-wheel colours (0° through 330°, in 30° steps) |
+|---------|---------------------------------------------------|
+| Base | `#C63939`, `#C68039`, `#C6C639`, `#80C639`, `#39C639`, `#39C680`, `#39C6C6`, `#3980C6`, `#3939C6`, `#8039C6`, `#C639C6`, `#C63980` |
+| Brighter | `#E29C9C`, `#E2BF9C`, `#E2E29C`, `#BFE29C`, `#9CE29C`, `#9CE2BF`, `#9CE2E2`, `#9CBFE2`, `#9C9CE2`, `#BF9CE2`, `#E29CE2`, `#E29CBF` |
+| Darker | `#631D1D`, `#63401D`, `#63631D`, `#40631D`, `#1D631D`, `#1D6340`, `#1D6363`, `#1D4063`, `#1D1D63`, `#401D63`, `#631D63`, `#631D40` |
+| More vibrant | `#E21D1D`, `#E2801D`, `#E2E21D`, `#80E21D`, `#1DE21D`, `#1DE280`, `#1DE2E2`, `#1D80E2`, `#1D1DE2`, `#801DE2`, `#E21DE2`, `#E21D80` |
+| Less vibrant | `#A35C5C`, `#A3805C`, `#A3A35C`, `#80A35C`, `#5CA35C`, `#5CA380`, `#5CA3A3`, `#5C80A3`, `#5C5CA3`, `#805CA3`, `#A35CA3`, `#A35C80` |
+| Brighter + more vibrant | `#F18E8E`, `#F1BF8E`, `#F1F18E`, `#BFF18E`, `#8EF18E`, `#8EF1BF`, `#8EF1F1`, `#8EBFF1`, `#8E8EF1`, `#BF8EF1`, `#F18EF1`, `#F18EBF` |
+| Brighter + less vibrant | `#D1AEAE`, `#D1BFAE`, `#D1D1AE`, `#BFD1AE`, `#AED1AE`, `#AED1BF`, `#AED1D1`, `#AEBFD1`, `#AEAED1`, `#BFAED1`, `#D1AED1`, `#D1AEBF` |
+| Darker + more vibrant | `#710E0E`, `#71400E`, `#71710E`, `#40710E`, `#0E710E`, `#0E7140`, `#0E7171`, `#0E4071`, `#0E0E71`, `#400E71`, `#710E71`, `#710E40` |
+| Darker + less vibrant | `#512E2E`, `#51402E`, `#51512E`, `#40512E`, `#2E512E`, `#2E5140`, `#2E5151`, `#2E4051`, `#2E2E51`, `#402E51`, `#512E51`, `#512E40` |
 
 ## Temperature
 
