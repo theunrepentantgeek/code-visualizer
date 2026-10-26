@@ -69,11 +69,22 @@ func layoutChildren(
 			OuterRadius: outerRadius,
 		}
 		if dir != nil {
+			nestedStart := child.StartAngle
+			nestedSweep := child.SweepAngle
+			parentValue := directoryMetricValue(dir, sizeMetric)
+
+			_, nestedValue := allocationValues(dir.Dirs, sizeMetric)
+
+			if parentValue > 0 && nestedValue > 0 && nestedValue < parentValue {
+				nestedSweep *= nestedValue / parentValue
+				nestedStart += (child.SweepAngle - nestedSweep) / 2
+			}
+
 			child.Children = layoutChildren(
 				dir.Dirs,
 				depth+1,
-				child.StartAngle,
-				child.SweepAngle,
+				nestedStart,
+				nestedSweep,
 				ringWidth,
 				sizeMetric,
 			)

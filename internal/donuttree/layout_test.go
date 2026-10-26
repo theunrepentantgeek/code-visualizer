@@ -45,6 +45,24 @@ func TestLayoutAllocatesDirectorySectorsByMetric(t *testing.T) {
 	g.Expect(nested.InnerRadius).To(BeNumerically(">", layout.Children[1].InnerRadius))
 }
 
+func TestLayoutCentersNestedSectorsWithinTheirMetricShare(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	parent := directoryWithLines("astmodel", 22381)
+	parent.Dirs = []*model.Directory{directoryWithLines("testdata", 74)}
+	root := &model.Directory{Name: "root", Dirs: []*model.Directory{parent}}
+
+	layout := Layout(root, 800, filesystem.FileLines)
+	parentSector := layout.Children[0]
+	nestedSector := parentSector.Children[0]
+	expectedSweep := parentSector.SweepAngle * 74 / 22381
+
+	g.Expect(nestedSector.SweepAngle).To(BeNumerically("~", expectedSweep, 1e-12))
+	g.Expect(nestedSector.StartAngle + nestedSector.SweepAngle/2).
+		To(BeNumerically("~", parentSector.StartAngle+parentSector.SweepAngle/2, 1e-12))
+}
+
 func TestLayoutLeavesTenPercentGapBetweenDepthRings(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
