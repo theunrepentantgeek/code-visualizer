@@ -71,6 +71,7 @@ func TestMapCategorical_ThirtyValuesHaveDistinctColours(t *testing.T) {
 
 	mapper := NewCategoricalMapper(values, GetPalette(Categorization))
 	colours := make(map[color.RGBA]struct{}, len(values))
+
 	for _, value := range values {
 		colours[mapper.Map(value)] = struct{}{}
 	}

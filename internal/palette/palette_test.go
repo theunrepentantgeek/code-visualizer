@@ -73,6 +73,7 @@ func TestCategorizationPalette(t *testing.T) {
 		g.Expect(colour.A).To(Equal(uint8(255)), "colour %d should be opaque", i)
 		colours[colour] = struct{}{}
 	}
+
 	g.Expect(colours).To(HaveLen(108), "every generated colour should be unique")
 }
 

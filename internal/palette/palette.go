@@ -121,7 +121,7 @@ func newCategorizationPalette() ColourPalette {
 
 	return ColourPalette{
 		Name:        Categorization,
-		Description: "108 colours generated from 12 hues and 9 brightness/vibrance variants. Best for classification metrics.",
+		Description: "108 generated colours from 12 hues and 9 variants for classification metrics.",
 		Ordered:     false,
 		Colours:     colours,
 	}
@@ -133,6 +133,7 @@ func hslToRGBA(hue, saturation, lightness float64) color.RGBA {
 	x := chroma * (1 - math.Abs(math.Mod(hueSegment, 2)-1))
 
 	var r, g, b float64
+
 	switch {
 	case hueSegment < 1:
 		r, g = chroma, x
