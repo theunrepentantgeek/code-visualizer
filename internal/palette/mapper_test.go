@@ -60,6 +60,24 @@ func TestMapCategorical_DistinctValues(t *testing.T) {
 	g.Expect(colours).To(HaveLen(3))
 }
 
+func TestMapCategorical_ThirtyValuesHaveDistinctColours(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	values := make([]string, 30)
+	for i := range values {
+		values[i] = string(rune('A' + i))
+	}
+
+	mapper := NewCategoricalMapper(values, GetPalette(Categorization))
+	colours := make(map[color.RGBA]struct{}, len(values))
+	for _, value := range values {
+		colours[mapper.Map(value)] = struct{}{}
+	}
+
+	g.Expect(colours).To(HaveLen(len(values)))
+}
+
 func TestMapCategorical_WrapAround(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)

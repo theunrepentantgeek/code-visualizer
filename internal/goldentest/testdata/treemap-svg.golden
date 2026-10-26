@@ -7,21 +7,21 @@
 <rect x="10.000" y="26.000" width="105.017" height="177.000" fill="rgba(0,0,0,0.000)" stroke="rgb(51,51,51)" stroke-width="3.000"/>
 <rect x="229.371" y="104.194" width="85.629" height="20.000" fill="rgb(32,38,49)" stroke="rgb(32,38,49)" stroke-width="0.000"/>
 <rect x="229.371" y="104.194" width="85.629" height="70.742" fill="rgba(0,0,0,0.000)" stroke="rgb(51,51,51)" stroke-width="2.000"/>
-<defs><radialGradient id="rg1" cx="50%" cy="50%" r="70%" fx="17.246%" fy="-19.185%"><stop offset="0%" stop-color="rgb(178,223,138)"/><stop offset="100%" stop-color="rgb(106,133,82)"/></radialGradient></defs>
+<defs><radialGradient id="rg1" cx="50%" cy="50%" r="70%" fx="17.246%" fy="-19.185%"><stop offset="0%" stop-color="rgb(198,198,57)"/><stop offset="100%" stop-color="rgb(118,118,34)"/></radialGradient></defs>
 <rect x="229.371" y="176.935" width="85.629" height="31.065" fill="url(#rg1)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
-<defs><radialGradient id="rg2" cx="50%" cy="50%" r="70%" fx="-48.261%" fy="90.823%"><stop offset="0%" stop-color="rgb(31,120,180)"/><stop offset="100%" stop-color="rgb(18,72,108)"/></radialGradient></defs>
+<defs><radialGradient id="rg2" cx="50%" cy="50%" r="70%" fx="-48.261%" fy="90.823%"><stop offset="0%" stop-color="rgb(198,128,57)"/><stop offset="100%" stop-color="rgb(118,76,34)"/></radialGradient></defs>
 <rect x="229.371" y="5.000" width="85.629" height="97.194" fill="url(#rg2)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
-<defs><radialGradient id="rg3" cx="50%" cy="50%" r="70%" fx="16.460%" fy="62.727%"><stop offset="0%" stop-color="rgb(31,120,180)"/><stop offset="100%" stop-color="rgb(18,72,108)"/></radialGradient></defs>
+<defs><radialGradient id="rg3" cx="50%" cy="50%" r="70%" fx="16.460%" fy="62.727%"><stop offset="0%" stop-color="rgb(198,128,57)"/><stop offset="100%" stop-color="rgb(118,76,34)"/></radialGradient></defs>
 <rect x="117.017" y="26.000" width="105.355" height="116.208" fill="url(#rg3)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
-<defs><radialGradient id="rg4" cx="50%" cy="50%" r="70%" fx="37.937%" fy="23.081%"><stop offset="0%" stop-color="rgb(31,120,180)"/><stop offset="100%" stop-color="rgb(18,72,108)"/></radialGradient></defs>
+<defs><radialGradient id="rg4" cx="50%" cy="50%" r="70%" fx="37.937%" fy="23.081%"><stop offset="0%" stop-color="rgb(198,128,57)"/><stop offset="100%" stop-color="rgb(118,76,34)"/></radialGradient></defs>
 <rect x="117.017" y="144.208" width="72.552" height="58.792" fill="url(#rg4)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
-<defs><radialGradient id="rg5" cx="50%" cy="50%" r="70%" fx="19.415%" fy="38.156%"><stop offset="0%" stop-color="rgb(166,206,227)"/><stop offset="100%" stop-color="rgb(99,123,136)"/></radialGradient></defs>
+<defs><radialGradient id="rg5" cx="50%" cy="50%" r="70%" fx="19.415%" fy="38.156%"><stop offset="0%" stop-color="rgb(198,57,57)"/><stop offset="100%" stop-color="rgb(118,34,34)"/></radialGradient></defs>
 <rect x="191.569" y="144.208" width="30.803" height="58.792" fill="url(#rg5)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
-<defs><radialGradient id="rg6" cx="50%" cy="50%" r="70%" fx="40.259%" fy="51.916%"><stop offset="0%" stop-color="rgb(31,120,180)"/><stop offset="100%" stop-color="rgb(18,72,108)"/></radialGradient></defs>
+<defs><radialGradient id="rg6" cx="50%" cy="50%" r="70%" fx="40.259%" fy="51.916%"><stop offset="0%" stop-color="rgb(198,128,57)"/><stop offset="100%" stop-color="rgb(118,76,34)"/></radialGradient></defs>
 <rect x="31.000" y="31.000" width="79.017" height="160.603" fill="url(#rg6)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
-<defs><radialGradient id="rg7" cx="50%" cy="50%" r="70%" fx="49.617%" fy="-19.987%"><stop offset="0%" stop-color="rgb(51,160,44)"/><stop offset="100%" stop-color="rgb(30,96,26)"/></radialGradient></defs>
+<defs><radialGradient id="rg7" cx="50%" cy="50%" r="70%" fx="49.617%" fy="-19.987%"><stop offset="0%" stop-color="rgb(128,198,57)"/><stop offset="100%" stop-color="rgb(76,118,34)"/></radialGradient></defs>
 <rect x="31.000" y="193.603" width="79.017" height="4.397" fill="url(#rg7)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
-<defs><radialGradient id="rg8" cx="50%" cy="50%" r="70%" fx="50.000%" fy="32.120%"><stop offset="0%" stop-color="rgb(178,223,138)"/><stop offset="100%" stop-color="rgb(106,133,82)"/></radialGradient></defs>
+<defs><radialGradient id="rg8" cx="50%" cy="50%" r="70%" fx="50.000%" fy="32.120%"><stop offset="0%" stop-color="rgb(198,198,57)"/><stop offset="100%" stop-color="rgb(118,118,34)"/></radialGradient></defs>
 <rect x="234.371" y="125.194" width="75.629" height="44.742" fill="url(#rg8)" stroke="rgb(51,51,51)" stroke-width="0.500"/>
 <text x="116.186" y="15.000" fill="rgb(255,255,255)" font-size="12.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">src</text>
 <text x="20.000" y="114.500" fill="rgb(255,255,255)" font-size="12.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" transform="rotate(-90.000 20.000 114.500)">deep</text>
@@ -33,13 +33,13 @@
 <text x="205.000" y="7.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
 <text x="163.000" y="54.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Fill</text>
 <text x="163.000" y="70.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
-<rect x="118.000" y="84.000" width="28.000" height="28.000" fill="rgb(166,206,227)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="84.000" width="28.000" height="28.000" fill="rgb(198,57,57)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="98.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">CSS</text>
-<rect x="118.000" y="116.000" width="28.000" height="28.000" fill="rgb(31,120,180)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="116.000" width="28.000" height="28.000" fill="rgb(198,128,57)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="130.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Go</text>
-<rect x="118.000" y="148.000" width="28.000" height="28.000" fill="rgb(178,223,138)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="148.000" width="28.000" height="28.000" fill="rgb(198,198,57)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="162.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Markdown</text>
-<rect x="118.000" y="180.000" width="28.000" height="28.000" fill="rgb(51,160,44)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="180.000" width="28.000" height="28.000" fill="rgb(128,198,57)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="194.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Text</text>
 <text x="257.000" y="54.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Size</text>
 <text x="257.000" y="70.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>
@@ -55,9 +55,9 @@
 <text x="153.293" y="156.673" fill="rgb(255,255,255)" font-size="16.931" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">util.go</text>
 <text x="153.293" y="173.604" fill="rgb(255,255,255)" font-size="16.931" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">75</text>
 <text x="153.293" y="190.535" fill="rgb(255,255,255)" font-size="16.931" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Go</text>
-<text x="206.970" y="168.441" fill="rgb(0,0,0)" font-size="5.163" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">styles.css</text>
-<text x="206.970" y="173.604" fill="rgb(0,0,0)" font-size="5.163" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">33</text>
-<text x="206.970" y="178.767" fill="rgb(0,0,0)" font-size="5.163" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">CSS</text>
+<text x="206.970" y="168.441" fill="rgb(255,255,255)" font-size="5.163" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">styles.css</text>
+<text x="206.970" y="173.604" fill="rgb(255,255,255)" font-size="5.163" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">33</text>
+<text x="206.970" y="178.767" fill="rgb(255,255,255)" font-size="5.163" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">CSS</text>
 <text x="70.508" y="85.477" fill="rgb(255,255,255)" font-size="25.824" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">big.go</text>
 <text x="70.508" y="111.301" fill="rgb(255,255,255)" font-size="25.824" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">305</text>
 <text x="70.508" y="137.126" fill="rgb(255,255,255)" font-size="25.824" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Go</text>
