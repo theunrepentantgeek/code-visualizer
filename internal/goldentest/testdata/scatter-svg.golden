@@ -16,14 +16,14 @@
 <line x1="96.000" y1="67.714" x2="288.000" y2="67.714" stroke="rgb(221,221,221)" stroke-width="1.000"/>
 <line x1="96.000" y1="57.857" x2="288.000" y2="57.857" stroke="rgb(221,221,221)" stroke-width="1.000"/>
 <line x1="96.000" y1="48.000" x2="288.000" y2="48.000" stroke="rgb(221,221,221)" stroke-width="1.000"/>
-<circle cx="224.667" cy="70.372" r="12.000" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
-<circle cx="288.000" cy="48.000" r="12.000" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
-<circle cx="146.667" cy="99.102" r="12.000" fill="rgb(178,223,138)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
-<circle cx="168.000" cy="91.567" r="12.000" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
-<circle cx="96.000" cy="117.000" r="12.000" fill="rgb(51,160,44)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
-<circle cx="114.667" cy="110.406" r="12.000" fill="rgb(178,223,138)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
-<circle cx="110.000" cy="112.055" r="12.000" fill="rgb(166,206,227)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
-<circle cx="138.000" cy="102.164" r="12.000" fill="rgb(31,120,180)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="224.667" cy="70.372" r="12.000" fill="rgb(46,64,81)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="288.000" cy="48.000" r="12.000" fill="rgb(46,64,81)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="146.667" cy="99.102" r="12.000" fill="rgb(99,29,29)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="168.000" cy="91.567" r="12.000" fill="rgb(46,64,81)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="96.000" cy="117.000" r="12.000" fill="rgb(241,241,142)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="114.667" cy="110.406" r="12.000" fill="rgb(99,29,29)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="110.000" cy="112.055" r="12.000" fill="rgb(174,174,209)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
+<circle cx="138.000" cy="102.164" r="12.000" fill="rgb(46,64,81)" stroke="rgb(51,51,51)" stroke-width="1.000"/>
 <text x="192.000" y="173.000" fill="rgb(34,34,34)" font-size="12.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-size</text>
 <text x="24.000" y="82.500" fill="rgb(34,34,34)" font-size="12.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" transform="rotate(-90.000 24.000 82.500)">file-lines</text>
 <text x="96.000" y="135.000" fill="rgb(34,34,34)" font-size="10.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">0</text>
@@ -43,22 +43,22 @@
 <text x="88.000" y="48.000" fill="rgb(34,34,34)" font-size="10.000" font-family="sans-serif" text-anchor="end" dominant-baseline="central">350</text>
 <text x="224.667" y="70.372" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">app…</text>
 <text x="288.000" y="48.000" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">big…</text>
-<text x="146.667" y="99.102" fill="rgb(0,0,0)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">gui…</text>
+<text x="146.667" y="99.102" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">gui…</text>
 <text x="168.000" y="91.567" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">mai…</text>
-<text x="96.000" y="117.000" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">not…</text>
-<text x="114.667" y="110.406" fill="rgb(0,0,0)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">rea…</text>
-<text x="110.000" y="112.055" fill="rgb(0,0,0)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sty…</text>
+<text x="96.000" y="117.000" fill="rgb(0,0,0)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">not…</text>
+<text x="114.667" y="110.406" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">rea…</text>
+<text x="110.000" y="112.055" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">sty…</text>
 <text x="138.000" y="102.164" fill="rgb(255,255,255)" font-size="8.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">uti…</text>
 <rect x="106.000" y="23.000" width="198.000" height="190.000" fill="rgba(255,255,255,0.902)" stroke="rgba(153,153,153,0.800)" stroke-width="1.000"/>
 <text x="163.000" y="43.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Fill</text>
 <text x="163.000" y="59.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-type</text>
-<rect x="118.000" y="73.000" width="28.000" height="28.000" fill="rgb(166,206,227)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="73.000" width="28.000" height="28.000" fill="rgb(174,174,209)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="87.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">CSS</text>
-<rect x="118.000" y="105.000" width="28.000" height="28.000" fill="rgb(31,120,180)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="105.000" width="28.000" height="28.000" fill="rgb(46,64,81)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="119.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Go</text>
-<rect x="118.000" y="137.000" width="28.000" height="28.000" fill="rgb(178,223,138)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="137.000" width="28.000" height="28.000" fill="rgb(99,29,29)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="151.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Markdown</text>
-<rect x="118.000" y="169.000" width="28.000" height="28.000" fill="rgb(51,160,44)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
+<rect x="118.000" y="169.000" width="28.000" height="28.000" fill="rgb(241,241,142)" stroke="rgb(102,102,102)" stroke-width="0.500"/>
 <text x="152.000" y="183.000" fill="rgb(51,51,51)" font-size="12.000" font-family="sans-serif" text-anchor="start" dominant-baseline="central">Text</text>
 <text x="257.000" y="43.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">Size</text>
 <text x="257.000" y="59.000" fill="rgb(38,38,38)" font-size="13.000" font-family="sans-serif" text-anchor="middle" dominant-baseline="central">file-lines</text>

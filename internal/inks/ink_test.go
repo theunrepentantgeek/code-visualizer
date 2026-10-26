@@ -77,7 +77,7 @@ func TestNumericInk_Dip_UsesQuantity(t *testing.T) {
 	g.Expect(lowResult).NotTo(Equal(highResult))
 }
 
-func TestCategoricalInk_Dip_MapsCategories(t *testing.T) {
+func TestCategoricalInk_Dip_MapsCategoriesToPaletteColours(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
 
@@ -92,9 +92,9 @@ func TestCategoricalInk_Dip_MapsCategories(t *testing.T) {
 	g.Expect(goCol.A).To(Equal(uint8(255)))
 	g.Expect(rsCol.A).To(Equal(uint8(255)))
 	g.Expect(pyCol.A).To(Equal(uint8(255)))
-
-	colours := map[color.RGBA]bool{goCol: true, rsCol: true, pyCol: true}
-	g.Expect(colours).To(HaveLen(3))
+	g.Expect(pal.Colours).To(ContainElement(goCol))
+	g.Expect(pal.Colours).To(ContainElement(rsCol))
+	g.Expect(pal.Colours).To(ContainElement(pyCol))
 }
 
 func TestCategoricalInk_Dip_UnknownCategory_ReturnsGrey(t *testing.T) {
