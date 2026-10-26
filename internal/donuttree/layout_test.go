@@ -63,6 +63,68 @@ func TestLayoutCentersNestedSectorsWithinTheirMetricShare(t *testing.T) {
 		To(BeNumerically("~", parentSector.StartAngle+parentSector.SweepAngle/2, 1e-12))
 }
 
+func TestLayoutUsesUnderlyingValuesToPartitionMeanMetricSectors(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const meanMetric = metric.Name("file-lines.mean")
+
+	child := directoryWithLines("nested", 0)
+	child.SetMeasure(meanMetric, 1)
+	child.Files = []*model.File{
+		fileWithLines(1),
+		fileWithLines(1),
+	}
+	parent := &model.Directory{
+		Name: "parent",
+		Files: []*model.File{
+			fileWithLines(5),
+			fileWithLines(5),
+		},
+		Dirs: []*model.Directory{child},
+	}
+	parent.SetMeasure(meanMetric, 3)
+	root := &model.Directory{Name: "root", Dirs: []*model.Directory{parent}}
+
+	layout := Layout(root, 800, meanMetric)
+	parentSector := layout.Children[0]
+	nestedSector := parentSector.Children[0]
+
+	g.Expect(nestedSector.SweepAngle).To(BeNumerically("~", parentSector.SweepAngle/6, 1e-12))
+	g.Expect(nestedSector.StartAngle + nestedSector.SweepAngle/2).
+		To(BeNumerically("~", parentSector.StartAngle+parentSector.SweepAngle/2, 1e-12))
+}
+
+func TestLayoutPartitionsNestedSectorsWhenChildAggregatesExceedParent(t *testing.T) {
+	t.Parallel()
+	g := NewGomegaWithT(t)
+
+	const maxMetric = metric.Name("file-lines.max")
+
+	left := directoryWithLines("left", 0)
+	left.SetQuantity(maxMetric, 8)
+	left.Files = []*model.File{fileWithLines(8)}
+	right := directoryWithLines("right", 0)
+	right.SetQuantity(maxMetric, 8)
+	right.Files = []*model.File{fileWithLines(8)}
+	parent := directoryWithLines("parent", 0)
+	parent.SetQuantity(maxMetric, 10)
+	parent.Files = []*model.File{fileWithLines(10)}
+	parent.Dirs = []*model.Directory{left, right}
+	root := &model.Directory{Name: "root", Dirs: []*model.Directory{parent}}
+
+	layout := Layout(root, 800, maxMetric)
+	parentSector := layout.Children[0]
+	expectedSweep := parentSector.SweepAngle * 8 / 13
+
+	g.Expect(parentSector.Children).To(HaveLen(2))
+	g.Expect(parentSector.Children[0].SweepAngle + parentSector.Children[1].SweepAngle).
+		To(BeNumerically("~", expectedSweep, 1e-12))
+	g.Expect(parentSector.Children[0].StartAngle +
+		(parentSector.Children[0].SweepAngle+parentSector.Children[1].SweepAngle)/2).
+		To(BeNumerically("~", parentSector.StartAngle+parentSector.SweepAngle/2, 1e-12))
+}
+
 func TestLayoutLeavesTenPercentGapBetweenDepthRings(t *testing.T) {
 	t.Parallel()
 	g := NewGomegaWithT(t)
@@ -220,4 +282,11 @@ func TestDirectoryMetricValuePrefersQuantityThenMeasure(t *testing.T) {
 
 	dir.SetQuantity(name, 2)
 	g.Expect(directoryMetricValue(dir, name)).To(BeNumerically("==", 2))
+}
+
+func fileWithLines(value int64) *model.File {
+	file := &model.File{}
+	file.SetQuantity(filesystem.FileLines, value)
+
+	return file
 }
