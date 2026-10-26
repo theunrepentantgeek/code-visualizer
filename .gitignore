@@ -43,3 +43,4 @@ docs/content/hero.png
 
 # Miscellaneous
 .custom-gcl.yml # Temporary custom GolangCI-Lint configuration file
+.task-exclusive.lock
